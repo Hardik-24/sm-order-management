@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">SM Fleet</string>
+    <string name="title_activity_main">SM Fleet</string>
+    <string name="package_name">com.siliconmarketing.fleet</string>
+    <string name="custom_url_scheme">com.siliconmarketing.fleet</string>
+</resources>
