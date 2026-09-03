@@ -12,11 +12,15 @@
     "@capacitor/android": "^8.5.1",
     "@capacitor/core": "^8.5.1",
     "@capacitor/geolocation": "^8.2.2",
+    "lucide-vue-next": "^1.0.0",
     "vue": "^3.4.21"
   },
   "devDependencies": {
     "@capacitor/cli": "^8.5.1",
     "@vitejs/plugin-vue": "^5.0.4",
+    "autoprefixer": "^10.5.4",
+    "postcss": "^8.5.27",
+    "tailwindcss": "^4.3.3",
     "typescript": "^5.2.2",
     "vite": "^5.2.0",
     "vue-tsc": "^2.0.0"
