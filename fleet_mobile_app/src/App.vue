@@ -1,6 +1,7 @@
 <template>
-  <div class="min-h-screen bg-[#faf8f5] text-[#1a1a1a] flex flex-col font-sans">
-    
+  <Login v-if="!isAuthenticated" @login-success="onLoginSuccess" />
+  
+  <div v-else class="min-h-screen bg-[#faf8f5] text-[#1a1a1a] flex flex-col font-sans">
     <!-- Top Nav -->
     <header class="bg-[#1a5c4c] text-white p-4 shadow-md flex items-center justify-between sticky top-0 z-10 safe-area-pt">
       <div class="flex items-center gap-3">
@@ -9,12 +10,12 @@
         </div>
         <div>
           <h1 class="font-bold text-lg leading-tight tracking-wide">SM FLEET</h1>
-          <p class="text-xs text-white/70">Driver: Test User</p>
+          <p class="text-xs text-white/70">Driver: {{ currentUser?.name || 'Loading...' }}</p>
         </div>
       </div>
       <div class="flex items-center gap-2">
+        <button @click="logout" class="text-xs uppercase bg-white/20 px-2 py-1 rounded">Logout</button>
         <div class="w-3 h-3 rounded-full" :class="isTracking ? 'bg-[#4ecdc4] animate-pulse' : 'bg-red-400'"></div>
-        <span class="text-xs font-semibold uppercase tracking-wider">{{ isTracking ? 'Online' : 'Offline' }}</span>
       </div>
     </header>
 
@@ -84,10 +85,46 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { Geolocation } from '@capacitor/geolocation'
+import { Preferences } from '@capacitor/preferences'
 import { Truck, MapPin, Play, Square, ShieldCheck } from 'lucide-vue-next'
+import Login from './components/Login.vue'
 
+const isAuthenticated = ref(false)
+const currentUser = ref<any>(null)
+let authToken = ''
+const API_URL = 'https://sm-order-management.vercel.app'
+
+onMounted(async () => {
+  const { value } = await Preferences.get({ key: 'auth_token' })
+  const { value: userStr } = await Preferences.get({ key: 'user' })
+  
+  if (value && userStr) {
+    authToken = value
+    currentUser.value = JSON.parse(userStr)
+    isAuthenticated.value = true
+  }
+})
+
+async function onLoginSuccess(payload: { user: any, token: string }) {
+  await Preferences.set({ key: 'auth_token', value: payload.token })
+  await Preferences.set({ key: 'user', value: JSON.stringify(payload.user) })
+  authToken = payload.token
+  currentUser.value = payload.user
+  isAuthenticated.value = true
+}
+
+async function logout() {
+  await Preferences.remove({ key: 'auth_token' })
+  await Preferences.remove({ key: 'user' })
+  isAuthenticated.value = false
+  currentUser.value = null
+  authToken = ''
+  completeTrip() // stop tracking if active
+}
+
+// --- Tracking Logic ---
 const isTracking = ref(false)
 const currentLat = ref<number | null>(null)
 const currentLng = ref<number | null>(null)
@@ -121,7 +158,9 @@ async function startTrip() {
     elapsedTime.value = Math.floor((Date.now() - startTime.value!) / 1000)
   }, 1000)
 
-  // Start Native GPS Watch
+  // In a real app we'd create the trip route in Supabase here via POST API
+  // fetch(`${API_URL}/api/driver/trip`, { method: 'POST', headers: { Authorization: `Bearer ${authToken}` }, body: ... })
+
   watchId = await Geolocation.watchPosition(
     { enableHighAccuracy: true, timeout: 10000 },
     (position, err) => {
@@ -131,10 +170,14 @@ async function startTrip() {
       currentLng.value = position.coords.longitude
       currentSpeed.value = position.coords.speed ? Math.round(position.coords.speed * 3.6) : 0
       
-      // TODO: Connect to Vercel API
-      // fetch('https://sm-order-management.vercel.app/api/driver/trip', {
+      // Ping the server with Bearer token!
+      // fetch(`${API_URL}/api/driver/trip`, {
       //   method: 'POST',
-      //   body: JSON.stringify({ lat: currentLat.value, lng: currentLng.value })
+      //   headers: { 
+      //     'Content-Type': 'application/json',
+      //     'Authorization': `Bearer ${authToken}`
+      //   },
+      //   body: JSON.stringify({ action: 'ping', lat: currentLat.value, lng: currentLng.value })
       // })
     }
   )

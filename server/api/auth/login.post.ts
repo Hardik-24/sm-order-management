@@ -44,5 +44,5 @@ export default defineEventHandler(async (event) => {
     path: '/',
   })
 
-  return { user: sessionUser }
+  return { user: sessionUser, token }
 })

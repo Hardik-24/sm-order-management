@@ -48,9 +48,19 @@ export function verifyToken(token: string): SessionUser | null {
   }
 }
 
-/** Get the current user from the request cookie */
+/** Get the current user from the request cookie or Authorization header */
 export function getUserFromEvent(event: H3Event): SessionUser | null {
-  const token = getCookie(event, 'auth_token')
+  // 1. Check for cookie (Web App)
+  let token = getCookie(event, 'auth_token')
+  
+  // 2. Check for Bearer token (Mobile App)
+  if (!token) {
+    const authHeader = getHeader(event, 'Authorization')
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.split(' ')[1]
+    }
+  }
+
   if (!token) return null
   return verifyToken(token)
 }
