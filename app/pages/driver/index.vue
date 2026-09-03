@@ -987,6 +987,12 @@ async function startTripPrompt(order: any) {
   // Wait for a satellite-accurate GPS fix (accuracy < 50m) before starting trip
   // This prevents WiFi/cell-tower triangulation (which can be 200-500m off) being used as start point
   const cap = getCapacitor()
+  
+  if (cap && cap.isNativePlatform()) {
+     const bgGeo = getPlugin('BackgroundGeolocation')
+     alert("DEBUG: Native Platform detected. BackgroundGeolocation plugin exists? " + !!bgGeo)
+  }
+
   if (!navigator.geolocation && !(cap && cap.isNativePlatform())) {
     showEditing('Please allow Location / GPS access on your phone to start trip.')
     return
