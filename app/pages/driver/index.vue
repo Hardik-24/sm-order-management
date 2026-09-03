@@ -490,13 +490,28 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
-import { Capacitor, registerPlugin } from '@capacitor/core'
-import { Geolocation as CapGeolocation } from '@capacitor/geolocation'
-const BackgroundGeolocation = registerPlugin('BackgroundGeolocation')
+
+const getCapacitor = () => {
+  if (typeof window !== 'undefined' && (window as any).Capacitor) {
+    return (window as any).Capacitor
+  }
+  return null
+}
+
+const getPlugin = (pluginName: string) => {
+  const cap = getCapacitor()
+  if (cap && cap.Plugins && cap.Plugins[pluginName]) {
+    return cap.Plugins[pluginName]
+  }
+  return null
+}
 
 const geo = {
   watchPosition: async (success: any, error: any, options: any) => {
-    if (Capacitor.isNativePlatform()) {
+    const cap = getCapacitor()
+    const BackgroundGeolocation = getPlugin('BackgroundGeolocation')
+
+    if (cap && cap.isNativePlatform() && BackgroundGeolocation) {
       // Use the hardcore Background Geolocation plugin
       return await BackgroundGeolocation.addWatcher(
         {
@@ -531,14 +546,20 @@ const geo = {
     }
   },
   clearWatch: async (id: any) => {
-    if (Capacitor.isNativePlatform()) {
+    const cap = getCapacitor()
+    const BackgroundGeolocation = getPlugin('BackgroundGeolocation')
+
+    if (cap && cap.isNativePlatform() && BackgroundGeolocation) {
       await BackgroundGeolocation.removeWatcher({ id })
     } else {
       navigator.geolocation.clearWatch(id)
     }
   },
   getCurrentPosition: async (success: any, error: any, options: any) => {
-    if (Capacitor.isNativePlatform()) {
+    const cap = getCapacitor()
+    const CapGeolocation = getPlugin('Geolocation')
+
+    if (cap && cap.isNativePlatform() && CapGeolocation) {
       try {
         const pos = await CapGeolocation.getCurrentPosition(options)
         success(pos)
@@ -813,7 +834,8 @@ async function refreshData() {
 
 // Start continuous GPS tracking via phone browser
 function startGpsTracking() {
-  if (!navigator.geolocation && !Capacitor.isNativePlatform()) {
+  const cap = getCapacitor()
+  if (!navigator.geolocation && !(cap && cap.isNativePlatform())) {
     alert('GPS Geolocation is not supported by your mobile browser.')
     return
   }
@@ -964,7 +986,8 @@ async function startTripPrompt(order: any) {
 
   // Wait for a satellite-accurate GPS fix (accuracy < 50m) before starting trip
   // This prevents WiFi/cell-tower triangulation (which can be 200-500m off) being used as start point
-  if (!navigator.geolocation && !Capacitor.isNativePlatform()) {
+  const cap = getCapacitor()
+  if (!navigator.geolocation && !(cap && cap.isNativePlatform())) {
     showEditing('Please allow Location / GPS access on your phone to start trip.')
     return
   }
@@ -1142,10 +1165,11 @@ function openDirections(order: any) {
 
   const dest = `${lat},${lng}`
 
+  const cap = getCapacitor()
   // If driver current coordinates are already known via live GPS, launch turn-by-turn navigation with exact origin & driving mode
   if (currentCoords && currentCoords.lat && currentCoords.lng) {
     window.open(`https://www.google.com/maps/dir/?api=1&origin=${currentCoords.lat},${currentCoords.lng}&destination=${dest}&travelmode=driving`, '_blank')
-  } else if ((typeof navigator !== 'undefined' && navigator.geolocation) || Capacitor.isNativePlatform()) {
+  } else if ((typeof navigator !== 'undefined' && navigator.geolocation) || (cap && cap.isNativePlatform())) {
     geo.getCurrentPosition(
       (pos: any) => {
         currentCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude }
