@@ -31,11 +31,9 @@ jobs:
         working-directory: ./fleet_mobile_app
         run: npm run build
 
-      - name: Add Android Platform
+      - name: Sync Android Platform
         working-directory: ./fleet_mobile_app
-        run: |
-          npx cap add android
-          npx cap sync android
+        run: npx cap sync android
 
       - name: Build Android APK (Debug)
         working-directory: ./fleet_mobile_app/android
