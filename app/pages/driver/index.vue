@@ -490,6 +490,40 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { Capacitor } from '@capacitor/core'
+import { Geolocation as CapGeolocation } from '@capacitor/geolocation'
+
+const geo = {
+  watchPosition: async (success: any, error: any, options: any) => {
+    if (Capacitor.isNativePlatform()) {
+      return await CapGeolocation.watchPosition(options, (pos, err) => {
+        if (err) error(err)
+        else if (pos) success(pos)
+      })
+    } else {
+      return navigator.geolocation.watchPosition(success, error, options)
+    }
+  },
+  clearWatch: async (id: any) => {
+    if (Capacitor.isNativePlatform()) {
+      await CapGeolocation.clearWatch({ id })
+    } else {
+      navigator.geolocation.clearWatch(id)
+    }
+  },
+  getCurrentPosition: async (success: any, error: any, options: any) => {
+    if (Capacitor.isNativePlatform()) {
+      try {
+        const pos = await CapGeolocation.getCurrentPosition(options)
+        success(pos)
+      } catch (e) {
+        if (error) error(e)
+      }
+    } else {
+      navigator.geolocation.getCurrentPosition(success, error, options)
+    }
+  }
+}
 import { 
   Truck, LogOut, RefreshCw, PackageCheck, History, MapPin, 
   Phone, Box, ChevronDown, Navigation, Play, CheckCircle2, Loader2, X, AlertTriangle, Clock 
@@ -753,7 +787,7 @@ async function refreshData() {
 
 // Start continuous GPS tracking via phone browser
 function startGpsTracking() {
-  if (!navigator.geolocation) {
+  if (!navigator.geolocation && !Capacitor.isNativePlatform()) {
     alert('GPS Geolocation is not supported by your mobile browser.')
     return
   }
@@ -763,8 +797,8 @@ function startGpsTracking() {
   startBackgroundAudioKeepAlive()
 
   if (watchId === null) {
-    watchId = navigator.geolocation.watchPosition(
-      (pos) => {
+    geo.watchPosition(
+      (pos: any) => {
         // 1. Accuracy Filter: Ignore highly inaccurate GPS bounces (worse than 35 meters radius)
         if (pos.coords.accuracy && pos.coords.accuracy > 35) {
           return // Drop noisy ping
@@ -819,7 +853,7 @@ function startGpsTracking() {
         timeout: 10000,
         maximumAge: 5000,
       }
-    )
+    ).then((id: any) => { watchId = id })
   }
 
   // Periodic batch store-and-forward ping to backend every 12 seconds
@@ -881,7 +915,7 @@ function startGpsTracking() {
 
 function stopGpsTracking() {
   if (watchId !== null) {
-    navigator.geolocation.clearWatch(watchId)
+    geo.clearWatch(watchId)
     watchId = null
   }
   if (pingInterval) {
@@ -904,20 +938,20 @@ async function startTripPrompt(order: any) {
 
   // Wait for a satellite-accurate GPS fix (accuracy < 50m) before starting trip
   // This prevents WiFi/cell-tower triangulation (which can be 200-500m off) being used as start point
-  if (!navigator.geolocation) {
+  if (!navigator.geolocation && !Capacitor.isNativePlatform()) {
     showEditing('Please allow Location / GPS access on your phone to start trip.')
     return
   }
 
   let bestPos: GeolocationPosition | null = null
-  let watchHandle: number | null = null
+  let watchHandle: any = null
   let timeoutHandle: any = null
   let resolved = false
 
-  const doStart = async (pos: GeolocationPosition) => {
+  const doStart = async (pos: GeolocationPosition | any) => {
     if (resolved) return
     resolved = true
-    if (watchHandle !== null) navigator.geolocation.clearWatch(watchHandle)
+    if (watchHandle !== null) geo.clearWatch(watchHandle)
     if (timeoutHandle) clearTimeout(timeoutHandle)
 
     currentCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude }
@@ -948,8 +982,8 @@ async function startTripPrompt(order: any) {
     }
   }
 
-  watchHandle = navigator.geolocation.watchPosition(
-    (pos) => {
+  geo.watchPosition(
+    (pos: any) => {
       const accuracy = pos.coords.accuracy
       // Accept this fix if it's better than 50m, or update best known position
       if (!bestPos || accuracy < bestPos.coords.accuracy) {
@@ -960,19 +994,19 @@ async function startTripPrompt(order: any) {
         doStart(pos)
       }
     },
-    (_err) => {
+    (_err: any) => {
       if (!resolved) {
         if (bestPos) {
           doStart(bestPos)
         } else {
-          if (watchHandle !== null) navigator.geolocation.clearWatch(watchHandle)
+          if (watchHandle !== null) geo.clearWatch(watchHandle)
           if (timeoutHandle) clearTimeout(timeoutHandle)
           showEditing('Please allow Location / GPS access on your phone to start trip.')
         }
       }
     },
     { enableHighAccuracy: true, maximumAge: 0, timeout: 12000 }
-  )
+  ).then((id: any) => { watchHandle = id })
 
   // Fallback: after 12 seconds, use the best position we got (even if >50m)
   timeoutHandle = setTimeout(() => {
@@ -982,7 +1016,7 @@ async function startTripPrompt(order: any) {
         doStart(bestPos)
       } else {
         resolved = true
-        if (watchHandle !== null) navigator.geolocation.clearWatch(watchHandle)
+        if (watchHandle !== null) geo.clearWatch(watchHandle)
         showEditing('Could not get GPS location. Please enable Location Services and try again.')
       }
     }
@@ -1085,9 +1119,9 @@ function openDirections(order: any) {
   // If driver current coordinates are already known via live GPS, launch turn-by-turn navigation with exact origin & driving mode
   if (currentCoords && currentCoords.lat && currentCoords.lng) {
     window.open(`https://www.google.com/maps/dir/?api=1&origin=${currentCoords.lat},${currentCoords.lng}&destination=${dest}&travelmode=driving`, '_blank')
-  } else if (typeof navigator !== 'undefined' && navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
+  } else if ((typeof navigator !== 'undefined' && navigator.geolocation) || Capacitor.isNativePlatform()) {
+    geo.getCurrentPosition(
+      (pos: any) => {
         currentCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude }
         const origin = `${pos.coords.latitude},${pos.coords.longitude}`
         window.open(`https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${dest}&travelmode=driving`, '_blank')
