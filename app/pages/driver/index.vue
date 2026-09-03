@@ -490,23 +490,49 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
-import { Capacitor } from '@capacitor/core'
+import { Capacitor, registerPlugin } from '@capacitor/core'
 import { Geolocation as CapGeolocation } from '@capacitor/geolocation'
+const BackgroundGeolocation = registerPlugin('BackgroundGeolocation')
 
 const geo = {
   watchPosition: async (success: any, error: any, options: any) => {
     if (Capacitor.isNativePlatform()) {
-      return await CapGeolocation.watchPosition(options, (pos, err) => {
-        if (err) error(err)
-        else if (pos) success(pos)
-      })
+      // Use the hardcore Background Geolocation plugin
+      return await BackgroundGeolocation.addWatcher(
+        {
+          backgroundMessage: "Tracking active. Tap to open app.",
+          backgroundTitle: "SM Fleet",
+          requestPermissions: true,
+          stale: false,
+          distanceFilter: 10
+        },
+        (location: any, err: any) => {
+          if (err) {
+            error(err)
+            return
+          }
+          if (location) {
+            // Map plugin output to match HTML5 Geolocation API exactly
+            success({
+              coords: {
+                latitude: location.latitude,
+                longitude: location.longitude,
+                accuracy: location.accuracy,
+                speed: location.speed,
+                heading: location.bearing
+              },
+              timestamp: location.time
+            })
+          }
+        }
+      )
     } else {
       return navigator.geolocation.watchPosition(success, error, options)
     }
   },
   clearWatch: async (id: any) => {
     if (Capacitor.isNativePlatform()) {
-      await CapGeolocation.clearWatch({ id })
+      await BackgroundGeolocation.removeWatcher({ id })
     } else {
       navigator.geolocation.clearWatch(id)
     }
