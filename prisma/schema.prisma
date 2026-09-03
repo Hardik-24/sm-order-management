@@ -1,0 +1,310 @@
+// Silicon Marketing - Order Management System
+// Prisma Schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  ADMIN
+  SALES
+  BILLING
+  PACKING
+  DELIVERY
+}
+
+enum ProductUnit {
+  SHEET
+  PIECE
+  SQFT
+  BOX
+  KG
+  METER
+}
+
+enum OrderStatus {
+  CONFIRMED
+  PROCESSING
+  READY
+  DISPATCHED
+  DELIVERED
+}
+
+enum BillingState {
+  PENDING
+  GENERATED
+  ERROR
+  ON_HOLD
+}
+
+enum PackingState {
+  PENDING
+  IN_PROGRESS
+  PACKED
+  ON_HOLD
+}
+
+enum DeliveryState {
+  WAITING
+  ASSIGNED
+  DISPATCHED
+  DELIVERED
+  ON_HOLD
+}
+
+// ─── Models ───────────────────────────────────────────────────────────────────
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      UserRole @default(SALES)
+  avatar    String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  salesOrders     Order[]         @relation("SalesPerson")
+  billingActions  BillingStatus[] @relation("BillingUser")
+  packingAssigned PackingStatus[] @relation("PackingUser")
+  timelineEntries OrderTimeline[] @relation("TimelineUser")
+
+  @@map("users")
+}
+
+model Category {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  products Product[]
+
+  @@map("categories")
+}
+
+model Product {
+  id         String      @id @default(uuid())
+  sku        String      @unique
+  name       String
+  categoryId String
+  unit       String      @default("PIECE")
+  price      Decimal     @db.Decimal(10, 2)
+  stock      Int         @default(0)
+  hsnCode    String?
+  taxRate    Decimal?    @db.Decimal(5, 2)
+  isActive   Boolean     @default(true)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  // Relations
+  category   Category    @relation(fields: [categoryId], references: [id])
+  orderItems OrderItem[]
+
+  @@map("products")
+}
+
+model Customer {
+  id           String   @id @default(uuid())
+  name         String
+  company      String
+  phone        String
+  email        String?
+  address      String?
+  city         String?
+  state        String?
+  pincode      String?
+  gstNumber    String?
+  paymentTerms String   @default("30 Days")
+  latitude     Float?
+  longitude    Float?
+  landmark     String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  orders Order[]
+
+  @@map("customers")
+}
+
+model Supplier {
+  id           String   @id @default(uuid())
+  name         String
+  company      String
+  phone        String?
+  email        String?
+  address      String?
+  city         String?
+  state        String?
+  pincode      String?
+  gstNumber    String?
+  paymentTerms String   @default("30 Days")
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("suppliers")
+}
+
+model Order {
+  id              String      @id @default(uuid())
+  orderNumber     String      @unique
+  customerId      String
+  salesPersonId   String
+  orderDate       DateTime    @default(now())
+  deliveryAddress String
+  paymentTerms    String
+  notes           String?
+  totalAmount     Decimal     @db.Decimal(12, 2)
+  overallStatus   OrderStatus @default(CONFIRMED)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  // Relations
+  customer       Customer       @relation(fields: [customerId], references: [id])
+  salesPerson    User           @relation("SalesPerson", fields: [salesPersonId], references: [id])
+  items          OrderItem[]
+  billingStatus  BillingStatus?
+  packingStatus  PackingStatus?
+  deliveryStatus DeliveryStatus?
+  timeline       OrderTimeline[]
+  tripRoute      TripRoute?
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id             String  @id @default(uuid())
+  orderId        String
+  productId      String
+  sku            String
+  productName    String
+  quantity       Int
+  unitPrice      Decimal @db.Decimal(10, 2)
+  discount       Decimal @default(0) @db.Decimal(10, 2)
+  taxRate        Decimal @default(0) @db.Decimal(10, 2)
+  taxAmount      Decimal @default(0) @db.Decimal(10, 2)
+  totalPrice     Decimal @default(0) @db.Decimal(10, 2)
+  packedQuantity Int     @default(0)
+
+  // Relations
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@map("order_items")
+}
+
+model BillingStatus {
+  id            String       @id @default(uuid())
+  orderId       String       @unique
+  status        BillingState @default(PENDING)
+  invoiceNumber String?
+  generatedById String?
+  generatedAt   DateTime?
+  holdReason    String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  // Relations
+  order       Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  generatedBy User? @relation("BillingUser", fields: [generatedById], references: [id])
+
+  @@map("billing_statuses")
+}
+
+model PackingStatus {
+  id           String       @id @default(uuid())
+  orderId      String       @unique
+  status       PackingState @default(PENDING)
+  assignedToId String?
+  packedAt     DateTime?
+  holdReason   String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  // Relations
+  order      Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  assignedTo User? @relation("PackingUser", fields: [assignedToId], references: [id])
+
+  @@map("packing_statuses")
+}
+
+model DeliveryStatus {
+  id           String        @id @default(uuid())
+  orderId      String        @unique
+  status       DeliveryState @default(WAITING)
+  driverName   String?
+  dispatchDate DateTime?
+  eta          DateTime?
+  deliveredAt  DateTime?
+  holdReason   String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  // Relations
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("delivery_statuses")
+}
+
+model OrderTimeline {
+  id            String   @id @default(uuid())
+  orderId       String
+  action        String
+  description   String
+  performedById String
+  timestamp     DateTime @default(now())
+
+  // Relations
+  order       Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  performedBy User  @relation("TimelineUser", fields: [performedById], references: [id])
+
+  @@map("order_timeline")
+}
+
+model SystemSetting {
+  key   String @id
+  value String
+
+  @@map("system_settings")
+}
+
+model TripRoute {
+  id               String    @id @default(uuid())
+  orderId          String    @unique
+  driverId         String
+  driverName       String
+  startLat         Float
+  startLng         Float
+  destLat          Float?
+  destLng          Float?
+  startTime        DateTime
+  endTime          DateTime?
+  status           String    @default("IN_TRANSIT")
+  breadcrumbs      Json      @default("[]")
+  totalDistanceKm  Float     @default(0)
+  ratePerKm        Float     @default(15)
+  calculatedPayout Float     @default(0)
+  durationMinutes  Int?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("trip_routes")
+}

@@ -1,0 +1,23 @@
+{
+  "name": "fleet_mobile_app",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@capacitor/core": "^8.5.1",
+    "@capacitor/geolocation": "^8.2.2",
+    "vue": "^3.4.21"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.5.1",
+    "@vitejs/plugin-vue": "^5.0.4",
+    "typescript": "^5.2.2",
+    "vite": "^5.2.0",
+    "vue-tsc": "^2.0.0"
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "a31e29c6-77a8-4ee0-b76d-d3ae6f7228e2": {
+    "id": "TRIP-1788347275926",
+    "orderId": "a31e29c6-77a8-4ee0-b76d-d3ae6f7228e2",
+    "orderNumber": "SO-2026-1029",
+    "customerName": "Jayshree D",
+    "deliveryAddress": "industrial suburb, mysore, Mysore, Karnataka - 570008",
+    "driverId": "driver-1",
+    "driverName": "Suresh Singh",
+    "driverPhone": "+91 98765 00000",
+    "status": "IN_TRANSIT",
+    "startTime": 1788347275926,
+    "totalDistanceKm": 0,
+    "ratePerKm": 15,
+    "calculatedPayout": 0,
+    "currentLocation": {
+      "lat": 12.2785,
+      "lng": 76.645,
+      "timestamp": 1788347275926
+    },
+    "destinationCoords": {
+      "lat": 12.308,
+      "lng": 76.642
+    },
+    "route": [
+      {
+        "lat": 12.2785,
+        "lng": 76.645,
+        "timestamp": 1788347275926
+      }
+    ]
+  }
+}

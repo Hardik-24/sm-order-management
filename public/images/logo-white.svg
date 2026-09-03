@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 200" fill="none">
+  <!-- S box -->
+  <rect x="10" y="10" width="110" height="110" rx="8" fill="white" opacity="0.15"/>
+  <text x="65" y="95" font-family="Georgia, serif" font-size="72" font-weight="bold" fill="white" text-anchor="middle">S</text>
+  <!-- M box -->
+  <rect x="130" y="10" width="110" height="110" rx="8" fill="white" opacity="0.15"/>
+  <text x="185" y="95" font-family="Georgia, serif" font-size="72" font-weight="bold" fill="white" text-anchor="middle">M</text>
+  <!-- Decorative box -->
+  <rect x="250" y="10" width="110" height="110" rx="8" fill="white" opacity="0.1"/>
+  <path d="M250 80 Q305 30 360 80 Q305 120 250 80Z" fill="white" opacity="0.15"/>
+  <path d="M270 100 Q305 50 340 100 Q305 120 270 100Z" fill="white" opacity="0.1"/>
+  <!-- Text -->
+  <text x="185" y="160" font-family="Georgia, serif" font-size="28" font-style="italic" fill="white" text-anchor="middle" letter-spacing="2">Silicon Marketing</text>
+</svg>

@@ -1,0 +1,50 @@
+name: Build Android APK
+
+on:
+  workflow_dispatch: # Allows you to trigger this build manually from the GitHub Actions tab
+
+jobs:
+  build-android:
+    name: Build Android Debug APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup Java JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Install Dependencies
+        working-directory: ./fleet_mobile_app
+        run: npm install
+
+      - name: Build Vue App
+        working-directory: ./fleet_mobile_app
+        run: npm run build
+
+      - name: Add Android Platform
+        working-directory: ./fleet_mobile_app
+        run: |
+          npx cap add android
+          npx cap sync android
+
+      - name: Build Android APK (Debug)
+        working-directory: ./fleet_mobile_app/android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sm-fleet-app-debug
+          path: fleet_mobile_app/android/app/build/outputs/apk/debug/app-debug.apk
