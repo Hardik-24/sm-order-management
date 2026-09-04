@@ -33,6 +33,16 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths"></meta-data>
         </provider>
+
+        <!-- Catches notification swipe-dismiss and re-posts it while GPS trip is active -->
+        <receiver
+            android:name="com.equimaps.capacitor_background_geolocation.NotificationDismissReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.equimaps.capacitor_background_geolocation.NOTIFICATION_DISMISSED" />
+            </intent-filter>
+        </receiver>
+
     </application>
 
     <!-- Permissions -->
