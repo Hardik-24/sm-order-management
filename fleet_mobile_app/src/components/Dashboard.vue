@@ -483,8 +483,11 @@
 import { Preferences } from '@capacitor/preferences';
 const API_URL = 'https://sm-order-management.vercel.app';
 
-const fetchAuth = async (url, options = {}) => {
+const fetchAuth = async (url: string, options: any = {}) => {
   const { value: token } = await Preferences.get({ key: 'auth_token' });
+  if (options.body && typeof options.body === 'object') {
+    options.body = JSON.stringify(options.body);
+  }
   const res = await fetch(API_URL + url, {
     ...options,
     headers: {
@@ -588,8 +591,8 @@ import {
   Truck, LogOut, RefreshCw, PackageCheck, History, MapPin, 
   Phone, Box, ChevronDown, Navigation, Play, CheckCircle2, Loader2, X, AlertTriangle, Clock 
 } from 'lucide-vue-next'
-import LiveTrackingMap from '~/components/ui/LiveTrackingMap.vue'
-import { useSnackbar } from '~/composables/useSnackbar'
+
+
 
 
 
