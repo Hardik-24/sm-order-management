@@ -1,7 +1,7 @@
 <template>
   <div class="min-h-screen bg-gray-100 flex flex-col font-sans pb-16">
     <!-- Top Header with Silicon Marketing Branding -->
-    <header class="bg-[#1a5c4c] text-white shadow-md sticky top-0 z-30">
+    <header class="bg-[#1a5c4c] text-white shadow-md sticky top-0 z-30 safe-area-pt">
       <!-- Silicon Marketing Brand Ribbon -->
       <div class="px-4 py-1.5 bg-[#123e33] border-b border-emerald-800/60 flex items-center justify-between text-xs">
         <div class="flex items-center gap-2">
@@ -597,7 +597,8 @@ import {
 
 
 
-const showSaving = (msg) => console.log(msg); const showSaved = () => {}; const showEditing = (msg) => alert(msg);
+import { useSnackbar } from '../composables/useSnackbar'
+const { showSaving, showSaved, showEditing } = useSnackbar()
 
 const userInitials = computed(() => {
   if (!({ name: 'Driver' })?.name) return 'D'
