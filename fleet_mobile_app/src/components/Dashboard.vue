@@ -502,7 +502,7 @@ const logout = async () => {
   window.location.reload();
 };
 
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch, reactive, onUnmounted } from 'vue'
 
 const getCapacitor = () => {
   if (typeof window !== 'undefined' && (window as any).Capacitor) {
