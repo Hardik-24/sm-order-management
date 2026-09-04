@@ -452,7 +452,16 @@
         </div>
 
         <div class="h-72 w-full">
-          <LiveTrackingMap :trip="selectedSnapshotTrip" />
+          <LiveTrackingMap
+            :isSnapshot="true"
+            :routeCoordinates="selectedSnapshotTrip.route || []"
+            :startLocation="selectedSnapshotTrip.startLocation || (selectedSnapshotTrip.route?.length ? selectedSnapshotTrip.route[0] : null)"
+            :destinationLocation="selectedSnapshotTrip.destinationCoords"
+            :driverLocation="selectedSnapshotTrip.route?.length ? selectedSnapshotTrip.route[selectedSnapshotTrip.route.length - 1] : null"
+            :distanceKm="selectedSnapshotTrip.totalDistanceKm"
+            :durationMin="selectedSnapshotTrip.durationMinutes"
+            :payout="selectedSnapshotTrip.calculatedPayout"
+          />
         </div>
 
         <div class="p-4 bg-gray-50 flex items-center justify-between text-xs gap-3">

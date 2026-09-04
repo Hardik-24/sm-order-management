@@ -403,7 +403,7 @@ watch(() => props.routeCoordinates, () => {
 }, { deep: true })
 
 onMounted(async () => {
-  const apiKey = null
+  const apiKey = 'AIzaSyCuH_BQBFYCt4vcFDL3CkUV1byZNuiLuYg'
   if (apiKey && apiKey.trim() !== '') {
     try {
       engine.value = 'google'
