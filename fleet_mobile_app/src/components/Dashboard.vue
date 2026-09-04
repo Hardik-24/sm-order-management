@@ -305,8 +305,9 @@
                 <strong>No delivery pin set.</strong> Contact the dispatch office to drop a pin on the map for this customer before you can start this trip.
               </p>
             </div>
-            <button @click="fetchAssignedDeliveries" class="self-end px-3 py-1 bg-red-100 hover:bg-red-200 text-red-800 text-[10px] font-bold rounded flex items-center gap-1 transition">
-              <RefreshCw class="w-3 h-3" /> Check Again
+            <button @click="handleCheckAgain" :disabled="isChecking" class="self-end px-3 py-1 bg-red-100 hover:bg-red-200 text-red-800 text-[10px] font-bold rounded flex items-center gap-1 transition disabled:opacity-50">
+              <RefreshCw :class="['w-3 h-3', { 'animate-spin': isChecking }]" /> 
+              {{ isChecking ? 'Checking...' : 'Check Again' }}
             </button>
           </div>
         </div>
@@ -451,7 +452,7 @@
         </div>
 
         <div class="h-72 w-full">
-          <div class="p-8 text-center text-gray-500 bg-gray-100 rounded-lg">Map View Hidden in Prototype</div>
+          <LiveTrackingMap :trip="selectedSnapshotTrip" />
         </div>
 
         <div class="p-4 bg-gray-50 flex items-center justify-between text-xs gap-3">
@@ -597,6 +598,7 @@ import {
 
 
 
+import LiveTrackingMap from './ui/LiveTrackingMap.vue'
 import { useSnackbar } from '../composables/useSnackbar'
 const { showSaving, showSaved, showEditing } = useSnackbar()
 
@@ -779,6 +781,12 @@ function stopBackgroundAudioKeepAlive() {
 }
 
 // Fetch driver assigned deliveries
+const isChecking = ref(false)
+async function handleCheckAgain() {
+  isChecking.value = true
+  await fetchAssignedDeliveries()
+  setTimeout(() => { isChecking.value = false }, 500)
+}
 async function fetchAssignedDeliveries() {
   try {
     const data = await fetchAuth('/api/driver/assigned')
