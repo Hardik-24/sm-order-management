@@ -1,101 +1,128 @@
 <template>
-  <div class="h-full flex flex-col bg-gray-50/50">
-    <!-- Header -->
-    <header class="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between shrink-0">
-      <div>
-        <h1 class="text-xl font-bold text-gray-900 flex items-center gap-2">
-          <MessageSquare class="w-5 h-5 text-emerald-600" />
-          Team Chat
-        </h1>
-        <p class="text-xs text-gray-500 mt-1">Company-wide group chat for dispatch, sales, and warehouse.</p>
-      </div>
-      <div class="flex items-center gap-2">
-        <span class="relative flex h-3 w-3">
-          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-          <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-        </span>
-        <span class="text-xs font-bold text-gray-500 uppercase tracking-widest">Live</span>
+  <div class="absolute inset-0 flex flex-col bg-[#efeae2] z-10">
+    <!-- Header (WhatsApp style) -->
+    <header class="bg-[#f0f2f5] border-b border-gray-300 px-4 py-3 flex items-center justify-between shrink-0 shadow-sm z-20">
+      <div class="flex items-center gap-4">
+        <div class="w-10 h-10 rounded-full bg-[#1a5c4c] flex items-center justify-center text-white shrink-0">
+          <MessageSquare class="w-5 h-5" />
+        </div>
+        <div>
+          <h1 class="text-base font-semibold text-[#111b21] leading-tight">
+            Company Group
+          </h1>
+          <p class="text-xs text-[#667781]">
+            <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 mr-1 animate-pulse"></span>
+            All Team Members
+          </p>
+        </div>
       </div>
     </header>
 
-    <!-- Chat Messages Area -->
-    <div class="flex-1 overflow-y-auto p-6 space-y-6" ref="chatContainer">
+    <!-- Chat Messages Area (Scrollable) -->
+    <div 
+      class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-3 relative" 
+      ref="chatContainer"
+      style="background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-repeat: repeat; opacity: 0.95;"
+    >
       <div v-if="pending" class="flex justify-center items-center h-full">
         <Loader2 class="w-8 h-8 animate-spin text-emerald-600" />
       </div>
       
-      <div v-else-if="messages.length === 0" class="flex flex-col items-center justify-center h-full text-gray-400 space-y-3">
-        <MessageSquare class="w-12 h-12 opacity-20" />
-        <p>No messages yet. Say hello to the team!</p>
+      <div v-else-if="messages.length === 0" class="flex justify-center my-10">
+        <div class="bg-[#ffeecd] text-[#54656f] text-xs py-2 px-4 rounded-xl shadow-sm inline-block text-center max-w-sm">
+          Messages are end-to-end secured by Silicon Marketing.<br/>No one outside this workspace can read them.
+        </div>
       </div>
 
       <template v-else>
+        <!-- Security notification banner -->
+        <div class="flex justify-center mb-6">
+          <div class="bg-[#ffeecd] text-[#54656f] text-xs py-1.5 px-4 rounded-lg shadow-sm inline-block text-center max-w-sm">
+            Messages are end-to-end secured.
+          </div>
+        </div>
+
         <div 
           v-for="(msg, idx) in messages" 
           :key="msg.id"
-          class="flex gap-4"
-          :class="{ 'flex-row-reverse': msg.userId === user?.id }"
+          class="flex w-full"
+          :class="msg.userId === user?.id ? 'justify-end' : 'justify-start'"
         >
-          <!-- Avatar -->
-          <img 
-            :src="msg.user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(msg.user.name)}&background=1a5c4c&color=e8e0d4`" 
-            alt="Avatar" 
-            class="w-10 h-10 rounded-full shadow-sm shrink-0 mt-1"
-          />
-
-          <!-- Message Content -->
-          <div class="max-w-[75%]" :class="{ 'text-right': msg.userId === user?.id }">
-            <div class="flex items-baseline gap-2 mb-1" :class="{ 'flex-row-reverse': msg.userId === user?.id }">
-              <span class="font-bold text-sm text-gray-900">{{ msg.user.name }}</span>
-              <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 uppercase tracking-wider">
-                {{ msg.user.role }}
-              </span>
-              <span class="text-[11px] text-gray-400">{{ formatTime(msg.createdAt) }}</span>
+          <div 
+            class="flex max-w-[85%] md:max-w-[70%]"
+            :class="msg.userId === user?.id ? 'flex-row-reverse' : 'flex-row'"
+          >
+            <!-- Avatar (Only for others) -->
+            <div v-if="msg.userId !== user?.id" class="mr-2 mt-1 shrink-0">
+              <img 
+                :src="msg.user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(msg.user.name)}&background=e8e0d4&color=1a5c4c`" 
+                alt="Avatar" 
+                class="w-7 h-7 rounded-full shadow-sm"
+              />
             </div>
-            
+
+            <!-- Bubble -->
             <div 
-              class="px-4 py-2.5 rounded-2xl shadow-sm text-sm whitespace-pre-wrap break-words"
-              :class="msg.userId === user?.id ? 'bg-[#1a5c4c] text-white rounded-tr-sm' : 'bg-white border border-gray-100 text-gray-800 rounded-tl-sm'"
-              v-html="formatMessage(msg.content, msg.userId === user?.id)"
+              class="relative px-3 py-1.5 rounded-lg shadow-sm text-[14.5px] leading-snug whitespace-pre-wrap break-words text-[#111b21] flex flex-col"
+              :class="msg.userId === user?.id ? 'bg-[#d9fdd3] rounded-tr-none' : 'bg-white rounded-tl-none'"
             >
+              <!-- Tail Triangles -->
+              <div v-if="msg.userId === user?.id" class="absolute top-0 -right-2 w-0 h-0 border-t-[10px] border-t-[#d9fdd3] border-r-[10px] border-r-transparent"></div>
+              <div v-if="msg.userId !== user?.id" class="absolute top-0 -left-2 w-0 h-0 border-t-[10px] border-t-white border-l-[10px] border-l-transparent"></div>
+
+              <!-- Sender Name (if not me) -->
+              <div v-if="msg.userId !== user?.id" class="flex items-center gap-2 mb-0.5">
+                <span class="font-semibold text-xs text-[#d14b62]">{{ msg.user.name }}</span>
+                <span class="text-[9px] font-bold px-1 py-0.5 rounded bg-gray-100 text-gray-500 uppercase tracking-widest border border-gray-200">
+                  {{ msg.user.role }}
+                </span>
+              </div>
+
+              <!-- Content -->
+              <div class="pr-12 min-w-[100px]" v-html="formatMessage(msg.content)"></div>
+              
+              <!-- Timestamp (Float right inside bubble) -->
+              <span class="text-[10px] text-[#667781] float-right mt-1 -mr-1 flex items-center justify-end">
+                {{ formatTime(msg.createdAt) }}
+                <CheckCheck v-if="msg.userId === user?.id" class="w-3.5 h-3.5 ml-1 text-[#53bdeb]" />
+              </span>
             </div>
           </div>
         </div>
       </template>
     </div>
 
-    <!-- Composer -->
-    <div class="bg-white border-t border-gray-200 p-4 shrink-0">
-      <form @submit.prevent="sendMessage" class="flex gap-3 max-w-5xl mx-auto">
-        <div class="flex-1 relative">
-          <textarea
-            v-model="newMessage"
-            @keydown.enter.prevent="handleEnter"
-            placeholder="Type a message to the team... (Use #SO- to link an order)"
-            class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition shadow-inner resize-none min-h-[50px] max-h-[150px]"
-            rows="1"
-            ref="inputRef"
-          ></textarea>
-          <div class="absolute right-3 bottom-3 text-[10px] text-gray-400 font-bold uppercase tracking-widest hidden sm:block pointer-events-none">
-            Press Enter to send
-          </div>
-        </div>
-        <button 
-          type="submit" 
-          :disabled="!newMessage.trim() || isSending"
-          class="bg-[#1a5c4c] hover:bg-[#134336] text-white px-5 rounded-xl font-bold flex items-center justify-center transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
-        >
-          <Loader2 v-if="isSending" class="w-5 h-5 animate-spin" />
-          <Send v-else class="w-5 h-5" />
-        </button>
-      </form>
+    <!-- Composer Footer (WhatsApp style) -->
+    <div class="bg-[#f0f2f5] px-4 py-3 shrink-0 flex items-end gap-3 z-20">
+      <!-- Input container -->
+      <div class="flex-1 bg-white rounded-xl shadow-sm flex items-end px-4 py-2 relative">
+        <textarea
+          v-model="newMessage"
+          @keydown.enter.prevent="handleEnter"
+          placeholder="Type a message"
+          class="w-full bg-transparent text-[15px] text-[#111b21] focus:outline-none resize-none min-h-[24px] max-h-[120px] placeholder:text-[#8696a0]"
+          rows="1"
+          ref="inputRef"
+        ></textarea>
+      </div>
+      
+      <!-- Send Button -->
+      <button 
+        @click="sendMessage"
+        :disabled="!newMessage.trim() || isSending"
+        class="w-12 h-12 rounded-full flex items-center justify-center shrink-0 transition-all text-white shadow-sm"
+        :class="newMessage.trim() && !isSending ? 'bg-[#00a884] hover:bg-[#008f6f]' : 'bg-gray-300'"
+      >
+        <Loader2 v-if="isSending" class="w-5 h-5 animate-spin" />
+        <Send v-else class="w-5 h-5 ml-1" />
+      </button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, nextTick, watch } from 'vue'
-import { MessageSquare, Send, Loader2 } from 'lucide-vue-next'
+import { MessageSquare, Send, Loader2, CheckCheck } from 'lucide-vue-next'
 import { useAuth } from '~/composables/useAuth'
 import { useRealtimeSync } from '~/composables/useRealtimeSync'
 
@@ -112,16 +139,11 @@ const inputRef = ref<HTMLTextAreaElement | null>(null)
 // Format timestamps
 function formatTime(isoStr: string) {
   const d = new Date(isoStr)
-  const today = new Date()
-  const isToday = d.getDate() === today.getDate() && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear()
-  
-  const timeStr = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
-  if (isToday) return timeStr
-  return `${d.toLocaleDateString([], { month: 'short', day: 'numeric' })} at ${timeStr}`
+  return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true })
 }
 
 // Auto-link order numbers
-function formatMessage(text: string, isOwnMessage: boolean) {
+function formatMessage(text: string) {
   if (!text) return ''
   // Basic HTML escape
   let safeText = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -129,8 +151,7 @@ function formatMessage(text: string, isOwnMessage: boolean) {
   // Find order numbers like #SO-2026-001 or SO-2026-001
   const orderRegex = /#?(SO-\d{4}-\d+)/gi
   return safeText.replace(orderRegex, (match, orderNum) => {
-    const linkColor = isOwnMessage ? 'text-emerald-200 hover:text-white' : 'text-emerald-600 hover:text-emerald-800'
-    return `<a href="/dashboard/orders?search=${orderNum}" class="font-bold underline ${linkColor}">${match}</a>`
+    return `<a href="/dashboard/orders?search=${orderNum}" class="font-semibold text-[#027eb5] hover:underline">${match}</a>`
   })
 }
 
@@ -163,8 +184,6 @@ onMounted(() => {
 // Listen for realtime chat updates
 onOrderSync((event) => {
   if (event.type === 'DB_CHAT_CHANGE') {
-    // We just reload all messages for simplicity, but we could fetch just the new one
-    // or append the payload if it contained full user details (it doesn't by default)
     loadMessages()
   }
 })
@@ -175,10 +194,9 @@ const sendMessage = async () => {
   
   isSending.value = true
   const content = newMessage.value
-  newMessage.value = '' // Clear UI immediately for responsiveness
+  newMessage.value = '' // Clear UI immediately
   
-  // Reset textarea height
-  if (inputRef.value) inputRef.value.style.height = 'auto'
+  if (inputRef.value) inputRef.value.style.height = '24px'
 
   try {
     const newMsg = await $fetch('/api/chat', {
@@ -186,24 +204,20 @@ const sendMessage = async () => {
       body: { content }
     })
     
-    // Add locally to feel instantaneous before the websocket bounce-back
     if (!messages.value.find(m => m.id === newMsg.id)) {
       messages.value.push(newMsg)
       scrollToBottom()
     }
   } catch (err) {
     console.error('Failed to send:', err)
-    newMessage.value = content // restore on error
+    newMessage.value = content
   } finally {
     isSending.value = false
   }
 }
 
 const handleEnter = (e: KeyboardEvent) => {
-  if (e.shiftKey) {
-    // Allow multi-line
-    return
-  }
+  if (e.shiftKey) return
   sendMessage()
 }
 
@@ -211,8 +225,8 @@ const handleEnter = (e: KeyboardEvent) => {
 watch(newMessage, () => {
   nextTick(() => {
     if (inputRef.value) {
-      inputRef.value.style.height = 'auto'
-      inputRef.value.style.height = Math.min(inputRef.value.scrollHeight, 150) + 'px'
+      inputRef.value.style.height = '24px'
+      inputRef.value.style.height = Math.min(inputRef.value.scrollHeight, 120) + 'px'
     }
   })
 })
