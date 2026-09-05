@@ -60,9 +60,13 @@ const { data: statsData, refresh: refreshStats } = useFetch('/api/orders/deliver
   watch: [statsQuery]
 })
 
+const nuxtApp = useNuxtApp()
 const { data, refresh, pending } = useFetch('/api/orders', {
   query: queryObj,
-  watch: [queryObj]
+  watch: [queryObj],
+  getCachedData(key) {
+    return nuxtApp.payload.data[key] || nuxtApp.static.data[key]
+  }
 })
 
 watch(data, (newVal) => {

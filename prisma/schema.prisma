@@ -185,6 +185,9 @@ model Order {
   timeline       OrderTimeline[]
   tripRoute      TripRoute?
 
+  @@index([orderDate])
+  @@index([overallStatus])
+  @@index([customerId])
   @@map("orders")
 }
 
@@ -224,6 +227,7 @@ model BillingStatus {
   order       Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
   generatedBy User? @relation("BillingUser", fields: [generatedById], references: [id])
 
+  @@index([status])
   @@map("billing_statuses")
 }
 
@@ -241,6 +245,7 @@ model PackingStatus {
   order      Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
   assignedTo User? @relation("PackingUser", fields: [assignedToId], references: [id])
 
+  @@index([status])
   @@map("packing_statuses")
 }
 
@@ -259,6 +264,7 @@ model DeliveryStatus {
   // Relations
   order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
+  @@index([status])
   @@map("delivery_statuses")
 }
 

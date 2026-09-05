@@ -491,7 +491,19 @@
 
 <script setup lang="ts">
 import { Preferences } from '@capacitor/preferences';
+import { createClient } from '@supabase/supabase-js';
+
 const API_URL = 'https://sm-order-management.vercel.app';
+const SUPABASE_URL = 'https://xfzvkqjkbwwdqtxgasrh.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhmenZrcWprYnd3ZHF0eGdhc3JoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg1Njg1MzYsImV4cCI6MjEwNDE0NDUzNn0.0D6O8IL-2Dg53GIuMoti0yA2seDfj4XVpPj1aarfb4s';
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
+  realtime: {
+    params: {
+      eventsPerSecond: 20,
+    },
+  },
+});
 
 const fetchAuth = async (url: string, options: any = {}) => {
   const { value: token } = await Preferences.get({ key: 'auth_token' });
@@ -1253,10 +1265,26 @@ onMounted(async () => {
     document.addEventListener('visibilitychange', handleVisibilityChange)
   }
 
-  // 4. Live elapsed time ticker (every second)
-  elapsedTimer = setInterval(() => {
-    currentTimeMs.value = Date.now()
-  }, 1000)
+  // 5. Supabase Realtime WebSocket sync across all company devices (<100ms)
+  try {
+    realtimeDriverChannel = supabase.channel('sm_driver_realtime', {
+      config: { broadcast: { ack: false, self: false } }
+    })
+
+    realtimeDriverChannel
+      .on('broadcast', { event: 'ORDER_CHANGE' }, () => {
+        fetchAssignedDeliveries()
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
+        fetchAssignedDeliveries()
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'delivery_statuses' }, () => {
+        fetchAssignedDeliveries()
+      })
+      .subscribe()
+  } catch (err) {
+    console.warn('[RealtimeDriver] Channel setup warning:', err)
+  }
 })
 
 let realtimeDriverChannel: any = null
@@ -1267,7 +1295,7 @@ onBeforeUnmount(() => {
   if (elapsedTimer) clearInterval(elapsedTimer)
   if (driverSyncChannel) driverSyncChannel.close()
   if (autoPollTimer) clearInterval(autoPollTimer)
-  if (realtimeDriverChannel) realtimeDriverChannel.unsubscribe()
+  if (realtimeDriverChannel) supabase.removeChannel(realtimeDriverChannel)
   if (typeof document !== 'undefined') {
     document.removeEventListener('visibilitychange', handleVisibilityChange)
   }

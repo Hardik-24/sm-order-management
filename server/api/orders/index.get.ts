@@ -1,6 +1,6 @@
 import { requireAuth } from '~~/server/utils/auth'
 import { prisma } from '~~/server/utils/prisma'
-import { resolveDestinationPin } from '~~/server/utils/customerPins'
+import { resolveDestinationPin, loadCustomerPins } from '~~/server/utils/customerPins'
 
 export default defineEventHandler(async (event) => {
   await requireAuth(event)
@@ -57,11 +57,11 @@ export default defineEventHandler(async (event) => {
       take: limit,
       orderBy: { [sortBy]: sortOrder },
       include: {
-        customer: true,
+        customer: { select: { name: true, company: true, city: true, latitude: true, longitude: true, landmark: true } },
         salesPerson: { select: { name: true } },
-        billingStatus: true,
-        packingStatus: true,
-        deliveryStatus: true,
+        billingStatus: { select: { status: true } },
+        packingStatus: { select: { status: true } },
+        deliveryStatus: { select: { status: true, driverName: true } },
         items: { select: { quantity: true, packedQuantity: true } },
         _count: { select: { items: true } }
       }
@@ -69,13 +69,16 @@ export default defineEventHandler(async (event) => {
     prisma.order.count({ where })
   ])
 
+  const preloadedPins = loadCustomerPins()
+
   const formattedOrders = orders.map((order) => {
     const pin = resolveDestinationPin(
       order.customerId,
       order.customer.name,
       order.deliveryAddress,
       order.customer.city,
-      order.customer
+      order.customer,
+      preloadedPins
     )
     return {
       ...order,

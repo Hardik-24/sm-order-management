@@ -20,6 +20,7 @@ const endDate = ref('')
 const selectedOrderId = ref<string | null>(null)
 const isPanelOpen = ref(false)
 
+const nuxtApp = useNuxtApp()
 const { data, refresh, pending } = useFetch('/api/orders', {
   query: { 
     page, 
@@ -32,7 +33,10 @@ const { data, refresh, pending } = useFetch('/api/orders', {
     startDate,
     endDate
   },
-  watch: [page, limit, search, status, billingStatus, packingStatus, deliveryStatus, startDate, endDate]
+  watch: [page, limit, search, status, billingStatus, packingStatus, deliveryStatus, startDate, endDate],
+  getCachedData(key) {
+    return nuxtApp.payload.data[key] || nuxtApp.static.data[key]
+  }
 })
 
 const handleSelect = (id: string) => {

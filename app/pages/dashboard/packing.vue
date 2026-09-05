@@ -39,8 +39,13 @@ const queryObj = computed(() => {
   return q
 })
 
-const { data, pending, refresh } = useFetch('/api/orders', {
-  query: queryObj
+const nuxtApp = useNuxtApp()
+const { data, refresh, pending } = useFetch('/api/orders', {
+  query: queryObj,
+  watch: [queryObj],
+  getCachedData(key) {
+    return nuxtApp.payload.data[key] || nuxtApp.static.data[key]
+  }
 })
 
 const { data: stats, refresh: refreshStats } = useFetch('/api/orders/packing-stats')

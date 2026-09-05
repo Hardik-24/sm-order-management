@@ -14,7 +14,10 @@ export interface DestinationPin {
 // In-memory fallback cache (survives read-only environments like /var/task)
 const memoryPinsStore: Record<string, DestinationPin> = {}
 
+let cachedStoragePath: string | null = null;
+
 function getSafeStoragePath(): string {
+  if (cachedStoragePath) return cachedStoragePath;
   // 1. Try local server/data directory
   const localDir = path.resolve(process.cwd(), 'server/data')
   try {
@@ -24,10 +27,12 @@ function getSafeStoragePath(): string {
     const testFile = path.join(localDir, '.write_test')
     fs.writeFileSync(testFile, '1', 'utf-8')
     fs.unlinkSync(testFile)
-    return path.join(localDir, 'customer_pins.json')
+    cachedStoragePath = path.join(localDir, 'customer_pins.json')
+    return cachedStoragePath;
   } catch {
     // 2. Fallback to OS temp directory (always writable in AWS Lambda / Vercel)
-    return path.join(os.tmpdir(), 'customer_pins.json')
+    cachedStoragePath = path.join(os.tmpdir(), 'customer_pins.json')
+    return cachedStoragePath;
   }
 }
 
@@ -199,7 +204,8 @@ export function resolveDestinationPin(
   customerName?: string,
   deliveryAddress?: string,
   city?: string,
-  customerObj?: any
+  customerObj?: any,
+  preloadedPins?: Record<string, DestinationPin>
 ): DestinationPin | null {
   // 1. Check if customer object already has latitude/longitude from Supabase DB
   if (customerObj && customerObj.latitude && customerObj.longitude) {
@@ -211,7 +217,7 @@ export function resolveDestinationPin(
     }
   }
 
-  const pins = loadCustomerPins()
+  const pins = preloadedPins || loadCustomerPins()
 
   // 2. Check exact customerId or customerName match
   if (customerId && pins[customerId.toLowerCase().trim()]) {

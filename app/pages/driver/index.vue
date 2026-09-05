@@ -602,6 +602,16 @@ const activeTripOrderId = ref<string | null>(null)
 const activeTrip = ref<any | null>(null)
 const selectedSnapshotTrip = ref<any | null>(null)
 
+// Auto-refresh driver screen when office assigns a new order or puts one on hold
+const { onOrderSync } = useRealtimeSync()
+onOrderSync(() => {
+  if (activeTab.value === 'DELIVERIES') {
+    fetchAssignedDeliveries()
+  } else {
+    fetchTripHistory()
+  }
+})
+
 function calculateDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371
   const dLat = (lat2 - lat1) * (Math.PI / 180)

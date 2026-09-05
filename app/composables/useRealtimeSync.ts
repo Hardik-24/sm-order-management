@@ -103,6 +103,15 @@ function setupRealtimeChannel() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'delivery_statuses' }, (payload) => {
         triggerListeners({ type: 'DB_DELIVERY_CHANGE', table: 'delivery_statuses', record: payload.new || payload.old })
       })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'order_items' }, (payload) => {
+        triggerListeners({ type: 'DB_ORDER_ITEM_CHANGE', table: 'order_items', record: payload.new || payload.old })
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'customers' }, (payload) => {
+        triggerListeners({ type: 'DB_CUSTOMER_CHANGE', table: 'customers', record: payload.new || payload.old })
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, (payload) => {
+        triggerListeners({ type: 'DB_PRODUCT_CHANGE', table: 'products', record: payload.new || payload.old })
+      })
 
     sharedChannel.subscribe((status) => {
       if (status === 'SUBSCRIBED') {
