@@ -1,16 +1,16 @@
 <template>
   <div class="h-full w-full flex flex-col bg-white overflow-hidden">
-    <!-- Header (WhatsApp style) -->
-    <header class="bg-[#f0f2f5] border-b border-gray-200 px-4 py-3 flex items-center justify-between shrink-0 z-20">
-      <div class="flex items-center gap-4">
-        <div class="w-10 h-10 rounded-full bg-[#1a5c4c] flex items-center justify-center text-white shrink-0 shadow-sm">
-          <MessageSquare class="w-5 h-5" />
+    <!-- Header (Dark Sidebar Theme) -->
+    <header class="bg-[#1c1c1c] border-b border-gray-800 px-5 py-3.5 flex items-center justify-between shrink-0 z-20 shadow-md">
+      <div class="flex items-center gap-3.5">
+        <div class="w-10 h-10 rounded-full bg-[#1a5c4c] flex items-center justify-center text-[#e8e0d4] shrink-0 border border-emerald-600/30 shadow-sm">
+          <MessageSquare class="w-5 h-5 text-emerald-300" />
         </div>
         <div>
-          <h1 class="text-base font-bold text-[#111b21] leading-tight">
+          <h1 class="text-base font-bold text-white tracking-wide leading-tight">
             Team Chat
           </h1>
-          <p class="text-xs text-[#667781] flex items-center mt-0.5">
+          <p class="text-xs text-gray-400 flex items-center mt-0.5">
             <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 mr-1.5 animate-pulse shadow-sm"></span>
             Company-wide group chat
           </p>
@@ -103,15 +103,15 @@
       </template>
     </div>
 
-    <!-- Composer Footer (WhatsApp style) -->
-    <div class="bg-[#f0f2f5] px-4 py-3 shrink-0 flex items-end gap-3 z-20 border-t border-gray-200">
+    <!-- Composer Footer (Dark Sidebar Theme) -->
+    <div class="bg-[#1c1c1c] px-4 py-3 shrink-0 flex items-end gap-3 z-20 border-t border-gray-800 shadow-lg">
       <!-- Input container -->
-      <div class="flex-1 bg-white rounded-xl shadow-sm border border-gray-200 flex items-end px-4 py-2 relative">
+      <div class="flex-1 bg-[#242424] rounded-xl shadow-inner border border-gray-700/80 flex items-end px-4 py-2 relative focus-within:border-emerald-500/70 transition-colors">
         <textarea
           v-model="newMessage"
           @keydown.enter.prevent="handleEnter"
           placeholder="Type a message..."
-          class="w-full bg-transparent text-[15px] text-[#111b21] focus:outline-none resize-none min-h-[24px] max-h-[120px] placeholder:text-[#8696a0]"
+          class="w-full bg-transparent text-[15px] text-gray-100 focus:outline-none resize-none min-h-[24px] max-h-[120px] placeholder:text-gray-500"
           rows="1"
           ref="inputRef"
         ></textarea>
@@ -121,11 +121,11 @@
       <button 
         @click="sendMessage"
         :disabled="!newMessage.trim() || isSending"
-        class="w-12 h-12 rounded-full flex items-center justify-center shrink-0 transition-all text-white shadow-sm"
-        :class="newMessage.trim() && !isSending ? 'bg-[#00a884] hover:bg-[#008f6f]' : 'bg-gray-300'"
+        class="w-11 h-11 rounded-full flex items-center justify-center shrink-0 transition-all text-white shadow-md"
+        :class="newMessage.trim() && !isSending ? 'bg-[#1a5c4c] hover:bg-[#134336] active:scale-95 border border-emerald-500/30' : 'bg-gray-800 text-gray-500 border border-gray-700 cursor-not-allowed'"
       >
-        <Loader2 v-if="isSending" class="w-5 h-5 animate-spin" />
-        <Send v-else class="w-5 h-5 ml-1" />
+        <Loader2 v-if="isSending" class="w-5 h-5 animate-spin text-emerald-300" />
+        <Send v-else class="w-4 h-4 ml-0.5" />
       </button>
     </div>
   </div>
