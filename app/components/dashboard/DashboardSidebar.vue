@@ -51,6 +51,10 @@
             <PenTool class="shrink-0 w-4 h-4" />
             <span v-if="!isSidebarCollapsed" class="font-medium whitespace-nowrap">Create Order</span>
           </NuxtLink>
+          <NuxtLink to="/dashboard/chat" title="Team Chat" class="flex items-center gap-3 rounded-md py-2.5 text-sm transition-colors" :class="[route.path.startsWith('/dashboard/chat') ? 'bg-[#223933] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50 hover:text-gray-200', isSidebarCollapsed ? 'justify-center px-0' : 'px-3']">
+            <MessageSquare class="shrink-0 w-4 h-4 text-emerald-400" />
+            <span v-if="!isSidebarCollapsed" class="font-medium whitespace-nowrap">Team Chat</span>
+          </NuxtLink>
         </nav>
       </div>
 
@@ -62,10 +66,6 @@
           <NuxtLink to="/dashboard/inventory" title="Inventory" class="flex items-center gap-3 rounded-md py-2.5 text-sm transition-colors" :class="[route.path.startsWith('/dashboard/inventory') ? 'bg-[#223933] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50 hover:text-gray-200', isSidebarCollapsed ? 'justify-center px-0' : 'px-3']">
             <Boxes class="shrink-0 w-4 h-4" />
             <span v-if="!isSidebarCollapsed" class="font-medium whitespace-nowrap">Inventory</span>
-          </NuxtLink>
-          <NuxtLink to="/dashboard/chat" title="Team Chat" class="flex items-center gap-3 rounded-md py-2.5 text-sm transition-colors" :class="[route.path.startsWith('/dashboard/chat') ? 'bg-[#223933] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50 hover:text-gray-200', isSidebarCollapsed ? 'justify-center px-0' : 'px-3']">
-            <MessageSquare class="shrink-0 w-4 h-4 text-emerald-400" />
-            <span v-if="!isSidebarCollapsed" class="font-medium whitespace-nowrap">Team Chat</span>
           </NuxtLink>
           <NuxtLink to="/dashboard/billing" title="Billing" class="flex items-center gap-3 rounded-md py-2.5 text-sm transition-colors" :class="[route.path.startsWith('/dashboard/billing') ? 'bg-[#223933] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50 hover:text-gray-200', isSidebarCollapsed ? 'justify-center px-0' : 'px-3']">
             <Receipt class="shrink-0 w-4 h-4" />
@@ -144,8 +144,8 @@
         <NuxtLink to="/dashboard" :class="[route.path === '/dashboard' ? 'text-[#4ecdc4]' : 'text-gray-400']"><LayoutDashboard class="w-5 h-5" /></NuxtLink>
         <NuxtLink to="/dashboard/orders" :class="[route.path.startsWith('/dashboard/orders') && route.path !== '/dashboard/orders/create' ? 'text-[#4ecdc4]' : 'text-gray-400']"><ClipboardList class="w-5 h-5" /></NuxtLink>
         <NuxtLink v-if="['ADMIN', 'SALES'].includes(user?.role || '')" to="/dashboard/orders/create" :class="[route.path === '/dashboard/orders/create' ? 'text-[#4ecdc4]' : 'text-gray-400']"><PenTool class="w-5 h-5" /></NuxtLink>
-        <NuxtLink to="/dashboard/inventory" :class="[route.path.startsWith('/dashboard/inventory') ? 'text-[#4ecdc4]' : 'text-gray-400']"><Boxes class="w-5 h-5" /></NuxtLink>
         <NuxtLink to="/dashboard/chat" :class="[route.path.startsWith('/dashboard/chat') ? 'text-[#4ecdc4]' : 'text-gray-400']"><MessageSquare class="w-5 h-5" /></NuxtLink>
+        <NuxtLink to="/dashboard/inventory" :class="[route.path.startsWith('/dashboard/inventory') ? 'text-[#4ecdc4]' : 'text-gray-400']"><Boxes class="w-5 h-5" /></NuxtLink>
         <NuxtLink to="/dashboard/billing" :class="[route.path.startsWith('/dashboard/billing') ? 'text-[#4ecdc4]' : 'text-gray-400']"><Receipt class="w-5 h-5" /></NuxtLink>
         <NuxtLink to="/dashboard/packing" :class="[route.path.startsWith('/dashboard/packing') ? 'text-[#4ecdc4]' : 'text-gray-400']"><Package class="w-5 h-5" /></NuxtLink>
         <NuxtLink to="/dashboard/delivery" :class="[route.path.startsWith('/dashboard/delivery') ? 'text-[#4ecdc4]' : 'text-gray-400']"><Truck class="w-5 h-5" /></NuxtLink>
@@ -195,6 +195,9 @@
         <NuxtLink v-if="['ADMIN', 'SALES'].includes(user?.role || '')" to="/dashboard/orders/create" class="flex items-center gap-3 rounded-md py-2.5 px-3 text-sm transition-colors" :class="[route.path === '/dashboard/orders/create' ? 'bg-[#223933] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50']">
           <PenTool class="w-4 h-4" /> <span class="font-medium">Create Order</span>
         </NuxtLink>
+        <NuxtLink to="/dashboard/chat" class="flex items-center gap-3 rounded-md py-2.5 px-3 text-sm transition-colors text-emerald-400 hover:bg-gray-800/50" :class="[route.path.startsWith('/dashboard/chat') ? 'bg-[#223933] text-emerald-300' : '']">
+          <MessageSquare class="w-4 h-4" /> <span class="font-medium">Team Chat</span>
+        </NuxtLink>
       </div>
 
       <!-- OPERATIONS -->
@@ -202,9 +205,6 @@
         <h3 class="block mb-3 px-3 text-[10px] font-bold uppercase tracking-widest text-gray-500">OPERATIONS</h3>
         <NuxtLink to="/dashboard/inventory" class="flex items-center gap-3 rounded-md py-2.5 px-3 text-sm transition-colors" :class="[route.path.startsWith('/dashboard/inventory') ? 'bg-[#223933] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50']">
           <Boxes class="w-4 h-4" /> <span class="font-medium">Inventory</span>
-        </NuxtLink>
-        <NuxtLink to="/dashboard/chat" class="flex items-center gap-3 rounded-md py-2.5 px-3 text-sm transition-colors text-emerald-400 hover:bg-gray-800/50" :class="[route.path.startsWith('/dashboard/chat') ? 'bg-[#223933] text-emerald-300' : '']">
-          <MessageSquare class="w-4 h-4" /> <span class="font-medium">Team Chat</span>
         </NuxtLink>
         <NuxtLink to="/dashboard/billing" class="flex items-center gap-3 rounded-md py-2.5 px-3 text-sm transition-colors" :class="[route.path.startsWith('/dashboard/billing') ? 'bg-[#223933] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50']">
           <Receipt class="w-4 h-4" /> <span class="font-medium">Billing</span>
