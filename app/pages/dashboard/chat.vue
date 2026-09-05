@@ -45,9 +45,20 @@
         <div 
           v-for="(msg, idx) in messages" 
           :key="msg.id"
-          class="flex w-full"
+          class="flex w-full group items-center"
           :class="msg.userId === user?.id ? 'justify-end' : 'justify-start'"
         >
+          <!-- Delete button (visible on hover) -->
+          <button 
+            v-if="msg.userId === user?.id || user?.role === 'ADMIN'"
+            @click="deleteMessage(msg.id)"
+            class="opacity-0 group-hover:opacity-100 p-2 text-gray-400 hover:text-red-500 transition-all shrink-0 mx-2"
+            :class="msg.userId === user?.id ? 'order-first' : 'order-last'"
+            title="Delete message"
+          >
+            <Trash2 class="w-4 h-4" />
+          </button>
+
           <div 
             class="flex max-w-[85%] md:max-w-[70%]"
             :class="msg.userId === user?.id ? 'flex-row-reverse' : 'flex-row'"
@@ -122,7 +133,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, nextTick, watch } from 'vue'
-import { MessageSquare, Send, Loader2, CheckCheck } from 'lucide-vue-next'
+import { MessageSquare, Send, Loader2, CheckCheck, Trash2 } from 'lucide-vue-next'
 import { useAuth } from '~/composables/useAuth'
 import { useRealtimeSync } from '~/composables/useRealtimeSync'
 
@@ -213,6 +224,22 @@ const sendMessage = async () => {
     newMessage.value = content
   } finally {
     isSending.value = false
+  }
+}
+
+// Delete message
+const deleteMessage = async (id: string) => {
+  if (!confirm('Delete this message for everyone?')) return
+  
+  // Optimistically remove from UI
+  messages.value = messages.value.filter(m => m.id !== id)
+  
+  try {
+    await $fetch(`/api/chat/${id}`, { method: 'DELETE' })
+  } catch (err) {
+    console.error('Failed to delete message:', err)
+    // If it fails, reload the actual messages to restore it
+    loadMessages()
   }
 }
 
