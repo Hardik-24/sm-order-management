@@ -238,6 +238,8 @@ const confirmGenerate = async () => {
         items: itemsToSave
       }
     })
+    const { notifyChange } = useRealtimeSync()
+    notifyChange({ orderId: props.orderId, action: 'BILL_GENERATED' })
     emit('generated')
     closeModal()
   } catch (error) {

@@ -72,10 +72,12 @@ const { showSaving, showSaved, hide } = useSnackbar()
 const submitOrder = async () => {
   showSaving()
   try {
-    await $fetch('/api/orders', {
+    const res = await $fetch<any>('/api/orders', {
       method: 'POST',
       body: form.value
     })
+    const { notifyChange } = useRealtimeSync()
+    notifyChange({ orderId: res?.id, action: 'ORDER_CREATED' })
     showSaved('Order created successfully')
     router.push('/dashboard/orders')
   } catch (err) {

@@ -16,7 +16,7 @@ definePageMeta({
 
 const currentDate = new Date()
 
-const { data: dashboardData, pending: dashboardPending } = useFetch('/api/dashboard')
+const { data: dashboardData, pending: dashboardPending, refresh: refreshDashboard } = useFetch('/api/dashboard')
 
 const page = ref(1)
 const limit = ref(5)
@@ -43,9 +43,16 @@ const queryObj = computed(() => {
   return q
 })
 
-const { data: ordersData, pending: ordersPending } = useFetch('/api/orders', {
+const { data: ordersData, pending: ordersPending, refresh: refreshOrders } = useFetch('/api/orders', {
   query: queryObj,
   watch: [queryObj]
+})
+
+// Realtime instant synchronization across all devices
+const { onOrderSync } = useRealtimeSync()
+onOrderSync(() => {
+  refreshDashboard()
+  refreshOrders()
 })
 
 const handleOrderSelect = (orderId: string) => {
@@ -105,6 +112,7 @@ const handleOrderSelect = (orderId: string) => {
       :order-id="selectedOrderId"
       :is-open="isPanelOpen"
       @close="isPanelOpen = false"
+      @updated="refreshOrders(); refreshDashboard()"
     />
   </div>
 </template>

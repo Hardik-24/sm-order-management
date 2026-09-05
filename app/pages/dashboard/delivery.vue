@@ -89,6 +89,12 @@ function performSilentSync() {
   refreshStats()
 }
 
+// Realtime instant synchronization across all devices
+const { onOrderSync } = useRealtimeSync()
+onOrderSync(() => {
+  performSilentSync()
+})
+
 const handleSelect = (id: string) => {
   selectedOrderId.value = id
   isPanelOpen.value = true

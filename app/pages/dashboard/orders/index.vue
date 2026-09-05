@@ -48,6 +48,12 @@ const handlePanelClose = () => {
 const handlePanelUpdate = () => {
   refresh()
 }
+
+// Realtime instant synchronization across all devices
+const { onOrderSync } = useRealtimeSync()
+onOrderSync(() => {
+  refresh()
+})
 </script>
 
 <template>

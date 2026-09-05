@@ -43,7 +43,14 @@ const { data, pending, refresh } = useFetch('/api/orders', {
   query: queryObj
 })
 
-const { data: stats } = useFetch('/api/orders/packing-stats')
+const { data: stats, refresh: refreshStats } = useFetch('/api/orders/packing-stats')
+
+// Realtime instant synchronization across all devices
+const { onOrderSync } = useRealtimeSync()
+onOrderSync(() => {
+  refresh()
+  refreshStats()
+})
 
 watch([search, status, billingStatus, packingStatus, deliveryStatus, startDate, endDate], () => {
   page.value = 1
@@ -185,7 +192,7 @@ watch(stats, () => {
       :isOpen="isPanelOpen"
       context="packing"
       @close="handlePanelClose"
-      @updated="refresh"
+      @updated="refresh(); refreshStats()"
     />
   </div>
 </template>

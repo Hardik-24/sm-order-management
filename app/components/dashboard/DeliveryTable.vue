@@ -193,6 +193,8 @@ const onPinSaved = (pin: any) => {
   } else {
     showSaved(`Delivery pin removed for ${selectedPinOrder.value?.customer?.company || selectedPinOrder.value?.customer?.name || 'Customer'}`)
   }
+  const { notifyChange } = useRealtimeSync()
+  notifyChange({ orderId: selectedPinOrder.value?.id, action: 'PIN_SAVED' })
   emit('refresh')
 }
 
@@ -262,14 +264,9 @@ const saveDriverAssignment = async () => {
       targetOrder.deliveryStatus.status = newStatus
     }
 
-    // 3. Broadcast to driver phone
-    if (typeof BroadcastChannel !== 'undefined') {
-      try {
-        const bc = new BroadcastChannel('sm_delivery_channel')
-        bc.postMessage({ type: 'DELIVERY_STATUS_CHANGED', orderId, driverName })
-        bc.close()
-      } catch (e) {}
-    }
+    // 3. Multi-device instant WebSocket broadcast
+    const { notifyChange } = useRealtimeSync()
+    notifyChange({ type: 'DELIVERY_STATUS_CHANGED', orderId, driverName, action: 'DRIVER_ASSIGNED' })
 
     // 4. Trigger background refresh to keep parent completely in sync
     emit('refresh')

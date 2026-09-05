@@ -1086,6 +1086,10 @@ function notifyDeliveryChange(action: string, orderId: string) {
       channel.close()
     } catch (e) {}
   }
+  try {
+    const { notifyChange } = useRealtimeSync()
+    notifyChange({ type: 'DELIVERY_STATUS_CHANGED', action, orderId })
+  } catch (e) {}
 }
 
 // Driver clicks "Complete Trip"

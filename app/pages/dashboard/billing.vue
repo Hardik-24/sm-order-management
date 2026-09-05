@@ -70,6 +70,13 @@ const handleUpdate = () => {
   refreshStats()
 }
 
+// Realtime instant synchronization across all devices
+const { onOrderSync } = useRealtimeSync()
+onOrderSync(() => {
+  refresh()
+  refreshStats()
+})
+
 const isGenerateModalOpen = ref(false)
 const generatingOrderId = ref<string | null>(null)
 

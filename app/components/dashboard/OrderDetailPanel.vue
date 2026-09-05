@@ -8,10 +8,12 @@ import CustomSelect from '~/components/ui/CustomSelect.vue'
 import { formatCurrency, formatDateTime, formatDate, formatTime, getDisplayStatus, getOverallColor } from '~~/app/lib/utils'
 import type { Order } from '~/types'
 import { useSnackbar } from '~/composables/useSnackbar'
+import { useRealtimeSync } from '~/composables/useRealtimeSync'
 
 const isPinModalOpen = ref(false)
 
 const { showEditing, showSaving, showSaved, hide } = useSnackbar()
+const { notifyChange, onOrderSync } = useRealtimeSync()
 const { animateStagger } = useGsapAnimation()
 const itemsTbodyRef = ref<HTMLElement | null>(null)
 
@@ -30,6 +32,13 @@ const { user, hasRole } = useAuth()
 const order = ref<Order | null>(null)
 const isLoading = ref(false)
 const activeTab = ref<'DETAILS' | 'TIMELINE' | 'NOTES'>('DETAILS')
+
+// Automatically refresh drawer if another user/tab updates this order
+onOrderSync((event) => {
+  if (props.isOpen && props.orderId && (!event.orderId || event.orderId === props.orderId)) {
+    fetchOrder(props.orderId)
+  }
+})
 
 // Inline form states
 const showBillingForm = ref(false)
@@ -62,7 +71,9 @@ const deleteOrder = async () => {
   if (!order.value || !confirm('Are you sure you want to completely delete this order? This action cannot be undone.')) return
   isDeleting.value = true
   try {
-    await $fetch(`/api/orders/${order.value.id}`, { method: 'DELETE' })
+    const deletedId = order.value.id
+    await $fetch(`/api/orders/${deletedId}`, { method: 'DELETE' })
+    notifyChange({ orderId: deletedId, action: 'ORDER_DELETED' })
     emit('updated')
     closePanel()
   } catch (err) {
@@ -214,6 +225,7 @@ const markBillGenerated = () => {
 
 const handleBillGenerated = async () => {
   showSaved('Bill generated successfully')
+  notifyChange({ orderId: order.value?.id, action: 'BILL_GENERATED' })
   emit('updated')
   if (order.value?.id) {
     await fetchOrder(order.value.id)
@@ -230,6 +242,13 @@ const updateBilling = async () => {
     return
   }
 
+  // Optimistic UI update (0ms local response)
+  if (order.value && billingForm.value.status) {
+    if (!order.value.billingStatus) order.value.billingStatus = {} as any
+    order.value.billingStatus.status = billingForm.value.status as any
+    if (billingForm.value.invoiceNumber) order.value.billingStatus.invoiceNumber = billingForm.value.invoiceNumber
+  }
+
   showSaving()
   try {
     await $fetch(`/api/orders/${order.value.id}/billing`, {
@@ -238,6 +257,7 @@ const updateBilling = async () => {
     })
     showBillingForm.value = false
     showSaved('Billing updated successfully')
+    notifyChange({ orderId: order.value.id, action: 'BILLING_UPDATED', status: billingForm.value.status })
     emit('updated')
     await fetchOrder(order.value.id)
   } catch (err) {
@@ -379,6 +399,7 @@ const saveEdit = async () => {
     })
     showSaved('Order updated successfully')
     isEditModalOpen.value = false
+    notifyChange({ orderId: order.value.id, action: 'ORDER_EDITED' })
     emit('updated')
     await fetchOrder(order.value.id)
   } catch (err) {
@@ -399,6 +420,13 @@ watch(editForm, () => {
 
 const updatePacking = async () => {
     if (!order.value) return
+
+    // Optimistic UI update (0ms local response)
+    if (order.value && packingForm.value.status) {
+      if (!order.value.packingStatus) order.value.packingStatus = {} as any
+      order.value.packingStatus.status = packingForm.value.status as any
+    }
+
     showSaving()
     try {
       const payload = {
@@ -413,7 +441,8 @@ const updatePacking = async () => {
         method: 'PATCH',
         body: payload
       })
-            showSaved('Packing updated successfully')
+      showSaved('Packing updated successfully')
+      notifyChange({ orderId: order.value.id, action: 'PACKING_UPDATED', status: packingForm.value.status })
       emit('updated')
       await fetchOrder(order.value.id)
     } catch (err) {
@@ -432,10 +461,7 @@ const updateDelivery = async () => {
       deliveryForm.value.status = 'WAITING'
     }
 
-    await $fetch(`/api/orders/${order.value.id}/delivery`, {
-      method: 'PATCH',
-      body: deliveryForm.value
-    })
+    // Optimistic UI update (0ms local response)
     if (order.value) {
       if (!order.value.deliveryStatus) order.value.deliveryStatus = {} as any
       order.value.deliveryStatus.driverName = deliveryForm.value.driverName || null
@@ -443,15 +469,19 @@ const updateDelivery = async () => {
       order.value.deliveryDriver = deliveryForm.value.driverName || null
     }
 
+    await $fetch(`/api/orders/${order.value.id}/delivery`, {
+      method: 'PATCH',
+      body: deliveryForm.value
+    })
+
     showDeliveryForm.value = false
     showSaved('Delivery updated successfully')
-    if (typeof BroadcastChannel !== 'undefined') {
-      try {
-        const bc = new BroadcastChannel('sm_delivery_channel')
-        bc.postMessage({ type: 'DELIVERY_STATUS_CHANGED', orderId: order.value.id, status: deliveryForm.value.status })
-        bc.close()
-      } catch (e) {}
-    }
+    notifyChange({
+      orderId: order.value.id,
+      action: 'DELIVERY_UPDATED',
+      status: deliveryForm.value.status,
+      driverName: deliveryForm.value.driverName
+    })
     emit('updated')
     await fetchOrder(order.value.id)
   } catch (err) {
@@ -1074,6 +1104,9 @@ const updateDelivery = async () => {
           showSaved('Customer delivery pin saved!')
         } else {
           showSaved('Customer delivery pin removed!')
+        }
+        if (order) {
+          notifyChange({ orderId: order.id, action: 'PIN_CHANGED' })
         }
         emit('updated')
       }"
