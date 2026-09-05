@@ -1,5 +1,5 @@
 <template>
-  <div class="absolute inset-4 md:inset-6 flex flex-col bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden z-10">
+  <div class="h-full w-full flex flex-col bg-white overflow-hidden">
     <!-- Header (WhatsApp style) -->
     <header class="bg-[#f0f2f5] border-b border-gray-200 px-4 py-3 flex items-center justify-between shrink-0 z-20">
       <div class="flex items-center gap-4">
@@ -132,7 +132,7 @@
 </template>
 
 <script setup lang="ts">
-definePageMeta({ layout: 'dashboard' })
+definePageMeta({ layout: 'dashboard-chat' })
 
 import { ref, onMounted, nextTick, watch } from 'vue'
 import { MessageSquare, Send, Loader2, CheckCheck, Trash2 } from 'lucide-vue-next'
