@@ -25,7 +25,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'close'): void
-  (e: 'updated'): void
+  (e: 'updated', updatedOrder?: any): void
 }>()
 
 const { user, hasRole } = useAuth()
@@ -393,14 +393,14 @@ const saveEdit = async () => {
   }
   showSaving('Saving Changes...')
   try {
-    await $fetch(`/api/orders/${order.value.id}`, {
+    const updatedOrder = await $fetch<any>(`/api/orders/${order.value.id}`, {
       method: 'PATCH',
       body: editForm.value
     })
     showSaved('Order updated successfully')
     isEditModalOpen.value = false
-    notifyChange({ orderId: order.value.id, action: 'ORDER_EDITED' })
-    emit('updated')
+    notifyChange({ orderId: order.value.id, action: 'ORDER_EDITED', order: updatedOrder })
+    emit('updated', updatedOrder)
     await fetchOrder(order.value.id)
   } catch (err) {
     console.error(err)

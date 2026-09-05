@@ -79,12 +79,24 @@ watch(data, (newVal) => {
 let syncChannel: BroadcastChannel | null = null
 let silentSyncTimer: any = null
 
-function performSilentSync() {
+const applyOrderUpdate = (updatedOrder: any) => {
+  if (!updatedOrder || !updatedOrder.id) return
+  if (data.value && Array.isArray(data.value.orders)) {
+    const idx = data.value.orders.findIndex((o: any) => o.id === updatedOrder.id)
+    if (idx !== -1) {
+      data.value.orders[idx] = { ...data.value.orders[idx], ...updatedOrder }
+    }
+  }
+}
+
+function performSilentSync(updatedOrder?: any) {
+  if (updatedOrder) applyOrderUpdate(updatedOrder)
+  const cachedKeys = Object.keys(nuxtApp.payload.data).filter(k => k.startsWith('/api/orders') || k.includes('orders'))
+  cachedKeys.forEach(k => delete nuxtApp.payload.data[k])
+  
   if (typeof document !== 'undefined') {
     // Only sync if tab is currently visible
     if (document.visibilityState !== 'visible') return
-    // Don't interrupt if order drawer is open
-    if (isPanelOpen.value) return
     // Don't interrupt if typing in search or dropdown
     const activeEl = document.activeElement
     if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'SELECT')) return
@@ -95,7 +107,8 @@ function performSilentSync() {
 
 // Realtime instant synchronization across all devices
 const { onOrderSync } = useRealtimeSync()
-onOrderSync(() => {
+onOrderSync((event) => {
+  if (event?.order) applyOrderUpdate(event.order)
   performSilentSync()
 })
 
@@ -261,7 +274,7 @@ watch(statsData, () => {
       :isOpen="isPanelOpen"
       context="delivery"
       @close="handlePanelClose"
-      @updated="() => { refresh(); refreshStats(); }"
+      @updated="(updatedOrder) => { performSilentSync(updatedOrder); }"
     />
   </div>
 </template>

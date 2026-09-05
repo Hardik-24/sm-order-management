@@ -82,7 +82,11 @@ export default defineEventHandler(async (event) => {
     where: { id },
     data: updateData,
     include: {
-      customer: true,
+      customer: { select: { id: true, name: true, company: true, city: true, latitude: true, longitude: true, landmark: true } },
+      salesPerson: { select: { name: true } },
+      billingStatus: { select: { status: true, invoiceNumber: true } },
+      packingStatus: { select: { status: true } },
+      deliveryStatus: { select: { status: true, driverName: true } },
       items: { include: { product: true } }
     }
   })

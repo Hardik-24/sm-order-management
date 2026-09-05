@@ -49,13 +49,44 @@ const handlePanelClose = () => {
   selectedOrderId.value = null
 }
 
-const handlePanelUpdate = () => {
+const applyOrderUpdate = (updatedOrder: any) => {
+  if (!updatedOrder || !updatedOrder.id) return
+  if (data.value && Array.isArray(data.value.orders)) {
+    const idx = data.value.orders.findIndex((o: any) => o.id === updatedOrder.id)
+    if (idx !== -1) {
+      data.value.orders[idx] = {
+        ...data.value.orders[idx],
+        ...updatedOrder,
+        customer: updatedOrder.customer || data.value.orders[idx].customer,
+        totalAmount: updatedOrder.totalAmount !== undefined ? updatedOrder.totalAmount : data.value.orders[idx].totalAmount,
+        items: updatedOrder.items || data.value.orders[idx].items,
+      }
+    }
+  }
+}
+
+const handlePanelUpdate = (updatedOrder?: any) => {
+  if (updatedOrder) {
+    applyOrderUpdate(updatedOrder)
+  }
+  // Clear the cached key so subsequent fetches always get fresh DB data
+  const cachedKeys = Object.keys(nuxtApp.payload.data).filter(k => k.startsWith('/api/orders') || k.includes('orders'))
+  cachedKeys.forEach(k => {
+    delete nuxtApp.payload.data[k]
+  })
   refresh()
 }
 
 // Realtime instant synchronization across all devices
 const { onOrderSync } = useRealtimeSync()
-onOrderSync(() => {
+onOrderSync((event) => {
+  if (event?.order) {
+    applyOrderUpdate(event.order)
+  }
+  const cachedKeys = Object.keys(nuxtApp.payload.data).filter(k => k.startsWith('/api/orders') || k.includes('orders'))
+  cachedKeys.forEach(k => {
+    delete nuxtApp.payload.data[k]
+  })
   refresh()
 })
 </script>

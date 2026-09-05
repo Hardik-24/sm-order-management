@@ -69,14 +69,30 @@ const handlePanelClose = () => {
   selectedOrderId.value = null
 }
 
-const handleUpdate = () => {
+const applyOrderUpdate = (updatedOrder: any) => {
+  if (!updatedOrder || !updatedOrder.id) return
+  if (data.value && Array.isArray(data.value.orders)) {
+    const idx = data.value.orders.findIndex((o: any) => o.id === updatedOrder.id)
+    if (idx !== -1) {
+      data.value.orders[idx] = { ...data.value.orders[idx], ...updatedOrder }
+    }
+  }
+}
+
+const handleUpdate = (updatedOrder?: any) => {
+  if (updatedOrder) applyOrderUpdate(updatedOrder)
+  const cachedKeys = Object.keys(nuxtApp.payload.data).filter(k => k.startsWith('/api/orders') || k.includes('orders'))
+  cachedKeys.forEach(k => delete nuxtApp.payload.data[k])
   refresh()
   refreshStats()
 }
 
 // Realtime instant synchronization across all devices
 const { onOrderSync } = useRealtimeSync()
-onOrderSync(() => {
+onOrderSync((event) => {
+  if (event?.order) applyOrderUpdate(event.order)
+  const cachedKeys = Object.keys(nuxtApp.payload.data).filter(k => k.startsWith('/api/orders') || k.includes('orders'))
+  cachedKeys.forEach(k => delete nuxtApp.payload.data[k])
   refresh()
   refreshStats()
 })
