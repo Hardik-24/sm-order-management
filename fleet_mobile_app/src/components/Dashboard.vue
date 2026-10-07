@@ -37,20 +37,29 @@
           </div>
           <div>
             <h1 class="text-base font-bold leading-tight">{{ user?.name || 'Delivery Driver' }}</h1>
-            <p class="text-[11px] text-white/80 flex items-center gap-1.5 mt-0.5">
-              <span 
-                class="w-1.5 h-1.5 rounded-full"
-                :class="activeTripOrderId ? 'bg-emerald-300 animate-pulse' : 'bg-white/60'"
-              ></span>
-              {{ activeTripOrderId ? 'Trip in Progress • GPS Live' : 'Ready for Dispatch' }}
-            </p>
+            <div class="flex items-center gap-1.5 mt-0.5">
+              <!-- Mode Selection Chip -->
+              <button 
+                type="button"
+                @click="showSettingsModal = true"
+                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold tracking-wide uppercase transition active:scale-95 border"
+                :class="enableTurnByTurn ? 'bg-amber-400 text-gray-900 border-amber-300 shadow-xs' : 'bg-emerald-800/90 text-emerald-100 border-emerald-600/60'"
+                title="Tap to switch between Headless and Turn-by-Turn modes"
+              >
+                <span>{{ enableTurnByTurn ? '🧭 Turn-by-Turn' : '📍 Headless (Silent)' }}</span>
+                <ChevronDown class="w-2.5 h-2.5 opacity-70" />
+              </button>
+              <span class="text-[10px] text-white/70">
+                • {{ activeTripOrderId ? 'Live' : 'Ready' }}
+              </span>
+            </div>
           </div>
         </div>
 
         <div class="flex items-center gap-2">
           <button 
             @click="showSettingsModal = true" 
-            class="p-2 rounded-lg bg-white/10 hover:bg-white/20 active:scale-95 transition text-white"
+            class="p-2 rounded-lg bg-white/10 hover:bg-white/20 active:scale-95 transition text-white flex items-center gap-1 text-xs font-semibold"
             title="Navigation Settings"
           >
             <Settings class="w-4 h-4" />
@@ -500,15 +509,15 @@
       class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs"
       @click.self="showSettingsModal = false"
     >
-      <div class="bg-white rounded-2xl max-w-sm w-full p-5 shadow-2xl space-y-5 border border-gray-100">
+      <div class="bg-white rounded-2xl max-w-sm w-full p-5 shadow-2xl space-y-4 border border-gray-100">
         <div class="flex items-center justify-between border-b border-gray-100 pb-3">
           <div class="flex items-center gap-2.5">
             <div class="w-8 h-8 rounded-lg bg-[#1a5c4c]/10 flex items-center justify-center text-[#1a5c4c]">
               <Settings class="w-4 h-4" />
             </div>
             <div>
-              <h3 class="text-base font-bold text-gray-900 leading-tight">Navigation Settings</h3>
-              <p class="text-[11px] text-gray-400">SM Fleet Preferences</p>
+              <h3 class="text-base font-bold text-gray-900 leading-tight">Navigation Mode</h3>
+              <p class="text-[11px] text-gray-400">Choose how trips run on your phone</p>
             </div>
           </div>
           <button 
@@ -519,52 +528,57 @@
           </button>
         </div>
 
-        <!-- Turn-by-Turn Mode Toggle Card -->
-        <div class="bg-gray-50 rounded-xl p-4 border border-gray-200/80 space-y-3">
-          <div class="flex items-start justify-between gap-3">
-            <div>
-              <span class="text-xs font-bold text-gray-900 block">Turn-by-Turn Navigation</span>
-              <p class="text-[11px] text-gray-500 mt-0.5 leading-relaxed">
-                Launch Google Maps 3D turn-by-turn voice navigation during delivery.
-              </p>
+        <!-- Mode Option 1: Headless (Silent Background Tracking) -->
+        <div 
+          @click="setNavigationMode(false)"
+          class="p-3.5 rounded-xl border-2 cursor-pointer transition active:scale-[0.99] space-y-2"
+          :class="!enableTurnByTurn ? 'border-[#1a5c4c] bg-emerald-50/50 shadow-xs' : 'border-gray-200 bg-white hover:border-gray-300'"
+        >
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="text-base">📍</span>
+              <span class="text-xs font-bold text-gray-900">Headless Mode (Silent GPS)</span>
             </div>
-            <!-- Toggle Switch -->
-            <button 
-              type="button"
-              @click="toggleTurnByTurn" 
-              class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden"
-              :class="enableTurnByTurn ? 'bg-[#1a5c4c]' : 'bg-gray-300'"
+            <div 
+              class="w-4 h-4 rounded-full border-2 flex items-center justify-center"
+              :class="!enableTurnByTurn ? 'border-[#1a5c4c] bg-[#1a5c4c]' : 'border-gray-300'"
             >
-              <span 
-                class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out"
-                :class="enableTurnByTurn ? 'translate-x-5' : 'translate-x-0'"
-              />
-            </button>
+              <div v-if="!enableTurnByTurn" class="w-1.5 h-1.5 rounded-full bg-white"></div>
+            </div>
           </div>
-
-          <!-- Status Indicator Pill -->
-          <div 
-            class="px-2.5 py-1.5 rounded-lg text-[11px] font-medium flex items-center gap-2 transition"
-            :class="enableTurnByTurn ? 'bg-emerald-100/70 text-emerald-800' : 'bg-gray-200/70 text-gray-700'"
-          >
-            <span class="w-2 h-2 rounded-full" :class="enableTurnByTurn ? 'bg-emerald-600' : 'bg-gray-400'"></span>
-            <span>
-              {{ enableTurnByTurn ? 'Turn-by-Turn Active: Voice & 3D Guidance' : 'Location Only: Silent Road-Snapped Tracking' }}
-            </span>
-          </div>
+          <p class="text-[11px] text-gray-600 leading-relaxed pl-6">
+            <strong>Recommended:</strong> Road-snapped GPS streams continuously in the background. Your phone stays on this delivery dashboard so you can view orders, items, and call customer. Zero screen takeover.
+          </p>
         </div>
 
-        <!-- Explanatory helper -->
-        <div class="bg-amber-50 rounded-xl p-3 border border-amber-200/60 text-[11px] text-amber-800 flex items-start gap-2 leading-relaxed">
-          <span class="text-sm">💡</span>
-          <span>When turned off, location tracking still streams continuously to dispatch and customer without taking over your screen.</span>
+        <!-- Mode Option 2: Turn-by-Turn (3D Voice Navigation) -->
+        <div 
+          @click="setNavigationMode(true)"
+          class="p-3.5 rounded-xl border-2 cursor-pointer transition active:scale-[0.99] space-y-2"
+          :class="enableTurnByTurn ? 'border-amber-500 bg-amber-50/50 shadow-xs' : 'border-gray-200 bg-white hover:border-gray-300'"
+        >
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="text-base">🧭</span>
+              <span class="text-xs font-bold text-gray-900">Turn-by-Turn Mode (3D Voice)</span>
+            </div>
+            <div 
+              class="w-4 h-4 rounded-full border-2 flex items-center justify-center"
+              :class="enableTurnByTurn ? 'border-amber-500 bg-amber-500' : 'border-gray-300'"
+            >
+              <div v-if="enableTurnByTurn" class="w-1.5 h-1.5 rounded-full bg-white"></div>
+            </div>
+          </div>
+          <p class="text-[11px] text-gray-600 leading-relaxed pl-6">
+            Launches full-screen <strong>Google Maps 3D navigation</strong> inside the app with spoken voice directions and lane guidance. Tap "Exit" at the top anytime to return to the app.
+          </p>
         </div>
 
         <button 
           @click="showSettingsModal = false"
           class="w-full py-2.5 bg-[#1a5c4c] hover:bg-[#14473b] text-white rounded-xl text-xs font-bold transition shadow-sm active:scale-98"
         >
-          Save & Close
+          Done
         </button>
       </div>
     </div>
@@ -729,12 +743,16 @@ const showSettingsModal = ref(false)
 const enableTurnByTurn = ref(false)
 
 async function toggleTurnByTurn() {
-  enableTurnByTurn.value = !enableTurnByTurn.value
+  setNavigationMode(!enableTurnByTurn.value)
+}
+
+async function setNavigationMode(turnByTurn: boolean) {
+  enableTurnByTurn.value = turnByTurn
   await Preferences.set({
     key: 'turn_by_turn_enabled',
-    value: enableTurnByTurn.value ? 'true' : 'false'
+    value: turnByTurn ? 'true' : 'false'
   })
-  showSaved(enableTurnByTurn.value ? '🧭 Turn-by-Turn navigation enabled' : '📍 Location-only tracking active')
+  showSaved(turnByTurn ? '🧭 Turn-by-Turn 3D mode enabled' : '📍 Headless silent tracking enabled')
 }
 
 function calculateDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
