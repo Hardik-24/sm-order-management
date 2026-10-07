@@ -185,7 +185,7 @@ public class NavigationManager {
     private void setupRemainingTimeOrDistanceListener() {
         if (mNavigator == null) return;
         try {
-            mNavigator.addRemainingTimeOrDistanceChangedListener(new Navigator.RemainingTimeOrDistanceChangedListener() {
+            mNavigator.addRemainingTimeOrDistanceChangedListener(5, 20, new Navigator.RemainingTimeOrDistanceChangedListener() {
                 @Override
                 public void onRemainingTimeOrDistanceChanged() {
                     updateTimeAndDistance();
