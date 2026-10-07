@@ -2,14 +2,13 @@ package com.siliconmarketing.fleet;
 
 import android.app.Activity;
 import android.location.Location;
-import android.location.LocationListener;
-import android.os.Bundle;
 import android.util.Log;
 import androidx.annotation.NonNull;
 
 import com.google.android.libraries.navigation.ListenableResultFuture;
 import com.google.android.libraries.navigation.NavigationApi;
 import com.google.android.libraries.navigation.Navigator;
+import com.google.android.libraries.navigation.RoadSnappedLocationProvider;
 import com.google.android.libraries.navigation.Waypoint;
 
 public class NavigationManager {
@@ -17,7 +16,8 @@ public class NavigationManager {
     private static NavigationManager sInstance;
 
     private Navigator mNavigator;
-    private LocationListener mLocationListener;
+    private RoadSnappedLocationProvider mRoadSnappedProvider;
+    private RoadSnappedLocationProvider.LocationListener mLocationListener;
     private OnRoadSnappedLocationCallback mLocationCallback;
     private boolean mIsNavigating = false;
     private double mCurrentDestLat = 0;
@@ -54,10 +54,13 @@ public class NavigationManager {
         this.mCurrentDestLng = destLng;
         this.mCurrentDestTitle = (title != null && !title.trim().isEmpty()) ? title : "Customer Delivery";
 
-        try {
-            NavigationApi.showTermsAndConditionsDialogIfNeeded(activity, "Silicon Marketing");
-        } catch (Exception e) {
-            Log.w(TAG, "Terms dialog check warning: " + e.getMessage());
+        if (mRoadSnappedProvider == null && activity != null) {
+            try {
+                mRoadSnappedProvider = NavigationApi.getRoadSnappedLocationProvider(activity.getApplication());
+                setupLocationListener();
+            } catch (Exception e) {
+                Log.w(TAG, "Failed to get RoadSnappedLocationProvider: " + e.getMessage());
+            }
         }
 
         if (mNavigator != null) {
@@ -69,7 +72,6 @@ public class NavigationManager {
             @Override
             public void onNavigatorReady(Navigator navigator) {
                 mNavigator = navigator;
-                setupLocationListener();
                 applyDestinationAndStart(onReady);
             }
 
@@ -82,10 +84,10 @@ public class NavigationManager {
     }
 
     private void setupLocationListener() {
-        if (mNavigator == null) return;
+        if (mRoadSnappedProvider == null) return;
 
         if (mLocationListener == null) {
-            mLocationListener = new LocationListener() {
+            mLocationListener = new RoadSnappedLocationProvider.LocationListener() {
                 @Override
                 public void onLocationChanged(@NonNull Location location) {
                     if (mLocationCallback != null) {
@@ -99,20 +101,11 @@ public class NavigationManager {
                         );
                     }
                 }
-
-                @Override
-                public void onStatusChanged(String provider, int status, Bundle extras) {}
-
-                @Override
-                public void onProviderEnabled(@NonNull String provider) {}
-
-                @Override
-                public void onProviderDisabled(@NonNull String provider) {}
             };
         }
 
         try {
-            mNavigator.addLocationListener(mLocationListener);
+            mRoadSnappedProvider.addLocationListener(mLocationListener);
             Log.i(TAG, "Google Navigation SDK road-snapped location listener attached successfully.");
         } catch (Exception e) {
             Log.e(TAG, "Error adding location listener", e);
@@ -152,14 +145,16 @@ public class NavigationManager {
 
     public void stopNavigation() {
         mIsNavigating = false;
+        if (mRoadSnappedProvider != null && mLocationListener != null) {
+            try {
+                mRoadSnappedProvider.removeLocationListener(mLocationListener);
+            } catch (Exception ignored) {}
+        }
         if (mNavigator != null) {
             try {
                 mNavigator.stopGuidance();
                 mNavigator.clearDestinations();
-                if (mLocationListener != null) {
-                    mNavigator.removeLocationListener(mLocationListener);
-                }
-                Log.i(TAG, "Navigation session stopped and location listener detached.");
+                Log.i(TAG, "Navigation session stopped.");
             } catch (Exception e) {
                 Log.e(TAG, "Error stopping navigation", e);
             }

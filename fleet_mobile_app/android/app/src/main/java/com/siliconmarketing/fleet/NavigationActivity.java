@@ -6,8 +6,7 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.google.android.libraries.navigation.GoogleMap;
-import com.google.android.libraries.navigation.Navigator;
+import com.google.android.gms.maps.GoogleMap;
 import com.google.android.libraries.navigation.SupportNavigationFragment;
 
 public class NavigationActivity extends AppCompatActivity {
@@ -49,7 +48,7 @@ public class NavigationActivity extends AppCompatActivity {
             mNavFragment.getMapAsync(googleMap -> {
                 if (googleMap != null) {
                     try {
-                        googleMap.setFollowMyLocation(GoogleMap.CameraPerspective.TILTED);
+                        googleMap.followMyLocation(GoogleMap.CameraPerspective.TILTED);
                     } catch (Exception ignored) {}
                 }
             });
@@ -59,6 +58,5 @@ public class NavigationActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        // NavigationManager continues guidance and road-snapping in background
     }
 }
