@@ -1,12 +1,12 @@
 <template>
-  <div class="flex h-screen w-full overflow-hidden bg-[#faf8f5] flex-col md:flex-row">
+  <div class="flex h-[100dvh] max-h-[100dvh] w-full overflow-hidden bg-[#faf8f5] flex-col md:flex-row fixed inset-0 md:static md:h-screen overscroll-none">
     <!-- Sidebar (Top on mobile, Left on desktop) -->
     <DashboardSidebar class="shrink-0" />
     
     <!-- Topbar (Mobile only) -->
     <DashboardTopbar class="md:hidden shrink-0" />
     
-    <div class="flex flex-1 flex-col overflow-hidden relative min-w-0">
+    <div class="flex flex-1 flex-col overflow-hidden relative min-w-0 min-h-0">
       <!-- Topbar (Desktop only) -->
       <DashboardTopbar class="hidden md:flex shrink-0" />
       

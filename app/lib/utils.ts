@@ -76,36 +76,43 @@ export function generateOrderNumber(sequenceNumber: number): string {
   return `SO-${year}-${num}`
 }
 
-/** Get status badge color classes */
+/** Get status badge color classes - Standardized 4-Semantic System:
+ * ⚪ Gray (Pending / Waiting / Not Started)
+ * 🔵 Blue (Active / In Progress / Assigned / Dispatched)
+ * 🟠 Amber/Red (On Hold / Shortage / Blocked)
+ * 🟢 Green / Teal (Done / Generated / Packed / Delivered)
+ */
 export function getStatusColor(status: string): string {
   if (typeof status !== 'string') return 'bg-gray-100 text-gray-600 border-gray-200'
   const colors: Record<string, string> = {
-    // Overall (Raw DB values, mostly overridden by getOverallColor anyway)
-    CONFIRMED: 'bg-blue-100 text-blue-700 border-blue-200',
-    PROCESSING: 'bg-amber-100 text-amber-700 border-amber-200',
+    // 🟢 DONE / COMPLETED
+    GENERATED: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    PACKED: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    COMPLETED: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    DELIVERED: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    PAID: 'bg-emerald-50 text-emerald-700 border-emerald-200',
     READY: 'bg-[#e6f4f1] text-[#1a5c4c] border-[#1a5c4c]/30',
-    DISPATCHED: 'bg-indigo-100 text-indigo-700 border-indigo-200',
-    DELIVERED: 'bg-gray-100 text-gray-500 border-gray-200',
-    
-    // Billing
-    PENDING: 'bg-amber-100 text-amber-700 border-amber-200',
-    IN_PROGRESS: 'bg-blue-100 text-blue-700 border-blue-200',
-    GENERATED: 'bg-green-100 text-green-700 border-green-200',
-    ERROR: 'bg-red-100 text-red-700 border-red-200',
-    ON_HOLD: 'bg-orange-100 text-orange-700 border-orange-200',
-    
-    // Packing
-    PENDING: 'bg-amber-100 text-amber-700 border-amber-200',
-    NOT_STARTED: 'bg-amber-100 text-amber-700 border-amber-200',
-    IN_PROGRESS: 'bg-blue-100 text-blue-700 border-blue-200',
-    PACKED: 'bg-green-100 text-green-700 border-green-200',
-    SHORTAGE: 'bg-red-100 text-red-700 border-red-200',
-    ON_HOLD: 'bg-orange-100 text-orange-700 border-orange-200',
-    
-    // Delivery
-    WAITING: 'bg-amber-100 text-amber-700 border-amber-200',
-    ASSIGNED: 'bg-blue-100 text-blue-700 border-blue-200',
-    ON_HOLD: 'bg-orange-100 text-orange-700 border-orange-200',
+
+    // 🔵 ACTIVE / IN PROGRESS
+    IN_PROGRESS: 'bg-blue-50 text-blue-700 border-blue-200',
+    ASSIGNED: 'bg-blue-50 text-blue-700 border-blue-200',
+    DISPATCHED: 'bg-blue-50 text-blue-700 border-blue-200',
+    CONFIRMED: 'bg-blue-50 text-blue-700 border-blue-200',
+    PROCESSING: 'bg-blue-50 text-blue-700 border-blue-200',
+    PARTIAL: 'bg-blue-50 text-blue-700 border-blue-200',
+
+    // 🟠 BLOCKED / ON HOLD / WARNING / UNPAID
+    ON_HOLD: 'bg-amber-50 text-amber-700 border-amber-200',
+    HOLD: 'bg-amber-50 text-amber-700 border-amber-200',
+    UNPAID: 'bg-amber-50 text-amber-700 border-amber-200',
+    SHORTAGE: 'bg-rose-50 text-rose-700 border-rose-200',
+    ERROR: 'bg-rose-50 text-rose-700 border-rose-200',
+    OVERDUE: 'bg-rose-50 text-rose-700 border-rose-200',
+
+    // ⚪ WAITING / NOT STARTED / PENDING
+    PENDING: 'bg-gray-100 text-gray-600 border-gray-200',
+    WAITING: 'bg-gray-100 text-gray-600 border-gray-200',
+    NOT_STARTED: 'bg-gray-100 text-gray-600 border-gray-200',
   }
   return colors[status] || 'bg-gray-100 text-gray-600 border-gray-200'
 }

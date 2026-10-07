@@ -6,19 +6,22 @@ export default defineEventHandler(async (event) => {
   await requireAuth(event)
   const query = getQuery(event)
   
-  const page = Number(query.page) || 1
-  const limit = Number(query.limit) || 10
+  const isUnlimited = Number(query.limit) === -1 || query.limit === 'unlimited'
+  const page = isUnlimited ? 1 : (Number(query.page) || 1)
+  const limit = isUnlimited ? -1 : (Number(query.limit) || 10)
   const search = query.search as string
   const status = query.status as string
   const billingStatus = query.billingStatus as string
   const packingStatus = query.packingStatus as string
   const deliveryStatus = query.deliveryStatus as string
+  const paymentStatus = query.paymentStatus as string
   const startDate = query.startDate as string
   const endDate = query.endDate as string
   const sortBy = (query.sortBy as string) || 'createdAt'
   const sortOrder = (query.sortOrder as string) || 'desc'
 
-  const skip = (page - 1) * limit
+  const skip = isUnlimited ? undefined : (page - 1) * limit
+  const take = isUnlimited ? undefined : limit
 
   const where: any = {}
   
@@ -39,6 +42,16 @@ export default defineEventHandler(async (event) => {
       where.deliveryStatus = { status: deliveryStatus }
     }
   }
+  if (paymentStatus) {
+    if (paymentStatus === 'UNPAID') {
+      where.OR = [
+        { paymentStatus: { status: 'UNPAID' } },
+        { paymentStatus: null }
+      ]
+    } else {
+      where.paymentStatus = { status: paymentStatus }
+    }
+  }
   
   if (startDate || endDate) {
     where.orderDate = {}
@@ -54,7 +67,7 @@ export default defineEventHandler(async (event) => {
     prisma.order.findMany({
       where,
       skip,
-      take: limit,
+      take,
       orderBy: { [sortBy]: sortOrder },
       include: {
         customer: { select: { name: true, company: true, city: true, latitude: true, longitude: true, landmark: true } },
@@ -62,6 +75,7 @@ export default defineEventHandler(async (event) => {
         billingStatus: { select: { status: true } },
         packingStatus: { select: { status: true } },
         deliveryStatus: { select: { status: true, driverName: true } },
+        paymentStatus: { select: { status: true, amountPaid: true, balanceDue: true, paymentMethod: true, referenceNo: true, dueDate: true, paidAt: true } },
         items: { select: { quantity: true, packedQuantity: true } },
         _count: { select: { items: true } }
       }
@@ -80,8 +94,20 @@ export default defineEventHandler(async (event) => {
       order.customer,
       preloadedPins
     )
+    const total = Number(order.totalAmount || 0)
+    const ps = order.paymentStatus || {
+      status: 'UNPAID',
+      amountPaid: 0,
+      balanceDue: total,
+      paymentMethod: null,
+      referenceNo: null,
+      dueDate: null,
+      paidAt: null
+    }
+
     return {
       ...order,
+      paymentStatus: ps,
       destinationCoords: pin ? { lat: pin.lat, lng: pin.lng, areaName: pin.areaName, landmark: pin.landmark } : null,
       hasDestinationPin: !!pin,
     }
@@ -92,6 +118,6 @@ export default defineEventHandler(async (event) => {
     total,
     page,
     limit,
-    totalPages: Math.ceil(total / limit)
+    totalPages: isUnlimited ? 1 : (Math.ceil(total / limit) || 1)
   }
 })

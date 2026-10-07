@@ -27,6 +27,7 @@ const status = ref('')
 const billingStatus = ref('')
 const packingStatus = ref('')
 const deliveryStatus = ref('')
+const paymentStatus = ref('')
 
 const isPanelOpen = ref(false)
 const selectedOrderId = ref<string | null>(null)
@@ -40,6 +41,7 @@ const queryObj = computed(() => {
   if (billingStatus.value) q.billingStatus = billingStatus.value
   if (packingStatus.value) q.packingStatus = packingStatus.value
   if (deliveryStatus.value) q.deliveryStatus = deliveryStatus.value
+  if (paymentStatus.value) q.paymentStatus = paymentStatus.value
   return q
 })
 
@@ -51,6 +53,7 @@ const { data: ordersData, pending: ordersPending, refresh: refreshOrders } = use
 // Realtime instant synchronization across all devices
 const { onOrderSync } = useRealtimeSync()
 onOrderSync(() => {
+  // 
   refreshDashboard()
   refreshOrders()
 })
@@ -103,6 +106,7 @@ const handleOrderSelect = (orderId: string) => {
         v-model:billingStatus="billingStatus"
         v-model:packingStatus="packingStatus"
         v-model:deliveryStatus="deliveryStatus"
+        v-model:paymentStatus="paymentStatus"
         @select="handleOrderSelect"
       />
     </div>
@@ -112,7 +116,7 @@ const handleOrderSelect = (orderId: string) => {
       :order-id="selectedOrderId"
       :is-open="isPanelOpen"
       @close="isPanelOpen = false"
-      @updated="refreshOrders(); refreshDashboard()"
+      @updated="() => { refreshOrders(); refreshDashboard(); }"
     />
   </div>
 </template>

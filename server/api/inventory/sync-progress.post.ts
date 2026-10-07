@@ -1,8 +1,9 @@
-﻿import { prisma } from '~~/server/utils/prisma'
+import { prisma } from '~~/server/utils/prisma'
 
 export default defineEventHandler(async (event) => {
-  const authHeader = getHeader(event, 'authorization')
-  if (authHeader !== 'Bearer super-secret-key-123') {
+  const syncSecret = process.env.NUXT_SYNC_SECRET || 'super-secret-key-123'
+  const authHeader = getHeader(event, 'authorization') || getHeader(event, 'Authorization')
+  if (authHeader !== `Bearer ${syncSecret}`) {
     throw createError({ statusCode: 401, message: 'Unauthorized' })
   }
 

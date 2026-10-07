@@ -147,25 +147,56 @@ export async function recordTripPing(
   if (points.length === 0) return dbRowToDriverTrip(row, row.order.orderNumber, row.order.customer.name, row.order.deliveryAddress)
 
   const existingCrumbs: TripBreadcrumb[] = Array.isArray(row.breadcrumbs) ? row.breadcrumbs : []
-  let lastPoint = existingCrumbs.length > 0 ? existingCrumbs[existingCrumbs.length - 1] : { lat: row.startLat, lng: row.startLng }
+  let lastPoint: TripBreadcrumb = existingCrumbs.length > 0 
+    ? existingCrumbs[existingCrumbs.length - 1] 
+    : { lat: row.startLat, lng: row.startLng, timestamp: new Date(row.startTime).getTime() }
   let addedKm = 0
   const newCrumbs: TripBreadcrumb[] = []
 
   for (const pt of points) {
     if (typeof pt.lat !== 'number' || typeof pt.lng !== 'number') continue
     const deltaKm = calculateDistanceKm(lastPoint.lat, lastPoint.lng, pt.lat, pt.lng)
-    // Filter GPS jitter < 10m, and outliers > 2km (impossible jump in one ping)
-    if (deltaKm >= 0.01 && deltaKm <= 2.0) {
+    const ptTimestamp = pt.timestamp || Date.now()
+    const lastTimestamp = lastPoint.timestamp || (row.startTime ? new Date(row.startTime).getTime() : Date.now())
+    const timeDeltaSec = Math.max(1, (ptTimestamp - lastTimestamp) / 1000)
+    const impliedSpeedKmh = (deltaKm / (timeDeltaSec / 3600))
+
+    const isJitter = deltaKm < 0.01 // < 10 meters
+    // Valid speed check: accept reasonable driving speeds up to 140 km/h, or reconnection after offline gaps
+    const isReasonableTravel = timeDeltaSec <= 5 ? deltaKm <= 0.25 : (impliedSpeedKmh <= 150 || (timeDeltaSec > 60 && deltaKm <= 50))
+
+    if (!isJitter && isReasonableTravel) {
       addedKm += deltaKm
       const crumb: TripBreadcrumb = {
         lat: pt.lat,
         lng: pt.lng,
-        timestamp: pt.timestamp || Date.now(),
+        timestamp: ptTimestamp,
         speed: pt.speed,
         heading: pt.heading,
       }
       newCrumbs.push(crumb)
       lastPoint = crumb
+    } else if (isJitter) {
+      // Stationary heartbeat: keep timestamp and current location fresh without adding distance
+      const crumb: TripBreadcrumb = {
+        lat: pt.lat,
+        lng: pt.lng,
+        timestamp: ptTimestamp,
+        speed: 0,
+        heading: lastPoint.heading,
+      }
+      // Record heartbeat crumb if more than 15s elapsed since the last breadcrumb
+      const lastRecorded = newCrumbs[newCrumbs.length - 1] || existingCrumbs[existingCrumbs.length - 1]
+      if (!lastRecorded || (crumb.timestamp - (lastRecorded.timestamp || 0)) >= 15000) {
+        newCrumbs.push(crumb)
+      }
+      lastPoint = crumb
+    } else {
+      // Teleportation / anomaly: do not inflate distance payout, but advance lastPoint after prolonged gap to prevent permanent lockout
+      console.warn(`[GPS Ping] Skipped jump anomaly: ${deltaKm}km in ${timeDeltaSec}s (${Math.round(impliedSpeedKmh)} km/h)`)
+      if (timeDeltaSec > 90) {
+        lastPoint = { lat: pt.lat, lng: pt.lng, timestamp: ptTimestamp, speed: pt.speed, heading: pt.heading }
+      }
     }
   }
 
@@ -239,7 +270,7 @@ export async function completeTrip(
   if (finalCoords) {
     const lastPoint = finalCrumbs.length > 0 ? finalCrumbs[finalCrumbs.length - 1] : { lat: row.startLat, lng: row.startLng, timestamp: now.getTime() }
     const deltaKm = calculateDistanceKm(lastPoint.lat, lastPoint.lng, finalCoords.lat, finalCoords.lng)
-    if (deltaKm >= 0.01 && deltaKm <= 2.0) {
+    if (deltaKm >= 0.01 && deltaKm <= 10.0) {
       totalKm = Math.round((totalKm + deltaKm) * 100) / 100
       finalCrumbs.push({ lat: finalCoords.lat, lng: finalCoords.lng, timestamp: now.getTime() })
     }

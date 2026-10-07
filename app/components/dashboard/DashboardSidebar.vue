@@ -47,6 +47,14 @@
             <ClipboardList class="shrink-0 w-4 h-4" />
             <span v-if="!isSidebarCollapsed" class="font-medium whitespace-nowrap">Orders</span>
           </NuxtLink>
+          <NuxtLink to="/dashboard/order-requests" title="Order Requests" class="flex items-center gap-3 rounded-md py-2.5 text-sm transition-colors relative" :class="[route.path.startsWith('/dashboard/order-requests') ? 'bg-[#223933] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50 hover:text-gray-200', isSidebarCollapsed ? 'justify-center px-0' : 'px-3']">
+            <Inbox class="shrink-0 w-4 h-4 text-amber-400" />
+            <span v-if="!isSidebarCollapsed" class="font-medium whitespace-nowrap flex-1">Order Requests</span>
+            <span v-if="pendingRequestsCount > 0 && !isSidebarCollapsed" class="bg-amber-500/20 text-amber-300 text-[10px] font-bold px-1.5 py-0.5 rounded-full border border-amber-500/30">
+              {{ pendingRequestsCount }}
+            </span>
+            <span v-if="pendingRequestsCount > 0 && isSidebarCollapsed" class="absolute top-2 right-2 w-2 h-2 rounded-full bg-amber-400 ring-2 ring-[#1c1c1c]"></span>
+          </NuxtLink>
           <NuxtLink v-if="['ADMIN', 'SALES'].includes(user?.role || '')" to="/dashboard/orders/create" title="Create Order" class="flex items-center gap-3 rounded-md py-2.5 text-sm transition-colors" :class="[route.path === '/dashboard/orders/create' ? 'bg-[#223933] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50 hover:text-gray-200', isSidebarCollapsed ? 'justify-center px-0' : 'px-3']">
             <PenTool class="shrink-0 w-4 h-4" />
             <span v-if="!isSidebarCollapsed" class="font-medium whitespace-nowrap">Create Order</span>
@@ -70,6 +78,10 @@
           <NuxtLink to="/dashboard/billing" title="Billing" class="flex items-center gap-3 rounded-md py-2.5 text-sm transition-colors" :class="[route.path.startsWith('/dashboard/billing') ? 'bg-[#223933] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50 hover:text-gray-200', isSidebarCollapsed ? 'justify-center px-0' : 'px-3']">
             <Receipt class="shrink-0 w-4 h-4" />
             <span v-if="!isSidebarCollapsed" class="font-medium whitespace-nowrap">Billing</span>
+          </NuxtLink>
+          <NuxtLink to="/dashboard/payments" title="Payments" class="flex items-center gap-3 rounded-md py-2.5 text-sm transition-colors" :class="[route.path.startsWith('/dashboard/payments') ? 'bg-[#223933] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50 hover:text-gray-200', isSidebarCollapsed ? 'justify-center px-0' : 'px-3']">
+            <CreditCard class="shrink-0 w-4 h-4" />
+            <span v-if="!isSidebarCollapsed" class="font-medium whitespace-nowrap">Payments</span>
           </NuxtLink>
           <NuxtLink to="/dashboard/packing" title="Packing" class="flex items-center gap-3 rounded-md py-2.5 text-sm transition-colors" :class="[route.path.startsWith('/dashboard/packing') ? 'bg-[#223933] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50 hover:text-gray-200', isSidebarCollapsed ? 'justify-center px-0' : 'px-3']">
             <Package class="shrink-0 w-4 h-4" />
@@ -143,10 +155,15 @@
       <div class="flex-1 flex flex-row items-center overflow-x-auto no-scrollbar px-3 gap-6 h-full">
         <NuxtLink to="/dashboard" :class="[route.path === '/dashboard' ? 'text-[#4ecdc4]' : 'text-gray-400']"><LayoutDashboard class="w-5 h-5" /></NuxtLink>
         <NuxtLink to="/dashboard/orders" :class="[route.path.startsWith('/dashboard/orders') && route.path !== '/dashboard/orders/create' ? 'text-[#4ecdc4]' : 'text-gray-400']"><ClipboardList class="w-5 h-5" /></NuxtLink>
+        <NuxtLink to="/dashboard/order-requests" class="relative" :class="[route.path.startsWith('/dashboard/order-requests') ? 'text-[#4ecdc4]' : 'text-gray-400']">
+          <Inbox class="w-5 h-5" :class="route.path.startsWith('/dashboard/order-requests') ? 'text-[#4ecdc4]' : 'text-amber-400/80'" />
+          <span v-if="pendingRequestsCount > 0" class="absolute -top-1.5 -right-1.5 w-2 h-2 rounded-full bg-amber-400 ring-2 ring-[#1c1c1c]"></span>
+        </NuxtLink>
         <NuxtLink v-if="['ADMIN', 'SALES'].includes(user?.role || '')" to="/dashboard/orders/create" :class="[route.path === '/dashboard/orders/create' ? 'text-[#4ecdc4]' : 'text-gray-400']"><PenTool class="w-5 h-5" /></NuxtLink>
         <NuxtLink to="/dashboard/chat" :class="[route.path.startsWith('/dashboard/chat') ? 'text-[#4ecdc4]' : 'text-gray-400']"><MessageSquare class="w-5 h-5" /></NuxtLink>
         <NuxtLink to="/dashboard/inventory" :class="[route.path.startsWith('/dashboard/inventory') ? 'text-[#4ecdc4]' : 'text-gray-400']"><Boxes class="w-5 h-5" /></NuxtLink>
         <NuxtLink to="/dashboard/billing" :class="[route.path.startsWith('/dashboard/billing') ? 'text-[#4ecdc4]' : 'text-gray-400']"><Receipt class="w-5 h-5" /></NuxtLink>
+        <NuxtLink to="/dashboard/payments" :class="[route.path.startsWith('/dashboard/payments') ? 'text-[#4ecdc4]' : 'text-gray-400']"><CreditCard class="w-5 h-5" /></NuxtLink>
         <NuxtLink to="/dashboard/packing" :class="[route.path.startsWith('/dashboard/packing') ? 'text-[#4ecdc4]' : 'text-gray-400']"><Package class="w-5 h-5" /></NuxtLink>
         <NuxtLink to="/dashboard/delivery" :class="[route.path.startsWith('/dashboard/delivery') ? 'text-[#4ecdc4]' : 'text-gray-400']"><Truck class="w-5 h-5" /></NuxtLink>
         <NuxtLink to="/dashboard/customers" :class="[route.path.startsWith('/dashboard/customers') ? 'text-[#4ecdc4]' : 'text-gray-400']"><User class="w-5 h-5" /></NuxtLink>
@@ -192,6 +209,14 @@
         <NuxtLink to="/dashboard/orders" class="flex items-center gap-3 rounded-md py-2.5 px-3 text-sm transition-colors" :class="[route.path.startsWith('/dashboard/orders') && route.path !== '/dashboard/orders/create' ? 'bg-[#223933] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50']">
           <ClipboardList class="w-4 h-4" /> <span class="font-medium">Orders</span>
         </NuxtLink>
+        <NuxtLink to="/dashboard/order-requests" class="flex items-center justify-between rounded-md py-2.5 px-3 text-sm transition-colors" :class="[route.path.startsWith('/dashboard/order-requests') ? 'bg-[#223933] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50']">
+          <div class="flex items-center gap-3">
+            <Inbox class="w-4 h-4 text-amber-400" /> <span class="font-medium">Order Requests</span>
+          </div>
+          <span v-if="pendingRequestsCount > 0" class="bg-amber-500/20 text-amber-300 text-[10px] font-bold px-2 py-0.5 rounded-full border border-amber-500/30">
+            {{ pendingRequestsCount }}
+          </span>
+        </NuxtLink>
         <NuxtLink v-if="['ADMIN', 'SALES'].includes(user?.role || '')" to="/dashboard/orders/create" class="flex items-center gap-3 rounded-md py-2.5 px-3 text-sm transition-colors" :class="[route.path === '/dashboard/orders/create' ? 'bg-[#223933] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50']">
           <PenTool class="w-4 h-4" /> <span class="font-medium">Create Order</span>
         </NuxtLink>
@@ -208,6 +233,9 @@
         </NuxtLink>
         <NuxtLink to="/dashboard/billing" class="flex items-center gap-3 rounded-md py-2.5 px-3 text-sm transition-colors" :class="[route.path.startsWith('/dashboard/billing') ? 'bg-[#223933] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50']">
           <Receipt class="w-4 h-4" /> <span class="font-medium">Billing</span>
+        </NuxtLink>
+        <NuxtLink to="/dashboard/payments" class="flex items-center gap-3 rounded-md py-2.5 px-3 text-sm transition-colors" :class="[route.path.startsWith('/dashboard/payments') ? 'bg-[#223933] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50']">
+          <CreditCard class="w-4 h-4" /> <span class="font-medium">Payments</span>
         </NuxtLink>
         <NuxtLink to="/dashboard/packing" class="flex items-center gap-3 rounded-md py-2.5 px-3 text-sm transition-colors" :class="[route.path.startsWith('/dashboard/packing') ? 'bg-[#223933] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50']">
           <Package class="w-4 h-4" /> <span class="font-medium">Packing</span>
@@ -254,6 +282,7 @@ import {
   ClipboardList, 
   PenTool, 
   Receipt, 
+  CreditCard,
   Package, 
   Boxes, 
   Truck, 
@@ -268,7 +297,8 @@ import {
   Menu, 
   X, 
   LogOut,
-  MessageSquare 
+  MessageSquare,
+  Inbox
 } from 'lucide-vue-next'
 import { useRoute } from 'vue-router'
 import { watch, ref, onMounted, onUnmounted, nextTick } from 'vue'
@@ -299,6 +329,23 @@ const checkDb = async () => {
     dbStatus.value = 'error'
   }
 }
+
+const pendingRequestsCount = ref(0)
+const fetchPendingRequestsCount = async () => {
+  try {
+    const res = await $fetch<any>('/api/order-requests', { params: { limit: 1 } })
+    if (res?.counts) {
+      pendingRequestsCount.value = res.counts.pending || 0
+    }
+  } catch {
+    // silent
+  }
+}
+
+const { onOrderSync } = useRealtimeSync()
+const unsubscribeSync = onOrderSync(() => {
+  fetchPendingRequestsCount()
+})
 
 /**
  * Animate "SILICON MARKETING" brand text with tracked reveal & blur unmask
@@ -395,6 +442,7 @@ const animateMobileMenu = () => {
 
 onMounted(() => {
   checkDb()
+  fetchPendingRequestsCount()
   pollInterval = setInterval(checkDb, 30000)
 
   gsapCtx = gsap.context(() => {
@@ -408,6 +456,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   if (pollInterval) clearInterval(pollInterval)
+  if (unsubscribeSync) unsubscribeSync()
   gsapCtx?.revert()
 })
 

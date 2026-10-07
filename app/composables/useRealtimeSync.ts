@@ -50,24 +50,14 @@ function getLocalBroadcastChannel(): BroadcastChannel | null {
   return localBroadcastChannel
 }
 
-// Debounce listener triggers slightly so burst events consolidate
-let debounceTimer: any = null
-let pendingEvents: any[] = []
-
 function triggerListeners(event: any) {
-  pendingEvents.push(event)
-  if (debounceTimer) clearTimeout(debounceTimer)
-  debounceTimer = setTimeout(() => {
-    const lastEvent = pendingEvents[pendingEvents.length - 1] || event
-    pendingEvents = []
-    listeners.forEach((fn) => {
-      try {
-        fn(lastEvent)
-      } catch (err) {
-        console.error('[RealtimeSync] Listener callback error:', err)
-      }
-    })
-  }, 60)
+  listeners.forEach((fn) => {
+    try {
+      fn(event)
+    } catch (err) {
+      console.error('[RealtimeSync] Listener callback error:', err)
+    }
+  })
 }
 
 function setupRealtimeChannel() {
@@ -112,8 +102,20 @@ function setupRealtimeChannel() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, (payload) => {
         triggerListeners({ type: 'DB_PRODUCT_CHANGE', table: 'products', record: payload.new || payload.old })
       })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, (payload) => {
+        triggerListeners({ type: 'DB_CATEGORY_CHANGE', table: 'categories', record: payload.new || payload.old })
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, (payload) => {
+        triggerListeners({ type: 'DB_USER_CHANGE', table: 'users', record: payload.new || payload.old })
+      })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_messages' }, (payload) => {
         triggerListeners({ type: 'DB_CHAT_CHANGE', table: 'chat_messages', record: payload.new || payload.old })
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'order_timeline' }, (payload) => {
+        triggerListeners({ type: 'DB_TIMELINE_CHANGE', table: 'order_timeline', record: payload.new || payload.old })
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'order_requests' }, (payload) => {
+        triggerListeners({ type: 'DB_ORDER_REQUEST_CHANGE', table: 'order_requests', record: payload.new || payload.old })
       })
 
     sharedChannel.subscribe((status) => {

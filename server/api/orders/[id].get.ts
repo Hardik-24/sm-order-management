@@ -17,6 +17,11 @@ export default defineEventHandler(async (event) => {
       billingStatus: { include: { generatedBy: true } },
       packingStatus: { include: { assignedTo: true } },
       deliveryStatus: true,
+      paymentStatus: true,
+      paymentRecords: {
+        include: { recordedBy: { select: { name: true } } },
+        orderBy: { createdAt: 'desc' }
+      },
       timeline: { include: { performedBy: true }, orderBy: { timestamp: 'desc' } }
     }
   })
@@ -31,8 +36,20 @@ export default defineEventHandler(async (event) => {
     order.customer
   )
 
+  const total = Number(order.totalAmount || 0)
+  const ps = order.paymentStatus || {
+    status: 'UNPAID',
+    amountPaid: 0,
+    balanceDue: total,
+    paymentMethod: null,
+    referenceNo: null,
+    dueDate: null,
+    paidAt: null
+  }
+
   return {
     ...order,
+    paymentStatus: ps,
     destinationCoords: pin ? { lat: pin.lat, lng: pin.lng, areaName: pin.areaName, landmark: pin.landmark } : null,
     hasDestinationPin: !!pin,
   }

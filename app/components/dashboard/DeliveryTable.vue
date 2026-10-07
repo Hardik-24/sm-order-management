@@ -4,6 +4,8 @@ import { onClickOutside } from '@vueuse/core'
 import { Filter, Search, MoreHorizontal, Calendar, X, MapPin, Share2, Loader2, UserPlus, Truck } from 'lucide-vue-next'
 import { formatDate } from '~~/app/lib/utils'
 import CustomSelect from '~/components/ui/CustomSelect.vue'
+import TableFilterButtons from '~/components/dashboard/TableFilterButtons.vue'
+import RowsPerPageSelect from '~/components/ui/RowsPerPageSelect.vue'
 import StatusBadge from '~/components/ui/StatusBadge.vue'
 import type { Order } from '~/types'
 import { useGsapAnimation } from '~/composables/useGsapAnimation'
@@ -24,6 +26,8 @@ const props = defineProps<{
   endDate: string
   status: string
   deliveryStatus: string
+  billingStatus?: string
+  packingStatus?: string
 }>()
 
 const emit = defineEmits<{
@@ -34,23 +38,32 @@ const emit = defineEmits<{
   (e: 'update:endDate', val: string): void
   (e: 'update:status', val: string): void
   (e: 'update:deliveryStatus', val: string): void
+  (e: 'update:billingStatus', val: string): void
+  (e: 'update:packingStatus', val: string): void
   (e: 'select', orderId: string): void
   (e: 'refresh'): void
 }>()
 
 const { animateStagger } = useGsapAnimation()
 const tbodyRef = ref<HTMLElement | null>(null)
+const mobileListRef = ref<HTMLElement | null>(null)
 
 let lastOrderIds = ''
 const triggerRowAnimation = (force = false) => {
   nextTick(() => {
-    if (tbodyRef.value && !props.isLoading) {
+    if (!props.isLoading) {
       const currentIds = (props.orders || []).map((o: any) => o.id).join(',')
       if (force || currentIds !== lastOrderIds) {
         lastOrderIds = currentIds
-        const rows = tbodyRef.value.querySelectorAll('tr')
-        const targetRows = Array.from(rows).slice(0, 15)
-        animateStagger(targetRows, { duration: 0.18, stagger: 0.015, y: 4 })
+        if (tbodyRef.value) {
+          const rows = tbodyRef.value.querySelectorAll('tr')
+          const targetRows = Array.from(rows).slice(0, 15)
+          animateStagger(targetRows, { duration: 0.18, stagger: 0.015, y: 4 })
+        }
+        if (mobileListRef.value) {
+          const targetCards = Array.from(mobileListRef.value.children).slice(0, 15)
+          animateStagger(targetCards, { duration: 0.18, stagger: 0.015, y: 4 })
+        }
       }
     }
   })
@@ -60,31 +73,18 @@ watch([() => props.orders, () => props.isLoading], () => {
   triggerRowAnimation()
 }, { immediate: false })
 
+const tableRootRef = ref<HTMLElement | null>(null)
+
+watch(() => props.page, () => {
+  nextTick(() => {
+    tableRootRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  })
+})
+
 onMounted(() => {
   triggerRowAnimation(true)
 })
 
-const isFiltersOpen = ref(false)
-const filterDropdownRef = ref<HTMLElement | null>(null)
-
-onClickOutside(filterDropdownRef, () => {
-  if (isFiltersOpen.value) isFiltersOpen.value = false
-})
-
-const activeFilterCount = computed(() => {
-  let count = 0
-  if (props.startDate || props.endDate) count++
-  if (props.status) count++
-  if (props.deliveryStatus) count++
-  return count
-})
-
-const clearFilters = () => {
-  emit('update:startDate', '')
-  emit('update:endDate', '')
-  emit('update:status', '')
-  emit('update:deliveryStatus', '')
-}
 
 import { createClient, type RealtimeChannel } from '@supabase/supabase-js'
 
@@ -290,283 +290,350 @@ const saveDriverAssignment = async () => {
 </script>
 
 <template>
-  <div class="bg-white rounded-xl shadow-sm border border-[#e5e2dc] overflow-visible">
+  <div ref="tableRootRef" class="bg-white rounded-xl shadow-sm border border-[#e5e2dc] overflow-visible">
     <!-- Top Bar -->
-    <div class="p-4 border-b border-gray-200 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+    <div class="p-4 border-b border-gray-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
       <!-- Search -->
-      <div class="relative w-full sm:max-w-md">
-        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+      <div class="relative w-full md:w-80 lg:w-96">
+        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
           <Search class="h-4 w-4 text-gray-400" />
         </div>
         <input 
           :value="search"
           @input="e => emit('update:search', (e.target as HTMLInputElement).value)"
           type="text" 
-          placeholder="Search by order ID or customer..." 
-          class="pl-10 block w-full text-sm border-gray-300 rounded-md focus:ring-[#1a5c4c] focus:border-[#1a5c4c] py-2 transition-shadow shadow-sm"
+          placeholder="Search by order ID, customer, driver..." 
+          class="block w-full pl-10 pr-9 py-2 border border-gray-300 rounded-lg text-sm bg-white placeholder:text-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1a5c4c]/20 focus:border-[#1a5c4c] transition-all shadow-sm"
+        />
+        <button 
+          v-if="search"
+          @click="emit('update:search', '')"
+          class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
         >
+          <X class="h-4 w-4" />
+        </button>
       </div>
 
       <!-- Actions -->
-      <div class="flex items-center gap-2 w-full sm:w-auto">
-        <div class="relative" ref="filterDropdownRef">
-          <button 
-            @click="isFiltersOpen = !isFiltersOpen"
-            class="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1a5c4c] transition-colors shadow-sm"
-            :class="{ 'bg-gray-50 ring-2 ring-[#1a5c4c] border-transparent': isFiltersOpen }"
-          >
-            <Filter class="w-4 h-4" />
-            Filters
-            <span v-if="activeFilterCount > 0" class="ml-1.5 inline-flex items-center justify-center bg-[#1a5c4c] text-white text-[10px] font-bold h-5 w-5 rounded-full">
-              {{ activeFilterCount }}
-            </span>
-          </button>
-
-          <!-- Filter Dropdown -->
-          <div 
-            v-if="isFiltersOpen"
-            class="absolute left-0 md:left-auto md:right-0 mt-2 w-80 bg-white rounded-xl shadow-xl ring-1 ring-black ring-opacity-5 z-[100] flex flex-col max-h-[85vh]"
-          >
-            <!-- Dropdown Content -->
-            <div class="p-4 space-y-4 overflow-y-auto flex-1 min-h-0">
-              <!-- Date Range -->
-              <div>
-                <label class="block text-xs text-gray-500 mb-1">Start Date</label>
-                <input 
-                  type="date" 
-                  :value="startDate"
-                  @input="e => emit('update:startDate', (e.target as HTMLInputElement).value)"
-                  class="w-full text-sm border border-gray-300 rounded-md p-2 focus:ring-[#1a5c4c] focus:border-[#1a5c4c]"
-                >
-              </div>
-              <div>
-                <label class="block text-xs text-gray-500 mb-1">End Date</label>
-                <input 
-                  type="date" 
-                  :value="endDate"
-                  @input="e => emit('update:endDate', (e.target as HTMLInputElement).value)"
-                  class="w-full text-sm border border-gray-300 rounded-md p-2 focus:ring-[#1a5c4c] focus:border-[#1a5c4c]"
-                >
-              </div>
-
-              <!-- General Status -->
-              <div>
-                <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Overall Status</label>
-                <CustomSelect 
-                  :modelValue="status"
-                  @update:modelValue="val => emit('update:status', val)"
-                  :options="[
-                    {label: 'All Statuses', value: ''},
-                    {label: 'Ready for Dispatch', value: 'READY'},
-                    {label: 'In Transit', value: 'DISPATCHED'},
-                    {label: 'Delivered', value: 'DELIVERED'}
-                  ]"
-                  searchable
-                  searchPlaceholder="Search statuses..."
-                  class="w-full"
-                />
-              </div>
-
-              <!-- Department: Delivery -->
-              <div>
-                <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Delivery Department</label>
-                <CustomSelect 
-                  :modelValue="deliveryStatus"
-                  @update:modelValue="val => emit('update:deliveryStatus', val)"
-                  :options="[
-                    {label: 'Any State', value: ''},
-                    {label: 'Waiting', value: 'WAITING'},
-                    {label: 'Assigned', value: 'ASSIGNED'},
-                    {label: 'Dispatched', value: 'DISPATCHED'},
-                    {label: 'Delivered', value: 'DELIVERED'},
-                    {label: 'On Hold', value: 'ON_HOLD'}
-                  ]"
-                  searchable
-                  searchPlaceholder="Search delivery..."
-                  class="w-full"
-                />
-              </div>
-            </div>
-
-            <!-- Footer -->
-            <div class="p-5 py-4 bg-gray-50 rounded-b-xl border-t border-gray-100 flex justify-between items-center flex-shrink-0">
-              <button @click="clearFilters" class="text-xs font-medium text-gray-500 hover:text-gray-900 transition-colors">Clear All</button>
-              <button @click="isFiltersOpen = false" class="px-4 py-2 bg-[#1a5c4c] text-white text-sm font-medium rounded-md hover:bg-[#1a5c4c]/90 transition-colors shadow-sm">Show Results</button>
-            </div>
-          </div>
-        </div>
+      <div class="flex items-center gap-3">
+        <TableFilterButtons
+          :startDate="startDate"
+          :endDate="endDate"
+          :status="status"
+          :billingStatus="billingStatus"
+          :packingStatus="packingStatus"
+          :deliveryStatus="deliveryStatus"
+          @update:startDate="val => emit('update:startDate', val)"
+          @update:endDate="val => emit('update:endDate', val)"
+          @update:status="val => emit('update:status', val)"
+          @update:billingStatus="val => emit('update:billingStatus', val)"
+          @update:packingStatus="val => emit('update:packingStatus', val)"
+          @update:deliveryStatus="val => emit('update:deliveryStatus', val)"
+        />
+        <RowsPerPageSelect 
+          :modelValue="limit" 
+          :options="[10, 20, 50, -1]"
+          @update:modelValue="val => { emit('update:limit', val); emit('update:page', 1) }"
+        />
       </div>
     </div>
 
-    <!-- Table -->
-    <div class="overflow-x-auto relative min-h-[200px]">
+    <!-- Table Area -->
+    <div class="relative min-h-[200px]">
       <Transition name="fade">
         <div v-if="isLoading" class="absolute inset-0 bg-white/50 backdrop-blur-[2px] z-10 animate-pulse pointer-events-none"></div>
       </Transition>
-      <table class="w-full text-left border-collapse min-w-[900px]">
-        <thead>
-          <tr class="bg-gray-50 border-b border-gray-200 text-xs font-medium text-gray-500 uppercase tracking-wider">
-            <th class="px-6 py-4 whitespace-nowrap">Order ID</th>
-            <th class="px-6 py-4 whitespace-nowrap">Customer & Address</th>
-            <th class="px-6 py-4 whitespace-nowrap text-center">Driver</th>
-            <th class="px-6 py-4 whitespace-nowrap text-center">Dispatch / ETA</th>
-            <th class="px-6 py-4 whitespace-nowrap text-center">Status</th>
-            <th class="px-6 py-4 whitespace-nowrap text-right">Action</th>
-          </tr>
-        </thead>
-        <tbody ref="tbodyRef" class="divide-y divide-gray-200 bg-white relative">
-          
+
+      <!-- DESKTOP / TABLET VIEW: Full Multi-column Table -->
+      <div class="hidden md:block overflow-x-auto no-scrollbar">
+        <table class="w-full text-left border-collapse min-w-full">
+          <thead>
+            <tr class="bg-gray-50 border-b border-gray-200 text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th class="px-6 py-4 whitespace-nowrap">Order ID</th>
+              <th class="px-6 py-4 whitespace-nowrap">Customer & Address</th>
+              <th class="px-6 py-4 whitespace-nowrap text-center">Driver</th>
+              <th class="px-6 py-4 whitespace-nowrap text-center">Dispatch / ETA</th>
+              <th class="px-6 py-4 whitespace-nowrap text-center">Status</th>
+              <th class="px-6 py-4 whitespace-nowrap text-right">Action</th>
+            </tr>
+          </thead>
+          <tbody ref="tbodyRef" class="divide-y divide-gray-200 bg-white relative">
             <tr 
               v-for="order in orders" 
-            :key="order.id"
-            @click="emit('select', order.id)"
-            class="hover:bg-gray-50 cursor-pointer transition-colors group"
-          >
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ order.orderNumber }}</td>
-            <td class="px-6 py-4 text-sm text-gray-900 max-w-[250px] truncate">
-              <span class="font-medium block">{{ order.customer?.name || '-' }}</span>
-              <span class="text-xs text-gray-500 block truncate">{{ order.deliveryAddress || '-' }}</span>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-center font-medium">
-              <button 
-                v-if="!order.deliveryDriver && (!order.deliveryStatus || order.deliveryStatus.status === 'WAITING')"
-                @click.stop="openAssignModal(order)"
-                class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300/80 rounded-lg text-xs font-bold transition active:scale-95 shadow-xs"
-                title="Click to assign a driver"
-              >
-                <UserPlus class="w-3.5 h-3.5 text-amber-600" />
-                <span>Assign Driver</span>
-              </button>
-              <button 
-                v-else
-                @click.stop="openAssignModal(order)"
-                class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-[#1a5c4c] border border-emerald-200 rounded-lg text-xs font-semibold transition active:scale-95"
-                title="Click to change driver"
-              >
-                <Truck class="w-3.5 h-3.5 text-emerald-600" />
-                <span>{{ order.deliveryDriver || order.deliveryStatus?.driverName || 'Assigned' }}</span>
-              </button>
-            </td>
-            
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
-              <span class="block text-gray-900">{{ order.dispatchDate ? formatDate(order.dispatchDate) : 'TBD' }}</span>
-              <span class="block text-[10px] text-gray-400">ETA: {{ order.eta ? formatDate(order.eta) : '-' }}</span>
-            </td>
-            
-            <td class="px-6 py-4 whitespace-nowrap text-center">
-              <StatusBadge v-if="order.deliveryStatus?.status" :status="order.deliveryStatus.status" class="mx-auto" />
-              <span v-else class="text-gray-400 block text-center">-</span>
-            </td>
-            
-            <td class="px-6 py-4 whitespace-nowrap text-right text-gray-400">
-              <div class="flex items-center justify-end gap-1.5">
-                <!-- WhatsApp Share (Dispatched) -->
+              :key="order.id"
+              @click="emit('select', order.id)"
+              class="hover:bg-gray-50 cursor-pointer transition-colors group"
+            >
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ order.orderNumber }}</td>
+              <td class="px-6 py-4 text-sm text-gray-900 max-w-[250px] truncate">
+                <span class="font-medium block">{{ order.customer?.name || '-' }}</span>
+                <span class="text-xs text-gray-500 block truncate">{{ order.deliveryAddress || '-' }}</span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-center font-medium">
                 <button 
-                  v-if="order.deliveryStatus?.status === 'DISPATCHED'"
-                  @click.stop="shareOnWhatsApp(order)"
-                  title="Share Live Tracking on WhatsApp"
-                  class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded border border-emerald-200 transition-colors"
+                  v-if="!order.deliveryDriver && (!order.deliveryStatus || order.deliveryStatus.status === 'WAITING')"
+                  @click.stop="openAssignModal(order)"
+                  class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300/80 rounded-lg text-xs font-bold transition active:scale-95 shadow-xs"
+                  title="Click to assign a driver"
                 >
-                  <Share2 class="w-3.5 h-3.5" />
-                  <span class="hidden xl:inline">WhatsApp</span>
+                  <UserPlus class="w-3.5 h-3.5 text-amber-600" />
+                  <span>Assign Driver</span>
+                </button>
+                <button 
+                  v-else
+                  @click.stop="openAssignModal(order)"
+                  class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-[#1a5c4c] border border-emerald-200 rounded-lg text-xs font-semibold transition active:scale-95"
+                  title="Click to change driver"
+                >
+                  <Truck class="w-3.5 h-3.5 text-emerald-600" />
+                  <span>{{ order.deliveryDriver || order.deliveryStatus?.driverName || 'Assigned' }}</span>
+                </button>
+              </td>
+              
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                <span class="block text-gray-900">{{ order.dispatchDate ? formatDate(order.dispatchDate) : 'TBD' }}</span>
+                <span class="block text-[10px] text-gray-400">ETA: {{ order.eta ? formatDate(order.eta) : '-' }}</span>
+              </td>
+              
+              <td class="px-6 py-4 whitespace-nowrap text-center">
+                <StatusBadge v-if="order.deliveryStatus?.status" :status="order.deliveryStatus.status" class="mx-auto" />
+                <span v-else class="text-gray-400 block text-center">-</span>
+              </td>
+              
+              <td class="px-6 py-4 whitespace-nowrap text-right text-gray-400">
+                <div class="flex items-center justify-end gap-1.5">
+                  <!-- WhatsApp Share (Dispatched) -->
+                  <button 
+                    v-if="order.deliveryStatus?.status === 'DISPATCHED'"
+                    @click.stop="shareOnWhatsApp(order)"
+                    title="Share Live Tracking on WhatsApp"
+                    class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded border border-emerald-200 transition-colors"
+                  >
+                    <Share2 class="w-3.5 h-3.5" />
+                    <span class="hidden xl:inline">WhatsApp</span>
+                  </button>
+
+                  <!-- Live Map (Dispatched) -->
+                  <button 
+                    v-if="order.deliveryStatus?.status === 'DISPATCHED'"
+                    @click.stop="openTrackingModal(order)"
+                    title="View Live GPS"
+                    class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold bg-[#1a5c4c] text-white hover:bg-[#134336] rounded transition-colors shadow-sm"
+                  >
+                    <MapPin class="w-3.5 h-3.5" />
+                    <span>Track Live</span>
+                  </button>
+
+                  <!-- Route Snapshot (Delivered) -->
+                  <button 
+                    v-else-if="order.deliveryStatus?.status === 'DELIVERED'"
+                    @click.stop="openTrackingModal(order)"
+                    title="View Completed Route Snapshot"
+                    class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold bg-blue-50 text-blue-700 hover:bg-blue-100 rounded border border-blue-200 transition-colors"
+                  >
+                    <MapPin class="w-3.5 h-3.5" />
+                    <span>Route Map</span>
+                  </button>
+
+                  <!-- Change Pin Button (If pin already set) -->
+                  <button 
+                    v-if="order.deliveryStatus?.status !== 'DELIVERED' && ((order as any).hasDestinationPin || (order as any).destinationCoords)"
+                    @click.stop="openPinModal(order)"
+                    title="Customer pin is verified. Click to change pin on map."
+                    class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold rounded border transition-colors bg-emerald-50 text-[#1a5c4c] hover:bg-emerald-100 border-emerald-200"
+                  >
+                    <MapPin class="w-3.5 h-3.5 text-[#1a5c4c]" />
+                    <span class="hidden xl:inline">Change Pin</span>
+                  </button>
+
+                  <!-- Set Pin Button (If pin is missing) -->
+                  <button 
+                    v-else-if="order.deliveryStatus?.status !== 'DELIVERED'"
+                    @click.stop="openPinModal(order)"
+                    title="⚠️ Pin missing! Click to drop destination pin on map."
+                    class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold rounded border transition-colors bg-amber-50 text-amber-900 hover:bg-amber-100 border-amber-300 shadow-sm animate-pulse"
+                  >
+                    <MapPin class="w-3.5 h-3.5 text-amber-600" />
+                    <span class="hidden xl:inline">Set Pin</span>
+                  </button>
+
+                  <!-- Update Button -->
+                  <button 
+                    @click.stop="emit('select', order.id)" 
+                    class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded border border-gray-200 transition-colors"
+                  >
+                    Manage
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr v-if="!orders?.length">
+              <td colspan="10" class="px-6 py-8 text-center text-sm text-gray-500">
+                No orders found.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- MOBILE VIEW: 2-Line High-Density Non-Scrollable Rows -->
+      <div ref="mobileListRef" class="block md:hidden divide-y divide-gray-100 bg-white">
+        <div 
+          v-for="order in orders" 
+          :key="'mob-deliv-' + order.id"
+          @click="emit('select', order.id)"
+          class="px-3.5 py-3 hover:bg-gray-50 active:bg-gray-100 cursor-pointer transition-colors flex flex-col gap-1.5"
+        >
+          <!-- LINE 1: Identity & Delivery Status -->
+          <div class="flex items-center justify-between gap-2 min-w-0">
+            <div class="flex items-center gap-1.5 min-w-0">
+              <span class="text-sm font-semibold text-gray-900 shrink-0">
+                {{ order.orderNumber }}
+              </span>
+              <span class="text-gray-300 text-xs shrink-0">•</span>
+              <span class="text-xs font-medium text-gray-700 truncate" :title="order.customer?.name || ''">
+                {{ order.customer?.name || 'Walk-in Customer' }}
+              </span>
+            </div>
+            
+            <!-- Delivery Status Badge -->
+            <StatusBadge 
+              v-if="order.deliveryStatus?.status" 
+              :status="order.deliveryStatus.status" 
+              class="!text-[10px] !py-0.5 !px-2.5 shrink-0 min-w-[95px] text-center"
+            />
+            <span v-else class="text-gray-400 text-xs shrink-0">—</span>
+          </div>
+
+          <!-- LINE 2: Driver Info, Destination & Direct 1-Tap Action -->
+          <div class="flex items-center justify-between gap-2 min-w-0 pt-0.5">
+            <div class="flex items-center gap-1.5 shrink-0 truncate max-w-[55%]">
+              <span 
+                v-if="order.deliveryDriver || order.deliveryStatus?.driverName" 
+                class="text-xs font-medium text-gray-800 flex items-center gap-1 truncate"
+              >
+                <Truck class="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <span class="truncate">{{ order.deliveryDriver || order.deliveryStatus?.driverName }}</span>
+              </span>
+              <span 
+                v-else 
+                class="text-xs font-medium text-amber-600 flex items-center gap-1 shrink-0"
+              >
+                <UserPlus class="w-3.5 h-3.5 shrink-0" />
+                <span>No Driver</span>
+              </span>
+
+              <span class="text-gray-300 text-xs shrink-0">•</span>
+
+              <!-- Destination Address & Pin Status Indicator -->
+              <div class="flex items-center gap-1 truncate min-w-0">
+                <span class="text-[11px] text-gray-400 truncate" :title="order.deliveryAddress || order.customer?.city || ''">
+                  {{ order.deliveryAddress ? order.deliveryAddress.split(',')[0] : (order.customer?.city || 'Local') }}
+                </span>
+
+                <!-- Pin Verified (Green) -->
+                <button
+                  v-if="(order as any).hasDestinationPin || (order as any).destinationCoords"
+                  @click.stop="openPinModal(order)"
+                  class="inline-flex items-center text-emerald-600 hover:text-emerald-700 shrink-0"
+                  title="Destination Pin Verified (tap to change)"
+                >
+                  <MapPin class="w-3.5 h-3.5 fill-emerald-100" />
                 </button>
 
-                <!-- Live Map (Dispatched) -->
-                <button 
-                  v-if="order.deliveryStatus?.status === 'DISPATCHED'"
-                  @click.stop="openTrackingModal(order)"
-                  title="View Live GPS"
-                  class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold bg-[#1a5c4c] text-white hover:bg-[#134336] rounded transition-colors shadow-sm"
+                <!-- Pin Missing (Pulsing Amber) -->
+                <button
+                  v-else
+                  @click.stop="openPinModal(order)"
+                  class="inline-flex items-center text-amber-500 hover:text-amber-600 animate-pulse shrink-0"
+                  title="⚠️ Pin Missing! Tap to set destination pin"
                 >
                   <MapPin class="w-3.5 h-3.5" />
-                  <span>Track Live</span>
-                </button>
-
-                <!-- Route Snapshot (Delivered) -->
-                <button 
-                  v-else-if="order.deliveryStatus?.status === 'DELIVERED'"
-                  @click.stop="openTrackingModal(order)"
-                  title="View Completed Route Snapshot"
-                  class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold bg-blue-50 text-blue-700 hover:bg-blue-100 rounded border border-blue-200 transition-colors"
-                >
-                  <MapPin class="w-3.5 h-3.5" />
-                  <span>Route Map</span>
-                </button>
-
-                <!-- Change Pin Button (If pin already set) -->
-                <button 
-                  v-if="order.deliveryStatus?.status !== 'DELIVERED' && ((order as any).hasDestinationPin || (order as any).destinationCoords)"
-                  @click.stop="openPinModal(order)"
-                  title="Customer pin is verified. Click to change pin on map."
-                  class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold rounded border transition-colors bg-emerald-50 text-[#1a5c4c] hover:bg-emerald-100 border-emerald-200"
-                >
-                  <MapPin class="w-3.5 h-3.5 text-[#1a5c4c]" />
-                  <span class="hidden xl:inline">Change Pin</span>
-                </button>
-
-                <!-- Set Pin Button (If pin is missing) -->
-                <button 
-                  v-else-if="order.deliveryStatus?.status !== 'DELIVERED'"
-                  @click.stop="openPinModal(order)"
-                  title="⚠️ Pin missing! Click to drop destination pin on map."
-                  class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold rounded border transition-colors bg-amber-50 text-amber-900 hover:bg-amber-100 border-amber-300 shadow-sm animate-pulse"
-                >
-                  <MapPin class="w-3.5 h-3.5 text-amber-600" />
-                  <span class="hidden xl:inline">Set Pin</span>
-                </button>
-
-                <!-- Update Button -->
-                <button 
-                  @click.stop="emit('select', order.id)" 
-                  class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded border border-gray-200 transition-colors"
-                >
-                  Manage
                 </button>
               </div>
-            </td>
-          </tr>
-          <tr v-if="!orders?.length">
-            <td colspan="10" class="px-6 py-8 text-center text-sm text-gray-500">
-              No orders found.
-            </td>
-          </tr>
-        </tbody>
-      </table>
+            </div>
+
+            <!-- Direct 1-Tap Action Button -->
+            <div class="flex items-center gap-1.5 shrink-0">
+              <!-- Live Tracking if In Transit / Dispatched -->
+              <button 
+                v-if="order.deliveryStatus?.status === 'DISPATCHED'"
+                @click.stop="openTrackingModal(order)"
+                class="px-2.5 py-1 bg-[#1a5c4c] text-white text-[11px] font-semibold rounded-md hover:bg-[#154a3d] active:scale-95 transition-all shadow-xs flex items-center gap-1"
+              >
+                <MapPin class="w-3 h-3" />
+                <span>Track Live</span>
+              </button>
+
+              <!-- Route Map if Delivered -->
+              <button 
+                v-else-if="order.deliveryStatus?.status === 'DELIVERED'"
+                @click.stop="openTrackingModal(order)"
+                class="px-2.5 py-1 border border-blue-200 bg-blue-50 text-blue-700 text-[11px] font-semibold rounded-md hover:bg-blue-100 transition-colors flex items-center gap-1"
+              >
+                <MapPin class="w-3 h-3" />
+                <span>Route</span>
+              </button>
+
+              <!-- Assign Driver if unassigned -->
+              <button 
+                v-else-if="!order.deliveryDriver && (!order.deliveryStatus || order.deliveryStatus.status === 'WAITING')"
+                @click.stop="openAssignModal(order)"
+                class="px-2.5 py-1 bg-amber-50 text-amber-800 border border-amber-300 rounded-md text-[11px] font-bold active:scale-95 transition-all shadow-xs"
+              >
+                Assign
+              </button>
+
+              <!-- Manage / Details otherwise -->
+              <button 
+                v-else
+                @click.stop="emit('select', order.id)"
+                class="px-2.5 py-1 border border-gray-200 bg-gray-50 text-gray-700 text-[11px] font-medium rounded-md hover:bg-gray-100 transition-colors"
+              >
+                Manage
+              </button>
+              
+              <ChevronRight class="w-4 h-4 text-gray-300 shrink-0 -mr-1" />
+            </div>
+          </div>
+        </div>
+
+        <div v-if="!orders?.length" class="px-4 py-8 text-center text-sm text-gray-500">
+          No delivery orders found.
+        </div>
+      </div>
     </div>
 
     <!-- Pagination Bottom -->
-    <div class="px-6 py-4 border-t border-gray-200 bg-white flex items-center justify-between">
-      <div class="text-sm text-gray-500">
-        Showing {{ orders.length ? (page - 1) * limit + 1 : 0 }} to {{ Math.min(page * limit, total) }} of {{ total }} orders
-      </div>
-      <div class="flex items-center gap-4">
-        <div class="flex gap-1">
-          <button 
-            @click="emit('update:page', Math.max(1, page - 1))"
-            :disabled="page === 1"
-            class="px-2 py-1 text-sm font-medium text-gray-500 hover:bg-gray-100 rounded disabled:opacity-50"
-          >&lt;</button>
-          <span class="px-3 py-1 text-sm font-medium rounded bg-gray-100 text-gray-900">{{ page }}</span>
-          <button 
-            @click="emit('update:page', page + 1)"
-            :disabled="page * limit >= total"
-            class="px-2 py-1 text-sm font-medium text-gray-500 hover:bg-gray-100 rounded disabled:opacity-50"
-          >&gt;</button>
-        </div>
-        <select 
-          :value="limit" 
-          @change="e => emit('update:limit', parseInt((e.target as HTMLSelectElement).value))"
-          class="text-sm border border-gray-300 rounded-md bg-white py-1 pl-2 pr-6 focus:outline-none focus:ring-1 focus:ring-[#1a5c4c]"
+    <div class="p-4 border-t border-gray-200 bg-white rounded-b-xl flex items-center justify-between gap-4">
+      <p class="text-xs text-gray-500 whitespace-nowrap">
+        Showing <span class="font-medium text-gray-900">{{ orders.length ? (limit === -1 ? 1 : (page - 1) * limit + 1) : 0 }}</span>
+        to <span class="font-medium text-gray-900">{{ limit === -1 ? total : Math.min(page * limit, total) }}</span>
+        of <span class="font-medium text-gray-900">{{ total }}</span> orders
+      </p>
+
+      <div class="flex items-center justify-center gap-2">
+        <button
+          :disabled="page <= 1"
+          @click="emit('update:page', Math.max(1, page - 1))"
+          class="px-3 py-1.5 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          <option :value="5">5 / page</option>
-          <option :value="10">10 / page</option>
-          <option :value="20">20 / page</option>
-        </select>
+          Previous
+        </button>
+        <span class="text-xs font-medium text-gray-700 px-1">{{ page }} / {{ limit === -1 ? 1 : (Math.ceil(total / limit) || 1) }}</span>
+        <button
+          :disabled="limit === -1 || page * limit >= total"
+          @click="emit('update:page', page + 1)"
+          class="px-3 py-1.5 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          Next
+        </button>
       </div>
     </div>
 
     <!-- Quick Assign Driver Modal -->
-    <div v-if="assignModalOrder" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+    <Teleport to="body">
+      <div v-if="assignModalOrder" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
       <div class="bg-white w-full max-w-sm rounded-2xl overflow-hidden shadow-2xl border border-gray-200 flex flex-col p-6 space-y-4">
         <div class="flex items-center justify-between border-b border-gray-100 pb-3">
           <div>
@@ -614,9 +681,11 @@ const saveDriverAssignment = async () => {
         </div>
       </div>
     </div>
+    </Teleport>
 
     <!-- Live Tracking & Route Snapshot Modal -->
-    <div v-if="trackingModalOrder" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <Teleport to="body">
+      <div v-if="trackingModalOrder" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
       <div class="bg-white w-full max-w-2xl rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[92vh]">
         <!-- Modal Header -->
         <div class="p-4 bg-[#1a5c4c] text-white flex items-center justify-between">
@@ -701,6 +770,7 @@ const saveDriverAssignment = async () => {
         </div>
       </div>
     </div>
+    </Teleport>
 
     <!-- Set Customer Delivery Pin Modal -->
     <SetDeliveryPinModal

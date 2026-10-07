@@ -35,6 +35,8 @@ const queryObj = computed(() => {
   if (startDate.value) q.startDate = startDate.value
   if (endDate.value) q.endDate = endDate.value
   if (status.value) q.status = status.value
+  if (packingStatus.value) q.packingStatus = packingStatus.value
+  if (deliveryStatus.value) q.deliveryStatus = deliveryStatus.value
   return q
 })
 
@@ -53,10 +55,7 @@ const { data: statsData, refresh: refreshStats } = useFetch('/api/orders/billing
 const nuxtApp = useNuxtApp()
 const { data, refresh, pending } = useFetch('/api/orders', {
   query: queryObj,
-  watch: [queryObj],
-  getCachedData(key) {
-    return nuxtApp.payload.data[key] || nuxtApp.static.data[key]
-  }
+  watch: [queryObj]
 })
 
 const handleSelect = (id: string) => {
@@ -81,8 +80,7 @@ const applyOrderUpdate = (updatedOrder: any) => {
 
 const handleUpdate = (updatedOrder?: any) => {
   if (updatedOrder) applyOrderUpdate(updatedOrder)
-  const cachedKeys = Object.keys(nuxtApp.payload.data).filter(k => k.startsWith('/api/orders') || k.includes('orders'))
-  cachedKeys.forEach(k => delete nuxtApp.payload.data[k])
+  // 
   refresh()
   refreshStats()
 }
@@ -91,8 +89,7 @@ const handleUpdate = (updatedOrder?: any) => {
 const { onOrderSync } = useRealtimeSync()
 onOrderSync((event) => {
   if (event?.order) applyOrderUpdate(event.order)
-  const cachedKeys = Object.keys(nuxtApp.payload.data).filter(k => k.startsWith('/api/orders') || k.includes('orders'))
-  cachedKeys.forEach(k => delete nuxtApp.payload.data[k])
+  // 
   refresh()
   refreshStats()
 })
@@ -156,83 +153,83 @@ watch(statsData, () => {
     </div>
 
     <!-- Quick Stats matching reference UI -->
-    <div ref="statsContainer" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div ref="statsContainer" class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
       <!-- Awaiting Billing -->
-      <div class="bg-white rounded-xl border border-[#e5e2dc] p-5 shadow-sm">
-        <div class="flex gap-4">
-          <div class="flex flex-col justify-between">
-            <div class="bg-amber-50 p-2.5 rounded-lg text-amber-600 border border-amber-100/50">
-              <FileClock class="w-5 h-5" />
+      <div class="bg-white rounded-xl border border-[#e5e2dc] p-3.5 sm:p-5 shadow-sm">
+        <div class="flex gap-2.5 sm:gap-4">
+          <div class="flex flex-col justify-between shrink-0">
+            <div class="bg-amber-50 p-2 sm:p-2.5 rounded-lg text-amber-600 border border-amber-100/50">
+              <FileClock class="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <div class="w-8 h-1 bg-amber-500 rounded-full mt-6"></div>
+            <div class="w-6 sm:w-8 h-1 bg-amber-500 rounded-full mt-4 sm:mt-6"></div>
           </div>
-          <div class="flex flex-col justify-center">
-            <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5">Awaiting Billing</p>
-            <h3 ref="numPending" class="text-2xl font-bold text-gray-900 mb-0.5">0</h3>
-            <p class="text-xs text-gray-500">Orders to invoice</p>
+          <div class="flex flex-col justify-center min-w-0">
+            <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">Awaiting Billing</p>
+            <h3 ref="numPending" class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">0</h3>
+            <p class="text-xs text-gray-500 truncate">Orders to invoice</p>
           </div>
         </div>
       </div>
 
       <!-- Urgent / SLA Breached -->
-      <div class="bg-white rounded-xl border border-[#e5e2dc] p-5 shadow-sm">
-        <div class="flex gap-4">
-          <div class="flex flex-col justify-between">
-            <div class="bg-red-50 p-2.5 rounded-lg text-red-600 border border-red-100/50">
-              <Clock class="w-5 h-5" />
+      <div class="bg-white rounded-xl border border-[#e5e2dc] p-3.5 sm:p-5 shadow-sm">
+        <div class="flex gap-2.5 sm:gap-4">
+          <div class="flex flex-col justify-between shrink-0">
+            <div class="bg-red-50 p-2 sm:p-2.5 rounded-lg text-red-600 border border-red-100/50">
+              <Clock class="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <div class="w-8 h-1 bg-red-500 rounded-full mt-6"></div>
+            <div class="w-6 sm:w-8 h-1 bg-red-500 rounded-full mt-4 sm:mt-6"></div>
           </div>
-          <div class="flex flex-col justify-center">
-            <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5">Urgent (SLA)</p>
-            <h3 ref="numUrgent" class="text-2xl font-bold text-gray-900 mb-0.5">0</h3>
-            <p class="text-xs text-red-500 font-medium">Waiting > 2 hours</p>
+          <div class="flex flex-col justify-center min-w-0">
+            <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">Urgent (SLA)</p>
+            <h3 ref="numUrgent" class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">0</h3>
+            <p class="text-xs text-red-500 font-medium truncate">Waiting > 2 hours</p>
           </div>
         </div>
       </div>
 
       <!-- Invoices Generated Today -->
-      <div class="bg-white rounded-xl border border-[#e5e2dc] p-5 shadow-sm">
-        <div class="flex gap-4">
-          <div class="flex flex-col justify-between">
-            <div class="bg-[#1a5c4c]/10 p-2.5 rounded-lg text-[#1a5c4c] border border-[#1a5c4c]/20">
-              <CheckCircle class="w-5 h-5" />
+      <div class="bg-white rounded-xl border border-[#e5e2dc] p-3.5 sm:p-5 shadow-sm">
+        <div class="flex gap-2.5 sm:gap-4">
+          <div class="flex flex-col justify-between shrink-0">
+            <div class="bg-[#1a5c4c]/10 p-2 sm:p-2.5 rounded-lg text-[#1a5c4c] border border-[#1a5c4c]/20">
+              <CheckCircle class="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <div class="w-8 h-1 bg-[#1a5c4c] rounded-full mt-6"></div>
+            <div class="w-6 sm:w-8 h-1 bg-[#1a5c4c] rounded-full mt-4 sm:mt-6"></div>
           </div>
-          <div class="flex flex-col justify-center">
-            <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5">Invoices Generated</p>
-            <h3 ref="numGenerated" class="text-2xl font-bold text-gray-900 mb-0.5">0</h3>
-            <p class="text-xs text-gray-500">Completed today</p>
+          <div class="flex flex-col justify-center min-w-0">
+            <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">Invoices Generated</p>
+            <h3 ref="numGenerated" class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">0</h3>
+            <p class="text-xs text-gray-500 truncate">Completed today</p>
           </div>
         </div>
       </div>
 
       <!-- Flagged / On Hold -->
-      <div class="bg-white rounded-xl border border-[#e5e2dc] p-5 shadow-sm">
-        <div class="flex gap-4">
-          <div class="flex flex-col justify-between">
-            <div class="bg-orange-50 p-2.5 rounded-lg text-orange-600 border border-orange-100/50">
-              <FileText class="w-5 h-5" />
+      <div class="bg-white rounded-xl border border-[#e5e2dc] p-3.5 sm:p-5 shadow-sm">
+        <div class="flex gap-2.5 sm:gap-4">
+          <div class="flex flex-col justify-between shrink-0">
+            <div class="bg-orange-50 p-2 sm:p-2.5 rounded-lg text-orange-600 border border-orange-100/50">
+              <FileText class="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <div class="w-8 h-1 bg-orange-500 rounded-full mt-6"></div>
+            <div class="w-6 sm:w-8 h-1 bg-orange-500 rounded-full mt-4 sm:mt-6"></div>
           </div>
-          <div class="flex flex-col justify-center">
-            <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5">Flagged / On Hold</p>
-            <h3 ref="numOnHold" class="text-2xl font-bold text-gray-900 mb-0.5">0</h3>
-            <p class="text-xs text-orange-500 font-medium">Needs clarification</p>
+          <div class="flex flex-col justify-center min-w-0">
+            <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">Flagged / On Hold</p>
+            <h3 ref="numOnHold" class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">0</h3>
+            <p class="text-xs text-orange-500 font-medium truncate">Needs clarification</p>
           </div>
         </div>
       </div>
     </div>
 
     <!-- Tabs -->
-    <div class="border-b border-gray-200">
-      <nav class="-mb-px flex gap-8">
+    <div class="border-b border-gray-200 tab-scroll-container">
+      <nav class="-mb-px flex gap-6 sm:gap-8 min-w-max">
         <button 
           v-for="tab in ['PENDING', 'GENERATED', 'ON_HOLD', 'ALL']" :key="tab"
           @click="activeTab = tab as any; page = 1"
-          class="whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm transition-colors"
+          class="whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm transition-colors shrink-0"
           :class="activeTab === tab ? 'border-[#1a5c4c] text-[#1a5c4c]' : 'border-transparent text-gray-500 hover:text-gray-900 hover:border-gray-300'"
         >
           {{ tab === 'ALL' ? 'All Invoices' : tab === 'PENDING' ? 'Awaiting Billing' : tab === 'ON_HOLD' ? 'On Hold' : 'Invoiced Today' }}
@@ -253,6 +250,8 @@ watch(statsData, () => {
         v-model:endDate="endDate"
         v-model:status="status"
         v-model:billingStatus="billingStatus"
+        v-model:packingStatus="packingStatus"
+        v-model:deliveryStatus="deliveryStatus"
         @select="handleSelect"
         @generate-invoice="openGenerateModal"
       />

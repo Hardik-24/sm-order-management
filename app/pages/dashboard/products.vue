@@ -2,109 +2,114 @@
   <div class="space-y-8">
     <!-- PRODUCTS SECTION -->
     <section>
-      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+      <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-4">
         <h2 class="text-xl font-bold text-[#1a1a1a]">Products</h2>
-        <div class="flex items-center gap-3 w-full sm:w-auto">
-          <!-- Search -->
+        
+        <!-- Controls: Row 1 = Search, Row 2 = Filter + Category + Product on mobile -->
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 w-full lg:w-auto">
+          <!-- Row 1 on mobile: Search -->
           <div class="relative w-full sm:w-56">
             <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input 
               v-model="searchQuery"
               type="text"
               placeholder="Search SKU or Name..."
-              class="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-[#4ecdc4] focus:ring-1 focus:ring-[#4ecdc4] text-sm"
+              class="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-[#4ecdc4] focus:ring-1 focus:ring-[#4ecdc4] text-sm bg-white"
             />
           </div>
-          
-          <!-- Category Filter Custom Dropdown -->
-          <div class="relative w-full sm:w-56 z-40">
-            <div 
-              @click="openCategoryFilter"
-              class="w-full pl-9 pr-8 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-[#4ecdc4] focus:ring-1 focus:ring-[#4ecdc4] text-sm bg-white text-gray-700 cursor-pointer flex items-center justify-between transition-colors hover:bg-gray-50"
-            >
-              <Filter class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <span class="truncate block w-full text-left">{{ selectedCategory ? getCategoryName(selectedCategory) : 'All Categories' }}</span>
-              <ChevronDown class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-            </div>
 
-            <!-- Transparent Overlay to close dropdown -->
-            <div v-if="isCategoryFilterOpen" @click="isCategoryFilterOpen = false" class="fixed inset-0 z-30"></div>
-
-            <!-- Dropdown Menu -->
-            <div v-if="isCategoryFilterOpen" class="absolute left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-xl z-50 overflow-hidden">
-              <div class="p-2 border-b border-gray-100 bg-gray-50">
-                <div class="relative">
-                  <Search class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
-                  <input 
-                    ref="categorySearchInput"
-                    v-model="categorySearchQuery"
-                    type="text"
-                    placeholder="Search categories..."
-                    class="w-full pl-8 pr-3 py-1.5 border border-gray-200 rounded-md text-sm focus:outline-none focus:border-[#4ecdc4] focus:ring-1 focus:ring-[#4ecdc4] bg-white"
-                    @click.stop
-                    @keydown.down.prevent="handleKeydown('down')"
-                    @keydown.up.prevent="handleKeydown('up')"
-                    @keydown.enter.prevent="selectFocusedCategory"
-                  />
-                </div>
+          <!-- Row 2 on mobile: 3 buttons (Filter, +Category, +Product) -->
+          <div class="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
+            <!-- Category Filter Custom Dropdown -->
+            <div class="relative flex-1 sm:w-56 z-40">
+              <div 
+                @click="openCategoryFilter"
+                class="w-full pl-8 sm:pl-9 pr-7 sm:pr-8 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-[#4ecdc4] focus:ring-1 focus:ring-[#4ecdc4] text-xs sm:text-sm bg-white text-gray-700 cursor-pointer flex items-center justify-between transition-colors hover:bg-gray-50"
+              >
+                <Filter class="absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 w-3.5 sm:w-4 h-3.5 sm:h-4 text-gray-400" />
+                <span class="truncate block w-full text-left">{{ selectedCategory ? getCategoryName(selectedCategory) : 'All Categories' }}</span>
+                <ChevronDown class="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 w-3.5 sm:w-4 h-3.5 sm:h-4 text-gray-400 pointer-events-none" />
               </div>
-              <ul ref="categoryListRef" class="max-h-64 overflow-y-auto p-1">
-                <li 
-                  @click="selectedCategory = null; isCategoryFilterOpen = false"
-                  class="px-3 py-2 text-sm rounded cursor-pointer flex items-center justify-between"
-                  :class="{
-                    'text-[#1a5c4c] font-medium bg-[#1a5c4c]/5': selectedCategory === null,
-                    'bg-gray-100': focusedCategoryIndex === 0 && selectedCategory !== null,
-                    'hover:bg-gray-100': focusedCategoryIndex !== 0
-                  }"
-                  @mouseenter="focusedCategoryIndex = 0"
-                >
-                  All Categories
-                  <Check v-if="selectedCategory === null" class="w-4 h-4" />
-                </li>
-                <li 
-                  v-for="(category, index) in filteredFilterCategories" 
-                  :key="category.id"
-                  @click="selectedCategory = category.id; isCategoryFilterOpen = false"
-                  class="px-3 py-2 text-sm rounded cursor-pointer flex items-center justify-between"
-                  :class="{
-                    'text-[#1a5c4c] font-medium bg-[#1a5c4c]/5': selectedCategory === category.id,
-                    'bg-gray-100': focusedCategoryIndex === index + 1 && selectedCategory !== category.id,
-                    'hover:bg-gray-100': focusedCategoryIndex !== index + 1
-                  }"
-                  @mouseenter="focusedCategoryIndex = index + 1"
-                >
-                  {{ category.name }}
-                  <Check v-if="selectedCategory === category.id" class="w-4 h-4" />
-                </li>
-                <li v-if="filteredFilterCategories.length === 0" class="px-3 py-4 text-sm text-center text-gray-500">
-                  No categories found.
-                </li>
-              </ul>
-            </div>
-          </div>
 
-          <!-- Add Buttons -->
-          <button 
-            v-if="user?.role === 'ADMIN'"
-            @click="openCategoryModal()"
-            class="flex items-center gap-2 bg-white border border-[#1a5c4c] text-[#1a5c4c] px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors shadow-sm whitespace-nowrap text-sm font-medium"
-          >
-            <Plus class="w-4 h-4" />
-            Category
-          </button>
-          <button 
-            v-if="user?.role === 'ADMIN'"
-            @click="openProductModal()"
-            class="flex items-center gap-2 bg-[#1a5c4c] text-white px-4 py-2 rounded-lg hover:bg-[#134336] transition-colors shadow-sm whitespace-nowrap text-sm font-medium"
-          >
-            <Plus class="w-4 h-4" />
-            Product
-          </button>
+              <!-- Transparent Overlay to close dropdown -->
+              <div v-if="isCategoryFilterOpen" @click="isCategoryFilterOpen = false" class="fixed inset-0 z-30"></div>
+
+              <!-- Dropdown Menu -->
+              <div v-if="isCategoryFilterOpen" class="absolute left-0 right-0 sm:right-auto sm:w-64 mt-2 bg-white border border-gray-200 rounded-lg shadow-xl z-50 overflow-hidden">
+                <div class="p-2 border-b border-gray-100 bg-gray-50">
+                  <div class="relative">
+                    <Search class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                    <input 
+                      ref="categorySearchInput"
+                      v-model="categorySearchQuery"
+                      type="text"
+                      placeholder="Search categories..."
+                      class="w-full pl-8 pr-3 py-1.5 border border-gray-200 rounded-md text-sm focus:outline-none focus:border-[#4ecdc4] focus:ring-1 focus:ring-[#4ecdc4] bg-white"
+                      @click.stop
+                      @keydown.down.prevent="handleKeydown('down')"
+                      @keydown.up.prevent="handleKeydown('up')"
+                      @keydown.enter.prevent="selectFocusedCategory"
+                    />
+                  </div>
+                </div>
+                <ul ref="categoryListRef" class="max-h-64 overflow-y-auto p-1">
+                  <li 
+                    @click="selectedCategory = null; isCategoryFilterOpen = false"
+                    class="px-3 py-2 text-sm rounded cursor-pointer flex items-center justify-between"
+                    :class="{
+                      'text-[#1a5c4c] font-medium bg-[#1a5c4c]/5': selectedCategory === null,
+                      'bg-gray-100': focusedCategoryIndex === 0 && selectedCategory !== null,
+                      'hover:bg-gray-100': focusedCategoryIndex !== 0
+                    }"
+                    @mouseenter="focusedCategoryIndex = 0"
+                  >
+                    All Categories
+                    <Check v-if="selectedCategory === null" class="w-4 h-4" />
+                  </li>
+                  <li 
+                    v-for="(category, index) in filteredFilterCategories" 
+                    :key="category.id"
+                    @click="selectedCategory = category.id; isCategoryFilterOpen = false"
+                    class="px-3 py-2 text-sm rounded cursor-pointer flex items-center justify-between"
+                    :class="{
+                      'text-[#1a5c4c] font-medium bg-[#1a5c4c]/5': selectedCategory === category.id,
+                      'bg-gray-100': focusedCategoryIndex === index + 1 && selectedCategory !== category.id,
+                      'hover:bg-gray-100': focusedCategoryIndex !== index + 1
+                    }"
+                    @mouseenter="focusedCategoryIndex = index + 1"
+                  >
+                    {{ category.name }}
+                    <Check v-if="selectedCategory === category.id" class="w-4 h-4" />
+                  </li>
+                  <li v-if="filteredFilterCategories.length === 0" class="px-3 py-4 text-sm text-center text-gray-500">
+                    No categories found.
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- Add Buttons -->
+            <button 
+              v-if="user?.role === 'ADMIN'"
+              @click="openCategoryModal()"
+              class="flex items-center justify-center gap-1.5 bg-white border border-[#1a5c4c] text-[#1a5c4c] px-2.5 sm:px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors shadow-sm whitespace-nowrap text-xs sm:text-sm font-medium shrink-0"
+            >
+              <Plus class="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span>Category</span>
+            </button>
+            <button 
+              v-if="user?.role === 'ADMIN'"
+              @click="openProductModal()"
+              class="flex items-center justify-center gap-1.5 bg-[#1a5c4c] text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-[#134336] transition-colors shadow-sm whitespace-nowrap text-xs sm:text-sm font-medium shrink-0"
+            >
+              <Plus class="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span>Product</span>
+            </button>
+          </div>
         </div>
       </div>
 
-      <div class="bg-white rounded-xl border border-[#e5e2dc] shadow-sm overflow-hidden flex flex-col">
+      <div ref="tableRootRef" class="bg-white rounded-xl border border-[#e5e2dc] shadow-sm overflow-hidden flex flex-col">
         <!-- Optional Toolbar Header -->
         <div class="p-3.5 border-b border-gray-100 bg-gray-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-gray-500">
           <div>
@@ -112,17 +117,11 @@
           </div>
           <div class="flex items-center gap-2">
             <span>Rows:</span>
-            <select 
-              v-model.number="pageSize" 
-              @change="currentPage = 1"
-              class="border border-gray-300 rounded px-2 py-1 text-xs bg-white focus:outline-none focus:border-[#4ecdc4]"
-            >
-              <option :value="25">25</option>
-              <option :value="50">50</option>
-              <option :value="100">100</option>
-              <option :value="200">200</option>
-              <option :value="-1">All ({{ filteredProducts.length }})</option>
-            </select>
+            <RowsPerPageSelect 
+              :modelValue="pageSize" 
+              @update:modelValue="val => { pageSize = val; currentPage = 1 }"
+              :options="[10, 20, 50, -1]"
+            />
           </div>
         </div>
 
@@ -252,19 +251,22 @@
     </section>
 
     <!-- Product Details Modal Popup (Untruncated) -->
-    <div 
-      v-if="isDetailModalOpen && selectedProduct" 
-      class="fixed inset-0 z-50 flex items-center justify-center p-4"
-    >
+    <Teleport to="body">
+      <div 
+        v-if="isDetailModalOpen && selectedProduct" 
+        class="fixed inset-0 z-[110] flex items-center justify-center p-2 sm:p-4"
+      >
       <div 
         ref="detailBackdropRef"
         class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" 
         @click="closeProductDetail"
+        @wheel.prevent.stop
+        @touchmove.prevent.stop
       ></div>
 
       <div 
         ref="detailModalRef"
-        class="relative bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-hidden flex flex-col border border-gray-100"
+        class="relative bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[92vh] overflow-hidden flex flex-col border border-gray-100 overscroll-contain"
       >
         <!-- Header -->
         <div class="px-6 py-4 bg-gray-50/80 border-b border-gray-100 flex items-center justify-between">
@@ -404,303 +406,205 @@
         </div>
       </div>
     </div>
+    </Teleport>
 
     <!-- Product Form Modal (Edit / Add) -->
-    <div v-if="isProductModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div 
-        ref="formBackdropRef"
-        class="absolute inset-0 bg-black/50 backdrop-blur-sm" 
-        @click="closeProductModal"
-      ></div>
-      
-      <div 
-        ref="formModalRef"
-        class="relative bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col"
-      >
-        <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-          <h3 class="text-lg font-semibold text-[#1a1a1a]">
-            {{ editingProduct ? 'Edit Product' : 'Add New Product' }}
-          </h3>
-          <button @click="closeProductModal" class="text-gray-400 hover:text-gray-600">
-            <X class="w-5 h-5" />
-          </button>
-        </div>
+    <Teleport to="body">
+      <div v-if="isProductModalOpen" class="fixed inset-0 z-[110] flex items-center justify-center p-2 sm:p-4">
+        <div 
+          ref="formBackdropRef"
+          class="absolute inset-0 bg-black/50 backdrop-blur-sm" 
+          @click="closeProductModal"
+          @wheel.prevent.stop
+          @touchmove.prevent.stop
+        ></div>
         
-        <div :class="['p-6 overflow-y-auto flex-1 transition-all duration-300', snackbarState !== 'hidden' ? 'pb-24' : '']">
-          <form @submit.prevent="saveProduct" class="space-y-4">
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div 
+          ref="formModalRef"
+          class="relative bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[92vh] overflow-hidden flex flex-col overscroll-contain border border-gray-100"
+        >
+          <div class="px-4 sm:px-6 py-4 border-b border-gray-200 flex items-center justify-between shrink-0">
+            <h3 class="text-base sm:text-lg font-semibold text-[#1a1a1a]">
+              {{ editingProduct ? 'Edit Product' : 'Add New Product' }}
+            </h3>
+            <button @click="closeProductModal" class="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100 transition-colors">
+              <X class="w-5 h-5" />
+            </button>
+          </div>
+          
+          <div :class="['p-4 sm:p-6 overflow-y-auto flex-1 transition-all duration-300', snackbarState !== 'hidden' ? 'pb-24' : '']">
+            <form id="productForm" @submit.prevent="saveProduct" class="space-y-4">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="space-y-1">
+                  <label class="block text-[10px] font-medium text-gray-500 uppercase tracking-widest">SKU / Item Code *</label>
+                  <input v-model="productForm.sku" required type="text" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#4ecdc4] focus:ring-1 focus:ring-[#4ecdc4] outline-none text-sm uppercase font-mono" />
+                </div>
+
+                <div class="space-y-1">
+                  <label class="block text-[10px] font-medium text-gray-500 uppercase tracking-widest">HSN Code</label>
+                  <input v-model="productForm.hsnCode" type="text" placeholder="e.g. 44089090" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#4ecdc4] focus:ring-1 focus:ring-[#4ecdc4] outline-none text-sm font-mono" />
+                </div>
+              </div>
+              
               <div class="space-y-1">
-                <label class="block text-[10px] font-medium text-gray-500 uppercase tracking-widest">SKU / Item Code *</label>
-                <input v-model="productForm.sku" required type="text" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#4ecdc4] focus:ring-1 focus:ring-[#4ecdc4] outline-none text-sm uppercase font-mono" />
+                <label class="block text-[10px] font-medium text-gray-500 uppercase tracking-widest">Product Name *</label>
+                <input v-model="productForm.name" required type="text" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#4ecdc4] focus:ring-1 focus:ring-[#4ecdc4] outline-none text-sm" />
               </div>
 
-              <div class="space-y-1">
-                <label class="block text-[10px] font-medium text-gray-500 uppercase tracking-widest">HSN Code</label>
-                <input v-model="productForm.hsnCode" type="text" placeholder="e.g. 44089090" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#4ecdc4] focus:ring-1 focus:ring-[#4ecdc4] outline-none text-sm font-mono" />
-              </div>
-            </div>
-            
-            <div class="space-y-1">
-              <label class="block text-[10px] font-medium text-gray-500 uppercase tracking-widest">Product Name *</label>
-              <input v-model="productForm.name" required type="text" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#4ecdc4] focus:ring-1 focus:ring-[#4ecdc4] outline-none text-sm" />
-            </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="space-y-1">
+                  <label class="block text-[10px] font-medium text-gray-500 uppercase tracking-widest">Category *</label>
+                  <CustomSelect 
+                    :modelValue="productForm.categoryId"
+                    @update:modelValue="val => productForm.categoryId = val"
+                    :options="categoryOptions"
+                    searchable
+                    searchPlaceholder="Search category..."
+                    placeholder="Select Category"
+                    class="w-full"
+                  />
+                </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div class="space-y-1">
-                <label class="block text-[10px] font-medium text-gray-500 uppercase tracking-widest">Category *</label>
-                <CustomSelect 
-                  :modelValue="productForm.categoryId"
-                  @update:modelValue="val => productForm.categoryId = val"
-                  :options="categoryOptions"
-                  searchable
-                  searchPlaceholder="Search category..."
-                  placeholder="Select Category"
-                  class="w-full"
-                />
-              </div>
-
-              <div class="space-y-1">
-                <label class="block text-[10px] font-medium text-gray-500 uppercase tracking-widest">Unit *</label>
-                <CustomSelect 
-                  :modelValue="productForm.unit"
-                  @update:modelValue="val => productForm.unit = val"
-                  :options="unitOptions"
-                  searchable
-                  searchPlaceholder="Search unit..."
-                  placeholder="Select Unit"
-                  class="w-full"
-                />
-              </div>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div class="space-y-1">
-                <label class="block text-[10px] font-medium text-gray-500 uppercase tracking-widest">Price (₹) *</label>
-                <input v-model.number="productForm.price" required type="number" min="0" step="0.01" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#4ecdc4] focus:ring-1 focus:ring-[#4ecdc4] outline-none text-sm" />
+                <div class="space-y-1">
+                  <label class="block text-[10px] font-medium text-gray-500 uppercase tracking-widest">Unit *</label>
+                  <CustomSelect 
+                    :modelValue="productForm.unit"
+                    @update:modelValue="val => productForm.unit = val"
+                    :options="unitOptions"
+                    searchable
+                    searchPlaceholder="Search unit..."
+                    placeholder="Select Unit"
+                    class="w-full"
+                  />
+                </div>
               </div>
 
-              <div class="space-y-1">
-                <label class="block text-[10px] font-medium text-gray-500 uppercase tracking-widest">Stock *</label>
-                <input v-model.number="productForm.stockQuantity" required type="number" min="0" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#4ecdc4] focus:ring-1 focus:ring-[#4ecdc4] outline-none text-sm" />
-              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="space-y-1">
+                  <label class="block text-[10px] font-medium text-gray-500 uppercase tracking-widest">Price (₹) *</label>
+                  <input v-model.number="productForm.price" required type="number" min="0" step="0.01" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#4ecdc4] focus:ring-1 focus:ring-[#4ecdc4] outline-none text-sm" />
+                </div>
 
-              <div class="space-y-1">
-                <label class="block text-[10px] font-medium text-gray-500 uppercase tracking-widest">GST Rate (%)</label>
-                <input v-model.number="productForm.taxRate" type="number" min="0" max="100" step="0.1" placeholder="e.g. 18" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#4ecdc4] focus:ring-1 focus:ring-[#4ecdc4] outline-none text-sm" />
+                <div class="space-y-1">
+                  <label class="block text-[10px] font-medium text-gray-500 uppercase tracking-widest">Stock *</label>
+                  <input v-model.number="productForm.stockQuantity" required type="number" min="0" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#4ecdc4] focus:ring-1 focus:ring-[#4ecdc4] outline-none text-sm" />
+                </div>
+
+                <div class="space-y-1">
+                  <label class="block text-[10px] font-medium text-gray-500 uppercase tracking-widest">GST Rate (%)</label>
+                  <input v-model.number="productForm.taxRate" type="number" min="0" max="100" step="0.1" placeholder="e.g. 18" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#4ecdc4] focus:ring-1 focus:ring-[#4ecdc4] outline-none text-sm" />
+                </div>
               </div>
-            </div>
-            
-            <div class="space-y-1 flex items-center pt-2">
-              <label class="flex items-center gap-2 cursor-pointer">
-                <input v-model="productForm.isActive" type="checkbox" class="w-4 h-4 text-[#1a5c4c] border-gray-300 rounded focus:ring-[#4ecdc4]" />
-                <span class="text-sm text-gray-700">Active Product</span>
-              </label>
-            </div>
-          </form>
+              
+              <div class="space-y-1 flex items-center pt-2">
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input v-model="productForm.isActive" type="checkbox" class="w-4 h-4 text-[#1a5c4c] border-gray-300 rounded focus:ring-[#4ecdc4]" />
+                  <span class="text-sm text-gray-700">Active Product</span>
+                </label>
+              </div>
+            </form>
+          </div>
+
+          <!-- Sticky Modal Footer -->
+          <div class="px-4 sm:px-6 py-3.5 bg-gray-50 border-t border-gray-200 flex items-center justify-end gap-3 shrink-0">
+            <button
+              type="button"
+              @click="closeProductModal"
+              class="px-4 py-2 border border-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              form="productForm"
+              :disabled="isSavingProduct"
+              class="px-5 py-2 bg-[#1a5c4c] text-white rounded-lg text-sm font-medium hover:bg-[#14483b] transition-colors flex items-center gap-2 shadow-sm disabled:opacity-50"
+            >
+              <Loader2 v-if="isSavingProduct" class="w-4 h-4 animate-spin" />
+              <span>{{ isSavingProduct ? 'Saving...' : (editingProduct ? 'Save Changes' : 'Create Product') }}</span>
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+    </Teleport>
 
     <!-- Category Modal -->
-    <div v-if="isCategoryModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="closeCategoryModal"></div>
-      
-      <div class="relative bg-white rounded-xl shadow-xl w-full max-w-sm overflow-hidden flex flex-col">
-        <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-          <h3 class="text-lg font-semibold text-[#1a1a1a]">Add Category</h3>
-          <button @click="closeCategoryModal" class="text-gray-400 hover:text-gray-600">
-            <X class="w-5 h-5" />
-          </button>
-        </div>
+    <Teleport to="body">
+      <div v-if="isCategoryModalOpen" class="fixed inset-0 z-[110] flex items-center justify-center p-2 sm:p-4">
+        <div 
+          class="absolute inset-0 bg-black/50 backdrop-blur-sm" 
+          @click="closeCategoryModal"
+          @wheel.prevent.stop
+          @touchmove.prevent.stop
+        ></div>
         
-        <div :class="['p-6 overflow-y-auto flex-1 transition-all duration-300', snackbarState !== 'hidden' ? 'pb-24' : '']">
-          <form @submit.prevent="saveCategory" class="space-y-4">
-            <div class="space-y-1">
-              <label class="block text-[10px] font-medium text-gray-500 uppercase tracking-widest">Name *</label>
-              <input v-model="categoryForm.name" required type="text" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#4ecdc4] focus:ring-1 focus:ring-[#4ecdc4] outline-none text-sm" />
-            </div>
-            <div class="space-y-1">
-              <label class="block text-[10px] font-medium text-gray-500 uppercase tracking-widest">Description</label>
-              <textarea v-model="categoryForm.description" rows="2" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#4ecdc4] focus:ring-1 focus:ring-[#4ecdc4] outline-none text-sm"></textarea>
-            </div>
-          </form>
+        <div class="relative bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden flex flex-col overscroll-contain border border-gray-100">
+          <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between shrink-0">
+            <h3 class="text-base sm:text-lg font-semibold text-[#1a1a1a]">Add Category</h3>
+            <button @click="closeCategoryModal" class="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100 transition-colors">
+              <X class="w-5 h-5" />
+            </button>
+          </div>
+          
+          <div :class="['p-4 sm:p-6 overflow-y-auto flex-1 transition-all duration-300', snackbarState !== 'hidden' ? 'pb-24' : '']">
+            <form id="categoryForm" @submit.prevent="saveCategory" class="space-y-4">
+              <div class="space-y-1">
+                <label class="block text-[10px] font-medium text-gray-500 uppercase tracking-widest">Name *</label>
+                <input v-model="categoryForm.name" required type="text" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#4ecdc4] focus:ring-1 focus:ring-[#4ecdc4] outline-none text-sm" />
+              </div>
+              <div class="space-y-1">
+                <label class="block text-[10px] font-medium text-gray-500 uppercase tracking-widest">Description</label>
+                <textarea v-model="categoryForm.description" rows="2" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#4ecdc4] focus:ring-1 focus:ring-[#4ecdc4] outline-none text-sm"></textarea>
+              </div>
+            </form>
+          </div>
+
+          <!-- Sticky Modal Footer -->
+          <div class="px-6 py-3.5 bg-gray-50 border-t border-gray-200 flex items-center justify-end gap-3 shrink-0">
+            <button
+              type="button"
+              @click="closeCategoryModal"
+              class="px-4 py-2 border border-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              form="categoryForm"
+              :disabled="isSavingCategory"
+              class="px-5 py-2 bg-[#1a5c4c] text-white rounded-lg text-sm font-medium hover:bg-[#14483b] transition-colors flex items-center gap-2 shadow-sm disabled:opacity-50"
+            >
+              <Loader2 v-if="isSavingCategory" class="w-4 h-4 animate-spin" />
+              <span>{{ isSavingCategory ? 'Saving...' : 'Create Category' }}</span>
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+    </Teleport>
 
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, nextTick, watch, onMounted } from 'vue'
+import { ref, computed, nextTick, watch, onMounted, onUnmounted } from 'vue'
 import { 
   Plus, Search, Edit2, X, Loader2, Check, IndianRupee, Package, Filter, 
   ChevronDown, ChevronLeft, ChevronRight, CheckCircle2, XCircle, Tag, Hash, Layers, ShieldCheck
 } from 'lucide-vue-next'
 import { useSnackbar } from '~/composables/useSnackbar'
 import { useGsapAnimation } from '~/composables/useGsapAnimation'
+import { useRealtimeSync } from '~/composables/useRealtimeSync'
 import CustomSelect from '~/components/ui/CustomSelect.vue'
+import RowsPerPageSelect from '~/components/ui/RowsPerPageSelect.vue'
 
 definePageMeta({ layout: 'dashboard' })
 
 const { user } = useAuth()
 const { showEditing, showSaving, showSaved, hide, snackbarState } = useSnackbar()
 const { animateModalOpen, animateStagger, initContext } = useGsapAnimation()
+const { notifyChange, onOrderSync } = useRealtimeSync()
 
-const categoryOptions = computed(() => {
-  return (categories.value || []).map((cat: any) => ({
-    label: cat.name,
-    value: cat.id
-  }))
-})
-
-const unitOptions = [
-  { label: 'PIECE', value: 'PIECE' },
-  { label: 'SHEET', value: 'SHEET' },
-  { label: 'Nos.', value: 'Nos.' },
-  { label: 'SQFT', value: 'SQFT' },
-  { label: 'BOX', value: 'BOX' },
-  { label: 'KG', value: 'KG' },
-  { label: 'METER', value: 'METER' },
-  { label: 'ROLL', value: 'ROLL' },
-  { label: 'SET', value: 'SET' },
-  { label: 'PAIR', value: 'PAIR' }
-]
-
-// State
-const searchQuery = ref('')
-const selectedCategory = ref<string | null>(null)
-const isCategoryFilterOpen = ref(false)
-const categorySearchQuery = ref('')
-const focusedCategoryIndex = ref(0)
-const categorySearchInput = ref<HTMLInputElement | null>(null)
-const categoryListRef = ref<HTMLUListElement | null>(null)
-const tableContainerRef = ref<HTMLElement | null>(null)
-
-// Detail modal state
-const selectedProduct = ref<any | null>(null)
-const isDetailModalOpen = ref(false)
-const detailModalRef = ref<HTMLElement | null>(null)
-const detailBackdropRef = ref<HTMLElement | null>(null)
-
-// Form modal state
-const isProductModalOpen = ref(false)
-const isSavingProduct = ref(false)
-const editingProduct = ref<any>(null)
-const formModalRef = ref<HTMLElement | null>(null)
-const formBackdropRef = ref<HTMLElement | null>(null)
-
-const openProductDetail = (product: any) => {
-  selectedProduct.value = product
-  isDetailModalOpen.value = true
-  nextTick(() => {
-    animateModalOpen(detailModalRef.value, detailBackdropRef.value, { duration: 0.26 })
-  })
-}
-
-const closeProductDetail = () => {
-  isDetailModalOpen.value = false
-  selectedProduct.value = null
-}
-
-const editProductFromDetail = () => {
-  const prod = selectedProduct.value
-  isDetailModalOpen.value = false
-  selectedProduct.value = null
-  if (prod) {
-    openProductModal(prod)
-  }
-}
-
-const triggerRowAnimation = () => {
-  nextTick(() => {
-    if (tableContainerRef.value && !productsPending.value) {
-      const rows = tableContainerRef.value.querySelectorAll('tbody tr')
-      const targetRows = Array.from(rows).slice(0, 15)
-      animateStagger(targetRows, { duration: 0.18, stagger: 0.015, y: 4 })
-    }
-  })
-}
-
-onMounted(() => {
-  initContext(tableContainerRef.value || undefined)
-  triggerRowAnimation()
-})
-
-// Pagination state
-const currentPage = ref(1)
-const pageSize = ref(50)
-
-watch([searchQuery, selectedCategory], () => {
-  currentPage.value = 1
-})
-
-const openCategoryFilter = () => {
-  isCategoryFilterOpen.value = !isCategoryFilterOpen.value
-  if (isCategoryFilterOpen.value) {
-    categorySearchQuery.value = ''
-    focusedCategoryIndex.value = 0
-    nextTick(() => {
-      categorySearchInput.value?.focus()
-    })
-  }
-}
-
-const handleKeydown = (direction: 'up' | 'down') => {
-  if (direction === 'down') {
-    focusedCategoryIndex.value = Math.min(filteredFilterCategories.value.length, focusedCategoryIndex.value + 1)
-  } else {
-    focusedCategoryIndex.value = Math.max(0, focusedCategoryIndex.value - 1)
-  }
-  
-  nextTick(() => {
-    if (categoryListRef.value) {
-      const li = categoryListRef.value.children[focusedCategoryIndex.value] as HTMLElement
-      if (li && li.scrollIntoView) {
-        li.scrollIntoView({ block: 'nearest' })
-      }
-    }
-  })
-}
-
-const selectFocusedCategory = () => {
-  if (focusedCategoryIndex.value === 0) {
-    selectedCategory.value = null
-  } else {
-    const cat = filteredFilterCategories.value[focusedCategoryIndex.value - 1]
-    if (cat) {
-      selectedCategory.value = cat.id
-    }
-  }
-  isCategoryFilterOpen.value = false
-}
-
-watch(categorySearchQuery, () => {
-  focusedCategoryIndex.value = 0
-})
-
-// Category Modals state
-const isCategoryModalOpen = ref(false)
-const isSavingCategory = ref(false)
-
-// Forms
-const productForm = ref({
-  sku: '', 
-  name: '', 
-  categoryId: '', 
-  unit: 'PIECE', 
-  price: 0, 
-  stockQuantity: 0, 
-  hsnCode: '', 
-  taxRate: 0, 
-  isActive: true
-})
-
-const categoryForm = ref({
-  name: '', description: ''
-})
-
-// Data fetching
+// 1. Data fetching
 const { data: categories, refresh: refreshCategories } = useFetch('/api/categories', {
   default: () => [
     { id: 'c1', name: 'MDF' },
@@ -717,7 +621,99 @@ const { data: products, pending: productsPending, refresh: refreshProducts } = u
   ]
 })
 
-// Computed
+// Realtime multi-device sync for products & stock updates
+onOrderSync((event) => {
+  if (
+    event?.type === 'DB_PRODUCT_CHANGE' || 
+    event?.type === 'PRODUCT_CHANGE' || 
+    event?.type === 'DB_CATEGORY_CHANGE' || 
+    event?.type === 'DB_ORDER_ITEM_CHANGE' ||
+    event?.action === 'PRODUCT_SAVED' ||
+    event?.action === 'CATEGORY_SAVED' ||
+    event?.action === 'ORDER_CREATED' ||
+    event?.action === 'PACKING_UPDATED'
+  ) {
+    refreshProducts()
+    refreshCategories()
+  }
+})
+
+const unitOptions = [
+  { label: 'PIECE', value: 'PIECE' },
+  { label: 'SHEET', value: 'SHEET' },
+  { label: 'Nos.', value: 'Nos.' },
+  { label: 'SQFT', value: 'SQFT' },
+  { label: 'BOX', value: 'BOX' },
+  { label: 'KG', value: 'KG' },
+  { label: 'METER', value: 'METER' },
+  { label: 'ROLL', value: 'ROLL' },
+  { label: 'SET', value: 'SET' },
+  { label: 'PAIR', value: 'PAIR' }
+]
+
+// 2. State refs
+const searchQuery = ref('')
+const selectedCategory = ref<string | null>(null)
+const isCategoryFilterOpen = ref(false)
+const categorySearchQuery = ref('')
+const focusedCategoryIndex = ref(0)
+const categorySearchInput = ref<HTMLInputElement | null>(null)
+const categoryListRef = ref<HTMLUListElement | null>(null)
+const tableRootRef = ref<HTMLElement | null>(null)
+const tableContainerRef = ref<HTMLElement | null>(null)
+
+// Pagination state
+const currentPage = ref(1)
+const pageSize = ref(50)
+
+// Detail modal state
+const selectedProduct = ref<any | null>(null)
+const isDetailModalOpen = ref(false)
+const detailModalRef = ref<HTMLElement | null>(null)
+const detailBackdropRef = ref<HTMLElement | null>(null)
+
+// Product Form modal state
+const isProductModalOpen = ref(false)
+const isSavingProduct = ref(false)
+const editingProduct = ref<any>(null)
+const formModalRef = ref<HTMLElement | null>(null)
+const formBackdropRef = ref<HTMLElement | null>(null)
+const initialProductFormStr = ref('')
+
+const productForm = ref({
+  sku: '', 
+  name: '', 
+  categoryId: '', 
+  unit: 'PIECE', 
+  price: 0, 
+  stockQuantity: 0, 
+  hsnCode: '', 
+  taxRate: 0, 
+  isActive: true
+})
+
+// Category modal state
+const isCategoryModalOpen = ref(false)
+const isSavingCategory = ref(false)
+const initialCategoryFormStr = ref('')
+const categoryForm = ref({
+  name: '', description: ''
+})
+
+// 3. Helper functions
+const getCategoryName = (id: string) => {
+  const cat = categories.value?.find((c: any) => c.id === id)
+  return cat ? cat.name : 'Unknown'
+}
+
+// 4. Computed properties
+const categoryOptions = computed(() => {
+  return (categories.value || []).map((cat: any) => ({
+    label: cat.name,
+    value: cat.id
+  }))
+})
+
 const filteredFilterCategories = computed(() => {
   if (!categories.value) return []
   if (!categorySearchQuery.value) return categories.value
@@ -759,12 +755,6 @@ const paginatedProducts = computed(() => {
   return filteredProducts.value.slice(start, start + pageSize.value)
 })
 
-watch([paginatedProducts, productsPending], () => {
-  if (!productsPending.value) {
-    triggerRowAnimation()
-  }
-}, { immediate: false })
-
 const startIndex = computed(() => {
   if (filteredProducts.value.length === 0) return 0
   return (currentPage.value - 1) * pageSize.value + 1
@@ -775,13 +765,143 @@ const endIndex = computed(() => {
   return Math.min(currentPage.value * pageSize.value, filteredProducts.value.length)
 })
 
-const getCategoryName = (id: string) => {
-  const cat = categories.value?.find((c: any) => c.id === id)
-  return cat ? cat.name : 'Unknown'
+// Lock background scrolling when any product or category modal is open
+const isAnyModalOpen = computed(() => isProductModalOpen.value || isDetailModalOpen.value || isCategoryModalOpen.value)
+
+// 5. Watchers & lifecycle hooks
+watch(isAnyModalOpen, (open) => {
+  if (process.client) {
+    const mainEl = document.querySelector('main')
+    if (mainEl) {
+      mainEl.style.overflowY = open ? 'hidden' : 'auto'
+    }
+  }
+})
+
+onUnmounted(() => {
+  if (process.client) {
+    const mainEl = document.querySelector('main')
+    if (mainEl) mainEl.style.overflowY = 'auto'
+  }
+})
+
+watch(currentPage, () => {
+  nextTick(() => {
+    tableRootRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  })
+})
+
+watch([searchQuery, selectedCategory], () => {
+  currentPage.value = 1
+})
+
+watch(categorySearchQuery, () => {
+  focusedCategoryIndex.value = 0
+})
+
+watch([paginatedProducts, productsPending], () => {
+  if (!productsPending.value) {
+    triggerRowAnimation()
+  }
+}, { immediate: false })
+
+watch(productForm, () => {
+  if (isProductModalOpen.value) {
+    if (JSON.stringify(productForm.value) !== initialProductFormStr.value) {
+      showEditing('Unsaved product changes', saveProduct, closeProductModal)
+    } else {
+      hide()
+    }
+  }
+}, { deep: true })
+
+watch(categoryForm, () => {
+  if (isCategoryModalOpen.value) {
+    if (JSON.stringify(categoryForm.value) !== initialCategoryFormStr.value) {
+      showEditing('Unsaved category changes', saveCategory, closeCategoryModal)
+    } else {
+      hide()
+    }
+  }
+}, { deep: true })
+
+onMounted(() => {
+  initContext(tableContainerRef.value || undefined)
+  triggerRowAnimation()
+})
+
+// 6. Methods
+const triggerRowAnimation = () => {
+  nextTick(() => {
+    if (tableContainerRef.value && !productsPending.value) {
+      const rows = tableContainerRef.value.querySelectorAll('tbody tr')
+      const targetRows = Array.from(rows).slice(0, 15)
+      animateStagger(targetRows, { duration: 0.18, stagger: 0.015, y: 4 })
+    }
+  })
 }
 
-// Methods
-const initialProductFormStr = ref('')
+const openProductDetail = (product: any) => {
+  selectedProduct.value = product
+  isDetailModalOpen.value = true
+  nextTick(() => {
+    animateModalOpen(detailModalRef.value, detailBackdropRef.value, { duration: 0.26 })
+  })
+}
+
+const closeProductDetail = () => {
+  isDetailModalOpen.value = false
+  selectedProduct.value = null
+}
+
+const editProductFromDetail = () => {
+  const prod = selectedProduct.value
+  isDetailModalOpen.value = false
+  selectedProduct.value = null
+  if (prod) {
+    openProductModal(prod)
+  }
+}
+
+const openCategoryFilter = () => {
+  isCategoryFilterOpen.value = !isCategoryFilterOpen.value
+  if (isCategoryFilterOpen.value) {
+    categorySearchQuery.value = ''
+    focusedCategoryIndex.value = 0
+    nextTick(() => {
+      categorySearchInput.value?.focus()
+    })
+  }
+}
+
+const handleKeydown = (direction: 'up' | 'down') => {
+  if (direction === 'down') {
+    focusedCategoryIndex.value = Math.min(filteredFilterCategories.value.length, focusedCategoryIndex.value + 1)
+  } else {
+    focusedCategoryIndex.value = Math.max(0, focusedCategoryIndex.value - 1)
+  }
+  
+  nextTick(() => {
+    if (categoryListRef.value) {
+      const li = categoryListRef.value.children[focusedCategoryIndex.value] as HTMLElement
+      if (li && li.scrollIntoView) {
+        li.scrollIntoView({ block: 'nearest' })
+      }
+    }
+  })
+}
+
+const selectFocusedCategory = () => {
+  if (focusedCategoryIndex.value === 0) {
+    selectedCategory.value = null
+  } else {
+    const cat = filteredFilterCategories.value[focusedCategoryIndex.value - 1]
+    if (cat) {
+      selectedCategory.value = cat.id
+    }
+  }
+  isCategoryFilterOpen.value = false
+}
 
 const openProductModal = (product: any = null) => {
   if (product) {
@@ -800,14 +920,14 @@ const openProductModal = (product: any = null) => {
   } else {
     editingProduct.value = null
     productForm.value = {
-      sku: '',
-      name: '',
-      categoryId: categories.value?.[0]?.id || '',
-      unit: 'PIECE',
-      price: 0,
-      stockQuantity: 0,
-      hsnCode: '',
-      taxRate: 0,
+      sku: '', 
+      name: '', 
+      categoryId: categories.value?.[0]?.id || '', 
+      unit: 'PIECE', 
+      price: 0, 
+      stockQuantity: 0, 
+      hsnCode: '', 
+      taxRate: 0, 
       isActive: true
     }
   }
@@ -832,6 +952,7 @@ const saveProduct = async () => {
     const method = editingProduct.value ? 'PATCH' : 'POST'
     await $fetch(url, { method, body: productForm.value })
     await refreshProducts()
+    notifyChange({ type: 'PRODUCT_CHANGE', action: 'PRODUCT_SAVED' })
     closeProductModal()
     showSaved('Product saved successfully')
   } catch (e) {
@@ -841,18 +962,6 @@ const saveProduct = async () => {
     isSavingProduct.value = false
   }
 }
-
-watch(productForm, () => {
-  if (isProductModalOpen.value) {
-    if (JSON.stringify(productForm.value) !== initialProductFormStr.value) {
-      showEditing('Unsaved product changes', saveProduct, closeProductModal)
-    } else {
-      hide()
-    }
-  }
-}, { deep: true })
-
-const initialCategoryFormStr = ref('')
 
 const openCategoryModal = () => {
   categoryForm.value = { name: '', description: '' }
@@ -872,6 +981,7 @@ const saveCategory = async () => {
   try {
     await $fetch('/api/categories', { method: 'POST', body: categoryForm.value })
     await refreshCategories()
+    notifyChange({ type: 'PRODUCT_CHANGE', action: 'CATEGORY_SAVED' })
     closeCategoryModal()
     showSaved('Category saved successfully')
   } catch (e) {
@@ -881,16 +991,6 @@ const saveCategory = async () => {
     isSavingCategory.value = false
   }
 }
-
-watch(categoryForm, () => {
-  if (isCategoryModalOpen.value) {
-    if (JSON.stringify(categoryForm.value) !== initialCategoryFormStr.value) {
-      showEditing('Unsaved category changes', saveCategory, closeCategoryModal)
-    } else {
-      hide()
-    }
-  }
-}, { deep: true })
 
 const saveInlineUpdate = async (product: any) => {
   try {
@@ -902,11 +1002,11 @@ const saveInlineUpdate = async (product: any) => {
       product.stockQuantity = product.editStock
       product.isEditingStock = false
     }
-    // API update call
     await $fetch(`/api/products/${product.id}`, {
       method: 'PATCH',
       body: { price: product.price, stock: product.stockQuantity }
     })
+    notifyChange({ type: 'PRODUCT_CHANGE', action: 'PRODUCT_SAVED' })
   } catch (e) {
     console.error(e)
   }

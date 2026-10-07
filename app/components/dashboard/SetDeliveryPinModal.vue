@@ -1,21 +1,22 @@
 <template>
-  <div v-if="isOpen" class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-    <div class="bg-white rounded-2xl shadow-2xl border border-gray-100 w-full max-w-2xl overflow-hidden flex flex-col max-h-[92vh]">
-      <!-- Header -->
-      <div class="px-6 py-4 bg-[#1a1a1a] text-white flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <div class="w-9 h-9 rounded-xl bg-[#1a5c4c] flex items-center justify-center text-white">
-            <MapPin class="w-5 h-5" />
+  <Teleport to="body">
+    <div v-if="isOpen" class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <div class="bg-white rounded-2xl shadow-2xl border border-gray-100 w-full max-w-2xl overflow-hidden flex flex-col max-h-[92vh]">
+        <!-- Header -->
+        <div class="px-6 py-4 bg-[#1a1a1a] text-white flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-[#1a5c4c] flex items-center justify-center text-white">
+              <MapPin class="w-5 h-5" />
+            </div>
+            <div>
+              <h3 class="font-bold text-base text-[#e8e0d4]">Set Customer Delivery Pin</h3>
+              <p class="text-xs text-gray-400 truncate max-w-md">{{ customerName }} • {{ customerCompany || deliveryAddress }}</p>
+            </div>
           </div>
-          <div>
-            <h3 class="font-bold text-base text-[#e8e0d4]">Set Customer Delivery Pin</h3>
-            <p class="text-xs text-gray-400 truncate max-w-md">{{ customerName }} • {{ customerCompany || deliveryAddress }}</p>
-          </div>
+          <button @click="close" class="p-1.5 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition-colors">
+            <X class="w-5 h-5" />
+          </button>
         </div>
-        <button @click="close" class="p-1.5 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition-colors">
-          <X class="w-5 h-5" />
-        </button>
-      </div>
 
       <!-- Content -->
       <div class="p-6 overflow-y-auto space-y-4 flex-1">
@@ -212,6 +213,7 @@
       </div>
     </div>
   </div>
+  </Teleport>
 </template>
 
 <script setup lang="ts">

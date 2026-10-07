@@ -20,6 +20,11 @@
     --border-dark: #3a3a3a;
   }
 
+  html, body {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
   body {
     font-family: 'Inter', sans-serif;
     background-color: var(--bg-light);
@@ -42,6 +47,53 @@
   }
   ::-webkit-scrollbar-thumb:hover {
     background: #a8a29e;
+  }
+
+  /* Utility: Hide scrollbar */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  /* Sleek Tab Bar Scrollable Container: zero vertical scroll & smooth blending indicator */
+  .tab-scroll-container {
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    max-width: 100%;
+    touch-action: pan-x pan-y;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+    transition: scrollbar-color 0.25s ease;
+  }
+
+  .tab-scroll-container::-webkit-scrollbar {
+    height: 3px;
+    background: transparent;
+  }
+
+  .tab-scroll-container::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .tab-scroll-container::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 9999px;
+    transition: background-color 0.25s ease;
+  }
+
+  /* Blends softly into warm background (#faf8f5 / #e5e2dc) and only appears when touched, dragged, or actively scrolled */
+  .tab-scroll-container:hover::-webkit-scrollbar-thumb,
+  .tab-scroll-container:active::-webkit-scrollbar-thumb,
+  .tab-scroll-container:focus-within::-webkit-scrollbar-thumb,
+  .tab-scroll-container.is-scrolling::-webkit-scrollbar-thumb {
+    background: rgba(26, 92, 76, 0.22);
+    scrollbar-color: rgba(26, 92, 76, 0.22) transparent;
   }
 }
 

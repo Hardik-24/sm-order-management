@@ -12,6 +12,8 @@ const search = ref('')
 const startDate = ref('')
 const endDate = ref('')
 const status = ref('')
+const billingStatus = ref('')
+const packingStatus = ref('')
 const deliveryStatus = ref('')
 const selectedOrderId = ref<string | null>(null)
 const isPanelOpen = ref(false)
@@ -31,6 +33,8 @@ const queryObj = computed(() => {
   if (startDate.value) q.startDate = startDate.value
   if (endDate.value) q.endDate = endDate.value
   if (status.value) q.status = status.value
+  if (billingStatus.value) q.billingStatus = billingStatus.value
+  if (packingStatus.value) q.packingStatus = packingStatus.value
   return q
 })
 
@@ -63,10 +67,7 @@ const { data: statsData, refresh: refreshStats } = useFetch('/api/orders/deliver
 const nuxtApp = useNuxtApp()
 const { data, refresh, pending } = useFetch('/api/orders', {
   query: queryObj,
-  watch: [queryObj],
-  getCachedData(key) {
-    return nuxtApp.payload.data[key] || nuxtApp.static.data[key]
-  }
+  watch: [queryObj]
 })
 
 watch(data, (newVal) => {
@@ -91,8 +92,7 @@ const applyOrderUpdate = (updatedOrder: any) => {
 
 function performSilentSync(updatedOrder?: any) {
   if (updatedOrder) applyOrderUpdate(updatedOrder)
-  const cachedKeys = Object.keys(nuxtApp.payload.data).filter(k => k.startsWith('/api/orders') || k.includes('orders'))
-  cachedKeys.forEach(k => delete nuxtApp.payload.data[k])
+  // 
   
   if (typeof document !== 'undefined') {
     // Only sync if tab is currently visible
@@ -195,52 +195,52 @@ watch(statsData, () => {
     </div>
 
     <!-- Quick Stats -->
-    <div ref="statsContainer" class="grid grid-cols-2 md:grid-cols-4 gap-4">
-      <div class="bg-white rounded-xl border border-[#e5e2dc] p-5 shadow-sm flex items-center gap-4">
-        <div class="bg-amber-100 p-3 rounded-lg text-amber-600">
-          <Clock class="w-6 h-6" />
+    <div ref="statsContainer" class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+      <div class="bg-white rounded-xl border border-[#e5e2dc] p-3.5 sm:p-5 shadow-sm flex items-center gap-2.5 sm:gap-4">
+        <div class="bg-amber-100 p-2.5 sm:p-3 rounded-lg text-amber-600 shrink-0">
+          <Clock class="w-5 h-5 sm:w-6 sm:h-6" />
         </div>
-        <div>
-          <p class="text-[10px] font-medium text-gray-500 uppercase tracking-widest">Waiting</p>
-          <h3 ref="numWaiting" class="text-2xl font-bold text-gray-900 mt-1">0</h3>
-        </div>
-      </div>
-      <div class="bg-white rounded-xl border border-[#e5e2dc] p-5 shadow-sm flex items-center gap-4">
-        <div class="bg-blue-100 p-3 rounded-lg text-blue-600">
-          <Truck class="w-6 h-6" />
-        </div>
-        <div>
-          <p class="text-[10px] font-medium text-gray-500 uppercase tracking-widest">Dispatched</p>
-          <h3 ref="numDispatched" class="text-2xl font-bold text-gray-900 mt-1">0</h3>
+        <div class="min-w-0">
+          <p class="text-[10px] font-medium text-gray-500 uppercase tracking-widest truncate">Waiting</p>
+          <h3 ref="numWaiting" class="text-xl sm:text-2xl font-bold text-gray-900 mt-0.5 truncate">0</h3>
         </div>
       </div>
-      <div class="bg-white rounded-xl border border-[#e5e2dc] p-5 shadow-sm flex items-center gap-4">
-        <div class="bg-green-100 p-3 rounded-lg text-green-600">
-          <MapPin class="w-6 h-6" />
+      <div class="bg-white rounded-xl border border-[#e5e2dc] p-3.5 sm:p-5 shadow-sm flex items-center gap-2.5 sm:gap-4">
+        <div class="bg-blue-100 p-2.5 sm:p-3 rounded-lg text-blue-600 shrink-0">
+          <Truck class="w-5 h-5 sm:w-6 sm:h-6" />
         </div>
-        <div>
-          <p class="text-[10px] font-medium text-gray-500 uppercase tracking-widest">Delivered</p>
-          <h3 ref="numDelivered" class="text-2xl font-bold text-gray-900 mt-1">0</h3>
+        <div class="min-w-0">
+          <p class="text-[10px] font-medium text-gray-500 uppercase tracking-widest truncate">Dispatched</p>
+          <h3 ref="numDispatched" class="text-xl sm:text-2xl font-bold text-gray-900 mt-0.5 truncate">0</h3>
         </div>
       </div>
-      <div class="bg-white rounded-xl border border-[#e5e2dc] p-5 shadow-sm flex items-center gap-4">
-        <div class="bg-[#e5f6f4] p-3 rounded-lg text-[#1a5c4c]">
-          <PackageCheck class="w-6 h-6" />
+      <div class="bg-white rounded-xl border border-[#e5e2dc] p-3.5 sm:p-5 shadow-sm flex items-center gap-2.5 sm:gap-4">
+        <div class="bg-green-100 p-2.5 sm:p-3 rounded-lg text-green-600 shrink-0">
+          <MapPin class="w-5 h-5 sm:w-6 sm:h-6" />
         </div>
-        <div>
-          <p class="text-[10px] font-medium text-gray-500 uppercase tracking-widest">Total Orders</p>
-          <h3 ref="numTotal" class="text-2xl font-bold text-gray-900 mt-1">0</h3>
+        <div class="min-w-0">
+          <p class="text-[10px] font-medium text-gray-500 uppercase tracking-widest truncate">Delivered</p>
+          <h3 ref="numDelivered" class="text-xl sm:text-2xl font-bold text-gray-900 mt-0.5 truncate">0</h3>
+        </div>
+      </div>
+      <div class="bg-white rounded-xl border border-[#e5e2dc] p-3.5 sm:p-5 shadow-sm flex items-center gap-2.5 sm:gap-4">
+        <div class="bg-[#e5f6f4] p-2.5 sm:p-3 rounded-lg text-[#1a5c4c] shrink-0">
+          <PackageCheck class="w-5 h-5 sm:w-6 sm:h-6" />
+        </div>
+        <div class="min-w-0">
+          <p class="text-[10px] font-medium text-gray-500 uppercase tracking-widest truncate">Total Orders</p>
+          <h3 ref="numTotal" class="text-xl sm:text-2xl font-bold text-gray-900 mt-0.5 truncate">0</h3>
         </div>
       </div>
     </div>
 
     <!-- Tabs -->
-    <div class="border-b border-gray-200">
-      <nav class="-mb-px flex gap-6 overflow-x-auto">
+    <div class="border-b border-gray-200 tab-scroll-container">
+      <nav class="-mb-px flex gap-6 min-w-max">
         <button 
           v-for="tab in ['WAITING', 'DISPATCHED', 'DELIVERED', 'ON_HOLD', 'ALL']" :key="tab"
           @click="handleTabChange(tab)"
-          class="whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm transition-colors"
+          class="whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm transition-colors shrink-0"
           :class="activeTab === tab ? 'border-[#1a5c4c] text-[#1a5c4c]' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
         >
           {{ tab === 'ALL' ? 'All Orders' : tab === 'WAITING' ? 'Awaiting Dispatch' : tab === 'ON_HOLD' ? 'On Hold' : tab === 'DISPATCHED' ? 'In Transit' : 'Delivered' }}
@@ -262,6 +262,8 @@ watch(statsData, () => {
         v-model:startDate="startDate"
         v-model:endDate="endDate"
         v-model:status="status"
+        v-model:billingStatus="billingStatus"
+        v-model:packingStatus="packingStatus"
         v-model:deliveryStatus="deliveryStatus"
         @select="handleSelect"
         @refresh="() => { refresh(); refreshStats(); }"

@@ -857,9 +857,9 @@ function startGpsTracking() {
   if (watchId === null) {
     geo.watchPosition(
       (pos: any) => {
-        // 1. Accuracy Filter: Ignore highly inaccurate GPS bounces (worse than 35 meters radius)
-        if (pos.coords.accuracy && pos.coords.accuracy > 35) {
-          return // Drop noisy ping
+        // 1. Accuracy Filter: Allow standard phone GPS fixes up to 80 meters (phones in vehicles often range 40-75m)
+        if (pos.coords.accuracy && pos.coords.accuracy > 80) {
+          return // Drop extreme noisy jump
         }
 
         const pt = {
@@ -889,18 +889,31 @@ function startGpsTracking() {
         const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
         const distanceMeters = R * c
 
-        // 3. Speed Sanity Check: Reject impossible jumps (e.g., Max 150 km/h = ~41.6 meters/second)
-        const timeDiffSeconds = (pt.timestamp - last.timestamp) / 1000
-        if (timeDiffSeconds > 0) {
-           const speedMps = distanceMeters / timeDiffSeconds
-           if (speedMps > 42) {
-             return // Reject! The GPS just violently spiked 2km in 1 second.
-           }
+        // 2. Speed Sanity Check: Reject impossible jumps (> 150 km/h = ~41.6 m/s) over short intervals
+        const timeDiffSeconds = Math.max(0.5, (pt.timestamp - last.timestamp) / 1000)
+        if (distanceMeters > 30) {
+          const speedMps = distanceMeters / timeDiffSeconds
+          if (speedMps > 42) {
+            return // Reject spike: teleported > 150 km/h
+          }
         }
 
-        // 2. Minimum Distance Threshold: Must have moved at least 15 meters to log a new breadcrumb
-        if (distanceMeters >= 15) {
+        // 3. Distance & Heartbeat Threshold:
+        // Accept new point if moved >= 10 meters, OR if >= 15 seconds elapsed (stationary heartbeat)
+        const timeElapsedMs = pt.timestamp - last.timestamp
+        if (distanceMeters >= 10) {
           offlineGpsQueue.push(pt)
+        } else if (timeElapsedMs >= 15000) {
+          // Stationary heartbeat: keep timestamp fresh so tracking reflects active live state
+          offlineGpsQueue.push({
+            ...pt,
+            speed: 0,
+          })
+        }
+
+        // Buffer guard: cap queue to prevent memory bloat during prolonged disconnections
+        if (offlineGpsQueue.length > 300) {
+          offlineGpsQueue.shift()
         }
       },
       (err) => {

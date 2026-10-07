@@ -15,6 +15,7 @@ const status = ref('')
 const billingStatus = ref('')
 const packingStatus = ref('')
 const deliveryStatus = ref('')
+const paymentStatus = ref('')
 const startDate = ref('')
 const endDate = ref('')
 const selectedOrderId = ref<string | null>(null)
@@ -30,13 +31,11 @@ const { data, refresh, pending } = useFetch('/api/orders', {
     billingStatus,
     packingStatus,
     deliveryStatus,
+    paymentStatus,
     startDate,
     endDate
   },
-  watch: [page, limit, search, status, billingStatus, packingStatus, deliveryStatus, startDate, endDate],
-  getCachedData(key) {
-    return nuxtApp.payload.data[key] || nuxtApp.static.data[key]
-  }
+  watch: [page, limit, search, status, billingStatus, packingStatus, deliveryStatus, paymentStatus, startDate, endDate]
 })
 
 const handleSelect = (id: string) => {
@@ -69,11 +68,7 @@ const handlePanelUpdate = (updatedOrder?: any) => {
   if (updatedOrder) {
     applyOrderUpdate(updatedOrder)
   }
-  // Clear the cached key so subsequent fetches always get fresh DB data
-  const cachedKeys = Object.keys(nuxtApp.payload.data).filter(k => k.startsWith('/api/orders') || k.includes('orders'))
-  cachedKeys.forEach(k => {
-    delete nuxtApp.payload.data[k]
-  })
+  // 
   refresh()
 }
 
@@ -83,10 +78,7 @@ onOrderSync((event) => {
   if (event?.order) {
     applyOrderUpdate(event.order)
   }
-  const cachedKeys = Object.keys(nuxtApp.payload.data).filter(k => k.startsWith('/api/orders') || k.includes('orders'))
-  cachedKeys.forEach(k => {
-    delete nuxtApp.payload.data[k]
-  })
+  // 
   refresh()
 })
 </script>
@@ -106,6 +98,7 @@ onOrderSync((event) => {
       v-model:billingStatus="billingStatus"
       v-model:packingStatus="packingStatus"
       v-model:deliveryStatus="deliveryStatus"
+      v-model:paymentStatus="paymentStatus"
       v-model:startDate="startDate"
       v-model:endDate="endDate"
       @select="handleSelect"

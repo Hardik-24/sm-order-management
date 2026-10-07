@@ -22,7 +22,10 @@ export default defineEventHandler(async (event) => {
     confirmed,
     dispatched,
     billingPending,
-    readyOrders
+    readyOrders,
+    pendingPayments,
+    totalOutstandingAgg,
+    overdueOrders
   ] = await Promise.all([
     prisma.order.count({ where: { createdAt: { gte: today, lt: tomorrow } } }),
     prisma.order.count({ where: { createdAt: { gte: yesterday, lt: today } } }),
@@ -59,6 +62,25 @@ export default defineEventHandler(async (event) => {
     prisma.order.findMany({
       where: { deliveryStatus: { status: 'WAITING' }, billingStatus: { status: 'GENERATED' }, packingStatus: { status: 'PACKED' } },
       include: { customer: true }, take: 5
+    }),
+    prisma.order.count({
+      where: {
+        OR: [
+          { paymentStatus: { status: { in: ['UNPAID', 'PARTIAL', 'OVERDUE'] } } },
+          { paymentStatus: null }
+        ]
+      }
+    }),
+    prisma.paymentStatus.aggregate({
+      _sum: { balanceDue: true },
+      where: { status: { in: ['UNPAID', 'PARTIAL', 'OVERDUE'] } }
+    }),
+    prisma.order.findMany({
+      where: {
+        paymentStatus: { status: 'OVERDUE' }
+      },
+      include: { customer: true },
+      take: 5
     })
   ])
 
@@ -76,7 +98,8 @@ export default defineEventHandler(async (event) => {
     issues: 0,
     ready: readyForDelivery,
     delivery: dispatched,
-    delivered: delivered
+    delivered: delivered,
+    unpaid: pendingPayments
   }
 
   const needsAttention = [
@@ -95,8 +118,27 @@ export default defineEventHandler(async (event) => {
       statusText: 'Ready for delivery',
       timeAgo: 'Now',
       actionText: 'Dispatch'
+    })),
+    ...overdueOrders.map(o => ({ 
+      id: o.id, 
+      orderNumber: o.orderNumber, 
+      customerName: o.customer.name, 
+      statusText: 'Payment Overdue',
+      timeAgo: 'Due',
+      actionText: 'Collect Payment'
     }))
   ]
 
-  return { ordersToday, ordersTodayChange, awaitingBilling, packing, readyForDelivery, delivered, orderFlow, needsAttention }
+  return {
+    ordersToday,
+    ordersTodayChange,
+    awaitingBilling,
+    packing,
+    readyForDelivery,
+    delivered,
+    pendingPayments,
+    totalOutstanding: Number(totalOutstandingAgg._sum?.balanceDue || 0),
+    orderFlow,
+    needsAttention
+  }
 })

@@ -42,10 +42,7 @@ const queryObj = computed(() => {
 const nuxtApp = useNuxtApp()
 const { data, refresh, pending } = useFetch('/api/orders', {
   query: queryObj,
-  watch: [queryObj],
-  getCachedData(key) {
-    return nuxtApp.payload.data[key] || nuxtApp.static.data[key]
-  }
+  watch: [queryObj]
 })
 
 const { data: stats, refresh: refreshStats } = useFetch('/api/orders/packing-stats')
@@ -62,8 +59,7 @@ const applyOrderUpdate = (updatedOrder: any) => {
 
 const handleUpdate = (updatedOrder?: any) => {
   if (updatedOrder) applyOrderUpdate(updatedOrder)
-  const cachedKeys = Object.keys(nuxtApp.payload.data).filter(k => k.startsWith('/api/orders') || k.includes('orders'))
-  cachedKeys.forEach(k => delete nuxtApp.payload.data[k])
+  // 
   refresh()
   refreshStats()
 }
@@ -72,8 +68,7 @@ const handleUpdate = (updatedOrder?: any) => {
 const { onOrderSync } = useRealtimeSync()
 onOrderSync((event) => {
   if (event?.order) applyOrderUpdate(event.order)
-  const cachedKeys = Object.keys(nuxtApp.payload.data).filter(k => k.startsWith('/api/orders') || k.includes('orders'))
-  cachedKeys.forEach(k => delete nuxtApp.payload.data[k])
+  // 
   refresh()
   refreshStats()
 })
@@ -137,53 +132,53 @@ watch(stats, () => {
       </div>
 
       <!-- Quick Stats -->
-      <div ref="statsContainer" class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div class="bg-white rounded-xl border border-[#e5e2dc] p-5 shadow-sm flex items-center gap-4">
-          <div class="bg-amber-100 p-3 rounded-lg text-amber-600">
-            <Clock class="w-6 h-6" />
+      <div ref="statsContainer" class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+        <div class="bg-white rounded-xl border border-[#e5e2dc] p-3.5 sm:p-5 shadow-sm flex items-center gap-2.5 sm:gap-4">
+          <div class="bg-amber-100 p-2.5 sm:p-3 rounded-lg text-amber-600 shrink-0">
+            <Clock class="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
-          <div>
-            <p class="text-[10px] font-medium text-gray-500 uppercase tracking-widest">Pending</p>
-            <h3 ref="numPending" class="text-2xl font-bold text-gray-900 mt-1">0</h3>
-          </div>
-        </div>
-        <div class="bg-white rounded-xl border border-[#e5e2dc] p-5 shadow-sm flex items-center gap-4">
-          <div class="bg-blue-100 p-3 rounded-lg text-blue-600">
-            <PlayCircle class="w-6 h-6" />
-          </div>
-          <div>
-            <p class="text-[10px] font-medium text-gray-500 uppercase tracking-widest">In Progress</p>
-            <h3 ref="numInProgress" class="text-2xl font-bold text-gray-900 mt-1">0</h3>
+          <div class="min-w-0">
+            <p class="text-[10px] font-medium text-gray-500 uppercase tracking-widest truncate">Pending</p>
+            <h3 ref="numPending" class="text-xl sm:text-2xl font-bold text-gray-900 mt-0.5 truncate">0</h3>
           </div>
         </div>
-        <div class="bg-white rounded-xl border border-[#e5e2dc] p-5 shadow-sm flex items-center gap-4">
-          <div class="bg-green-100 p-3 rounded-lg text-green-600">
-            <Box class="w-6 h-6" />
+        <div class="bg-white rounded-xl border border-[#e5e2dc] p-3.5 sm:p-5 shadow-sm flex items-center gap-2.5 sm:gap-4">
+          <div class="bg-blue-100 p-2.5 sm:p-3 rounded-lg text-blue-600 shrink-0">
+            <PlayCircle class="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
-          <div>
-            <p class="text-[10px] font-medium text-gray-500 uppercase tracking-widest">Packed</p>
-            <h3 ref="numPacked" class="text-2xl font-bold text-gray-900 mt-1">0</h3>
+          <div class="min-w-0">
+            <p class="text-[10px] font-medium text-gray-500 uppercase tracking-widest truncate">In Progress</p>
+            <h3 ref="numInProgress" class="text-xl sm:text-2xl font-bold text-gray-900 mt-0.5 truncate">0</h3>
           </div>
         </div>
-        <div class="bg-white rounded-xl border border-[#e5e2dc] p-5 shadow-sm flex items-center gap-4">
-          <div class="bg-[#e5f6f4] p-3 rounded-lg text-[#1a5c4c]">
-            <Package class="w-6 h-6" />
+        <div class="bg-white rounded-xl border border-[#e5e2dc] p-3.5 sm:p-5 shadow-sm flex items-center gap-2.5 sm:gap-4">
+          <div class="bg-green-100 p-2.5 sm:p-3 rounded-lg text-green-600 shrink-0">
+            <Box class="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
-          <div>
-            <p class="text-[10px] font-medium text-gray-500 uppercase tracking-widest">Total Orders</p>
-            <h3 ref="numTotal" class="text-2xl font-bold text-gray-900 mt-1">0</h3>
+          <div class="min-w-0">
+            <p class="text-[10px] font-medium text-gray-500 uppercase tracking-widest truncate">Packed</p>
+            <h3 ref="numPacked" class="text-xl sm:text-2xl font-bold text-gray-900 mt-0.5 truncate">0</h3>
+          </div>
+        </div>
+        <div class="bg-white rounded-xl border border-[#e5e2dc] p-3.5 sm:p-5 shadow-sm flex items-center gap-2.5 sm:gap-4">
+          <div class="bg-[#e5f6f4] p-2.5 sm:p-3 rounded-lg text-[#1a5c4c] shrink-0">
+            <Package class="w-5 h-5 sm:w-6 sm:h-6" />
+          </div>
+          <div class="min-w-0">
+            <p class="text-[10px] font-medium text-gray-500 uppercase tracking-widest truncate">Total Orders</p>
+            <h3 ref="numTotal" class="text-xl sm:text-2xl font-bold text-gray-900 mt-0.5 truncate">0</h3>
           </div>
         </div>
       </div>
     </div>
 
     <!-- Tabs -->
-    <div class="border-b border-gray-200">
-      <nav class="-mb-px flex gap-6 overflow-x-auto">
+    <div class="border-b border-gray-200 tab-scroll-container">
+      <nav class="-mb-px flex gap-6 min-w-max">
         <button 
           v-for="tab in ['PENDING', 'IN_PROGRESS', 'PACKED', 'ON_HOLD', 'ALL']" :key="tab"
           @click="activeTab = tab as any; page = 1"
-          class="whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm transition-colors"
+          class="whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm transition-colors shrink-0"
           :class="activeTab === tab ? 'border-[#1a5c4c] text-[#1a5c4c]' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
         >
           {{ tab === 'ALL' ? 'All Orders' : tab === 'PENDING' ? 'Pending Validation' : tab === 'ON_HOLD' ? 'On Hold' : tab === 'IN_PROGRESS' ? 'Currently Packing' : 'Ready / Packed' }}

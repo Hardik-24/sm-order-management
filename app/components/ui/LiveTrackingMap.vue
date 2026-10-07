@@ -374,14 +374,73 @@ function fitMapBounds(force = false) {
   }
 }
 
+let animationFrameId: number | null = null
+
+function animateMarkerTo(targetLat: number, targetLng: number, durationMs = 1200) {
+  if (animationFrameId !== null) {
+    cancelAnimationFrame(animationFrameId)
+    animationFrameId = null
+  }
+
+  let startLat = targetLat
+  let startLng = targetLng
+
+  if (engine.value === 'google' && googleDriverMarker) {
+    const pos = googleDriverMarker.getPosition()
+    if (pos) {
+      startLat = typeof pos.lat === 'function' ? pos.lat() : pos.lat
+      startLng = typeof pos.lng === 'function' ? pos.lng() : pos.lng
+    }
+  } else if (engine.value === 'leaflet' && leafletDriverMarker) {
+    const pos = leafletDriverMarker.getLatLng()
+    if (pos) {
+      startLat = pos.lat
+      startLng = pos.lng
+    }
+  }
+
+  const dist = Math.abs(targetLat - startLat) + Math.abs(targetLng - startLng)
+  // If tiny or huge jump (> 0.05 degrees ~= 5km), jump directly without animation
+  if (dist < 0.00002 || dist > 0.05) {
+    if (engine.value === 'google' && googleDriverMarker) {
+      googleDriverMarker.setPosition({ lat: targetLat, lng: targetLng })
+    } else if (engine.value === 'leaflet' && leafletDriverMarker) {
+      leafletDriverMarker.setLatLng([targetLat, targetLng])
+    }
+    return
+  }
+
+  const startTime = performance.now()
+
+  function step(currentTime: number) {
+    const elapsed = currentTime - startTime
+    const progress = Math.min(elapsed / durationMs, 1)
+    // Smooth cubic ease-out
+    const ease = 1 - Math.pow(1 - progress, 3)
+
+    const curLat = startLat + (targetLat - startLat) * ease
+    const curLng = startLng + (targetLng - startLng) * ease
+
+    if (engine.value === 'google' && googleDriverMarker) {
+      googleDriverMarker.setPosition({ lat: curLat, lng: curLng })
+    } else if (engine.value === 'leaflet' && leafletDriverMarker) {
+      leafletDriverMarker.setLatLng([curLat, curLng])
+    }
+
+    if (progress < 1) {
+      animationFrameId = requestAnimationFrame(step)
+    } else {
+      animationFrameId = null
+    }
+  }
+
+  animationFrameId = requestAnimationFrame(step)
+}
+
 watch(() => props.driverLocation, (newLoc) => {
   if (!newLoc) return
 
-  if (engine.value === 'google' && googleDriverMarker) {
-    googleDriverMarker.setPosition(newLoc)
-  } else if (engine.value === 'leaflet' && leafletDriverMarker) {
-    leafletDriverMarker.setLatLng([newLoc.lat, newLoc.lng])
-  }
+  animateMarkerTo(newLoc.lat, newLoc.lng)
 
   if (!hasFitInitially) {
     fitMapBounds()
@@ -418,10 +477,21 @@ onMounted(async () => {
 })
 
 onBeforeUnmount(() => {
+  if (animationFrameId !== null) {
+    cancelAnimationFrame(animationFrameId)
+    animationFrameId = null
+  }
   if (leafletMap) {
     leafletMap.remove()
     leafletMap = null
   }
+  leafletDriverMarker = null
+  leafletDestMarker = null
+  leafletPolyline = null
+  googleMap = null
+  googleDriverMarker = null
+  googleDestMarker = null
+  googlePolyline = null
 })
 </script>
 

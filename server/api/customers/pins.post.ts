@@ -1,7 +1,9 @@
 import { saveCustomerPin, DestinationPin } from '~~/server/utils/customerPins'
+import { requireAuth } from '~~/server/utils/auth'
 
 export default defineEventHandler(async (event) => {
   try {
+    requireAuth(event)
     const body = await readBody(event)
 
     const { customerKey, customerId, customerName, customerCompany, deliveryAddress, lat, lng, landmark, areaName } = body || {}

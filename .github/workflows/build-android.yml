@@ -2,6 +2,12 @@ name: Build Android APK
 
 on:
   workflow_dispatch: # Allows you to trigger this build manually from the GitHub Actions tab
+  push:
+    branches:
+      - main
+    paths:
+      - 'fleet_mobile_app/**'
+      - '.github/workflows/build-android.yml'
 
 jobs:
   build-android:

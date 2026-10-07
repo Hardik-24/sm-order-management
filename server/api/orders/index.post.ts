@@ -8,11 +8,6 @@ export default defineEventHandler(async (event) => {
   const body = await readBody(event)
   const { customerId, deliveryAddress, paymentTerms, notes, items } = body
 
-  // Auto-generate orderNumber
-  const count = await prisma.order.count()
-  const year = new Date().getFullYear()
-  const orderNumber = `SO-${year}-${String(count + 1).padStart(4, '0')}`
-
   let totalAmount = 0
   const orderItemsData = []
 
@@ -34,37 +29,71 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const order = await prisma.order.create({
-    data: {
-      orderNumber,
-      customerId,
-      salesPersonId: user.id,
-      deliveryAddress,
-      paymentTerms,
-      notes,
-      totalAmount,
-      overallStatus: 'CONFIRMED',
-      items: { create: orderItemsData },
-      billingStatus: { create: { status: 'PENDING' } },
-      packingStatus: { create: { status: 'PENDING' } },
-      deliveryStatus: { create: { status: 'WAITING' } },
-      timeline: {
-        create: {
-          action: 'Order Created',
-          description: `Order ${orderNumber} created by ${user.name}`,
-          performedById: user.id
-        }
+  const year = new Date().getFullYear()
+  let order = null
+  let attempts = 0
+
+  while (!order && attempts < 5) {
+    attempts++
+
+    const latestOrder = await prisma.order.findFirst({
+      where: { orderNumber: { startsWith: `SO-${year}-` } },
+      orderBy: { orderNumber: 'desc' },
+      select: { orderNumber: true }
+    })
+
+    let nextSeq = 1
+    if (latestOrder) {
+      const parts = latestOrder.orderNumber.split('-')
+      if (parts.length === 3) {
+        nextSeq = parseInt(parts[2], 10) + 1
       }
-    },
-    include: {
-      customer: true,
-      items: { include: { product: true } },
-      billingStatus: true,
-      packingStatus: true,
-      deliveryStatus: true,
-      timeline: true
     }
-  })
+
+    const orderNumber = `SO-${year}-${String(nextSeq).padStart(4, '0')}`
+
+    try {
+      order = await prisma.order.create({
+        data: {
+          orderNumber,
+          customerId,
+          salesPersonId: user.id,
+          deliveryAddress,
+          paymentTerms,
+          notes,
+          totalAmount,
+          overallStatus: 'CONFIRMED',
+          items: { create: orderItemsData },
+          billingStatus: { create: { status: 'PENDING' } },
+          packingStatus: { create: { status: 'PENDING' } },
+          deliveryStatus: { create: { status: 'WAITING' } },
+          paymentStatus: { create: { status: 'UNPAID', amountPaid: 0, balanceDue: totalAmount } },
+          timeline: {
+            create: {
+              action: 'Order Created',
+              description: `Order ${orderNumber} created by ${user.name}`,
+              performedById: user.id
+            }
+          }
+        },
+        include: {
+          customer: true,
+          items: { include: { product: true } },
+          billingStatus: true,
+          packingStatus: true,
+          deliveryStatus: true,
+          paymentStatus: true,
+          timeline: true
+        }
+      })
+    } catch (err: any) {
+      if (err.code === 'P2002' && attempts < 5) {
+        // Unique constraint failed on orderNumber, retry
+        continue
+      }
+      throw err
+    }
+  }
 
   return order
 })

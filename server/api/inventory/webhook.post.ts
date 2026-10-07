@@ -1,8 +1,9 @@
 import { prisma } from '~~/server/utils/prisma'
 
 export default defineEventHandler(async (event) => {
+  const syncSecret = process.env.NUXT_SYNC_SECRET || 'super-secret-key-123'
   const authHeader = getHeader(event, 'Authorization')
-  if (authHeader !== 'Bearer super-secret-key-123') {
+  if (authHeader !== `Bearer ${syncSecret}`) {
     throw createError({ statusCode: 401, message: 'Unauthorized' })
   }
 
@@ -18,16 +19,10 @@ export default defineEventHandler(async (event) => {
     const uniqueCategoryNames = [...new Set(items.map((i: any) => i.category?.trim() || 'Uncategorized'))]
     
     if (uniqueCategoryNames.length > 0) {
-      const catValues = uniqueCategoryNames.map(name => {
-        const safeName = name.replace(/'/g, "''")
-        return `(gen_random_uuid(), '${safeName}', NOW(), NOW())`
-      }).join(',')
-      
-      await prisma.$executeRawUnsafe(`
-        INSERT INTO categories (id, name, "createdAt", "updatedAt")
-        VALUES ${catValues}
-        ON CONFLICT (name) DO NOTHING;
-      `)
+      await prisma.category.createMany({
+        data: uniqueCategoryNames.map(name => ({ name })),
+        skipDuplicates: true
+      })
     }
 
     // Fetch them back to get their IDs
@@ -40,44 +35,36 @@ export default defineEventHandler(async (event) => {
       categoryMap.set(c.name, c.id)
     }
 
-    // 2. Update stock on existing products (matching by name or sku) and insert new ones if they don't exist
+    // 2. Update stock on existing products and insert new ones
     if (items.length > 0) {
-      // Step A: Bulk update stock on existing products matched by name or sku
-      const tempTableValues = items.map((item: any) => {
-        const catName = item.category?.trim() || 'Uncategorized'
-        const categoryId = categoryMap.get(catName) || categories[0]?.id
-        const stockInt = Math.round(Number(item.stock)) || 0
-        const safeName = item.name.replace(/'/g, "''")
-        const safeSku = item.sku.replace(/'/g, "''")
-        return `('${safeName}', '${safeSku}', '${categoryId}', ${stockInt})`
-      }).join(',')
-
-      await prisma.$executeRawUnsafe(`
-        UPDATE products AS p
-        SET 
-          stock = v.stock,
-          "categoryId" = v.category_id,
-          "updatedAt" = NOW()
-        FROM (VALUES ${tempTableValues}) AS v(item_name, item_sku, category_id, stock)
-        WHERE p.name = v.item_name OR p.sku = v.item_sku;
-      `)
-
-      // Step B: Insert any brand new items that didn't exist at all
-      const insertValues = items.map((item: any) => {
+      const operations = items.map((item: any) => {
         const catName = item.category?.trim() || 'Uncategorized'
         const categoryId = categoryMap.get(catName) || categories[0]?.id
         const stockInt = Math.round(Number(item.stock)) || 0
         const priceVal = Number(item.price) || 0
-        const safeSku = item.sku.replace(/'/g, "''")
-        const safeName = item.name.replace(/'/g, "''")
-        return `(gen_random_uuid(), '${safeSku}', '${safeName}', '${categoryId}', ${stockInt}, ${priceVal}, NOW(), NOW())`
-      }).join(',')
 
-      await prisma.$executeRawUnsafe(`
-        INSERT INTO products (id, sku, name, "categoryId", stock, price, "createdAt", "updatedAt")
-        VALUES ${insertValues}
-        ON CONFLICT (sku) DO NOTHING;
-      `)
+        return prisma.product.upsert({
+          where: { sku: item.sku },
+          update: {
+            stock: stockInt,
+            categoryId: categoryId,
+            name: item.name
+          },
+          create: {
+            sku: item.sku,
+            name: item.name,
+            categoryId: categoryId,
+            stock: stockInt,
+            price: priceVal
+          }
+        })
+      })
+
+      // Execute in chunks to avoid overwhelming the database
+      const chunkSize = 500
+      for (let i = 0; i < operations.length; i += chunkSize) {
+        await prisma.$transaction(operations.slice(i, i + chunkSize))
+      }
     }
 
     // 3. Success - Reset sync flag

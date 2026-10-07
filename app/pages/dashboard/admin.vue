@@ -53,19 +53,45 @@
               </td>
               <td class="px-6 py-4 text-gray-600">{{ u.email }}</td>
               <td class="px-6 py-4">
-                <select 
-                  :value="u.role" 
-                  @change="changeUserRole(u, ($event.target as HTMLSelectElement).value)"
-                  class="text-xs font-semibold px-2.5 py-1 rounded-md border border-gray-200 outline-none cursor-pointer transition-colors shadow-sm focus:ring-1 focus:ring-[#1a5c4c]"
-                  :class="getRoleColorClass(u.role)"
-                  title="Click to Change Role"
-                >
-                  <option value="ADMIN">ADMIN</option>
-                  <option value="SALES">SALES</option>
-                  <option value="BILLING">BILLING</option>
-                  <option value="PACKING">PACKING</option>
-                  <option value="DELIVERY">DELIVERY</option>
-                </select>
+                <div class="relative inline-block text-left">
+                  <button
+                    type="button"
+                    @click="activeRoleDropdownUserId = activeRoleDropdownUserId === u.id ? null : u.id"
+                    class="text-xs font-semibold px-2.5 py-1 rounded-md border border-gray-200 outline-none cursor-pointer transition-all shadow-xs flex items-center gap-1.5 hover:shadow-sm"
+                    :class="getRoleColorClass(u.role)"
+                    title="Click to Change Role"
+                  >
+                    <span>{{ u.role }}</span>
+                    <ChevronDown class="w-3 h-3 opacity-70" />
+                  </button>
+
+                  <!-- Overlay backdrop -->
+                  <div 
+                    v-if="activeRoleDropdownUserId === u.id" 
+                    @click="activeRoleDropdownUserId = null" 
+                    class="fixed inset-0 z-30"
+                  ></div>
+
+                  <!-- Dropdown Menu -->
+                  <div 
+                    v-if="activeRoleDropdownUserId === u.id" 
+                    class="absolute left-0 mt-1 w-36 bg-white border border-gray-200 rounded-lg shadow-xl z-40 p-1"
+                  >
+                    <button 
+                      v-for="role in ['ADMIN', 'SALES', 'BILLING', 'PACKING', 'DELIVERY']" 
+                      :key="role"
+                      type="button"
+                      @click="changeUserRole(u, role); activeRoleDropdownUserId = null"
+                      class="w-full text-left px-2 py-1.5 text-xs font-medium rounded flex items-center justify-between hover:bg-gray-100 transition-colors"
+                      :class="u.role === role ? 'font-bold' : 'text-gray-700'"
+                    >
+                      <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold" :class="getRoleColorClass(role)">
+                        {{ role }}
+                      </span>
+                      <Check v-if="u.role === role" class="w-3.5 h-3.5 text-[#1a5c4c]" />
+                    </button>
+                  </div>
+                </div>
               </td>
               <td class="px-6 py-4">
                 <button 
@@ -100,7 +126,8 @@
     </div>
 
     <!-- Modal Form -->
-    <div v-if="isModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <Teleport to="body">
+      <div v-if="isModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="closeModal"></div>
       
       <div class="relative bg-white rounded-xl shadow-xl w-full max-w-md max-h-[90vh] overflow-hidden flex flex-col">
@@ -156,13 +183,14 @@
         </div>
       </div>
     </div>
+    </Teleport>
 
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, nextTick, watch, onMounted } from 'vue'
-import { Plus, Edit2, X, Loader2 } from 'lucide-vue-next'
+import { Plus, Edit2, X, Loader2, ChevronDown, Check } from 'lucide-vue-next'
 import { useSnackbar } from '~/composables/useSnackbar'
 import { useGsapAnimation } from '~/composables/useGsapAnimation'
 import CustomSelect from '~/components/ui/CustomSelect.vue'
@@ -173,6 +201,17 @@ definePageMeta({ layout: 'dashboard' })
 const { user } = useAuth()
 const { showSaving, showSaved, showEditing } = useSnackbar()
 const { animateStagger } = useGsapAnimation()
+const { notifyChange, onOrderSync } = useRealtimeSync()
+
+const activeRoleDropdownUserId = ref<string | null>(null)
+
+// Realtime multi-device sync for users and admin management
+onOrderSync((event) => {
+  if (event?.type === 'DB_USER_CHANGE' || event?.type === 'USER_CHANGE' || event?.action === 'USER_UPDATED') {
+    // 
+    refresh()
+  }
+})
 
 const roleOptions = [
   { label: 'ADMIN - Full System Access', value: 'ADMIN' },
@@ -250,6 +289,7 @@ const toggleUserStatus = async (userToToggle: any) => {
     if (users.value) {
       users.value = [...users.value]
     }
+    notifyChange({ type: 'USER_CHANGE', action: 'USER_UPDATED', userId: userToToggle.id })
     showSaved(`${userToToggle.name} is now ${targetState ? 'Active' : 'Inactive'}`)
   } catch (e: any) {
     console.error('Failed to toggle status', e)
@@ -272,6 +312,7 @@ const changeUserRole = async (userToUpdate: any, newRole: string) => {
       method: 'PATCH',
       body: { role: newRole }
     })
+    notifyChange({ type: 'USER_CHANGE', action: 'USER_UPDATED', userId: userToUpdate.id })
     showSaved(`${userToUpdate.name}'s role updated to ${newRole}`)
   } catch (e: any) {
     console.error('Failed to update role', e)
@@ -330,7 +371,9 @@ const saveUser = async () => {
       })
       showSaved(`User ${form.value.name} created successfully`)
     }
+    // 
     await refresh()
+    notifyChange({ type: 'USER_CHANGE', action: 'USER_UPDATED' })
     closeModal()
   } catch (e: any) {
     console.error('Failed to save user', e)

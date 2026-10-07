@@ -2,7 +2,7 @@
 export default defineNuxtConfig({
   compatibilityDate: '2025-05-10',
 
-  devtools: { enabled: true },
+  devtools: { enabled: false },
 
   modules: [
     '@nuxtjs/tailwindcss',
@@ -57,10 +57,7 @@ export default defineNuxtConfig({
     '/api/**': {
       cors: true,
       headers: {
-        'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET,HEAD,PUT,PATCH,POST,DELETE',
-        'Access-Control-Allow-Headers': '*',
-        'Access-Control-Expose-Headers': '*'
       }
     }
   },
@@ -68,6 +65,20 @@ export default defineNuxtConfig({
   vite: {
     server: {
       allowedHosts: true,
+      watch: {
+        usePolling: false,
+        ignored: ['**/node_modules/**', '**/.git/**', '**/.nuxt/**', '**/.output/**'],
+      },
+    },
+    optimizeDeps: {
+      include: [
+        'lucide-vue-next',
+        '@vueuse/core',
+        'gsap',
+        'canvas-confetti',
+        '@supabase/supabase-js',
+        'date-fns',
+      ],
     },
   },
 })

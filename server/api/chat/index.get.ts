@@ -21,5 +21,22 @@ export default defineEventHandler(async (event) => {
     }
   })
 
-  return messages
+  return messages.map(m => {
+    let parsedContent = m.content
+    let replyTo = null
+    if (m.content.startsWith('{') && m.content.endsWith('}')) {
+      try {
+        const parsed = JSON.parse(m.content)
+        if (parsed && parsed.text !== undefined) {
+          parsedContent = parsed.text
+          replyTo = parsed.replyTo || null
+        }
+      } catch (e) {}
+    }
+    return {
+      ...m,
+      parsedContent,
+      replyTo
+    }
+  })
 })

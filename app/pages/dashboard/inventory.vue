@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, onUnmounted } from 'vue'
+import { ref, computed, watch, onUnmounted, nextTick } from 'vue'
 import { 
   RefreshCw, CheckCircle2, XCircle, Search, Package, AlertTriangle, 
   ChevronLeft, ChevronRight, X, Tag, Hash, Layers, IndianRupee, ShieldCheck
@@ -7,6 +7,8 @@ import {
 import { formatDateTime } from '~/lib/utils'
 
 import { useGsapAnimation } from '~/composables/useGsapAnimation'
+import { useRealtimeSync } from '~/composables/useRealtimeSync'
+import RowsPerPageSelect from '~/components/ui/RowsPerPageSelect.vue'
 
 definePageMeta({ layout: 'dashboard' })
 
@@ -15,6 +17,21 @@ const { data: syncStatusData, refresh: refreshSyncStatus } = useFetch('/api/inve
 const { data: lastSyncedData, refresh: refreshLastSynced } = useFetch('/api/inventory/last-synced')
 
 const { animateProgressBar, animateModalOpen, animateStagger, initContext } = useGsapAnimation()
+const { onOrderSync } = useRealtimeSync()
+
+onOrderSync((event) => {
+  if (
+    event?.type === 'DB_PRODUCT_CHANGE' || 
+    event?.type === 'PRODUCT_CHANGE' || 
+    event?.type === 'DB_ORDER_ITEM_CHANGE' ||
+    event?.action === 'PRODUCT_SAVED' ||
+    event?.action === 'ORDER_CREATED' ||
+    event?.action === 'PACKING_UPDATED'
+  ) {
+    // 
+    refreshProducts()
+  }
+})
 
 const searchQuery = ref('')
 const isSyncing = ref(false)
@@ -59,9 +76,17 @@ watch(() => syncStatusData.value?.progress?.progress, (newVal) => {
   }
 })
 
+const tableRootRef = ref<HTMLElement | null>(null)
+
 // Pagination state
 const currentPage = ref(1)
 const pageSize = ref(50)
+
+watch(currentPage, () => {
+  nextTick(() => {
+    tableRootRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  })
+})
 
 // Computed filtering with multi-token fuzzy word matching
 const filteredProducts = computed(() => {
@@ -197,62 +222,65 @@ onUnmounted(() => {
     </div>
 
     <!-- Real-Time Sync Progress Modal Popup (Centered in Active Viewport Screen) -->
-    <div 
-      v-if="isSyncing || syncStatusData?.syncRequested" 
-      class="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200"
-    >
-      <!-- Dark Backdrop -->
-      <div class="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity"></div>
+    <Teleport to="body">
+      <div 
+        v-if="isSyncing || syncStatusData?.syncRequested" 
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200"
+      >
+        <!-- Dark Backdrop -->
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity"></div>
 
-      <!-- Centered Modal Card -->
-      <div class="relative bg-white rounded-2xl shadow-2xl p-6 sm:p-8 max-w-md w-full border border-gray-100 flex flex-col items-center text-center animate-in zoom-in-95 duration-200">
-        <div class="w-14 h-14 rounded-2xl bg-[#1a5c4c]/10 text-[#1a5c4c] flex items-center justify-center mb-4 shadow-sm">
-          <RefreshCw class="w-7 h-7 animate-spin" />
-        </div>
-        
-        <h3 class="text-lg font-bold text-gray-900 leading-snug">
-          {{ syncStatusData?.progress?.message || 'Syncing with Busy Accounting...' }}
-        </h3>
+        <!-- Centered Modal Card -->
+        <div class="relative bg-white rounded-2xl shadow-2xl p-6 sm:p-8 max-w-md w-full border border-gray-100 flex flex-col items-center text-center animate-in zoom-in-95 duration-200">
+          <div class="w-14 h-14 rounded-2xl bg-[#1a5c4c]/10 text-[#1a5c4c] flex items-center justify-center mb-4 shadow-sm">
+            <RefreshCw class="w-7 h-7 animate-spin" />
+          </div>
+          
+          <h3 class="text-lg font-bold text-gray-900 leading-snug">
+            {{ syncStatusData?.progress?.message || 'Syncing with Busy Accounting...' }}
+          </h3>
 
-        <!-- Step Pill Badge -->
-        <div class="flex items-center gap-2 mt-2 mb-5">
-          <span 
-            v-if="syncStatusData?.progress?.step && syncStatusData?.progress?.totalSteps" 
-            class="px-3 py-1 rounded-full text-xs font-semibold bg-[#1a5c4c]/10 text-[#1a5c4c] border border-[#1a5c4c]/20"
+          <!-- Step Pill Badge -->
+          <div class="flex items-center gap-2 mt-2 mb-5">
+            <span 
+              v-if="syncStatusData?.progress?.step && syncStatusData?.progress?.totalSteps" 
+              class="px-3 py-1 rounded-full text-xs font-semibold bg-[#1a5c4c]/10 text-[#1a5c4c] border border-[#1a5c4c]/20"
+            >
+              Step {{ syncStatusData.progress.step }} of {{ syncStatusData.progress.totalSteps }}
+              <span class="text-gray-400 font-normal">({{ Math.max(0, syncStatusData.progress.totalSteps - syncStatusData.progress.step) }} steps remaining)</span>
+            </span>
+            <span v-else class="text-xs text-gray-500 font-medium">Connecting to Office PC automation worker...</span>
+          </div>
+
+          <!-- Liquid GSAP Progress Bar -->
+          <div class="w-full bg-gray-100 rounded-full h-3 overflow-hidden mb-2 shadow-inner">
+            <div 
+              ref="progressBarRef"
+              class="bg-gradient-to-r from-[#1a5c4c] to-[#4ecdc4] h-3 rounded-full transition-all duration-300 ease-out" 
+              :style="{ width: `${syncStatusData?.progress?.progress || 10}%` }"
+            ></div>
+          </div>
+
+          <div class="w-full flex justify-between text-xs text-gray-400 font-mono mb-6">
+            <span>Overall Progress</span>
+            <span class="font-bold text-[#1a5c4c]">{{ syncStatusData?.progress?.progress || 10 }}%</span>
+          </div>
+
+          <!-- Abort Button -->
+          <button 
+            @click="cancelSync" 
+            class="w-full py-2.5 px-4 rounded-xl border border-red-200 text-red-600 hover:bg-red-50 text-xs font-semibold transition-colors flex items-center justify-center gap-2"
           >
-            Step {{ syncStatusData.progress.step }} of {{ syncStatusData.progress.totalSteps }}
-            <span class="text-gray-400 font-normal">({{ Math.max(0, syncStatusData.progress.totalSteps - syncStatusData.progress.step) }} steps remaining)</span>
-          </span>
-          <span v-else class="text-xs text-gray-500 font-medium">Connecting to Office PC automation worker...</span>
+            <XCircle class="w-4 h-4" />
+            Cancel / Abort Sync
+          </button>
         </div>
-
-        <!-- Liquid GSAP Progress Bar -->
-        <div class="w-full bg-gray-100 rounded-full h-3 overflow-hidden mb-2 shadow-inner">
-          <div 
-            ref="progressBarRef"
-            class="bg-gradient-to-r from-[#1a5c4c] to-[#4ecdc4] h-3 rounded-full transition-all duration-300 ease-out" 
-            :style="{ width: `${syncStatusData?.progress?.progress || 10}%` }"
-          ></div>
-        </div>
-
-        <div class="w-full flex justify-between text-xs text-gray-400 font-mono mb-6">
-          <span>Overall Progress</span>
-          <span class="font-bold text-[#1a5c4c]">{{ syncStatusData?.progress?.progress || 10 }}%</span>
-        </div>
-
-        <!-- Abort Button -->
-        <button 
-          @click="cancelSync" 
-          class="w-full py-2.5 px-4 rounded-xl border border-red-200 text-red-600 hover:bg-red-50 text-xs font-semibold transition-colors flex items-center justify-center gap-2"
-        >
-          <XCircle class="w-4 h-4" />
-          Cancel / Abort Sync
-        </button>
       </div>
-    </div>
+    </Teleport>
 
     <!-- Main Content Card -->
     <div 
+      ref="tableRootRef"
       class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col"
     >
       <!-- Toolbar -->
@@ -270,17 +298,11 @@ onUnmounted(() => {
         <div class="flex items-center gap-4 text-sm text-gray-500">
           <div class="flex items-center gap-2">
             <span>Rows:</span>
-            <select 
-              v-model.number="pageSize" 
-              @change="currentPage = 1"
-              class="border border-gray-300 rounded px-2 py-1 text-sm bg-white focus:outline-none focus:border-[#4ecdc4]"
-            >
-              <option :value="25">25</option>
-              <option :value="50">50</option>
-              <option :value="100">100</option>
-              <option :value="200">200</option>
-              <option :value="-1">All ({{ filteredProducts.length }})</option>
-            </select>
+            <RowsPerPageSelect 
+              :modelValue="pageSize" 
+              @update:modelValue="val => { pageSize = val; currentPage = 1 }"
+              :options="[10, 20, 50, -1]"
+            />
           </div>
           <div>
             Total Items: <span class="font-bold text-gray-900">{{ filteredProducts.length }}</span>
@@ -422,10 +444,11 @@ onUnmounted(() => {
     </div>
 
     <!-- Product Detail Modal Popup (Untruncated) -->
-    <div 
-      v-if="isDetailModalOpen && selectedProduct" 
-      class="fixed inset-0 z-50 flex items-center justify-center p-4"
-    >
+    <Teleport to="body">
+      <div 
+        v-if="isDetailModalOpen && selectedProduct" 
+        class="fixed inset-0 z-50 flex items-center justify-center p-4"
+      >
       <!-- Backdrop -->
       <div 
         ref="backdropRef"
@@ -565,6 +588,7 @@ onUnmounted(() => {
         </div>
       </div>
     </div>
+    </Teleport>
 
   </div>
 </template>

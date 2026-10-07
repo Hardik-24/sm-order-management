@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
-import { ShoppingBag, FileText, Package, Box, Truck, AlertCircle, ArrowRight } from 'lucide-vue-next'
+import { ShoppingBag, FileText, Package, Box, Truck, AlertCircle, ArrowRight, CreditCard } from 'lucide-vue-next'
 import { useGsapAnimation } from '~/composables/useGsapAnimation'
 import OdometerNumber from '~/components/ui/OdometerNumber.vue'
 
@@ -19,7 +19,8 @@ const stages = [
   { name: 'Awaiting Packing', icon: Package, key: 'packing', color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200' },
   { name: 'Action Required', icon: AlertCircle, key: 'issues', color: 'text-red-600', bg: 'bg-red-50', border: 'border-red-200' },
   { name: 'Ready for Dispatch', icon: Box, key: 'ready', color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200' },
-  { name: 'In Transit', icon: Truck, key: 'delivery', color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-200' }
+  { name: 'In Transit', icon: Truck, key: 'delivery', color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-200' },
+  { name: 'Payment Due', icon: CreditCard, key: 'unpaid', color: 'text-amber-700', bg: 'bg-amber-50', border: 'border-amber-200' }
 ]
 
 const getPercentage = (key: string) => {

@@ -1,7 +1,9 @@
 import { deleteCustomerPin } from '~~/server/utils/customerPins'
+import { requireAuth } from '~~/server/utils/auth'
 
 export default defineEventHandler(async (event) => {
   try {
+    requireAuth(event)
     const query = getQuery(event)
     const body = event.node.req.method === 'DELETE' ? await readBody(event).catch(() => ({})) : {}
 

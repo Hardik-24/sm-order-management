@@ -9,9 +9,21 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: 'Message content is required' })
   }
 
+  let contentToSave = body.content.trim()
+  if (body.replyTo && typeof body.replyTo === 'object') {
+    contentToSave = JSON.stringify({
+      text: body.content.trim(),
+      replyTo: {
+        id: body.replyTo.id,
+        senderName: body.replyTo.senderName,
+        text: (body.replyTo.text || '').slice(0, 150)
+      }
+    })
+  }
+
   const message = await prisma.chatMessage.create({
     data: {
-      content: body.content.trim(),
+      content: contentToSave,
       userId: user.id
     },
     include: {
@@ -26,5 +38,21 @@ export default defineEventHandler(async (event) => {
     }
   })
 
-  return message
+  let parsedContent = message.content
+  let replyTo = null
+  if (message.content.startsWith('{') && message.content.endsWith('}')) {
+    try {
+      const parsed = JSON.parse(message.content)
+      if (parsed && parsed.text !== undefined) {
+        parsedContent = parsed.text
+        replyTo = parsed.replyTo || null
+      }
+    } catch (e) {}
+  }
+
+  return {
+    ...message,
+    parsedContent,
+    replyTo
+  }
 })

@@ -61,6 +61,65 @@
 
     <!-- User Section -->
     <div class="flex items-center gap-5">
+      <!-- Notifications -->
+      <div class="relative" ref="notificationContainer">
+        <button 
+          @click="toggleNotifications"
+          class="relative p-2 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors focus:outline-none"
+          title="Notifications"
+        >
+          <Bell class="w-5 h-5" />
+          <span 
+            v-if="unreadCount > 0" 
+            class="absolute top-1 right-1 flex h-4 min-w-4 px-1 items-center justify-center rounded-full bg-red-500 text-white text-[9px] font-bold shadow-sm ring-2 ring-white"
+          >
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+            <span class="relative">{{ unreadCount > 9 ? '9+' : unreadCount }}</span>
+          </span>
+        </button>
+
+        <!-- Notification Dropdown -->
+        <div 
+          v-if="showNotifications" 
+          class="absolute top-full right-0 mt-2 w-80 bg-white border border-gray-200 rounded-lg shadow-xl overflow-hidden z-50 origin-top-right transition-all"
+        >
+          <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gray-50">
+            <h3 class="text-sm font-semibold text-[#1a1a1a]">Notifications</h3>
+            <span v-if="unreadCount > 0" class="text-xs text-gray-500">{{ unreadCount }} unread</span>
+          </div>
+          
+          <div class="max-h-[320px] overflow-y-auto">
+            <div v-if="isLoadingNotifications" class="p-4 text-center text-sm text-gray-500">
+              Loading...
+            </div>
+            <div v-else-if="notifications.length === 0" class="p-4 text-center text-sm text-gray-500">
+              No recent notifications
+            </div>
+            <div 
+              v-else 
+              v-for="notif in notifications" 
+              :key="notif.id"
+              @click="handleNotificationClick(notif)"
+              class="flex flex-col px-4 py-3 border-b border-gray-100 last:border-0 hover:bg-[#f2fcf9] cursor-pointer transition-colors"
+            >
+              <div class="flex items-start gap-3">
+                <img :src="notif.performedBy?.avatar || 'https://ui-avatars.com/api/?name=' + (notif.performedBy?.name || 'User') + '&background=1a5c4c&color=e8e0d4'" class="w-8 h-8 rounded-full flex-shrink-0" />
+                <div class="flex flex-col">
+                  <span class="text-sm text-[#1a1a1a] leading-tight">
+                    <span class="font-semibold">{{ notif.performedBy?.name || 'Someone' }}</span> 
+                    {{ formatNotificationDesc(notif) }}
+                  </span>
+                  <div class="flex items-center gap-2 mt-1">
+                    <span class="text-xs font-semibold text-[#1a5c4c]" v-if="notif.order?.orderNumber">{{ notif.order.orderNumber }}</span>
+                    <span class="text-[10px] text-gray-400">{{ formatTimeAgo(new Date(notif.timestamp)) }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Profile -->
       <div class="flex items-center gap-3">
         <div class="flex flex-col text-right hidden sm:flex">
@@ -86,16 +145,129 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref, watch, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Search, Menu, FileText, Package, User as UserIcon, X } from 'lucide-vue-next'
-import { useDebounceFn } from '@vueuse/core'
+import { Search, Menu, FileText, Package, User as UserIcon, X, Bell } from 'lucide-vue-next'
+import { useDebounceFn, onClickOutside } from '@vueuse/core'
 
 const route = useRoute()
 const router = useRouter()
 const { user } = useAuth()
 const isSidebarCollapsed = useState('sidebarCollapsed', () => false)
 const isMobileMenuOpen = useState('mobileMenuOpen', () => false)
+
+// Notifications State
+const showNotifications = ref(false)
+const isLoadingNotifications = ref(false)
+const notifications = ref<any[]>([])
+const unreadCount = ref(0)
+const lastSeenTimestamp = ref<number>(0)
+const notificationContainer = ref(null)
+
+// Initialize last seen from localStorage on client
+if (typeof window !== 'undefined') {
+  const stored = localStorage.getItem('sm_notifications_last_seen')
+  if (stored) {
+    lastSeenTimestamp.value = parseInt(stored, 10) || 0
+  }
+}
+
+onClickOutside(notificationContainer, () => {
+  if (showNotifications.value) {
+    showNotifications.value = false
+  }
+})
+
+const calculateUnreadCount = () => {
+  if (!lastSeenTimestamp.value) {
+    unreadCount.value = Math.min(notifications.value.length, 5)
+    return
+  }
+  const unread = notifications.value.filter(n => new Date(n.timestamp).getTime() > lastSeenTimestamp.value)
+  unreadCount.value = unread.length
+}
+
+const fetchNotifications = async (silent = false) => {
+  try {
+    if (!silent) isLoadingNotifications.value = true
+    const res = await $fetch<any>('/api/notifications', {
+      params: { _t: Date.now() }
+    })
+    if (res && res.notifications) {
+      notifications.value = res.notifications
+      if (!showNotifications.value) {
+        calculateUnreadCount()
+      }
+    }
+  } catch (error) {
+    console.error('Failed to fetch notifications', error)
+  } finally {
+    if (!silent) isLoadingNotifications.value = false
+  }
+}
+
+const toggleNotifications = () => {
+  showNotifications.value = !showNotifications.value
+  if (showNotifications.value) {
+    unreadCount.value = 0
+    if (notifications.value.length > 0) {
+      lastSeenTimestamp.value = new Date(notifications.value[0].timestamp).getTime()
+    } else {
+      lastSeenTimestamp.value = Date.now()
+    }
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('sm_notifications_last_seen', String(lastSeenTimestamp.value))
+    }
+  }
+}
+
+const formatNotificationDesc = (notif: any) => {
+  if (!notif.description) return notif.action
+  const name = notif.performedBy?.name || ''
+  let desc = notif.description
+  if (name && desc.startsWith(name)) {
+    desc = desc.substring(name.length).trim()
+  }
+  return desc
+}
+
+const formatTimeAgo = (date: Date) => {
+  const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000)
+  if (seconds < 10) return "just now"
+  let interval = seconds / 31536000
+  if (interval > 1) return Math.floor(interval) + "y ago"
+  interval = seconds / 2592000
+  if (interval > 1) return Math.floor(interval) + "mo ago"
+  interval = seconds / 86400
+  if (interval > 1) return Math.floor(interval) + "d ago"
+  interval = seconds / 3600
+  if (interval > 1) return Math.floor(interval) + "h ago"
+  interval = seconds / 60
+  if (interval > 1) return Math.floor(interval) + "m ago"
+  return `${seconds}s ago`
+}
+
+const handleNotificationClick = (notif: any) => {
+  showNotifications.value = false
+  if (notif.order?.orderNumber) {
+    router.push({ path: '/dashboard/orders', query: { search: notif.order.orderNumber } })
+  }
+}
+
+// Subscribe to Realtime Sync via Supabase WebSocket + Local BroadcastChannel
+const { onOrderSync } = useRealtimeSync()
+const unsubscribeSync = onOrderSync((event) => {
+  // Instantly refresh notifications list whenever any order timeline or status updates across all connected devices
+  fetchNotifications(true)
+})
+
+onMounted(() => {
+  fetchNotifications()
+})
+
+onUnmounted(() => {
+  if (unsubscribeSync) unsubscribeSync()
+})
 
 const searchQuery = ref('')
 const suggestions = ref<any[]>([])

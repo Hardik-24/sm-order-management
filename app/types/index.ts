@@ -6,6 +6,7 @@ export type OrderStatus = 'CONFIRMED' | 'PROCESSING' | 'READY' | 'DISPATCHED' | 
 export type BillingState = 'PENDING' | 'IN_PROGRESS' | 'GENERATED'
 export type PackingState = 'PENDING' | 'IN_PROGRESS' | 'PACKED'
 export type DeliveryState = 'WAITING' | 'ASSIGNED' | 'DISPATCHED' | 'DELIVERED'
+export type PaymentState = 'UNPAID' | 'PARTIAL' | 'PAID' | 'OVERDUE'
 export type ProductUnit = 'SHEET' | 'PIECE' | 'SQFT' | 'BOX' | 'KG' | 'METER'
 
 export interface SessionUser {
@@ -91,6 +92,34 @@ export interface DeliveryStatus {
   deliveredAt?: string | null
 }
 
+export interface PaymentStatus {
+  id: string
+  orderId: string
+  status: PaymentState
+  amountPaid: number
+  balanceDue: number
+  paymentMethod?: string | null
+  referenceNo?: string | null
+  dueDate?: string | null
+  paidAt?: string | null
+  notes?: string | null
+}
+
+export interface PaymentRecord {
+  id: string
+  orderId: string
+  amount: number
+  paymentMethod: string
+  referenceNo?: string | null
+  notes?: string | null
+  recordedById?: string | null
+  recordedBy?: { name: string } | null
+  isVoided?: boolean
+  voidedAt?: string | null
+  voidReason?: string | null
+  createdAt: string
+}
+
 export interface TimelineEntry {
   id: string
   orderId: string
@@ -117,6 +146,8 @@ export interface Order {
   billingStatus?: BillingStatus | null
   packingStatus?: PackingStatus | null
   deliveryStatus?: DeliveryStatus | null
+  paymentStatus?: PaymentStatus | null
+  paymentRecords?: PaymentRecord[]
   timeline?: TimelineEntry[]
   createdAt: string
   updatedAt: string
@@ -129,6 +160,8 @@ export interface DashboardStats {
   packing: number
   readyForDelivery: number
   delivered: number
+  pendingPayments?: number
+  totalOutstanding?: number
   orderFlow: {
     confirmed: number
     billing: number

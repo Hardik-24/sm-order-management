@@ -17,15 +17,25 @@
     </div>
 
     <!-- Filters & Search Toolbar -->
-    <div class="bg-white p-4 rounded-xl border border-[#e5e2dc] shadow-sm flex items-center justify-between gap-4">
-      <div class="relative w-full max-w-md">
-        <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+    <!-- Filters & Search Toolbar -->
+    <div class="bg-white p-4 rounded-xl border border-[#e5e2dc] shadow-sm flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+      <div class="relative w-full sm:max-w-md">
+        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+          <Search class="h-4 w-4 text-gray-400" />
+        </div>
         <input 
           v-model="searchQuery"
           type="text"
           placeholder="Search by company, contact, phone, city, GST..."
-          class="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-[#4ecdc4] focus:ring-1 focus:ring-[#4ecdc4] text-sm"
+          class="block w-full pl-10 pr-9 py-2 border border-gray-300 rounded-lg text-sm bg-white placeholder:text-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1a5c4c]/20 focus:border-[#1a5c4c] transition-all shadow-sm"
         />
+        <button 
+          v-if="searchQuery"
+          @click="searchQuery = ''"
+          class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+        >
+          <X class="h-4 w-4" />
+        </button>
       </div>
       <div class="text-xs text-gray-500 hidden sm:block">
         Showing <span class="font-bold text-gray-900">{{ filteredCustomers.length }}</span> customers
@@ -33,25 +43,19 @@
     </div>
 
     <!-- Table Container -->
-    <div class="bg-white rounded-xl border border-[#e5e2dc] shadow-sm overflow-hidden flex flex-col">
+    <div ref="tableRootRef" class="bg-white rounded-xl border border-[#e5e2dc] shadow-sm overflow-hidden flex flex-col">
       <!-- Toolbar Header -->
-      <div class="p-3.5 border-b border-gray-100 bg-gray-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-gray-500">
+      <div class="p-3.5 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between gap-3 text-xs text-gray-500">
         <div>
           Total Customers: <span class="font-bold text-gray-900">{{ filteredCustomers.length }}</span>
         </div>
         <div class="flex items-center gap-2">
           <span>Rows:</span>
-          <select 
-            v-model.number="pageSize" 
-            @change="currentPage = 1"
-            class="border border-gray-300 rounded px-2 py-1 text-xs bg-white focus:outline-none focus:border-[#4ecdc4]"
-          >
-            <option :value="25">25</option>
-            <option :value="50">50</option>
-            <option :value="100">100</option>
-            <option :value="200">200</option>
-            <option :value="-1">All ({{ filteredCustomers.length }})</option>
-          </select>
+          <RowsPerPageSelect 
+            :modelValue="pageSize" 
+            @update:modelValue="val => { pageSize = val; currentPage = 1 }"
+            :options="[10, 20, 50, -1]"
+          />
         </div>
       </div>
 
@@ -59,25 +63,25 @@
         <table class="w-full text-left border-collapse table-auto">
           <thead>
             <tr class="bg-gray-50 border-b border-gray-200">
-              <th class="px-5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest min-w-[200px]">Company</th>
-              <th class="px-5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest min-w-[160px]">Contact Person</th>
-              <th class="px-5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest w-36 min-w-[130px]">Phone</th>
-              <th class="px-5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest w-32 min-w-[110px]">City</th>
-              <th class="px-5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest w-32 min-w-[110px]">Payment Terms</th>
-              <th class="px-5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest w-24 min-w-[90px]">Status</th>
-              <th v-if="user?.role === 'ADMIN'" class="px-5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest w-24 min-w-[80px] text-right">Actions</th>
+              <th class="px-3 md:px-5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest md:min-w-[200px]">Customer</th>
+              <th class="hidden md:table-cell px-5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest min-w-[160px]">Contact Person</th>
+              <th class="hidden md:table-cell px-5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest w-36 min-w-[130px]">Phone</th>
+              <th class="hidden md:table-cell px-5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest w-32 min-w-[110px]">City</th>
+              <th class="hidden md:table-cell px-5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest w-32 min-w-[110px]">Payment Terms</th>
+              <th class="px-2 md:px-5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest w-16 md:w-24 text-center md:text-left">Status</th>
+              <th v-if="user?.role === 'ADMIN'" class="px-2 md:px-5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest w-20 md:w-28 text-right">Actions</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-200 text-sm">
             <template v-if="pending">
               <tr v-for="i in 5" :key="i" class="animate-pulse hover:bg-transparent">
-                <td class="px-5 py-3.5"><div class="h-4 bg-gray-200 rounded w-3/4"></div></td>
-                <td class="px-5 py-3.5"><div class="h-4 bg-gray-200 rounded w-1/2"></div></td>
-                <td class="px-5 py-3.5"><div class="h-4 bg-gray-200 rounded w-24"></div></td>
-                <td class="px-5 py-3.5"><div class="h-4 bg-gray-200 rounded w-20"></div></td>
-                <td class="px-5 py-3.5"><div class="h-4 bg-gray-200 rounded w-16"></div></td>
-                <td class="px-5 py-3.5"><div class="h-5 bg-gray-200 rounded-full w-16"></div></td>
-                <td v-if="user?.role === 'ADMIN'" class="px-5 py-3.5"><div class="h-4 bg-gray-200 rounded w-8 ml-auto"></div></td>
+                <td class="px-3 md:px-5 py-3.5"><div class="h-4 bg-gray-200 rounded w-3/4"></div></td>
+                <td class="hidden md:table-cell px-5 py-3.5"><div class="h-4 bg-gray-200 rounded w-1/2"></div></td>
+                <td class="hidden md:table-cell px-5 py-3.5"><div class="h-4 bg-gray-200 rounded w-24"></div></td>
+                <td class="hidden md:table-cell px-5 py-3.5"><div class="h-4 bg-gray-200 rounded w-20"></div></td>
+                <td class="hidden md:table-cell px-5 py-3.5"><div class="h-4 bg-gray-200 rounded w-16"></div></td>
+                <td class="px-2 md:px-5 py-3.5"><div class="h-5 bg-gray-200 rounded-full w-14 mx-auto md:mx-0"></div></td>
+                <td v-if="user?.role === 'ADMIN'" class="px-2 md:px-5 py-3.5"><div class="h-4 bg-gray-200 rounded w-12 ml-auto"></div></td>
               </tr>
             </template>
             <template v-else>
@@ -90,29 +94,31 @@
                 @click="openCustomerDetail(customer)"
                 class="hover:bg-teal-50/40 cursor-pointer transition-colors group"
               >
-                <td class="px-5 py-3 font-medium text-[#1a1a1a] min-w-[200px] group-hover:text-[#1a5c4c] transition-colors">
-                  <span class="break-words line-clamp-2" :title="customer.company">{{ customer.company }}</span>
+                <td class="px-3 md:px-5 py-3 font-medium text-[#1a1a1a] md:min-w-[200px] group-hover:text-[#1a5c4c] transition-colors">
+                  <span class="text-xs md:text-sm font-semibold leading-snug break-words line-clamp-2 block" :title="customer.company || customer.name">
+                    {{ customer.company || customer.name }}
+                  </span>
                 </td>
-                <td class="px-5 py-3 text-gray-600 min-w-[160px]">
+                <td class="hidden md:table-cell px-5 py-3 text-gray-600 min-w-[160px]">
                   <span class="break-words line-clamp-2" :title="customer.name">{{ customer.name }}</span>
                 </td>
-                <td class="px-5 py-3 font-mono text-xs text-gray-600 w-36 min-w-[130px]">{{ customer.phone }}</td>
-                <td class="px-5 py-3 text-gray-600 w-32 min-w-[110px]">{{ customer.city || '-' }}</td>
-                <td class="px-5 py-3 w-32 min-w-[110px]">
+                <td class="hidden md:table-cell px-5 py-3 font-mono text-xs text-gray-600 w-36 min-w-[130px]">{{ customer.phone }}</td>
+                <td class="hidden md:table-cell px-5 py-3 text-gray-600 w-32 min-w-[110px]">{{ customer.city || '-' }}</td>
+                <td class="hidden md:table-cell px-5 py-3 w-32 min-w-[110px]">
                   <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-gray-100 text-gray-700 text-xs font-medium">
                     {{ formatPaymentTerms(customer.paymentTerms) }}
                   </span>
                 </td>
-                <td class="px-5 py-3 w-24 min-w-[90px]">
+                <td class="px-2 md:px-5 py-3 w-16 md:w-24 whitespace-nowrap text-center md:text-left">
                   <span 
-                    class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+                    class="inline-flex items-center px-1.5 md:px-2 py-0.5 rounded-full text-[11px] md:text-xs font-medium"
                     :class="customer.isActive !== false ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'"
                   >
                     {{ customer.isActive !== false ? 'Active' : 'Inactive' }}
                   </span>
                 </td>
-                <td v-if="user?.role === 'ADMIN'" @click.stop class="px-5 py-3 text-right w-28 min-w-[100px]">
-                  <div class="flex items-center justify-end gap-1.5">
+                <td v-if="user?.role === 'ADMIN'" @click.stop class="px-2 md:px-5 py-3 text-right w-20 md:w-28 whitespace-nowrap">
+                  <div class="flex items-center justify-end gap-1">
                     <button 
                       @click="openCustomerPinModal(customer)"
                       class="transition-colors p-1.5 rounded"
@@ -169,19 +175,22 @@
     </div>
 
     <!-- Customer Details Modal Popup (Untruncated) -->
-    <div 
-      v-if="isDetailModalOpen && selectedCustomer" 
-      class="fixed inset-0 z-50 flex items-center justify-center p-4"
-    >
+    <Teleport to="body">
+      <div 
+        v-if="isDetailModalOpen && selectedCustomer" 
+        class="fixed inset-0 z-[110] flex items-center justify-center p-2 sm:p-4"
+      >
       <div 
         ref="detailBackdropRef"
         class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" 
         @click="closeCustomerDetail"
+        @wheel.prevent.stop
+        @touchmove.prevent.stop
       ></div>
 
       <div 
         ref="detailModalRef"
-        class="relative bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-hidden flex flex-col border border-gray-100"
+        class="relative bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[92vh] overflow-hidden flex flex-col border border-gray-100 overscroll-contain"
       >
         <!-- Header -->
         <div class="px-6 py-4 bg-gray-50/80 border-b border-gray-100 flex items-center justify-between">
@@ -353,96 +362,121 @@
         </div>
       </div>
     </div>
+    </Teleport>
 
     <!-- Edit / Add Modal Form -->
-    <div v-if="isModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div 
-        ref="formBackdropRef"
-        class="absolute inset-0 bg-black/50 backdrop-blur-sm" 
-        @click="closeModal"
-      ></div>
-      
-      <div 
-        ref="formModalRef"
-        class="relative bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
-      >
-        <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-          <h3 class="text-lg font-semibold text-[#1a1a1a]">
-            {{ editingCustomer ? 'Edit Customer' : 'Add New Customer' }}
-          </h3>
-          <button @click="closeModal" class="text-gray-400 hover:text-gray-600">
-            <X class="w-5 h-5" />
-          </button>
-        </div>
+    <Teleport to="body">
+      <div v-if="isModalOpen" class="fixed inset-0 z-[110] flex items-center justify-center p-2 sm:p-4">
+        <div 
+          ref="formBackdropRef"
+          class="absolute inset-0 bg-black/50 backdrop-blur-sm" 
+          @click="closeModal"
+          @wheel.prevent.stop
+          @touchmove.prevent.stop
+        ></div>
         
-        <div :class="['p-6 overflow-y-auto flex-1 transition-all duration-300', snackbarState !== 'hidden' ? 'pb-24' : '']">
-          <form @submit.prevent="saveCustomer" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div class="space-y-1">
-              <label class="block text-[10px] font-medium text-gray-500 uppercase tracking-widest">Company Name *</label>
-              <input v-model="form.company" required type="text" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#4ecdc4] focus:ring-1 focus:ring-[#4ecdc4] outline-none text-sm" />
-            </div>
-            
-            <div class="space-y-1">
-              <label class="block text-[10px] font-medium text-gray-500 uppercase tracking-widest">Contact Name *</label>
-              <input v-model="form.name" required type="text" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#4ecdc4] focus:ring-1 focus:ring-[#4ecdc4] outline-none text-sm" />
-            </div>
+        <div 
+          ref="formModalRef"
+          class="relative bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[92vh] overflow-hidden flex flex-col overscroll-contain border border-gray-100"
+        >
+          <div class="px-4 sm:px-6 py-4 border-b border-gray-200 flex items-center justify-between shrink-0">
+            <h3 class="text-base sm:text-lg font-semibold text-[#1a1a1a]">
+              {{ editingCustomer ? 'Edit Customer' : 'Add New Customer' }}
+            </h3>
+            <button @click="closeModal" class="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100 transition-colors">
+              <X class="w-5 h-5" />
+            </button>
+          </div>
+          
+          <div :class="['p-4 sm:p-6 overflow-y-auto flex-1 transition-all duration-300', snackbarState !== 'hidden' ? 'pb-24' : '']">
+            <form id="customerForm" @submit.prevent="saveCustomer" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div class="space-y-1">
+                <label class="block text-[10px] font-medium text-gray-500 uppercase tracking-widest">Company Name *</label>
+                <input v-model="form.company" required type="text" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#4ecdc4] focus:ring-1 focus:ring-[#4ecdc4] outline-none text-sm" />
+              </div>
+              
+              <div class="space-y-1">
+                <label class="block text-[10px] font-medium text-gray-500 uppercase tracking-widest">Contact Name *</label>
+                <input v-model="form.name" required type="text" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#4ecdc4] focus:ring-1 focus:ring-[#4ecdc4] outline-none text-sm" />
+              </div>
 
-            <div class="space-y-1">
-              <label class="block text-[10px] font-medium text-gray-500 uppercase tracking-widest">Phone *</label>
-              <input v-model="form.phone" required type="tel" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#4ecdc4] focus:ring-1 focus:ring-[#4ecdc4] outline-none text-sm" />
-            </div>
+              <div class="space-y-1">
+                <label class="block text-[10px] font-medium text-gray-500 uppercase tracking-widest">Phone *</label>
+                <input v-model="form.phone" required type="tel" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#4ecdc4] focus:ring-1 focus:ring-[#4ecdc4] outline-none text-sm" />
+              </div>
 
-            <div class="space-y-1">
-              <label class="block text-[10px] font-medium text-gray-500 uppercase tracking-widest">Email</label>
-              <input v-model="form.email" type="email" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#4ecdc4] focus:ring-1 focus:ring-[#4ecdc4] outline-none text-sm" />
-            </div>
+              <div class="space-y-1">
+                <label class="block text-[10px] font-medium text-gray-500 uppercase tracking-widest">Email</label>
+                <input v-model="form.email" type="email" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#4ecdc4] focus:ring-1 focus:ring-[#4ecdc4] outline-none text-sm" />
+              </div>
 
-            <div class="space-y-1 md:col-span-2">
-              <label class="block text-[10px] font-medium text-gray-500 uppercase tracking-widest">Address</label>
-              <textarea v-model="form.address" rows="2" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#4ecdc4] focus:ring-1 focus:ring-[#4ecdc4] outline-none text-sm"></textarea>
-            </div>
+              <div class="space-y-1 sm:col-span-2">
+                <label class="block text-[10px] font-medium text-gray-500 uppercase tracking-widest">Address</label>
+                <textarea v-model="form.address" rows="2" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#4ecdc4] focus:ring-1 focus:ring-[#4ecdc4] outline-none text-sm"></textarea>
+              </div>
 
-            <div class="space-y-1">
-              <label class="block text-[10px] font-medium text-gray-500 uppercase tracking-widest">City</label>
-              <input v-model="form.city" type="text" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#4ecdc4] focus:ring-1 focus:ring-[#4ecdc4] outline-none text-sm" />
-            </div>
+              <div class="space-y-1">
+                <label class="block text-[10px] font-medium text-gray-500 uppercase tracking-widest">City</label>
+                <input v-model="form.city" type="text" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#4ecdc4] focus:ring-1 focus:ring-[#4ecdc4] outline-none text-sm" />
+              </div>
 
-            <div class="space-y-1">
-              <label class="block text-[10px] font-medium text-gray-500 uppercase tracking-widest">State</label>
-              <input v-model="form.state" type="text" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#4ecdc4] focus:ring-1 focus:ring-[#4ecdc4] outline-none text-sm" />
-            </div>
+              <div class="space-y-1">
+                <label class="block text-[10px] font-medium text-gray-500 uppercase tracking-widest">State</label>
+                <input v-model="form.state" type="text" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#4ecdc4] focus:ring-1 focus:ring-[#4ecdc4] outline-none text-sm" />
+              </div>
 
-            <div class="space-y-1">
-              <label class="block text-[10px] font-medium text-gray-500 uppercase tracking-widest">Pincode</label>
-              <input v-model="form.pincode" type="text" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#4ecdc4] focus:ring-1 focus:ring-[#4ecdc4] outline-none text-sm" />
-            </div>
+              <div class="space-y-1">
+                <label class="block text-[10px] font-medium text-gray-500 uppercase tracking-widest">Pincode</label>
+                <input v-model="form.pincode" type="text" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#4ecdc4] focus:ring-1 focus:ring-[#4ecdc4] outline-none text-sm" />
+              </div>
 
-            <div class="space-y-1">
-              <label class="block text-[10px] font-medium text-gray-500 uppercase tracking-widest">GST Number</label>
-              <input v-model="form.gstNumber" type="text" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#4ecdc4] focus:ring-1 focus:ring-[#4ecdc4] outline-none text-sm uppercase" />
-            </div>
+              <div class="space-y-1">
+                <label class="block text-[10px] font-medium text-gray-500 uppercase tracking-widest">GST Number</label>
+                <input v-model="form.gstNumber" type="text" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#4ecdc4] focus:ring-1 focus:ring-[#4ecdc4] outline-none text-sm uppercase" />
+              </div>
 
-            <div class="space-y-1">
-              <label class="block text-[10px] font-medium text-gray-500 uppercase tracking-widest">Payment Terms</label>
-              <CustomSelect 
-                :modelValue="form.paymentTerms"
-                @update:modelValue="val => form.paymentTerms = val"
-                :options="paymentTermsOptions"
-                placeholder="Select Payment Terms"
-                class="w-full"
-              />
-            </div>
+              <div class="space-y-1">
+                <label class="block text-[10px] font-medium text-gray-500 uppercase tracking-widest">Payment Terms</label>
+                <CustomSelect 
+                  :modelValue="form.paymentTerms"
+                  @update:modelValue="val => form.paymentTerms = val"
+                  :options="paymentTermsOptions"
+                  placeholder="Select Payment Terms"
+                  class="w-full"
+                />
+              </div>
 
-            <div class="space-y-1 flex items-center pt-6">
-              <label class="flex items-center gap-2 cursor-pointer">
-                <input v-model="form.isActive" type="checkbox" class="w-4 h-4 text-[#1a5c4c] border-gray-300 rounded focus:ring-[#4ecdc4]" />
-                <span class="text-sm text-gray-700">Active Customer</span>
-              </label>
-            </div>
-          </form>
+              <div class="space-y-1 flex items-center pt-2 sm:pt-6">
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input v-model="form.isActive" type="checkbox" class="w-4 h-4 text-[#1a5c4c] border-gray-300 rounded focus:ring-[#4ecdc4]" />
+                  <span class="text-sm text-gray-700">Active Customer</span>
+                </label>
+              </div>
+            </form>
+          </div>
+
+          <!-- Sticky Modal Footer -->
+          <div class="px-4 sm:px-6 py-3.5 bg-gray-50 border-t border-gray-200 flex items-center justify-end gap-3 shrink-0">
+            <button
+              type="button"
+              @click="closeModal"
+              class="px-4 py-2 border border-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              form="customerForm"
+              :disabled="isSaving"
+              class="px-5 py-2 bg-[#1a5c4c] text-white rounded-lg text-sm font-medium hover:bg-[#14483b] transition-colors flex items-center gap-2 shadow-sm disabled:opacity-50"
+            >
+              <Loader2 v-if="isSaving" class="w-4 h-4 animate-spin" />
+              <span>{{ isSaving ? 'Saving...' : (editingCustomer ? 'Save Changes' : 'Create Customer') }}</span>
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+    </Teleport>
 
     <!-- Set Customer Delivery Pin Modal -->
     <SetDeliveryPinModal
@@ -461,21 +495,32 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, nextTick } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { 
   Plus, Search, Edit2, X, Loader2, Building2, User, Phone, Mail, 
   MapPin, CreditCard, ShieldCheck, CheckCircle2, XCircle, ChevronLeft, ChevronRight 
 } from 'lucide-vue-next'
 import { useSnackbar } from '~/composables/useSnackbar'
 import { useGsapAnimation } from '~/composables/useGsapAnimation'
+import { useRealtimeSync } from '~/composables/useRealtimeSync'
 import SetDeliveryPinModal from '~/components/dashboard/SetDeliveryPinModal.vue'
 import CustomSelect from '~/components/ui/CustomSelect.vue'
+import RowsPerPageSelect from '~/components/ui/RowsPerPageSelect.vue'
 
 definePageMeta({ layout: 'dashboard' })
 
 const { user } = useAuth()
 const { showEditing, showSaving, showSaved, hide, snackbarState } = useSnackbar()
 const { animateModalOpen, animateStagger, initContext } = useGsapAnimation()
+const { notifyChange, onOrderSync } = useRealtimeSync()
+
+// Realtime multi-device sync for customers
+onOrderSync((event) => {
+  if (event?.type === 'DB_CUSTOMER_CHANGE' || event?.type === 'CUSTOMER_CHANGE' || event?.action === 'CUSTOMER_SAVED' || event?.action === 'PIN_CHANGED') {
+    // 
+    refresh()
+  }
+})
 
 const paymentTermsOptions = [
   { label: 'COD (Cash on Delivery)', value: 'COD' },
@@ -510,7 +555,9 @@ const onCustomerPinSaved = (pin: any) => {
   } else {
     showSaved(`Delivery pin removed for ${selectedCustomerForPin.value?.company || selectedCustomerForPin.value?.name || 'Customer'}`)
   }
+  // 
   refresh()
+  notifyChange({ type: 'CUSTOMER_CHANGE', action: 'PIN_CHANGED' })
 }
 
 // State
@@ -529,6 +576,25 @@ const detailBackdropRef = ref<HTMLElement | null>(null)
 // Form modal state
 const formModalRef = ref<HTMLElement | null>(null)
 const formBackdropRef = ref<HTMLElement | null>(null)
+
+// Lock background scrolling when any modal is open
+const isAnyModalOpen = computed(() => isModalOpen.value || isDetailModalOpen.value || isCustomerPinModalOpen.value)
+
+watch(isAnyModalOpen, (open) => {
+  if (process.client) {
+    const mainEl = document.querySelector('main')
+    if (mainEl) {
+      mainEl.style.overflowY = open ? 'hidden' : 'auto'
+    }
+  }
+})
+
+onUnmounted(() => {
+  if (process.client) {
+    const mainEl = document.querySelector('main')
+    if (mainEl) mainEl.style.overflowY = 'auto'
+  }
+})
 
 const openCustomerDetail = (customer: any) => {
   selectedCustomer.value = customer
@@ -567,9 +633,17 @@ onMounted(() => {
   triggerRowAnimation()
 })
 
+const tableRootRef = ref<HTMLElement | null>(null)
+
 // Pagination state
 const currentPage = ref(1)
 const pageSize = ref(50)
+
+watch(currentPage, () => {
+  nextTick(() => {
+    tableRootRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  })
+})
 
 watch(searchQuery, () => {
   currentPage.value = 1
@@ -700,7 +774,9 @@ const saveCustomer = async () => {
     const method = editingCustomer.value ? 'PATCH' : 'POST'
     
     await $fetch(url, { method, body: form.value })
+    // 
     await refresh()
+    notifyChange({ type: 'CUSTOMER_CHANGE', action: 'CUSTOMER_SAVED' })
     
     closeModal()
     showSaved('Customer saved successfully')
