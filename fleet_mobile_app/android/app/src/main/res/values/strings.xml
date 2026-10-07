@@ -4,4 +4,5 @@
     <string name="title_activity_main">SM Fleet</string>
     <string name="package_name">com.siliconmarketing.fleet</string>
     <string name="custom_url_scheme">com.siliconmarketing.fleet</string>
+    <string name="google_maps_key">AIzaSyCuH_BQBFYCt4vcFDL3CkUV1byZNuiLuYg</string>
 </resources>

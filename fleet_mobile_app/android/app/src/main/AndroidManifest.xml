@@ -43,6 +43,19 @@
             </intent-filter>
         </receiver>
 
+        <!-- Google Maps & Navigation SDK API Key -->
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="@string/google_maps_key" />
+
+        <!-- Native Turn-by-Turn In-App Navigation Activity -->
+        <activity
+            android:name=".NavigationActivity"
+            android:label="Delivery Navigation"
+            android:theme="@style/AppTheme.NoActionBar"
+            android:configChanges="orientation|keyboardHidden|screenSize|screenLayout|density"
+            android:exported="false" />
+
     </application>
 
     <!-- Permissions -->

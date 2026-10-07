@@ -49,6 +49,13 @@
 
         <div class="flex items-center gap-2">
           <button 
+            @click="showSettingsModal = true" 
+            class="p-2 rounded-lg bg-white/10 hover:bg-white/20 active:scale-95 transition text-white"
+            title="Navigation Settings"
+          >
+            <Settings class="w-4 h-4" />
+          </button>
+          <button 
             @click="refreshData" 
             class="p-2 rounded-lg bg-white/10 hover:bg-white/20 active:scale-95 transition"
             title="Refresh"
@@ -486,6 +493,81 @@
         </div>
       </div>
     </div>
+
+    <!-- Navigation Settings Modal -->
+    <div 
+      v-if="showSettingsModal" 
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs"
+      @click.self="showSettingsModal = false"
+    >
+      <div class="bg-white rounded-2xl max-w-sm w-full p-5 shadow-2xl space-y-5 border border-gray-100">
+        <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-lg bg-[#1a5c4c]/10 flex items-center justify-center text-[#1a5c4c]">
+              <Settings class="w-4 h-4" />
+            </div>
+            <div>
+              <h3 class="text-base font-bold text-gray-900 leading-tight">Navigation Settings</h3>
+              <p class="text-[11px] text-gray-400">SM Fleet Preferences</p>
+            </div>
+          </div>
+          <button 
+            @click="showSettingsModal = false" 
+            class="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition"
+          >
+            <X class="w-4 h-4" />
+          </button>
+        </div>
+
+        <!-- Turn-by-Turn Mode Toggle Card -->
+        <div class="bg-gray-50 rounded-xl p-4 border border-gray-200/80 space-y-3">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <span class="text-xs font-bold text-gray-900 block">Turn-by-Turn Navigation</span>
+              <p class="text-[11px] text-gray-500 mt-0.5 leading-relaxed">
+                Launch Google Maps 3D turn-by-turn voice navigation during delivery.
+              </p>
+            </div>
+            <!-- Toggle Switch -->
+            <button 
+              type="button"
+              @click="toggleTurnByTurn" 
+              class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden"
+              :class="enableTurnByTurn ? 'bg-[#1a5c4c]' : 'bg-gray-300'"
+            >
+              <span 
+                class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out"
+                :class="enableTurnByTurn ? 'translate-x-5' : 'translate-x-0'"
+              />
+            </button>
+          </div>
+
+          <!-- Status Indicator Pill -->
+          <div 
+            class="px-2.5 py-1.5 rounded-lg text-[11px] font-medium flex items-center gap-2 transition"
+            :class="enableTurnByTurn ? 'bg-emerald-100/70 text-emerald-800' : 'bg-gray-200/70 text-gray-700'"
+          >
+            <span class="w-2 h-2 rounded-full" :class="enableTurnByTurn ? 'bg-emerald-600' : 'bg-gray-400'"></span>
+            <span>
+              {{ enableTurnByTurn ? 'Turn-by-Turn Active: Voice & 3D Guidance' : 'Location Only: Silent Road-Snapped Tracking' }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Explanatory helper -->
+        <div class="bg-amber-50 rounded-xl p-3 border border-amber-200/60 text-[11px] text-amber-800 flex items-start gap-2 leading-relaxed">
+          <span class="text-sm">💡</span>
+          <span>When turned off, location tracking still streams continuously to dispatch and customer without taking over your screen.</span>
+        </div>
+
+        <button 
+          @click="showSettingsModal = false"
+          class="w-full py-2.5 bg-[#1a5c4c] hover:bg-[#14473b] text-white rounded-xl text-xs font-bold transition shadow-sm active:scale-98"
+        >
+          Save & Close
+        </button>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -611,7 +693,7 @@ const geo = {
 }
 import { 
   Truck, LogOut, RefreshCw, PackageCheck, History, MapPin, 
-  Phone, Box, ChevronDown, Navigation, Play, CheckCircle2, Loader2, X, AlertTriangle, Clock 
+  Phone, Box, ChevronDown, Navigation, Play, CheckCircle2, Loader2, X, AlertTriangle, Clock, Settings 
 } from 'lucide-vue-next'
 
 
@@ -641,6 +723,19 @@ const historyData = ref<{ trips: any[]; summary: any }>({ trips: [], summary: {}
 const activeTripOrderId = ref<string | null>(null)
 const activeTrip = ref<any | null>(null)
 const selectedSnapshotTrip = ref<any | null>(null)
+
+// Navigation SDK Settings
+const showSettingsModal = ref(false)
+const enableTurnByTurn = ref(false)
+
+async function toggleTurnByTurn() {
+  enableTurnByTurn.value = !enableTurnByTurn.value
+  await Preferences.set({
+    key: 'turn_by_turn_enabled',
+    value: enableTurnByTurn.value ? 'true' : 'false'
+  })
+  showSaved(enableTurnByTurn.value ? '🧭 Turn-by-Turn navigation enabled' : '📍 Location-only tracking active')
+}
 
 function calculateDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371
@@ -1217,8 +1312,8 @@ function handleVisibilityChange() {
   }
 }
 
-// Open Google Maps Driving Directions from Driver's Current Location to Pinned Customer Location
-function openDirections(order: any) {
+// Open Google Maps / Navigation SDK Driving Directions
+async function openDirections(order: any) {
   const lat = order.destinationCoords?.lat || order.customer?.latitude || order.trip?.destinationCoords?.lat
   const lng = order.destinationCoords?.lng || order.customer?.longitude || order.trip?.destinationCoords?.lng
 
@@ -1228,30 +1323,46 @@ function openDirections(order: any) {
     return
   }
 
-  const dest = `${lat},${lng}`
+  const customerTitle = order.customer?.name || order.customerName || `Order #${order.orderNumber}`
 
   const cap = getCapacitor()
-  // If driver current coordinates are already known via live GPS, launch turn-by-turn navigation with exact origin & driving mode
+  if (cap && cap.isNativePlatform()) {
+    const navPlugin = (window as any).Capacitor?.Plugins?.NavigationPlugin
+    if (navPlugin) {
+      try {
+        await navPlugin.startNavigation({
+          destLat: lat,
+          destLng: lng,
+          title: customerTitle,
+          enableTurnByTurn: enableTurnByTurn.value,
+        })
+        if (!enableTurnByTurn.value) {
+          showSaved('📍 Turn-by-Turn is OFF in settings: Road tracking is active in background')
+        }
+        return
+      } catch (e) {
+        console.warn('Native navigation plugin failed, falling back:', e)
+      }
+    }
+  }
+
+  // Web or external fallback to Google Maps
+  const dest = `${lat},${lng}`
   if (currentCoords && currentCoords.lat && currentCoords.lng) {
     window.open(`https://www.google.com/maps/dir/?api=1&origin=${currentCoords.lat},${currentCoords.lng}&destination=${dest}&travelmode=driving`, '_blank')
-  } else if ((typeof navigator !== 'undefined' && navigator.geolocation) || (cap && cap.isNativePlatform())) {
-    geo.getCurrentPosition(
-      (pos: any) => {
-        currentCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude }
-        const origin = `${pos.coords.latitude},${pos.coords.longitude}`
-        window.open(`https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${dest}&travelmode=driving`, '_blank')
-      },
-      () => {
-        window.open(`https://www.google.com/maps/dir/?api=1&origin=Current+Location&destination=${dest}&travelmode=driving`, '_blank')
-      },
-      { timeout: 8000, enableHighAccuracy: true, maximumAge: 0 }
-    )
   } else {
     window.open(`https://www.google.com/maps/dir/?api=1&origin=Current+Location&destination=${dest}&travelmode=driving`, '_blank')
   }
 }
 
 onMounted(async () => {
+  try {
+    const { value: savedTbt } = await Preferences.get({ key: 'turn_by_turn_enabled' })
+    if (savedTbt !== null && savedTbt !== undefined) {
+      enableTurnByTurn.value = savedTbt === 'true'
+    }
+  } catch (e) {}
+
   isLoading.value = true
   
   await refreshData()
