@@ -101,6 +101,11 @@ public class NavigationManager {
                         );
                     }
                 }
+
+                @Override
+                public void onRawLocationUpdate(@NonNull Location location) {
+                    // Raw GPS update from device before road-snapping (ignored, road-snapped used above)
+                }
             };
         }
 
