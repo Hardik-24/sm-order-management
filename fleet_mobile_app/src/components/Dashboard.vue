@@ -973,7 +973,9 @@ async function refreshData() {
   isRefreshing.value = false
 }
 
-// Start continuous GPS tracking via phone browser
+let navListenerHandle: any = null
+
+// Start continuous GPS tracking via Navigation SDK (road-snapped)
 function startGpsTracking() {
   const cap = getCapacitor()
   if (!navigator.geolocation && !(cap && cap.isNativePlatform())) {
@@ -985,9 +987,36 @@ function startGpsTracking() {
   requestScreenWakeLock()
   startBackgroundAudioKeepAlive()
 
+  // 1. Google Navigation SDK Road-Snapped Stream (Pure, road-aligned coords)
+  if (cap && cap.isNativePlatform()) {
+    const navPlugin = (window as any).Capacitor?.Plugins?.NavigationPlugin
+    if (navPlugin && !navListenerHandle) {
+      navPlugin.addListener('onRoadSnappedLocation', (pos: any) => {
+        const pt = {
+          lat: pos.latitude,
+          lng: pos.longitude,
+          speed: pos.speed, // km/h
+          heading: pos.bearing,
+          timestamp: pos.timestamp || Date.now(),
+        }
+        currentCoords = pt
+        offlineGpsQueue.push(pt)
+
+        if (offlineGpsQueue.length > 300) {
+          offlineGpsQueue.shift()
+        }
+      }).then((handle: any) => {
+        navListenerHandle = handle
+      })
+    }
+  }
+
+  // 2. Standard Fallback Watcher (active when Navigation SDK has not started or on web)
   if (watchId === null) {
     geo.watchPosition(
       (pos: any) => {
+        // If Navigation SDK is active, it handles road-snapped coordinates directly
+        if (navListenerHandle) return
         // 1. Accuracy Filter: Allow standard phone GPS fixes up to 80 meters (phones in vehicles often range 40-75m)
         if (pos.coords.accuracy && pos.coords.accuracy > 80) {
           return // Drop extreme noisy jump
@@ -1124,6 +1153,17 @@ function stopGpsTracking() {
     clearInterval(pingInterval)
     pingInterval = null
   }
+  if (navListenerHandle) {
+    try { navListenerHandle.remove() } catch (e) {}
+    navListenerHandle = null
+  }
+  const cap = getCapacitor()
+  if (cap && cap.isNativePlatform()) {
+    const navPlugin = (window as any).Capacitor?.Plugins?.NavigationPlugin
+    if (navPlugin) {
+      navPlugin.stopNavigation().catch(() => {})
+    }
+  }
   offlineGpsQueue = []
   releaseScreenWakeLock()
   stopBackgroundAudioKeepAlive()
@@ -1138,15 +1178,7 @@ async function startTripPrompt(order: any) {
 
   showSaving('Acquiring precise GPS location...')
 
-  // Wait for a satellite-accurate GPS fix (accuracy < 50m) before starting trip
-  // This prevents WiFi/cell-tower triangulation (which can be 200-500m off) being used as start point
   const cap = getCapacitor()
-  
-  if (cap && cap.isNativePlatform()) {
-     const bgGeo = getPlugin('BackgroundGeolocation')
-     alert("DEBUG: Native Platform detected. BackgroundGeolocation plugin exists? " + !!bgGeo)
-  }
-
   if (!navigator.geolocation && !(cap && cap.isNativePlatform())) {
     showEditing('Please allow Location / GPS access on your phone to start trip.')
     return
@@ -1181,9 +1213,27 @@ async function startTripPrompt(order: any) {
         localStorage.setItem('sm_active_trip_order_id', order.id)
       }
       activeTrip.value = res.trip
+
+      // Start Google Navigation SDK session (engaging road-snapped location engine)
+      if (cap && cap.isNativePlatform()) {
+        const navPlugin = (window as any).Capacitor?.Plugins?.NavigationPlugin
+        if (navPlugin) {
+          try {
+            await navPlugin.startNavigation({
+              destLat: dest?.lat || 0,
+              destLng: dest?.lng || 0,
+              title: order.customer?.name || `Order #${order.orderNumber}`,
+              enableTurnByTurn: enableTurnByTurn.value,
+            })
+          } catch (e) {
+            console.warn('Navigation SDK start warning:', e)
+          }
+        }
+      }
+
       startGpsTracking()
       notifyDeliveryChange('start', order.id)
-      showSaved(`Trip started for #${order.orderNumber}! GPS is live. Drive safe!`)
+      showSaved(`Trip started for #${order.orderNumber}! Road-snapped GPS is live. Drive safe!`)
       await fetchAssignedDeliveries()
     } catch (e: any) {
       console.error('Failed to start trip:', e)

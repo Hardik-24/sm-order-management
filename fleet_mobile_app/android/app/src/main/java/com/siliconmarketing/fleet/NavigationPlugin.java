@@ -2,6 +2,7 @@ package com.siliconmarketing.fleet;
 
 import android.content.Intent;
 import android.net.Uri;
+import android.util.Log;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
@@ -10,11 +11,32 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 
 @CapacitorPlugin(name = "NavigationPlugin")
 public class NavigationPlugin extends Plugin {
+    private static final String TAG = "NavigationPlugin";
+
+    @Override
+    public void load() {
+        super.load();
+
+        // Connect road-snapped location stream directly to Capacitor JS listeners
+        NavigationManager.getInstance().setLocationCallback((lat, lng, bearing, speedMps, accuracy, timestamp) -> {
+            JSObject data = new JSObject();
+            data.put("latitude", lat);
+            data.put("longitude", lng);
+            data.put("bearing", bearing);
+            data.put("speed", Math.round(speedMps * 3.6)); // km/h
+            data.put("accuracy", accuracy);
+            data.put("timestamp", timestamp > 0 ? timestamp : System.currentTimeMillis());
+            data.put("isRoadSnapped", true);
+
+            notifyListeners("onRoadSnappedLocation", data);
+        });
+    }
 
     @PluginMethod
     public void isAvailable(PluginCall call) {
         JSObject ret = new JSObject();
         ret.put("available", true);
+        ret.put("isNavigating", NavigationManager.getInstance().isNavigating());
         call.resolve(ret);
     }
 
@@ -30,40 +52,32 @@ public class NavigationPlugin extends Plugin {
             return;
         }
 
-        if (Boolean.TRUE.equals(enableTurnByTurn)) {
-            try {
-                Intent intent = new Intent(getContext(), NavigationActivity.class);
-                intent.putExtra("destLat", lat);
-                intent.putExtra("destLng", lng);
-                intent.putExtra("title", title);
-                getActivity().startActivity(intent);
-
-                JSObject ret = new JSObject();
-                ret.put("success", true);
-                ret.put("mode", "in_app");
-                call.resolve(ret);
-            } catch (Exception e) {
-                // Fallback to Google Maps app intent
+        NavigationManager.getInstance().startNavigation(getActivity(), lat, lng, title, () -> {
+            if (Boolean.TRUE.equals(enableTurnByTurn)) {
                 try {
-                    Uri gmmIntentUri = Uri.parse("google.navigation:q=" + lat + "," + lng + "&mode=d");
-                    Intent mapIntent = new Intent(Intent.ACTION_VIEW, gmmIntentUri);
-                    mapIntent.setPackage("com.google.android.apps.maps");
-                    getContext().startActivity(mapIntent);
-
-                    JSObject ret = new JSObject();
-                    ret.put("success", true);
-                    ret.put("mode", "external_maps");
-                    call.resolve(ret);
-                } catch (Exception ex) {
-                    call.reject("Failed to start navigation: " + ex.getMessage());
+                    Intent intent = new Intent(getContext(), NavigationActivity.class);
+                    intent.putExtra("destLat", lat);
+                    intent.putExtra("destLng", lng);
+                    intent.putExtra("title", title);
+                    getActivity().startActivity(intent);
+                } catch (Exception e) {
+                    Log.w(TAG, "NavigationActivity launch error: " + e.getMessage());
                 }
             }
-        } else {
-            // Headless Mode: background tracking remains active without full-screen navigation takeover
+
             JSObject ret = new JSObject();
             ret.put("success", true);
-            ret.put("mode", "headless");
+            ret.put("isRoadSnappedActive", true);
+            ret.put("mode", Boolean.TRUE.equals(enableTurnByTurn) ? "in_app" : "headless");
             call.resolve(ret);
-        }
+        });
+    }
+
+    @PluginMethod
+    public void stopNavigation(PluginCall call) {
+        NavigationManager.getInstance().stopNavigation();
+        JSObject ret = new JSObject();
+        ret.put("success", true);
+        call.resolve(ret);
     }
 }
