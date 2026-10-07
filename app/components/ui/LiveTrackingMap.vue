@@ -1,7 +1,7 @@
 <template>
-  <div class="relative w-full h-full min-h-[350px] rounded-xl overflow-hidden bg-gray-100 border border-gray-200">
+  <div class="relative w-full h-full min-h-[200px] rounded-xl overflow-hidden bg-gray-100 border border-gray-200">
     <!-- Map Canvas Container -->
-    <div ref="mapContainerRef" class="w-full h-full min-h-[350px]"></div>
+    <div ref="mapContainerRef" class="w-full h-full min-h-[200px]"></div>
 
     <!-- Status / Mode Badge Overlay -->
     <div class="absolute top-3 left-3 z-10 flex items-center gap-2 bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-lg shadow-sm border border-gray-200 text-xs font-medium">
@@ -18,7 +18,7 @@
     </div>
 
     <!-- Stats Overlay (Distance & Duration) -->
-    <div v-if="distanceKm !== undefined || durationMin !== undefined" class="absolute bottom-3 left-3 z-10 flex items-center gap-3 bg-white/95 backdrop-blur-sm px-3.5 py-2 rounded-xl shadow-md border border-gray-200 text-xs">
+    <div v-if="distanceKm !== undefined || durationMin !== undefined" class="absolute bottom-3.5 left-3.5 z-10 flex items-center gap-3 bg-white/95 backdrop-blur-sm px-3.5 py-2 rounded-xl shadow-md border border-gray-200 text-xs">
       <div v-if="distanceKm !== undefined" class="flex flex-col">
         <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Distance</span>
         <span class="font-bold text-[#1a5c4c] text-sm">{{ distanceKm }} km</span>
@@ -36,7 +36,7 @@
     <!-- Recenter / Fit View Button -->
     <button 
       @click="fitMapBounds" 
-      class="absolute bottom-3 right-3 z-10 bg-white/95 hover:bg-white text-gray-700 p-2 rounded-lg shadow-md border border-gray-200 transition-colors"
+      class="absolute bottom-3.5 right-3.5 z-10 bg-white/95 hover:bg-white text-gray-700 p-2 rounded-lg shadow-md border border-gray-200 transition-colors"
       title="Fit Route to Screen"
     >
       <Compass class="w-4 h-4" />
@@ -367,10 +367,19 @@ function fitMapBounds(force = false) {
   if (engine.value === 'google' && googleMap && (window as any).google?.maps) {
     const bounds = new (window as any).google.maps.LatLngBounds()
     points.forEach((p) => bounds.extend(p))
-    googleMap.fitBounds(bounds)
+    googleMap.fitBounds(bounds, {
+      top: 40,
+      left: 40,
+      right: 40,
+      bottom: 75,
+    })
   } else if (engine.value === 'leaflet' && leafletMap && (window as any).L) {
     const bounds = (window as any).L.latLngBounds(points.map((p) => [p.lat, p.lng]))
-    leafletMap.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 })
+    leafletMap.fitBounds(bounds, {
+      paddingTopLeft: [40, 40],
+      paddingBottomRight: [40, 75],
+      maxZoom: 15,
+    })
   }
 }
 

@@ -24,7 +24,7 @@
     </header>
 
     <!-- Main Container -->
-    <main class="flex-1 max-w-2xl mx-auto w-full p-4 space-y-4 pb-12">
+    <main class="flex-1 max-w-2xl mx-auto w-full p-4 sm:p-6 space-y-6 pb-28">
       <!-- Loading State -->
       <div v-if="isLoading" class="py-20 text-center text-gray-400">
         <Loader2 class="w-10 h-10 animate-spin mx-auto mb-3 text-[#1a5c4c]" />
@@ -65,7 +65,7 @@
             <div v-if="trackingData.deliveryStatus === 'DISPATCHED'" class="space-y-4">
               <!-- Live Map Card -->
               <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-                <div class="h-80 sm:h-96 w-full relative">
+                <div class="h-[380px] sm:h-[440px] w-full relative overflow-hidden">
                   <LiveTrackingMap
                     :driverLocation="trackingData.trip?.currentLocation || null"
                     :startLocation="trackingData.trip?.startLocation || null"
@@ -124,7 +124,7 @@
                   <span class="font-bold text-gray-700">Delivered Route Map</span>
                   <span class="text-gray-500">{{ trackingData.trip.totalDistanceKm || 0 }} km driven</span>
                 </div>
-                <div class="h-72 w-full">
+                <div class="h-[340px] sm:h-[380px] w-full overflow-hidden">
                   <LiveTrackingMap
                     :driverLocation="trackingData.trip?.route[trackingData.trip.route.length - 1]"
                     :startLocation="trackingData.trip?.startLocation || null"

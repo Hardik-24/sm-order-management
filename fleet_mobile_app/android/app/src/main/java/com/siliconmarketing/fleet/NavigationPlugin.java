@@ -1,7 +1,6 @@
 package com.siliconmarketing.fleet;
 
 import android.content.Intent;
-import android.net.Uri;
 import android.util.Log;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
@@ -18,7 +17,10 @@ public class NavigationPlugin extends Plugin {
         super.load();
 
         // Connect road-snapped location stream directly to Capacitor JS listeners
-        NavigationManager.getInstance().setLocationCallback((lat, lng, bearing, speedMps, accuracy, timestamp) -> {
+        NavigationManager.getInstance().setLocationCallback((
+                lat, lng, bearing, speedMps, accuracy, timestamp,
+                isRoadSnapped, remainingMeters, remainingSeconds, distanceDrivenKm
+        ) -> {
             JSObject data = new JSObject();
             data.put("latitude", lat);
             data.put("longitude", lng);
@@ -26,7 +28,20 @@ public class NavigationPlugin extends Plugin {
             data.put("speed", Math.round(speedMps * 3.6)); // km/h
             data.put("accuracy", accuracy);
             data.put("timestamp", timestamp > 0 ? timestamp : System.currentTimeMillis());
-            data.put("isRoadSnapped", true);
+            data.put("isRoadSnapped", isRoadSnapped);
+
+            if (remainingMeters >= 0) {
+                double remKm = Math.round((remainingMeters / 1000.0) * 10.0) / 10.0;
+                int remMins = Math.round(remainingSeconds / 60.0f);
+                data.put("remainingMeters", remainingMeters);
+                data.put("remainingSeconds", remainingSeconds);
+                data.put("remainingDistanceKm", remKm);
+                data.put("remainingTimeMinutes", remMins);
+                data.put("distanceDrivenKm", distanceDrivenKm);
+                data.put("etaFormatted", remKm + " km left (~" + remMins + " min)");
+            } else {
+                data.put("distanceDrivenKm", distanceDrivenKm);
+            }
 
             notifyListeners("onRoadSnappedLocation", data);
         });
@@ -46,31 +61,41 @@ public class NavigationPlugin extends Plugin {
         Double lng = call.getDouble("destLng");
         String title = call.getString("title", "Delivery Destination");
         Boolean enableTurnByTurn = call.getBoolean("enableTurnByTurn", false);
+        String orderId = call.getString("orderId", "");
+        String authToken = call.getString("authToken", "");
 
         if (lat == null || lng == null) {
             call.reject("Invalid destination coordinates");
             return;
         }
 
-        NavigationManager.getInstance().startNavigation(getActivity(), lat, lng, title, () -> {
-            if (Boolean.TRUE.equals(enableTurnByTurn)) {
-                try {
-                    Intent intent = new Intent(getContext(), NavigationActivity.class);
-                    intent.putExtra("destLat", lat);
-                    intent.putExtra("destLng", lng);
-                    intent.putExtra("title", title);
-                    getActivity().startActivity(intent);
-                } catch (Exception e) {
-                    Log.w(TAG, "NavigationActivity launch error: " + e.getMessage());
-                }
-            }
+        NavigationManager.getInstance().startNavigation(
+                getActivity(),
+                lat,
+                lng,
+                title,
+                orderId,
+                authToken,
+                () -> {
+                    if (Boolean.TRUE.equals(enableTurnByTurn)) {
+                        try {
+                            Intent intent = new Intent(getContext(), NavigationActivity.class);
+                            intent.putExtra("destLat", lat);
+                            intent.putExtra("destLng", lng);
+                            intent.putExtra("title", title);
+                            getActivity().startActivity(intent);
+                        } catch (Exception e) {
+                            Log.w(TAG, "NavigationActivity launch error: " + e.getMessage());
+                        }
+                    }
 
-            JSObject ret = new JSObject();
-            ret.put("success", true);
-            ret.put("isRoadSnappedActive", true);
-            ret.put("mode", Boolean.TRUE.equals(enableTurnByTurn) ? "in_app" : "headless");
-            call.resolve(ret);
-        });
+                    JSObject ret = new JSObject();
+                    ret.put("success", true);
+                    ret.put("isRoadSnappedActive", true);
+                    ret.put("mode", Boolean.TRUE.equals(enableTurnByTurn) ? "in_app" : "headless");
+                    call.resolve(ret);
+                }
+        );
     }
 
     @PluginMethod

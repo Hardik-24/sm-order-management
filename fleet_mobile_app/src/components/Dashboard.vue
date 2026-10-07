@@ -136,7 +136,7 @@
           </div>
           <div>
             <span class="text-[10px] text-emerald-200 uppercase font-bold block">Est. Payout</span>
-            <span class="text-base sm:text-lg font-extrabold text-white">₹{{ activeTrip.calculatedPayout || 0 }}</span>
+            <span class="text-base sm:text-lg font-extrabold text-white">₹{{ Math.max(activeTrip.calculatedPayout || 0, Math.round(displayDistanceKm * 15)) }}</span>
           </div>
         </div>
 
@@ -768,8 +768,10 @@ function calculateDistanceKm(lat1: number, lon1: number, lat2: number, lon2: num
 }
 
 let lastNavPt: { lat: number; lng: number } | null = null
+const navSdkEta = ref<string | null>(null)
 
 const activeTripEta = computed(() => {
+  if (navSdkEta.value) return navSdkEta.value
   const current = currentCoords || activeTrip.value?.currentLocation
   const dest = activeTrip.value?.destinationCoords || activeTrip.value?.destinationLocation
   if (!current || !dest || !current.lat || !dest.lat) return null
@@ -1037,14 +1039,21 @@ function startGpsTracking() {
           activeTrip.value.currentLocation = pt
         }
 
-        // Real-time incremental distance update while driving
-        if (lastNavPt) {
+        // 1. Synchronize real-time distance driven from Google Navigation SDK
+        if (pos.distanceDrivenKm !== undefined && pos.distanceDrivenKm > 0) {
+          displayDistanceKm.value = pos.distanceDrivenKm
+        } else if (lastNavPt) {
           const dKm = calculateDistanceKm(lastNavPt.lat, lastNavPt.lng, pt.lat, pt.lng)
           if (dKm >= 0.005 && dKm < 0.5) {
             displayDistanceKm.value = Math.round((displayDistanceKm.value + dKm) * 100) / 100
           }
         }
         lastNavPt = { lat: pt.lat, lng: pt.lng }
+
+        // 2. Synchronize ETA & remaining route distance from Google Navigation SDK
+        if (pos.etaFormatted) {
+          navSdkEta.value = pos.etaFormatted
+        }
 
         offlineGpsQueue.push(pt)
 
@@ -1061,8 +1070,10 @@ function startGpsTracking() {
   if (watchId === null) {
     geo.watchPosition(
       (pos: any) => {
-        // If Navigation SDK is active, it handles road-snapped coordinates directly
-        if (navListenerHandle) return
+        // If Navigation SDK is actively streaming points (within last 8 seconds), let it handle updates
+        if (navListenerHandle && lastNavPt && (Date.now() - (currentCoords?.timestamp || 0) < 8000)) {
+          return
+        }
         // 1. Accuracy Filter: Allow standard phone GPS fixes up to 80 meters (phones in vehicles often range 40-75m)
         if (pos.coords.accuracy && pos.coords.accuracy > 80) {
           return // Drop extreme noisy jump
@@ -1142,12 +1153,7 @@ function startGpsTracking() {
       if (activeTripOrderId.value && offlineGpsQueue.length > 0) {
         const pointsToSend = [...offlineGpsQueue]
         try {
-          const res = await $fetch<{ 
-            success: boolean; 
-            trip: any;
-            orderStatus?: string;
-            holdReason?: string | null;
-          }>('/api/driver/trip', {
+          const res = await fetchAuth('/api/driver/trip', {
             method: 'POST',
             body: {
               action: 'ping',
@@ -1272,11 +1278,14 @@ async function startTripPrompt(order: any) {
         const navPlugin = (window as any).Capacitor?.Plugins?.NavigationPlugin
         if (navPlugin) {
           try {
+            const { value: token } = await Preferences.get({ key: 'auth_token' })
             await navPlugin.startNavigation({
               destLat: dest?.lat || 0,
               destLng: dest?.lng || 0,
               title: order.customer?.name || `Order #${order.orderNumber}`,
               enableTurnByTurn: enableTurnByTurn.value,
+              orderId: order.id,
+              authToken: token || '',
             })
           } catch (e) {
             console.warn('Navigation SDK start warning:', e)
@@ -1433,11 +1442,14 @@ async function openDirections(order: any) {
     const navPlugin = (window as any).Capacitor?.Plugins?.NavigationPlugin
     if (navPlugin) {
       try {
+        const { value: token } = await Preferences.get({ key: 'auth_token' })
         await navPlugin.startNavigation({
           destLat: lat,
           destLng: lng,
           title: customerTitle,
           enableTurnByTurn: enableTurnByTurn.value,
+          orderId: order.id || activeTripOrderId.value || '',
+          authToken: token || '',
         })
         if (!enableTurnByTurn.value) {
           showSaved('📍 Turn-by-Turn is OFF in settings: Road tracking is active in background')

@@ -1,7 +1,7 @@
 <template>
-  <div class="relative w-full h-full min-h-[350px] rounded-xl overflow-hidden bg-gray-100 border border-gray-200">
+  <div class="relative w-full h-full min-h-[200px] rounded-xl overflow-hidden bg-gray-100 border border-gray-200">
     <!-- Map Canvas Container -->
-    <div ref="mapContainerRef" class="w-full h-full min-h-[350px]"></div>
+    <div ref="mapContainerRef" class="w-full h-full min-h-[200px]"></div>
 
     <!-- Status / Mode Badge Overlay -->
     <div class="absolute top-3 left-3 z-10 flex items-center gap-2 bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-lg shadow-sm border border-gray-200 text-xs font-medium">

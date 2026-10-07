@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Silicon Marketing — System Enhancement Proposal</title>
+<style>
+  @page {
+    size: A4;
+    margin: 16mm 14mm 16mm 14mm;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: #1f2937;
+    line-height: 1.5;
+    font-size: 13px;
+    background: #fff;
+    margin: 0;
+    padding: 0;
+  }
+  .header-card {
+    border-bottom: 3px solid #1a5c4c;
+    padding-bottom: 12px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+  .brand-title {
+    font-size: 24px;
+    font-weight: 800;
+    color: #1a5c4c;
+    letter-spacing: 0.5px;
+    margin: 0;
+  }
+  .doc-subtitle {
+    font-size: 13px;
+    color: #4b5563;
+    margin-top: 4px;
+    font-weight: 500;
+  }
+  .meta-box {
+    text-align: right;
+    font-size: 11px;
+    color: #6b7280;
+  }
+  h2 {
+    font-size: 16px;
+    color: #111827;
+    border-left: 4px solid #1a5c4c;
+    padding-left: 8px;
+    margin-top: 24px;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  h3 {
+    font-size: 14px;
+    color: #1a5c4c;
+    margin-top: 14px;
+    margin-bottom: 6px;
+  }
+  p {
+    margin: 6px 0;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0 16px 0;
+    font-size: 12px;
+  }
+  th, td {
+    border: 1px solid #e5e7eb;
+    padding: 8px 10px;
+    text-align: left;
+    vertical-align: top;
+  }
+  th {
+    background-color: #f3f4f6;
+    color: #111827;
+    font-weight: 700;
+  }
+  tr:nth-child(even) {
+    background-color: #fafafa;
+  }
+  .badge {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+  .badge-green { background: #dcfce7; color: #166534; }
+  .badge-amber { background: #fef3c7; color: #92400e; }
+  .badge-blue { background: #dbeafe; color: #1e40af; }
+  .callout {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin: 12px 0;
+    font-size: 12px;
+  }
+  .pipeline-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    margin: 14px 0 20px 0;
+  }
+  .pipeline-step {
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 8px;
+    background: #f9fafb;
+    text-align: center;
+  }
+  .pipeline-step-num {
+    font-size: 10px;
+    font-weight: 800;
+    color: #1a5c4c;
+    text-transform: uppercase;
+  }
+  .pipeline-step-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: #111827;
+    margin-top: 2px;
+  }
+  .pipeline-step-desc {
+    font-size: 10px;
+    color: #6b7280;
+    margin-top: 4px;
+    line-height: 1.3;
+  }
+  .code-box {
+    background: #1f2937;
+    color: #e5e7eb;
+    padding: 10px;
+    border-radius: 6px;
+    font-family: Consolas, monospace;
+    font-size: 11px;
+    overflow-x: auto;
+    white-space: pre-wrap;
+  }
+  .page-break {
+    page-break-before: always;
+  }
+</style>
+</head>
+<body>
+
+<div class="header-card">
+  <div>
+    <h1 class="brand-title">SILICON MARKETING</h1>
+    <div class="doc-subtitle">System & Workflow Architecture Enhancement Proposal</div>
+  </div>
+  <div class="meta-box">
+    <strong>Document:</strong> OMS Proposal v2.0<br>
+    <strong>Target:</strong> Family Business Review & Sign-Off<br>
+    <strong>Date:</strong> October 7, 2026
+  </div>
+</div>
+
+<h2>1. Executive Summary</h2>
+<p>
+This proposal establishes a <strong>frictionless 5-department order fulfillment lifecycle</strong> tailored specifically for Silicon Marketing's wholesale plywood, MDF, and hardware business. It introduces clear client ownership, multi-address support, pricing controls, actual packed-quantity tracking, invoice attachment, multi-order trip bunching, and complete financial audit retention.
+</p>
+
+<h2>2. 5-Stage Operational Pipeline</h2>
+<div class="pipeline-grid">
+  <div class="pipeline-step">
+    <div class="pipeline-step-num">Step 1</div>
+    <div class="pipeline-step-title">Order Creation</div>
+    <div class="pipeline-step-desc">Customer Manager, Multi-Address picker, Urgent toggle, Tax & Last Price notes.</div>
+  </div>
+  <div class="pipeline-step">
+    <div class="pipeline-step-num">Step 2</div>
+    <div class="pipeline-step-title">Order Approval</div>
+    <div class="pipeline-step-desc">Dedicated approval queue. Verifies rates & discounts. Sets final price.</div>
+  </div>
+  <div class="pipeline-step">
+    <div class="pipeline-step-num">Step 3</div>
+    <div class="pipeline-step-title">Warehouse Packing</div>
+    <div class="pipeline-step-desc">Packs goods. Enters actual physically loaded quantity to log shortages.</div>
+  </div>
+  <div class="pipeline-step">
+    <div class="pipeline-step-num">Step 4</div>
+    <div class="pipeline-step-title">Tax & Billing</div>
+    <div class="pipeline-step-desc">Matches packed vs billed qty. Inputs bill no., date & attaches invoice PDF.</div>
+  </div>
+  <div class="pipeline-step">
+    <div class="pipeline-step-num">Step 5</div>
+    <div class="pipeline-step-title">Fleet Logistics</div>
+    <div class="pipeline-step-desc">Assigns driver. Bunches multiple orders in 1 trip. Split batch dispatch.</div>
+  </div>
+</div>
+
+<h2>3. Customer & Product Master Enhancements</h2>
+
+<h3>A. Customer Master (CRM)</h3>
+<table>
+  <tr>
+    <th style="width: 25%;">Feature / Field</th>
+    <th style="width: 25%;">Configuration</th>
+    <th>Business Benefit & Operational Value</th>
+  </tr>
+  <tr>
+    <td><strong>Customer Manager</strong></td>
+    <td>Dropdown (Sales / Staff)</td>
+    <td>Assigns clear staff ownership. Sales reps know who is responsible for follow-ups and payments.</td>
+  </tr>
+  <tr>
+    <td><strong>Multiple Delivery Addresses</strong></td>
+    <td>Unlimited (Address 1, Warehouse, Site)</td>
+    <td>Supports clients with multiple godowns, show units, or site locations with 1-click order picker.</td>
+  </tr>
+  <tr>
+    <td><strong>Privilege Tier</strong></td>
+    <td><span class="badge badge-amber">Bronze (Default)</span> <span class="badge badge-blue">Silver</span> <span class="badge badge-green">Gold</span></td>
+    <td>Categorizes clients for pricing discounts, credit limits, and priority dispatch.</td>
+  </tr>
+  <tr>
+    <td><strong>Urgent Client Flag</strong></td>
+    <td>Toggle (Priority Client)</td>
+    <td>Flags VIP contractors so new orders automatically default to Urgent status.</td>
+  </tr>
+  <tr>
+    <td><strong>Alternate Contact No.</strong></td>
+    <td>10-Digit Mobile</td>
+    <td>Separates owner/proprietor contact from the on-site supervisor or purchase manager.</td>
+  </tr>
+  <tr>
+    <td><strong>GST Number (GSTIN)</strong></td>
+    <td>15-Digit Alphanumeric</td>
+    <td>Strict validation prevents typos before tax invoices are generated. Must be unique.</td>
+  </tr>
+  <tr>
+    <td><strong>Customer Code / ID</strong></td>
+    <td>Auto-Generated + Editable</td>
+    <td>Auto-generates sequential codes (e.g. <code>CUST-1001</code>). Admins can edit to match Busy ledger codes.</td>
+  </tr>
+  <tr>
+    <td><strong>Customer Alias</strong></td>
+    <td>Market Nickname</td>
+    <td>Quick search by the local name verbalized in market trade (e.g. <em>Balaji Ply</em> for <em>Sri Balaji Traders</em>).</td>
+  </tr>
+  <tr>
+    <td><strong>Master Field Control</strong></td>
+    <td>Admin Dropdown Management</td>
+    <td>Admins can configure and decide exactly which options appear in dropdown menus during customer creation (e.g. Customer Managers, Privilege Tiers, Payment Terms, Address Labels). Prevents clutter.</td>
+  </tr>
+</table>
+
+<h3>B. Product Master (Inventory)</h3>
+<table>
+  <tr>
+    <th style="width: 25%;">Change</th>
+    <th style="width: 25%;">Implementation</th>
+    <th>Operational Value</th>
+  </tr>
+  <tr>
+    <td><strong>Category &rarr; Group Name</strong></td>
+    <td>Rebranding in UI & DB</td>
+    <td>Matches standard timber/plywood trade and Busy groups (<em>Plywood Group, MDF Group, Hardware Group</em>).</td>
+  </tr>
+  <tr>
+    <td><strong>Anti-Duplication Rules</strong></td>
+    <td>SKU + Compound Check</td>
+    <td>Strictly unique SKU. Prevents adding identical product name twice inside the same Group.</td>
+  </tr>
+</table>
+
+<div class="page-break"></div>
+
+<h2>4. Order Creation & Workflow Controls</h2>
+<table>
+  <tr>
+    <th style="width: 25%;">Stage</th>
+    <th>Key Features & Functionality</th>
+  </tr>
+  <tr>
+    <td><strong>Order Creation</strong><br><small>/dashboard/orders/create</small></td>
+    <td>
+      &bull; <strong>Customer Manager Badge:</strong> Automatically shows assigned manager (uneditable).<br>
+      &bull; <strong>Address Picker:</strong> Dropdown to pick Address 1, Godown, or custom site address.<br>
+      &bull; <strong>Urgent Order Toggle:</strong> Flags order as <code>Urgent</code> with high-visibility glowing row colors.<br>
+      &bull; <strong>Tax Mode Toggle:</strong> Inclusive vs Exclusive of GST per item.<br>
+      &bull; <strong>Product Notes:</strong> Box below each item for discount or specification instructions.<br>
+      &bull; <strong>Last Price Checkbox:</strong> Flags the approval team to apply the client's last billed price.
+    </td>
+  </tr>
+  <tr>
+    <td><strong>Approve Orders</strong><br><small>New Sidebar Menu</small></td>
+    <td>
+      &bull; <strong>Pricing Review:</strong> Management reviews item notes and last price requests.<br>
+      &bull; <strong>Confirm Price:</strong> Approver confirms final rates and clicks <strong>Approve Order</strong> to release to warehouse.
+    </td>
+  </tr>
+  <tr>
+    <td><strong>Warehouse Packing</strong><br><small>/dashboard/packing</small></td>
+    <td>
+      &bull; <strong>Packed Quantity Input:</strong> Staff inputs actual physical units loaded (e.g. 85 sheets packed vs 100 ordered).<br>
+      &bull; <strong>Discrepancy Logging:</strong> Directly flags warehouse shortages for billing.
+    </td>
+  </tr>
+  <tr>
+    <td><strong>Billing Department</strong><br><small>/dashboard/billing</small></td>
+    <td>
+      &bull; <strong>Reconciliation:</strong> Billing adjusts Invoiced Qty to match physical Packed Qty.<br>
+      &bull; <strong>Invoice Record:</strong> Enters Bill Number, Bill Date, and attaches digital <strong>PDF Invoice</strong>.
+    </td>
+  </tr>
+  <tr>
+    <td><strong>Fleet Logistics</strong><br><small>/dashboard/delivery & App</small></td>
+    <td>
+      &bull; <strong>Multi-Order Trip Bunching:</strong> Assigns multiple neighboring orders to 1 driver in 1 trip.<br>
+      &bull; <strong>Split / Batch Delivery:</strong> Deliver big orders in separate partial truckloads with separate bills.<br>
+      &bull; <strong>GPS Navigation SDK:</strong> Driver phone tracks road-snapped location continuously.
+    </td>
+  </tr>
+  <tr>
+    <td><strong>Security & Audit Policy</strong></td>
+    <td>
+      &bull; <strong>Admin-Only Deletion:</strong> Standard staff cannot permanently delete any order.<br>
+      &bull; <strong>Cancellation with Reason:</strong> Staff can only Cancel orders with mandatory reason logged.<br>
+      &bull; <strong>Permanent Retention:</strong> Cancelled orders are never wiped; kept in records for full audit transparency.
+    </td>
+  </tr>
+</table>
+
+<h2>5. Agreed Decisions & Next Steps</h2>
+<ul>
+  <li><strong>Privilege Tiers:</strong> Bronze (Default), Silver, Gold.</li>
+  <li><strong>Customer Code:</strong> Auto-generated (e.g. <code>CUST-1001</code>) with Admin manual override capability (matching Busy ledger codes).</li>
+  <li><strong>Group Name:</strong> Categories converted to Group Name convention (matching Busy product groups).</li>
+  <li><strong>Master Field Control:</strong> Dedicated Admin settings to configure dropdown options during customer creation.</li>
+  <li><strong>Database Migration:</strong> Full Prisma schema updated with new models (<code>CustomerAddress</code>, <code>DispatchBatch</code>, <code>ProductGroup</code>).</li>
+</ul>
+
+</body>
+</html>
