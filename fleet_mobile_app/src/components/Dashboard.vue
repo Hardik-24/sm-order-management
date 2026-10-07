@@ -767,13 +767,15 @@ function calculateDistanceKm(lat1: number, lon1: number, lat2: number, lon2: num
   return Math.round(R * c * 10) / 10
 }
 
+let lastNavPt: { lat: number; lng: number } | null = null
+
 const activeTripEta = computed(() => {
-  if (!activeTrip.value?.currentLocation || !activeTrip.value?.destinationCoords) return null
-  const { lat: cLat, lng: cLng } = activeTrip.value.currentLocation
-  const { lat: dLat, lng: dLng } = activeTrip.value.destinationCoords
-  const remainingKm = calculateDistanceKm(cLat, cLng, dLat, dLng)
+  const current = currentCoords || activeTrip.value?.currentLocation
+  const dest = activeTrip.value?.destinationCoords || activeTrip.value?.destinationLocation
+  if (!current || !dest || !current.lat || !dest.lat) return null
+  const remainingKm = calculateDistanceKm(current.lat, current.lng, dest.lat, dest.lng)
   if (remainingKm < 0.1) return 'Arriving soon'
-  const speedKmh = activeTrip.value.currentLocation.speed ? (activeTrip.value.currentLocation.speed * 3.6) : 25
+  const speedKmh = current.speed ? (current.speed * 3.6) : 25
   const avgSpeed = Math.max(speedKmh, 15) // Assume at least 15km/h in city traffic
   const mins = Math.round((remainingKm / avgSpeed) * 60)
   return `${remainingKm} km left (~${mins} min)`
@@ -781,6 +783,30 @@ const activeTripEta = computed(() => {
 
 const currentTimeMs = ref(Date.now())
 let elapsedTimer: ReturnType<typeof setInterval> | null = null
+
+function ensureElapsedTimerStarted() {
+  if (!elapsedTimer) {
+    currentTimeMs.value = Date.now()
+    elapsedTimer = setInterval(() => {
+      currentTimeMs.value = Date.now()
+    }, 1000)
+  }
+}
+
+function stopElapsedTimer() {
+  if (elapsedTimer) {
+    clearInterval(elapsedTimer)
+    elapsedTimer = null
+  }
+}
+
+watch(() => activeTrip.value?.startTime, (newStart) => {
+  if (newStart) {
+    ensureElapsedTimerStarted()
+  } else {
+    stopElapsedTimer()
+  }
+}, { immediate: true })
 
 const elapsedTimeFormatted = computed(() => {
   if (!activeTrip.value?.startTime) return '0m 00s'
@@ -801,26 +827,13 @@ const displayDistanceKm = ref(0)
 let distanceSimInterval: ReturnType<typeof setInterval> | null = null
 
 watch(() => activeTrip.value?.totalDistanceKm, (newVal) => {
-  if (newVal === undefined) {
+  if (newVal === undefined || newVal === null) {
     displayDistanceKm.value = 0
     return
   }
-  // Sync up
-  if (Math.abs(displayDistanceKm.value - newVal) > 0.5) {
+  if (newVal > displayDistanceKm.value || Math.abs(displayDistanceKm.value - newVal) > 0.5) {
     displayDistanceKm.value = newVal
   }
-  
-  if (distanceSimInterval) clearInterval(distanceSimInterval)
-  
-  // Smoothly increment over the next 12 seconds
-  const target = newVal
-  distanceSimInterval = setInterval(() => {
-    if (activeTrip.value?.currentLocation?.speed) {
-       const speedKmH = activeTrip.value.currentLocation.speed * 3.6
-       const kmPerSecond = speedKmH / 3600
-       displayDistanceKm.value = Math.round((displayDistanceKm.value + kmPerSecond) * 100) / 100
-    }
-  }, 1000)
 }, { immediate: true })
 
 const isHoldActive = ref(false)
@@ -951,6 +964,7 @@ async function fetchAssignedDeliveries() {
         // Trip is still live — update trip data if server returned it, otherwise keep existing state
         if (activeOrder.trip && activeOrder.trip.status === 'IN_TRANSIT') {
           activeTrip.value = activeOrder.trip
+          ensureElapsedTimerStarted()
         }
         if (isHoldActive.value) {
           isHoldActive.value = false
@@ -967,6 +981,7 @@ async function fetchAssignedDeliveries() {
     if (active) {
       activeTripOrderId.value = active.id
       activeTrip.value = active.trip
+      ensureElapsedTimerStarted()
       startGpsTracking()
     }
     // If nothing active and we weren't tracking, leave state alone (no false clears)
@@ -1018,6 +1033,19 @@ function startGpsTracking() {
           timestamp: pos.timestamp || Date.now(),
         }
         currentCoords = pt
+        if (activeTrip.value) {
+          activeTrip.value.currentLocation = pt
+        }
+
+        // Real-time incremental distance update while driving
+        if (lastNavPt) {
+          const dKm = calculateDistanceKm(lastNavPt.lat, lastNavPt.lng, pt.lat, pt.lng)
+          if (dKm >= 0.005 && dKm < 0.5) {
+            displayDistanceKm.value = Math.round((displayDistanceKm.value + dKm) * 100) / 100
+          }
+        }
+        lastNavPt = { lat: pt.lat, lng: pt.lng }
+
         offlineGpsQueue.push(pt)
 
         if (offlineGpsQueue.length > 300) {
@@ -1048,6 +1076,9 @@ function startGpsTracking() {
           timestamp: pos.timestamp || Date.now(),
         }
         currentCoords = pt
+        if (activeTrip.value) {
+          activeTrip.value.currentLocation = pt
+        }
 
         const last = offlineGpsQueue[offlineGpsQueue.length - 1]
         
@@ -1183,6 +1214,8 @@ function stopGpsTracking() {
     }
   }
   offlineGpsQueue = []
+  lastNavPt = null
+  stopElapsedTimer()
   releaseScreenWakeLock()
   stopBackgroundAudioKeepAlive()
 }
@@ -1231,6 +1264,8 @@ async function startTripPrompt(order: any) {
         localStorage.setItem('sm_active_trip_order_id', order.id)
       }
       activeTrip.value = res.trip
+      ensureElapsedTimerStarted()
+      lastNavPt = currentCoords ? { lat: currentCoords.lat, lng: currentCoords.lng } : null
 
       // Start Google Navigation SDK session (engaging road-snapped location engine)
       if (cap && cap.isNativePlatform()) {
