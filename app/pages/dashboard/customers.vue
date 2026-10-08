@@ -44,7 +44,7 @@
     <!-- Table Container -->
     <div ref="tableRootRef" class="bg-white rounded-xl border border-[#e5e2dc] shadow-sm overflow-hidden flex flex-col">
       <!-- Toolbar Header -->
-      <div class="p-3.5 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between gap-3 text-xs text-gray-500">
+      <div class="px-5 py-3.5 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between gap-3 text-xs text-gray-500">
         <div>
           Total Customers: <span class="font-bold text-gray-900">{{ filteredCustomers.length }}</span>
         </div>
@@ -58,31 +58,31 @@
         </div>
       </div>
 
-      <div ref="tableContainerRef" class="w-full overflow-x-hidden min-h-[350px]">
-        <table class="w-full text-left border-collapse table-fixed">
+      <div ref="tableContainerRef" class="w-full overflow-x-auto no-scrollbar min-h-[350px]">
+        <table class="w-full text-left border-collapse table-fixed md:min-w-[940px] xl:min-w-full">
           <thead>
             <tr class="bg-gray-50 border-b border-gray-200">
-              <th class="px-3 md:px-3.5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest w-[65%] md:w-[24%]">Customer & Code</th>
-              <th class="hidden md:table-cell px-2.5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest w-[11%]">Tier / Mgr</th>
-              <th class="hidden md:table-cell px-2.5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest w-[12%]">Contact</th>
-              <th class="hidden md:table-cell px-2 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest w-[10%]">Phone</th>
-              <th class="hidden md:table-cell px-3 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest w-[27%]">Locations & Addresses</th>
-              <th class="hidden md:table-cell px-2.5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest w-[8%]">Terms</th>
-              <th class="px-2 md:px-2.5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest w-[20%] md:w-[5%] text-center md:text-left">Status</th>
-              <th v-if="user?.role === 'ADMIN'" class="px-2 md:px-2.5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest w-[15%] md:w-[3%] text-right">Actions</th>
+              <th class="pl-5 pr-4 py-3.5 text-[10px] font-bold text-gray-500 uppercase tracking-widest w-[60%] md:w-[22%]">Customer & Code</th>
+              <th class="hidden md:table-cell px-4 py-3.5 text-[10px] font-bold text-gray-500 uppercase tracking-widest md:w-[11%]">Tier / Mgr</th>
+              <th class="hidden md:table-cell px-4 py-3.5 text-[10px] font-bold text-gray-500 uppercase tracking-widest md:w-[11%]">Contact</th>
+              <th class="hidden md:table-cell px-4 py-3.5 text-[10px] font-bold text-gray-500 uppercase tracking-widest md:w-[11%]">Phone</th>
+              <th class="hidden md:table-cell px-4 py-3.5 text-[10px] font-bold text-gray-500 uppercase tracking-widest md:w-[23%]">Locations & Addresses</th>
+              <th class="hidden md:table-cell px-4 py-3.5 text-[10px] font-bold text-gray-500 uppercase tracking-widest md:w-[9%]">Terms</th>
+              <th class="px-4 py-3.5 text-[10px] font-bold text-gray-500 uppercase tracking-widest w-[22%] md:w-[7%] text-center md:text-left">Status</th>
+              <th v-if="user?.role === 'ADMIN'" class="pl-4 pr-5 py-3.5 text-[10px] font-bold text-gray-500 uppercase tracking-widest w-[18%] md:w-[6%] text-right">Actions</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-200 text-sm">
             <template v-if="pending">
               <tr v-for="i in 5" :key="i" class="animate-pulse hover:bg-transparent">
-                <td class="px-3 md:px-3.5 py-3"><div class="h-4 bg-gray-200 rounded w-3/4"></div></td>
-                <td class="hidden md:table-cell px-2.5 py-3"><div class="h-4 bg-gray-200 rounded w-full"></div></td>
-                <td class="hidden md:table-cell px-2.5 py-3"><div class="h-4 bg-gray-200 rounded w-3/4"></div></td>
-                <td class="hidden md:table-cell px-2 py-3"><div class="h-4 bg-gray-200 rounded w-full"></div></td>
-                <td class="hidden md:table-cell px-3 py-3"><div class="h-4 bg-gray-200 rounded w-full"></div></td>
-                <td class="hidden md:table-cell px-2.5 py-3"><div class="h-4 bg-gray-200 rounded w-3/4"></div></td>
-                <td class="px-2 md:px-2.5 py-3"><div class="h-5 bg-gray-200 rounded-full w-10 mx-auto md:mx-0"></div></td>
-                <td v-if="user?.role === 'ADMIN'" class="px-2 md:px-2.5 py-3"><div class="h-4 bg-gray-200 rounded w-6 ml-auto"></div></td>
+                <td class="pl-5 pr-4 py-3.5 md:py-4"><div class="h-4 bg-gray-200 rounded w-3/4"></div></td>
+                <td class="hidden md:table-cell px-4 py-3.5 md:py-4"><div class="h-4 bg-gray-200 rounded w-full"></div></td>
+                <td class="hidden md:table-cell px-4 py-3.5 md:py-4"><div class="h-4 bg-gray-200 rounded w-3/4"></div></td>
+                <td class="hidden md:table-cell px-4 py-3.5 md:py-4"><div class="h-4 bg-gray-200 rounded w-full"></div></td>
+                <td class="hidden md:table-cell px-4 py-3.5 md:py-4"><div class="h-4 bg-gray-200 rounded w-full"></div></td>
+                <td class="hidden md:table-cell px-4 py-3.5 md:py-4"><div class="h-4 bg-gray-200 rounded w-3/4"></div></td>
+                <td class="px-4 py-3.5 md:py-4"><div class="h-5 bg-gray-200 rounded-full w-12 mx-auto md:mx-0"></div></td>
+                <td v-if="user?.role === 'ADMIN'" class="pl-4 pr-5 py-3.5 md:py-4"><div class="h-4 bg-gray-200 rounded w-6 ml-auto"></div></td>
               </tr>
             </template>
             <template v-else>
@@ -96,7 +96,7 @@
                 class="hover:bg-teal-50/40 cursor-pointer transition-colors group"
               >
                 <!-- Customer & Code -->
-                <td class="px-3 md:px-3.5 py-3 font-medium text-[#1a1a1a] group-hover:text-[#1a5c4c] transition-colors overflow-hidden">
+                <td class="pl-5 pr-4 py-3.5 md:py-4 font-medium text-[#1a1a1a] group-hover:text-[#1a5c4c] transition-colors overflow-hidden">
                   <div class="flex items-center gap-1.5 mb-1 flex-wrap">
                     <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-gray-100 text-gray-700 font-bold border border-gray-200 shrink-0">
                       {{ customer.customerCode || 'NO CODE' }}
@@ -112,8 +112,8 @@
                 </td>
 
                 <!-- Tier / Manager -->
-                <td class="hidden md:table-cell px-2.5 py-3 text-xs overflow-hidden">
-                  <div class="flex flex-col gap-1 min-w-0">
+                <td class="hidden md:table-cell px-4 py-3.5 md:py-4 text-xs overflow-hidden">
+                  <div class="flex flex-col gap-1.5 min-w-0">
                     <span 
                       class="inline-block text-[8px] px-1.5 py-0.5 rounded font-bold uppercase border w-max truncate"
                       :class="getPrivilegeTierClass(customer.privilegeTier || 'BRONZE')"
@@ -128,13 +128,13 @@
                 </td>
 
                 <!-- Contact Person -->
-                <td class="hidden md:table-cell px-2.5 py-3 text-gray-600 text-xs overflow-hidden">
-                  <span class="truncate block" :title="customer.name">{{ customer.name }}</span>
+                <td class="hidden md:table-cell px-4 py-3.5 md:py-4 text-gray-600 text-xs overflow-hidden">
+                  <span class="truncate block font-medium text-gray-800" :title="customer.name">{{ customer.name }}</span>
                 </td>
 
                 <!-- Phone: One number per line, comma-separated split -->
-                <td class="hidden md:table-cell px-2 py-3 text-gray-700 overflow-hidden">
-                  <div class="flex flex-col gap-0.5 min-w-0">
+                <td class="hidden md:table-cell px-4 py-3.5 md:py-4 text-gray-700 overflow-hidden">
+                  <div class="flex flex-col gap-1 min-w-0">
                     <span 
                       v-for="(p, pIdx) in getPhoneList(customer.phone, customer.alternatePhone)" 
                       :key="pIdx"
@@ -147,12 +147,12 @@
                 </td>
 
                 <!-- City / Addresses Capsules with per-address Pin -->
-                <td class="hidden md:table-cell px-3 py-3 overflow-hidden">
-                  <div class="flex flex-wrap items-center gap-1">
+                <td class="hidden md:table-cell px-4 py-3.5 md:py-4 overflow-hidden">
+                  <div class="flex flex-wrap items-center gap-1.5">
                     <div 
                       v-for="(addr, aIdx) in getCustomerAddresses(customer)" 
                       :key="addr.id || aIdx"
-                      class="inline-flex items-center gap-1 pl-2 pr-1 py-0.5 rounded-lg border text-xs transition-all shadow-2xs group/cap max-w-full"
+                      class="inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-1 rounded-lg border text-xs transition-all shadow-2xs group/cap max-w-full"
                       :class="addr.latitude && addr.longitude 
                         ? 'bg-emerald-50/90 border-emerald-200 text-emerald-950' 
                         : 'bg-gray-50 border-gray-200 text-gray-700'"
@@ -192,16 +192,16 @@
                 </td>
 
                 <!-- Payment Terms -->
-                <td class="hidden md:table-cell px-2.5 py-3 overflow-hidden">
-                  <span class="inline-block px-1.5 py-0.5 rounded bg-gray-100 text-gray-700 text-[10px] font-medium truncate max-w-full" :title="formatPaymentTerms(customer.paymentTerms)">
+                <td class="hidden md:table-cell px-4 py-3.5 md:py-4 overflow-hidden">
+                  <span class="inline-block px-2 py-0.5 rounded bg-gray-100 text-gray-700 text-[10px] font-medium truncate max-w-full" :title="formatPaymentTerms(customer.paymentTerms)">
                     {{ formatPaymentTerms(customer.paymentTerms) }}
                   </span>
                 </td>
 
                 <!-- Status -->
-                <td class="px-2 md:px-2.5 py-3 overflow-hidden text-center md:text-left">
+                <td class="px-4 py-3.5 md:py-4 overflow-hidden text-center md:text-left">
                   <span 
-                    class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold"
+                    class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold whitespace-nowrap"
                     :class="customer.isActive !== false ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'"
                   >
                     {{ customer.isActive !== false ? 'Active' : 'Inactive' }}
@@ -209,14 +209,16 @@
                 </td>
 
                 <!-- Actions -->
-                <td v-if="user?.role === 'ADMIN'" @click.stop class="px-2 md:px-2.5 py-3 text-right overflow-hidden">
-                  <button 
-                    @click="openModal(customer)"
-                    class="text-gray-500 hover:text-[#1a5c4c] hover:bg-[#1a5c4c]/10 transition-colors p-1.5 rounded-lg"
-                    title="Edit Customer Details"
-                  >
-                    <Edit2 class="w-3.5 h-3.5" />
-                  </button>
+                <td v-if="user?.role === 'ADMIN'" @click.stop class="pl-4 pr-5 py-3.5 md:py-4 text-right whitespace-nowrap">
+                  <div class="flex items-center justify-end">
+                    <button 
+                      @click="openModal(customer)"
+                      class="text-gray-400 hover:text-[#1a5c4c] hover:bg-[#1a5c4c]/10 transition-colors p-1.5 rounded-lg inline-flex items-center justify-center"
+                      title="Edit Customer Details"
+                    >
+                      <Edit2 class="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </td>
               </tr>
             </template>
@@ -225,7 +227,7 @@
       </div>
 
       <!-- Pagination Footer -->
-      <div v-if="filteredCustomers.length > 0 && pageSize !== -1" class="p-4 border-t border-gray-100 bg-gray-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div v-if="filteredCustomers.length > 0 && pageSize !== -1" class="px-5 py-3.5 border-t border-gray-100 bg-gray-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div class="text-xs text-gray-500">
           Showing <span class="font-medium text-gray-900">{{ startIndex }}</span> to <span class="font-medium text-gray-900">{{ endIndex }}</span> of <span class="font-medium text-gray-900">{{ filteredCustomers.length }}</span> customers
         </div>
