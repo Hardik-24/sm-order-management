@@ -132,14 +132,14 @@
                   <span class="truncate block font-medium text-gray-800" :title="customer.name">{{ customer.name }}</span>
                 </td>
 
-                <!-- Phone: Single line with NA fallback -->
+                <!-- Phone: Only one main phone number, NA if empty -->
                 <td class="hidden md:table-cell px-4 py-3.5 md:py-4 text-gray-700 overflow-hidden">
                   <span 
                     class="font-mono text-[11px] leading-tight block truncate whitespace-nowrap"
-                    :class="formatPhone(customer.phone, customer.alternatePhone) === 'NA' ? 'text-gray-400 font-sans text-xs' : 'text-gray-900'"
-                    :title="formatPhone(customer.phone, customer.alternatePhone)"
+                    :class="getMainPhone(customer.phone) === 'NA' ? 'text-gray-400 font-sans text-xs font-medium' : 'text-gray-900'"
+                    :title="getMainPhone(customer.phone)"
                   >
-                    {{ formatPhone(customer.phone, customer.alternatePhone) }}
+                    {{ getMainPhone(customer.phone) }}
                   </span>
                 </td>
 
@@ -1014,26 +1014,20 @@ const form = ref({
 // Fetch all customers including inactive so status changes are fully visible & editable
 const { data: customers, pending, refresh } = useFetch('/api/customers?includeInactive=true')
 
-// Helper to format phone numbers into a single clean line with NA fallback
-const formatPhone = (phone?: string, altPhone?: string) => {
-  const list: string[] = []
-  if (phone) {
-    phone.split(/[,;/]+/).forEach(p => {
-      const clean = p.trim()
-      if (clean && clean.toUpperCase() !== 'N/A' && clean.toUpperCase() !== 'NA' && clean !== '-' && !list.includes(clean)) {
-        list.push(clean)
-      }
-    })
+// Helper to extract strictly the one main phone number for the table row, or 'NA'
+const getMainPhone = (phone?: string) => {
+  if (!phone) return 'NA'
+  
+  // Split on comma, slash, semicolon, or newline to extract the first main number
+  const parts = phone.split(/[,;\/\n]+/).map(p => p.trim()).filter(Boolean)
+  for (const part of parts) {
+    const upper = part.toUpperCase()
+    if (upper !== 'N/A' && upper !== 'NA' && part !== '-' && part !== '--' && upper !== 'NONE' && upper !== 'NULL') {
+      return part
+    }
   }
-  if (altPhone) {
-    altPhone.split(/[,;/]+/).forEach(p => {
-      const clean = p.trim()
-      if (clean && clean.toUpperCase() !== 'N/A' && clean.toUpperCase() !== 'NA' && clean !== '-' && !list.includes(clean)) {
-        list.push(clean)
-      }
-    })
-  }
-  return list.length > 0 ? list.join(', ') : 'NA'
+  
+  return 'NA'
 }
 
 // Helper to safely get list of addresses for each customer
