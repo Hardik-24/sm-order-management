@@ -62,14 +62,14 @@
         <table class="w-full text-left border-collapse table-fixed md:min-w-[940px] xl:min-w-full">
           <thead>
             <tr class="bg-gray-50 border-b border-gray-200">
-              <th class="pl-5 pr-4 py-3.5 text-[10px] font-bold text-gray-500 uppercase tracking-widest w-[60%] md:w-[22%]">Customer & Code</th>
+              <th class="pl-5 pr-4 py-3.5 text-[10px] font-bold text-gray-500 uppercase tracking-widest w-[56%] md:w-[21%]">Customer & Code</th>
               <th class="hidden md:table-cell px-4 py-3.5 text-[10px] font-bold text-gray-500 uppercase tracking-widest md:w-[11%]">Tier / Mgr</th>
               <th class="hidden md:table-cell px-4 py-3.5 text-[10px] font-bold text-gray-500 uppercase tracking-widest md:w-[11%]">Contact</th>
               <th class="hidden md:table-cell px-4 py-3.5 text-[10px] font-bold text-gray-500 uppercase tracking-widest md:w-[11%]">Phone</th>
               <th class="hidden md:table-cell px-4 py-3.5 text-[10px] font-bold text-gray-500 uppercase tracking-widest md:w-[23%]">Locations & Addresses</th>
               <th class="hidden md:table-cell px-4 py-3.5 text-[10px] font-bold text-gray-500 uppercase tracking-widest md:w-[9%]">Terms</th>
-              <th class="px-4 py-3.5 text-[10px] font-bold text-gray-500 uppercase tracking-widest w-[22%] md:w-[7%] text-center md:text-left">Status</th>
-              <th v-if="user?.role === 'ADMIN'" class="pl-4 pr-5 py-3.5 text-[10px] font-bold text-gray-500 uppercase tracking-widest w-[18%] md:w-[6%] text-right">Actions</th>
+              <th class="px-4 py-3.5 text-[10px] font-bold text-gray-500 uppercase tracking-widest w-[22%] md:w-[6%] text-center md:text-left">Status</th>
+              <th v-if="user?.role === 'ADMIN'" class="pl-2 pr-8 md:pr-10 py-3.5 text-[10px] font-bold text-gray-500 uppercase tracking-widest w-[22%] md:w-[8%] text-right">Actions</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-200 text-sm">
@@ -82,7 +82,7 @@
                 <td class="hidden md:table-cell px-4 py-3.5 md:py-4"><div class="h-4 bg-gray-200 rounded w-full"></div></td>
                 <td class="hidden md:table-cell px-4 py-3.5 md:py-4"><div class="h-4 bg-gray-200 rounded w-3/4"></div></td>
                 <td class="px-4 py-3.5 md:py-4"><div class="h-5 bg-gray-200 rounded-full w-12 mx-auto md:mx-0"></div></td>
-                <td v-if="user?.role === 'ADMIN'" class="pl-4 pr-5 py-3.5 md:py-4"><div class="h-4 bg-gray-200 rounded w-6 ml-auto"></div></td>
+                <td v-if="user?.role === 'ADMIN'" class="pl-2 pr-8 md:pr-10 py-3.5 md:py-4"><div class="h-4 bg-gray-200 rounded w-6 ml-auto"></div></td>
               </tr>
             </template>
             <template v-else>
@@ -132,18 +132,15 @@
                   <span class="truncate block font-medium text-gray-800" :title="customer.name">{{ customer.name }}</span>
                 </td>
 
-                <!-- Phone: One number per line, comma-separated split -->
+                <!-- Phone: Single line with NA fallback -->
                 <td class="hidden md:table-cell px-4 py-3.5 md:py-4 text-gray-700 overflow-hidden">
-                  <div class="flex flex-col gap-1 min-w-0">
-                    <span 
-                      v-for="(p, pIdx) in getPhoneList(customer.phone, customer.alternatePhone)" 
-                      :key="pIdx"
-                      class="font-mono text-[11px] leading-tight text-gray-900 truncate block"
-                      :title="p"
-                    >
-                      {{ p }}
-                    </span>
-                  </div>
+                  <span 
+                    class="font-mono text-[11px] leading-tight block truncate whitespace-nowrap"
+                    :class="formatPhone(customer.phone, customer.alternatePhone) === 'NA' ? 'text-gray-400 font-sans text-xs' : 'text-gray-900'"
+                    :title="formatPhone(customer.phone, customer.alternatePhone)"
+                  >
+                    {{ formatPhone(customer.phone, customer.alternatePhone) }}
+                  </span>
                 </td>
 
                 <!-- City / Addresses Capsules with per-address Pin -->
@@ -209,7 +206,7 @@
                 </td>
 
                 <!-- Actions -->
-                <td v-if="user?.role === 'ADMIN'" @click.stop class="pl-4 pr-5 py-3.5 md:py-4 text-right whitespace-nowrap">
+                <td v-if="user?.role === 'ADMIN'" @click.stop class="pl-2 pr-8 md:pr-10 py-3.5 md:py-4 text-right whitespace-nowrap">
                   <div class="flex items-center justify-end">
                     <button 
                       @click="openModal(customer)"
@@ -1017,22 +1014,26 @@ const form = ref({
 // Fetch all customers including inactive so status changes are fully visible & editable
 const { data: customers, pending, refresh } = useFetch('/api/customers?includeInactive=true')
 
-// Helper to parse phone numbers into individual lines (comma, semicolon, slash separated)
-const getPhoneList = (phone?: string, altPhone?: string) => {
+// Helper to format phone numbers into a single clean line with NA fallback
+const formatPhone = (phone?: string, altPhone?: string) => {
   const list: string[] = []
   if (phone) {
     phone.split(/[,;/]+/).forEach(p => {
       const clean = p.trim()
-      if (clean && clean !== 'N/A' && !list.includes(clean)) list.push(clean)
+      if (clean && clean.toUpperCase() !== 'N/A' && clean.toUpperCase() !== 'NA' && clean !== '-' && !list.includes(clean)) {
+        list.push(clean)
+      }
     })
   }
   if (altPhone) {
     altPhone.split(/[,;/]+/).forEach(p => {
       const clean = p.trim()
-      if (clean && clean !== 'N/A' && !list.includes(clean)) list.push(clean)
+      if (clean && clean.toUpperCase() !== 'N/A' && clean.toUpperCase() !== 'NA' && clean !== '-' && !list.includes(clean)) {
+        list.push(clean)
+      }
     })
   }
-  return list.length > 0 ? list : ['-']
+  return list.length > 0 ? list.join(', ') : 'NA'
 }
 
 // Helper to safely get list of addresses for each customer
