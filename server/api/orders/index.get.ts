@@ -17,6 +17,8 @@ export default defineEventHandler(async (event) => {
   const paymentStatus = query.paymentStatus as string
   const startDate = query.startDate as string
   const endDate = query.endDate as string
+  const isApproved = query.isApproved as string
+  const isUrgent = query.isUrgent as string
   const sortBy = (query.sortBy as string) || 'createdAt'
   const sortOrder = (query.sortOrder as string) || 'desc'
 
@@ -28,10 +30,17 @@ export default defineEventHandler(async (event) => {
   if (search) {
     where.OR = [
       { orderNumber: { contains: search, mode: 'insensitive' } },
-      { customer: { company: { contains: search, mode: 'insensitive' } } }
+      { customer: { company: { contains: search, mode: 'insensitive' } } },
+      { customer: { name: { contains: search, mode: 'insensitive' } } }
     ]
   }
 
+  if (isApproved !== undefined && isApproved !== '') {
+    where.isApproved = isApproved === 'true'
+  }
+  if (isUrgent !== undefined && isUrgent !== '') {
+    where.isUrgent = isUrgent === 'true'
+  }
   if (status) where.overallStatus = status
   if (billingStatus) where.billingStatus = { status: billingStatus }
   if (packingStatus) where.packingStatus = { status: packingStatus }
@@ -70,13 +79,18 @@ export default defineEventHandler(async (event) => {
       take,
       orderBy: { [sortBy]: sortOrder },
       include: {
-        customer: { select: { name: true, company: true, city: true, latitude: true, longitude: true, landmark: true } },
+        customer: { select: { id: true, name: true, company: true, city: true, latitude: true, longitude: true, landmark: true, privilegeTier: true, isPriorityClient: true } },
         salesPerson: { select: { name: true } },
-        billingStatus: { select: { status: true } },
+        approvedBy: { select: { name: true } },
+        billingStatus: { select: { status: true, invoiceNumber: true, invoiceDate: true, invoicePdfUrl: true } },
         packingStatus: { select: { status: true } },
         deliveryStatus: { select: { status: true, driverName: true } },
         paymentStatus: { select: { status: true, amountPaid: true, balanceDue: true, paymentMethod: true, referenceNo: true, dueDate: true, paidAt: true } },
-        items: { select: { quantity: true, packedQuantity: true } },
+        items: {
+          include: {
+            product: { select: { name: true, sku: true, unit: true, price: true } }
+          }
+        },
         _count: { select: { items: true } }
       }
     }),

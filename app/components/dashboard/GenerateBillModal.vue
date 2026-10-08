@@ -10,7 +10,7 @@
         <div>
           <h2 class="text-lg font-bold text-gray-900 flex items-center gap-2">
             <FileText class="w-5 h-5 text-[#1a5c4c]" />
-            Generate Invoice
+            Generate & Reconcile Invoice
           </h2>
           <p class="text-sm text-gray-500 mt-1">Order: {{ order?.orderNumber || 'Loading...' }}</p>
         </div>
@@ -25,69 +25,122 @@
           <Loader2 class="w-8 h-8 animate-spin text-[#1a5c4c]" />
         </div>
         
-        <div v-else-if="order" class="space-y-8">
-          <!-- Customer Details -->
-          <div class="grid grid-cols-2 gap-6 bg-gray-50 p-4 rounded-xl border border-gray-100">
+        <div v-else-if="order" class="space-y-6">
+          <!-- Customer & Invoice Metadata Row -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-xl border border-gray-200">
             <div>
-              <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Bill To</p>
-              <p class="text-sm font-medium text-gray-900">{{ order.customer?.name }}</p>
-              <p v-if="order.customer?.company" class="text-sm text-gray-600">{{ order.customer.company }}</p>
-              <p class="text-sm text-gray-500 mt-1">{{ order.customer?.address || 'No address provided' }}</p>
+              <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Bill To Customer</p>
+              <p class="text-sm font-bold text-gray-900">{{ order.customer?.name }}</p>
+              <p v-if="order.customer?.company" class="text-xs text-gray-600">{{ order.customer.company }}</p>
+              <p class="text-xs text-gray-500 mt-0.5 truncate">{{ order.deliveryAddress || order.customer?.address || 'No address' }}</p>
+              <p v-if="order.customer?.gstNumber" class="text-xs font-mono font-semibold text-gray-700 mt-1">
+                GSTIN: {{ order.customer.gstNumber }}
+              </p>
             </div>
-            <div class="text-right">
-              <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Invoice Date</p>
-              <p class="text-sm font-medium text-gray-900">{{ new Date().toLocaleDateString() }}</p>
+            
+            <div class="space-y-2">
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Bill / Invoice No. *</label>
+                  <input 
+                    type="text" 
+                    v-model="invoiceNumber" 
+                    placeholder="e.g. INV-2026-001 or Busy No." 
+                    class="w-full text-xs font-mono font-bold border border-gray-300 rounded-lg p-2 bg-white focus:ring-[#1a5c4c] focus:border-[#1a5c4c]" 
+                  />
+                </div>
+                <div>
+                  <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Invoice Date *</label>
+                  <input 
+                    type="date" 
+                    v-model="invoiceDate" 
+                    class="w-full text-xs font-medium border border-gray-300 rounded-lg p-2 bg-white focus:ring-[#1a5c4c] focus:border-[#1a5c4c]" 
+                  />
+                </div>
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Invoice Document / PDF URL (Optional)</label>
+                <input 
+                  type="text" 
+                  v-model="invoicePdfUrl" 
+                  placeholder="https://... or invoice document reference" 
+                  class="w-full text-xs border border-gray-300 rounded-lg p-2 bg-white focus:ring-[#1a5c4c] focus:border-[#1a5c4c]" 
+                />
+              </div>
             </div>
           </div>
 
-          <!-- Items Table -->
+          <!-- Items Reconciliation Table -->
           <div>
-            <h3 class="text-sm font-bold text-gray-900 mb-4 uppercase tracking-widest">Order Items</h3>
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-xs font-bold text-gray-900 uppercase tracking-widest">
+                Reconcile & Adjust Billed Quantities
+              </h3>
+              <span class="text-xs text-gray-500">
+                Ordered vs Physically Packed vs Billed
+              </span>
+            </div>
             <div class="border border-gray-200 rounded-xl overflow-x-auto">
-              <table class="w-full text-left border-collapse min-w-[800px]">
+              <table class="w-full text-left border-collapse min-w-[850px] text-xs">
                 <thead>
-                  <tr class="bg-gray-50 border-b border-gray-200 text-[11px] font-bold text-gray-500 uppercase tracking-widest">
-                    <th class="px-4 py-3 whitespace-nowrap">Item</th>
-                    <th class="px-4 py-3 whitespace-nowrap text-right">Qty</th>
-                    <th class="px-4 py-3 whitespace-nowrap text-right w-32">Unit Price (₹)</th>
-                    <th class="px-4 py-3 whitespace-nowrap text-right w-24">Discount %</th>
-                    <th class="px-4 py-3 whitespace-nowrap text-right w-24">Tax Rate</th>
-                    <th class="px-4 py-3 whitespace-nowrap text-right w-28">Tax Amt</th>
-                    <th class="px-4 py-3 whitespace-nowrap text-right w-32">Total (₹)</th>
+                  <tr class="bg-gray-50 border-b border-gray-200 font-bold text-gray-500 uppercase tracking-widest text-[10px]">
+                    <th class="px-3 py-3">Item / SKU</th>
+                    <th class="px-3 py-3 text-center">Ordered</th>
+                    <th class="px-3 py-3 text-center">Packed</th>
+                    <th class="px-3 py-3 text-center w-24">Billed Qty</th>
+                    <th class="px-3 py-3 text-right w-28">Rate (₹)</th>
+                    <th class="px-3 py-3 text-right w-20">Disc %</th>
+                    <th class="px-3 py-3 text-right w-20">Tax %</th>
+                    <th class="px-3 py-3 text-right w-28">Tax Amt</th>
+                    <th class="px-3 py-3 text-right w-28">Total (₹)</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
                   <tr v-for="(item, index) in editableItems" :key="item.id" class="hover:bg-gray-50/50">
-                    <td class="px-4 py-3">
-                      <p class="text-sm font-medium text-gray-900">{{ item.productName }}</p>
-                      <p class="text-xs text-gray-500">{{ item.sku }} <span v-if="item.product?.hsnCode">| HSN: {{ item.product.hsnCode }}</span></p>
+                    <td class="px-3 py-2.5">
+                      <p class="font-bold text-gray-900">{{ item.productName }}</p>
+                      <p class="text-[11px] text-gray-500">{{ item.sku }} <span v-if="item.product?.hsnCode">| HSN: {{ item.product.hsnCode }}</span></p>
+                      <p v-if="item.itemNotes" class="text-[10px] text-amber-600 mt-0.5">💬 {{ item.itemNotes }}</p>
                     </td>
-                    <td class="px-4 py-3 text-sm font-medium text-gray-900 text-right">{{ item.quantity }}</td>
-                    <td class="px-4 py-3 text-right">
+                    <td class="px-3 py-2.5 text-center text-gray-600 font-semibold">{{ item.quantity }}</td>
+                    <td class="px-3 py-2.5 text-center">
+                      <span class="font-bold px-1.5 py-0.5 rounded text-[11px]" :class="(item.packedQuantity ?? item.quantity) < item.quantity ? 'bg-amber-100 text-amber-800' : 'bg-green-100 text-green-800'">
+                        {{ item.packedQuantity !== undefined ? item.packedQuantity : item.quantity }}
+                      </span>
+                    </td>
+                    <td class="px-3 py-2.5 text-center">
+                      <input 
+                        type="number" 
+                        min="0"
+                        v-model.number="item.billedQuantity" 
+                        class="w-16 text-center font-bold text-xs border border-gray-300 rounded p-1.5 focus:ring-[#1a5c4c] bg-white"
+                      />
+                    </td>
+                    <td class="px-3 py-2.5 text-right">
                       <input 
                         type="number" 
                         v-model.number="item.unitPrice" 
-                        class="w-full text-right text-sm border border-gray-300 rounded p-1.5 focus:ring-[#1a5c4c] focus:border-[#1a5c4c] bg-white"
-                      >
+                        class="w-24 text-right text-xs border border-gray-300 rounded p-1.5 focus:ring-[#1a5c4c] bg-white font-medium"
+                      />
                     </td>
-                    <td class="px-4 py-3 text-right">
+                    <td class="px-3 py-2.5 text-right">
                       <input 
                         type="number" 
                         v-model.number="item.discount" 
                         min="0" max="100"
-                        class="w-full text-right text-sm border border-gray-300 rounded p-1.5 focus:ring-[#1a5c4c] focus:border-[#1a5c4c] bg-white"
-                      >
+                        class="w-16 text-right text-xs border border-gray-300 rounded p-1.5 focus:ring-[#1a5c4c] bg-white"
+                      />
                     </td>
-                    <td class="px-4 py-3 text-right">
+                    <td class="px-3 py-2.5 text-right">
                       <input 
                         type="number" 
                         v-model.number="item.taxRate" 
                         min="0" max="100"
-                        class="w-full text-right text-sm border border-gray-300 rounded p-1.5 focus:ring-[#1a5c4c] focus:border-[#1a5c4c] bg-white"
-                      >
+                        class="w-16 text-right text-xs border border-gray-300 rounded p-1.5 focus:ring-[#1a5c4c] bg-white"
+                      />
                     </td>
-                    <td class="px-4 py-3 text-sm text-gray-600 text-right">₹{{ calculateTax(item).toFixed(2) }}</td>
-                    <td class="px-4 py-3 text-sm font-bold text-gray-900 text-right">₹{{ calculateTotal(item).toFixed(2) }}</td>
+                    <td class="px-3 py-2.5 text-right font-medium text-gray-600">₹{{ calculateTax(item).toFixed(2) }}</td>
+                    <td class="px-3 py-2.5 text-right font-bold text-gray-900">₹{{ calculateTotal(item).toFixed(2) }}</td>
                   </tr>
                 </tbody>
               </table>
@@ -96,22 +149,22 @@
 
           <!-- Summary -->
           <div class="flex justify-end">
-            <div class="w-72 bg-gray-50 rounded-xl p-5 border border-gray-200">
-              <div class="flex justify-between items-center mb-3 text-sm text-gray-600">
-                <span>Subtotal</span>
-                <span>₹{{ grandSubtotal.toFixed(2) }}</span>
+            <div class="w-80 bg-gray-50 rounded-xl p-4 border border-gray-200 space-y-2 text-xs">
+              <div class="flex justify-between items-center text-gray-600">
+                <span>Subtotal (Billed)</span>
+                <span class="font-semibold">₹{{ grandSubtotal.toFixed(2) }}</span>
               </div>
-              <div class="flex justify-between items-center mb-3 text-sm text-gray-600">
+              <div class="flex justify-between items-center text-gray-600">
                 <span>Total Discount</span>
-                <span class="text-red-600">-₹{{ grandDiscount.toFixed(2) }}</span>
+                <span class="text-rose-600 font-semibold">-₹{{ grandDiscount.toFixed(2) }}</span>
               </div>
-              <div class="flex justify-between items-center mb-4 text-sm text-gray-600">
-                <span>Total Tax</span>
-                <span>₹{{ grandTax.toFixed(2) }}</span>
+              <div class="flex justify-between items-center text-gray-600">
+                <span>Total Tax (GST)</span>
+                <span class="font-semibold">₹{{ grandTax.toFixed(2) }}</span>
               </div>
-              <div class="pt-4 border-t border-gray-200 flex justify-between items-center">
-                <span class="text-sm font-bold text-gray-900 uppercase tracking-widest">Grand Total</span>
-                <span class="text-xl font-bold text-[#1a5c4c]">₹{{ grandTotal.toFixed(2) }}</span>
+              <div class="pt-3 border-t border-gray-200 flex justify-between items-center">
+                <span class="text-xs font-bold text-gray-900 uppercase tracking-widest">Final Bill Amount</span>
+                <span class="text-xl font-black text-[#1a5c4c]">₹{{ grandTotal.toFixed(2) }}</span>
               </div>
             </div>
           </div>
@@ -120,14 +173,14 @@
       </div>
 
       <!-- Footer -->
-      <div class="p-5 border-t border-gray-100 bg-white flex justify-end gap-3">
-        <button @click="closeModal" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+      <div class="p-4 border-t border-gray-100 bg-white flex justify-end gap-3">
+        <button @click="closeModal" class="px-4 py-2 text-xs font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
           Cancel
         </button>
         <button 
           @click="confirmGenerate" 
-          :disabled="isGenerating"
-          class="flex items-center gap-2 px-6 py-2 bg-[#1a5c4c] text-white text-sm font-medium rounded-lg hover:bg-[#134336] transition-colors disabled:opacity-50"
+          :disabled="isGenerating || !invoiceNumber.trim()"
+          class="flex items-center gap-2 px-6 py-2 bg-[#1a5c4c] text-white text-xs font-bold rounded-lg hover:bg-[#134336] transition-colors disabled:opacity-50 shadow-sm"
         >
           <Loader2 v-if="isGenerating" class="w-4 h-4 animate-spin" />
           <Check v-else class="w-4 h-4" />
@@ -154,22 +207,41 @@ const order = ref<any>(null)
 const pending = ref(false)
 const isGenerating = ref(false)
 
+const invoiceNumber = ref('')
+const invoiceDate = ref(new Date().toISOString().split('T')[0])
+const invoicePdfUrl = ref('')
+
 const editableItems = ref<any[]>([])
 
 watch(() => props.isOpen, async (isOpen) => {
   if (isOpen && props.orderId) {
     pending.value = true
     try {
-      const data = await $fetch(`/api/orders/${props.orderId}`)
+      const data = await $fetch<any>(`/api/orders/${props.orderId}`)
       order.value = data
       
-      // Initialize editable items
-      editableItems.value = data.items.map((item: any) => ({
-        ...item,
-        unitPrice: Number(item.unitPrice),
-        discount: 0,
-        taxRate: Number(item.product?.taxRate || 0)
-      }))
+      invoiceNumber.value = data.billingStatus?.invoiceNumber || `INV-${new Date().getFullYear()}-${data.orderNumber?.replace('SO-', '') || '001'}`
+      invoiceDate.value = data.billingStatus?.invoiceDate 
+        ? new Date(data.billingStatus.invoiceDate).toISOString().split('T')[0] 
+        : new Date().toISOString().split('T')[0]
+      invoicePdfUrl.value = data.billingStatus?.invoicePdfUrl || ''
+
+      // Initialize editable items reconciling packed vs ordered
+      editableItems.value = (data.items || []).map((item: any) => {
+        const approvedQty = item.approvedQuantity ?? item.quantity
+        const packedQty = item.packedQuantity !== undefined && item.packedQuantity !== null ? item.packedQuantity : approvedQty
+        const billedQty = item.billedQuantity !== undefined && item.billedQuantity !== null ? item.billedQuantity : packedQty
+
+        return {
+          ...item,
+          quantity: approvedQty,
+          packedQuantity: packedQty,
+          billedQuantity: billedQty,
+          unitPrice: Number(item.unitPrice || 0),
+          discount: item.discount ? Number(item.discount) : 0,
+          taxRate: item.taxRate !== undefined && item.taxRate !== null ? Number(item.taxRate) : Number(item.product?.taxRate || 0)
+        }
+      })
     } catch (e) {
       console.error(e)
     } finally {
@@ -185,19 +257,20 @@ const closeModal = () => {
   emit('close')
 }
 
-// Calculations
+// Calculations based on billedQuantity
 const calculateSubtotal = (item: any) => {
-  return item.quantity * item.unitPrice
+  const qty = Number(item.billedQuantity !== undefined ? item.billedQuantity : (item.packedQuantity ?? item.quantity))
+  return qty * Number(item.unitPrice || 0)
 }
 
 const calculateDiscountAmt = (item: any) => {
   const sub = calculateSubtotal(item)
-  return sub * ((item.discount || 0) / 100)
+  return sub * ((Number(item.discount || 0)) / 100)
 }
 
 const calculateTax = (item: any) => {
   const afterDiscount = calculateSubtotal(item) - calculateDiscountAmt(item)
-  return afterDiscount * ((item.taxRate || 0) / 100)
+  return afterDiscount * ((Number(item.taxRate || 0)) / 100)
 }
 
 const calculateTotal = (item: any) => {
@@ -222,13 +295,18 @@ const grandTotal = computed(() => {
 })
 
 const confirmGenerate = async () => {
+  if (!invoiceNumber.value.trim()) {
+    alert('Please enter an Invoice / Bill Number')
+    return
+  }
   isGenerating.value = true
   try {
     const itemsToSave = editableItems.value.map(item => ({
       id: item.id,
-      unitPrice: item.unitPrice,
-      discount: item.discount,
-      taxRate: item.taxRate,
+      billedQuantity: Number(item.billedQuantity),
+      unitPrice: Number(item.unitPrice),
+      discount: Number(item.discount || 0),
+      taxRate: Number(item.taxRate || 0),
       taxAmount: calculateTax(item),
       totalPrice: calculateTotal(item)
     }))
@@ -237,6 +315,9 @@ const confirmGenerate = async () => {
       method: 'PATCH',
       body: { 
         status: 'GENERATED',
+        invoiceNumber: invoiceNumber.value.trim(),
+        invoiceDate: invoiceDate.value || undefined,
+        invoicePdfUrl: invoicePdfUrl.value?.trim() || undefined,
         items: itemsToSave
       }
     })
@@ -244,8 +325,9 @@ const confirmGenerate = async () => {
     notifyChange({ orderId: props.orderId, action: 'BILL_GENERATED' })
     emit('generated')
     closeModal()
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to generate invoice:', error)
+    alert(error.data?.message || 'Failed to generate invoice')
   } finally {
     isGenerating.value = false
   }

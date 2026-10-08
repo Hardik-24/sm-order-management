@@ -3,7 +3,7 @@ import { prisma } from '~~/server/utils/prisma'
 
 export default defineEventHandler(async (event) => {
   const user = await getUserFromEvent(event)
-  await requireRole(event, ['ADMIN', 'SALES'])
+  await requireRole(event, ['ADMIN'])
   
   const id = event.context.params?.id
   if (!id) throw createError({ statusCode: 400, message: 'Missing order ID' })

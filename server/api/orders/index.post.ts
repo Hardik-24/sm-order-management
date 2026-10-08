@@ -6,7 +6,23 @@ export default defineEventHandler(async (event) => {
   await requireRole(event, ['ADMIN', 'SALES'])
   
   const body = await readBody(event)
-  const { customerId, deliveryAddress, paymentTerms, notes, items } = body
+  const { 
+    customerId, 
+    deliveryAddress, 
+    deliveryAddressId,
+    paymentTerms, 
+    notes, 
+    isUrgent = false,
+    items 
+  } = body
+
+  let resolvedDeliveryAddress = deliveryAddress
+  if (deliveryAddressId && (!resolvedDeliveryAddress || resolvedDeliveryAddress.trim() === '')) {
+    const addr = await prisma.customerAddress.findUnique({ where: { id: deliveryAddressId } })
+    if (addr) {
+      resolvedDeliveryAddress = [addr.addressLine, addr.city, addr.pincode].filter(Boolean).join(', ')
+    }
+  }
 
   let totalAmount = 0
   const orderItemsData = []
@@ -15,17 +31,24 @@ export default defineEventHandler(async (event) => {
     const product = await prisma.product.findUnique({ where: { id: item.productId } })
     if (!product) throw createError({ statusCode: 404, message: `Product ${item.productId} not found` })
     
-    const unitPrice = Number(product.price)
-    const amount = unitPrice * item.quantity
+    const unitPrice = item.unitPrice !== undefined && item.unitPrice !== null && !isNaN(Number(item.unitPrice))
+      ? Number(item.unitPrice)
+      : Number(product.price)
+    const qty = Number(item.quantity) || 1
+    const amount = unitPrice * qty
     totalAmount += amount
 
     orderItemsData.push({
       productId: product.id,
       sku: product.sku,
       productName: product.name,
-      quantity: item.quantity,
-      unitPrice: product.price,
-      packedQuantity: 0
+      quantity: qty,
+      unitPrice: unitPrice,
+      packedQuantity: 0,
+      approvedQuantity: qty,
+      isTaxInclusive: Boolean(item.isTaxInclusive),
+      applyLastPrice: Boolean(item.applyLastPrice),
+      itemNotes: item.itemNotes ? String(item.itemNotes) : null
     })
   }
 
@@ -58,7 +81,10 @@ export default defineEventHandler(async (event) => {
           orderNumber,
           customerId,
           salesPersonId: user.id,
-          deliveryAddress,
+          deliveryAddress: resolvedDeliveryAddress,
+          deliveryAddressId: deliveryAddressId || null,
+          isUrgent: Boolean(isUrgent),
+          isApproved: false,
           paymentTerms,
           notes,
           totalAmount,

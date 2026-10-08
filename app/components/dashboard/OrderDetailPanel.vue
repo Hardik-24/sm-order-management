@@ -95,11 +95,45 @@ const deleteOrder = async () => {
     notifyChange({ orderId: deletedId, action: 'ORDER_DELETED' })
     emit('updated')
     closePanel()
-  } catch (err) {
+  } catch (err: any) {
     console.error(err)
-    alert('Failed to delete order')
+    alert(err.data?.message || 'Failed to delete order')
   } finally {
     isDeleting.value = false
+  }
+}
+
+const isCancelModalOpen = ref(false)
+const cancelReason = ref('')
+const isCancelling = ref(false)
+
+const openCancelModal = () => {
+  cancelReason.value = ''
+  isCancelModalOpen.value = true
+}
+
+const confirmCancelOrder = async () => {
+  if (!order.value) return
+  if (!cancelReason.value.trim()) {
+    alert('Please enter a cancellation reason')
+    return
+  }
+  isCancelling.value = true
+  try {
+    await $fetch(`/api/orders/${order.value.id}/cancel`, {
+      method: 'POST',
+      body: { reason: cancelReason.value.trim() }
+    })
+    showSaved('Order cancelled and permanently logged in timeline')
+    isCancelModalOpen.value = false
+    notifyChange({ orderId: order.value.id, action: 'ORDER_CANCELLED' })
+    emit('updated')
+    await fetchOrder(order.value.id)
+  } catch (err: any) {
+    console.error(err)
+    alert(err.data?.message || 'Failed to cancel order')
+  } finally {
+    isCancelling.value = false
   }
 }
 
@@ -110,12 +144,17 @@ const fetchOrder = async (id: string) => {
     order.value = data
     packingForm.value = {
       status: data.packingStatus?.status || 'PENDING',
-      items: data.items?.map(i => ({ 
-        id: i.id, 
-        isPacked: i.packedQuantity === i.quantity,
-        quantity: i.quantity,
-        sku: i.product?.sku || i.product?.name
-      })) || [],
+      items: data.items?.map(i => {
+        const approvedQty = i.approvedQuantity ?? i.quantity
+        const packedQty = i.packedQuantity !== undefined && i.packedQuantity !== null ? i.packedQuantity : approvedQty
+        return {
+          id: i.id,
+          packedQuantity: packedQty,
+          isPacked: packedQty >= approvedQty,
+          quantity: approvedQty,
+          sku: i.product?.sku || i.product?.name
+        }
+      }) || [],
       holdReason: data.packingStatus?.holdReason || ''
     }
     nextTick(() => {
@@ -443,25 +482,80 @@ const updateBilling = async () => {
   }
 }
 
-  const handlePackingChange = async (idx: number, event: Event) => {
-    const isChecked = (event.target as HTMLInputElement).checked
-    packingForm.value.items[idx].isPacked = isChecked
-    
-    const anyPacked = packingForm.value.items.some(i => i.isPacked)
-    
-    if (anyPacked && packingForm.value.status !== 'PACKED') {
-      packingForm.value.status = 'IN_PROGRESS'
-    } else if (!anyPacked && packingForm.value.status !== 'PACKED') {
-      packingForm.value.status = 'PENDING'
-    }
-    
-    await updatePacking()
+const updatePacking = async () => {
+  if (!order.value) return
+  showSaving()
+  try {
+    const itemsData = (packingForm.value.items || []).map(i => ({
+      id: i.id,
+      packedQuantity: Number(i.packedQuantity !== undefined ? i.packedQuantity : (i.isPacked ? i.quantity : 0))
+    }))
+    await $fetch(`/api/orders/${order.value.id}/packing`, {
+      method: 'PATCH',
+      body: {
+        status: packingForm.value.status,
+        items: itemsData,
+        holdReason: packingForm.value.status === 'ON_HOLD' ? packingForm.value.holdReason : undefined
+      }
+    })
+    showSaved('Packing updated successfully')
+    notifyChange({ orderId: order.value.id, action: 'PACKING_UPDATED', status: packingForm.value.status })
+    emit('updated')
+    await fetchOrder(order.value.id)
+  } catch (err: any) {
+    console.error('Failed to update packing:', err)
+    hide()
+  }
+}
+
+const handlePackedQtyChange = async (idx: number) => {
+  const item = packingForm.value.items[idx]
+  if (!item) return
+  const approvedQty = Number(item.quantity || 0)
+  const currentPacked = Number(item.packedQuantity || 0)
+  item.isPacked = currentPacked >= approvedQty
+
+  const anyPacked = packingForm.value.items.some(i => (i.packedQuantity || 0) > 0)
+  const allFull = packingForm.value.items.every(i => (i.packedQuantity || 0) >= (i.quantity || 0))
+
+  if (allFull) {
+    packingForm.value.status = 'PACKED'
+  } else if (anyPacked) {
+    packingForm.value.status = 'IN_PROGRESS'
+  } else {
+    packingForm.value.status = 'PENDING'
   }
 
-  const markAsPacked = async () => {
+  await updatePacking()
+}
+
+const handlePackingChange = async (idx: number, event: Event) => {
+  const isChecked = (event.target as HTMLInputElement).checked
+  packingForm.value.items[idx].isPacked = isChecked
+  packingForm.value.items[idx].packedQuantity = isChecked ? packingForm.value.items[idx].quantity : 0
+  
+  const anyPacked = packingForm.value.items.some(i => i.isPacked)
+  const allFull = packingForm.value.items.every(i => i.isPacked)
+  
+  if (allFull) {
     packingForm.value.status = 'PACKED'
-    await updatePacking()
+  } else if (anyPacked) {
+    packingForm.value.status = 'IN_PROGRESS'
+  } else {
+    packingForm.value.status = 'PENDING'
   }
+  
+  await updatePacking()
+}
+
+const markAsPacked = async () => {
+  packingForm.value.status = 'PACKED'
+  packingForm.value.items.forEach(i => {
+    i.isPacked = true
+    i.packedQuantity = i.quantity
+  })
+  await updatePacking()
+}
 
   
 const getStepStatus = (step) => {
@@ -602,38 +696,6 @@ watch(editForm, () => {
   }
 }, { deep: true })
 
-const updatePacking = async () => {
-    if (!order.value) return
-
-    // Optimistic UI update (0ms local response)
-    if (order.value && packingForm.value.status) {
-      if (!order.value.packingStatus) order.value.packingStatus = {} as any
-      order.value.packingStatus.status = packingForm.value.status as any
-    }
-
-    showSaving()
-    try {
-      const payload = {
-        status: packingForm.value.status,
-        holdReason: packingForm.value.holdReason,
-        items: packingForm.value.items.map(i => ({
-          id: i.id,
-          packedQuantity: i.isPacked ? i.quantity : 0
-        }))
-      }
-      await $fetch(`/api/orders/${order.value.id}/packing`, {
-        method: 'PATCH',
-        body: payload
-      })
-      showSaved('Packing updated successfully')
-      notifyChange({ orderId: order.value.id, action: 'PACKING_UPDATED', status: packingForm.value.status })
-      emit('updated')
-      await fetchOrder(order.value.id)
-    } catch (err) {
-      console.error(err)
-      hide()
-    }
-  }
 
 const updateDelivery = async () => {
   if (!order.value) return
@@ -692,6 +754,47 @@ const updateDelivery = async () => {
     @recorded="onPaymentRecorded"
   />
 
+  <!-- Mandatory Order Cancellation Modal -->
+  <Teleport to="body">
+    <div v-if="isCancelModalOpen" class="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+      <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden border border-gray-200">
+        <div class="p-6">
+          <div class="w-12 h-12 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center mb-4 border border-rose-100">
+            <Ban class="w-6 h-6" />
+          </div>
+          <h3 class="text-lg font-bold text-gray-900 mb-1">Cancel Order {{ order?.orderNumber }}?</h3>
+          <p class="text-xs text-gray-500 mb-4">
+            Under company policy, orders cannot be deleted without audit. This will permanently mark the order as Cancelled and record your audit log in the timeline.
+          </p>
+
+          <label class="block text-xs font-bold text-gray-700 mb-1">Mandatory Cancellation Reason *</label>
+          <textarea 
+            v-model="cancelReason" 
+            rows="3"
+            placeholder="e.g. Client requested cancellation due to site delay, duplicate entry, out of stock..."
+            class="w-full p-2.5 border border-gray-300 rounded-lg text-xs focus:ring-2 focus:ring-rose-500 focus:outline-none"
+          ></textarea>
+        </div>
+
+        <div class="px-6 py-3 bg-gray-50 border-t border-gray-200 flex justify-end gap-3">
+          <button 
+            @click="isCancelModalOpen = false"
+            class="px-4 py-2 text-xs font-semibold text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-100"
+          >
+            Go Back
+          </button>
+          <button 
+            @click="confirmCancelOrder" 
+            :disabled="isCancelling || !cancelReason.trim()"
+            class="px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-lg shadow-sm flex items-center gap-2 disabled:opacity-50"
+          >
+            <span>Confirm Cancellation</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </Teleport>
+
   <Teleport to="body">
     <div v-if="isOpen" class="fixed inset-0 z-[100] overflow-hidden pointer-events-none">
       <div class="absolute inset-0 bg-black/20 backdrop-blur-[2px] pointer-events-auto transition-opacity" @click="closePanel"></div>
@@ -720,15 +823,23 @@ const updateDelivery = async () => {
             </div>
             <div class="flex items-center gap-2">
               <button 
-                v-if="hasRole('ADMIN', 'SALES')"
+                v-if="order.overallStatus !== 'CANCELLED' && order.overallStatus !== 'DELIVERED' && hasRole('ADMIN', 'SALES')"
+                @click="openCancelModal" 
+                title="Cancel Order (Mandatory Reason Required)"
+                class="px-2.5 py-1 text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-md transition-colors flex items-center gap-1"
+              >
+                <Ban class="w-3.5 h-3.5" /> Cancel
+              </button>
+              <button 
+                v-if="hasRole('ADMIN')"
                 @click="deleteOrder" 
                 :disabled="isDeleting"
-                title="Delete Order"
+                title="Delete Order (Admin Only)"
                 class="p-1.5 text-red-400 hover:text-red-600 rounded-md hover:bg-red-50 transition-colors disabled:opacity-50"
               >
                 <Trash2 class="w-5 h-5" />
               </button>
-              <button @click="closePanel" class="p-1.5 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100 ml-2">
+              <button @click="closePanel" class="p-1.5 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100 ml-1">
                 <X class="w-5 h-5" />
               </button>
             </div>
@@ -1077,27 +1188,47 @@ const updateDelivery = async () => {
                     <thead class="bg-gray-50 text-xs text-gray-500 uppercase tracking-wider">
                       <tr>
                         <th class="px-4 py-2 font-medium">Product</th>
-                        <th class="px-4 py-2 font-medium text-right">Qty</th>
-                        <th v-if="context === 'packing'" class="px-4 py-2 font-medium text-center">Packed</th>
+                        <th class="px-4 py-2 font-medium text-right">{{ (order as any)?.isApproved ? 'Approved Qty' : 'Qty' }}</th>
+                        <th v-if="context === 'packing'" class="px-4 py-2 font-medium text-center">Packed Qty</th>
                       </tr>
                     </thead>
                     <tbody ref="itemsTbodyRef" class="divide-y divide-gray-200">
-                      <tr v-for="(item, idx) in order.items" :key="item.id" class="bg-white transition-colors" :class="{ 'bg-green-50/30': context === 'packing' && packingForm.items[idx]?.isPacked }">
+                      <tr v-for="(item, idx) in order.items" :key="item.id" class="bg-white transition-colors" :class="{ 'bg-amber-50/30': context === 'packing' && ((packingForm.items[idx]?.packedQuantity || 0) < (item.approvedQuantity ?? item.quantity)) }">
                         <td class="px-4 py-3">
-                          <div class="font-medium truncate max-w-[150px]" :class="context === 'packing' && packingForm.items[idx]?.isPacked ? 'text-gray-400 line-through' : 'text-gray-900'">
+                          <div class="font-medium truncate max-w-[150px] text-gray-900">
                             {{ item.product?.sku }}
                           </div>
                           <div class="text-xs text-gray-400 truncate max-w-[150px]">{{ item.product?.name }}</div>
+                          <div v-if="(item as any)?.itemNotes" class="text-[10px] text-amber-700 bg-amber-50 px-1 py-0.5 rounded border border-amber-200 mt-1 inline-block">
+                            💬 {{ (item as any)?.itemNotes }}
+                          </div>
                         </td>
-                        <td class="px-4 py-3 text-right font-medium text-gray-900">{{ item.quantity }}</td>
+                        <td class="px-4 py-3 text-right font-bold text-gray-900">{{ item.approvedQuantity ?? item.quantity }}</td>
                         <td v-if="context === 'packing'" class="px-4 py-3 text-center">
-                          <input 
-                            type="checkbox" 
-                            :checked="packingForm.items[idx]?.isPacked" 
-                            @change="e => handlePackingChange(idx, e)" 
-                            class="rounded border-gray-300 text-[#1a5c4c] focus:ring-[#1a5c4c] w-5 h-5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" 
-                            :disabled="!hasRole('ADMIN', 'PACKING')"
-                          />
+                          <div class="flex items-center justify-center gap-2">
+                            <input 
+                              type="number" 
+                              min="0"
+                              :max="item.approvedQuantity ?? item.quantity"
+                              v-model.number="packingForm.items[idx].packedQuantity" 
+                              @change="handlePackedQtyChange(idx)" 
+                              class="w-16 px-2 py-1 text-xs border border-gray-300 rounded font-bold text-center focus:ring-[#1a5c4c]" 
+                              :disabled="!hasRole('ADMIN', 'PACKING')"
+                            />
+                            <span 
+                              v-if="(packingForm.items[idx]?.packedQuantity || 0) < (item.approvedQuantity ?? item.quantity)" 
+                              class="text-[10px] px-1.5 py-0.5 rounded font-bold bg-amber-100 text-amber-700 border border-amber-200 whitespace-nowrap"
+                              title="Shortage alert"
+                            >
+                              -{{ (item.approvedQuantity ?? item.quantity) - (packingForm.items[idx]?.packedQuantity || 0) }}
+                            </span>
+                            <span 
+                              v-else 
+                              class="text-[10px] px-1.5 py-0.5 rounded font-bold bg-green-100 text-green-700 border border-green-200"
+                            >
+                              ✓
+                            </span>
+                          </div>
                         </td>
                       </tr>
                     </tbody>

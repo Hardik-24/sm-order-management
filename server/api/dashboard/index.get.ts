@@ -25,7 +25,8 @@ export default defineEventHandler(async (event) => {
     readyOrders,
     pendingPayments,
     totalOutstandingAgg,
-    overdueOrders
+    overdueOrders,
+    pendingApproval
   ] = await Promise.all([
     prisma.order.count({ where: { createdAt: { gte: today, lt: tomorrow } } }),
     prisma.order.count({ where: { createdAt: { gte: yesterday, lt: today } } }),
@@ -81,6 +82,12 @@ export default defineEventHandler(async (event) => {
       },
       include: { customer: true },
       take: 5
+    }),
+    prisma.order.count({
+      where: {
+        isApproved: false,
+        overallStatus: { notIn: ['CANCELLED', 'DELIVERED'] }
+      }
     })
   ])
 
@@ -133,6 +140,7 @@ export default defineEventHandler(async (event) => {
     ordersToday,
     ordersTodayChange,
     awaitingBilling,
+    pendingApproval,
     packing,
     readyForDelivery,
     delivered,

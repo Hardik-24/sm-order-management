@@ -21,6 +21,12 @@ enum UserRole {
   DELIVERY
 }
 
+enum PrivilegeTier {
+  BRONZE
+  SILVER
+  GOLD
+}
+
 enum ProductUnit {
   SHEET
   PIECE
@@ -36,6 +42,7 @@ enum OrderStatus {
   READY
   DISPATCHED
   DELIVERED
+  CANCELLED
 }
 
 enum BillingState {
@@ -88,6 +95,9 @@ model User {
 
   // Relations
   salesOrders       Order[]         @relation("SalesPerson")
+  managedCustomers  Customer[]      @relation("CustomerManager")
+  approvedOrders    Order[]         @relation("ApprovedByUser")
+  cancelledOrders   Order[]         @relation("CancelledByUser")
   billingActions    BillingStatus[] @relation("BillingUser")
   packingAssigned   PackingStatus[] @relation("PackingUser")
   timelineEntries   OrderTimeline[] @relation("TimelineUser")
@@ -126,14 +136,14 @@ model Category {
 }
 
 model Product {
-  id         String      @id @default(uuid())
-  sku        String      @unique
-  name       String
-  categoryId String
-  unit       String      @default("PIECE")
-  price      Decimal     @db.Decimal(10, 2)
-  stock      Int         @default(0)
-  hsnCode    String?
+  id             String             @id @default(uuid())
+  sku            String             @unique
+  name           String
+  categoryId     String
+  unit           String             @default("PIECE")
+  price          Decimal            @db.Decimal(10, 2)
+  stock          Int                @default(0)
+  hsnCode        String?
   taxRate        Decimal?           @db.Decimal(5, 2)
   hasVariants    Boolean            @default(false)
   variantOptions Json?
@@ -147,32 +157,64 @@ model Product {
   orderItems        OrderItem[]
   orderRequestItems OrderRequestItem[]
 
+  @@index([categoryId, name])
   @@map("products")
 }
 
 model Customer {
-  id           String   @id @default(uuid())
-  name         String
-  company      String
-  phone        String
-  email        String?
-  address      String?
-  city         String?
-  state        String?
-  pincode      String?
-  gstNumber    String?
-  paymentTerms String   @default("30 Days")
-  latitude     Float?
-  longitude    Float?
-  landmark     String?
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id                String            @id @default(uuid())
+  customerCode      String?           @unique
+  name              String
+  company           String
+  alias             String?
+  phone             String
+  alternatePhone    String?
+  email             String?
+  address           String?
+  city              String?
+  state             String?
+  pincode           String?
+  gstNumber         String?
+  paymentTerms      String            @default("30 Days")
+  latitude          Float?
+  longitude         Float?
+  landmark          String?
+  customerManagerId String?
+  privilegeTier     PrivilegeTier     @default(BRONZE)
+  isPriorityClient  Boolean           @default(false)
+  isActive          Boolean           @default(true)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
 
   // Relations
-  orders Order[]
+  customerManager   User?             @relation("CustomerManager", fields: [customerManagerId], references: [id])
+  addresses         CustomerAddress[]
+  orders            Order[]
 
+  @@index([phone])
+  @@index([gstNumber])
+  @@index([name])
   @@map("customers")
+}
+
+model CustomerAddress {
+  id          String   @id @default(uuid())
+  customerId  String
+  label       String   @default("Address 1 (Main Showroom)")
+  addressLine String
+  city        String?
+  state       String?  @default("Karnataka")
+  pincode     String?
+  landmark    String?
+  latitude    Float?
+  longitude   Float?
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@map("customer_addresses")
 }
 
 model Supplier {
@@ -195,22 +237,32 @@ model Supplier {
 }
 
 model Order {
-  id              String      @id @default(uuid())
-  orderNumber     String      @unique
-  customerId      String
-  salesPersonId   String
-  orderDate       DateTime    @default(now())
-  deliveryAddress String
-  paymentTerms    String
-  notes           String?
-  totalAmount     Decimal     @db.Decimal(12, 2)
-  overallStatus   OrderStatus @default(CONFIRMED)
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  id                String          @id @default(uuid())
+  orderNumber       String          @unique
+  customerId        String
+  salesPersonId     String
+  orderDate         DateTime        @default(now())
+  deliveryAddressId String?
+  deliveryAddress   String
+  isUrgent          Boolean         @default(false)
+  isApproved        Boolean         @default(false)
+  approvedById      String?
+  approvedAt        DateTime?
+  cancelReason      String?
+  cancelledById     String?
+  cancelledAt       DateTime?
+  paymentTerms      String
+  notes             String?
+  totalAmount       Decimal         @db.Decimal(12, 2)
+  overallStatus     OrderStatus     @default(CONFIRMED)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
 
   // Relations
-  customer       Customer       @relation(fields: [customerId], references: [id])
-  salesPerson    User           @relation("SalesPerson", fields: [salesPersonId], references: [id])
+  customer       Customer        @relation(fields: [customerId], references: [id])
+  salesPerson    User            @relation("SalesPerson", fields: [salesPersonId], references: [id])
+  approvedBy     User?           @relation("ApprovedByUser", fields: [approvedById], references: [id])
+  cancelledBy    User?           @relation("CancelledByUser", fields: [cancelledById], references: [id])
   items          OrderItem[]
   billingStatus  BillingStatus?
   packingStatus  PackingStatus?
@@ -228,18 +280,23 @@ model Order {
 }
 
 model OrderItem {
-  id             String  @id @default(uuid())
-  orderId        String
-  productId      String
-  sku            String
-  productName    String
-  quantity       Int
-  unitPrice      Decimal @db.Decimal(10, 2)
-  discount       Decimal @default(0) @db.Decimal(10, 2)
-  taxRate        Decimal @default(0) @db.Decimal(10, 2)
-  taxAmount      Decimal @default(0) @db.Decimal(10, 2)
-  totalPrice     Decimal @default(0) @db.Decimal(10, 2)
-  packedQuantity Int     @default(0)
+  id               String   @id @default(uuid())
+  orderId          String
+  productId        String
+  sku              String
+  productName      String
+  quantity         Int
+  approvedQuantity Int?
+  packedQuantity   Int      @default(0)
+  billedQuantity   Int?
+  unitPrice        Decimal  @db.Decimal(10, 2)
+  discount         Decimal  @default(0) @db.Decimal(10, 2)
+  taxRate          Decimal  @default(0) @db.Decimal(10, 2)
+  taxAmount        Decimal  @default(0) @db.Decimal(10, 2)
+  totalPrice       Decimal  @default(0) @db.Decimal(10, 2)
+  isTaxInclusive   Boolean  @default(false)
+  applyLastPrice   Boolean  @default(false)
+  itemNotes        String?
 
   // Relations
   order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
@@ -253,6 +310,8 @@ model BillingStatus {
   orderId       String       @unique
   status        BillingState @default(PENDING)
   invoiceNumber String?
+  invoiceDate   DateTime?
+  invoicePdfUrl String?
   generatedById String?
   generatedAt   DateTime?
   holdReason    String?

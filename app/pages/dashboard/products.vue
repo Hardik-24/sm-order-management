@@ -131,7 +131,7 @@
               <tr class="bg-gray-50 border-b border-gray-200">
                 <th class="px-5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest w-36 min-w-[130px] max-w-[160px]">SKU</th>
                 <th class="px-5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest min-w-[220px]">Product Name</th>
-                <th class="px-5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest w-40 min-w-[140px]">Category</th>
+                <th class="px-5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest w-40 min-w-[140px]">Group Name (Busy)</th>
                 <th class="px-5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest w-28 min-w-[100px]">HSN</th>
                 <th class="px-5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest w-28 min-w-[110px] text-right">Price</th>
                 <th class="px-5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest w-24 min-w-[90px] text-right">Stock</th>
@@ -453,7 +453,7 @@
 
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div class="space-y-1">
-                  <label class="block text-[10px] font-medium text-gray-500 uppercase tracking-widest">Category *</label>
+                  <label class="block text-[10px] font-medium text-gray-500 uppercase tracking-widest">Item Group * (Busy Group Name)</label>
                   <CustomSelect 
                     :modelValue="productForm.categoryId"
                     @update:modelValue="val => productForm.categoryId = val"
@@ -945,6 +945,18 @@ const closeProductModal = () => {
 
 const saveProduct = async () => {
   if (!productForm.value.sku || !productForm.value.name) return
+
+  const cleanSku = productForm.value.sku.trim().toUpperCase()
+  const cleanName = productForm.value.name.trim().toLowerCase()
+  const existingDup = (products.value || []).find((p: any) => {
+    if (editingProduct.value && p.id === editingProduct.value.id) return false
+    return p.sku?.trim().toUpperCase() === cleanSku || p.name?.trim().toLowerCase() === cleanName
+  })
+  if (existingDup) {
+    alert(`Anti-duplication alert: Product with SKU "${cleanSku}" or name "${existingDup.name}" already exists!`)
+    return
+  }
+
   isSavingProduct.value = true
   showSaving()
   try {
@@ -955,8 +967,9 @@ const saveProduct = async () => {
     notifyChange({ type: 'PRODUCT_CHANGE', action: 'PRODUCT_SAVED' })
     closeProductModal()
     showSaved('Product saved successfully')
-  } catch (e) {
+  } catch (e: any) {
     console.error('Failed to save product', e)
+    alert(e.data?.message || 'Failed to save product')
     hide()
   } finally {
     isSavingProduct.value = false

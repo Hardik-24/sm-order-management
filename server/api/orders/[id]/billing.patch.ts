@@ -17,7 +17,7 @@ export default defineEventHandler(async (event) => {
   if (!id) throw createError({ statusCode: 400, message: 'Missing order ID' })
   
   const body = await readBody(event)
-  const { status, invoiceNumber, holdReason, items } = body
+  const { status, invoiceNumber, invoiceDate, invoicePdfUrl, holdReason, items } = body
 
   const order = await prisma.order.findUnique({
     where: { id },
@@ -29,21 +29,24 @@ export default defineEventHandler(async (event) => {
   if (items && Array.isArray(items)) {
     for (const item of items) {
       if (item.id) {
+        const updateData: any = {}
+        if (item.billedQuantity !== undefined) updateData.billedQuantity = Number(item.billedQuantity)
+        if (item.unitPrice !== undefined) updateData.unitPrice = Number(item.unitPrice)
+        if (item.discount !== undefined) updateData.discount = Number(item.discount)
+        if (item.taxRate !== undefined) updateData.taxRate = Number(item.taxRate)
+        if (item.taxAmount !== undefined) updateData.taxAmount = Number(item.taxAmount)
+        if (item.totalPrice !== undefined) updateData.totalPrice = Number(item.totalPrice)
         await prisma.orderItem.update({
           where: { id: item.id },
-          data: {
-            unitPrice: item.unitPrice,
-            discount: item.discount,
-            taxRate: item.taxRate,
-            taxAmount: item.taxAmount,
-            totalPrice: item.totalPrice
-          }
+          data: updateData
         })
       }
     }
   }
 
   const billingData: any = { status, invoiceNumber }
+  if (invoiceDate) billingData.invoiceDate = new Date(invoiceDate)
+  if (invoicePdfUrl) billingData.invoicePdfUrl = invoicePdfUrl
   if (status === 'GENERATED') {
     billingData.generatedById = user.id
     billingData.generatedAt = new Date()

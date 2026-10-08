@@ -205,9 +205,25 @@ const getPaymentDot = (order: Order) => {
               :key="order.id"
               @click="emit('select', order.id)"
               class="hover:bg-gray-50 cursor-pointer transition-colors group"
+              :class="{ 'bg-rose-50/20 border-l-4 border-l-rose-500': (order as any).isUrgent }"
             >
-              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ order.orderNumber }}</td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ order.customer?.name || '—' }}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                <div class="flex items-center gap-1.5">
+                  <span>{{ order.orderNumber }}</span>
+                  <span v-if="(order as any).isUrgent" class="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[10px] font-bold bg-rose-100 text-rose-700 border border-rose-300 animate-pulse">
+                    ⚡ URGENT
+                  </span>
+                  <span v-if="(order as any).isApproved" class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    ✓
+                  </span>
+                </div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <div class="flex items-center gap-1.5">
+                  <span>{{ order.customer?.name || '—' }}</span>
+                  <span v-if="(order.customer as any)?.isPriorityClient" class="text-amber-500 font-bold text-xs" title="Priority Client">★</span>
+                </div>
+              </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ order.items?.length || 0 }}</td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ formatCurrency(order.totalAmount || 0) }}</td>
               
@@ -283,14 +299,18 @@ const getPaymentDot = (order: Order) => {
         >
           <!-- LINE 1: Identity & Overall Status -->
           <div class="flex items-center justify-between gap-2 min-w-0">
-            <div class="flex items-center gap-1.5 min-w-0">
+            <div class="flex items-center gap-1.5 min-w-0 flex-wrap">
               <span class="text-sm font-semibold text-gray-900 shrink-0">
                 {{ order.orderNumber }}
+              </span>
+              <span v-if="(order as any).isUrgent" class="text-[9px] font-bold text-rose-600 bg-rose-50 px-1 py-0.2 rounded border border-rose-200">
+                ⚡ URGENT
               </span>
               <span class="text-gray-300 text-xs shrink-0">•</span>
               <span class="text-xs font-medium text-gray-700 truncate" :title="order.customer?.name || ''">
                 {{ order.customer?.name || 'Walk-in Customer' }}
               </span>
+              <span v-if="(order.customer as any)?.isPriorityClient" class="text-amber-500 font-bold text-xs">★</span>
             </div>
             
             <!-- Overall Status Badge (Cleanly anchored on top right) -->

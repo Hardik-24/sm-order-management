@@ -12,17 +12,28 @@ export default defineEventHandler(async (event) => {
     where.OR = [
       { name: { contains: search, mode: 'insensitive' } },
       { company: { contains: search, mode: 'insensitive' } },
+      { alias: { contains: search, mode: 'insensitive' } },
+      { customerCode: { contains: search, mode: 'insensitive' } },
       { email: { contains: search, mode: 'insensitive' } },
-      { phone: { contains: search, mode: 'insensitive' } }
+      { phone: { contains: search, mode: 'insensitive' } },
+      { gstNumber: { contains: search, mode: 'insensitive' } }
     ]
   }
 
   const customers = await prisma.customer.findMany({
     where,
+    include: {
+      customerManager: {
+        select: { id: true, name: true, email: true, role: true }
+      },
+      addresses: {
+        orderBy: { createdAt: 'asc' }
+      }
+    },
     orderBy: { name: 'asc' }
   })
 
-  // Sync memory cache from Supabase
+  // Sync memory cache from Supabase for legacy customer pins
   await syncPinsFromDatabase()
   const pins = loadCustomerPins()
 

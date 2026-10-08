@@ -71,6 +71,14 @@
         <h3 v-if="!isSidebarCollapsed" class="mb-3 px-3 text-[10px] font-bold uppercase tracking-widest text-gray-500 whitespace-nowrap">OPERATIONS</h3>
         <div v-else class="mb-3 h-3 flex justify-center border-b border-gray-800 mx-2"></div>
         <nav class="flex flex-col gap-1">
+          <NuxtLink v-if="['ADMIN', 'SALES'].includes(user?.role || '')" to="/dashboard/approve-orders" title="Approve Orders" class="flex items-center gap-3 rounded-md py-2.5 text-sm transition-colors relative" :class="[route.path.startsWith('/dashboard/approve-orders') ? 'bg-[#223933] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50 hover:text-gray-200', isSidebarCollapsed ? 'justify-center px-0' : 'px-3']">
+            <CheckCheck class="shrink-0 w-4 h-4 text-emerald-400" />
+            <span v-if="!isSidebarCollapsed" class="font-medium whitespace-nowrap flex-1">Approve Orders</span>
+            <span v-if="pendingApprovalCount > 0 && !isSidebarCollapsed" class="bg-emerald-500/20 text-emerald-300 text-[10px] font-bold px-1.5 py-0.5 rounded-full border border-emerald-500/30">
+              {{ pendingApprovalCount }}
+            </span>
+            <span v-if="pendingApprovalCount > 0 && isSidebarCollapsed" class="absolute top-2 right-2 w-2 h-2 rounded-full bg-emerald-400 ring-2 ring-[#1c1c1c]"></span>
+          </NuxtLink>
           <NuxtLink to="/dashboard/inventory" title="Inventory" class="flex items-center gap-3 rounded-md py-2.5 text-sm transition-colors" :class="[route.path.startsWith('/dashboard/inventory') ? 'bg-[#223933] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50 hover:text-gray-200', isSidebarCollapsed ? 'justify-center px-0' : 'px-3']">
             <Boxes class="shrink-0 w-4 h-4" />
             <span v-if="!isSidebarCollapsed" class="font-medium whitespace-nowrap">Inventory</span>
@@ -160,6 +168,10 @@
           <span v-if="pendingRequestsCount > 0" class="absolute -top-1.5 -right-1.5 w-2 h-2 rounded-full bg-amber-400 ring-2 ring-[#1c1c1c]"></span>
         </NuxtLink>
         <NuxtLink v-if="['ADMIN', 'SALES'].includes(user?.role || '')" to="/dashboard/orders/create" :class="[route.path === '/dashboard/orders/create' ? 'text-[#4ecdc4]' : 'text-gray-400']"><PenTool class="w-5 h-5" /></NuxtLink>
+        <NuxtLink v-if="['ADMIN', 'SALES'].includes(user?.role || '')" to="/dashboard/approve-orders" class="relative" :class="[route.path.startsWith('/dashboard/approve-orders') ? 'text-[#4ecdc4]' : 'text-gray-400']">
+          <CheckCheck class="w-5 h-5 text-emerald-400" />
+          <span v-if="pendingApprovalCount > 0" class="absolute -top-1.5 -right-1.5 w-2 h-2 rounded-full bg-emerald-400 ring-2 ring-[#1c1c1c]"></span>
+        </NuxtLink>
         <NuxtLink to="/dashboard/chat" :class="[route.path.startsWith('/dashboard/chat') ? 'text-[#4ecdc4]' : 'text-gray-400']"><MessageSquare class="w-5 h-5" /></NuxtLink>
         <NuxtLink to="/dashboard/inventory" :class="[route.path.startsWith('/dashboard/inventory') ? 'text-[#4ecdc4]' : 'text-gray-400']"><Boxes class="w-5 h-5" /></NuxtLink>
         <NuxtLink to="/dashboard/billing" :class="[route.path.startsWith('/dashboard/billing') ? 'text-[#4ecdc4]' : 'text-gray-400']"><Receipt class="w-5 h-5" /></NuxtLink>
@@ -228,6 +240,14 @@
       <!-- OPERATIONS -->
       <div class="flex flex-col gap-1 mb-6">
         <h3 class="block mb-3 px-3 text-[10px] font-bold uppercase tracking-widest text-gray-500">OPERATIONS</h3>
+        <NuxtLink v-if="['ADMIN', 'SALES'].includes(user?.role || '')" to="/dashboard/approve-orders" class="flex items-center justify-between rounded-md py-2.5 px-3 text-sm transition-colors" :class="[route.path.startsWith('/dashboard/approve-orders') ? 'bg-[#223933] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50']">
+          <div class="flex items-center gap-3">
+            <CheckCheck class="w-4 h-4 text-emerald-400" /> <span class="font-medium">Approve Orders</span>
+          </div>
+          <span v-if="pendingApprovalCount > 0" class="bg-emerald-500/20 text-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-500/30">
+            {{ pendingApprovalCount }}
+          </span>
+        </NuxtLink>
         <NuxtLink to="/dashboard/inventory" class="flex items-center gap-3 rounded-md py-2.5 px-3 text-sm transition-colors" :class="[route.path.startsWith('/dashboard/inventory') ? 'bg-[#223933] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50']">
           <Boxes class="w-4 h-4" /> <span class="font-medium">Inventory</span>
         </NuxtLink>
@@ -298,7 +318,8 @@ import {
   X, 
   LogOut,
   MessageSquare,
-  Inbox
+  Inbox,
+  CheckCheck
 } from 'lucide-vue-next'
 import { useRoute } from 'vue-router'
 import { watch, ref, onMounted, onUnmounted, nextTick } from 'vue'
@@ -342,9 +363,22 @@ const fetchPendingRequestsCount = async () => {
   }
 }
 
+const pendingApprovalCount = ref(0)
+const fetchPendingApprovalCount = async () => {
+  try {
+    const res = await $fetch<any>('/api/orders', { params: { isApproved: 'false', status: 'CONFIRMED', limit: 1 } })
+    if (res?.total !== undefined) {
+      pendingApprovalCount.value = res.total || 0
+    }
+  } catch {
+    // silent
+  }
+}
+
 const { onOrderSync } = useRealtimeSync()
 const unsubscribeSync = onOrderSync(() => {
   fetchPendingRequestsCount()
+  fetchPendingApprovalCount()
 })
 
 /**
@@ -443,6 +477,7 @@ const animateMobileMenu = () => {
 onMounted(() => {
   checkDb()
   fetchPendingRequestsCount()
+  fetchPendingApprovalCount()
   pollInterval = setInterval(checkDb, 30000)
 
   gsapCtx = gsap.context(() => {
