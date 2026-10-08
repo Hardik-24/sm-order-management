@@ -63,7 +63,7 @@
           <thead>
             <tr class="bg-gray-50 border-b border-gray-200">
               <th class="pl-5 pr-4 py-3.5 text-[10px] font-bold text-gray-500 uppercase tracking-widest w-[56%] md:w-[21%]">Customer & Code</th>
-              <th class="hidden md:table-cell px-4 py-3.5 text-[10px] font-bold text-gray-500 uppercase tracking-widest md:w-[11%]">Tier / Mgr</th>
+              <th class="hidden md:table-cell px-4 py-3.5 text-[10px] font-bold text-gray-500 uppercase tracking-widest md:w-[11%]">Tier</th>
               <th class="hidden md:table-cell px-4 py-3.5 text-[10px] font-bold text-gray-500 uppercase tracking-widest md:w-[11%]">Contact</th>
               <th class="hidden md:table-cell px-4 py-3.5 text-[10px] font-bold text-gray-500 uppercase tracking-widest md:w-[11%]">Phone</th>
               <th class="hidden md:table-cell px-4 py-3.5 text-[10px] font-bold text-gray-500 uppercase tracking-widest md:w-[23%]">Locations & Addresses</th>
@@ -1021,8 +1021,9 @@ const getMainPhone = (phone?: string) => {
   // Split on comma, slash, semicolon, or newline to extract the first main number
   const parts = phone.split(/[,;\/\n]+/).map(p => p.trim()).filter(Boolean)
   for (const part of parts) {
-    const upper = part.toUpperCase()
-    if (upper !== 'N/A' && upper !== 'NA' && part !== '-' && part !== '--' && upper !== 'NONE' && upper !== 'NULL') {
+    // A valid phone number must contain at least 5 digits
+    const digitsOnly = part.replace(/\D/g, '')
+    if (digitsOnly.length >= 5) {
       return part
     }
   }
