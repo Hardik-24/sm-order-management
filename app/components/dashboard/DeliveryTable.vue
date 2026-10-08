@@ -123,7 +123,16 @@ const openTrackingModal = async (order: any) => {
   if (supabaseUrl && supabaseKey) {
     // 🚀 USE REALTIME WEBSOCKETS
     const supabase = createClient(supabaseUrl, supabaseKey)
-    trackingRealtimeChannel = supabase.channel(`tracking-${order.id}`)
+    trackingRealtimeChannel = supabase.channel(`trip_${order.id}`)
+      .on('broadcast', { event: 'LOCATION_UPDATE' }, (payload) => {
+        if (trackingData.value && trackingData.value.trip) {
+          const { coords, distanceKm } = payload.payload
+          trackingData.value.trip.currentLocation = coords
+          if (distanceKm !== undefined) {
+            trackingData.value.trip.totalDistanceKm = distanceKm
+          }
+        }
+      })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'trip_routes', filter: `orderId=eq.${order.id}` }, () => {
         // Trigger silent refresh instantly when GPS updates in DB
         fetchTrackingData(trackingModalOrder.value?.orderNumber || trackingModalOrder.value?.id, true)

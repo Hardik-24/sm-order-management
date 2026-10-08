@@ -833,7 +833,9 @@ watch(() => activeTrip.value?.totalDistanceKm, (newVal) => {
     displayDistanceKm.value = 0
     return
   }
-  if (newVal > displayDistanceKm.value || Math.abs(displayDistanceKm.value - newVal) > 0.5) {
+  // Only accept server distance if it's strictly larger (e.g. on app restart).
+  // Never downgrade to server's Haversine distance while Navigation SDK is actively increasing it.
+  if (newVal > displayDistanceKm.value) {
     displayDistanceKm.value = newVal
   }
 }, { immediate: true })
@@ -1010,6 +1012,19 @@ async function refreshData() {
 
 let navListenerHandle: any = null
 
+function broadcastLocation(pt: any) {
+  if (!activeTripOrderId.value || !supabase) return
+  supabase.channel(`trip_${activeTripOrderId.value}`).send({
+    type: 'broadcast',
+    event: 'LOCATION_UPDATE',
+    payload: {
+      coords: pt,
+      distanceKm: displayDistanceKm.value,
+      eta: navSdkEta.value
+    }
+  }).catch(() => {})
+}
+
 // Start continuous GPS tracking via Navigation SDK (road-snapped)
 function startGpsTracking() {
   const cap = getCapacitor()
@@ -1055,6 +1070,8 @@ function startGpsTracking() {
           navSdkEta.value = pos.etaFormatted
         }
 
+        broadcastLocation(pt)
+
         offlineGpsQueue.push(pt)
 
         if (offlineGpsQueue.length > 300) {
@@ -1090,6 +1107,8 @@ function startGpsTracking() {
         if (activeTrip.value) {
           activeTrip.value.currentLocation = pt
         }
+
+        broadcastLocation(pt)
 
         const last = offlineGpsQueue[offlineGpsQueue.length - 1]
         

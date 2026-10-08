@@ -358,10 +358,19 @@ onMounted(async () => {
   const supabaseUrl = config.public.supabaseUrl
   const supabaseKey = config.public.supabaseKey
 
-  if (supabaseUrl && supabaseKey) {
+  if (supabaseUrl && supabaseKey && trackingData.value?.id) {
     import('@supabase/supabase-js').then(({ createClient }) => {
       const supabase = createClient(supabaseUrl, supabaseKey)
-      realtimeChannel = supabase.channel(`public-track-${orderNumber}-${Date.now()}`)
+      realtimeChannel = supabase.channel(`trip_${trackingData.value.id}`)
+        .on('broadcast', { event: 'LOCATION_UPDATE' }, (payload) => {
+          if (trackingData.value && trackingData.value.trip) {
+            const { coords, distanceKm } = payload.payload
+            trackingData.value.trip.currentLocation = coords
+            if (distanceKm !== undefined) {
+              trackingData.value.trip.totalDistanceKm = distanceKm
+            }
+          }
+        })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
           fetchTracking(true)
         })

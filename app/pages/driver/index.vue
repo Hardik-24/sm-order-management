@@ -662,8 +662,9 @@ watch(() => activeTrip.value?.totalDistanceKm, (newVal) => {
     displayDistanceKm.value = 0
     return
   }
-  // Sync up
-  if (Math.abs(displayDistanceKm.value - newVal) > 0.5) {
+  // Only accept server distance if it's strictly larger.
+  // Never downgrade to server's Haversine distance while local client is actively tracking.
+  if (newVal > displayDistanceKm.value) {
     displayDistanceKm.value = newVal
   }
   
@@ -842,6 +843,19 @@ async function refreshData() {
   isRefreshing.value = false
 }
 
+function broadcastLocation(pt: any) {
+  if (!activeTripOrderId.value || !supabaseClient) return
+  supabaseClient.channel(`trip_${activeTripOrderId.value}`).send({
+    type: 'broadcast',
+    event: 'LOCATION_UPDATE',
+    payload: {
+      coords: pt,
+      distanceKm: displayDistanceKm.value,
+      eta: activeTripEta.value
+    }
+  }).catch(() => {})
+}
+
 // Start continuous GPS tracking via phone browser
 function startGpsTracking() {
   const cap = getCapacitor()
@@ -870,6 +884,11 @@ function startGpsTracking() {
           timestamp: pos.timestamp || Date.now(),
         }
         currentCoords = pt
+        if (activeTrip.value) {
+          activeTrip.value.currentLocation = pt
+        }
+
+        broadcastLocation(pt)
 
         const last = offlineGpsQueue[offlineGpsQueue.length - 1]
         
@@ -1246,8 +1265,8 @@ onMounted(async () => {
 
   if (supabaseUrl && supabaseKey) {
     import('@supabase/supabase-js').then(({ createClient }) => {
-      const supabase = createClient(supabaseUrl, supabaseKey)
-      realtimeDriverChannel = supabase.channel('driver-updates')
+      supabaseClient = createClient(supabaseUrl, supabaseKey)
+      realtimeDriverChannel = supabaseClient.channel('driver-updates')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'delivery_statuses' }, () => {
           fetchAssignedDeliveries()
         })
@@ -1269,6 +1288,7 @@ onMounted(async () => {
 })
 
 let realtimeDriverChannel: any = null
+let supabaseClient: any = null
 
 onBeforeUnmount(() => {
   stopGpsTracking()
