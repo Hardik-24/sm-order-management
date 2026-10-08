@@ -111,6 +111,7 @@ export default defineEventHandler(async (event) => {
       customerManagerId: body.customerManagerId || null,
       privilegeTier: body.privilegeTier || 'BRONZE',
       isPriorityClient: Boolean(body.isPriorityClient),
+      isActive: body.isActive !== undefined ? Boolean(body.isActive) : true,
       addresses: addressesToCreate.length > 0 ? {
         create: addressesToCreate
       } : undefined

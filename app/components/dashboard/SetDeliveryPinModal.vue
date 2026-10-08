@@ -9,7 +9,12 @@
               <MapPin class="w-5 h-5" />
             </div>
             <div>
-              <h3 class="font-bold text-base text-[#e8e0d4]">Set Customer Delivery Pin</h3>
+              <h3 class="font-bold text-base text-[#e8e0d4] flex items-center gap-2">
+                <span>Set Delivery Pin</span>
+                <span v-if="addressLabel" class="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#1a5c4c] text-emerald-100 border border-emerald-400/30">
+                  {{ addressLabel }}
+                </span>
+              </h3>
               <p class="text-xs text-gray-400 truncate max-w-md">{{ customerName }} • {{ customerCompany || deliveryAddress }}</p>
             </div>
           </div>
@@ -227,6 +232,8 @@ const { showSaving, showSaved } = useSnackbar()
 const props = defineProps<{
   isOpen: boolean
   customerId?: string
+  addressId?: string
+  addressLabel?: string
   customerName: string
   customerCompany?: string
   deliveryAddress?: string
@@ -645,12 +652,13 @@ async function savePin() {
   showSaving('Saving customer delivery pin...')
 
   try {
-    const key = props.customerId || props.customerName || props.deliveryAddress || 'default'
+    const key = props.addressId || props.customerId || props.customerName || props.deliveryAddress || 'default'
     const res = await $fetch<{ success: boolean; pin: any }>('/api/customers/pins', {
       method: 'POST',
       body: {
         customerKey: key,
         customerId: props.customerId || undefined,
+        addressId: props.addressId || undefined,
         customerName: props.customerName || undefined,
         customerCompany: props.customerCompany || undefined,
         deliveryAddress: props.deliveryAddress || undefined,
@@ -665,7 +673,7 @@ async function savePin() {
     try {
       if (typeof BroadcastChannel !== 'undefined') {
         const channel = new BroadcastChannel('sm_delivery_channel')
-        channel.postMessage({ type: 'DELIVERY_STATUS_CHANGED', action: 'PIN_UPDATED', customerId: props.customerId })
+        channel.postMessage({ type: 'DELIVERY_STATUS_CHANGED', action: 'PIN_UPDATED', customerId: props.customerId, addressId: props.addressId })
         channel.close()
       }
     } catch (e) {}
@@ -688,7 +696,7 @@ async function savePin() {
 }
 
 async function deletePin() {
-  if (!confirm(`Are you sure you want to remove the saved delivery pin for ${props.customerCompany || props.customerName || 'this customer'}?`)) {
+  if (!confirm(`Are you sure you want to remove the saved delivery pin for ${props.addressLabel || props.customerCompany || props.customerName || 'this location'}?`)) {
     return
   }
 
@@ -700,6 +708,7 @@ async function deletePin() {
       method: 'DELETE',
       query: {
         customerId: props.customerId || undefined,
+        addressId: props.addressId || undefined,
         customerName: props.customerName || undefined,
         customerCompany: props.customerCompany || undefined,
       }
@@ -715,7 +724,7 @@ async function deletePin() {
     try {
       if (typeof BroadcastChannel !== 'undefined') {
         const channel = new BroadcastChannel('sm_delivery_channel')
-        channel.postMessage({ type: 'DELIVERY_STATUS_CHANGED', action: 'PIN_DELETED', customerId: props.customerId })
+        channel.postMessage({ type: 'DELIVERY_STATUS_CHANGED', action: 'PIN_DELETED', customerId: props.customerId, addressId: props.addressId })
         channel.close()
       }
     } catch (e) {}
@@ -748,11 +757,12 @@ watch(() => props.isOpen, async (open) => {
       try {
         const data = await $fetch<{ pins: Record<string, any> }>('/api/customers/pins')
         const pins = data?.pins || {}
+        const addrKey = (props.addressId || '').toLowerCase().trim()
         const idKey = (props.customerId || '').toLowerCase().trim()
         const nameKey = (props.customerName || '').toLowerCase().trim()
         const compKey = (props.customerCompany || '').toLowerCase().trim()
 
-        const existing = (idKey ? pins[idKey] : null) || (nameKey ? pins[nameKey] : null) || (compKey ? pins[compKey] : null)
+        const existing = (addrKey ? pins[addrKey] : null) || (idKey ? pins[idKey] : null) || (nameKey ? pins[nameKey] : null) || (compKey ? pins[compKey] : null)
         if (existing) {
           lat = existing.lat
           lng = existing.lng

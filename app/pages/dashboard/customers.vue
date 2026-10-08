@@ -58,31 +58,31 @@
         </div>
       </div>
 
-      <div ref="tableContainerRef" class="overflow-x-auto min-h-[350px]">
-        <table class="w-full text-left border-collapse table-auto">
+      <div ref="tableContainerRef" class="w-full overflow-x-hidden min-h-[350px]">
+        <table class="w-full text-left border-collapse table-fixed">
           <thead>
             <tr class="bg-gray-50 border-b border-gray-200">
-              <th class="px-3 md:px-5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest md:min-w-[220px]">Customer & Code</th>
-              <th class="hidden md:table-cell px-5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest w-36">Tier / Manager</th>
-              <th class="hidden md:table-cell px-5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest min-w-[150px]">Contact Person</th>
-              <th class="hidden md:table-cell px-5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest w-36 min-w-[130px]">Phone</th>
-              <th class="hidden md:table-cell px-5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest w-36 min-w-[120px]">City / Addresses</th>
-              <th class="hidden md:table-cell px-5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest w-28">Payment Terms</th>
-              <th class="px-2 md:px-5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest w-16 md:w-20 text-center md:text-left">Status</th>
-              <th v-if="user?.role === 'ADMIN'" class="px-2 md:px-5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest w-20 md:w-24 text-right">Actions</th>
+              <th class="px-3 md:px-3.5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest w-[65%] md:w-[24%]">Customer & Code</th>
+              <th class="hidden md:table-cell px-2.5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest w-[11%]">Tier / Mgr</th>
+              <th class="hidden md:table-cell px-2.5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest w-[12%]">Contact</th>
+              <th class="hidden md:table-cell px-2 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest w-[10%]">Phone</th>
+              <th class="hidden md:table-cell px-3 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest w-[27%]">Locations & Addresses</th>
+              <th class="hidden md:table-cell px-2.5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest w-[8%]">Terms</th>
+              <th class="px-2 md:px-2.5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest w-[20%] md:w-[5%] text-center md:text-left">Status</th>
+              <th v-if="user?.role === 'ADMIN'" class="px-2 md:px-2.5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest w-[15%] md:w-[3%] text-right">Actions</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-200 text-sm">
             <template v-if="pending">
               <tr v-for="i in 5" :key="i" class="animate-pulse hover:bg-transparent">
-                <td class="px-3 md:px-5 py-3.5"><div class="h-4 bg-gray-200 rounded w-3/4"></div></td>
-                <td class="hidden md:table-cell px-5 py-3.5"><div class="h-4 bg-gray-200 rounded w-24"></div></td>
-                <td class="hidden md:table-cell px-5 py-3.5"><div class="h-4 bg-gray-200 rounded w-1/2"></div></td>
-                <td class="hidden md:table-cell px-5 py-3.5"><div class="h-4 bg-gray-200 rounded w-24"></div></td>
-                <td class="hidden md:table-cell px-5 py-3.5"><div class="h-4 bg-gray-200 rounded w-20"></div></td>
-                <td class="hidden md:table-cell px-5 py-3.5"><div class="h-4 bg-gray-200 rounded w-16"></div></td>
-                <td class="px-2 md:px-5 py-3.5"><div class="h-5 bg-gray-200 rounded-full w-14 mx-auto md:mx-0"></div></td>
-                <td v-if="user?.role === 'ADMIN'" class="px-2 md:px-5 py-3.5"><div class="h-4 bg-gray-200 rounded w-12 ml-auto"></div></td>
+                <td class="px-3 md:px-3.5 py-3"><div class="h-4 bg-gray-200 rounded w-3/4"></div></td>
+                <td class="hidden md:table-cell px-2.5 py-3"><div class="h-4 bg-gray-200 rounded w-full"></div></td>
+                <td class="hidden md:table-cell px-2.5 py-3"><div class="h-4 bg-gray-200 rounded w-3/4"></div></td>
+                <td class="hidden md:table-cell px-2 py-3"><div class="h-4 bg-gray-200 rounded w-full"></div></td>
+                <td class="hidden md:table-cell px-3 py-3"><div class="h-4 bg-gray-200 rounded w-full"></div></td>
+                <td class="hidden md:table-cell px-2.5 py-3"><div class="h-4 bg-gray-200 rounded w-3/4"></div></td>
+                <td class="px-2 md:px-2.5 py-3"><div class="h-5 bg-gray-200 rounded-full w-10 mx-auto md:mx-0"></div></td>
+                <td v-if="user?.role === 'ADMIN'" class="px-2 md:px-2.5 py-3"><div class="h-4 bg-gray-200 rounded w-6 ml-auto"></div></td>
               </tr>
             </template>
             <template v-else>
@@ -96,69 +96,112 @@
                 class="hover:bg-teal-50/40 cursor-pointer transition-colors group"
               >
                 <!-- Customer & Code -->
-                <td class="px-3 md:px-5 py-3 font-medium text-[#1a1a1a] md:min-w-[220px] group-hover:text-[#1a5c4c] transition-colors">
-                  <div class="flex items-center gap-2 mb-1 flex-wrap">
-                    <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-gray-100 text-gray-700 font-bold border border-gray-200">
+                <td class="px-3 md:px-3.5 py-3 font-medium text-[#1a1a1a] group-hover:text-[#1a5c4c] transition-colors overflow-hidden">
+                  <div class="flex items-center gap-1.5 mb-1 flex-wrap">
+                    <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-gray-100 text-gray-700 font-bold border border-gray-200 shrink-0">
                       {{ customer.customerCode || 'NO CODE' }}
                     </span>
-                    <span v-if="customer.isPriorityClient" class="text-amber-500 font-bold text-xs" title="Priority Client">★ Priority</span>
+                    <span v-if="customer.isPriorityClient" class="text-amber-500 font-bold text-[10px] shrink-0" title="Priority Client">★ Priority</span>
                   </div>
-                  <span class="text-xs md:text-sm font-semibold leading-snug break-words line-clamp-2 block" :title="customer.company || customer.name">
+                  <span class="text-xs md:text-sm font-semibold leading-tight truncate block" :title="customer.company || customer.name">
                     {{ customer.company || customer.name }}
                   </span>
-                  <span v-if="customer.alias" class="text-[11px] text-gray-400 italic block mt-0.5">
+                  <span v-if="customer.alias" class="text-[10px] text-gray-400 italic truncate block mt-0.5">
                     Alias: {{ customer.alias }}
                   </span>
                 </td>
 
                 <!-- Tier / Manager -->
-                <td class="hidden md:table-cell px-5 py-3 text-xs">
-                  <div class="flex flex-col gap-1">
+                <td class="hidden md:table-cell px-2.5 py-3 text-xs overflow-hidden">
+                  <div class="flex flex-col gap-1 min-w-0">
                     <span 
-                      class="inline-block text-[9px] px-2 py-0.5 rounded font-bold uppercase border w-max"
+                      class="inline-block text-[8px] px-1.5 py-0.5 rounded font-bold uppercase border w-max truncate"
                       :class="getPrivilegeTierClass(customer.privilegeTier || 'BRONZE')"
                     >
                       {{ customer.privilegeTier || 'BRONZE' }}
                     </span>
-                    <div v-if="customer.customerManager" class="flex items-center gap-1 text-[11px] text-gray-600 font-medium">
-                      <UserCheck class="w-3 h-3 text-[#1a5c4c]" />
-                      <span class="truncate max-w-[120px]">{{ customer.customerManager.name }}</span>
+                    <div v-if="customer.customerManager" class="flex items-center gap-1 text-[11px] text-gray-600 font-medium min-w-0">
+                      <UserCheck class="w-3 h-3 text-[#1a5c4c] shrink-0" />
+                      <span class="truncate" :title="customer.customerManager.name">{{ customer.customerManager.name }}</span>
                     </div>
                   </div>
                 </td>
 
                 <!-- Contact Person -->
-                <td class="hidden md:table-cell px-5 py-3 text-gray-600 min-w-[150px]">
-                  <span class="break-words line-clamp-2" :title="customer.name">{{ customer.name }}</span>
+                <td class="hidden md:table-cell px-2.5 py-3 text-gray-600 text-xs overflow-hidden">
+                  <span class="truncate block" :title="customer.name">{{ customer.name }}</span>
                 </td>
 
-                <!-- Phone -->
-                <td class="hidden md:table-cell px-5 py-3 text-xs text-gray-600 w-36 min-w-[130px]">
-                  <div class="font-mono">{{ customer.phone }}</div>
-                  <div v-if="customer.alternatePhone" class="font-mono text-gray-400 text-[11px] mt-0.5">
-                    Alt: {{ customer.alternatePhone }}
+                <!-- Phone: One number per line, comma-separated split -->
+                <td class="hidden md:table-cell px-2 py-3 text-gray-700 overflow-hidden">
+                  <div class="flex flex-col gap-0.5 min-w-0">
+                    <span 
+                      v-for="(p, pIdx) in getPhoneList(customer.phone, customer.alternatePhone)" 
+                      :key="pIdx"
+                      class="font-mono text-[11px] leading-tight text-gray-900 truncate block"
+                      :title="p"
+                    >
+                      {{ p }}
+                    </span>
                   </div>
                 </td>
 
-                <!-- City / Addresses -->
-                <td class="hidden md:table-cell px-5 py-3 text-gray-600 w-36 min-w-[120px]">
-                  <div class="text-xs font-medium text-gray-800">{{ customer.city || '-' }}</div>
-                  <div v-if="customer.addresses && customer.addresses.length > 0" class="text-[10px] text-gray-400 mt-0.5">
-                    📍 {{ customer.addresses.length }} {{ customer.addresses.length === 1 ? 'address' : 'addresses' }}
+                <!-- City / Addresses Capsules with per-address Pin -->
+                <td class="hidden md:table-cell px-3 py-3 overflow-hidden">
+                  <div class="flex flex-wrap items-center gap-1">
+                    <div 
+                      v-for="(addr, aIdx) in getCustomerAddresses(customer)" 
+                      :key="addr.id || aIdx"
+                      class="inline-flex items-center gap-1 pl-2 pr-1 py-0.5 rounded-lg border text-xs transition-all shadow-2xs group/cap max-w-full"
+                      :class="addr.latitude && addr.longitude 
+                        ? 'bg-emerald-50/90 border-emerald-200 text-emerald-950' 
+                        : 'bg-gray-50 border-gray-200 text-gray-700'"
+                      @click.stop
+                    >
+                      <div 
+                        class="flex items-center gap-1 min-w-0 overflow-hidden" 
+                        :title="`${addr.label || 'Address ' + (aIdx + 1)}: ${[addr.addressLine, addr.city, addr.state, addr.pincode].filter(Boolean).join(', ')}`"
+                      >
+                        <span class="font-bold text-[10px] truncate max-w-[85px]">
+                          {{ addr.label || `Address ${aIdx + 1}` }}
+                        </span>
+                        <span v-if="addr.city" class="text-[9px] text-gray-500 font-medium truncate max-w-[55px]">
+                          ({{ addr.city }})
+                        </span>
+                        <span v-if="addr.isDefault" class="text-[7px] font-black uppercase tracking-wider text-[#1a5c4c] bg-[#1a5c4c]/10 px-1 py-0.2 rounded border border-[#1a5c4c]/20 shrink-0">
+                          DEF
+                        </span>
+                      </div>
+
+                      <button
+                        v-if="user?.role === 'ADMIN'"
+                        type="button"
+                        @click.stop="openAddressPinModal(customer, addr, aIdx)"
+                        class="p-0.5 rounded transition-all flex items-center justify-center shrink-0"
+                        :class="addr.latitude && addr.longitude 
+                          ? 'text-[#1a5c4c] bg-emerald-100 hover:bg-emerald-200 ring-1 ring-emerald-300' 
+                          : 'text-gray-400 hover:text-[#1a5c4c] hover:bg-gray-200/70'"
+                        :title="addr.latitude && addr.longitude 
+                          ? `📍 Saved Pin: ${Number(addr.latitude).toFixed(4)}, ${Number(addr.longitude).toFixed(4)}${addr.landmark ? ' (' + addr.landmark + ')' : ''} - Click to edit pin` 
+                          : `Set Delivery GPS Pin for ${addr.label || 'Address ' + (aIdx + 1)}`"
+                      >
+                        <MapPin class="w-3 h-3" :class="{ 'fill-[#1a5c4c] text-[#1a5c4c]': addr.latitude && addr.longitude }" />
+                      </button>
+                    </div>
                   </div>
                 </td>
 
                 <!-- Payment Terms -->
-                <td class="hidden md:table-cell px-5 py-3 w-28">
-                  <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-gray-100 text-gray-700 text-xs font-medium">
+                <td class="hidden md:table-cell px-2.5 py-3 overflow-hidden">
+                  <span class="inline-block px-1.5 py-0.5 rounded bg-gray-100 text-gray-700 text-[10px] font-medium truncate max-w-full" :title="formatPaymentTerms(customer.paymentTerms)">
                     {{ formatPaymentTerms(customer.paymentTerms) }}
                   </span>
                 </td>
 
                 <!-- Status -->
-                <td class="px-2 md:px-5 py-3 w-16 md:w-20 whitespace-nowrap text-center md:text-left">
+                <td class="px-2 md:px-2.5 py-3 overflow-hidden text-center md:text-left">
                   <span 
-                    class="inline-flex items-center px-1.5 md:px-2 py-0.5 rounded-full text-[11px] md:text-xs font-medium"
+                    class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold"
                     :class="customer.isActive !== false ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'"
                   >
                     {{ customer.isActive !== false ? 'Active' : 'Inactive' }}
@@ -166,24 +209,14 @@
                 </td>
 
                 <!-- Actions -->
-                <td v-if="user?.role === 'ADMIN'" @click.stop class="px-2 md:px-5 py-3 text-right w-20 md:w-24 whitespace-nowrap">
-                  <div class="flex items-center justify-end gap-1">
-                    <button 
-                      @click="openCustomerPinModal(customer)"
-                      class="transition-colors p-1.5 rounded"
-                      :class="customer.latitude && customer.longitude ? 'text-[#1a5c4c] bg-emerald-50 hover:bg-emerald-100 ring-1 ring-emerald-300 shadow-xs' : 'text-gray-400 hover:text-gray-700 hover:bg-gray-100'"
-                      :title="customer.latitude && customer.longitude ? `📍 Saved Pin: ${customer.latitude.toFixed(4)}, ${customer.longitude.toFixed(4)}${customer.landmark ? ' (' + customer.landmark + ')' : ''}` : 'Set Delivery Destination Pin'"
-                    >
-                      <MapPin class="w-4 h-4" :class="{ 'fill-[#1a5c4c]/30 text-[#1a5c4c]': customer.latitude && customer.longitude }" />
-                    </button>
-                    <button 
-                      @click="openModal(customer)"
-                      class="text-gray-600 hover:text-gray-900 transition-colors p-1.5 rounded hover:bg-gray-100"
-                      title="Edit Customer Details"
-                    >
-                      <Edit2 class="w-4 h-4" />
-                    </button>
-                  </div>
+                <td v-if="user?.role === 'ADMIN'" @click.stop class="px-2 md:px-2.5 py-3 text-right overflow-hidden">
+                  <button 
+                    @click="openModal(customer)"
+                    class="text-gray-500 hover:text-[#1a5c4c] hover:bg-[#1a5c4c]/10 transition-colors p-1.5 rounded-lg"
+                    title="Edit Customer Details"
+                  >
+                    <Edit2 class="w-3.5 h-3.5" />
+                  </button>
                 </td>
               </tr>
             </template>
@@ -399,202 +432,383 @@
       <div v-if="isModalOpen" class="fixed inset-0 z-[110] flex items-center justify-center p-2 sm:p-4">
         <div 
           ref="formBackdropRef"
-          class="absolute inset-0 bg-black/50 backdrop-blur-sm" 
+          class="absolute inset-0 bg-black/60 backdrop-blur-sm" 
           @click="closeModal"
         ></div>
         
         <div 
           ref="formModalRef"
-          class="relative bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[92vh] overflow-hidden flex flex-col overscroll-contain border border-gray-100"
+          class="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[92vh] overflow-hidden flex flex-col overscroll-contain border border-gray-100"
         >
-          <div class="px-4 sm:px-6 py-4 border-b border-gray-200 flex items-center justify-between shrink-0 bg-[#1c1c1c] text-white">
-            <h3 class="text-base sm:text-lg font-bold">
-              {{ editingCustomer ? `Edit Customer: ${editingCustomer.customerCode || editingCustomer.name}` : 'Add New Customer' }}
-            </h3>
-            <button @click="closeModal" class="text-gray-400 hover:text-white p-1 rounded-lg">
+          <!-- Modern Dark Header -->
+          <div class="px-5 sm:px-6 py-4 border-b border-gray-800 flex items-center justify-between shrink-0 bg-[#171717] text-white">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-[#1a5c4c]/40 border border-[#4ecdc4]/20 flex items-center justify-center text-[#4ecdc4]">
+                <Building2 class="w-5 h-5" />
+              </div>
+              <div>
+                <div class="flex items-center gap-2">
+                  <h3 class="text-base sm:text-lg font-bold text-white">
+                    {{ editingCustomer ? 'Edit Customer Profile' : 'Add New Customer' }}
+                  </h3>
+                  <span v-if="editingCustomer?.customerCode" class="font-mono text-[10px] font-bold px-2 py-0.5 rounded bg-white/10 text-[#e8e0d4] border border-white/15">
+                    {{ editingCustomer.customerCode }}
+                  </span>
+                </div>
+                <p class="text-xs text-gray-400 mt-0.5 truncate max-w-sm sm:max-w-md">
+                  {{ editingCustomer ? (editingCustomer.company || editingCustomer.name) : 'Register customer profile, privilege tiers & delivery addresses' }}
+                </p>
+              </div>
+            </div>
+            <button @click="closeModal" class="text-gray-400 hover:text-white p-2 rounded-lg hover:bg-white/10 transition-colors">
               <X class="w-5 h-5" />
             </button>
           </div>
           
-          <div :class="['p-4 sm:p-6 overflow-y-auto flex-1 transition-all duration-300', snackbarState !== 'hidden' ? 'pb-24' : '']">
-            <form id="customerForm" @submit.prevent="saveCustomer" class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+          <div :class="['p-4 sm:p-6 overflow-y-auto flex-1 bg-[#faf9f6] space-y-5 transition-all duration-300', snackbarState !== 'hidden' ? 'pb-24' : '']">
+            <form id="customerForm" @submit.prevent="saveCustomer" class="space-y-5 text-xs">
               
-              <!-- Customer Code (Admin only editable) -->
-              <div class="space-y-1">
-                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest">
-                  Customer ID / Code {{ user?.role === 'ADMIN' ? '(Admin Editable)' : '(Locked)' }}
-                </label>
-                <input 
-                  v-model="form.customerCode" 
-                  :disabled="user?.role !== 'ADMIN'"
-                  type="text" 
-                  placeholder="Auto-assigned (e.g. CUST-1276)"
-                  class="w-full px-3 py-2 border border-gray-200 rounded-lg outline-none font-mono text-sm uppercase disabled:bg-gray-100 disabled:text-gray-500 focus:border-[#1a5c4c]" 
-                />
+              <!-- 1. Identification & Classification Card -->
+              <div class="bg-white p-4 sm:p-5 rounded-xl border border-gray-200/90 shadow-2xs space-y-4">
+                <div class="flex items-center justify-between pb-2 border-b border-gray-100">
+                  <div class="flex items-center gap-2 font-bold text-gray-800 text-xs uppercase tracking-wider">
+                    <ShieldCheck class="w-4 h-4 text-[#1a5c4c]" />
+                    <span>Identification & Classification</span>
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <!-- Customer Code -->
+                  <div class="space-y-1">
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest flex items-center justify-between">
+                      <span>Customer ID / Code</span>
+                      <span class="text-[9px] font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
+                        {{ user?.role === 'ADMIN' ? 'Admin Editable' : 'Locked' }}
+                      </span>
+                    </label>
+                    <input 
+                      v-model="form.customerCode" 
+                      :disabled="user?.role !== 'ADMIN'"
+                      type="text" 
+                      placeholder="Auto-assigned (e.g. CUST-1276)"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none font-mono text-sm uppercase bg-white disabled:bg-gray-100 disabled:text-gray-500 focus:ring-2 focus:ring-[#1a5c4c]/20 focus:border-[#1a5c4c] transition-all" 
+                    />
+                  </div>
+
+                  <!-- Privilege Tier -->
+                  <div class="space-y-1">
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest">Privilege Tier *</label>
+                    <CustomSelect 
+                      :modelValue="form.privilegeTier"
+                      @update:modelValue="val => form.privilegeTier = val"
+                      :options="privilegeTierOptions"
+                      placeholder="Select Privilege Tier"
+                      class="w-full"
+                    />
+                  </div>
+
+                  <!-- Company / Firm Name -->
+                  <div class="space-y-1">
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest">Company / Firm Name *</label>
+                    <input 
+                      v-model="form.company" 
+                      required 
+                      type="text" 
+                      placeholder="e.g. Royal Interiors & Furnishings"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none text-sm bg-white focus:ring-2 focus:ring-[#1a5c4c]/20 focus:border-[#1a5c4c] transition-all" 
+                    />
+                  </div>
+
+                  <!-- Contact Name -->
+                  <div class="space-y-1">
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest">Contact Person *</label>
+                    <input 
+                      v-model="form.name" 
+                      required 
+                      type="text" 
+                      placeholder="e.g. Ramesh Patel"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none text-sm bg-white focus:ring-2 focus:ring-[#1a5c4c]/20 focus:border-[#1a5c4c] transition-all" 
+                    />
+                  </div>
+
+                  <!-- Trade Alias -->
+                  <div class="space-y-1">
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest">Customer Alias / Trade Name</label>
+                    <input 
+                      v-model="form.alias" 
+                      type="text" 
+                      placeholder="e.g. Sharma Hardware" 
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none text-sm bg-white focus:ring-2 focus:ring-[#1a5c4c]/20 focus:border-[#1a5c4c] transition-all" 
+                    />
+                  </div>
+
+                  <!-- Customer Account Manager -->
+                  <div class="space-y-1">
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest">Customer Account Manager</label>
+                    <CustomSelect 
+                      :modelValue="form.customerManagerId"
+                      @update:modelValue="val => form.customerManagerId = val"
+                      :options="customerManagerOptions"
+                      searchable
+                      searchPlaceholder="Search account manager..."
+                      placeholder="Unassigned (General Pool)"
+                      class="w-full"
+                    />
+                  </div>
+                </div>
               </div>
 
-              <!-- Privilege Tier -->
-              <div class="space-y-1">
-                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest">Privilege Tier *</label>
-                <select 
-                  v-model="form.privilegeTier" 
-                  class="w-full px-3 py-2 border border-gray-200 rounded-lg outline-none text-sm bg-white focus:border-[#1a5c4c]"
-                >
-                  <option value="BRONZE">Bronze (Standard)</option>
-                  <option value="SILVER">Silver (Preferred)</option>
-                  <option value="GOLD">Gold (VIP)</option>
-                </select>
+              <!-- 2. Contact & Commercial Terms Card -->
+              <div class="bg-white p-4 sm:p-5 rounded-xl border border-gray-200/90 shadow-2xs space-y-4">
+                <div class="flex items-center justify-between pb-2 border-b border-gray-100">
+                  <div class="flex items-center gap-2 font-bold text-gray-800 text-xs uppercase tracking-wider">
+                    <Phone class="w-4 h-4 text-[#1a5c4c]" />
+                    <span>Contact & Commercial Terms</span>
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <!-- Phone -->
+                  <div class="space-y-1">
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest">Primary Phone *</label>
+                    <input 
+                      v-model="form.phone" 
+                      required 
+                      type="tel" 
+                      placeholder="+91 98765 43210"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none text-sm font-mono bg-white focus:ring-2 focus:ring-[#1a5c4c]/20 focus:border-[#1a5c4c] transition-all" 
+                    />
+                  </div>
+
+                  <!-- Alternate Phone -->
+                  <div class="space-y-1">
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest">Alternate Phone / Mobile</label>
+                    <input 
+                      v-model="form.alternatePhone" 
+                      type="tel" 
+                      placeholder="e.g. +91 98765 00000" 
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none text-sm font-mono bg-white focus:ring-2 focus:ring-[#1a5c4c]/20 focus:border-[#1a5c4c] transition-all" 
+                    />
+                  </div>
+
+                  <!-- Email -->
+                  <div class="space-y-1">
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest">Email Address</label>
+                    <input 
+                      v-model="form.email" 
+                      type="email" 
+                      placeholder="customer@domain.com"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none text-sm bg-white focus:ring-2 focus:ring-[#1a5c4c]/20 focus:border-[#1a5c4c] transition-all" 
+                    />
+                  </div>
+
+                  <!-- GST Number -->
+                  <div class="space-y-1">
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest flex items-center justify-between">
+                      <span>GSTIN (15 Digits)</span>
+                      <span class="text-[9px] font-mono text-gray-400">{{ (form.gstNumber || '').length }}/15</span>
+                    </label>
+                    <input 
+                      v-model="form.gstNumber" 
+                      type="text" 
+                      maxlength="15"
+                      placeholder="29AAAAA0000A1Z5"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none text-sm uppercase font-mono bg-white focus:ring-2 focus:ring-[#1a5c4c]/20 focus:border-[#1a5c4c] transition-all" 
+                    />
+                  </div>
+
+                  <!-- Payment Terms -->
+                  <div class="space-y-1 sm:col-span-2">
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest">Payment Terms</label>
+                    <CustomSelect 
+                      :modelValue="form.paymentTerms"
+                      @update:modelValue="val => form.paymentTerms = val"
+                      :options="paymentTermsOptions"
+                      placeholder="Select Payment Terms"
+                      class="w-full"
+                    />
+                  </div>
+                </div>
               </div>
 
-              <!-- Company Name -->
-              <div class="space-y-1">
-                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest">Company / Firm Name *</label>
-                <input v-model="form.company" required type="text" class="w-full px-3 py-2 border border-gray-200 rounded-lg outline-none text-sm focus:border-[#1a5c4c]" />
-              </div>
-              
-              <!-- Contact Name -->
-              <div class="space-y-1">
-                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest">Contact Person *</label>
-                <input v-model="form.name" required type="text" class="w-full px-3 py-2 border border-gray-200 rounded-lg outline-none text-sm focus:border-[#1a5c4c]" />
-              </div>
+              <!-- 3. Account Status & Priority Toggles -->
+              <div class="bg-white p-4 sm:p-5 rounded-xl border border-gray-200/90 shadow-2xs space-y-3">
+                <div class="flex items-center justify-between pb-2 border-b border-gray-100">
+                  <div class="flex items-center gap-2 font-bold text-gray-800 text-xs uppercase tracking-wider">
+                    <Zap class="w-4 h-4 text-amber-500" />
+                    <span>Account Status & Operational Flags</span>
+                  </div>
+                </div>
 
-              <!-- Alias -->
-              <div class="space-y-1">
-                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest">Customer Alias / Trade Name</label>
-                <input v-model="form.alias" type="text" placeholder="e.g. Sharma Hardware" class="w-full px-3 py-2 border border-gray-200 rounded-lg outline-none text-sm focus:border-[#1a5c4c]" />
-              </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  <!-- Active Account Toggle Card -->
+                  <div 
+                    @click="form.isActive = !form.isActive"
+                    class="p-3.5 rounded-xl border cursor-pointer select-none transition-all flex items-center justify-between gap-3"
+                    :class="form.isActive ? 'bg-[#1a5c4c]/5 border-[#1a5c4c]/40 shadow-2xs' : 'bg-gray-50/70 border-gray-200 hover:border-gray-300'"
+                  >
+                    <div class="min-w-0">
+                      <div class="flex items-center gap-2">
+                        <span class="font-bold text-xs" :class="form.isActive ? 'text-[#1a5c4c]' : 'text-gray-700'">
+                          Active Customer Account
+                        </span>
+                        <span 
+                          class="text-[9px] font-black uppercase px-1.5 py-0.2 rounded"
+                          :class="form.isActive ? 'bg-[#1a5c4c] text-white' : 'bg-gray-200 text-gray-600'"
+                        >
+                          {{ form.isActive ? 'ACTIVE' : 'INACTIVE' }}
+                        </span>
+                      </div>
+                      <p class="text-[11px] text-gray-500 mt-0.5">
+                        {{ form.isActive ? 'Customer is enabled for orders and billing' : 'Customer is hidden from active order creation dropdowns' }}
+                      </p>
+                    </div>
+                    <!-- Toggle Switch UI -->
+                    <div 
+                      class="w-11 h-6 rounded-full transition-colors relative shrink-0 p-0.5"
+                      :class="form.isActive ? 'bg-[#1a5c4c]' : 'bg-gray-300'"
+                    >
+                      <div 
+                        class="w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-200 ease-in-out"
+                        :class="form.isActive ? 'translate-x-5' : 'translate-x-0'"
+                      ></div>
+                    </div>
+                  </div>
 
-              <!-- Customer Manager -->
-              <div class="space-y-1">
-                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest">Customer Account Manager</label>
-                <select 
-                  v-model="form.customerManagerId" 
-                  class="w-full px-3 py-2 border border-gray-200 rounded-lg outline-none text-sm bg-white focus:border-[#1a5c4c]"
-                >
-                  <option value="">Unassigned</option>
-                  <option v-for="u in staffUsers" :key="u.id" :value="u.id">{{ u.name }} ({{ u.role }})</option>
-                </select>
-              </div>
-
-              <!-- Phone -->
-              <div class="space-y-1">
-                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest">Primary Phone *</label>
-                <input v-model="form.phone" required type="tel" class="w-full px-3 py-2 border border-gray-200 rounded-lg outline-none text-sm font-mono focus:border-[#1a5c4c]" />
-              </div>
-
-              <!-- Alternate Phone -->
-              <div class="space-y-1">
-                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest">Alternate Phone / Mobile</label>
-                <input v-model="form.alternatePhone" type="tel" placeholder="e.g. +91 98765 00000" class="w-full px-3 py-2 border border-gray-200 rounded-lg outline-none text-sm font-mono focus:border-[#1a5c4c]" />
-              </div>
-
-              <!-- Email -->
-              <div class="space-y-1">
-                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest">Email Address</label>
-                <input v-model="form.email" type="email" class="w-full px-3 py-2 border border-gray-200 rounded-lg outline-none text-sm focus:border-[#1a5c4c]" />
-              </div>
-
-              <!-- GST Number -->
-              <div class="space-y-1">
-                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest">GSTIN (15 Digits)</label>
-                <input 
-                  v-model="form.gstNumber" 
-                  type="text" 
-                  maxlength="15"
-                  placeholder="29AAAAA0000A1Z5"
-                  class="w-full px-3 py-2 border border-gray-200 rounded-lg outline-none text-sm uppercase font-mono focus:border-[#1a5c4c]" 
-                />
-              </div>
-
-              <!-- Payment Terms -->
-              <div class="space-y-1 sm:col-span-2">
-                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest">Payment Terms</label>
-                <CustomSelect 
-                  :modelValue="form.paymentTerms"
-                  @update:modelValue="val => form.paymentTerms = val"
-                  :options="paymentTermsOptions"
-                  placeholder="Select Payment Terms"
-                  class="w-full"
-                />
-              </div>
-
-              <!-- Flags -->
-              <div class="sm:col-span-2 flex items-center gap-6 pt-2 border-t border-gray-100">
-                <label class="flex items-center gap-2 cursor-pointer select-none">
-                  <input v-model="form.isActive" type="checkbox" class="w-4 h-4 text-[#1a5c4c] border-gray-300 rounded focus:ring-[#1a5c4c]" />
-                  <span class="text-xs font-semibold text-gray-700">Active Customer Account</span>
-                </label>
-
-                <label class="flex items-center gap-2 cursor-pointer select-none">
-                  <input v-model="form.isPriorityClient" type="checkbox" class="w-4 h-4 text-amber-500 border-gray-300 rounded focus:ring-amber-500" />
-                  <span class="text-xs font-semibold text-amber-800">★ Mark as Priority Client</span>
-                </label>
+                  <!-- Priority Client Toggle Card -->
+                  <div 
+                    @click="form.isPriorityClient = !form.isPriorityClient"
+                    class="p-3.5 rounded-xl border cursor-pointer select-none transition-all flex items-center justify-between gap-3"
+                    :class="form.isPriorityClient ? 'bg-amber-50/80 border-amber-300 shadow-2xs' : 'bg-gray-50/70 border-gray-200 hover:border-gray-300'"
+                  >
+                    <div class="min-w-0">
+                      <div class="flex items-center gap-2">
+                        <span class="font-bold text-xs" :class="form.isPriorityClient ? 'text-amber-900' : 'text-gray-700'">
+                          ★ Priority Client Account
+                        </span>
+                        <span 
+                          v-if="form.isPriorityClient"
+                          class="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-amber-500 text-white"
+                        >
+                          VIP
+                        </span>
+                      </div>
+                      <p class="text-[11px] text-gray-500 mt-0.5">
+                        {{ form.isPriorityClient ? 'Priority badge automatically highlighted on orders' : 'Standard priority client' }}
+                      </p>
+                    </div>
+                    <!-- Toggle Switch UI -->
+                    <div 
+                      class="w-11 h-6 rounded-full transition-colors relative shrink-0 p-0.5"
+                      :class="form.isPriorityClient ? 'bg-amber-500' : 'bg-gray-300'"
+                    >
+                      <div 
+                        class="w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-200 ease-in-out"
+                        :class="form.isPriorityClient ? 'translate-x-5' : 'translate-x-0'"
+                      ></div>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <!-- Multi-Address Manager Section -->
-              <div class="sm:col-span-2 pt-4 border-t border-gray-200">
-                <div class="flex items-center justify-between mb-3">
+              <!-- 4. Registered Locations & Godowns Card -->
+              <div class="bg-white p-4 sm:p-5 rounded-xl border border-gray-200/90 shadow-2xs space-y-4">
+                <div class="flex items-center justify-between pb-2 border-b border-gray-100">
                   <div>
-                    <h4 class="text-xs font-bold text-gray-900 uppercase tracking-wider">Registered Locations & Godowns</h4>
-                    <p class="text-[11px] text-gray-500">Add labeled addresses for order destinations and delivery dispatch</p>
+                    <div class="flex items-center gap-2 font-bold text-gray-800 text-xs uppercase tracking-wider">
+                      <MapPin class="w-4 h-4 text-[#1a5c4c]" />
+                      <span>Registered Delivery Locations ({{ form.addresses.length }})</span>
+                    </div>
+                    <p class="text-[11px] text-gray-500 mt-0.5">Select a default delivery location and manage site addresses</p>
                   </div>
                   <button 
                     type="button" 
                     @click="addAddressRow" 
-                    class="text-xs font-bold text-[#1a5c4c] flex items-center gap-1 hover:underline"
+                    class="text-xs font-bold text-[#1a5c4c] bg-[#1a5c4c]/10 hover:bg-[#1a5c4c]/20 px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors"
                   >
-                    <Plus class="w-3.5 h-3.5" /> Add Location
+                    <Plus class="w-3.5 h-3.5" />
+                    <span>Add Location</span>
                   </button>
                 </div>
 
-                <div class="space-y-3">
+                <div class="space-y-3.5">
                   <div 
                     v-for="(addr, idx) in form.addresses" 
                     :key="idx" 
-                    class="p-3 bg-gray-50 rounded-xl border border-gray-200 space-y-2"
+                    class="p-4 bg-gray-50/80 rounded-xl border border-gray-200 space-y-3 transition-colors hover:border-gray-300"
                   >
-                    <div class="flex items-center justify-between gap-3">
-                      <input 
-                        v-model="addr.label" 
-                        type="text" 
-                        placeholder="Label: e.g. Main Showroom, Hebbal Godown..." 
-                        class="flex-1 font-bold text-xs px-2.5 py-1.5 border border-gray-300 rounded-md bg-white focus:border-[#1a5c4c]" 
-                      />
-                      <label class="flex items-center gap-1.5 text-xs text-gray-600 select-none cursor-pointer">
+                    <!-- Address Header: Label + Default Button + Pin Indicator + Delete -->
+                    <div class="flex flex-wrap items-center justify-between gap-2.5">
+                      <div class="flex-1 min-w-[180px]">
                         <input 
-                          type="radio" 
-                          :name="'defaultAddress'" 
-                          :checked="addr.isDefault" 
-                          @change="setDefaultAddress(idx)" 
-                          class="text-[#1a5c4c]" 
+                          v-model="addr.label" 
+                          type="text" 
+                          placeholder="Location Label: e.g. Main Showroom, Hebbal Godown..." 
+                          class="w-full font-bold text-xs px-3 py-1.5 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-[#1a5c4c]/20 focus:border-[#1a5c4c] outline-none" 
                         />
-                        <span>Default</span>
-                      </label>
-                      <button 
-                        v-if="form.addresses.length > 1" 
-                        type="button" 
-                        @click="removeAddressRow(idx)" 
-                        class="text-rose-500 hover:text-rose-700 p-1"
-                      >
-                        <X class="w-4 h-4" />
-                      </button>
+                      </div>
+
+                      <div class="flex items-center gap-2 shrink-0">
+                        <!-- Default Address Toggle Button -->
+                        <button
+                          type="button"
+                          @click="setDefaultAddress(idx)"
+                          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all select-none"
+                          :class="addr.isDefault 
+                            ? 'bg-[#1a5c4c] text-white shadow-xs' 
+                            : 'bg-white text-gray-600 hover:text-gray-900 border border-gray-200 hover:bg-gray-100'"
+                        >
+                          <CheckCircle2 v-if="addr.isDefault" class="w-3.5 h-3.5 text-white" />
+                          <span>{{ addr.isDefault ? 'Default Address' : 'Set as Default' }}</span>
+                        </button>
+
+                        <!-- Pin status badge -->
+                        <span 
+                          v-if="addr.latitude && addr.longitude" 
+                          class="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-800 bg-emerald-100/80 px-2 py-1 rounded-lg border border-emerald-200"
+                          :title="`Pin: ${Number(addr.latitude).toFixed(4)}, ${Number(addr.longitude).toFixed(4)}`"
+                        >
+                          <MapPin class="w-3 h-3 fill-emerald-700 text-emerald-700" />
+                          <span>Pin Saved</span>
+                        </span>
+
+                        <!-- Delete Button -->
+                        <button 
+                          v-if="form.addresses.length > 1" 
+                          type="button" 
+                          @click="removeAddressRow(idx)" 
+                          class="text-gray-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-rose-50 transition-colors"
+                          title="Remove location"
+                        >
+                          <X class="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
 
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <!-- Address Fields Grid -->
+                    <div class="grid grid-cols-1 sm:grid-cols-4 gap-2.5">
                       <div class="sm:col-span-2">
                         <input 
                           v-model="addr.addressLine" 
                           type="text" 
-                          placeholder="Address Line / Street / Building" 
-                          class="w-full text-xs px-2.5 py-1.5 border border-gray-300 rounded-md bg-white focus:border-[#1a5c4c]" 
+                          placeholder="Street Address / Building / Area" 
+                          class="w-full text-xs px-3 py-1.5 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-[#1a5c4c]/20 focus:border-[#1a5c4c] outline-none" 
                         />
                       </div>
                       <div>
                         <input 
                           v-model="addr.city" 
                           type="text" 
-                          placeholder="City" 
-                          class="w-full text-xs px-2.5 py-1.5 border border-gray-300 rounded-md bg-white focus:border-[#1a5c4c]" 
+                          placeholder="City (e.g. Mysuru)" 
+                          class="w-full text-xs px-3 py-1.5 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-[#1a5c4c]/20 focus:border-[#1a5c4c] outline-none" 
+                        />
+                      </div>
+                      <div>
+                        <input 
+                          v-model="addr.pincode" 
+                          type="text" 
+                          placeholder="Pincode (optional)" 
+                          class="w-full text-xs px-3 py-1.5 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-[#1a5c4c]/20 focus:border-[#1a5c4c] outline-none" 
                         />
                       </div>
                     </div>
@@ -605,23 +819,28 @@
           </div>
 
           <!-- Sticky Modal Footer -->
-          <div class="px-4 sm:px-6 py-3.5 bg-gray-50 border-t border-gray-200 flex items-center justify-end gap-3 shrink-0">
-            <button
-              type="button"
-              @click="closeModal"
-              class="px-4 py-2 border border-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              form="customerForm"
-              :disabled="isSaving"
-              class="px-5 py-2 bg-[#1a5c4c] text-white rounded-lg text-sm font-bold hover:bg-[#14483b] transition-colors flex items-center gap-2 shadow-sm disabled:opacity-50"
-            >
-              <Loader2 v-if="isSaving" class="w-4 h-4 animate-spin" />
-              <span>{{ isSaving ? 'Saving...' : (editingCustomer ? 'Save Changes' : 'Create Customer') }}</span>
-            </button>
+          <div class="px-5 sm:px-6 py-4 bg-white border-t border-gray-200 flex items-center justify-between gap-3 shrink-0">
+            <div class="text-xs text-gray-500 hidden sm:block">
+              {{ form.addresses.length }} delivery location{{ form.addresses.length === 1 ? '' : 's' }} registered
+            </div>
+            <div class="flex items-center gap-3 ml-auto">
+              <button
+                type="button"
+                @click="closeModal"
+                class="px-4 py-2 border border-gray-300 text-gray-700 rounded-xl text-xs font-semibold hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                form="customerForm"
+                :disabled="isSaving"
+                class="px-5 py-2 bg-[#1a5c4c] text-white rounded-xl text-xs font-bold hover:bg-[#14483b] transition-colors flex items-center gap-2 shadow-sm disabled:opacity-50"
+              >
+                <Loader2 v-if="isSaving" class="w-4 h-4 animate-spin" />
+                <span>{{ isSaving ? 'Saving...' : (editingCustomer ? 'Save Changes' : 'Create Customer') }}</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -631,12 +850,14 @@
     <SetDeliveryPinModal
       :isOpen="isCustomerPinModalOpen"
       :customerId="selectedCustomerForPin?.id"
+      :addressId="selectedAddressForPin?.id"
+      :addressLabel="selectedAddressForPin?.label || `Address ${(selectedAddressForPin?.index || 0) + 1}`"
       :customerName="selectedCustomerForPin?.name || 'Customer'"
       :customerCompany="selectedCustomerForPin?.company"
-      :deliveryAddress="selectedCustomerForPin?.address || `${selectedCustomerForPin?.city || ''} ${selectedCustomerForPin?.state || ''}`"
-      :initialLat="selectedCustomerForPin?.latitude"
-      :initialLng="selectedCustomerForPin?.longitude"
-      :initialLandmark="selectedCustomerForPin?.landmark"
+      :deliveryAddress="selectedAddressForPin ? [selectedAddressForPin.addressLine, selectedAddressForPin.city].filter(Boolean).join(', ') : selectedCustomerForPin?.address"
+      :initialLat="selectedAddressForPin?.latitude ?? selectedCustomerForPin?.latitude"
+      :initialLng="selectedAddressForPin?.longitude ?? selectedCustomerForPin?.longitude"
+      :initialLandmark="selectedAddressForPin?.landmark ?? selectedCustomerForPin?.landmark"
       @close="isCustomerPinModalOpen = false"
       @saved="onCustomerPinSaved"
     />
@@ -679,33 +900,67 @@ const paymentTermsOptions = [
   { label: '60 Days', value: '60_DAYS' }
 ]
 
+const privilegeTierOptions = [
+  { label: 'Bronze (Standard)', value: 'BRONZE', subtitle: 'Standard rates & terms' },
+  { label: 'Silver (Preferred)', value: 'SILVER', subtitle: 'Preferred rates' },
+  { label: 'Gold (VIP)', value: 'GOLD', subtitle: 'VIP priority client' }
+]
+
 // Fetch staff users for Account Manager dropdown
 const { data: staffUsers } = await useFetch<any[]>('/api/users')
 
-// Customer Pin Modal State
+const customerManagerOptions = computed(() => {
+  const options = [{ label: 'Unassigned (General Pool)', value: '' }]
+  if (staffUsers.value && Array.isArray(staffUsers.value)) {
+    staffUsers.value.forEach((u: any) => {
+      options.push({
+        label: `${u.name} (${u.role})`,
+        value: u.id,
+        subtitle: u.email
+      })
+    })
+  }
+  return options
+})
+
+// Customer & Address Pin Modal State
 const isCustomerPinModalOpen = ref(false)
 const selectedCustomerForPin = ref<any | null>(null)
+const selectedAddressForPin = ref<any | null>(null)
 
-const openCustomerPinModal = (customer: any) => {
+const openAddressPinModal = (customer: any, address: any, addressIndex: number) => {
   selectedCustomerForPin.value = customer
+  selectedAddressForPin.value = {
+    ...address,
+    index: addressIndex
+  }
   isCustomerPinModalOpen.value = true
 }
 
 const onCustomerPinSaved = (pin: any) => {
-  if (selectedCustomerForPin.value) {
-    selectedCustomerForPin.value.latitude = pin ? pin.lat : null
-    selectedCustomerForPin.value.longitude = pin ? pin.lng : null
-    selectedCustomerForPin.value.landmark = pin ? pin.landmark : null
-  }
-  if (selectedCustomer.value && selectedCustomer.value.id === selectedCustomerForPin.value?.id) {
-    selectedCustomer.value.latitude = pin ? pin.lat : null
-    selectedCustomer.value.longitude = pin ? pin.lng : null
-    selectedCustomer.value.landmark = pin ? pin.landmark : null
+  if (selectedCustomerForPin.value && selectedAddressForPin.value) {
+    const addrId = selectedAddressForPin.value.id
+    const addrIdx = selectedAddressForPin.value.index
+    if (selectedCustomerForPin.value.addresses && selectedCustomerForPin.value.addresses.length > 0) {
+      const target = addrId 
+        ? selectedCustomerForPin.value.addresses.find((a: any) => a.id === addrId)
+        : selectedCustomerForPin.value.addresses[addrIdx]
+      if (target) {
+        target.latitude = pin ? pin.lat : null
+        target.longitude = pin ? pin.lng : null
+        target.landmark = pin ? pin.landmark : null
+      }
+    }
+    if (!selectedAddressForPin.value.id || selectedAddressForPin.value.isDefault) {
+      selectedCustomerForPin.value.latitude = pin ? pin.lat : null
+      selectedCustomerForPin.value.longitude = pin ? pin.lng : null
+      selectedCustomerForPin.value.landmark = pin ? pin.landmark : null
+    }
   }
   if (pin) {
-    showSaved(`Delivery pin saved for ${selectedCustomerForPin.value?.company || selectedCustomerForPin.value?.name || 'Customer'}`)
+    showSaved(`Delivery pin saved for ${selectedAddressForPin.value?.label || selectedCustomerForPin.value?.company || 'Address'}`)
   } else {
-    showSaved(`Delivery pin removed for ${selectedCustomerForPin.value?.company || selectedCustomerForPin.value?.name || 'Customer'}`)
+    showSaved(`Delivery pin removed for ${selectedAddressForPin.value?.label || selectedCustomerForPin.value?.company || 'Address'}`)
   }
   refresh()
   notifyChange({ type: 'CUSTOMER_CHANGE', action: 'PIN_CHANGED' })
@@ -744,15 +999,58 @@ const form = ref({
   isPriorityClient: false,
   isActive: true,
   addresses: [] as Array<{
+    id?: string
     label: string
     addressLine: string
     city: string
+    state?: string
+    pincode?: string
+    landmark?: string
+    latitude?: number | null
+    longitude?: number | null
     isDefault: boolean
   }>
 })
 
-// Fetch data
-const { data: customers, pending, refresh } = useFetch('/api/customers')
+// Fetch all customers including inactive so status changes are fully visible & editable
+const { data: customers, pending, refresh } = useFetch('/api/customers?includeInactive=true')
+
+// Helper to parse phone numbers into individual lines (comma, semicolon, slash separated)
+const getPhoneList = (phone?: string, altPhone?: string) => {
+  const list: string[] = []
+  if (phone) {
+    phone.split(/[,;/]+/).forEach(p => {
+      const clean = p.trim()
+      if (clean && clean !== 'N/A' && !list.includes(clean)) list.push(clean)
+    })
+  }
+  if (altPhone) {
+    altPhone.split(/[,;/]+/).forEach(p => {
+      const clean = p.trim()
+      if (clean && clean !== 'N/A' && !list.includes(clean)) list.push(clean)
+    })
+  }
+  return list.length > 0 ? list : ['-']
+}
+
+// Helper to safely get list of addresses for each customer
+const getCustomerAddresses = (customer: any) => {
+  if (customer.addresses && customer.addresses.length > 0) {
+    return customer.addresses
+  }
+  return [{
+    id: undefined,
+    label: 'Address 1',
+    addressLine: customer.address || '',
+    city: customer.city || '',
+    state: customer.state || 'Karnataka',
+    pincode: customer.pincode || '',
+    landmark: customer.landmark || '',
+    latitude: customer.latitude,
+    longitude: customer.longitude,
+    isDefault: true
+  }]
+}
 
 // Computed filtering with multi-token smart search
 const filteredCustomers = computed(() => {
@@ -803,9 +1101,15 @@ const getPrivilegeTierClass = (tier: string) => {
 const addAddressRow = () => {
   const count = form.value.addresses.length
   form.value.addresses.push({
+    id: undefined,
     label: `Godown / Site ${count + 1}`,
     addressLine: '',
     city: form.value.addresses[0]?.city || 'Mysuru',
+    state: form.value.addresses[0]?.state || 'Karnataka',
+    pincode: form.value.addresses[0]?.pincode || '',
+    landmark: '',
+    latitude: null,
+    longitude: null,
     isDefault: count === 0
   })
 }
@@ -864,15 +1168,27 @@ const openModal = (customer: any = null) => {
       isActive: customer.isActive !== false,
       addresses: (customer.addresses && customer.addresses.length > 0)
         ? customer.addresses.map((a: any) => ({
+            id: a.id,
             label: a.label || 'Main Address',
             addressLine: a.addressLine || '',
             city: a.city || '',
+            state: a.state || 'Karnataka',
+            pincode: a.pincode || '',
+            landmark: a.landmark || '',
+            latitude: a.latitude !== undefined && a.latitude !== null ? Number(a.latitude) : null,
+            longitude: a.longitude !== undefined && a.longitude !== null ? Number(a.longitude) : null,
             isDefault: Boolean(a.isDefault)
           }))
         : [{
+            id: undefined,
             label: 'Main Address',
             addressLine: customer.address || '',
             city: customer.city || 'Mysuru',
+            state: customer.state || 'Karnataka',
+            pincode: customer.pincode || '',
+            landmark: customer.landmark || '',
+            latitude: customer.latitude !== undefined && customer.latitude !== null ? Number(customer.latitude) : null,
+            longitude: customer.longitude !== undefined && customer.longitude !== null ? Number(customer.longitude) : null,
             isDefault: true
           }]
     }
@@ -893,9 +1209,15 @@ const openModal = (customer: any = null) => {
       isPriorityClient: false,
       isActive: true,
       addresses: [{
+        id: undefined,
         label: 'Main Showroom / Billing Address',
         addressLine: '',
         city: 'Mysuru',
+        state: 'Karnataka',
+        pincode: '',
+        landmark: '',
+        latitude: null,
+        longitude: null,
         isDefault: true
       }]
     }

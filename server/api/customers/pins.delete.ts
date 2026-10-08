@@ -8,11 +8,46 @@ export default defineEventHandler(async (event) => {
     const body = event.node.req.method === 'DELETE' ? await readBody(event).catch(() => ({})) : {}
 
     const customerId = (query.customerId as string) || body?.customerId
+    const addressId = (query.addressId as string) || body?.addressId
     const customerName = (query.customerName as string) || body?.customerName
     const customerCompany = (query.customerCompany as string) || body?.customerCompany
     const customerKey = (query.customerKey as string) || body?.customerKey
 
+    if (addressId) {
+      try {
+        await prisma.customerAddress.update({
+          where: { id: addressId },
+          data: {
+            latitude: null,
+            longitude: null,
+            landmark: null,
+          }
+        })
+      } catch (addrErr) {
+        console.warn('Could not clear customer address pin:', addrErr)
+      }
+    }
+
+    if (customerId) {
+      try {
+        const addr = addressId ? await prisma.customerAddress.findUnique({ where: { id: addressId } }) : null
+        if (!addr || addr.isDefault) {
+          await prisma.customer.update({
+            where: { id: customerId },
+            data: {
+              latitude: null,
+              longitude: null,
+              landmark: null,
+            }
+          })
+        }
+      } catch (cErr) {
+        console.warn('Could not clear customer pin:', cErr)
+      }
+    }
+
     const keys = [
+      addressId,
       customerId,
       customerName,
       customerCompany,

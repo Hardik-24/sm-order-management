@@ -6,7 +6,7 @@ export default defineEventHandler(async (event) => {
     requireAuth(event)
     const body = await readBody(event)
 
-    const { customerKey, customerId, customerName, customerCompany, deliveryAddress, lat, lng, landmark, areaName } = body || {}
+    const { customerKey, customerId, addressId, customerName, customerCompany, deliveryAddress, lat, lng, landmark, areaName } = body || {}
 
     const numericLat = typeof lat === 'string' ? parseFloat(lat) : Number(lat)
     const numericLng = typeof lng === 'string' ? parseFloat(lng) : Number(lng)
@@ -25,7 +25,43 @@ export default defineEventHandler(async (event) => {
       areaName: areaName || undefined,
     }
 
+    // If specific addressId is provided, persist pin to CustomerAddress
+    if (addressId) {
+      try {
+        await prisma.customerAddress.update({
+          where: { id: addressId },
+          data: {
+            latitude: numericLat,
+            longitude: numericLng,
+            landmark: landmark || null,
+          }
+        })
+      } catch (addrErr) {
+        console.warn('Could not update customer address with pin:', addrErr)
+      }
+    }
+
+    // Sync to customer root if no addressId or if address is default
+    if (customerId) {
+      try {
+        const addr = addressId ? await prisma.customerAddress.findUnique({ where: { id: addressId } }) : null
+        if (!addr || addr.isDefault) {
+          await prisma.customer.update({
+            where: { id: customerId },
+            data: {
+              latitude: numericLat,
+              longitude: numericLng,
+              landmark: landmark || null,
+            }
+          })
+        }
+      } catch (cErr) {
+        console.warn('Could not sync customer pin:', cErr)
+      }
+    }
+
     const keys = [
+      addressId,
       customerId,
       customerName,
       customerCompany,

@@ -61,30 +61,6 @@ export default defineEventHandler(async (event) => {
     body.phone = phone
   }
 
-  // 4. Update Addresses if provided
-  if (Array.isArray(body.addresses)) {
-    // Delete existing addresses and recreate, or update
-    await prisma.customerAddress.deleteMany({
-      where: { customerId: id }
-    })
-    if (body.addresses.length > 0) {
-      await prisma.customerAddress.createMany({
-        data: body.addresses.map((a: any, idx: number) => ({
-          customerId: id,
-          label: a.label?.trim() || `Address ${idx + 1}`,
-          addressLine: a.addressLine?.trim() || a.address?.trim() || '',
-          city: a.city?.trim() || null,
-          state: a.state?.trim() || 'Karnataka',
-          pincode: a.pincode?.trim() || null,
-          landmark: a.landmark?.trim() || null,
-          latitude: a.latitude ?? null,
-          longitude: a.longitude ?? null,
-          isDefault: a.isDefault ?? (idx === 0),
-        }))
-      })
-    }
-  }
-
   // Clean data payload for main customer update
   const updateData: any = {
     name: body.name?.trim(),
@@ -106,6 +82,49 @@ export default defineEventHandler(async (event) => {
     privilegeTier: body.privilegeTier !== undefined ? body.privilegeTier : undefined,
     isPriorityClient: body.isPriorityClient !== undefined ? Boolean(body.isPriorityClient) : undefined,
     isActive: body.isActive !== undefined ? Boolean(body.isActive) : undefined,
+  }
+
+  // 4. Update Addresses if provided
+  if (Array.isArray(body.addresses)) {
+    // Delete existing addresses and recreate
+    await prisma.customerAddress.deleteMany({
+      where: { customerId: id }
+    })
+    if (body.addresses.length > 0) {
+      await prisma.customerAddress.createMany({
+        data: body.addresses.map((a: any, idx: number) => ({
+          customerId: id,
+          label: a.label?.trim() || `Address ${idx + 1}`,
+          addressLine: a.addressLine?.trim() || a.address?.trim() || '',
+          city: a.city?.trim() || null,
+          state: a.state?.trim() || 'Karnataka',
+          pincode: a.pincode?.trim() || null,
+          landmark: a.landmark?.trim() || null,
+          latitude: a.latitude !== undefined && a.latitude !== null && !isNaN(Number(a.latitude)) ? Number(a.latitude) : null,
+          longitude: a.longitude !== undefined && a.longitude !== null && !isNaN(Number(a.longitude)) ? Number(a.longitude) : null,
+          isDefault: Boolean(a.isDefault ?? (idx === 0)),
+        }))
+      })
+
+      // Sync top-level customer fields from default address
+      const defaultAddr = body.addresses.find((a: any) => a.isDefault) || body.addresses[0]
+      if (defaultAddr) {
+        const line = defaultAddr.addressLine?.trim() || defaultAddr.address?.trim()
+        if (line) updateData.address = line
+        if (defaultAddr.city?.trim()) updateData.city = defaultAddr.city.trim()
+        if (defaultAddr.state?.trim()) updateData.state = defaultAddr.state.trim()
+        if (defaultAddr.pincode?.trim()) updateData.pincode = defaultAddr.pincode.trim()
+        if (defaultAddr.latitude !== undefined && defaultAddr.latitude !== null && !isNaN(Number(defaultAddr.latitude))) {
+          updateData.latitude = Number(defaultAddr.latitude)
+        }
+        if (defaultAddr.longitude !== undefined && defaultAddr.longitude !== null && !isNaN(Number(defaultAddr.longitude))) {
+          updateData.longitude = Number(defaultAddr.longitude)
+        }
+        if (defaultAddr.landmark !== undefined) {
+          updateData.landmark = defaultAddr.landmark?.trim() || null
+        }
+      }
+    }
   }
 
   if (user.role === 'ADMIN' && body.customerCode !== undefined) {

@@ -7,7 +7,10 @@ export default defineEventHandler(async (event) => {
   const query = getQuery(event)
   const search = query.search as string
   
-  const where: any = { isActive: true }
+  const where: any = {}
+  if (query.includeInactive !== 'true') {
+    where.isActive = true
+  }
   if (search) {
     where.OR = [
       { name: { contains: search, mode: 'insensitive' } },
@@ -48,11 +51,27 @@ export default defineEventHandler(async (event) => {
     const lng = c.longitude ?? savedPin?.lng ?? null
     const landmark = c.landmark ?? savedPin?.landmark ?? savedPin?.areaName ?? null
 
+    const mappedAddresses = (c.addresses || []).map((a: any) => {
+      const aKey = (a.id || '').toLowerCase().trim()
+      const aSavedPin = aKey ? pins[aKey] : null
+      const aLat = a.latitude ?? aSavedPin?.lat ?? (a.isDefault ? lat : null)
+      const aLng = a.longitude ?? aSavedPin?.lng ?? (a.isDefault ? lng : null)
+      const aLandmark = a.landmark ?? aSavedPin?.landmark ?? (a.isDefault ? landmark : null)
+
+      return {
+        ...a,
+        latitude: aLat,
+        longitude: aLng,
+        landmark: aLandmark,
+      }
+    })
+
     return {
       ...c,
       latitude: lat,
       longitude: lng,
       landmark: landmark,
+      addresses: mappedAddresses,
     }
   })
 })
