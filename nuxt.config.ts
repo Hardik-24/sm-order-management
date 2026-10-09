@@ -10,6 +10,13 @@ export default defineNuxtConfig({
     '@vueuse/nuxt',
   ],
 
+  components: [
+    {
+      path: '~/components',
+      pathPrefix: false,
+    },
+  ],
+
   css: ['~/assets/css/main.css'],
 
   tailwindcss: {

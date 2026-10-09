@@ -24,7 +24,7 @@
 
     <!-- Users Table -->
     <div class="bg-white rounded-xl border border-[#e5e2dc] shadow-sm overflow-hidden">
-      <div class="overflow-x-auto">
+      <div ref="adminTableRef" class="overflow-x-auto no-scrollbar">
         <table class="w-full text-left border-collapse">
           <thead>
             <tr class="bg-gray-50 border-b border-gray-200">
@@ -123,6 +123,9 @@
           </tbody>
         </table>
       </div>
+
+      <!-- Floating Horizontal Scrollbar (Desktop only) -->
+      <FloatingHorizontalScrollbar :target="adminTableRef" />
     </div>
 
     <!-- Modal Form -->
@@ -194,6 +197,7 @@ import { Plus, Edit2, X, Loader2, ChevronDown, Check } from 'lucide-vue-next'
 import { useSnackbar } from '~/composables/useSnackbar'
 import { useGsapAnimation } from '~/composables/useGsapAnimation'
 import CustomSelect from '~/components/ui/CustomSelect.vue'
+import FloatingHorizontalScrollbar from '~/components/ui/FloatingHorizontalScrollbar.vue'
 
 definePageMeta({ layout: 'dashboard' })
 
@@ -222,6 +226,7 @@ const roleOptions = [
 ]
 
 // State
+const adminTableRef = ref<HTMLElement | null>(null)
 const isModalOpen = ref(false)
 const isSaving = ref(false)
 const editingUser = ref<any>(null)

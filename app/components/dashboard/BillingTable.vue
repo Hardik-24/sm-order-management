@@ -5,6 +5,7 @@ import StatusBadge from '~/components/ui/StatusBadge.vue'
 import RowsPerPageSelect from '~/components/ui/RowsPerPageSelect.vue'
 import CustomSelect from '~/components/ui/CustomSelect.vue'
 import TableFilterButtons from '~/components/dashboard/TableFilterButtons.vue'
+import FloatingHorizontalScrollbar from '~/components/ui/FloatingHorizontalScrollbar.vue'
 import { onClickOutside } from '@vueuse/core'
 import type { Order } from '~/types'
 
@@ -43,6 +44,7 @@ import { useGsapAnimation } from '~/composables/useGsapAnimation'
 const { animateStagger } = useGsapAnimation()
 const tbodyRef = ref<HTMLElement | null>(null)
 const mobileListRef = ref<HTMLElement | null>(null)
+const tableScrollRef = ref<HTMLElement | null>(null)
 
 
 const triggerRowAnimation = () => {
@@ -131,7 +133,7 @@ onMounted(() => {
       <div v-if="isLoading" class="absolute inset-0 bg-white/50 backdrop-blur-[2px] z-10 animate-pulse"></div>
 
       <!-- DESKTOP / TABLET VIEW: Full Multi-column Table -->
-      <div class="hidden md:block overflow-x-auto no-scrollbar">
+      <div ref="tableScrollRef" class="hidden md:block overflow-x-auto no-scrollbar">
         <table class="w-full text-left border-collapse min-w-full">
           <thead>
             <tr class="bg-gray-50 border-b border-gray-200 text-[11px] font-bold text-gray-500 uppercase tracking-widest">
@@ -150,9 +152,19 @@ onMounted(() => {
               v-for="order in orders" 
               :key="order.id"
               @click="emit('select', order.id)"
-              class="hover:bg-gray-50 cursor-pointer transition-colors group"
+              class="cursor-pointer transition-colors group"
+              :class="order.overallStatus === 'CANCELLED' 
+                ? 'bg-gray-100/75 hover:bg-gray-200/60 text-gray-400 [&_td]:!text-gray-400 [&_span]:!text-gray-400 [&_div]:!text-gray-400 opacity-60 border-l-4 border-l-gray-400' 
+                : 'hover:bg-gray-50'"
             >
-              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ order.orderNumber }}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                <div class="flex items-center gap-1.5">
+                  <span>{{ order.orderNumber }}</span>
+                  <span v-if="order.overallStatus === 'CANCELLED'" class="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[10px] font-bold bg-gray-200 !text-gray-600 border border-rose-500">
+                    🚫 CANCELLED
+                  </span>
+                </div>
+              </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ order.customer?.name || '—' }}</td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ order.salesPerson?.name || '—' }}</td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ order.items?.length || 0 }}</td>
@@ -208,6 +220,9 @@ onMounted(() => {
           </tbody>
         </table>
       </div>
+      
+      <!-- Floating Horizontal Scrollbar (Desktop only) -->
+      <FloatingHorizontalScrollbar :target="tableScrollRef" />
 
       <!-- MOBILE VIEW: 2-Line High-Density Non-Scrollable Rows -->
       <div ref="mobileListRef" class="block md:hidden divide-y divide-gray-100 bg-white">
@@ -215,13 +230,19 @@ onMounted(() => {
           v-for="order in orders" 
           :key="'mob-bill-' + order.id"
           @click="emit('select', order.id)"
-          class="px-3.5 py-3 hover:bg-gray-50 active:bg-gray-100 cursor-pointer transition-colors flex flex-col gap-1.5"
+          class="px-3.5 py-3 cursor-pointer transition-colors flex flex-col gap-1.5"
+          :class="order.overallStatus === 'CANCELLED' 
+            ? 'bg-gray-100/75 active:bg-gray-200/60 text-gray-400 [&_span]:!text-gray-400 [&_p]:!text-gray-400 opacity-60 border-l-4 border-l-gray-400' 
+            : 'hover:bg-gray-50 active:bg-gray-100'"
         >
           <!-- LINE 1: Identity & Billing Status -->
           <div class="flex items-center justify-between gap-2 min-w-0">
             <div class="flex items-center gap-1.5 min-w-0">
               <span class="text-sm font-semibold text-gray-900 shrink-0">
                 {{ order.orderNumber }}
+              </span>
+              <span v-if="order.overallStatus === 'CANCELLED'" class="text-[9px] font-bold text-gray-600 bg-gray-200 px-1 py-0.2 rounded border border-rose-500">
+                🚫 CANCELLED
               </span>
               <span class="text-gray-300 text-xs shrink-0">•</span>
               <span class="text-xs font-medium text-gray-700 truncate" :title="order.customer?.name || ''">

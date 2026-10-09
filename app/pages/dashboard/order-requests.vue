@@ -30,6 +30,7 @@ import { useRealtimeSync } from '~/composables/useRealtimeSync'
 import { useSnackbar } from '~/composables/useSnackbar'
 import RowsPerPageSelect from '~/components/ui/RowsPerPageSelect.vue'
 import ConfirmOrderRequestModal from '~/components/dashboard/ConfirmOrderRequestModal.vue'
+import FloatingHorizontalScrollbar from '~/components/ui/FloatingHorizontalScrollbar.vue'
 
 definePageMeta({ layout: 'dashboard' })
 
@@ -38,6 +39,7 @@ const { user, hasRole } = useAuth()
 
 // Shared sidebar state
 const isSidebarCollapsed = useState<boolean>('sidebarCollapsed', () => false)
+const desktopTableScrollRef = ref<HTMLElement | null>(null)
 
 // Query filters
 const page = ref(1)
@@ -436,7 +438,7 @@ watch(() => data.value?.counts, () => {
       <!-- Table Content -->
       <div class="relative min-h-[200px]">
         <div v-if="isLoading" class="absolute inset-0 bg-white/50 backdrop-blur-[2px] z-10 animate-pulse"></div>
-        <div class="hidden md:block" :class="isSidebarCollapsed ? 'overflow-hidden' : 'overflow-x-auto'">
+        <div ref="desktopTableScrollRef" class="hidden md:block" :class="isSidebarCollapsed ? 'overflow-hidden' : 'overflow-x-auto'">
           <table 
             class="w-full text-left border-collapse"
             :class="isSidebarCollapsed ? 'table-fixed' : 'min-w-[1000px]'"
@@ -540,6 +542,9 @@ watch(() => data.value?.counts, () => {
             </tbody>
           </table>
         </div>
+        
+        <!-- Floating Horizontal Scrollbar (Desktop only) -->
+        <FloatingHorizontalScrollbar :target="desktopTableScrollRef" />
 
         <!-- MOBILE VIEW: Stacked Cards (Hidden on desktop) -->
         <div class="md:hidden flex flex-col divide-y divide-gray-100 bg-white">

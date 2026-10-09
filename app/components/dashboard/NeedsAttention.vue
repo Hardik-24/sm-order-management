@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { FileText, Package, Truck, X } from 'lucide-vue-next'
+import { FileText, Package, Truck, CheckCheck, X } from 'lucide-vue-next'
 import type { NeedsAttentionItem } from '~/types'
 
 withDefaults(defineProps<{
@@ -13,6 +13,7 @@ const isModalOpen = ref(false)
 
 const getIcon = (statusType: string | undefined) => {
   const s = (statusType || '').toLowerCase()
+  if (s.includes('approval') || s.includes('approve')) return CheckCheck
   if (s.includes('billing')) return FileText
   if (s.includes('packing') || s.includes('shortage')) return Package
   if (s.includes('delivery') || s.includes('ready')) return Truck
@@ -21,6 +22,7 @@ const getIcon = (statusType: string | undefined) => {
 
 const getCircleClass = (statusType: string | undefined) => {
   const s = (statusType || '').toLowerCase()
+  if (s.includes('approval') || s.includes('approve')) return 'bg-amber-50 text-amber-600'
   if (s.includes('billing') || s.includes('attention')) return 'bg-orange-50 text-orange-600'
   if (s.includes('shortage') || s.includes('error')) return 'bg-red-50 text-red-600'
   if (s.includes('delivery') || s.includes('ready')) return 'bg-green-50 text-green-600'
@@ -29,6 +31,7 @@ const getCircleClass = (statusType: string | undefined) => {
 
 const getTextColorClass = (statusType: string | undefined) => {
   const s = (statusType || '').toLowerCase()
+  if (s.includes('approval') || s.includes('approve')) return 'text-amber-600'
   if (s.includes('billing') || s.includes('attention')) return 'text-orange-600'
   if (s.includes('shortage') || s.includes('error')) return 'text-red-600'
   if (s.includes('delivery') || s.includes('ready')) return 'text-green-600'

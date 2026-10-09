@@ -62,7 +62,11 @@ public class NavigationPlugin extends Plugin {
         String title = call.getString("title", "Delivery Destination");
         Boolean enableTurnByTurn = call.getBoolean("enableTurnByTurn", false);
         String orderId = call.getString("orderId", "");
+        String orderNumber = call.getString("orderNumber", "");
         String authToken = call.getString("authToken", "");
+        String apiUrl = call.getString("apiUrl", "https://sm-order-management.vercel.app");
+        Double initialDistanceKm = call.getDouble("initialDistanceKm", 0.0);
+        Long startTimeMs = call.getLong("startTimeMs", System.currentTimeMillis());
 
         if (lat == null || lng == null) {
             call.reject("Invalid destination coordinates");
@@ -76,6 +80,8 @@ public class NavigationPlugin extends Plugin {
                 title,
                 orderId,
                 authToken,
+                apiUrl,
+                initialDistanceKm != null ? initialDistanceKm : 0.0,
                 () -> {
                     if (Boolean.TRUE.equals(enableTurnByTurn)) {
                         try {
@@ -83,6 +89,12 @@ public class NavigationPlugin extends Plugin {
                             intent.putExtra("destLat", lat);
                             intent.putExtra("destLng", lng);
                             intent.putExtra("title", title);
+                            intent.putExtra("orderId", orderId);
+                            intent.putExtra("orderNumber", orderNumber);
+                            intent.putExtra("startTimeMs", startTimeMs != null ? startTimeMs : System.currentTimeMillis());
+                            intent.putExtra("initialDistanceKm", initialDistanceKm != null ? initialDistanceKm : 0.0);
+                            intent.putExtra("authToken", authToken);
+                            intent.putExtra("apiUrl", apiUrl);
                             getActivity().startActivity(intent);
                         } catch (Exception e) {
                             Log.w(TAG, "NavigationActivity launch error: " + e.getMessage());

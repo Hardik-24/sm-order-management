@@ -1,18 +1,58 @@
 package com.siliconmarketing.fleet;
 
+import android.app.AlertDialog;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.libraries.navigation.SupportNavigationFragment;
+
+import java.util.Locale;
 
 public class NavigationActivity extends AppCompatActivity {
 
     private SupportNavigationFragment mNavFragment;
-    private String mTitle;
+    private String mTitle = "Customer Delivery";
+    private String mOrderId = "";
+    private String mOrderNumber = "";
+    private long mStartTimeMs = 0;
+    private double mDestLat = 0.0;
+    private double mDestLng = 0.0;
+    private double mCurrentDistanceKm = 0.0;
+    private double mLastLat = 0.0;
+    private double mLastLng = 0.0;
+    private String mEtaFormatted = "Calculating...";
+
+    // Views
+    private TextView mTvTitle;
+    private LinearLayout mLlExpanded;
+    private LinearLayout mLlCollapsed;
+    private TextView mTvOrderNum;
+    private TextView mTvDistance;
+    private TextView mTvElapsed;
+    private TextView mTvPayout;
+    private TextView mTvEta;
+    private TextView mTvSlimStats;
+    private Button mBtnComplete;
+
+    private final Handler mTimerHandler = new Handler(Looper.getMainLooper());
+    private final Runnable mTimerRunnable = new Runnable() {
+        @Override
+        public void run() {
+            updateElapsedTime();
+            mTimerHandler.postDelayed(this, 1000);
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -23,12 +63,76 @@ public class NavigationActivity extends AppCompatActivity {
         if (mTitle == null || mTitle.trim().isEmpty()) {
             mTitle = "Customer Delivery";
         }
+        mOrderId = getIntent().getStringExtra("orderId");
+        mOrderNumber = getIntent().getStringExtra("orderNumber");
+        if (mOrderNumber == null || mOrderNumber.trim().isEmpty()) {
+            mOrderNumber = "#SO-TRIP";
+        }
+        mDestLat = getIntent().getDoubleExtra("destLat", 0.0);
+        mDestLng = getIntent().getDoubleExtra("destLng", 0.0);
+        mStartTimeMs = getIntent().getLongExtra("startTimeMs", System.currentTimeMillis());
+        mCurrentDistanceKm = getIntent().getDoubleExtra("initialDistanceKm", 0.0);
 
-        TextView titleView = findViewById(R.id.tv_nav_title);
-        if (titleView != null) {
-            titleView.setText(mTitle);
+        initViews();
+        setupListeners();
+        setupNavigationStream();
+
+        mTimerHandler.post(mTimerRunnable);
+    }
+
+    private void initViews() {
+        mTvTitle = findViewById(R.id.tv_nav_title);
+        if (mTvTitle != null) {
+            mTvTitle.setText(mTitle);
         }
 
+        mLlExpanded = findViewById(R.id.ll_banner_expanded);
+        mLlCollapsed = findViewById(R.id.ll_banner_collapsed);
+        mTvOrderNum = findViewById(R.id.tv_banner_order_num);
+        mTvDistance = findViewById(R.id.tv_nav_distance);
+        mTvElapsed = findViewById(R.id.tv_nav_elapsed);
+        mTvPayout = findViewById(R.id.tv_nav_payout);
+        mTvEta = findViewById(R.id.tv_nav_eta);
+        mTvSlimStats = findViewById(R.id.tv_slim_stats);
+        mBtnComplete = findViewById(R.id.btn_complete_nav);
+
+        if (mTvOrderNum != null) {
+            mTvOrderNum.setText(mOrderNumber);
+        }
+        if (mTvDistance != null) {
+            mTvDistance.setText(String.format(Locale.US, "%.1f km", mCurrentDistanceKm));
+        }
+        if (mTvPayout != null) {
+            int payout = Math.max(50, (int) Math.round(mCurrentDistanceKm * 15));
+            mTvPayout.setText("₹" + payout);
+        }
+
+        // Initialize Google Navigation Fragment
+        mNavFragment = (SupportNavigationFragment) getSupportFragmentManager()
+                .findFragmentById(R.id.navigation_fragment);
+
+        if (mNavFragment != null) {
+            mNavFragment.getMapAsync(googleMap -> {
+                if (googleMap != null) {
+                    try {
+                        googleMap.setMyLocationEnabled(true);
+                        googleMap.followMyLocation(GoogleMap.CameraPerspective.TILTED);
+                    } catch (Exception ignored) {}
+
+                    if (mDestLat != 0.0 && mDestLng != 0.0) {
+                        try {
+                            LatLng destLatLng = new LatLng(mDestLat, mDestLng);
+                            googleMap.addMarker(new MarkerOptions()
+                                    .position(destLatLng)
+                                    .title(mTitle));
+                        } catch (Exception ignored) {}
+                    }
+                }
+            });
+        }
+    }
+
+    private void setupListeners() {
         View.OnClickListener exitListener = v -> finish();
 
         ImageButton closeBtn = findViewById(R.id.btn_close_nav);
@@ -41,22 +145,149 @@ public class NavigationActivity extends AppCompatActivity {
             exitText.setOnClickListener(exitListener);
         }
 
-        mNavFragment = (SupportNavigationFragment) getSupportFragmentManager()
-                .findFragmentById(R.id.navigation_fragment);
-
-        if (mNavFragment != null) {
-            mNavFragment.getMapAsync(googleMap -> {
-                if (googleMap != null) {
-                    try {
-                        googleMap.followMyLocation(GoogleMap.CameraPerspective.TILTED);
-                    } catch (Exception ignored) {}
-                }
-            });
+        // Collapse / Expand toggle
+        TextView btnToggleCollapse = findViewById(R.id.btn_toggle_collapse);
+        if (btnToggleCollapse != null) {
+            btnToggleCollapse.setOnClickListener(v -> setBannerCollapsed(true));
         }
+
+        TextView btnToggleExpand = findViewById(R.id.btn_toggle_expand);
+        if (btnToggleExpand != null) {
+            btnToggleExpand.setOnClickListener(v -> setBannerCollapsed(false));
+        }
+
+        if (mLlCollapsed != null) {
+            mLlCollapsed.setOnClickListener(v -> setBannerCollapsed(false));
+        }
+
+        // Complete Trip Button
+        if (mBtnComplete != null) {
+            mBtnComplete.setOnClickListener(v -> showCompleteConfirmation());
+        }
+    }
+
+    private void setBannerCollapsed(boolean collapsed) {
+        if (collapsed) {
+            if (mLlExpanded != null) mLlExpanded.setVisibility(View.GONE);
+            if (mLlCollapsed != null) mLlCollapsed.setVisibility(View.VISIBLE);
+        } else {
+            if (mLlCollapsed != null) mLlCollapsed.setVisibility(View.GONE);
+            if (mLlExpanded != null) mLlExpanded.setVisibility(View.VISIBLE);
+        }
+    }
+
+    private void setupNavigationStream() {
+        NavigationManager.getInstance().setLocationCallback((
+                lat, lng, bearing, speedMps, accuracy, timestamp,
+                isRoadSnapped, remainingMeters, remainingSeconds, distanceDrivenKm
+        ) -> runOnUiThread(() -> {
+            mLastLat = lat;
+            mLastLng = lng;
+            mCurrentDistanceKm = Math.max(mCurrentDistanceKm, distanceDrivenKm);
+
+            if (mTvDistance != null) {
+                mTvDistance.setText(String.format(Locale.US, "%.1f km", mCurrentDistanceKm));
+            }
+
+            int payout = Math.max(50, (int) Math.round(mCurrentDistanceKm * 15));
+            if (mTvPayout != null) {
+                mTvPayout.setText("₹" + payout);
+            }
+
+            if (remainingMeters >= 0) {
+                double remKm = Math.round((remainingMeters / 1000.0) * 10.0) / 10.0;
+                int remMins = Math.round(remainingSeconds / 60.0f);
+                mEtaFormatted = String.format(Locale.US, "%.1f km left (~%d min)", remKm, remMins);
+            } else if (mDestLat != 0.0 && mDestLng != 0.0) {
+                float[] res = new float[1];
+                android.location.Location.distanceBetween(lat, lng, mDestLat, mDestLng, res);
+                double remKm = Math.round((res[0] / 1000.0) * 10.0) / 10.0;
+                float spd = Math.max(speedMps * 3.6f, 18.0f);
+                int remMins = Math.max(1, (int) Math.round((remKm / spd) * 60));
+                mEtaFormatted = String.format(Locale.US, "%.1f km left (~%d min)", remKm, remMins);
+            }
+
+            if (mTvEta != null) {
+                mTvEta.setText(mEtaFormatted);
+            }
+
+            updateSlimStatsText();
+        }));
+    }
+
+    private void updateElapsedTime() {
+        long now = System.currentTimeMillis();
+        long diffSec = Math.max(0, (now - mStartTimeMs) / 1000);
+        long hrs = diffSec / 3600;
+        long mins = (diffSec % 3600) / 60;
+        long secs = diffSec % 60;
+
+        String elapsedStr;
+        if (hrs > 0) {
+            elapsedStr = String.format(Locale.US, "%dh %02dm %02ds", hrs, mins, secs);
+        } else {
+            elapsedStr = String.format(Locale.US, "%dm %02ds", mins, secs);
+        }
+
+        if (mTvElapsed != null) {
+            mTvElapsed.setText(elapsedStr);
+        }
+
+        updateSlimStatsText();
+    }
+
+    private void updateSlimStatsText() {
+        if (mTvSlimStats != null && mTvElapsed != null) {
+            String dist = String.format(Locale.US, "%.1f km", mCurrentDistanceKm);
+            String elapsed = mTvElapsed.getText().toString();
+            mTvSlimStats.setText("🟢 " + dist + " • " + elapsed + " • " + mEtaFormatted);
+        }
+    }
+
+    private void showCompleteConfirmation() {
+        new AlertDialog.Builder(this)
+                .setTitle("Complete Delivery")
+                .setMessage("Are you at " + mTitle + "? Mark order as DELIVERED and finalize your payout?")
+                .setPositiveButton("Complete Delivery", (dialog, which) -> executeTripCompletion())
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private void executeTripCompletion() {
+        if (mBtnComplete != null) {
+            mBtnComplete.setEnabled(false);
+            mBtnComplete.setText("Finalizing Delivery...");
+        }
+
+        double lat = mLastLat != 0.0 ? mLastLat : NavigationManager.getInstance().getLastLat();
+        double lng = mLastLng != 0.0 ? mLastLng : NavigationManager.getInstance().getLastLng();
+
+        NavigationManager.getInstance().completeTripOnBackend(lat, lng, new NavigationManager.CompleteCallback() {
+            @Override
+            public void onSuccess(String message) {
+                runOnUiThread(() -> {
+                    Toast.makeText(NavigationActivity.this, "✓ " + message, Toast.LENGTH_LONG).show();
+                    setResult(RESULT_OK);
+                    finish();
+                });
+            }
+
+            @Override
+            public void onError(String error) {
+                runOnUiThread(() -> {
+                    Toast.makeText(NavigationActivity.this, "⚠️ " + error, Toast.LENGTH_LONG).show();
+                    if (mBtnComplete != null) {
+                        mBtnComplete.setEnabled(true);
+                        mBtnComplete.setText("✓ COMPLETE TRIP");
+                    }
+                });
+            }
+        });
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        mTimerHandler.removeCallbacks(mTimerRunnable);
     }
 }

@@ -156,19 +156,17 @@ export interface Order {
 export interface DashboardStats {
   ordersToday: number
   ordersTodayChange: number
-  awaitingBilling: number
+  pendingApproval: number
   packing: number
+  awaitingBilling: number
   readyForDelivery: number
   delivered: number
-  pendingPayments?: number
-  totalOutstanding?: number
   orderFlow: {
-    confirmed: number
-    billing: number
+    sales: number
+    approval: number
     packing: number
-    ready: number
+    billing: number
     delivery: number
-    delivered: number
     total: number
   }
   needsAttention: NeedsAttentionItem[]
@@ -179,6 +177,6 @@ export interface NeedsAttentionItem {
   orderNumber: string
   customerName: string
   issue: string
-  issueType: 'billing_pending' | 'packing_shortage' | 'ready_for_delivery' | 'delayed'
+  issueType: 'pending_approval' | 'billing_pending' | 'packing_shortage' | 'ready_for_delivery' | 'delayed'
   timeAgo: string
 }

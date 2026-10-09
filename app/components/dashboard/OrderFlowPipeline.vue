@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
-import { ShoppingBag, FileText, Package, Box, Truck, AlertCircle, ArrowRight, CreditCard } from 'lucide-vue-next'
+import { ShoppingBag, CheckCheck, Box, Receipt, Truck, ArrowRight } from 'lucide-vue-next'
 import { useGsapAnimation } from '~/composables/useGsapAnimation'
 import OdometerNumber from '~/components/ui/OdometerNumber.vue'
 
@@ -14,13 +14,11 @@ const { animateStagger, animateProgressBar, initContext } = useGsapAnimation()
 const containerRef = ref<HTMLElement | null>(null)
 
 const stages = [
-  { name: 'Awaiting Both', icon: ShoppingBag, key: 'new', color: 'text-gray-600', bg: 'bg-gray-50', border: 'border-gray-200' },
-  { name: 'Awaiting Billing', icon: FileText, key: 'billing', color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200' },
-  { name: 'Awaiting Packing', icon: Package, key: 'packing', color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200' },
-  { name: 'Action Required', icon: AlertCircle, key: 'issues', color: 'text-red-600', bg: 'bg-red-50', border: 'border-red-200' },
-  { name: 'Ready for Dispatch', icon: Box, key: 'ready', color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200' },
-  { name: 'In Transit', icon: Truck, key: 'delivery', color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-200' },
-  { name: 'Payment Due', icon: CreditCard, key: 'unpaid', color: 'text-amber-700', bg: 'bg-amber-50', border: 'border-amber-200' }
+  { name: 'Sales Placed', icon: ShoppingBag, key: 'sales', color: 'text-[#1a5c4c]', bg: 'bg-[#e6f4f1]', border: 'border-emerald-200' },
+  { name: 'Pending Approval', icon: CheckCheck, key: 'approval', color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200' },
+  { name: 'In Packing', icon: Box, key: 'packing', color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200' },
+  { name: 'Awaiting Billing', icon: Receipt, key: 'billing', color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-200' },
+  { name: 'Delivery', icon: Truck, key: 'delivery', color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200' }
 ]
 
 const getPercentage = (key: string) => {

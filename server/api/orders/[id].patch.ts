@@ -8,7 +8,7 @@ export default defineEventHandler(async (event) => {
   if (!id) throw createError({ statusCode: 400, message: 'Missing order ID' })
   
   const body = await readBody(event)
-  const { orderNumber, customerId, deliveryAddress, paymentTerms, notes, items } = body
+  const { orderNumber, customerId, deliveryAddress, deliveryAddressId, paymentTerms, notes, isUrgent, items } = body
   
   let totalAmount = 0
   const itemsToCreate = []
@@ -20,8 +20,11 @@ export default defineEventHandler(async (event) => {
       const product = await prisma.product.findUnique({ where: { id: item.productId } })
       if (!product) throw createError({ statusCode: 404, message: `Product ${item.productId} not found` })
       
-      const unitPrice = Number(product.price)
-      const amount = unitPrice * item.quantity
+      const unitPrice = item.unitPrice !== undefined && item.unitPrice !== null && !isNaN(Number(item.unitPrice))
+        ? Number(item.unitPrice)
+        : Number(product.price)
+      const qty = Number(item.quantity) || 1
+      const amount = unitPrice * qty
       totalAmount += amount
 
       if (item.id) {
@@ -31,8 +34,11 @@ export default defineEventHandler(async (event) => {
             productId: product.id,
             sku: product.sku,
             productName: product.name,
-            quantity: item.quantity,
-            unitPrice: product.price
+            quantity: qty,
+            unitPrice: unitPrice,
+            isTaxInclusive: Boolean(item.isTaxInclusive),
+            applyLastPrice: Boolean(item.applyLastPrice),
+            itemNotes: item.itemNotes ? String(item.itemNotes) : null
           }
         })
       } else {
@@ -40,9 +46,13 @@ export default defineEventHandler(async (event) => {
           productId: product.id,
           sku: product.sku,
           productName: product.name,
-          quantity: item.quantity,
-          unitPrice: product.price,
-          packedQuantity: 0
+          quantity: qty,
+          unitPrice: unitPrice,
+          packedQuantity: 0,
+          approvedQuantity: qty,
+          isTaxInclusive: Boolean(item.isTaxInclusive),
+          applyLastPrice: Boolean(item.applyLastPrice),
+          itemNotes: item.itemNotes ? String(item.itemNotes) : null
         })
       }
     }
@@ -56,9 +66,11 @@ export default defineEventHandler(async (event) => {
   const updateData: any = {
     notes,
     deliveryAddress,
+    ...(deliveryAddressId && { deliveryAddressId }),
     ...(orderNumber && { orderNumber }),
     ...(customerId && { customerId }),
     ...(paymentTerms && { paymentTerms }),
+    ...(isUrgent !== undefined && { isUrgent: Boolean(isUrgent) })
   }
 
   if (items && Array.isArray(items)) {

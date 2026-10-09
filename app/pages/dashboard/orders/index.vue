@@ -15,7 +15,7 @@ const status = ref('')
 const billingStatus = ref('')
 const packingStatus = ref('')
 const deliveryStatus = ref('')
-const paymentStatus = ref('')
+const isApproved = ref('')
 const startDate = ref('')
 const endDate = ref('')
 const selectedOrderId = ref<string | null>(null)
@@ -31,11 +31,11 @@ const { data, refresh, pending } = useFetch('/api/orders', {
     billingStatus,
     packingStatus,
     deliveryStatus,
-    paymentStatus,
+    isApproved,
     startDate,
     endDate
   },
-  watch: [page, limit, search, status, billingStatus, packingStatus, deliveryStatus, paymentStatus, startDate, endDate]
+  watch: [page, limit, search, status, billingStatus, packingStatus, deliveryStatus, isApproved, startDate, endDate]
 })
 
 const handleSelect = (id: string) => {
@@ -98,7 +98,7 @@ onOrderSync((event) => {
       v-model:billingStatus="billingStatus"
       v-model:packingStatus="packingStatus"
       v-model:deliveryStatus="deliveryStatus"
-      v-model:paymentStatus="paymentStatus"
+      v-model:isApproved="isApproved"
       v-model:startDate="startDate"
       v-model:endDate="endDate"
       @select="handleSelect"

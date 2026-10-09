@@ -31,6 +31,7 @@ import { useGsapAnimation } from '~/composables/useGsapAnimation'
 import { useRealtimeSync } from '~/composables/useRealtimeSync'
 import { useSnackbar } from '~/composables/useSnackbar'
 import RowsPerPageSelect from '~/components/ui/RowsPerPageSelect.vue'
+import FloatingHorizontalScrollbar from '~/components/ui/FloatingHorizontalScrollbar.vue'
 
 definePageMeta({ layout: 'dashboard' })
 
@@ -41,6 +42,7 @@ const { showSnackbar } = useSnackbar()
 // Filters
 const page = ref(1)
 const limit = ref(10)
+const approveTableRef = ref<HTMLElement | null>(null)
 const search = ref('')
 const activeTab = ref<'PENDING' | 'URGENT' | 'APPROVED' | 'ALL'>('PENDING')
 
@@ -352,7 +354,7 @@ const getPrivilegeColor = (tier: string) => {
       </div>
 
       <!-- Orders Table -->
-      <div class="overflow-x-auto">
+      <div ref="approveTableRef" class="overflow-x-auto no-scrollbar">
         <table class="w-full text-left text-sm text-gray-600">
           <thead class="bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider">
             <tr>
@@ -381,8 +383,10 @@ const getPrivilegeColor = (tier: string) => {
               v-else 
               v-for="order in data.orders" 
               :key="order.id"
-              class="hover:bg-gray-50/80 transition-colors"
-              :class="{ 'bg-rose-50/20': order.isUrgent }"
+              class="transition-colors"
+              :class="order.overallStatus === 'CANCELLED' 
+                ? 'bg-gray-100/75 hover:bg-gray-200/60 text-gray-400 [&_td]:!text-gray-400 [&_span]:!text-gray-400 [&_div]:!text-gray-400 [&_a]:!text-gray-400 opacity-60 border-l-4 border-l-gray-400' 
+                : (order.isUrgent ? 'bg-rose-50/20 hover:bg-gray-50/80 border-l-4 border-l-rose-500' : 'hover:bg-gray-50/80')"
             >
               <!-- Order # -->
               <td class="py-3 px-4 font-medium text-gray-900">
@@ -390,7 +394,10 @@ const getPrivilegeColor = (tier: string) => {
                   <NuxtLink :to="`/dashboard/orders/${order.id}`" class="text-[#1a5c4c] hover:underline font-semibold">
                     {{ order.orderNumber }}
                   </NuxtLink>
-                  <span v-if="order.isUrgent" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-700 border border-rose-300 animate-pulse">
+                  <span v-if="order.overallStatus === 'CANCELLED'" class="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[10px] font-bold bg-gray-200 !text-gray-600 border border-rose-500">
+                    🚫 CANCELLED
+                  </span>
+                  <span v-else-if="order.isUrgent" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-700 border border-rose-300 animate-pulse">
                     ⚡ URGENT
                   </span>
                 </div>
@@ -472,6 +479,9 @@ const getPrivilegeColor = (tier: string) => {
           </tbody>
         </table>
       </div>
+
+      <!-- Floating Horizontal Scrollbar (Desktop only) -->
+      <FloatingHorizontalScrollbar :target="approveTableRef" />
 
       <!-- Pagination -->
       <div v-if="data?.totalPages > 1" class="p-4 border-t border-gray-200 flex justify-between items-center text-sm text-gray-500">
@@ -684,3 +694,15 @@ const getPrivilegeColor = (tier: string) => {
     </div>
   </div>
 </template>
+
+<style scoped>
+.no-scrollbar::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+.no-scrollbar {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+</style>

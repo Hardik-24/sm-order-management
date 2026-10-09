@@ -5,6 +5,7 @@ import CustomSelect from '~/components/ui/CustomSelect.vue'
 import TableFilterButtons from '~/components/dashboard/TableFilterButtons.vue'
 import RowsPerPageSelect from '~/components/ui/RowsPerPageSelect.vue'
 import StatusBadge from '~/components/ui/StatusBadge.vue'
+import FloatingHorizontalScrollbar from '~/components/ui/FloatingHorizontalScrollbar.vue'
 import type { Order } from '~/types'
 
 const props = defineProps<{
@@ -20,7 +21,7 @@ const props = defineProps<{
   billingStatus?: string
   packingStatus?: string
   deliveryStatus?: string
-  paymentStatus?: string
+  isApproved?: string
 }>()
 
 const emit = defineEmits<{
@@ -33,11 +34,11 @@ const emit = defineEmits<{
   (e: 'update:billingStatus', val: string): void
   (e: 'update:packingStatus', val: string): void
   (e: 'update:deliveryStatus', val: string): void
-  (e: 'update:paymentStatus', val: string): void
+  (e: 'update:isApproved', val: string): void
   (e: 'select', orderId: string): void
 }>()
 
-import { ref, computed, nextTick, watch, onMounted } from 'vue'
+import { ref, computed, nextTick, watch, onMounted, onUnmounted } from 'vue'
 import { onClickOutside } from '@vueuse/core'
 import { useGsapAnimation } from '~/composables/useGsapAnimation'
 
@@ -46,6 +47,8 @@ const { animateStagger, initContext } = useGsapAnimation()
 
 const tbodyRef = ref<HTMLElement | null>(null)
 const mobileListRef = ref<HTMLElement | null>(null)
+
+const tableScrollRef = ref<HTMLElement | null>(null)
 
 const triggerRowAnimation = () => {
   nextTick(() => {
@@ -79,19 +82,10 @@ onMounted(() => {
   triggerRowAnimation()
 })
 
-
-const formatTime = (dateStr: string) => {
-  if (!dateStr) return '—'
-  const date = new Date(dateStr)
-  return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
-}
-
-// Pipeline Dot Status Helpers for Mobile View (Standardized 4-Color System)
-const getBillingDot = (order: Order) => {
-  const status = order.billingStatus?.status
-  if (status === 'GENERATED') return { bg: 'bg-emerald-500', text: 'text-emerald-700', label: 'Billing: Generated' }
-  if (status === 'ON_HOLD' || status === 'ERROR') return { bg: 'bg-amber-500', text: 'text-amber-700', label: 'Billing: On Hold' }
-  return { bg: 'bg-gray-300', text: 'text-gray-500', label: 'Billing: Pending' }
+// Pipeline Dot Status Helpers for Mobile View (Approval • Packing • Billing • Delivery)
+const getApprovalDot = (order: Order) => {
+  if ((order as any).isApproved) return { bg: 'bg-emerald-500', text: 'text-emerald-700', label: 'Approval: Approved' }
+  return { bg: 'bg-amber-500', text: 'text-amber-700', label: 'Approval: Pending' }
 }
 
 const getPackingDot = (order: Order) => {
@@ -102,20 +96,19 @@ const getPackingDot = (order: Order) => {
   return { bg: 'bg-gray-300', text: 'text-gray-500', label: 'Packing: Waiting' }
 }
 
+const getBillingDot = (order: Order) => {
+  const status = order.billingStatus?.status
+  if (status === 'GENERATED') return { bg: 'bg-emerald-500', text: 'text-emerald-700', label: 'Billing: Generated' }
+  if (status === 'ON_HOLD' || status === 'ERROR') return { bg: 'bg-amber-500', text: 'text-amber-700', label: 'Billing: On Hold' }
+  return { bg: 'bg-gray-300', text: 'text-gray-500', label: 'Billing: Pending' }
+}
+
 const getDeliveryDot = (order: Order) => {
   const status = order.deliveryStatus?.status
   if (status === 'DELIVERED') return { bg: 'bg-emerald-500', text: 'text-emerald-700', label: 'Delivery: Delivered' }
   if (status === 'DISPATCHED' || status === 'ASSIGNED') return { bg: 'bg-blue-500', text: 'text-blue-700', label: 'Delivery: In Transit/Assigned' }
   if (status === 'ON_HOLD') return { bg: 'bg-amber-500', text: 'text-amber-700', label: 'Delivery: On Hold' }
   return { bg: 'bg-gray-300', text: 'text-gray-500', label: 'Delivery: Waiting' }
-}
-
-const getPaymentDot = (order: Order) => {
-  const status = order.paymentStatus?.status || 'UNPAID'
-  if (status === 'PAID') return { bg: 'bg-emerald-500', text: 'text-emerald-700', label: 'Payment: Paid' }
-  if (status === 'PARTIAL') return { bg: 'bg-blue-500', text: 'text-blue-700', label: 'Payment: Partial' }
-  if (status === 'OVERDUE') return { bg: 'bg-rose-500', text: 'text-rose-700', label: 'Payment: Overdue' }
-  return { bg: 'bg-amber-500', text: 'text-amber-700', label: 'Payment: Unpaid' }
 }
 </script>
 
@@ -161,14 +154,14 @@ const getPaymentDot = (order: Order) => {
             :billingStatus="billingStatus"
             :packingStatus="packingStatus"
             :deliveryStatus="deliveryStatus"
-            :paymentStatus="paymentStatus"
+            :isApproved="isApproved"
             @update:startDate="val => emit('update:startDate', val)"
             @update:endDate="val => emit('update:endDate', val)"
             @update:status="val => emit('update:status', val)"
             @update:billingStatus="val => emit('update:billingStatus', val)"
             @update:packingStatus="val => emit('update:packingStatus', val)"
             @update:deliveryStatus="val => emit('update:deliveryStatus', val)"
-            @update:paymentStatus="val => emit('update:paymentStatus', val)"
+            @update:isApproved="val => emit('update:isApproved', val)"
           />
           <RowsPerPageSelect 
             :modelValue="limit" 
@@ -182,7 +175,7 @@ const getPaymentDot = (order: Order) => {
       <div v-if="isLoading" class="absolute inset-0 bg-white/50 backdrop-blur-[2px] z-10 animate-pulse"></div>
 
       <!-- DESKTOP / TABLET VIEW: Full Multi-column Table -->
-      <div class="hidden md:block overflow-x-auto no-scrollbar">
+      <div ref="tableScrollRef" class="hidden md:block overflow-x-auto no-scrollbar">
         <table class="w-full text-left border-collapse min-w-full">
           <thead>
             <tr class="bg-gray-50 border-b border-gray-200 text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -190,10 +183,10 @@ const getPaymentDot = (order: Order) => {
               <th class="px-6 py-4 whitespace-nowrap">Customer</th>
               <th class="px-6 py-4 whitespace-nowrap">Items</th>
               <th class="px-6 py-4 whitespace-nowrap">Amount</th>
-              <th class="px-6 py-4 whitespace-nowrap">Billing</th>
-              <th class="px-6 py-4 whitespace-nowrap">Packing</th>
-              <th class="px-6 py-4 whitespace-nowrap">Delivery</th>
-              <th class="px-6 py-4 whitespace-nowrap text-center">Payment</th>
+              <th class="px-6 py-4 whitespace-nowrap text-center">Approval</th>
+              <th class="px-6 py-4 whitespace-nowrap text-center">Packing</th>
+              <th class="px-6 py-4 whitespace-nowrap text-center">Billing</th>
+              <th class="px-6 py-4 whitespace-nowrap text-center">Delivery</th>
               <th class="px-6 py-4 whitespace-nowrap">Overall Status</th>
               <th class="px-6 py-4 whitespace-nowrap">Created</th>
               <th class="px-6 py-4 whitespace-nowrap"></th>
@@ -204,16 +197,21 @@ const getPaymentDot = (order: Order) => {
               v-for="order in orders" 
               :key="order.id"
               @click="emit('select', order.id)"
-              class="hover:bg-gray-50 cursor-pointer transition-colors group"
-              :class="{ 'bg-rose-50/20 border-l-4 border-l-rose-500': (order as any).isUrgent }"
+              class="cursor-pointer transition-colors group"
+              :class="order.overallStatus === 'CANCELLED' 
+                ? 'bg-gray-100/75 hover:bg-gray-200/60 text-gray-400 [&_td]:!text-gray-400 [&_span]:!text-gray-400 [&_div]:!text-gray-400 opacity-60 border-l-4 border-l-gray-400' 
+                : ((order as any).isUrgent ? 'bg-rose-50/20 hover:bg-gray-50 border-l-4 border-l-rose-500' : 'hover:bg-gray-50')"
             >
               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                 <div class="flex items-center gap-1.5">
                   <span>{{ order.orderNumber }}</span>
-                  <span v-if="(order as any).isUrgent" class="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[10px] font-bold bg-rose-100 text-rose-700 border border-rose-300 animate-pulse">
+                  <span v-if="order.overallStatus === 'CANCELLED'" class="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[10px] font-bold bg-gray-200 !text-gray-600 border border-rose-500">
+                    🚫 CANCELLED
+                  </span>
+                  <span v-else-if="(order as any).isUrgent" class="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[10px] font-bold bg-rose-100 text-rose-700 border border-rose-300 animate-pulse">
                     ⚡ URGENT
                   </span>
-                  <span v-if="(order as any).isApproved" class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  <span v-if="(order as any).isApproved && order.overallStatus !== 'CANCELLED'" class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                     ✓
                   </span>
                 </div>
@@ -227,41 +225,44 @@ const getPaymentDot = (order: Order) => {
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ order.items?.length || 0 }}</td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ formatCurrency(order.totalAmount || 0) }}</td>
               
-              <td class="px-6 py-4 whitespace-nowrap">
-                <span v-if="order.billingStatus?.status === 'GENERATED'" class="text-green-500 flex items-center justify-center w-6 h-6 border border-green-500 rounded-full mx-auto">
+              <!-- 1. Approval -->
+              <td class="px-6 py-4 whitespace-nowrap text-center">
+                <span v-if="(order as any).isApproved" class="text-emerald-600 flex items-center justify-center w-6 h-6 border border-emerald-500 rounded-full mx-auto" title="Approved">
+                  <Check class="w-4 h-4" />
+                </span>
+                <span 
+                  v-else 
+                  class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200 mx-auto"
+                >
+                  Pending
+                </span>
+              </td>
+
+              <!-- 2. Packing -->
+              <td class="px-6 py-4 whitespace-nowrap text-center">
+                <span v-if="order.packingStatus?.status === 'PACKED' || order.packingStatus?.status === 'COMPLETED'" class="text-emerald-600 flex items-center justify-center w-6 h-6 border border-emerald-500 rounded-full mx-auto" title="Packed">
+                  <Check class="w-4 h-4" />
+                </span>
+                <span v-else-if="!order.packingStatus || order.packingStatus.status === 'NOT_STARTED'" class="text-gray-400 block text-center">—</span>
+                <StatusBadge v-else :status="order.packingStatus.status" class="mx-auto" />
+              </td>
+
+              <!-- 3. Billing -->
+              <td class="px-6 py-4 whitespace-nowrap text-center">
+                <span v-if="order.billingStatus?.status === 'GENERATED'" class="text-emerald-600 flex items-center justify-center w-6 h-6 border border-emerald-500 rounded-full mx-auto" title="Generated">
                   <Check class="w-4 h-4" />
                 </span>
                 <StatusBadge v-else-if="order.billingStatus?.status" :status="order.billingStatus.status" class="mx-auto" />
                 <span v-else class="text-gray-400 block text-center">—</span>
               </td>
               
-              <td class="px-6 py-4 whitespace-nowrap">
-                <span v-if="order.packingStatus?.status === 'COMPLETED'" class="text-green-500 flex items-center justify-center w-6 h-6 border border-green-500 rounded-full mx-auto">
-                  <Check class="w-4 h-4" />
-                </span>
-                <span v-else-if="!order.packingStatus || order.packingStatus.status === 'NOT_STARTED'" class="text-gray-400 block text-center">—</span>
-                <StatusBadge v-else :status="order.packingStatus.status" class="mx-auto" />
-              </td>
-              
-              <td class="px-6 py-4 whitespace-nowrap">
-                <span v-if="order.deliveryStatus?.status === 'DELIVERED'" class="text-green-500 flex items-center justify-center w-6 h-6 border border-green-500 rounded-full mx-auto">
+              <!-- 4. Delivery -->
+              <td class="px-6 py-4 whitespace-nowrap text-center">
+                <span v-if="order.deliveryStatus?.status === 'DELIVERED'" class="text-emerald-600 flex items-center justify-center w-6 h-6 border border-emerald-500 rounded-full mx-auto" title="Delivered">
                   <Check class="w-4 h-4" />
                 </span>
                 <span v-else-if="!order.deliveryStatus || order.deliveryStatus.status === 'NOT_STARTED'" class="text-gray-400 block text-center">—</span>
                 <StatusBadge v-else :status="order.deliveryStatus.status" class="mx-auto" />
-              </td>
-
-              <td class="px-6 py-4 whitespace-nowrap text-center">
-                <span v-if="order.paymentStatus?.status === 'PAID'" class="text-green-500 flex items-center justify-center w-6 h-6 border border-green-500 rounded-full mx-auto" title="Fully Paid">
-                  <Check class="w-4 h-4" />
-                </span>
-                <span 
-                  v-else 
-                  class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold border mx-auto"
-                  :class="getStatusColor(order.paymentStatus?.status || 'UNPAID')"
-                >
-                  {{ order.paymentStatus?.status || 'UNPAID' }}
-                </span>
               </td>
               
               <td class="px-6 py-4 whitespace-nowrap">
@@ -288,6 +289,9 @@ const getPaymentDot = (order: Order) => {
           </tbody>
         </table>
       </div>
+      
+      <!-- Floating Horizontal Scrollbar (Desktop only) -->
+      <FloatingHorizontalScrollbar :target="tableScrollRef" />
 
       <!-- MOBILE VIEW: 2-Line High-Density Non-Scrollable Rows -->
       <div ref="mobileListRef" class="block md:hidden divide-y divide-gray-100 bg-white">
@@ -295,7 +299,10 @@ const getPaymentDot = (order: Order) => {
           v-for="order in orders" 
           :key="'mob-' + order.id"
           @click="emit('select', order.id)"
-          class="px-3.5 py-3 hover:bg-gray-50 active:bg-gray-100 cursor-pointer transition-colors flex flex-col gap-1.5"
+          class="px-3.5 py-3 cursor-pointer transition-colors flex flex-col gap-1.5"
+          :class="order.overallStatus === 'CANCELLED' 
+            ? 'bg-gray-100/75 active:bg-gray-200/60 text-gray-400 [&_span]:!text-gray-400 [&_p]:!text-gray-400 opacity-60 border-l-4 border-l-gray-400' 
+            : ((order as any).isUrgent ? 'bg-rose-50/20 active:bg-gray-100 border-l-4 border-l-rose-500' : 'hover:bg-gray-50 active:bg-gray-100')"
         >
           <!-- LINE 1: Identity & Overall Status -->
           <div class="flex items-center justify-between gap-2 min-w-0">
@@ -303,7 +310,10 @@ const getPaymentDot = (order: Order) => {
               <span class="text-sm font-semibold text-gray-900 shrink-0">
                 {{ order.orderNumber }}
               </span>
-              <span v-if="(order as any).isUrgent" class="text-[9px] font-bold text-rose-600 bg-rose-50 px-1 py-0.2 rounded border border-rose-200">
+              <span v-if="order.overallStatus === 'CANCELLED'" class="text-[9px] font-bold text-gray-600 bg-gray-200 px-1 py-0.2 rounded border border-rose-500">
+                🚫 CANCELLED
+              </span>
+              <span v-else-if="(order as any).isUrgent" class="text-[9px] font-bold text-rose-600 bg-rose-50 px-1 py-0.2 rounded border border-rose-200">
                 ⚡ URGENT
               </span>
               <span class="text-gray-300 text-xs shrink-0">•</span>
@@ -337,17 +347,17 @@ const getPaymentDot = (order: Order) => {
               </span>
             </div>
 
-            <!-- Pipeline Status Dots (B, P, D) + Chevron -->
+            <!-- Pipeline Status Dots (A, P, B, D) + Chevron -->
             <div class="flex items-center gap-1.5 shrink-0">
-              <!-- B / P / D Indicator Group -->
-              <div class="flex items-center gap-1.5 bg-gray-50 border border-gray-200/80 rounded-full px-2 py-0.5" title="Pipeline Status (Billing • Packing • Delivery)">
-                <!-- Billing Dot -->
+              <!-- A / P / B / D Indicator Group -->
+              <div class="flex items-center gap-1.5 bg-gray-50 border border-gray-200/80 rounded-full px-2 py-0.5" title="Pipeline Status (Approval • Packing • Billing • Delivery)">
+                <!-- Approval Dot -->
                 <div 
                   class="flex items-center gap-1" 
-                  :title="getBillingDot(order).label"
+                  :title="getApprovalDot(order).label"
                 >
-                  <span class="w-1.5 h-1.5 rounded-full" :class="getBillingDot(order).bg"></span>
-                  <span class="text-[9px] font-bold" :class="getBillingDot(order).text">B</span>
+                  <span class="w-1.5 h-1.5 rounded-full" :class="getApprovalDot(order).bg"></span>
+                  <span class="text-[9px] font-bold" :class="getApprovalDot(order).text">A</span>
                 </div>
 
                 <span class="text-gray-200 text-[9px] leading-none">|</span>
@@ -363,6 +373,17 @@ const getPaymentDot = (order: Order) => {
 
                 <span class="text-gray-200 text-[9px] leading-none">|</span>
 
+                <!-- Billing Dot -->
+                <div 
+                  class="flex items-center gap-1" 
+                  :title="getBillingDot(order).label"
+                >
+                  <span class="w-1.5 h-1.5 rounded-full" :class="getBillingDot(order).bg"></span>
+                  <span class="text-[9px] font-bold" :class="getBillingDot(order).text">B</span>
+                </div>
+
+                <span class="text-gray-200 text-[9px] leading-none">|</span>
+
                 <!-- Delivery Dot -->
                 <div 
                   class="flex items-center gap-1" 
@@ -370,17 +391,6 @@ const getPaymentDot = (order: Order) => {
                 >
                   <span class="w-1.5 h-1.5 rounded-full" :class="getDeliveryDot(order).bg"></span>
                   <span class="text-[9px] font-bold" :class="getDeliveryDot(order).text">D</span>
-                </div>
-
-                <span class="text-gray-200 text-[9px] leading-none">|</span>
-
-                <!-- Payment Dot -->
-                <div 
-                  class="flex items-center gap-1" 
-                  :title="getPaymentDot(order).label"
-                >
-                  <span class="w-1.5 h-1.5 rounded-full" :class="getPaymentDot(order).bg"></span>
-                  <span class="text-[9px] font-bold" :class="getPaymentDot(order).text">₹</span>
                 </div>
               </div>
 
@@ -423,3 +433,4 @@ const getPaymentDot = (order: Order) => {
     </div>
   </div>
 </template>
+

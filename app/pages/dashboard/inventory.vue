@@ -9,6 +9,7 @@ import { formatDateTime } from '~/lib/utils'
 import { useGsapAnimation } from '~/composables/useGsapAnimation'
 import { useRealtimeSync } from '~/composables/useRealtimeSync'
 import RowsPerPageSelect from '~/components/ui/RowsPerPageSelect.vue'
+import FloatingHorizontalScrollbar from '~/components/ui/FloatingHorizontalScrollbar.vue'
 
 definePageMeta({ layout: 'dashboard' })
 
@@ -38,6 +39,7 @@ const isSyncing = ref(false)
 let pollingInterval: any = null
 
 const tbodyRef = ref<HTMLElement | null>(null)
+const inventoryTableRef = ref<HTMLElement | null>(null)
 
 const triggerRowAnimation = () => {
   nextTick(() => {
@@ -311,7 +313,7 @@ onUnmounted(() => {
       </div>
 
       <!-- Table Container -->
-      <div class="overflow-x-auto relative min-h-[350px]">
+      <div ref="inventoryTableRef" class="overflow-x-auto no-scrollbar relative min-h-[350px]">
 
         <!-- Localized Table Blur Loading Animation -->
         <Transition
@@ -410,6 +412,9 @@ onUnmounted(() => {
           </tbody>
         </table>
       </div>
+
+      <!-- Floating Horizontal Scrollbar (Desktop only) -->
+      <FloatingHorizontalScrollbar :target="inventoryTableRef" />
 
       <!-- Pagination Footer -->
       <div v-if="filteredProducts.length > 0 && pageSize !== -1" class="p-4 border-t border-gray-100 bg-gray-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">

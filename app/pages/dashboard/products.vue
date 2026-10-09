@@ -125,13 +125,13 @@
           </div>
         </div>
 
-        <div ref="tableContainerRef" class="overflow-x-auto min-h-[350px]">
+        <div ref="tableContainerRef" class="overflow-x-auto no-scrollbar min-h-[350px]">
           <table class="w-full text-left border-collapse table-auto">
             <thead>
               <tr class="bg-gray-50 border-b border-gray-200">
                 <th class="px-5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest w-36 min-w-[130px] max-w-[160px]">SKU</th>
                 <th class="px-5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest min-w-[220px]">Product Name</th>
-                <th class="px-5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest w-40 min-w-[140px]">Group Name (Busy)</th>
+                <th class="px-5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest w-40 min-w-[140px]">Group Name</th>
                 <th class="px-5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest w-28 min-w-[100px]">HSN</th>
                 <th class="px-5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest w-28 min-w-[110px] text-right">Price</th>
                 <th class="px-5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest w-24 min-w-[90px] text-right">Stock</th>
@@ -216,6 +216,9 @@
               </tbody>
           </table>
         </div>
+
+        <!-- Floating Horizontal Scrollbar (Desktop only) -->
+        <FloatingHorizontalScrollbar :target="tableContainerRef" />
 
         <!-- Pagination Footer -->
         <div v-if="filteredProducts.length > 0 && pageSize !== -1" class="p-4 border-t border-gray-100 bg-gray-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -596,6 +599,7 @@ import { useGsapAnimation } from '~/composables/useGsapAnimation'
 import { useRealtimeSync } from '~/composables/useRealtimeSync'
 import CustomSelect from '~/components/ui/CustomSelect.vue'
 import RowsPerPageSelect from '~/components/ui/RowsPerPageSelect.vue'
+import FloatingHorizontalScrollbar from '~/components/ui/FloatingHorizontalScrollbar.vue'
 
 definePageMeta({ layout: 'dashboard' })
 

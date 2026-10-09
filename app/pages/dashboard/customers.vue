@@ -223,6 +223,9 @@
         </table>
       </div>
 
+      <!-- Floating Horizontal Scrollbar (Desktop only) -->
+      <FloatingHorizontalScrollbar :target="tableContainerRef" />
+
       <!-- Pagination Footer -->
       <div v-if="filteredCustomers.length > 0 && pageSize !== -1" class="px-5 py-3.5 border-t border-gray-100 bg-gray-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div class="text-xs text-gray-500">
@@ -876,6 +879,7 @@ import { useRealtimeSync } from '~/composables/useRealtimeSync'
 import SetDeliveryPinModal from '~/components/dashboard/SetDeliveryPinModal.vue'
 import CustomSelect from '~/components/ui/CustomSelect.vue'
 import RowsPerPageSelect from '~/components/ui/RowsPerPageSelect.vue'
+import FloatingHorizontalScrollbar from '~/components/ui/FloatingHorizontalScrollbar.vue'
 
 definePageMeta({ layout: 'dashboard' })
 

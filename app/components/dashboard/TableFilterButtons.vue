@@ -11,7 +11,7 @@ const props = withDefaults(defineProps<{
   billingStatus?: string
   packingStatus?: string
   deliveryStatus?: string
-  paymentStatus?: string
+  isApproved?: string
 }>(), {
   startDate: '',
   endDate: '',
@@ -19,7 +19,7 @@ const props = withDefaults(defineProps<{
   billingStatus: '',
   packingStatus: '',
   deliveryStatus: '',
-  paymentStatus: ''
+  isApproved: ''
 })
 
 const emit = defineEmits<{
@@ -29,7 +29,7 @@ const emit = defineEmits<{
   (e: 'update:billingStatus', val: string): void
   (e: 'update:packingStatus', val: string): void
   (e: 'update:deliveryStatus', val: string): void
-  (e: 'update:paymentStatus', val: string): void
+  (e: 'update:isApproved', val: string): void
 }>()
 
 const isDatePickerOpen = ref(false)
@@ -122,7 +122,7 @@ const activeFilterCount = computed(() => {
   if (props.billingStatus) count++
   if (props.packingStatus) count++
   if (props.deliveryStatus) count++
-  if (props.paymentStatus) count++
+  if (props.isApproved) count++
   return count
 })
 
@@ -131,7 +131,7 @@ const clearFilters = () => {
   emit('update:billingStatus', '')
   emit('update:packingStatus', '')
   emit('update:deliveryStatus', '')
-  emit('update:paymentStatus', '')
+  emit('update:isApproved', '')
   isFiltersOpen.value = false
 }
 
@@ -189,12 +189,10 @@ const deliveryStatusOptions = [
   { label: 'On Hold', value: 'ON_HOLD' }
 ]
 
-const paymentStatusOptions = [
-  { label: 'All Payment States', value: '' },
-  { label: 'Unpaid', value: 'UNPAID' },
-  { label: 'Partially Paid', value: 'PARTIAL' },
-  { label: 'Fully Paid', value: 'PAID' },
-  { label: 'Overdue', value: 'OVERDUE' }
+const approvalStatusOptions = [
+  { label: 'All Orders', value: '' },
+  { label: 'Approved', value: 'true' },
+  { label: 'Pending Approval', value: 'false' }
 ]
 </script>
 
@@ -358,15 +356,15 @@ const paymentStatusOptions = [
             />
           </div>
 
-          <!-- Payment Status -->
+          <!-- Approval Status -->
           <div>
-            <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Payment Status</label>
+            <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Approval Status</label>
             <CustomSelect 
-              :modelValue="paymentStatus"
-              @update:modelValue="val => emit('update:paymentStatus', val)"
-              :options="paymentStatusOptions"
+              :modelValue="isApproved"
+              @update:modelValue="val => emit('update:isApproved', val)"
+              :options="approvalStatusOptions"
               searchable
-              searchPlaceholder="Search payments..."
+              searchPlaceholder="Search approval..."
               class="w-full"
             />
           </div>

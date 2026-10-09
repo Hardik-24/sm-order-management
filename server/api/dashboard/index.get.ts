@@ -15,21 +15,24 @@ export default defineEventHandler(async (event) => {
   const [
     ordersToday,
     ordersYesterday,
+    pendingApproval,
     awaitingBilling,
     packing,
     readyForDelivery,
     delivered,
-    confirmed,
     dispatched,
+    pendingApprovalOrders,
     billingPending,
-    readyOrders,
-    pendingPayments,
-    totalOutstandingAgg,
-    overdueOrders,
-    pendingApproval
+    readyOrders
   ] = await Promise.all([
     prisma.order.count({ where: { createdAt: { gte: today, lt: tomorrow } } }),
     prisma.order.count({ where: { createdAt: { gte: yesterday, lt: today } } }),
+    prisma.order.count({
+      where: {
+        isApproved: false,
+        overallStatus: { notIn: ['CANCELLED', 'DELIVERED'] }
+      }
+    }),
     prisma.order.count({ 
       where: { 
         billingStatus: { status: 'PENDING' },
@@ -52,42 +55,24 @@ export default defineEventHandler(async (event) => {
     prisma.order.count({
       where: { overallStatus: 'DELIVERED', createdAt: { gte: today, lt: tomorrow } }
     }),
-    prisma.order.count({ 
-      where: { overallStatus: 'CONFIRMED' } 
-    }),
     prisma.order.count({ where: { overallStatus: 'DISPATCHED' } }),
     prisma.order.findMany({
-      where: { billingStatus: { status: 'PENDING' }, createdAt: { lt: oneHourAgo } },
-      include: { customer: true }, take: 5
-    }),
-    prisma.order.findMany({
-      where: { deliveryStatus: { status: 'WAITING' }, billingStatus: { status: 'GENERATED' }, packingStatus: { status: 'PACKED' } },
-      include: { customer: true }, take: 5
-    }),
-    prisma.order.count({
       where: {
-        OR: [
-          { paymentStatus: { status: { in: ['UNPAID', 'PARTIAL', 'OVERDUE'] } } },
-          { paymentStatus: null }
-        ]
-      }
-    }),
-    prisma.paymentStatus.aggregate({
-      _sum: { balanceDue: true },
-      where: { status: { in: ['UNPAID', 'PARTIAL', 'OVERDUE'] } }
-    }),
-    prisma.order.findMany({
-      where: {
-        paymentStatus: { status: 'OVERDUE' }
+        isApproved: false,
+        overallStatus: { notIn: ['CANCELLED', 'DELIVERED'] }
       },
       include: { customer: true },
       take: 5
     }),
-    prisma.order.count({
-      where: {
-        isApproved: false,
-        overallStatus: { notIn: ['CANCELLED', 'DELIVERED'] }
-      }
+    prisma.order.findMany({
+      where: { billingStatus: { status: 'PENDING' }, createdAt: { lt: oneHourAgo } },
+      include: { customer: true },
+      take: 5
+    }),
+    prisma.order.findMany({
+      where: { deliveryStatus: { status: 'WAITING' }, billingStatus: { status: 'GENERATED' }, packingStatus: { status: 'PACKED' } },
+      include: { customer: true },
+      take: 5
     })
   ])
 
@@ -99,17 +84,24 @@ export default defineEventHandler(async (event) => {
   }
 
   const orderFlow = {
-    new: confirmed,
+    sales: ordersToday,
+    approval: pendingApproval,
     packing: packing,
     billing: awaitingBilling,
-    issues: 0,
-    ready: readyForDelivery,
     delivery: dispatched,
     delivered: delivered,
-    unpaid: pendingPayments
+    total: ordersToday + pendingApproval + packing + awaitingBilling + dispatched
   }
 
   const needsAttention = [
+    ...pendingApprovalOrders.map(o => ({ 
+      id: o.id, 
+      orderNumber: o.orderNumber, 
+      customerName: o.customer.name, 
+      statusText: 'Pending Approval',
+      timeAgo: 'Action needed',
+      actionText: 'Review'
+    })),
     ...billingPending.map(o => ({ 
       id: o.id, 
       orderNumber: o.orderNumber, 
@@ -125,27 +117,17 @@ export default defineEventHandler(async (event) => {
       statusText: 'Ready for delivery',
       timeAgo: 'Now',
       actionText: 'Dispatch'
-    })),
-    ...overdueOrders.map(o => ({ 
-      id: o.id, 
-      orderNumber: o.orderNumber, 
-      customerName: o.customer.name, 
-      statusText: 'Payment Overdue',
-      timeAgo: 'Due',
-      actionText: 'Collect Payment'
     }))
   ]
 
   return {
     ordersToday,
     ordersTodayChange,
-    awaitingBilling,
     pendingApproval,
     packing,
+    awaitingBilling,
     readyForDelivery,
     delivered,
-    pendingPayments,
-    totalOutstanding: Number(totalOutstandingAgg._sum?.balanceDue || 0),
     orderFlow,
     needsAttention
   }

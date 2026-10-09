@@ -27,7 +27,7 @@ const status = ref('')
 const billingStatus = ref('')
 const packingStatus = ref('')
 const deliveryStatus = ref('')
-const paymentStatus = ref('')
+const isApproved = ref('')
 
 const isPanelOpen = ref(false)
 const selectedOrderId = ref<string | null>(null)
@@ -41,7 +41,7 @@ const queryObj = computed(() => {
   if (billingStatus.value) q.billingStatus = billingStatus.value
   if (packingStatus.value) q.packingStatus = packingStatus.value
   if (deliveryStatus.value) q.deliveryStatus = deliveryStatus.value
-  if (paymentStatus.value) q.paymentStatus = paymentStatus.value
+  if (isApproved.value) q.isApproved = isApproved.value
   return q
 })
 
@@ -106,7 +106,7 @@ const handleOrderSelect = (orderId: string) => {
         v-model:billingStatus="billingStatus"
         v-model:packingStatus="packingStatus"
         v-model:deliveryStatus="deliveryStatus"
-        v-model:paymentStatus="paymentStatus"
+        v-model:isApproved="isApproved"
         @select="handleOrderSelect"
       />
     </div>

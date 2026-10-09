@@ -4,34 +4,35 @@
     android:layout_height="match_parent"
     android:background="#121212">
 
-    <!-- Fragment container hosting Google Navigation -->
+    <!-- Fragment container hosting Google Navigation / Map -->
     <androidx.fragment.app.FragmentContainerView
         android:id="@+id/navigation_fragment"
         android:name="com.google.android.libraries.navigation.SupportNavigationFragment"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
-    <!-- Top floating header with Back / Exit Navigation button -->
+    <!-- Top Floating Header: Sleek, compact pill (does not block upcoming maneuvers) -->
     <LinearLayout
+        android:id="@+id/ll_top_nav_bar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
         android:orientation="horizontal"
-        android:paddingStart="14dp"
-        android:paddingEnd="14dp"
-        android:paddingTop="10dp"
-        android:paddingBottom="10dp"
+        android:paddingStart="10dp"
+        android:paddingEnd="12dp"
+        android:paddingTop="6dp"
+        android:paddingBottom="6dp"
         android:gravity="center_vertical"
-        android:layout_marginTop="36dp"
-        android:layout_marginStart="14dp"
-        android:layout_marginEnd="14dp"
+        android:layout_marginTop="28dp"
+        android:layout_marginStart="12dp"
+        android:layout_marginEnd="12dp"
         android:background="@drawable/bg_nav_header"
-        android:elevation="10dp">
+        android:elevation="12dp">
 
         <ImageButton
             android:id="@+id/btn_close_nav"
-            android:layout_width="38dp"
-            android:layout_height="38dp"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:src="@android:drawable/ic_menu_close_clear_cancel"
             android:contentDescription="Close Navigation"
@@ -42,14 +43,15 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:orientation="vertical"
-            android:layout_marginStart="10dp">
+            android:layout_marginStart="8dp">
 
             <TextView
+                android:id="@+id/tv_nav_status"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="NAVIGATING TO"
-                android:textSize="10sp"
-                android:textColor="#889988"
+                android:text="🟢 LIVE NAVIGATION"
+                android:textSize="9sp"
+                android:textColor="#34d399"
                 android:textStyle="bold"
                 android:letterSpacing="0.05" />
 
@@ -58,10 +60,11 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Customer Destination"
-                android:textSize="14sp"
+                android:textSize="13sp"
                 android:textColor="#ffffff"
                 android:textStyle="bold"
-                android:singleLine="true" />
+                android:singleLine="true"
+                android:ellipsize="end" />
         </LinearLayout>
 
         <TextView
@@ -69,11 +72,258 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="EXIT"
-            android:textSize="12sp"
-            android:textColor="#4ecdc4"
+            android:textSize="11sp"
+            android:textColor="#34d399"
             android:textStyle="bold"
-            android:paddingStart="10dp"
-            android:paddingEnd="6dp" />
+            android:paddingStart="8dp"
+            android:paddingEnd="4dp" />
+    </LinearLayout>
+
+    <!-- Bottom Wisely Sized & Placed Green Banner -->
+    <LinearLayout
+        android:id="@+id/ll_bottom_banner_root"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_marginStart="12dp"
+        android:layout_marginEnd="12dp"
+        android:layout_marginBottom="12dp"
+        android:orientation="vertical"
+        android:background="@drawable/bg_green_banner"
+        android:elevation="14dp"
+        android:padding="9dp">
+
+        <!-- EXPANDED VIEW: Compact 3-metric row + ETA + Complete button -->
+        <LinearLayout
+            android:id="@+id/ll_banner_expanded"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- Banner Header: Mini status pill + minimize toggle -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="6dp">
+
+                <TextView
+                    android:id="@+id/tv_banner_badge"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="TRIP ACTIVE"
+                    android:textSize="9sp"
+                    android:textStyle="bold"
+                    android:textColor="#a7f3d0"
+                    android:letterSpacing="0.08" />
+
+                <TextView
+                    android:id="@+id/tv_banner_order_num"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="8dp"
+                    android:text="#SO-0000"
+                    android:textSize="9sp"
+                    android:textStyle="bold"
+                    android:textColor="#6ee7b7"
+                    android:singleLine="true" />
+
+                <TextView
+                    android:id="@+id/btn_toggle_collapse"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="▼ MINIMIZE"
+                    android:textSize="9sp"
+                    android:textStyle="bold"
+                    android:textColor="#a7f3d0"
+                    android:paddingStart="8dp"
+                    android:paddingEnd="4dp"
+                    android:paddingTop="2dp"
+                    android:paddingBottom="2dp" />
+            </LinearLayout>
+
+            <!-- 3-Column Metrics Row (Distance, Elapsed, Payout) -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:background="@drawable/bg_stat_badge"
+                android:paddingTop="5dp"
+                android:paddingBottom="5dp"
+                android:paddingStart="4dp"
+                android:paddingEnd="4dp"
+                android:layout_marginBottom="6dp">
+
+                <!-- Distance -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:gravity="center">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="DISTANCE"
+                        android:textSize="8sp"
+                        android:textStyle="bold"
+                        android:textColor="#a7f3d0"
+                        android:letterSpacing="0.05" />
+
+                    <TextView
+                        android:id="@+id/tv_nav_distance"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0.0 km"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:textColor="#ffffff" />
+                </LinearLayout>
+
+                <View
+                    android:layout_width="1dp"
+                    android:layout_height="match_parent"
+                    android:background="#1c6b54" />
+
+                <!-- Elapsed Time -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:gravity="center">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="ELAPSED"
+                        android:textSize="8sp"
+                        android:textStyle="bold"
+                        android:textColor="#a7f3d0"
+                        android:letterSpacing="0.05" />
+
+                    <TextView
+                        android:id="@+id/tv_nav_elapsed"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0m 00s"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:typeface="monospace"
+                        android:textColor="#ffffff" />
+                </LinearLayout>
+
+                <View
+                    android:layout_width="1dp"
+                    android:layout_height="match_parent"
+                    android:background="#1c6b54" />
+
+                <!-- Est. Payout -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:gravity="center">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="PAYOUT"
+                        android:textSize="8sp"
+                        android:textStyle="bold"
+                        android:textColor="#a7f3d0"
+                        android:letterSpacing="0.05" />
+
+                    <TextView
+                        android:id="@+id/tv_nav_payout"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="₹0"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:textColor="#6ee7b7" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- ETA Strip (Slim single line) -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="6dp"
+                android:paddingStart="4dp"
+                android:paddingEnd="4dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="📍 ETA: "
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    android:textColor="#a7f3d0" />
+
+                <TextView
+                    android:id="@+id/tv_nav_eta"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Calculating route..."
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:textColor="#ffffff"
+                    android:singleLine="true" />
+            </LinearLayout>
+
+            <!-- Complete Trip Button -->
+            <Button
+                android:id="@+id/btn_complete_nav"
+                android:layout_width="match_parent"
+                android:layout_height="34dp"
+                android:background="@drawable/bg_btn_complete"
+                android:text="✓ COMPLETE TRIP"
+                android:textColor="#ffffff"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.08"
+                android:elevation="2dp" />
+        </LinearLayout>
+
+        <!-- COLLAPSED VIEW: Ultra-slim 32dp floating pill for 96% map visibility -->
+        <LinearLayout
+            android:id="@+id/ll_banner_collapsed"
+            android:layout_width="match_parent"
+            android:layout_height="28dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/tv_slim_stats"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="🟢 0.0 km • 0m 00s • ETA..."
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:textColor="#ffffff"
+                android:singleLine="true" />
+
+            <TextView
+                android:id="@+id/btn_toggle_expand"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="▲ EXPAND"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:textColor="#34d399"
+                android:paddingStart="8dp"
+                android:paddingEnd="4dp" />
+        </LinearLayout>
     </LinearLayout>
 
 </RelativeLayout>

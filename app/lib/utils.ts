@@ -108,6 +108,7 @@ export function getStatusColor(status: string): string {
     SHORTAGE: 'bg-rose-50 text-rose-700 border-rose-200',
     ERROR: 'bg-rose-50 text-rose-700 border-rose-200',
     OVERDUE: 'bg-rose-50 text-rose-700 border-rose-200',
+    CANCELLED: 'bg-gray-200 text-gray-700 border-gray-300',
 
     // ⚪ WAITING / NOT STARTED / PENDING
     PENDING: 'bg-gray-100 text-gray-600 border-gray-200',
@@ -123,6 +124,7 @@ export function formatStatus(status: string): string {
 
 export function getDisplayStatus(order: any): string {
   if (!order) return ''
+  if (order.overallStatus === 'CANCELLED') return 'Cancelled'
   const delivery = order.deliveryStatus?.status
   const packing = order.packingStatus?.status
   const billing = order.billingStatus?.status
@@ -139,6 +141,7 @@ export function getDisplayStatus(order: any): string {
 
 export function getOverallColor(order: any): string {
   if (!order) return 'bg-gray-100 text-gray-600 border-gray-200'
+  if (order.overallStatus === 'CANCELLED') return 'bg-gray-200 text-gray-700 border-gray-300'
   const delivery = order.deliveryStatus?.status
   const packing = order.packingStatus?.status
   const billing = order.billingStatus?.status

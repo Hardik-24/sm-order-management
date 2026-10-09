@@ -1,7 +1,12 @@
 package com.siliconmarketing.fleet;
 
 import android.app.Activity;
+import android.content.Context;
 import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
+import android.os.Bundle;
+import android.os.Looper;
 import android.util.Log;
 import androidx.annotation.NonNull;
 
@@ -31,6 +36,8 @@ public class NavigationManager {
     private Navigator mNavigator;
     private RoadSnappedLocationProvider mRoadSnappedProvider;
     private RoadSnappedLocationProvider.LocationListener mLocationListener;
+    private LocationListener mNativeGpsListener;
+    private LocationManager mNativeLocationManager;
     private OnRoadSnappedLocationCallback mLocationCallback;
     private boolean mIsNavigating = false;
     private double mCurrentDestLat = 0;
@@ -38,6 +45,7 @@ public class NavigationManager {
     private String mCurrentDestTitle = "";
     private String mCurrentOrderId = "";
     private String mAuthToken = "";
+    private String mApiUrl = "https://sm-order-management.vercel.app";
 
     private ScheduledExecutorService mPingScheduler;
     private final List<JSONObject> mPendingPings = new ArrayList<>();
@@ -63,6 +71,11 @@ public class NavigationManager {
         );
     }
 
+    public interface CompleteCallback {
+        void onSuccess(String message);
+        void onError(String error);
+    }
+
     public static synchronized NavigationManager getInstance() {
         if (sInstance == null) {
             sInstance = new NavigationManager();
@@ -84,6 +97,18 @@ public class NavigationManager {
         return mIsNavigating;
     }
 
+    public double getTotalDistanceDrivenKm() {
+        return Math.round((mTotalDistanceDrivenMeters / 1000.0) * 100.0) / 100.0;
+    }
+
+    public double getLastLat() {
+        return mLastLat;
+    }
+
+    public double getLastLng() {
+        return mLastLng;
+    }
+
     public void startNavigation(
             Activity activity,
             double destLat,
@@ -91,6 +116,8 @@ public class NavigationManager {
             String title,
             String orderId,
             String authToken,
+            String apiUrl,
+            double initialDistanceKm,
             Runnable onReady
     ) {
         this.mCurrentDestLat = destLat;
@@ -98,8 +125,11 @@ public class NavigationManager {
         this.mCurrentDestTitle = (title != null && !title.trim().isEmpty()) ? title : "Customer Delivery";
         this.mCurrentOrderId = (orderId != null) ? orderId : "";
         this.mAuthToken = (authToken != null) ? authToken : "";
+        if (apiUrl != null && !apiUrl.trim().isEmpty()) {
+            this.mApiUrl = apiUrl.trim();
+        }
 
-        this.mTotalDistanceDrivenMeters = 0.0;
+        this.mTotalDistanceDrivenMeters = initialDistanceKm > 0 ? (initialDistanceKm * 1000.0) : 0.0;
         this.mLastLat = 0.0;
         this.mLastLng = 0.0;
         this.mLastRemainingMeters = -1;
@@ -109,13 +139,15 @@ public class NavigationManager {
         }
 
         startBackgroundPingWorker();
+        setupNativeGpsFallback(activity);
 
+        // Attempt Google Navigation SDK Road Snapped Provider
         if (mRoadSnappedProvider == null && activity != null) {
             try {
                 mRoadSnappedProvider = NavigationApi.getRoadSnappedLocationProvider(activity.getApplication());
                 setupLocationListener();
             } catch (Exception e) {
-                Log.w(TAG, "Failed to get RoadSnappedLocationProvider: " + e.getMessage());
+                Log.w(TAG, "NavigationApi RoadSnappedLocationProvider not available: " + e.getMessage());
             }
         }
 
@@ -124,19 +156,80 @@ public class NavigationManager {
             return;
         }
 
-        NavigationApi.getNavigator(activity, new NavigationApi.NavigatorListener() {
-            @Override
-            public void onNavigatorReady(Navigator navigator) {
-                mNavigator = navigator;
-                applyDestinationAndStart(onReady);
-            }
+        try {
+            NavigationApi.getNavigator(activity, new NavigationApi.NavigatorListener() {
+                @Override
+                public void onNavigatorReady(Navigator navigator) {
+                    mNavigator = navigator;
+                    applyDestinationAndStart(onReady);
+                }
 
-            @Override
-            public void onError(@NavigationApi.ErrorCode int errorCode) {
-                Log.e(TAG, "NavigationApi.getNavigator error: " + errorCode);
-                if (onReady != null) onReady.run();
+                @Override
+                public void onError(@NavigationApi.ErrorCode int errorCode) {
+                    Log.w(TAG, "NavigationApi.getNavigator errorCode: " + errorCode + " (Using native hardware GPS)");
+                    if (onReady != null) onReady.run();
+                }
+            });
+        } catch (Exception e) {
+            Log.w(TAG, "NavigationApi getNavigator error: " + e.getMessage());
+            if (onReady != null) onReady.run();
+        }
+    }
+
+    /**
+     * Rock-solid fallback: Uses Android's native LocationManager hardware GPS chip.
+     * Ensures location updates and distance calculation NEVER stop, even if Google
+     * Navigation SDK is licensing-restricted or paused.
+     */
+    private void setupNativeGpsFallback(Activity activity) {
+        if (activity == null) return;
+        try {
+            if (mNativeLocationManager == null) {
+                mNativeLocationManager = (LocationManager) activity.getSystemService(Context.LOCATION_SERVICE);
             }
-        });
+            if (mNativeLocationManager != null && mNativeGpsListener == null) {
+                mNativeGpsListener = new LocationListener() {
+                    @Override
+                    public void onLocationChanged(@NonNull Location location) {
+                        // Use native GPS fix if no road-snapped point arrived in last 1.8 seconds
+                        if (System.currentTimeMillis() - mLastRoadSnappedTimestamp > 1800) {
+                            dispatchLocation(location, false);
+                        }
+                    }
+
+                    @Override
+                    public void onStatusChanged(String provider, int status, Bundle extras) {}
+                    @Override
+                    public void onProviderEnabled(@NonNull String provider) {}
+                    @Override
+                    public void onProviderDisabled(@NonNull String provider) {}
+                };
+
+                if (mNativeLocationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                    mNativeLocationManager.requestLocationUpdates(
+                            LocationManager.GPS_PROVIDER,
+                            1000,
+                            1.0f,
+                            mNativeGpsListener,
+                            Looper.getMainLooper()
+                    );
+                }
+                if (mNativeLocationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+                    mNativeLocationManager.requestLocationUpdates(
+                            LocationManager.NETWORK_PROVIDER,
+                            2000,
+                            2.0f,
+                            mNativeGpsListener,
+                            Looper.getMainLooper()
+                    );
+                }
+                Log.i(TAG, "Native hardware GPS listener registered successfully.");
+            }
+        } catch (SecurityException se) {
+            Log.w(TAG, "GPS permission not granted for native LocationManager: " + se.getMessage());
+        } catch (Exception e) {
+            Log.w(TAG, "Error attaching native GPS listener: " + e.getMessage());
+        }
     }
 
     private void setupLocationListener() {
@@ -152,8 +245,7 @@ public class NavigationManager {
 
                 @Override
                 public void onRawLocationUpdate(@NonNull Location location) {
-                    // Safety fallback: if no road-snapped point received in 2.5 seconds, use raw GPS
-                    if (System.currentTimeMillis() - mLastRoadSnappedTimestamp > 2500) {
+                    if (System.currentTimeMillis() - mLastRoadSnappedTimestamp > 2000) {
                         dispatchLocation(location, false);
                     }
                 }
@@ -176,9 +268,7 @@ public class NavigationManager {
                     mLastRemainingMeters = tad.getMeters();
                     mLastRemainingSeconds = tad.getSeconds();
                 }
-            } catch (Exception e) {
-                Log.w(TAG, "Error getting current time and distance: " + e.getMessage());
-            }
+            } catch (Exception ignored) {}
         }
     }
 
@@ -191,9 +281,7 @@ public class NavigationManager {
                     updateTimeAndDistance();
                 }
             });
-        } catch (Exception e) {
-            Log.w(TAG, "Could not register RemainingTimeOrDistanceChangedListener: " + e.getMessage());
-        }
+        } catch (Exception ignored) {}
     }
 
     private void dispatchLocation(Location location, boolean isRoadSnapped) {
@@ -208,7 +296,8 @@ public class NavigationManager {
             float[] results = new float[1];
             Location.distanceBetween(mLastLat, mLastLng, lat, lng, results);
             float deltaMeters = results[0];
-            if (deltaMeters >= 3.0f && deltaMeters <= 1200.0f) {
+            // Filter stationary GPS jitter (< 2.5m) and impossible teleportation (> 1500m)
+            if (deltaMeters >= 2.5f && deltaMeters <= 1500.0f) {
                 mTotalDistanceDrivenMeters += deltaMeters;
             }
         }
@@ -234,8 +323,8 @@ public class NavigationManager {
             );
         }
 
-        // Buffer for native background HTTP ping
-        if (mIsNavigating && mCurrentOrderId != null && !mCurrentOrderId.isEmpty()) {
+        // Buffer for native background HTTP ping (ALWAYS records while trip has an orderId)
+        if (mCurrentOrderId != null && !mCurrentOrderId.isEmpty()) {
             try {
                 JSONObject pt = new JSONObject();
                 pt.put("lat", lat);
@@ -260,37 +349,42 @@ public class NavigationManager {
             return;
         }
 
-        Waypoint destination = Waypoint.builder()
-                .setLatLng(mCurrentDestLat, mCurrentDestLng)
-                .setTitle(mCurrentDestTitle)
-                .build();
+        try {
+            Waypoint destination = Waypoint.builder()
+                    .setLatLng(mCurrentDestLat, mCurrentDestLng)
+                    .setTitle(mCurrentDestTitle)
+                    .build();
 
-        ListenableResultFuture<Navigator.RouteStatus> pendingRoute = mNavigator.setDestination(destination);
-        pendingRoute.setOnResultListener(new ListenableResultFuture.OnResultListener<Navigator.RouteStatus>() {
-            @Override
-            public void onResult(Navigator.RouteStatus routeStatus) {
-                if (routeStatus == Navigator.RouteStatus.OK) {
-                    try {
-                        mNavigator.startGuidance();
-                        mIsNavigating = true;
-                        Log.i(TAG, "Guidance started to destination. Road-snapping active.");
-                        setupRemainingTimeOrDistanceListener();
-                        updateTimeAndDistance();
-                    } catch (Exception e) {
-                        Log.e(TAG, "Failed to start guidance", e);
+            ListenableResultFuture<Navigator.RouteStatus> pendingRoute = mNavigator.setDestination(destination);
+            pendingRoute.setOnResultListener(new ListenableResultFuture.OnResultListener<Navigator.RouteStatus>() {
+                @Override
+                public void onResult(Navigator.RouteStatus routeStatus) {
+                    if (routeStatus == Navigator.RouteStatus.OK) {
+                        try {
+                            mNavigator.startGuidance();
+                            mIsNavigating = true;
+                            Log.i(TAG, "Guidance started to destination. Road-snapping active.");
+                            setupRemainingTimeOrDistanceListener();
+                            updateTimeAndDistance();
+                        } catch (Exception e) {
+                            Log.e(TAG, "Failed to start guidance", e);
+                        }
+                    } else {
+                        Log.w(TAG, "Route status returned: " + routeStatus.name());
                     }
-                } else {
-                    Log.w(TAG, "Route status returned: " + routeStatus.name());
+                    if (onReady != null) onReady.run();
                 }
-                if (onReady != null) onReady.run();
-            }
-        });
+            });
+        } catch (Exception e) {
+            Log.w(TAG, "applyDestinationAndStart error: " + e.getMessage());
+            if (onReady != null) onReady.run();
+        }
     }
 
     private void startBackgroundPingWorker() {
         stopBackgroundPingWorker();
         mPingScheduler = Executors.newSingleThreadScheduledExecutor();
-        mPingScheduler.scheduleWithFixedDelay(this::sendPendingPingsToBackend, 10, 10, TimeUnit.SECONDS);
+        mPingScheduler.scheduleWithFixedDelay(this::sendPendingPingsToBackend, 8, 10, TimeUnit.SECONDS);
     }
 
     private void stopBackgroundPingWorker() {
@@ -315,7 +409,8 @@ public class NavigationManager {
         }
 
         try {
-            URL url = new URL("https://sm-order-management.vercel.app/api/driver/trip");
+            String baseUrl = (mApiUrl.endsWith("/")) ? mApiUrl.substring(0, mApiUrl.length() - 1) : mApiUrl;
+            URL url = new URL(baseUrl + "/api/driver/trip");
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("POST");
             conn.setRequestProperty("Content-Type", "application/json");
@@ -364,10 +459,60 @@ public class NavigationManager {
         }
     }
 
+    public void completeTripOnBackend(double lat, double lng, CompleteCallback callback) {
+        new Thread(() -> {
+            try {
+                String baseUrl = (mApiUrl.endsWith("/")) ? mApiUrl.substring(0, mApiUrl.length() - 1) : mApiUrl;
+                URL url = new URL(baseUrl + "/api/driver/trip");
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("POST");
+                conn.setRequestProperty("Content-Type", "application/json");
+                conn.setRequestProperty("Authorization", "Bearer " + mAuthToken);
+                conn.setConnectTimeout(10000);
+                conn.setReadTimeout(10000);
+                conn.setDoOutput(true);
+
+                JSONObject body = new JSONObject();
+                body.put("action", "complete");
+                body.put("orderId", mCurrentOrderId);
+                if (lat != 0.0 && lng != 0.0) {
+                    JSONObject coords = new JSONObject();
+                    coords.put("lat", lat);
+                    coords.put("lng", lng);
+                    body.put("coords", coords);
+                }
+
+                byte[] outputBytes = body.toString().getBytes("UTF-8");
+                try (OutputStream os = conn.getOutputStream()) {
+                    os.write(outputBytes);
+                    os.flush();
+                }
+
+                int code = conn.getResponseCode();
+                if (code == 200) {
+                    stopNavigation();
+                    if (callback != null) callback.onSuccess("Trip completed successfully!");
+                } else {
+                    if (callback != null) callback.onError("Failed to complete trip (Code " + code + ")");
+                }
+                conn.disconnect();
+            } catch (Exception e) {
+                if (callback != null) callback.onError(e.getMessage());
+            }
+        }).start();
+    }
+
     public void stopNavigation() {
         mIsNavigating = false;
         stopBackgroundPingWorker();
         new Thread(this::sendPendingPingsToBackend).start();
+
+        if (mNativeLocationManager != null && mNativeGpsListener != null) {
+            try {
+                mNativeLocationManager.removeUpdates(mNativeGpsListener);
+            } catch (Exception ignored) {}
+            mNativeGpsListener = null;
+        }
 
         if (mRoadSnappedProvider != null && mLocationListener != null) {
             try {
@@ -379,17 +524,10 @@ public class NavigationManager {
                 mNavigator.stopGuidance();
                 mNavigator.clearDestinations();
                 Log.i(TAG, "Navigation session stopped.");
-            } catch (Exception e) {
-                Log.e(TAG, "Error stopping navigation", e);
-            }
+            } catch (Exception ignored) {}
         }
 
         mCurrentOrderId = "";
         mAuthToken = "";
-        mTotalDistanceDrivenMeters = 0.0;
-        mLastLat = 0.0;
-        mLastLng = 0.0;
-        mLastRemainingMeters = -1;
-        mLastRemainingSeconds = -1;
     }
 }

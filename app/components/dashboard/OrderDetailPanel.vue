@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
-import { X, MoreHorizontal, Lock, Edit, Package, Receipt, PackageCheck, Truck, Check, Box, Plus, Trash2, MapPin, CreditCard, AlertCircle, Ban } from 'lucide-vue-next'
+import { X, MoreHorizontal, Lock, Edit, Package, Receipt, PackageCheck, Truck, Check, Box, Plus, Trash2, MapPin, AlertCircle, Ban, CheckCheck } from 'lucide-vue-next'
 import StatusBadge from '~/components/ui/StatusBadge.vue'
 import GenerateBillModal from '~/components/dashboard/GenerateBillModal.vue'
 import SetDeliveryPinModal from '~/components/dashboard/SetDeliveryPinModal.vue'
-import RecordPaymentModal from '~/components/dashboard/RecordPaymentModal.vue'
 import CustomSelect from '~/components/ui/CustomSelect.vue'
 import { formatCurrency, formatDateTime, formatDate, formatTime, getDisplayStatus, getOverallColor, getStatusColor } from '~~/app/lib/utils'
 import type { Order } from '~/types'
@@ -21,7 +20,7 @@ const itemsTbodyRef = ref<HTMLElement | null>(null)
 const props = defineProps<{
   orderId: string | null
   isOpen: boolean
-  context?: 'billing' | 'packing' | 'delivery' | 'overview' | 'payment'
+  context?: 'billing' | 'packing' | 'delivery' | 'overview'
 }>()
 
 const emit = defineEmits<{
@@ -45,24 +44,6 @@ onOrderSync((event) => {
 const showBillingForm = ref(false)
 const billingForm = ref({ status: '', invoiceNumber: '', holdReason: '' })
 const isGenerateModalOpen = ref(false)
-const isPaymentModalOpen = ref(false)
-
-const showPaymentForm = ref(false)
-const paymentForm = ref({
-  status: 'UNPAID',
-  amountPaid: 0,
-  paymentMethod: 'UPI',
-  referenceNo: '',
-  dueDate: '',
-  notes: ''
-})
-
-const onPaymentRecorded = async () => {
-  if (props.orderId) {
-    await fetchOrder(props.orderId)
-    emit('updated', order.value)
-  }
-}
 
 const showPackingForm = ref(false)
 const packingForm = ref({ status: '', items: [] as any[], holdReason: '' })
@@ -227,20 +208,6 @@ const deliveryStatusOptions = [
   { label: 'ON HOLD', value: 'ON_HOLD' }
 ]
 
-const paymentStatusOptions = [
-  { label: 'UNPAID', value: 'UNPAID' },
-  { label: 'PARTIAL', value: 'PARTIAL' },
-  { label: 'PAID', value: 'PAID' },
-  { label: 'OVERDUE', value: 'OVERDUE' }
-]
-
-const paymentMethodOptions = [
-  { label: 'UPI / QR', value: 'UPI' },
-  { label: 'NEFT / RTGS', value: 'NEFT' },
-  { label: 'Cheque', value: 'CHEQUE' },
-  { label: 'Cash', value: 'CASH' },
-  { label: 'Other', value: 'OTHER' }
-]
 
 const driversList = ref<any[]>([])
 const driverOptions = computed(() => [
@@ -293,137 +260,15 @@ const initDeliveryForm = async () => {
   }
 }
 
-const initialPaymentState = ref('')
-
-const cancelPaymentForm = () => {
-  if (initialPaymentState.value) {
-    try {
-      paymentForm.value = JSON.parse(initialPaymentState.value)
-    } catch {}
-  }
-  showPaymentForm.value = false
-  hide()
-}
-
-const initPaymentForm = () => {
-  showPaymentForm.value = !showPaymentForm.value
-  if (!showPaymentForm.value) {
-    cancelPaymentForm()
-    return
-  }
-  if (order.value) {
-    paymentForm.value = {
-      status: order.value.paymentStatus?.status || 'UNPAID',
-      amountPaid: Number(order.value.paymentStatus?.amountPaid || 0),
-      paymentMethod: order.value.paymentStatus?.paymentMethod || 'UPI',
-      referenceNo: order.value.paymentStatus?.referenceNo || '',
-      dueDate: order.value.paymentStatus?.dueDate ? new Date(order.value.paymentStatus.dueDate).toISOString().split('T')[0] : '',
-      notes: order.value.paymentStatus?.notes || ''
-    }
-    initialPaymentState.value = JSON.stringify(paymentForm.value)
-    showEditing('Unsaved payment changes', updatePayment, cancelPaymentForm)
-  }
-}
-
-const updatePayment = async () => {
-  if (!order.value) return
-  showSaving()
-  try {
-    const isUnpaid = paymentForm.value.status === 'UNPAID'
-    await $fetch(`/api/orders/${order.value.id}/payment`, {
-      method: 'PATCH',
-      body: {
-        status: paymentForm.value.status,
-        amountPaid: isUnpaid ? 0 : (paymentForm.value.status === 'PARTIAL' ? Number(paymentForm.value.amountPaid) : undefined),
-        paymentMethod: isUnpaid ? null : (paymentForm.value.paymentMethod || null),
-        referenceNo: isUnpaid ? null : (paymentForm.value.referenceNo?.trim() || null),
-        dueDate: paymentForm.value.dueDate || null,
-        notes: paymentForm.value.notes?.trim() || null
-      }
-    })
-    showPaymentForm.value = false
-    showSaved('Payment status updated successfully')
-    notifyChange({ orderId: order.value.id, action: 'PAYMENT_UPDATED', status: paymentForm.value.status })
-    emit('updated')
-    await fetchOrder(order.value.id)
-  } catch (err: any) {
-    console.error('Failed to update payment status:', err)
-    alert(err?.data?.message || err?.message || 'Failed to update payment status')
-    hide()
-  }
-}
-
-const activePaymentRecords = computed(() => {
-  return (order.value?.paymentRecords || []).filter((r: any) => !r.isVoided)
-})
-
-const voidedPaymentRecords = computed(() => {
-  return (order.value?.paymentRecords || []).filter((r: any) => r.isVoided)
-})
-
-const isVoidingReceipt = ref<string | null>(null)
-
-const voidReceipt = async (recordId: string, amount: number) => {
-  if (!order.value) return
-  const confirmed = confirm(`Are you sure you want to VOID this payment receipt of ${formatCurrency(amount)}?\n\nThis will mark the receipt as voided and restore the outstanding balance due on this order.`)
-  if (!confirmed) return
-
-  const reason = prompt('Optional reason for voiding this payment (e.g., bounced cheque, entered by mistake):', 'Entered in error')
-  if (reason === null) return // user hit cancel on prompt
-
-  isVoidingReceipt.value = recordId
-  showSaving()
-  try {
-    const res: any = await $fetch(`/api/orders/${order.value.id}/payment-records/${recordId}`, {
-      method: 'DELETE',
-      body: { reason: reason?.trim() || 'Voided by user' }
-    })
-    showSaved('Payment receipt voided')
-    notifyChange({ orderId: order.value.id, action: 'PAYMENT_RECEIPT_VOIDED' })
-    if (res?.order) {
-      order.value = res.order
-    } else {
-      await fetchOrder(order.value.id)
-    }
-    emit('updated', order.value)
-  } catch (err: any) {
-    console.error('Failed to void receipt:', err)
-    alert(err?.data?.message || err?.message || 'Failed to void payment receipt')
-    hide()
-  } finally {
-    isVoidingReceipt.value = null
-  }
-}
-
 const closePanel = () => {
   hide()
   showBillingForm.value = false
   showDeliveryForm.value = false
-  showPaymentForm.value = false
   emit('close')
 }
 
 watch(billingForm, () => { if (showBillingForm.value) showEditing() }, { deep: true })
 watch(deliveryForm, () => { if (showDeliveryForm.value) showEditing() }, { deep: true })
-
-watch(paymentForm, (newVal) => {
-  if (showPaymentForm.value) {
-    if (newVal.status === 'UNPAID') {
-      newVal.paymentMethod = ''
-      newVal.referenceNo = ''
-      newVal.amountPaid = 0
-    } else if (newVal.status === 'PAID') {
-      newVal.amountPaid = Number(order.value?.totalAmount || 0)
-      if (!newVal.paymentMethod) newVal.paymentMethod = 'UPI'
-    }
-
-    if (JSON.stringify(newVal) !== initialPaymentState.value) {
-      showEditing('Unsaved payment changes', updatePayment, cancelPaymentForm)
-    } else {
-      hide()
-    }
-  }
-}, { deep: true })
 
 watch(() => deliveryForm.value.driverName, (newVal) => {
   if (newVal && deliveryForm.value.status === 'WAITING') {
@@ -558,35 +403,38 @@ const markAsPacked = async () => {
 }
 
   
-const getStepStatus = (step) => {
+const getStepStatus = (step: string) => {
   if (!order.value) return 'PENDING'
   switch(step) {
     case 'SALES': return 'COMPLETED'
-    case 'BILLING': return order.value.billingStatus?.status || 'PENDING'
+    case 'APPROVAL': return (order.value as any).isApproved ? 'APPROVED' : 'PENDING'
     case 'PACKING': return order.value.packingStatus?.status || 'NOT_STARTED'
+    case 'BILLING': return order.value.billingStatus?.status || 'PENDING'
     case 'DELIVERY': return order.value.deliveryStatus?.status || 'NOT_STARTED'
-    case 'PAYMENT': return order.value.paymentStatus?.status || 'UNPAID'
     default: return 'PENDING'
   }
 }
 
-const getStepColor = (step) => {
+const getStepColor = (step: string) => {
   const status = getStepStatus(step)
-  if (step === 'PAYMENT') {
-    if (status === 'PAID') return 'text-green-600 border-green-600 bg-green-50'
-    if (status === 'PARTIAL') return 'text-blue-600 border-blue-600 bg-blue-50'
-    if (status === 'OVERDUE') return 'text-rose-600 border-rose-600 bg-rose-50'
-    return 'text-amber-600 border-amber-400 bg-amber-50'
-  }
-  if (['COMPLETED', 'GENERATED', 'PACKED', 'DELIVERED', 'DISPATCHED'].includes(status)) return 'text-green-600 border-green-600 bg-green-50'
-  if (status === 'IN_PROGRESS' || status === 'WAITING') return 'text-blue-600 border-blue-600 bg-blue-50'
+  if (['COMPLETED', 'APPROVED', 'GENERATED', 'PACKED', 'DELIVERED'].includes(status)) return 'text-emerald-700 border-emerald-600 bg-emerald-50'
+  if (status === 'IN_PROGRESS' || status === 'WAITING' || status === 'DISPATCHED') return 'text-blue-600 border-blue-600 bg-blue-50'
   if (status === 'ON_HOLD') return 'text-orange-600 border-orange-600 bg-orange-50'
+  if (status === 'PENDING' && step === 'APPROVAL') return 'text-amber-600 border-amber-500 bg-amber-50'
   return 'text-gray-400 border-gray-300 bg-white'
 }
 
 const isEditModalOpen = ref(false)
 const isEditLoading = ref(false)
-const editForm = ref({ orderNumber: '', customerId: '', deliveryAddress: '', paymentTerms: '', notes: '', items: [] as any[] })
+const editForm = ref({ 
+  orderNumber: '', 
+  customerId: '', 
+  deliveryAddress: '', 
+  paymentTerms: '', 
+  notes: '', 
+  isUrgent: false,
+  items: [] as any[] 
+})
 const customersList = ref<any[]>([])
 const productsList = ref<any[]>([])
 
@@ -619,12 +467,16 @@ const openEditModal = async () => {
     deliveryAddress: order.value.deliveryAddress || '',
     paymentTerms: order.value.paymentTerms || '',
     notes: order.value.notes || '',
+    isUrgent: Boolean(order.value.isUrgent),
     items: order.value.items.map(i => ({
       id: i.id,
       productId: i.productId,
       quantity: i.quantity,
       unitPrice: Number(i.unitPrice),
-      productSku: i.product?.sku
+      productSku: i.product?.sku,
+      isTaxInclusive: Boolean(i.isTaxInclusive),
+      applyLastPrice: Boolean(i.applyLastPrice),
+      itemNotes: i.itemNotes || ''
     }))
   }
   
@@ -634,7 +486,14 @@ const openEditModal = async () => {
 }
 
 const addEditItem = () => {
-  editForm.value.items.push({ productId: '', quantity: 1, unitPrice: 0 })
+  editForm.value.items.push({ 
+    productId: '', 
+    quantity: 1, 
+    unitPrice: 0,
+    isTaxInclusive: false,
+    applyLastPrice: false,
+    itemNotes: ''
+  })
 }
 
 const removeEditItem = (idx: number) => {
@@ -747,12 +606,6 @@ const updateDelivery = async () => {
     @generated="handleBillGenerated"
   />
 
-  <RecordPaymentModal
-    :isOpen="isPaymentModalOpen"
-    :order="order"
-    @close="isPaymentModalOpen = false"
-    @recorded="onPaymentRecorded"
-  />
 
   <!-- Mandatory Order Cancellation Modal -->
   <Teleport to="body">
@@ -809,16 +662,17 @@ const updateDelivery = async () => {
         <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between bg-white flex-shrink-0">
             <div class="flex items-center gap-2 flex-wrap">
               <h2 class="text-lg font-bold text-gray-900">{{ order.orderNumber }}</h2>
+              <span v-if="order.overallStatus === 'CANCELLED'" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-200 text-gray-700 border border-rose-500 uppercase tracking-wider">
+                🚫 CANCELLED
+              </span>
               <StatusBadge 
                 :status="order.overallStatus" 
                 :display="getDisplayStatus(order)" 
                 :class="getOverallColor(order)" 
               />
-              <span 
-                class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border"
-                :class="getStatusColor(order.paymentStatus?.status || 'UNPAID')"
-              >
-                {{ order.paymentStatus?.status || 'UNPAID' }}
+              <span v-if="order.isUrgent && order.overallStatus !== 'CANCELLED'" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-700 border border-rose-300 uppercase tracking-wider">
+                <Zap class="w-3 h-3 text-rose-600" />
+                Urgent
               </span>
             </div>
             <div class="flex items-center gap-2">
@@ -854,12 +708,6 @@ const updateDelivery = async () => {
             </div>
             <div class="text-right">
               <p class="text-lg font-semibold text-[#1a5c4c]">{{ formatCurrency(order.totalAmount || 0) }}</p>
-              <p v-if="(order.paymentStatus?.status || 'UNPAID') !== 'PAID'" class="text-[11px] text-amber-700 font-medium mt-0.5">
-                Due: {{ formatCurrency(order.paymentStatus?.balanceDue ?? order.totalAmount) }}
-              </p>
-              <p v-else class="text-[11px] text-emerald-700 font-medium mt-0.5">
-                Fully Paid
-              </p>
             </div>
           </div>
         </div>
@@ -909,269 +757,6 @@ const updateDelivery = async () => {
               </div>
             </div>
 
-            <!-- Payment Summary & Action Card -->
-            <div v-if="context === 'payment'" class="p-4 bg-gray-50 border border-gray-200 rounded-xl space-y-3">
-              <div class="flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                  <CreditCard class="w-4 h-4 text-[#1a5c4c]" />
-                  <h3 class="text-xs font-bold text-gray-900 uppercase tracking-wider">Payment Status</h3>
-                </div>
-                <div class="flex items-center gap-2" v-if="hasRole('ADMIN', 'SALES', 'BILLING')">
-                  <button 
-                    v-if="(order.paymentStatus?.status || 'UNPAID') !== 'PAID'"
-                    @click="isPaymentModalOpen = true"
-                    class="px-2.5 py-1 text-xs font-semibold bg-[#1a5c4c] text-white rounded-lg hover:bg-[#1a5c4c]/90 transition shadow-sm flex items-center gap-1"
-                  >
-                    <Plus class="w-3.5 h-3.5" />
-                    Record Payment
-                  </button>
-                  <button 
-                    @click="initPaymentForm" 
-                    class="px-2.5 py-1 text-xs font-medium text-gray-700 bg-white border border-gray-200 hover:bg-gray-100 rounded-lg transition shadow-xs flex items-center gap-1"
-                  >
-                    <Edit class="w-3 h-3 text-gray-500" />
-                    {{ showPaymentForm ? 'Close' : 'Change Status' }}
-                  </button>
-                </div>
-              </div>
-              
-              <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 border-t border-gray-200/80 text-xs">
-                <div>
-                  <span class="block text-[10px] uppercase font-bold text-gray-400">Status</span>
-                  <span 
-                    class="inline-block mt-0.5 px-2 py-0.5 rounded text-[10px] font-bold border"
-                    :class="getStatusColor(order.paymentStatus?.status || 'UNPAID')"
-                  >
-                    {{ order.paymentStatus?.status || 'UNPAID' }}
-                  </span>
-                </div>
-                <div>
-                  <span class="block text-[10px] uppercase font-bold text-gray-400">Paid Amount</span>
-                  <span class="font-semibold text-emerald-700 mt-0.5 block">
-                    {{ formatCurrency(order.paymentStatus?.amountPaid || 0) }}
-                  </span>
-                </div>
-                <div>
-                  <span class="block text-[10px] uppercase font-bold text-gray-400">Balance Due</span>
-                  <span class="font-bold text-amber-700 mt-0.5 block">
-                    {{ formatCurrency(order.paymentStatus?.balanceDue ?? order.totalAmount) }}
-                  </span>
-                </div>
-                <div>
-                  <span class="block text-[10px] uppercase font-bold text-gray-400">Payment Terms</span>
-                  <span class="font-medium text-gray-700 mt-0.5 block">
-                    {{ order.paymentTerms || '30 Days' }}
-                  </span>
-                </div>
-              </div>
-
-              <!-- Inline Payment Status Form -->
-              <div v-if="showPaymentForm && hasRole('ADMIN', 'SALES', 'BILLING')" class="p-3.5 bg-white border border-gray-200 rounded-xl mt-3 space-y-3 shadow-xs">
-                <div class="flex items-center justify-between pb-2 border-b border-gray-100">
-                  <span class="text-xs font-bold text-gray-800 uppercase tracking-wider">Modify Payment Status</span>
-                  <span class="text-[10px] text-gray-400">Save via snackbar or button below</span>
-                </div>
-
-                <!-- Status & Due Date / Method row -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1">Status</label>
-                    <CustomSelect 
-                      :modelValue="paymentForm.status"
-                      @update:modelValue="val => paymentForm.status = val"
-                      :options="paymentStatusOptions"
-                      placeholder="Select Status"
-                      class="w-full"
-                    />
-                  </div>
-
-                  <div v-if="paymentForm.status !== 'UNPAID'">
-                    <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1">Payment Method</label>
-                    <CustomSelect 
-                      :modelValue="paymentForm.paymentMethod"
-                      @update:modelValue="val => paymentForm.paymentMethod = val"
-                      :options="paymentMethodOptions"
-                      placeholder="Select Method"
-                      class="w-full"
-                    />
-                  </div>
-
-                  <div v-else>
-                    <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1">Payment Due Date</label>
-                    <input 
-                      type="date" 
-                      v-model="paymentForm.dueDate" 
-                      class="w-full text-xs border border-gray-300 rounded-lg p-2 focus:ring-[#1a5c4c] focus:border-[#1a5c4c] bg-white text-gray-900" 
-                    />
-                  </div>
-                </div>
-
-                <!-- UNPAID Info Alert (when UNPAID, hide method/reference/amount) -->
-                <div v-if="paymentForm.status === 'UNPAID'" class="p-2.5 bg-amber-50/80 border border-amber-200 rounded-lg text-xs text-amber-900 flex items-center gap-2">
-                  <AlertCircle class="w-4 h-4 shrink-0 text-amber-600" />
-                  <span>Order marked as <strong>UNPAID</strong>. Total due is {{ formatCurrency(order.totalAmount) }}. Payment method and transaction references are cleared.</span>
-                </div>
-
-                <!-- Transaction Details (Only editable when NOT UNPAID) -->
-                <div v-if="paymentForm.status !== 'UNPAID'" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div v-if="paymentForm.status === 'PARTIAL'">
-                    <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1">Amount Paid (₹)</label>
-                    <input 
-                      type="number" 
-                      v-model.number="paymentForm.amountPaid" 
-                      min="0"
-                      :max="order.totalAmount"
-                      class="w-full text-xs border border-gray-300 rounded-lg p-2 focus:ring-[#1a5c4c] focus:border-[#1a5c4c] bg-white text-gray-900" 
-                      placeholder="Enter amount paid" 
-                    />
-                  </div>
-                  <div>
-                    <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1">Reference / Cheque #</label>
-                    <input 
-                      type="text" 
-                      v-model="paymentForm.referenceNo" 
-                      class="w-full text-xs border border-gray-300 rounded-lg p-2 focus:ring-[#1a5c4c] focus:border-[#1a5c4c] bg-white text-gray-900" 
-                      placeholder="e.g. UTR-19823410 / Chq #1029" 
-                    />
-                  </div>
-                  <div>
-                    <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1">Due Date</label>
-                    <input 
-                      type="date" 
-                      v-model="paymentForm.dueDate" 
-                      class="w-full text-xs border border-gray-300 rounded-lg p-2 focus:ring-[#1a5c4c] focus:border-[#1a5c4c] bg-white text-gray-900" 
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1">Payment Remarks / Notes</label>
-                  <textarea 
-                    v-model="paymentForm.notes" 
-                    rows="2" 
-                    class="w-full text-xs border border-gray-300 rounded-lg p-2 focus:ring-[#1a5c4c] focus:border-[#1a5c4c] bg-white text-gray-900 resize-none" 
-                    placeholder="Transaction remarks or payment notes..."
-                  ></textarea>
-                </div>
-
-                <div class="flex justify-end gap-2 pt-1">
-                  <button 
-                    type="button" 
-                    @click="cancelPaymentForm" 
-                    class="px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-100 rounded-lg transition"
-                  >
-                    Cancel
-                  </button>
-                  <button 
-                    type="button" 
-                    @click="updatePayment" 
-                    class="px-4 py-1.5 text-xs font-semibold bg-[#1a5c4c] text-white rounded-lg hover:bg-[#1a5c4c]/90 transition shadow-xs"
-                  >
-                    Save Changes
-                  </button>
-                </div>
-              </div>
-
-              <!-- Installment receipts breakdown -->
-              <div v-if="order.paymentRecords && order.paymentRecords.length > 0" class="pt-3 border-t border-gray-200/80">
-                <div class="flex items-center justify-between mb-2">
-                  <div class="flex items-center gap-2">
-                    <span class="text-[10px] uppercase font-bold text-gray-500 tracking-wider">
-                      Payment Receipts ({{ activePaymentRecords.length }})
-                    </span>
-                    <span v-if="voidedPaymentRecords.length > 0" class="text-[10px] px-1.5 py-0.5 bg-rose-50 text-rose-700 rounded-md border border-rose-200/80 font-semibold flex items-center gap-1">
-                      <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
-                      {{ voidedPaymentRecords.length }} voided
-                    </span>
-                  </div>
-                  <span class="text-[11px] font-semibold text-emerald-700">
-                    {{ formatCurrency(order.paymentStatus?.amountPaid || 0) }} collected
-                  </span>
-                </div>
-
-                <div class="space-y-2">
-                  <div 
-                    v-for="(record, rIdx) in order.paymentRecords" 
-                    :key="record.id || rIdx"
-                    class="p-2.5 rounded-xl text-xs transition"
-                    :class="record.isVoided 
-                      ? 'bg-rose-50/30 border border-dashed border-rose-200 text-gray-400' 
-                      : 'bg-white border border-gray-200 hover:border-gray-300 shadow-xs'"
-                  >
-                    <div class="flex items-center justify-between">
-                      <div class="flex items-center gap-2">
-                        <span 
-                          class="font-bold text-sm"
-                          :class="record.isVoided ? 'line-through text-gray-400' : 'text-emerald-700'"
-                        >
-                          {{ formatCurrency(record.amount) }}
-                        </span>
-                        <span 
-                          v-if="record.isVoided" 
-                          class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-rose-100 text-rose-700 border border-rose-200"
-                        >
-                          VOIDED
-                        </span>
-                        <span 
-                          class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider"
-                          :class="record.isVoided ? 'bg-gray-100 text-gray-400 border border-gray-200' : 'bg-gray-100 text-gray-700 border border-gray-200'"
-                        >
-                          {{ record.paymentMethod }}
-                        </span>
-                      </div>
-                      <div class="flex items-center gap-2">
-                        <span class="text-[10px] text-gray-400">
-                          {{ formatDateTime(record.createdAt) }}
-                        </span>
-                        <button 
-                          v-if="!record.isVoided && hasRole('ADMIN', 'BILLING', 'SALES')"
-                          type="button"
-                          @click="voidReceipt(record.id, record.amount)"
-                          :disabled="isVoidingReceipt === record.id"
-                          class="text-gray-400 hover:text-rose-600 px-1.5 py-0.5 rounded hover:bg-rose-50 transition flex items-center gap-1 border border-transparent hover:border-rose-200"
-                          title="Void this receipt"
-                        >
-                          <Ban class="w-3 h-3 text-rose-500" />
-                          <span class="text-[10px] font-semibold text-rose-600">Void</span>
-                        </button>
-                      </div>
-                    </div>
-
-                    <div class="mt-1.5 flex items-center justify-between text-[11px]" :class="record.isVoided ? 'text-gray-400' : 'text-gray-500'">
-                      <span v-if="record.referenceNo" class="font-mono truncate max-w-[200px]" :title="record.referenceNo">
-                        Ref: {{ record.referenceNo }}
-                      </span>
-                      <span v-else class="italic">No reference</span>
-                      
-                      <span v-if="record.recordedBy?.name" class="text-[10px]">
-                        by {{ record.recordedBy.name }}
-                      </span>
-                    </div>
-
-                    <div v-if="record.notes" class="mt-1.5 text-[11px] p-1.5 rounded-lg border italic" :class="record.isVoided ? 'bg-rose-50/40 border-rose-100 text-gray-400' : 'bg-gray-50 border-gray-100 text-gray-600'">
-                      "{{ record.notes }}"
-                    </div>
-
-                    <!-- Void audit information -->
-                    <div v-if="record.isVoided" class="mt-2 pt-1.5 border-t border-rose-200/60 flex items-center justify-between text-[10px] text-rose-600">
-                      <span>Void Reason: <strong class="text-rose-700 font-medium">{{ record.voidReason || 'Order status reset to UNPAID' }}</strong></span>
-                      <span v-if="record.voidedAt" class="text-gray-400">{{ formatDate(record.voidedAt) }}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Fallback if no payment records yet but legacy method/reference exists -->
-              <div v-else-if="order.paymentStatus?.paymentMethod || order.paymentStatus?.referenceNo" class="pt-2 border-t border-gray-200/60 flex items-center justify-between text-[11px] text-gray-500">
-                <span v-if="order.paymentStatus?.paymentMethod">
-                  Method: <strong class="text-gray-700">{{ order.paymentStatus.paymentMethod }}</strong>
-                </span>
-                <span v-if="order.paymentStatus?.referenceNo" class="font-mono">
-                  Ref: {{ order.paymentStatus.referenceNo }}
-                </span>
-              </div>
-            </div>
-
             <!-- 2. Order Items and Context-Aware Action Area -->
             <div>
               <div class="flex items-center justify-between mb-4">
@@ -1179,7 +764,6 @@ const updateDelivery = async () => {
                 <StatusBadge v-if="context === 'packing' && order.packingStatus?.status" :status="order.packingStatus.status" />
                 <StatusBadge v-else-if="context === 'billing' && order.billingStatus?.status" :status="order.billingStatus.status" />
                 <StatusBadge v-else-if="context === 'delivery' && order.deliveryStatus?.status" :status="order.deliveryStatus.status" />
-                <StatusBadge v-else-if="context === 'payment' && order.paymentStatus?.status" :status="order.paymentStatus.status" />
               </div>
               
               <div class="border border-gray-200 rounded-lg bg-white">
@@ -1199,8 +783,16 @@ const updateDelivery = async () => {
                             {{ item.product?.sku }}
                           </div>
                           <div class="text-xs text-gray-400 truncate max-w-[150px]">{{ item.product?.name }}</div>
-                          <div v-if="(item as any)?.itemNotes" class="text-[10px] text-amber-700 bg-amber-50 px-1 py-0.5 rounded border border-amber-200 mt-1 inline-block">
-                            💬 {{ (item as any)?.itemNotes }}
+                          <div class="flex flex-wrap items-center gap-1 mt-1.5">
+                            <span v-if="(item as any)?.isTaxInclusive" class="text-[9px] font-bold uppercase tracking-wider bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded border border-indigo-200" title="Tax Inclusive Rate">
+                              Tax Inc.
+                            </span>
+                            <span v-if="(item as any)?.applyLastPrice" class="text-[9px] font-bold uppercase tracking-wider bg-teal-50 text-teal-700 px-1.5 py-0.5 rounded border border-teal-200" title="Apply Last Price">
+                              Last Price
+                            </span>
+                            <div v-if="(item as any)?.itemNotes" class="text-[10px] text-amber-700 bg-amber-50 px-1 py-0.5 rounded border border-amber-200 inline-block truncate max-w-[200px]" :title="(item as any)?.itemNotes">
+                              💬 {{ (item as any)?.itemNotes }}
+                            </div>
                           </div>
                         </td>
                         <td class="px-4 py-3 text-right font-bold text-gray-900">{{ item.approvedQuantity ?? item.quantity }}</td>
@@ -1399,123 +991,7 @@ const updateDelivery = async () => {
                   </div>
                 </div>
 
-                <!-- Action Area: Payment -->
-                <div v-if="context === 'payment' && hasRole('ADMIN', 'SALES', 'BILLING')" class="p-4 bg-gray-50 border-t border-gray-200 rounded-b-lg relative">
-                  <div class="flex items-center justify-between mb-4">
-                    <div>
-                      <p class="text-sm font-medium text-gray-900">Payment Action</p>
-                      <p class="text-xs text-gray-500 mt-1">
-                        Outstanding: <span class="font-bold text-amber-700">{{ formatCurrency(order.paymentStatus?.balanceDue ?? order.totalAmount) }}</span>
-                      </p>
-                    </div>
-                    
-                    <div class="flex flex-col gap-2 items-end">
-                      <button 
-                        v-if="(order.paymentStatus?.status || 'UNPAID') !== 'PAID'"
-                        @click="isPaymentModalOpen = true" 
-                        class="px-3 py-1.5 text-xs font-semibold bg-[#1a5c4c] text-white rounded-lg hover:bg-[#1a5c4c]/90 shadow-sm flex items-center gap-1.5 transition"
-                      >
-                        <CreditCard class="w-3.5 h-3.5" /> Record Payment
-                      </button>
-                      <button 
-                        v-if="!showPaymentForm" 
-                        @click="initPaymentForm" 
-                        class="text-[10px] font-medium text-gray-500 hover:text-gray-700 hover:underline"
-                      >
-                        Advanced Options...
-                      </button>
-                    </div>
-                  </div>
 
-                  <!-- Advanced Payment Form in Action Area -->
-                  <div v-if="showPaymentForm" class="mt-4 pt-4 border-t border-gray-200">
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-                      <div>
-                        <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1">Status</label>
-                        <CustomSelect 
-                          :modelValue="paymentForm.status"
-                          @update:modelValue="val => paymentForm.status = val"
-                          :options="paymentStatusOptions"
-                          placeholder="Select Status"
-                          class="w-full"
-                        />
-                      </div>
-
-                      <div v-if="paymentForm.status !== 'UNPAID'">
-                        <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1">Payment Method</label>
-                        <CustomSelect 
-                          :modelValue="paymentForm.paymentMethod"
-                          @update:modelValue="val => paymentForm.paymentMethod = val"
-                          :options="paymentMethodOptions"
-                          placeholder="Select Method"
-                          class="w-full"
-                        />
-                      </div>
-
-                      <div v-else>
-                        <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1">Payment Due Date</label>
-                        <input 
-                          type="date" 
-                          v-model="paymentForm.dueDate" 
-                          class="w-full text-xs border border-gray-300 rounded-lg p-2 focus:ring-[#1a5c4c] focus:border-[#1a5c4c] bg-white text-gray-900" 
-                        />
-                      </div>
-                    </div>
-
-                    <!-- UNPAID Info Alert -->
-                    <div v-if="paymentForm.status === 'UNPAID'" class="mb-3 p-2.5 bg-amber-50/80 border border-amber-200 rounded-lg text-xs text-amber-900 flex items-center gap-2">
-                      <AlertCircle class="w-4 h-4 shrink-0 text-amber-600" />
-                      <span>Order marked as <strong>UNPAID</strong>. Total due is {{ formatCurrency(order.totalAmount) }}. Payment method and transaction references are cleared.</span>
-                    </div>
-
-                    <!-- Non-UNPAID fields -->
-                    <div v-if="paymentForm.status !== 'UNPAID'" class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-                      <div v-if="paymentForm.status === 'PARTIAL'">
-                        <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1">Amount Paid (₹)</label>
-                        <input 
-                          type="number" 
-                          v-model.number="paymentForm.amountPaid" 
-                          min="0"
-                          :max="order.totalAmount"
-                          class="w-full text-xs border border-gray-300 rounded p-1.5 focus:ring-[#1a5c4c] bg-white text-gray-900" 
-                          placeholder="Enter partial amount" 
-                        />
-                      </div>
-                      <div>
-                        <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1">Reference / Cheque #</label>
-                        <input 
-                          type="text" 
-                          v-model="paymentForm.referenceNo" 
-                          class="w-full text-xs border border-gray-300 rounded p-1.5 focus:ring-[#1a5c4c] bg-white text-gray-900" 
-                          placeholder="e.g. UTR-19823410" 
-                        />
-                      </div>
-                      <div>
-                        <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1">Due Date</label>
-                        <input 
-                          type="date" 
-                          v-model="paymentForm.dueDate" 
-                          class="w-full text-xs border border-gray-300 rounded p-1.5 focus:ring-[#1a5c4c] bg-white text-gray-900" 
-                        />
-                      </div>
-                    </div>
-
-                    <div class="mb-3">
-                      <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1">Payment Remarks / Notes</label>
-                      <textarea 
-                        v-model="paymentForm.notes" 
-                        rows="2" 
-                        class="w-full text-xs border border-gray-300 rounded p-1.5 focus:ring-[#1a5c4c] bg-white text-gray-900 resize-none" 
-                        placeholder="Transaction remarks or payment notes..."
-                      ></textarea>
-                    </div>
-
-                    <div class="flex justify-end gap-2">
-                      <button @click="cancelPaymentForm" class="px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-200 rounded">Cancel</button>
-                      <button @click="updatePayment" class="px-3 py-1.5 text-xs bg-[#1a5c4c] text-white rounded hover:bg-[#1a5c4c]/90">Save</button>
-                    </div>
-                  </div>
-                </div>
 
               </div>
             </div>
@@ -1531,11 +1007,11 @@ const updateDelivery = async () => {
                 <!-- Steps -->
                 <div 
                   v-for="step in [
-                    { id: 'SALES', label: 'Sales', icon: 'FileText' },
-                    { id: 'BILLING', label: 'Billing', icon: 'Receipt' },
-                    { id: 'PACKING', label: 'Packing', icon: 'Box' },
-                    { id: 'DELIVERY', label: 'Delivery', icon: 'Truck' },
-                    { id: 'PAYMENT', label: 'Payment', icon: 'CreditCard' }
+                    { id: 'SALES', label: 'Sales' },
+                    { id: 'APPROVAL', label: 'Approval' },
+                    { id: 'PACKING', label: 'Packing' },
+                    { id: 'BILLING', label: 'Billing' },
+                    { id: 'DELIVERY', label: 'Delivery' }
                   ]" 
                   :key="step.id"
                   class="flex flex-col items-center gap-2 bg-white px-1 sm:px-2"
@@ -1546,10 +1022,10 @@ const updateDelivery = async () => {
                     :class="getStepColor(step.id)"
                   >
                     <Check v-if="step.id === 'SALES'" class="w-4 h-4" />
-                    <Receipt v-else-if="step.id === 'BILLING'" class="w-4 h-4" />
+                    <CheckCheck v-else-if="step.id === 'APPROVAL'" class="w-4 h-4" />
                     <Box v-else-if="step.id === 'PACKING'" class="w-4 h-4" />
+                    <Receipt v-else-if="step.id === 'BILLING'" class="w-4 h-4" />
                     <Truck v-else-if="step.id === 'DELIVERY'" class="w-4 h-4" />
-                    <CreditCard v-else-if="step.id === 'PAYMENT'" class="w-4 h-4" />
                   </div>
                   <!-- Label -->
                   <div class="text-center">
@@ -1651,9 +1127,33 @@ const updateDelivery = async () => {
       <div class="relative bg-[#faf8f5] w-full max-w-4xl rounded-xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[92vh] overflow-hidden transform transition-all border border-gray-200">
         <div class="px-4 py-3 sm:px-6 sm:py-4 border-b border-gray-200 bg-white flex items-center justify-between shrink-0">
           <h2 class="text-base sm:text-lg font-bold text-gray-900 truncate">Edit Order: {{ order?.orderNumber }}</h2>
-          <button @click="isEditModalOpen = false; hide()" class="p-1.5 sm:p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors">
-            <X class="w-5 h-5" />
-          </button>
+          <div class="flex items-center gap-3">
+            <label class="hidden sm:flex items-center gap-3 px-4 py-2.5 rounded-xl border cursor-pointer select-none transition-all shadow-xs"
+              :class="editForm.isUrgent ? 'bg-rose-50 border-rose-300 text-rose-700 shadow-rose-100' : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'"
+            >
+              <input type="checkbox" v-model="editForm.isUrgent" class="w-4 h-4 text-rose-600 rounded focus:ring-rose-500" />
+              <div class="flex items-center gap-1.5 font-bold text-xs uppercase tracking-wider">
+                <Zap class="w-4 h-4 text-rose-600" />
+                <span>⚡ Mark as Urgent Order</span>
+              </div>
+            </label>
+            <button @click="isEditModalOpen = false; hide()" class="p-1.5 sm:p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors">
+              <X class="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+        
+        <!-- Mobile Urgent Toggle (visible only on small screens) -->
+        <div class="sm:hidden px-3.5 pt-3.5 pb-0 bg-[#faf8f5]">
+          <label class="flex items-center gap-3 px-4 py-2.5 rounded-xl border cursor-pointer select-none transition-all shadow-xs w-full"
+            :class="editForm.isUrgent ? 'bg-rose-50 border-rose-300 text-rose-700 shadow-rose-100' : 'bg-white border-gray-200 text-gray-700'"
+          >
+            <input type="checkbox" v-model="editForm.isUrgent" class="w-4 h-4 text-rose-600 rounded focus:ring-rose-500" />
+            <div class="flex items-center gap-1.5 font-bold text-xs uppercase tracking-wider">
+              <Zap class="w-4 h-4 text-rose-600" />
+              <span>⚡ Mark as Urgent Order</span>
+            </div>
+          </label>
         </div>
 
         <div class="relative p-3.5 sm:p-6 overflow-y-auto flex-1 space-y-4 sm:space-y-6">
@@ -1744,44 +1244,72 @@ const updateDelivery = async () => {
                 </button>
               </div>
               
-              <div class="space-y-3">
-                <div v-for="(item, idx) in editForm.items" :key="idx" class="flex flex-col sm:flex-row gap-2.5 sm:gap-4 sm:items-end bg-gray-50 p-3 sm:p-3.5 rounded-lg border border-gray-200/80">
-                  <div class="flex-grow min-w-0 w-full sm:w-auto">
-                    <div class="flex items-center justify-between sm:hidden mb-1">
-                      <span class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Item #{{ idx + 1 }}</span>
-                      <button type="button" @click="removeEditItem(idx)" class="text-red-500 text-xs font-semibold flex items-center gap-1 hover:text-red-700">
-                        <Trash2 class="w-3.5 h-3.5" /> Remove
-                      </button>
+              <div class="space-y-4">
+                <div v-for="(item, idx) in editForm.items" :key="idx" class="bg-gray-50/80 p-4 rounded-xl border border-gray-200 space-y-3">
+                  <div class="flex flex-wrap md:flex-nowrap gap-4 items-end">
+                    <!-- Product Select -->
+                    <div class="flex-1 w-full min-w-0">
+                      <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1.5">Product *</label>
+                      <CustomSelect 
+                        :modelValue="item.productId"
+                        @update:modelValue="val => { item.productId = val; onEditProductChange(idx) }"
+                        :options="productOptions"
+                        searchable
+                        searchPlaceholder="Search product by SKU or name..."
+                        placeholder="Select Product"
+                        class="w-full"
+                      />
                     </div>
-                    <label class="hidden sm:block text-[10px] uppercase font-bold text-gray-500 mb-1">Product</label>
-                    <CustomSelect 
-                      :modelValue="item.productId"
-                      @update:modelValue="val => { item.productId = val; onEditProductChange(idx) }"
-                      :options="productOptions"
-                      searchable
-                      searchPlaceholder="Search product by SKU or name..."
-                      placeholder="Select Product"
-                      class="w-full"
-                    />
-                  </div>
-                  <div class="grid grid-cols-3 sm:flex items-end gap-2 sm:gap-3 w-full sm:w-auto">
-                    <div class="w-full sm:w-20 lg:w-24">
-                      <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1">Qty</label>
-                      <input type="number" v-model.number="item.quantity" min="1" required class="w-full border border-gray-300 rounded-lg p-2 bg-white text-sm" />
+
+                    <!-- Qty -->
+                    <div class="w-full md:w-24 shrink-0">
+                      <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1.5">Qty *</label>
+                      <input type="number" v-model.number="item.quantity" min="1" required class="w-full border border-gray-300 rounded-lg shadow-xs p-2 bg-white text-sm font-bold focus:ring-[#1a5c4c] focus:border-[#1a5c4c]" />
                     </div>
-                    <div class="w-full sm:w-24 lg:w-28">
-                      <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1">Price</label>
-                      <input type="number" v-model.number="item.unitPrice" min="0" required class="w-full border border-gray-300 rounded-lg p-2 bg-white text-sm" />
+
+                    <!-- Unit Price -->
+                    <div class="w-full md:w-28 shrink-0">
+                      <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1.5">Rate (₹) *</label>
+                      <input type="number" v-model.number="item.unitPrice" min="0" step="0.01" required class="w-full border border-gray-300 rounded-lg shadow-xs p-2 bg-white text-sm font-bold focus:ring-[#1a5c4c] focus:border-[#1a5c4c]" />
                     </div>
-                    <div class="w-full sm:w-28 lg:w-32">
-                      <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1">Total</label>
-                      <div class="p-2 bg-white text-gray-900 rounded-lg font-semibold text-xs sm:text-sm border border-gray-200 truncate">
+
+                    <!-- Line Total -->
+                    <div class="w-full md:w-28 shrink-0">
+                      <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1.5">Subtotal</label>
+                      <div class="p-2 bg-white text-gray-900 rounded-lg font-bold text-sm border border-gray-200">
                         {{ formatCurrency(item.quantity * item.unitPrice) }}
                       </div>
                     </div>
-                    <button type="button" @click="removeEditItem(idx)" class="hidden sm:block p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg mb-0.5 transition-colors shrink-0" title="Remove item">
+
+                    <!-- Remove -->
+                    <button type="button" @click="removeEditItem(idx)" class="p-2 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg shrink-0 transition-colors" title="Remove Item">
                       <Trash2 class="w-4 h-4" />
                     </button>
+                  </div>
+
+                  <!-- Item-Level Options & Notes -->
+                  <div class="flex flex-wrap items-center gap-4 pt-2 border-t border-gray-200/60 text-xs">
+                    <!-- Tax Inclusive Toggle -->
+                    <label class="flex items-center gap-2 cursor-pointer select-none">
+                      <input type="checkbox" v-model="item.isTaxInclusive" class="w-3.5 h-3.5 rounded text-[#1a5c4c] focus:ring-[#1a5c4c]" />
+                      <span class="text-gray-700 font-medium">Tax Inclusive Rate</span>
+                    </label>
+
+                    <!-- Apply Last Price Checkbox -->
+                    <label class="flex items-center gap-2 cursor-pointer select-none">
+                      <input type="checkbox" v-model="item.applyLastPrice" class="w-3.5 h-3.5 rounded text-[#1a5c4c] focus:ring-[#1a5c4c]" />
+                      <span class="text-gray-700 font-medium">Apply Last Price</span>
+                    </label>
+
+                    <!-- Item Notes Input -->
+                    <div class="flex-1 min-w-[200px]">
+                      <input 
+                        type="text" 
+                        v-model="item.itemNotes" 
+                        placeholder="Optional item note: e.g. 10% rate agreed, custom edge-banding..."
+                        class="w-full px-2.5 py-1 text-xs border border-gray-300 rounded-lg bg-white focus:ring-1 focus:ring-[#1a5c4c]"
+                      />
+                    </div>
                   </div>
                 </div>
                 <div v-if="!editForm.items.length" class="text-sm text-gray-500 text-center py-4 bg-gray-50 rounded-lg border border-dashed border-gray-300">

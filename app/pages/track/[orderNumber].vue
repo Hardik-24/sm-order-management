@@ -318,6 +318,20 @@ async function fetchTracking(silent = false) {
       params: { _t: Date.now() },
       headers: { 'Cache-Control': 'no-cache' }
     })
+    
+    // Prevent stale REST data from overwriting fresh WebSocket data
+    if (
+      trackingData.value?.trip?.currentLocation?.timestamp &&
+      data?.trip?.currentLocation?.timestamp &&
+      trackingData.value.trip.currentLocation.timestamp > data.trip.currentLocation.timestamp
+    ) {
+      // Keep local fresh data
+      data.trip.currentLocation = { ...trackingData.value.trip.currentLocation }
+      if (trackingData.value.trip.totalDistanceKm !== undefined) {
+        data.trip.totalDistanceKm = trackingData.value.trip.totalDistanceKm
+      }
+    }
+    
     trackingData.value = data
     error.value = null
   } catch (e: any) {
