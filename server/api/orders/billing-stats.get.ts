@@ -6,38 +6,53 @@ export default defineEventHandler(async (event) => {
   await requireAuth(event)
   const query = getQuery(event)
   
-  const where: any = {}
+  const where: any = {
+    overallStatus: { not: 'CANCELLED' }
+  }
   
   if (query.startDate || query.endDate) {
-    where.orderDate = {}
+    const dateCondition: any = {}
     if (query.startDate) {
       const sd = new Date(`${query.startDate as string}T00:00:00`)
-      if (!isNaN(sd.getTime())) where.orderDate.gte = sd
+      if (!isNaN(sd.getTime())) dateCondition.gte = sd
     }
     if (query.endDate) {
       const ed = new Date(`${query.endDate as string}T23:59:59.999`)
-      if (!isNaN(ed.getTime())) where.orderDate.lte = ed
+      if (!isNaN(ed.getTime())) dateCondition.lte = ed
+    }
+    if (dateCondition.gte || dateCondition.lte) {
+      where.OR = [
+        { orderDate: dateCondition },
+        { createdAt: dateCondition }
+      ]
     }
   }
 
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const tomorrow = new Date(today)
-  tomorrow.setDate(tomorrow.getDate() + 1)
-
   const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000)
 
-  const [pendingOrders, urgentOrders, generatedToday, onHold] = await Promise.all([
+  const [pendingOrders, urgentOrders, generatedOrders, onHoldOrders, totalOrders] = await Promise.all([
     prisma.order.count({ where: { ...where, billingStatus: { status: 'PENDING' } } }),
-    prisma.order.count({ where: { ...where, billingStatus: { status: 'PENDING' }, createdAt: { lt: twoHoursAgo } } }),
-    prisma.order.count({ where: { ...where, billingStatus: { status: 'GENERATED' }, updatedAt: { gte: today, lt: tomorrow } } }),
-    prisma.order.count({ where: { ...where, billingStatus: { status: 'ON_HOLD' } } })
+    prisma.order.count({ 
+      where: { 
+        ...where, 
+        billingStatus: { status: 'PENDING' }, 
+        OR: [
+          { isUrgent: true },
+          { createdAt: { lt: twoHoursAgo } }
+        ]
+      } 
+    }),
+    prisma.order.count({ where: { ...where, billingStatus: { status: 'GENERATED' } } }),
+    prisma.order.count({ where: { ...where, billingStatus: { status: 'ON_HOLD' } } }),
+    prisma.order.count({ where })
   ])
 
   return { 
     pending: pendingOrders, 
     urgent: urgentOrders,
-    generatedToday,
-    onHold
+    generated: generatedOrders,
+    generatedToday: generatedOrders,
+    onHold: onHoldOrders,
+    total: totalOrders
   }
 })

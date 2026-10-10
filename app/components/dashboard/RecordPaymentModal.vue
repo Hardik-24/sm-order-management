@@ -114,7 +114,7 @@ const submitPayment = async () => {
         <div class="flex items-center justify-between p-5 border-b border-gray-100 bg-gray-50/80">
           <div class="flex items-center gap-3">
             <div class="w-10 h-10 rounded-xl bg-[#e6f4f1] text-[#1a5c4c] flex items-center justify-center">
-              <CreditCard class="w-5 h-5" />
+              <IndianRupee class="w-5 h-5" />
             </div>
             <div>
               <h2 class="text-base font-bold text-gray-900">Record Payment</h2>
@@ -155,7 +155,10 @@ const submitPayment = async () => {
             <!-- Amount Input -->
             <div>
               <div class="flex items-center justify-between mb-1.5">
-                <label class="text-xs font-bold text-gray-700 uppercase tracking-wider">Amount to Record (₹)</label>
+                <label class="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1">
+                  <IndianRupee class="w-3.5 h-3.5 text-gray-500" />
+                  <span>Amount to Record</span>
+                </label>
                 <button 
                   type="button" 
                   @click="setFullBalance" 
@@ -164,8 +167,8 @@ const submitPayment = async () => {
                   Pay Full Balance ({{ formatCurrency(balanceDue) }})
                 </button>
               </div>
-              <div class="relative">
-                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-gray-400 font-medium">₹</span>
+              <div class="relative flex items-center">
+                <IndianRupee class="absolute left-3 w-4 h-4 text-gray-400 pointer-events-none" />
                 <input 
                   type="number" 
                   v-model.number="form.amountReceived" 
@@ -173,7 +176,7 @@ const submitPayment = async () => {
                   :max="balanceDue" 
                   step="any"
                   placeholder="Enter amount"
-                  class="w-full pl-8 pr-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1a5c4c] focus:border-transparent transition"
+                  class="w-full pl-9 pr-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1a5c4c] focus:border-transparent transition"
                 />
               </div>
             </div>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
-import { X, MoreHorizontal, Lock, Edit, Package, Receipt, PackageCheck, Truck, Check, Box, Plus, Trash2, MapPin, AlertCircle, Ban, CheckCheck, CheckCircle2 } from 'lucide-vue-next'
+import { X, MoreHorizontal, Lock, Edit, Package, PackageCheck, Truck, Check, Box, Plus, Trash2, MapPin, AlertCircle, Ban, CheckCheck, CheckCircle2, Zap, User, IndianRupee, Clock, Building2, Phone, FileText, Calendar, Copy, ChevronRight } from 'lucide-vue-next'
 import StatusBadge from '~/components/ui/StatusBadge.vue'
 import GenerateBillModal from '~/components/dashboard/GenerateBillModal.vue'
 import SetDeliveryPinModal from '~/components/dashboard/SetDeliveryPinModal.vue'
@@ -17,11 +17,13 @@ const { notifyChange, onOrderSync } = useRealtimeSync()
 const { animateStagger } = useGsapAnimation()
 const itemsTbodyRef = ref<HTMLElement | null>(null)
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   orderId: string | null
   isOpen: boolean
-  context?: 'billing' | 'packing' | 'delivery' | 'overview' | 'approval'
-}>()
+  context?: 'billing' | 'packing' | 'delivery' | 'overview' | 'approval' | 'orders'
+}>(), {
+  context: 'orders'
+})
 
 const emit = defineEmits<{
   (e: 'close'): void
@@ -33,6 +35,36 @@ const { user, hasRole } = useAuth()
 const order = ref<Order | null>(null)
 const isLoading = ref(false)
 const activeTab = ref<'DETAILS' | 'TIMELINE' | 'NOTES'>('DETAILS')
+
+const canCancelOrder = computed(() => {
+  if (!order.value) return false
+  if (order.value.overallStatus === 'CANCELLED' || order.value.overallStatus === 'DELIVERED') return false
+
+  if (props.context === 'approval') {
+    return hasRole('ADMIN', 'SALES')
+  }
+  return hasRole('ADMIN')
+})
+
+const canGenerateBill = computed(() => {
+  if (!order.value) return false
+  if (order.value.overallStatus === 'CANCELLED') return false
+  if (order.value.billingStatus?.status === 'GENERATED') return false
+  if (props.context === 'approval') return false
+  return hasRole('ADMIN', 'BILLING') || props.context === 'billing'
+})
+
+const copiedOrderNumber = ref(false)
+const copyOrderNumber = () => {
+  if (!order.value?.orderNumber) return
+  if (typeof navigator !== 'undefined' && navigator.clipboard) {
+    navigator.clipboard.writeText(order.value.orderNumber)
+    copiedOrderNumber.value = true
+    setTimeout(() => {
+      copiedOrderNumber.value = false
+    }, 2000)
+  }
+}
 
 // Automatically refresh drawer if another user/tab updates this order
 onOrderSync((event) => {
@@ -651,161 +683,318 @@ const updateDelivery = async () => {
 
   <Teleport to="body">
     <div v-if="isOpen" class="fixed inset-0 z-[100] overflow-hidden pointer-events-none">
-      <div class="absolute inset-0 bg-black/20 backdrop-blur-[2px] pointer-events-auto transition-opacity" @click="closePanel"></div>
+      <div class="absolute inset-0 bg-black/30 backdrop-blur-[2px] pointer-events-auto transition-opacity" @click="closePanel"></div>
       
-      <div class="absolute inset-y-0 right-0 max-w-full sm:max-w-[450px] w-full bg-white shadow-2xl pointer-events-auto flex flex-col h-full overflow-hidden transform transition-transform duration-300">
+      <div class="absolute inset-y-0 right-0 max-w-full sm:max-w-[500px] md:max-w-[540px] w-full bg-white shadow-2xl pointer-events-auto flex flex-col h-full overflow-hidden transform transition-transform duration-300 border-l border-gray-200/80">
       
       <template v-if="order">
         <!-- Loading Overlay -->
         <div v-if="isLoading" class="absolute inset-0 bg-white/50 backdrop-blur-[2px] z-50 pointer-events-auto animate-pulse transition-all duration-300"></div>
 
-        <!-- Header -->
-        <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between bg-white flex-shrink-0">
-            <div class="flex items-center gap-2 flex-wrap">
-              <h2 class="text-lg font-bold text-gray-900">{{ order.orderNumber }}</h2>
-              <span v-if="order.overallStatus === 'CANCELLED'" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-200 text-gray-700 border border-rose-500 uppercase tracking-wider">
-                🚫 CANCELLED
-              </span>
-              <StatusBadge 
-                :status="order.overallStatus" 
-                :display="getDisplayStatus(order)" 
-                :class="getOverallColor(order)" 
-              />
-              <span v-if="order.isUrgent && order.overallStatus !== 'CANCELLED'" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-700 border border-rose-300 uppercase tracking-wider">
-                <Zap class="w-3 h-3 text-rose-600" />
-                Urgent
-              </span>
-            </div>
-            <div class="flex items-center gap-2">
+        <!-- 1. Header Bar -->
+        <div class="px-5 sm:px-6 py-3.5 border-b border-gray-200/80 flex items-center justify-between bg-white flex-shrink-0 z-10">
+          <div class="flex items-center gap-2 flex-wrap min-w-0">
+            <div class="flex items-center gap-1.5">
+              <h2 class="text-base sm:text-lg font-bold font-mono tracking-tight text-gray-950">
+                {{ order.orderNumber }}
+              </h2>
               <button 
-                v-if="order.overallStatus !== 'CANCELLED' && order.overallStatus !== 'DELIVERED' && hasRole('ADMIN', 'SALES')"
-                @click="openCancelModal" 
-                title="Cancel Order (Mandatory Reason Required)"
-                class="px-2.5 py-1 text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-md transition-colors flex items-center gap-1"
+                @click="copyOrderNumber" 
+                class="p-1 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded transition cursor-pointer" 
+                :title="copiedOrderNumber ? 'Copied to clipboard!' : 'Copy Order Number'"
               >
-                <Ban class="w-3.5 h-3.5" /> Cancel
-              </button>
-              <button 
-                v-if="hasRole('ADMIN')"
-                @click="deleteOrder" 
-                :disabled="isDeleting"
-                title="Delete Order (Admin Only)"
-                class="p-1.5 text-red-400 hover:text-red-600 rounded-md hover:bg-red-50 transition-colors disabled:opacity-50"
-              >
-                <Trash2 class="w-5 h-5" />
-              </button>
-              <button @click="closePanel" class="p-1.5 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100 ml-1">
-                <X class="w-5 h-5" />
+                <Check v-if="copiedOrderNumber" class="w-3.5 h-3.5 text-emerald-600" />
+                <Copy v-else class="w-3.5 h-3.5" />
               </button>
             </div>
+
+            <span v-if="order.overallStatus === 'CANCELLED'" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-300 uppercase tracking-wider">
+              <Ban class="w-3 h-3 text-rose-600" /> CANCELLED
+            </span>
+            <StatusBadge 
+              v-else
+              :status="order.overallStatus" 
+              :display="getDisplayStatus(order)" 
+              :class="getOverallColor(order)" 
+            />
+            <span v-if="order.isUrgent && order.overallStatus !== 'CANCELLED'" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200 uppercase tracking-wider">
+              <Zap class="w-3 h-3 text-rose-600 fill-rose-600" />
+              <span>Urgent</span>
+            </span>
+          </div>
+
+          <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            <button 
+              v-if="canCancelOrder"
+              @click="openCancelModal" 
+              title="Cancel Order (Mandatory Reason Required)"
+              class="px-2.5 py-1 text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200/80 rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+            >
+              <Ban class="w-3.5 h-3.5" />
+              <span class="hidden sm:inline">Cancel</span>
+            </button>
+            <button 
+              v-if="hasRole('ADMIN')"
+              @click="deleteOrder" 
+              :disabled="isDeleting"
+              title="Delete Order (Admin Only)"
+              class="p-1.5 text-red-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50 cursor-pointer"
+            >
+              <Trash2 class="w-4 h-4" />
+            </button>
+            <button 
+              @click="closePanel" 
+              class="p-1.5 text-gray-400 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+              title="Close Panel"
+            >
+              <X class="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
-        <!-- Sub-header -->
-        <div class="px-6 py-4 bg-gray-50 border-b border-gray-200 flex-shrink-0">
-          <div class="flex justify-between items-end">
-            <div>
-              <p class="text-sm font-medium text-gray-900">{{ order.customer?.name }}</p>
-              <p class="text-xs text-gray-500 mt-1">{{ order.items?.length || 0 }} items</p>
+        <!-- 2. Sub-header Quick Snapshot -->
+        <div class="px-5 sm:px-6 py-3 bg-gradient-to-b from-gray-50/90 to-gray-50/40 border-b border-gray-200/80 flex-shrink-0">
+          <div class="flex items-center justify-between gap-4">
+            <div class="min-w-0">
+              <div class="flex items-center gap-1.5">
+                <Building2 class="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                <h3 class="text-sm font-bold text-gray-900 truncate">
+                  {{ order.customer?.company || order.customer?.name || 'Customer' }}
+                </h3>
+              </div>
+              <p class="text-xs text-gray-500 mt-0.5 flex items-center gap-2">
+                <span v-if="order.customer?.company && order.customer?.name">{{ order.customer.name }} &bull;</span>
+                <span>Placed {{ formatDate(order.createdAt) }}</span>
+              </p>
             </div>
-            <div class="text-right">
-              <p class="text-lg font-semibold text-[#1a5c4c]">{{ formatCurrency(order.totalAmount || 0) }}</p>
+            <div class="text-right shrink-0">
+              <div class="text-base sm:text-lg font-black text-[#1a5c4c] tracking-tight tabular-nums">
+                {{ formatCurrency(order.totalAmount || 0) }}
+              </div>
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-200/70 text-gray-700 mt-0.5">
+                {{ order.items?.length || 0 }} {{ (order.items?.length === 1) ? 'item' : 'items' }}
+              </span>
             </div>
           </div>
         </div>
 
-        <!-- Tabs -->
-        <div class="px-6 border-b border-gray-200 flex gap-6 text-sm font-medium text-gray-500 flex-shrink-0">
+        <!-- 3. Navigation Tabs -->
+        <div class="px-5 sm:px-6 border-b border-gray-200/80 bg-white flex gap-6 text-xs sm:text-sm font-semibold text-gray-500 flex-shrink-0">
           <button 
-            v-for="tab in ['DETAILS', 'TIMELINE', 'NOTES']" 
-            :key="tab"
-            @click="activeTab = tab as any"
+            v-for="tab in ([
+              { id: 'DETAILS', label: 'Details', badge: order.items?.length },
+              { id: 'TIMELINE', label: 'Timeline', badge: order.timeline?.length },
+              { id: 'NOTES', label: 'Notes', badge: order.notes ? '•' : null }
+            ] as const)" 
+            :key="tab.id"
+            @click="activeTab = tab.id as any"
             :class="[
-              'py-3 border-b-2 transition-colors',
-              activeTab === tab ? 'border-[#1a5c4c] text-[#1a5c4c]' : 'border-transparent hover:text-gray-700 hover:border-gray-300'
+              'py-3 border-b-2 transition-all flex items-center gap-2 cursor-pointer',
+              activeTab === tab.id 
+                ? 'border-[#1a5c4c] text-[#1a5c4c] font-bold' 
+                : 'border-transparent text-gray-500 hover:text-gray-900 hover:border-gray-300'
             ]"
           >
-            {{ tab }}
+            <span>{{ tab.label }}</span>
+            <span 
+              v-if="tab.badge" 
+              class="text-[10px] px-1.5 py-0.2 rounded-full font-bold"
+              :class="activeTab === tab.id ? 'bg-[#1a5c4c]/10 text-[#1a5c4c]' : 'bg-gray-100 text-gray-500'"
+            >
+              {{ tab.badge }}
+            </span>
           </button>
         </div>
 
-        <!-- Scrollable Content -->
-        <div class="flex-grow overflow-y-auto bg-white p-6 pb-40">
+        <!-- 4. Scrollable Drawer Body -->
+        <div class="flex-grow overflow-y-auto bg-white p-5 sm:p-6 pb-36 space-y-6">
           
           <!-- DETAILS TAB -->
-          <div v-if="activeTab === 'DETAILS'" class="space-y-8 flex flex-col">
+          <div v-if="activeTab === 'DETAILS'" class="space-y-6 flex flex-col">
             
-            <!-- 1. Order Information Grid -->
-            <div>
-              <div class="flex justify-between items-center mb-4">
-                <h3 class="text-sm font-semibold text-gray-900 uppercase tracking-wider">Information</h3>
-                <button v-if="hasRole('ADMIN', 'SALES')" @click="openEditModal" class="text-xs font-medium text-[#1a5c4c] flex items-center gap-1 hover:underline">
-                  <Edit class="w-3 h-3" /> Edit
-                </button>
+            <!-- A. Order Flow Visualizer (Top of Details) -->
+            <div class="bg-gray-50/80 rounded-xl p-3.5 border border-gray-200/70">
+              <div class="flex items-center justify-between mb-3.5">
+                <span class="text-[11px] font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
+                  <Clock class="w-3.5 h-3.5 text-gray-400" />
+                  Workflow Pipeline
+                </span>
+                <span class="text-[11px] font-semibold text-gray-600 bg-white px-2 py-0.5 rounded-md border border-gray-200">
+                  {{ getDisplayStatus(order) }}
+                </span>
               </div>
-              <div class="grid grid-cols-2 gap-y-4 gap-x-6 text-sm">
-                <div>
-                  <span class="block text-[10px] uppercase font-bold text-gray-500 mb-1">Customer</span>
-                  <span class="font-medium text-gray-900">{{ order.customer?.name || '—' }}</span>
-                </div>
-                <div>
-                  <span class="block text-[10px] uppercase font-bold text-gray-500 mb-1">Phone</span>
-                  <span class="text-gray-900">{{ order.customer?.phone || '—' }}</span>
-                </div>
-                <div class="col-span-2">
-                  <span class="block text-[10px] uppercase font-bold text-gray-500 mb-1">Delivery Address</span>
-                  <span class="text-gray-900">{{ order.deliveryAddress || '—' }}</span>
+              
+              <div class="relative flex items-start justify-between px-2">
+                <!-- Background Connecting Line -->
+                <div class="absolute top-4 left-[10%] right-[10%] h-0.5 bg-gray-200/90 z-0"></div>
+                
+                <!-- Steps -->
+                <div 
+                  v-for="step in [
+                    { id: 'SALES', label: 'Sales' },
+                    { id: 'APPROVAL', label: 'Approval' },
+                    { id: 'PACKING', label: 'Packing' },
+                    { id: 'BILLING', label: 'Billing' },
+                    { id: 'DELIVERY', label: 'Dispatch' }
+                  ]" 
+                  :key="step.id"
+                  class="relative z-10 flex flex-col items-center gap-1.5 bg-transparent"
+                >
+                  <!-- Icon Circle -->
+                  <div 
+                    class="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center border-2 bg-white transition-all shadow-2xs"
+                    :class="getStepColor(step.id)"
+                  >
+                    <Check v-if="step.id === 'SALES'" class="w-3.5 h-3.5" />
+                    <CheckCheck v-else-if="step.id === 'APPROVAL'" class="w-3.5 h-3.5" />
+                    <Box v-else-if="step.id === 'PACKING'" class="w-3.5 h-3.5" />
+                    <IndianRupee v-else-if="step.id === 'BILLING'" class="w-3 h-3" />
+                    <Truck v-else-if="step.id === 'DELIVERY'" class="w-3.5 h-3.5" />
+                  </div>
+                  <!-- Label -->
+                  <div class="text-center">
+                    <span class="block text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-gray-800">
+                      {{ step.label }}
+                    </span>
+                    <span class="block text-[9px] text-gray-500 uppercase tracking-tight mt-0.5 whitespace-nowrap">
+                      {{ getStepStatus(step.id).replace(/_/g, ' ') }}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <!-- 2. Order Items and Context-Aware Action Area -->
+            <!-- B. Customer & Order Information Grid -->
+            <div class="bg-white rounded-xl border border-gray-200/80 p-4 shadow-2xs">
+              <div class="flex justify-between items-center mb-3 pb-2.5 border-b border-gray-100">
+                <h3 class="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-1.5">
+                  <User class="w-3.5 h-3.5 text-gray-400" />
+                  Customer & Order Details
+                </h3>
+                <button 
+                  v-if="hasRole('ADMIN', 'SALES')" 
+                  @click="openEditModal" 
+                  class="text-xs font-semibold text-[#1a5c4c] flex items-center gap-1 hover:underline cursor-pointer"
+                >
+                  <Edit class="w-3 h-3" /> Edit
+                </button>
+              </div>
+              
+              <div class="grid grid-cols-2 gap-y-3.5 gap-x-4 text-xs sm:text-sm">
+                <div>
+                  <span class="block text-[10px] sm:text-[11px] uppercase font-bold text-gray-400 tracking-wider mb-0.5">Customer</span>
+                  <span class="font-semibold text-gray-900">{{ order.customer?.name || '—' }}</span>
+                  <span v-if="order.customer?.company" class="block text-xs text-gray-500">{{ order.customer.company }}</span>
+                </div>
+
+                <div>
+                  <span class="block text-[10px] sm:text-[11px] uppercase font-bold text-gray-400 tracking-wider mb-0.5">Placed By</span>
+                  <div class="flex items-center gap-1.5 font-medium text-gray-900">
+                    <User class="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                    <span class="truncate">{{ order.salesPerson?.name || order.timeline?.find(t => t.action?.includes('Created'))?.performedBy?.name || '—' }}</span>
+                  </div>
+                </div>
+
+                <div>
+                  <span class="block text-[10px] sm:text-[11px] uppercase font-bold text-gray-400 tracking-wider mb-0.5">Contact Phone</span>
+                  <a 
+                    v-if="order.customer?.phone" 
+                    :href="`tel:${order.customer.phone}`" 
+                    class="font-medium text-gray-900 hover:text-[#1a5c4c] flex items-center gap-1 transition-colors"
+                  >
+                    <Phone class="w-3 h-3 text-gray-400" />
+                    <span>{{ order.customer.phone }}</span>
+                  </a>
+                  <span v-else class="text-gray-400">—</span>
+                </div>
+
+                <div>
+                  <span class="block text-[10px] sm:text-[11px] uppercase font-bold text-gray-400 tracking-wider mb-0.5">Payment Terms</span>
+                  <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-gray-100 text-gray-800 border border-gray-200">
+                    {{ order.paymentTerms || order.customer?.paymentTerms || '—' }}
+                  </span>
+                </div>
+
+                <div class="col-span-2 pt-2 border-t border-gray-100">
+                  <span class="block text-[10px] sm:text-[11px] uppercase font-bold text-gray-400 tracking-wider mb-0.5">Delivery Address</span>
+                  <p class="text-xs sm:text-sm text-gray-800 leading-relaxed flex items-start gap-1.5">
+                    <MapPin class="w-3.5 h-3.5 text-gray-400 mt-0.5 shrink-0" />
+                    <span>{{ order.deliveryAddress || 'No delivery address specified' }}</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- C. Line Items Table -->
             <div>
-              <div class="flex items-center justify-between mb-4">
-                <h3 class="text-sm font-semibold text-gray-900 uppercase tracking-wider">Order Items</h3>
+              <div class="flex items-center justify-between mb-2.5">
+                <h3 class="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-1.5">
+                  <Package class="w-3.5 h-3.5 text-gray-400" />
+                  Line Items ({{ order.items?.length || 0 }})
+                </h3>
                 <StatusBadge v-if="context === 'packing' && order.packingStatus?.status" :status="order.packingStatus.status" />
                 <StatusBadge v-else-if="context === 'billing' && order.billingStatus?.status" :status="order.billingStatus.status" />
                 <StatusBadge v-else-if="context === 'delivery' && order.deliveryStatus?.status" :status="order.deliveryStatus.status" />
               </div>
               
-              <div class="border border-gray-200 rounded-lg bg-white">
-                <div class="overflow-x-auto rounded-t-lg">
-                  <table class="w-full text-left text-sm">
-                    <thead class="bg-gray-50 text-xs text-gray-500 uppercase tracking-wider">
+              <div class="border border-gray-200/80 rounded-xl bg-white shadow-2xs overflow-hidden">
+                <div class="overflow-x-auto">
+                  <table class="w-full text-left text-xs sm:text-sm">
+                    <thead class="bg-gray-50/80 text-[11px] font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-200/70">
                       <tr>
-                        <th class="px-4 py-2 font-medium">Product</th>
-                        <th class="px-4 py-2 font-medium text-right">{{ (order as any)?.isApproved ? 'Approved Qty' : 'Qty' }}</th>
-                        <th v-if="context === 'packing'" class="px-4 py-2 font-medium text-center">Packed Qty</th>
+                        <th class="px-3.5 py-2.5 font-semibold">Product</th>
+                        <th class="px-3 py-2.5 font-semibold text-right">Rate</th>
+                        <th class="px-3 py-2.5 font-semibold text-right">
+                          {{ context === 'approval' && (order as any)?.isApproved ? 'Approved Qty' : 'Qty' }}
+                        </th>
+                        <th class="px-3.5 py-2.5 font-semibold text-right">Total</th>
+                        <th v-if="context === 'packing'" class="px-3 py-2.5 font-semibold text-center">Packed</th>
                       </tr>
                     </thead>
-                    <tbody ref="itemsTbodyRef" class="divide-y divide-gray-200">
-                      <tr v-for="(item, idx) in order.items" :key="item.id" class="bg-white transition-colors" :class="{ 'bg-amber-50/30': context === 'packing' && ((packingForm.items[idx]?.packedQuantity || 0) < (item.approvedQuantity ?? item.quantity)) }">
-                        <td class="px-4 py-3">
-                          <div class="font-medium truncate max-w-[150px] text-gray-900">
+                    <tbody ref="itemsTbodyRef" class="divide-y divide-gray-100">
+                      <tr 
+                        v-for="(item, idx) in order.items" 
+                        :key="item.id" 
+                        class="bg-white hover:bg-gray-50/60 transition-colors" 
+                        :class="{ 'bg-amber-50/30': context === 'packing' && ((packingForm.items[idx]?.packedQuantity || 0) < (item.approvedQuantity ?? item.quantity)) }"
+                      >
+                        <td class="px-3.5 py-3">
+                          <div class="font-mono font-bold text-xs sm:text-sm text-gray-900 truncate max-w-[150px] sm:max-w-[180px]">
                             {{ item.product?.sku }}
                           </div>
-                          <div class="text-xs text-gray-400 truncate max-w-[150px]">{{ item.product?.name }}</div>
+                          <div class="text-[11px] sm:text-xs text-gray-500 truncate max-w-[150px] sm:max-w-[180px] mt-0.5">
+                            {{ item.product?.name }}
+                          </div>
                           <div class="flex flex-wrap items-center gap-1 mt-1.5">
-                            <span v-if="(item as any)?.isTaxInclusive" class="text-[9px] font-bold uppercase tracking-wider bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded border border-indigo-200" title="Tax Inclusive Rate">
+                            <span v-if="(item as any)?.isTaxInclusive" class="text-[9px] font-bold uppercase tracking-wider bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded border border-indigo-200/70" title="Tax Inclusive Rate">
                               Tax Inc.
                             </span>
-                            <span v-if="(item as any)?.applyLastPrice" class="text-[9px] font-bold uppercase tracking-wider bg-teal-50 text-teal-700 px-1.5 py-0.5 rounded border border-teal-200" title="Apply Last Price">
+                            <span v-if="(item as any)?.applyLastPrice" class="text-[9px] font-bold uppercase tracking-wider bg-teal-50 text-teal-700 px-1.5 py-0.5 rounded border border-teal-200/70" title="Apply Last Price">
                               Last Price
                             </span>
-                            <div v-if="(item as any)?.itemNotes" class="text-[10px] text-amber-700 bg-amber-50 px-1 py-0.5 rounded border border-amber-200 inline-block truncate max-w-[200px]" :title="(item as any)?.itemNotes">
+                            <div v-if="(item as any)?.itemNotes" class="text-[10px] text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200/70 inline-block truncate max-w-[180px]" :title="(item as any)?.itemNotes">
                               💬 {{ (item as any)?.itemNotes }}
                             </div>
                           </div>
                         </td>
-                        <td class="px-4 py-3 text-right font-bold text-gray-900">{{ item.approvedQuantity ?? item.quantity }}</td>
-                        <td v-if="context === 'packing'" class="px-4 py-3 text-center">
-                          <div class="flex items-center justify-center gap-2">
+                        <td class="px-3 py-3 text-right font-medium text-gray-600 tabular-nums whitespace-nowrap">
+                          {{ formatCurrency(item.unitPrice || 0) }}
+                        </td>
+                        <td class="px-3 py-3 text-right font-bold text-gray-900 tabular-nums whitespace-nowrap">
+                          {{ item.approvedQuantity ?? item.quantity }}
+                        </td>
+                        <td class="px-3.5 py-3 text-right font-bold text-[#1a5c4c] tabular-nums whitespace-nowrap">
+                          {{ formatCurrency(item.total || ((item.unitPrice || 0) * (item.approvedQuantity ?? item.quantity))) }}
+                        </td>
+                        <td v-if="context === 'packing'" class="px-3 py-3 text-center whitespace-nowrap">
+                          <div class="flex items-center justify-center gap-1.5">
                             <input 
                               type="number" 
                               min="0"
                               :max="item.approvedQuantity ?? item.quantity"
                               v-model.number="packingForm.items[idx].packedQuantity" 
                               @change="handlePackedQtyChange(idx)" 
-                              class="w-16 px-2 py-1 text-xs border border-gray-300 rounded font-bold text-center focus:ring-[#1a5c4c]" 
+                              class="w-14 px-1.5 py-1 text-xs border border-gray-300 rounded-md font-bold text-center focus:ring-[#1a5c4c]" 
                               :disabled="!hasRole('ADMIN', 'PACKING')"
                             />
                             <span 
@@ -830,7 +1019,7 @@ const updateDelivery = async () => {
 
                 <!-- Action Area: Approval -->
                 <div 
-                  v-if="context === 'approval' || (!order.isApproved && order.overallStatus !== 'CANCELLED')" 
+                  v-if="context === 'approval'" 
                   class="p-4 bg-amber-50/50 border-t border-amber-200/60 rounded-b-lg relative"
                 >
                   <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -851,7 +1040,7 @@ const updateDelivery = async () => {
 
                     <div class="flex items-center gap-2 shrink-0">
                       <button 
-                        v-if="order.overallStatus !== 'CANCELLED' && order.overallStatus !== 'DELIVERED'"
+                        v-if="canCancelOrder"
                         @click="openCancelModal"
                         class="px-3 py-1.5 text-xs font-semibold text-rose-600 bg-white border border-rose-200 hover:bg-rose-50 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
                       >
@@ -885,14 +1074,14 @@ const updateDelivery = async () => {
                       <button 
                         v-if="order.billingStatus?.status !== 'GENERATED'"
                         @click="markBillGenerated" 
-                        class="px-3 py-1.5 text-xs font-medium bg-[#1a5c4c] text-white rounded hover:bg-[#1a5c4c]/90 shadow-sm flex items-center gap-1.5"
+                        class="px-3 py-1.5 text-xs font-medium bg-[#1a5c4c] text-white rounded hover:bg-[#1a5c4c]/90 shadow-sm flex items-center gap-1.5 cursor-pointer"
                       >
-                        <Receipt class="w-3.5 h-3.5" /> Mark as Generated
+                        <IndianRupee class="w-3.5 h-3.5" /> Mark as Generated
                       </button>
                       <button 
                         v-if="!showBillingForm" 
                         @click="showBillingForm = true" 
-                        class="text-[10px] font-medium text-gray-500 hover:text-gray-700 hover:underline"
+                        class="text-[10px] font-medium text-gray-500 hover:text-gray-700 hover:underline cursor-pointer"
                       >
                         Advanced Options...
                       </button>
@@ -938,14 +1127,14 @@ const updateDelivery = async () => {
                       <button 
                         @click="markAsPacked" 
                         :disabled="!packingForm.items.every(i => i.isPacked) || packingForm.status === 'PACKED'"
-                        class="px-4 py-2 text-xs font-semibold bg-[#1a5c4c] text-white rounded-md transition-all shadow-sm disabled:bg-gray-300 disabled:cursor-not-allowed disabled:text-gray-500"
+                        class="px-4 py-2 text-xs font-semibold bg-[#1a5c4c] text-white rounded-md transition-all shadow-sm disabled:bg-gray-300 disabled:cursor-not-allowed disabled:text-gray-500 cursor-pointer"
                       >
                         {{ packingForm.status === 'PACKED' ? 'Packing Completed' : 'Mark as Packed' }}
                       </button>
                       <button 
                         v-if="!showPackingForm" 
                         @click="showPackingForm = true" 
-                        class="text-[10px] font-medium text-gray-500 hover:text-gray-700 hover:underline"
+                        class="text-[10px] font-medium text-gray-500 hover:text-gray-700 hover:underline cursor-pointer"
                       >
                         Advanced Options...
                       </button>
@@ -981,21 +1170,21 @@ const updateDelivery = async () => {
                     <button 
                       v-if="(order as any)?.hasDestinationPin || (order as any)?.destinationCoords"
                       @click="isPinModalOpen = true"
-                      class="flex-1 py-2 text-xs font-semibold border border-emerald-300 text-[#1a5c4c] bg-emerald-50 hover:bg-emerald-100 rounded-lg shadow-sm flex justify-center items-center gap-1.5 transition"
+                      class="flex-1 py-2 text-xs font-semibold border border-emerald-300 text-[#1a5c4c] bg-emerald-50 hover:bg-emerald-100 rounded-lg shadow-sm flex justify-center items-center gap-1.5 transition cursor-pointer"
                     >
                       <MapPin class="w-3.5 h-3.5 text-[#1a5c4c]" /> Change Pin
                     </button>
                     <button 
                       v-else
                       @click="isPinModalOpen = true"
-                      class="flex-1 py-2 text-xs font-bold border border-amber-400 text-amber-900 bg-amber-50 hover:bg-amber-100 rounded-lg shadow-sm flex justify-center items-center gap-1.5 transition animate-pulse"
+                      class="flex-1 py-2 text-xs font-bold border border-amber-400 text-amber-900 bg-amber-50 hover:bg-amber-100 rounded-lg shadow-sm flex justify-center items-center gap-1.5 transition animate-pulse cursor-pointer"
                     >
                       <MapPin class="w-3.5 h-3.5 text-amber-600" /> Set Pin
                     </button>
                     <button 
                       v-if="!showDeliveryForm" 
                       @click="initDeliveryForm" 
-                      class="flex-1 py-2 text-xs font-semibold border border-[#1a5c4c] text-[#1a5c4c] bg-white rounded-lg hover:bg-gray-50 shadow-sm flex justify-center items-center gap-1.5 transition"
+                      class="flex-1 py-2 text-xs font-semibold border border-[#1a5c4c] text-[#1a5c4c] bg-white rounded-lg hover:bg-gray-50 shadow-sm flex justify-center items-center gap-1.5 transition cursor-pointer"
                     >
                       <Truck class="w-3.5 h-3.5" /> Delivery Details
                     </button>
@@ -1035,116 +1224,142 @@ const updateDelivery = async () => {
                   </div>
                 </div>
 
-
-
-              </div>
-            </div>
-
-            <!-- 3. Read-only Order Flow Visualizer -->
-            <div class="pt-4 border-t border-gray-100">
-              <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-6 text-center">Order Flow Status</h3>
-              
-              <div class="relative flex items-start justify-between px-4">
-                <!-- Background Line -->
-                <div class="absolute top-4 left-[15%] right-[15%] h-0.5 bg-gray-200 -z-10"></div>
-                
-                <!-- Steps -->
-                <div 
-                  v-for="step in [
-                    { id: 'SALES', label: 'Sales' },
-                    { id: 'APPROVAL', label: 'Approval' },
-                    { id: 'PACKING', label: 'Packing' },
-                    { id: 'BILLING', label: 'Billing' },
-                    { id: 'DELIVERY', label: 'Delivery' }
-                  ]" 
-                  :key="step.id"
-                  class="flex flex-col items-center gap-2 bg-white px-1 sm:px-2"
-                >
-                  <!-- Icon Circle -->
-                  <div 
-                    class="w-8 h-8 rounded-full flex items-center justify-center border-2"
-                    :class="getStepColor(step.id)"
-                  >
-                    <Check v-if="step.id === 'SALES'" class="w-4 h-4" />
-                    <CheckCheck v-else-if="step.id === 'APPROVAL'" class="w-4 h-4" />
-                    <Box v-else-if="step.id === 'PACKING'" class="w-4 h-4" />
-                    <Receipt v-else-if="step.id === 'BILLING'" class="w-4 h-4" />
-                    <Truck v-else-if="step.id === 'DELIVERY'" class="w-4 h-4" />
-                  </div>
-                  <!-- Label -->
-                  <div class="text-center">
-                    <span class="block text-[10px] font-bold uppercase tracking-wider text-gray-700">
-                      {{ step.label }}
-                    </span>
-                    <span class="block text-[9px] text-gray-500 uppercase tracking-widest mt-0.5">
-                      {{ getStepStatus(step.id).replace('_', ' ') }}
-                    </span>
-                  </div>
-                </div>
               </div>
             </div>
 
           </div>
           <!-- END DETAILS TAB -->
 
-          <!-- TIMELINE TAB (Placeholder) -->
-          <div v-else-if="activeTab === 'TIMELINE'" class="text-sm text-gray-500">
-            <h3 class="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4">Timeline</h3>
-            <ul class="space-y-4 border-l border-gray-200 ml-2 pl-4">
-              <li v-for="t in order.timeline" :key="t.id" class="relative">
-                <span class="absolute -left-[21px] top-1 w-2.5 h-2.5 bg-[#1a5c4c] rounded-full ring-4 ring-white"></span>
-                <p class="font-medium text-gray-900">{{ t.action }}</p>
-                <p v-if="t.description" class="mt-1 text-gray-600">{{ t.description }}</p>
-                <p class="text-xs text-gray-400 mt-1">{{ formatDateTime(t.timestamp) }} <span v-if="t.performedBy">by {{ t.performedBy.name }}</span></p>
-              </li>
-            </ul>
+          <!-- TIMELINE TAB -->
+          <div v-else-if="activeTab === 'TIMELINE'" class="space-y-4">
+            <div class="flex items-center justify-between pb-2 border-b border-gray-100">
+              <h3 class="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-1.5">
+                <Clock class="w-3.5 h-3.5 text-gray-400" />
+                Order Activity Log
+              </h3>
+              <span class="text-xs text-gray-400 font-medium">{{ order.timeline?.length || 0 }} entries</span>
+            </div>
+
+            <div v-if="order.timeline && order.timeline.length > 0" class="relative pl-6 space-y-4 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-gray-200">
+              <div v-for="t in order.timeline" :key="t.id" class="relative group">
+                <span class="absolute -left-6 top-1 w-2.5 h-2.5 rounded-full bg-[#1a5c4c] ring-4 ring-white shadow-2xs"></span>
+                <div class="bg-gray-50/70 hover:bg-gray-50 rounded-xl p-3 border border-gray-100 transition-colors">
+                  <p class="text-xs sm:text-sm font-semibold text-gray-900">{{ t.action }}</p>
+                  <p v-if="t.description" class="text-xs text-gray-600 mt-1 leading-relaxed">{{ t.description }}</p>
+                  <div class="flex items-center gap-2 mt-2 text-[11px] text-gray-400">
+                    <span class="flex items-center gap-1">
+                      <Clock class="w-3 h-3 text-gray-400" />
+                      {{ formatDateTime(t.timestamp) }}
+                    </span>
+                    <span v-if="t.performedBy" class="text-gray-500 font-medium">&bull; {{ t.performedBy.name }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Empty state -->
+            <div v-else class="text-center py-12 px-4 bg-gray-50/50 rounded-xl border border-dashed border-gray-200">
+              <Clock class="w-8 h-8 text-gray-300 mx-auto mb-2" />
+              <p class="text-xs font-medium text-gray-500">No activity recorded for this order yet.</p>
+            </div>
           </div>
 
-          <!-- NOTES TAB (Placeholder) -->
-          <div v-else-if="activeTab === 'NOTES'" class="text-sm text-gray-500">
-            <h3 class="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4">Internal Notes</h3>
-            <p v-if="order.notes">{{ order.notes }}</p>
-            <p v-else class="italic text-gray-400">No internal notes for this order.</p>
+          <!-- NOTES TAB -->
+          <div v-else-if="activeTab === 'NOTES'" class="space-y-4">
+            <div class="flex items-center justify-between pb-2 border-b border-gray-100">
+              <h3 class="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-1.5">
+                <FileText class="w-3.5 h-3.5 text-gray-400" />
+                Internal Notes
+              </h3>
+              <button 
+                v-if="hasRole('ADMIN', 'SALES')" 
+                @click="openEditModal" 
+                class="text-xs font-semibold text-[#1a5c4c] hover:underline flex items-center gap-1 cursor-pointer"
+              >
+                <Edit class="w-3 h-3" /> Edit Notes
+              </button>
+            </div>
+
+            <div v-if="order.notes" class="bg-amber-50/60 border border-amber-200/70 rounded-xl p-4 text-amber-950 text-xs sm:text-sm leading-relaxed shadow-2xs">
+              <div class="flex items-start gap-2.5">
+                <FileText class="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <div class="whitespace-pre-line">{{ order.notes }}</div>
+              </div>
+            </div>
+
+            <div v-else class="text-center py-12 px-4 bg-gray-50/50 rounded-xl border border-dashed border-gray-200">
+              <FileText class="w-8 h-8 text-gray-300 mx-auto mb-2" />
+              <p class="text-xs font-medium text-gray-500">No internal notes for this order.</p>
+              <button 
+                v-if="hasRole('ADMIN', 'SALES')" 
+                @click="openEditModal" 
+                class="mt-3 text-xs font-semibold text-[#1a5c4c] hover:underline cursor-pointer inline-flex items-center gap-1"
+              >
+                <Edit class="w-3 h-3" /> Add Internal Note
+              </button>
+            </div>
           </div>
 
         </div>
 
-        <!-- Sticky Bottom Action Footer -->
+        <!-- 5. Sticky Bottom Action Footer -->
         <div 
           v-if="order"
-          class="px-6 py-3.5 bg-white border-t border-gray-200 flex items-center justify-between gap-3 shrink-0 shadow-lg z-20"
+          class="px-5 sm:px-6 py-3.5 bg-white border-t border-gray-200 flex items-center justify-between gap-3 shrink-0 shadow-lg z-20"
         >
           <div>
-            <span class="text-[10px] uppercase font-bold text-gray-400 tracking-wider block">Total Amount</span>
-            <span class="text-base font-extrabold text-[#1a5c4c]">{{ formatCurrency(order.totalAmount || 0) }}</span>
+            <span class="text-[10px] sm:text-[11px] uppercase font-bold text-gray-400 tracking-wider block">Grand Total</span>
+            <span class="text-lg sm:text-xl font-black text-[#1a5c4c] tracking-tight tabular-nums">
+              {{ formatCurrency(order.totalAmount || 0) }}
+            </span>
           </div>
 
           <div class="flex items-center gap-2">
+            <!-- Generate Bill button before Cancel Order -->
             <button 
-              v-if="order.overallStatus !== 'CANCELLED' && order.overallStatus !== 'DELIVERED'"
+              v-if="canGenerateBill"
+              @click="markBillGenerated"
+              class="px-3.5 py-2 text-xs font-bold text-white bg-[#1a5c4c] hover:bg-[#14473b] rounded-lg shadow-sm hover:shadow transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+            >
+              <IndianRupee class="w-3.5 h-3.5" />
+              <span>Generate Bill</span>
+            </button>
+            <div 
+              v-else-if="order.billingStatus?.status === 'GENERATED' && context === 'billing'"
+              class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 whitespace-nowrap"
+            >
+              <CheckCircle2 class="w-4 h-4 text-emerald-600" />
+              <span>Bill Generated</span>
+            </div>
+
+            <button 
+              v-if="canCancelOrder"
               @click="openCancelModal"
-              class="px-3 py-1.5 text-xs font-semibold text-rose-600 bg-white border border-rose-200 hover:bg-rose-50 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
+              class="px-3.5 py-2 text-xs font-semibold text-rose-600 bg-white border border-rose-200 hover:bg-rose-50 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs whitespace-nowrap"
             >
               <Ban class="w-3.5 h-3.5" />
               <span>Cancel Order</span>
             </button>
 
-            <button 
-              v-if="!order.isApproved && order.overallStatus !== 'CANCELLED'"
-              @click="emit('reviewApprove', order)"
-              class="px-4 py-2 text-xs font-bold text-white bg-[#1a5c4c] hover:bg-[#14473b] rounded-lg shadow-sm hover:shadow transition-all flex items-center gap-1.5 cursor-pointer"
-            >
-              <CheckCheck class="w-4 h-4" />
-              <span>Review & Approve</span>
-            </button>
+            <!-- Approval desk actions only -->
+            <template v-if="context === 'approval'">
+              <button 
+                v-if="!order.isApproved && order.overallStatus !== 'CANCELLED'"
+                @click="emit('reviewApprove', order)"
+                class="px-4 py-2 text-xs font-bold text-white bg-[#1a5c4c] hover:bg-[#14473b] rounded-lg shadow-sm hover:shadow transition-all flex items-center gap-1.5 cursor-pointer"
+              >
+                <CheckCheck class="w-4 h-4" />
+                <span>Review & Approve</span>
+              </button>
 
-            <div 
-              v-else-if="order.isApproved" 
-              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200"
-            >
-              <CheckCircle2 class="w-4 h-4 text-emerald-600" />
-              <span>Approved</span>
-            </div>
+              <div 
+                v-else-if="order.isApproved" 
+                class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200"
+              >
+                <CheckCircle2 class="w-4 h-4 text-emerald-600" />
+                <span>Approved</span>
+              </div>
+            </template>
           </div>
         </div>
       </template>
@@ -1216,8 +1431,8 @@ const updateDelivery = async () => {
             >
               <input type="checkbox" v-model="editForm.isUrgent" class="w-4 h-4 text-rose-600 rounded focus:ring-rose-500" />
               <div class="flex items-center gap-1.5 font-bold text-xs uppercase tracking-wider">
-                <Zap class="w-4 h-4 text-rose-600" />
-                <span>⚡ Mark as Urgent Order</span>
+                <Zap class="w-4 h-4 text-rose-600 fill-rose-600" />
+                <span>Mark as Urgent Order</span>
               </div>
             </label>
             <button @click="isEditModalOpen = false; hide()" class="p-1.5 sm:p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors">
@@ -1233,8 +1448,8 @@ const updateDelivery = async () => {
           >
             <input type="checkbox" v-model="editForm.isUrgent" class="w-4 h-4 text-rose-600 rounded focus:ring-rose-500" />
             <div class="flex items-center gap-1.5 font-bold text-xs uppercase tracking-wider">
-              <Zap class="w-4 h-4 text-rose-600" />
-              <span>⚡ Mark as Urgent Order</span>
+              <Zap class="w-4 h-4 text-rose-600 fill-rose-600" />
+              <span>Mark as Urgent Order</span>
             </div>
           </label>
         </div>
@@ -1352,8 +1567,14 @@ const updateDelivery = async () => {
 
                     <!-- Unit Price -->
                     <div class="w-full md:w-28 shrink-0">
-                      <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1.5">Rate (₹) *</label>
-                      <input type="number" v-model.number="item.unitPrice" min="0" step="0.01" required class="w-full border border-gray-300 rounded-lg shadow-xs p-2 bg-white text-sm font-bold focus:ring-[#1a5c4c] focus:border-[#1a5c4c]" />
+                      <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1.5 flex items-center gap-1">
+                        <IndianRupee class="w-3 h-3 text-gray-500" />
+                        <span>Rate *</span>
+                      </label>
+                      <div class="relative flex items-center">
+                        <IndianRupee class="absolute left-2.5 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+                        <input type="number" v-model.number="item.unitPrice" min="0" step="0.01" required class="w-full pl-7 border border-gray-300 rounded-lg shadow-xs p-2 bg-white text-sm font-bold focus:ring-[#1a5c4c] focus:border-[#1a5c4c]" />
+                      </div>
                     </div>
 
                     <!-- Line Total -->

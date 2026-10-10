@@ -77,6 +77,19 @@ public class NavigationManager {
         void onError(String error);
     }
 
+    public interface OnRouteReadyListener {
+        void onRouteReady(int remainingMeters, int remainingSeconds);
+    }
+
+    private OnRouteReadyListener mRouteReadyListener;
+
+    public void setOnRouteReadyListener(OnRouteReadyListener listener) {
+        this.mRouteReadyListener = listener;
+        if (listener != null && mLastRemainingMeters >= 0) {
+            listener.onRouteReady(mLastRemainingMeters, mLastRemainingSeconds);
+        }
+    }
+
     public static synchronized NavigationManager getInstance() {
         if (sInstance == null) {
             sInstance = new NavigationManager();
@@ -279,6 +292,9 @@ public class NavigationManager {
                 if (tad != null) {
                     mLastRemainingMeters = tad.getMeters();
                     mLastRemainingSeconds = tad.getSeconds();
+                    if (mRouteReadyListener != null) {
+                        mRouteReadyListener.onRouteReady(mLastRemainingMeters, mLastRemainingSeconds);
+                    }
                 }
             } catch (Exception ignored) {}
         }
@@ -380,6 +396,9 @@ public class NavigationManager {
                             }
                             setupRemainingTimeOrDistanceListener();
                             updateTimeAndDistance();
+                            if (mRouteReadyListener != null) {
+                                mRouteReadyListener.onRouteReady(mLastRemainingMeters, mLastRemainingSeconds);
+                            }
                         } catch (Exception e) {
                             Log.e(TAG, "Failed to set guidance", e);
                         }

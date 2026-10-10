@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { ShoppingBag, ArrowUp, ArrowDown, Box, Truck, CheckCheck, Receipt } from 'lucide-vue-next'
+import { ShoppingBag, ArrowUp, ArrowDown, Box, Truck, CheckCheck, IndianRupee } from 'lucide-vue-next'
 import type { DashboardStats } from '~/types'
 import { useGsapAnimation } from '~/composables/useGsapAnimation'
 import OdometerNumber from '~/components/ui/OdometerNumber.vue'
@@ -96,7 +96,7 @@ onMounted(() => {
       <div class="flex justify-between items-start mb-2 sm:mb-4">
         <h3 class="uppercase tracking-wider text-[10px] font-semibold text-gray-500 group-hover:text-indigo-700 transition-colors">Awaiting Billing</h3>
         <div class="w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
-          <Receipt class="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          <IndianRupee class="w-3.5 h-3.5 sm:w-4 sm:h-4" />
         </div>
       </div>
       <div>

@@ -68,6 +68,19 @@
         </LinearLayout>
 
         <TextView
+            android:id="@+id/tv_route_overview_toggle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="ROUTE"
+            android:textSize="11sp"
+            android:textColor="#38bdf8"
+            android:textStyle="bold"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp" />
+
+        <TextView
             android:id="@+id/tv_exit_nav"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

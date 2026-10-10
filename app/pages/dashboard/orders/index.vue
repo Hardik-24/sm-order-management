@@ -118,6 +118,7 @@ onOrderSync((event) => {
     <OrderDetailPanel 
       :orderId="selectedOrderId"
       :isOpen="isPanelOpen"
+      context="orders"
       @close="handlePanelClose"
       @updated="handlePanelUpdate"
     />

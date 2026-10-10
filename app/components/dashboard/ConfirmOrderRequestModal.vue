@@ -12,7 +12,8 @@ import {
   CreditCard, 
   MapPin, 
   Package,
-  Check
+  Check,
+  IndianRupee
 } from 'lucide-vue-next'
 import { formatCurrency } from '~/lib/utils'
 import CustomSelect from '~/components/ui/CustomSelect.vue'
@@ -447,17 +448,21 @@ const submitConversion = async () => {
 
                   <!-- Unit Price (2 cols) -->
                   <div class="col-span-4 sm:col-span-2">
-                    <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1">
-                      Unit Price (₹)
+                    <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1 flex items-center gap-1">
+                      <IndianRupee class="w-3 h-3 text-gray-400" />
+                      <span>Unit Price</span>
                     </label>
-                    <input 
-                      type="number" 
-                      v-model.number="item.unitPrice" 
-                      min="0" 
-                      step="any"
-                      required 
-                      class="w-full p-2 bg-white border border-gray-300 rounded-lg text-xs font-bold text-gray-900 focus:ring-[#1a5c4c] focus:border-[#1a5c4c]" 
-                    />
+                    <div class="relative flex items-center">
+                      <IndianRupee class="absolute left-2.5 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+                      <input 
+                        type="number" 
+                        v-model.number="item.unitPrice" 
+                        min="0" 
+                        step="any"
+                        required 
+                        class="w-full pl-7 pr-2 py-2 bg-white border border-gray-300 rounded-lg text-xs font-bold text-gray-900 focus:ring-[#1a5c4c] focus:border-[#1a5c4c]" 
+                      />
+                    </div>
                   </div>
 
                   <!-- Line Total & Delete (2 cols) -->

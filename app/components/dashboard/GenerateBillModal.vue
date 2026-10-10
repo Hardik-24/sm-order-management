@@ -98,9 +98,33 @@
                 <tbody class="divide-y divide-gray-100">
                   <tr v-for="(item, index) in editableItems" :key="item.id" class="hover:bg-gray-50/50">
                     <td class="px-3 py-2.5">
-                      <p class="font-bold text-gray-900">{{ item.productName }}</p>
-                      <p class="text-[11px] text-gray-500">{{ item.sku }} <span v-if="item.product?.hsnCode">| HSN: {{ item.product.hsnCode }}</span></p>
-                      <p v-if="item.itemNotes" class="text-[10px] text-amber-600 mt-0.5">💬 {{ item.itemNotes }}</p>
+                      <p class="font-bold text-gray-900">{{ item.productName || item.product?.name }}</p>
+                      <p class="text-[11px] text-gray-500 mt-0.5">
+                        {{ item.sku || item.product?.sku }} <span v-if="item.product?.hsnCode">| HSN: {{ item.product.hsnCode }}</span>
+                      </p>
+                      <div class="flex flex-wrap items-center gap-1.5 mt-1">
+                        <span 
+                          v-if="item.isTaxInclusive" 
+                          class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-blue-50 text-blue-700 border border-blue-200 shadow-2xs"
+                          title="Tax Inclusive Rate"
+                        >
+                          Tax Inc.
+                        </span>
+                        <span 
+                          v-if="item.applyLastPrice" 
+                          class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-2xs"
+                          title="Applied Customer's Last Agreed Price"
+                        >
+                          Last Price
+                        </span>
+                        <span 
+                          v-if="item.itemNotes" 
+                          class="inline-flex items-center text-[10px] text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200/70 truncate max-w-[200px]" 
+                          :title="item.itemNotes"
+                        >
+                          💬 {{ item.itemNotes }}
+                        </span>
+                      </div>
                     </td>
                     <td class="px-3 py-2.5 text-center text-gray-600 font-semibold">{{ item.quantity }}</td>
                     <td class="px-3 py-2.5 text-center">
@@ -122,6 +146,9 @@
                         v-model.number="item.unitPrice" 
                         class="w-24 text-right text-xs border border-gray-300 rounded p-1.5 focus:ring-[#1a5c4c] bg-white font-medium"
                       />
+                      <div v-if="item.isTaxInclusive" class="text-[9px] font-semibold text-blue-600 mt-0.5">
+                        (Tax Incl.)
+                      </div>
                     </td>
                     <td class="px-3 py-2.5 text-right">
                       <input 
@@ -234,12 +261,17 @@ watch(() => props.isOpen, async (isOpen) => {
 
         return {
           ...item,
+          productName: item.productName || item.product?.name,
+          sku: item.sku || item.product?.sku,
           quantity: approvedQty,
           packedQuantity: packedQty,
           billedQuantity: billedQty,
           unitPrice: Number(item.unitPrice || 0),
           discount: item.discount ? Number(item.discount) : 0,
-          taxRate: item.taxRate !== undefined && item.taxRate !== null ? Number(item.taxRate) : Number(item.product?.taxRate || 0)
+          taxRate: item.taxRate !== undefined && item.taxRate !== null ? Number(item.taxRate) : Number(item.product?.taxRate || 0),
+          isTaxInclusive: Boolean(item.isTaxInclusive),
+          applyLastPrice: Boolean(item.applyLastPrice),
+          itemNotes: item.itemNotes || ''
         }
       })
     } catch (e) {

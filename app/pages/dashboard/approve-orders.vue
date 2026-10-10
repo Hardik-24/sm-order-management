@@ -22,9 +22,10 @@ import {
   ShieldCheck,
   FileText,
   UserCheck,
-  DollarSign,
+  IndianRupee,
   Loader2,
-  Award
+  Award,
+  Ban
 } from 'lucide-vue-next'
 import { formatCurrency, formatDateTime } from '~/lib/utils'
 import { useGsapAnimation } from '~/composables/useGsapAnimation'
@@ -86,10 +87,18 @@ const { data, pending: isLoading, refresh } = useFetch('/api/orders', {
   watch: [queryObj]
 })
 
+// Universal approval statistics
+const { data: statsData, refresh: refreshStats } = useFetch('/api/orders/approval-stats')
+
+const handleRefresh = async () => {
+  await Promise.all([refresh(), refreshStats()])
+}
+
 // Realtime sync
 const { onOrderSync, notifyChange } = useRealtimeSync()
 onOrderSync(() => {
   refresh()
+  refreshStats()
 })
 
 // Drawer state
@@ -108,6 +117,7 @@ const handleDrawerClose = () => {
 
 const handleDrawerUpdate = () => {
   refresh()
+  refreshStats()
 }
 
 const onDrawerReviewApprove = (order: any) => {
@@ -170,6 +180,7 @@ const submitApproval = async () => {
     selectedOrder.value = null
     notifyChange('order_approved')
     refresh()
+    refreshStats()
   } catch (err: any) {
     showSnackbar(err.data?.message || 'Failed to approve order', 'error')
   } finally {
@@ -200,6 +211,7 @@ const submitCancel = async () => {
     orderToCancel.value = null
     notifyChange('order_cancelled')
     refresh()
+    refreshStats()
   } catch (err: any) {
     showSnackbar(err.data?.message || 'Failed to cancel order', 'error')
   } finally {
@@ -210,21 +222,18 @@ const submitCancel = async () => {
 // GSAP Animation
 const { animateNumber, animateStagger, initContext } = useGsapAnimation()
 const statsContainer = ref<HTMLElement | null>(null)
+const tbodyRef = ref<HTMLElement | null>(null)
 const numPending = ref<HTMLElement | null>(null)
 const numUrgent = ref<HTMLElement | null>(null)
 const numApproved = ref<HTMLElement | null>(null)
 const numTotal = ref<HTMLElement | null>(null)
 
 const counts = computed(() => {
-  const orders = data.value?.orders || []
-  const pendingCount = orders.filter((o: any) => !o.isApproved && o.overallStatus !== 'CANCELLED').length
-  const urgentCount = orders.filter((o: any) => o.isUrgent && !o.isApproved).length
-  const approvedCount = orders.filter((o: any) => o.isApproved).length
   return {
-    pending: pendingCount,
-    urgent: urgentCount,
-    approved: approvedCount,
-    total: data.value?.total || 0
+    pending: statsData.value?.pending ?? 0,
+    urgent: statsData.value?.urgent ?? 0,
+    approved: statsData.value?.approved ?? 0,
+    total: statsData.value?.total ?? 0
   }
 })
 
@@ -237,17 +246,32 @@ const triggerStatAnimations = () => {
   })
 }
 
+const triggerRowAnimation = () => {
+  nextTick(() => {
+    if (!isLoading.value && tbodyRef.value) {
+      const rows = tbodyRef.value.querySelectorAll('tr')
+      const targetRows = Array.from(rows).slice(0, 15)
+      animateStagger(targetRows, { duration: 0.18, stagger: 0.015, y: 4 })
+    }
+  })
+}
+
 onMounted(() => {
   initContext(statsContainer.value || undefined)
   if (statsContainer.value) {
     animateStagger(statsContainer.value.children, { duration: 0.35, stagger: 0.06, y: 12 })
   }
   triggerStatAnimations()
+  triggerRowAnimation()
 })
 
 watch(() => counts.value, () => {
   triggerStatAnimations()
 }, { deep: true })
+
+watch([() => data.value?.orders, () => isLoading.value], () => {
+  triggerRowAnimation()
+}, { immediate: false })
 
 const getPrivilegeColor = (tier: string) => {
   switch (tier) {
@@ -270,12 +294,7 @@ const getItemsTotalQuantity = (order: any) => {
     <!-- Header -->
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
       <div>
-        <div class="flex items-center gap-3">
-          <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Approve Orders</h1>
-          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#1a5c4c]/10 text-[#1a5c4c] border border-[#1a5c4c]/20">
-            <CheckCheck class="w-3.5 h-3.5" /> Department Desk
-          </span>
-        </div>
+        <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Approve Orders</h1>
         <p class="text-sm text-gray-500 mt-1">
           Verify product rates, inspect custom notes, and approve orders before fulfillment.
         </p>
@@ -283,7 +302,7 @@ const getItemsTotalQuantity = (order: any) => {
 
       <div class="flex items-center gap-3">
         <button 
-          @click="() => refresh()" 
+          @click="handleRefresh" 
           :disabled="isLoading"
           class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 shadow-sm transition-colors"
         >
@@ -296,10 +315,7 @@ const getItemsTotalQuantity = (order: any) => {
     <!-- Quick Stats Cards -->
     <div ref="statsContainer" class="grid grid-cols-2 md:grid-cols-4 gap-4">
       <!-- Pending Approval -->
-      <div 
-        @click="activeTab = 'PENDING'; page = 1"
-        class="bg-white rounded-xl border border-[#e5e2dc] p-5 shadow-sm cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
-      >
+      <div class="bg-white rounded-xl border border-[#e5e2dc] p-5 shadow-sm">
         <div class="flex gap-4">
           <div class="flex flex-col justify-between">
             <div class="bg-amber-50 p-2.5 rounded-lg text-amber-600 border border-amber-100/50">
@@ -316,10 +332,7 @@ const getItemsTotalQuantity = (order: any) => {
       </div>
 
       <!-- Urgent Orders -->
-      <div 
-        @click="activeTab = 'URGENT'; page = 1"
-        class="bg-white rounded-xl border border-rose-200/80 p-5 shadow-sm cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
-      >
+      <div class="bg-white rounded-xl border border-rose-200/80 p-5 shadow-sm">
         <div class="flex gap-4">
           <div class="flex flex-col justify-between">
             <div class="bg-rose-50 p-2.5 rounded-lg text-rose-600 border border-rose-100/50">
@@ -336,10 +349,7 @@ const getItemsTotalQuantity = (order: any) => {
       </div>
 
       <!-- Approved -->
-      <div 
-        @click="activeTab = 'APPROVED'; page = 1"
-        class="bg-white rounded-xl border border-[#e5e2dc] p-5 shadow-sm cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
-      >
+      <div class="bg-white rounded-xl border border-[#e5e2dc] p-5 shadow-sm">
         <div class="flex gap-4">
           <div class="flex flex-col justify-between">
             <div class="bg-[#1a5c4c]/10 p-2.5 rounded-lg text-[#1a5c4c] border border-[#1a5c4c]/20">
@@ -350,16 +360,13 @@ const getItemsTotalQuantity = (order: any) => {
           <div class="flex flex-col justify-center">
             <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5">Approved</p>
             <h3 ref="numApproved" class="text-2xl font-bold text-gray-900 mb-0.5">{{ counts.approved }}</h3>
-            <p class="text-xs text-emerald-600 font-medium">Ready for dispatch</p>
+            <p class="text-xs text-emerald-600 font-medium">Approved orders</p>
           </div>
         </div>
       </div>
 
       <!-- Total Orders -->
-      <div 
-        @click="activeTab = 'ALL'; page = 1"
-        class="bg-white rounded-xl border border-[#e5e2dc] p-5 shadow-sm cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
-      >
+      <div class="bg-white rounded-xl border border-[#e5e2dc] p-5 shadow-sm">
         <div class="flex gap-4">
           <div class="flex flex-col justify-between">
             <div class="bg-gray-100 p-2.5 rounded-lg text-gray-600 border border-gray-200/50">
@@ -387,7 +394,7 @@ const getItemsTotalQuantity = (order: any) => {
         >
           <span v-if="tab === 'URGENT'">⚡</span>
           <span>
-            {{ tab === 'PENDING' ? 'Pending Approval' : tab === 'URGENT' ? 'Urgent Only' : tab === 'APPROVED' ? 'Approved Orders' : 'All Orders' }}
+            {{ tab === 'PENDING' ? 'Pending Approval' : tab === 'URGENT' ? 'Urgent Orders' : tab === 'APPROVED' ? 'Approved Orders' : 'All Orders' }}
           </span>
           <span 
             class="px-2 py-0.5 rounded-full text-[10px] font-bold transition-colors"
@@ -434,33 +441,58 @@ const getItemsTotalQuantity = (order: any) => {
         </div>
       </div>
 
-      <!-- Orders Table -->
-      <div ref="approveTableRef" class="overflow-x-auto no-scrollbar">
-        <table class="w-full text-left text-sm text-gray-600">
-          <thead class="bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-            <tr>
-              <th class="px-5 py-3.5 whitespace-nowrap">Order</th>
-              <th class="px-5 py-3.5">Customer & Tier</th>
-              <th class="px-5 py-3.5">Items</th>
-              <th class="px-5 py-3.5">Total Amount</th>
-              <th class="px-5 py-3.5">Status & Approval</th>
-              <th class="px-5 py-3.5 text-right whitespace-nowrap pr-5">Actions</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-100 bg-white">
-            <tr v-if="isLoading" class="text-center py-8">
-              <td colspan="6" class="py-14 text-center text-gray-400">
-                <Loader2 class="w-6 h-6 animate-spin mx-auto text-[#1a5c4c] mb-2" />
-                <span class="text-xs font-medium">Loading orders...</span>
-              </td>
-            </tr>
-            <tr v-else-if="!data?.orders || data.orders.length === 0" class="text-center py-8">
-              <td colspan="6" class="py-14 text-center text-gray-400">
-                <CheckCheck class="w-8 h-8 mx-auto text-emerald-500/50 mb-2" />
-                <p class="text-sm font-semibold text-gray-700">No orders pending approval</p>
-                <p class="text-xs text-gray-400 mt-0.5">All orders matching criteria have been reviewed.</p>
-              </td>
-            </tr>
+      <!-- Table Area with Pulsing Blur and Skeleton Support -->
+      <div class="relative min-h-[220px]">
+        <div v-if="isLoading" class="absolute inset-0 bg-white/50 backdrop-blur-[2px] z-10 animate-pulse pointer-events-none"></div>
+
+        <!-- Orders Table -->
+        <div ref="approveTableRef" class="overflow-x-auto no-scrollbar">
+          <table class="w-full text-left text-sm text-gray-600">
+            <thead class="bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+              <tr>
+                <th class="px-5 py-3.5 whitespace-nowrap">Order</th>
+                <th class="px-5 py-3.5">Customer & Tier</th>
+                <th class="px-5 py-3.5">Items</th>
+                <th class="px-5 py-3.5">Status & Approval</th>
+                <th class="px-5 py-3.5 text-right whitespace-nowrap pr-5">Actions</th>
+              </tr>
+            </thead>
+            <tbody ref="tbodyRef" class="divide-y divide-gray-100 bg-white">
+              <!-- Skeleton Rows when loading and no data -->
+              <template v-if="isLoading && (!data?.orders || data.orders.length === 0)">
+                <tr v-for="i in 6" :key="'skel-' + i" class="animate-pulse hover:bg-transparent">
+                  <td class="px-5 py-4 whitespace-nowrap">
+                    <div class="h-4 bg-gray-200 rounded w-24 mb-1.5"></div>
+                    <div class="h-3 bg-gray-100 rounded w-16"></div>
+                  </td>
+                  <td class="px-5 py-4">
+                    <div class="h-4 bg-gray-200 rounded w-36 mb-1.5"></div>
+                    <div class="h-3 bg-gray-100 rounded w-24"></div>
+                  </td>
+                  <td class="px-5 py-4">
+                    <div class="h-4 bg-gray-200 rounded w-44 mb-1.5"></div>
+                    <div class="h-3 bg-gray-100 rounded w-20"></div>
+                  </td>
+                  <td class="px-5 py-4 whitespace-nowrap">
+                    <div class="h-6 bg-gray-200 rounded-full w-28"></div>
+                  </td>
+                  <td class="px-5 py-4 text-right whitespace-nowrap pr-5">
+                    <div class="flex flex-col items-end gap-1.5">
+                      <div class="h-7 bg-gray-200 rounded-lg w-28"></div>
+                      <div class="h-6 bg-gray-100 rounded-lg w-20"></div>
+                    </div>
+                  </td>
+                </tr>
+              </template>
+
+              <!-- Empty state -->
+              <tr v-else-if="!isLoading && (!data?.orders || data.orders.length === 0)" class="text-center py-8">
+                <td colspan="5" class="py-14 text-center text-gray-400">
+                  <CheckCheck class="w-8 h-8 mx-auto text-emerald-500/50 mb-2" />
+                  <p class="text-sm font-semibold text-gray-700">No orders pending approval</p>
+                  <p class="text-xs text-gray-400 mt-0.5">All orders matching criteria have been reviewed.</p>
+                </td>
+              </tr>
             <tr 
               v-else 
               v-for="order in data.orders" 
@@ -520,17 +552,7 @@ const getItemsTotalQuantity = (order: any) => {
                 </p>
               </td>
 
-              <!-- 4. TOTAL AMOUNT -->
-              <td class="px-5 py-3.5 whitespace-nowrap">
-                <div class="text-xs font-bold text-gray-900">
-                  {{ formatCurrency(order.totalAmount) }}
-                </div>
-                <p v-if="order.customer?.paymentTerms" class="text-[11px] text-gray-400 mt-0.5">
-                  {{ order.customer.paymentTerms }}
-                </p>
-              </td>
-
-              <!-- 5. STATUS & APPROVAL (kept as requested) -->
+              <!-- 4. STATUS & APPROVAL -->
               <td class="px-5 py-3.5 whitespace-nowrap">
                 <div v-if="order.isApproved" class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                   <CheckCircle2 class="w-3.5 h-3.5 text-emerald-600" />
@@ -546,13 +568,13 @@ const getItemsTotalQuantity = (order: any) => {
                 </div>
               </td>
 
-              <!-- 6. ACTIONS -->
+              <!-- 5. ACTIONS: Review & Approve above, Cancel Order below -->
               <td class="px-5 py-3.5 text-right whitespace-nowrap pr-5">
-                <div class="flex items-center justify-end gap-2">
+                <div class="flex flex-col items-end gap-1.5">
                   <button 
                     v-if="!order.isApproved && order.overallStatus !== 'CANCELLED'"
                     @click.stop="openReview(order)"
-                    class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#1a5c4c] text-white hover:bg-[#14473b] shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+                    class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#1a5c4c] text-white hover:bg-[#14473b] shadow-2xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap"
                   >
                     <CheckCheck class="w-3.5 h-3.5" />
                     <span>Review & Approve</span>
@@ -560,10 +582,11 @@ const getItemsTotalQuantity = (order: any) => {
                   <button 
                     v-if="order.overallStatus !== 'CANCELLED' && order.overallStatus !== 'DELIVERED'"
                     @click.stop="openCancelModal(order)"
-                    class="px-2.5 py-1.5 rounded-lg text-xs font-medium text-rose-600 hover:bg-rose-50 transition-colors border border-rose-200 cursor-pointer"
+                    class="px-2.5 py-1 rounded-lg text-[11px] font-medium text-rose-600 hover:bg-rose-50 transition-colors border border-rose-200 flex items-center justify-center gap-1 cursor-pointer whitespace-nowrap"
                     title="Cancel Order"
                   >
-                    Cancel
+                    <Ban class="w-3 h-3 text-rose-500" />
+                    <span>Cancel Order</span>
                   </button>
                 </div>
               </td>
@@ -574,6 +597,7 @@ const getItemsTotalQuantity = (order: any) => {
 
       <!-- Floating Horizontal Scrollbar (Desktop only) -->
       <FloatingHorizontalScrollbar :target="approveTableRef" />
+    </div>
 
       <!-- Pagination -->
       <div v-if="data?.totalPages > 1" class="p-4 border-t border-gray-200 flex justify-between items-center text-xs text-gray-500 bg-gray-50/30">
@@ -719,13 +743,13 @@ const getItemsTotalQuantity = (order: any) => {
                     </td>
                     <td class="py-3 px-3">
                       <div class="relative flex items-center w-28">
-                        <span class="absolute left-2.5 text-xs text-gray-400 font-bold">₹</span>
+                        <IndianRupee class="absolute left-2.5 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
                         <input 
                           v-model.number="item.unitPrice" 
                           type="number" 
                           step="0.01" 
                           min="0"
-                          class="w-full pl-6 pr-2.5 py-1.5 border border-gray-300 rounded-lg font-bold text-gray-900 text-xs focus:ring-2 focus:ring-[#1a5c4c]/20 focus:border-[#1a5c4c] outline-none transition-all"
+                          class="w-full pl-7 pr-2.5 py-1.5 border border-gray-300 rounded-lg font-bold text-gray-900 text-xs focus:ring-2 focus:ring-[#1a5c4c]/20 focus:border-[#1a5c4c] outline-none transition-all"
                         />
                       </div>
                     </td>

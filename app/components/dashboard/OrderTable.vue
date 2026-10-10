@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Search, Filter, MoreHorizontal, ChevronRight, Check, Calendar, X, ArrowRight, Clock, Package, Truck, Receipt, CheckCheck } from 'lucide-vue-next'
+import { Search, Filter, MoreHorizontal, ChevronRight, Check, Calendar, X, ArrowRight, Clock, Package, Truck, IndianRupee, CheckCheck } from 'lucide-vue-next'
 import { formatTime, getDisplayStatus, getOverallColor, getStatusColor } from '~~/app/lib/utils'
 import CustomSelect from '~/components/ui/CustomSelect.vue'
 import TableFilterButtons from '~/components/dashboard/TableFilterButtons.vue'
@@ -124,7 +124,7 @@ const getStepIcon = (key: string) => {
   switch (key) {
     case 'A': return CheckCheck
     case 'P': return Package
-    case 'B': return Receipt
+    case 'B': return IndianRupee
     case 'D': return Truck
     default: return Check
   }
@@ -392,8 +392,10 @@ const getItemsTotalQuantity = (order: Order) => {
                         <!-- Exact Icon from Sidebar Menu -->
                         <component 
                           :is="getStepIcon(step.key)" 
-                          class="w-3.5 h-3.5" 
-                          :class="step.status === 'completed' ? 'stroke-[2.2]' : 'stroke-[1.8]'"
+                          :class="[
+                            step.key === 'B' ? 'w-3 h-3' : 'w-3.5 h-3.5',
+                            step.status === 'completed' ? 'stroke-[2.2]' : 'stroke-[1.8]'
+                          ]"
                         />
 
                         <!-- Completed mini check badge -->
@@ -546,7 +548,7 @@ const getItemsTotalQuantity = (order: Order) => {
                   :title="getBillingDot(order).label"
                 >
                   <span class="w-1.5 h-1.5 rounded-full" :class="getBillingDot(order).bg"></span>
-                  <Receipt class="w-2.5 h-2.5" :class="getBillingDot(order).text" />
+                  <IndianRupee class="w-2.5 h-2.5" :class="getBillingDot(order).text" />
                 </div>
 
                 <span class="text-gray-200 text-[9px] leading-none">|</span>

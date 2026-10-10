@@ -1476,7 +1476,7 @@ async function openDirections(order: any) {
           destLng: lng,
           title: customerTitle,
           orderNumber: order.orderNumber || activeTrip.value?.orderNumber || '',
-          enableTurnByTurn: enableTurnByTurn.value,
+          enableTurnByTurn: true,
           orderId: order.id || activeTripOrderId.value || '',
           authToken: token || '',
           apiUrl: API_URL,
@@ -1484,9 +1484,6 @@ async function openDirections(order: any) {
           startTimeMs: startTime,
           isPreview: !isTripAlreadyActive,
         })
-        if (!enableTurnByTurn.value) {
-          showSaved('📍 Turn-by-Turn is OFF in settings: Road tracking is active in background')
-        }
         return
       } catch (e) {
         console.warn('Native navigation plugin failed, falling back:', e)

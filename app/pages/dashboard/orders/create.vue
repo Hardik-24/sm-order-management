@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { X, Plus, Trash2, Zap, MapPin, UserCheck, ShieldAlert, Award, FileText } from 'lucide-vue-next'
+import { X, Plus, Trash2, Zap, MapPin, UserCheck, ShieldAlert, Award, FileText, IndianRupee } from 'lucide-vue-next'
 import { formatCurrency } from '~/lib/utils'
 import CustomSelect from '~/components/ui/CustomSelect.vue'
 import { useSnackbar } from '~/composables/useSnackbar'
@@ -318,8 +318,14 @@ const getPrivilegeColor = (tier: string) => {
 
               <!-- Unit Price -->
               <div class="w-full md:w-28 shrink-0">
-                <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1.5">Rate (₹) *</label>
-                <input type="number" v-model.number="item.unitPrice" min="0" step="0.01" required class="w-full border border-gray-300 rounded-lg shadow-xs p-2 bg-white text-sm font-bold focus:ring-[#1a5c4c] focus:border-[#1a5c4c]" />
+                <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1.5 flex items-center gap-1">
+                  <IndianRupee class="w-3 h-3 text-gray-400" />
+                  <span>Rate *</span>
+                </label>
+                <div class="relative flex items-center">
+                  <IndianRupee class="absolute left-2.5 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+                  <input type="number" v-model.number="item.unitPrice" min="0" step="0.01" required class="w-full pl-7 border border-gray-300 rounded-lg shadow-xs p-2 bg-white text-sm font-bold focus:ring-[#1a5c4c] focus:border-[#1a5c4c]" />
+                </div>
               </div>
 
               <!-- Line Total -->

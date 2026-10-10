@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
-import { ShoppingBag, CheckCheck, Box, Receipt, Truck, ArrowRight } from 'lucide-vue-next'
+import { ShoppingBag, CheckCheck, Box, IndianRupee, Truck, ArrowRight } from 'lucide-vue-next'
 import { useGsapAnimation } from '~/composables/useGsapAnimation'
 import OdometerNumber from '~/components/ui/OdometerNumber.vue'
 
@@ -17,7 +17,7 @@ const stages = [
   { name: 'Sales Placed', icon: ShoppingBag, key: 'sales', color: 'text-[#1a5c4c]', bg: 'bg-[#e6f4f1]', border: 'border-emerald-200' },
   { name: 'Pending Approval', icon: CheckCheck, key: 'approval', color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200' },
   { name: 'In Packing', icon: Box, key: 'packing', color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200' },
-  { name: 'Awaiting Billing', icon: Receipt, key: 'billing', color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-200' },
+  { name: 'Awaiting Billing', icon: IndianRupee, key: 'billing', color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-200' },
   { name: 'Delivery', icon: Truck, key: 'delivery', color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200' }
 ]
 
@@ -45,7 +45,7 @@ onMounted(() => {
       <template v-for="(stage, index) in stages" :key="stage.key">
         <div class="pipeline-node flex flex-col items-center flex-shrink-0 min-w-[70px]">
           <div :class="['w-12 h-12 flex items-center justify-center rounded-full border-2 mb-4 hover:scale-105 transition-transform duration-200', stage.bg, stage.border, stage.color]">
-            <component :is="stage.icon" class="w-5 h-5" />
+            <component :is="stage.icon" :class="stage.key === 'billing' ? 'w-4 h-4' : 'w-5 h-5'" />
           </div>
           <span class="text-xs font-medium text-gray-600 mb-1">{{ stage.name }}</span>
           <OdometerNumber :value="flow?.[stage.key] || 0" class="text-2xl font-semibold text-gray-900 mb-4" />

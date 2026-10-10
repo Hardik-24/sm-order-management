@@ -12,8 +12,10 @@ import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.libraries.navigation.SupportNavigationFragment;
 
@@ -22,6 +24,8 @@ import java.util.Locale;
 public class NavigationActivity extends AppCompatActivity {
 
     private SupportNavigationFragment mNavFragment;
+    private GoogleMap mGoogleMap;
+    private TextView mTvRouteOverviewToggle;
     private String mTitle = "Customer Delivery";
     private String mOrderId = "";
     private String mOrderNumber = "";
@@ -98,6 +102,7 @@ public class NavigationActivity extends AppCompatActivity {
     private void initViews() {
         mTvTitle = findViewById(R.id.tv_nav_title);
         mTvStatus = findViewById(R.id.tv_nav_status);
+        mTvRouteOverviewToggle = findViewById(R.id.tv_route_overview_toggle);
         if (mTvTitle != null) {
             mTvTitle.setText(mTitle);
         }
@@ -147,7 +152,7 @@ public class NavigationActivity extends AppCompatActivity {
             if (mLlExpanded != null) mLlExpanded.setVisibility(View.GONE);
             if (mLlCollapsed != null) mLlCollapsed.setVisibility(View.GONE);
             if (mTvPreviewRouteInfo != null) {
-                mTvPreviewRouteInfo.setText("Tap Start Trip below to begin turn-by-turn guidance");
+                mTvPreviewRouteInfo.setText("Loading route preview & road geometry...");
             }
         } else {
             if (mTvStatus != null) {
@@ -166,9 +171,9 @@ public class NavigationActivity extends AppCompatActivity {
         if (mNavFragment != null) {
             mNavFragment.getMapAsync(googleMap -> {
                 if (googleMap != null) {
+                    mGoogleMap = googleMap;
                     try {
                         googleMap.setMyLocationEnabled(true);
-                        googleMap.followMyLocation(GoogleMap.CameraPerspective.TILTED);
                     } catch (Exception ignored) {}
 
                     if (mDestLat != 0.0 && mDestLng != 0.0) {
@@ -177,6 +182,16 @@ public class NavigationActivity extends AppCompatActivity {
                             googleMap.addMarker(new MarkerOptions()
                                     .position(destLatLng)
                                     .title(mTitle));
+                        } catch (Exception ignored) {}
+                    }
+
+                    if (mIsPreview) {
+                        // Route preview mode: show complete route overview across screen
+                        showRouteOverviewSafely();
+                    } else {
+                        // Active navigation mode: follow driver location with 3D driving camera
+                        try {
+                            googleMap.followMyLocation(GoogleMap.CameraPerspective.TILTED);
                         } catch (Exception ignored) {}
                     }
                 }
@@ -195,6 +210,13 @@ public class NavigationActivity extends AppCompatActivity {
         TextView exitText = findViewById(R.id.tv_exit_nav);
         if (exitText != null) {
             exitText.setOnClickListener(exitListener);
+        }
+
+        if (mTvRouteOverviewToggle != null) {
+            mTvRouteOverviewToggle.setOnClickListener(v -> {
+                showRouteOverviewSafely();
+                Toast.makeText(this, "🗺️ Route overview centered", Toast.LENGTH_SHORT).show();
+            });
         }
 
         // Preview Mode: Start Trip Button
@@ -238,6 +260,7 @@ public class NavigationActivity extends AppCompatActivity {
                 runOnUiThread(() -> {
                     mIsPreview = false;
                     mStartTimeMs = System.currentTimeMillis();
+                    NavigationManager.getInstance().beginActiveGuidance();
 
                     if (mTvStatus != null) {
                         mTvStatus.setText("🟢 LIVE NAVIGATION");
@@ -247,6 +270,12 @@ public class NavigationActivity extends AppCompatActivity {
                     if (mLlPreview != null) mLlPreview.setVisibility(View.GONE);
                     if (mLlExpanded != null) mLlExpanded.setVisibility(View.VISIBLE);
                     if (mLlCollapsed != null) mLlCollapsed.setVisibility(View.GONE);
+
+                    if (mGoogleMap != null) {
+                        try {
+                            mGoogleMap.followMyLocation(GoogleMap.CameraPerspective.TILTED);
+                        } catch (Exception ignored) {}
+                    }
 
                     mTimerHandler.post(mTimerRunnable);
                     Toast.makeText(NavigationActivity.this, "✓ Trip started! Live tracking active.", Toast.LENGTH_LONG).show();
@@ -277,7 +306,48 @@ public class NavigationActivity extends AppCompatActivity {
         }
     }
 
+    private void showRouteOverviewSafely() {
+        if (mNavFragment != null) {
+            try {
+                mNavFragment.showRouteOverview();
+            } catch (Exception e) {
+                android.util.Log.w("NavigationActivity", "showRouteOverview error: " + e.getMessage());
+            }
+        }
+
+        // Fit camera bounds between driver location and destination pin so both are immediately framed
+        if (mGoogleMap != null && mDestLat != 0.0 && mDestLng != 0.0) {
+            double startLat = mLastLat != 0.0 ? mLastLat : NavigationManager.getInstance().getLastLat();
+            double startLng = mLastLng != 0.0 ? mLastLng : NavigationManager.getInstance().getLastLng();
+
+            if (startLat != 0.0 && startLng != 0.0) {
+                try {
+                    LatLngBounds bounds = new LatLngBounds.Builder()
+                            .include(new LatLng(startLat, startLng))
+                            .include(new LatLng(mDestLat, mDestLng))
+                            .build();
+                    mGoogleMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, 180));
+                } catch (Exception ignored) {}
+            }
+        }
+    }
+
     private void setupNavigationStream() {
+        NavigationManager.getInstance().setOnRouteReadyListener((remainingMeters, remainingSeconds) -> runOnUiThread(() -> {
+            if (remainingMeters >= 0) {
+                double remKm = Math.round((remainingMeters / 1000.0) * 10.0) / 10.0;
+                int remMins = Math.round(remainingSeconds / 60.0f);
+                mEtaFormatted = String.format(Locale.US, "%.1f km left (~%d min drive)", remKm, remMins);
+                if (mTvPreviewRouteInfo != null && mIsPreview) {
+                    mTvPreviewRouteInfo.setText("Route: " + mEtaFormatted + " • Tap START TRIP to begin guidance");
+                }
+            }
+
+            if (mIsPreview) {
+                showRouteOverviewSafely();
+            }
+        }));
+
         NavigationManager.getInstance().setLocationCallback((
                 lat, lng, bearing, speedMps, accuracy, timestamp,
                 isRoadSnapped, remainingMeters, remainingSeconds, distanceDrivenKm
@@ -400,5 +470,6 @@ public class NavigationActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         mTimerHandler.removeCallbacks(mTimerRunnable);
+        NavigationManager.getInstance().setOnRouteReadyListener(null);
     }
 }

@@ -80,7 +80,7 @@
             <span v-if="!isSidebarCollapsed" class="font-medium whitespace-nowrap">Packing</span>
           </NuxtLink>
           <NuxtLink to="/dashboard/billing" title="Billing" class="flex items-center gap-3 rounded-md py-2.5 text-sm transition-colors" :class="[isLinkActive('/dashboard/billing') ? 'bg-[#223933] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50 hover:text-gray-200', isSidebarCollapsed ? 'justify-center px-0' : 'px-3']">
-            <Receipt class="shrink-0 w-4 h-4 transition-colors" :class="isLinkActive('/dashboard/billing') ? 'text-emerald-400' : 'text-gray-400'" />
+            <IndianRupee class="shrink-0 w-4 h-4 transition-colors" :class="isLinkActive('/dashboard/billing') ? 'text-emerald-400' : 'text-gray-400'" />
             <span v-if="!isSidebarCollapsed" class="font-medium whitespace-nowrap">Billing</span>
           </NuxtLink>
           <NuxtLink to="/dashboard/delivery" title="Delivery" class="flex items-center gap-3 rounded-md py-2.5 text-sm transition-colors" :class="[isLinkActive('/dashboard/delivery') ? 'bg-[#223933] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50 hover:text-gray-200', isSidebarCollapsed ? 'justify-center px-0' : 'px-3']">
@@ -164,7 +164,7 @@
           <CheckCheck class="w-5 h-5" />
         </NuxtLink>
         <NuxtLink to="/dashboard/packing" :class="[isLinkActive('/dashboard/packing') ? 'text-emerald-400' : 'text-gray-400']"><Package class="w-5 h-5" /></NuxtLink>
-        <NuxtLink to="/dashboard/billing" :class="[isLinkActive('/dashboard/billing') ? 'text-emerald-400' : 'text-gray-400']"><Receipt class="w-5 h-5" /></NuxtLink>
+        <NuxtLink to="/dashboard/billing" :class="[isLinkActive('/dashboard/billing') ? 'text-emerald-400' : 'text-gray-400']"><IndianRupee class="w-5 h-5" /></NuxtLink>
         <NuxtLink to="/dashboard/delivery" :class="[isLinkActive('/dashboard/delivery') ? 'text-emerald-400' : 'text-gray-400']"><Truck class="w-5 h-5" /></NuxtLink>
         <NuxtLink to="/dashboard/inventory" :class="[isLinkActive('/dashboard/inventory') ? 'text-emerald-400' : 'text-gray-400']"><Boxes class="w-5 h-5" /></NuxtLink>
         <NuxtLink to="/dashboard/chat" :class="[isLinkActive('/dashboard/chat') ? 'text-emerald-400' : 'text-gray-400']"><MessageSquare class="w-5 h-5" /></NuxtLink>
@@ -238,7 +238,7 @@
           <Package class="w-4 h-4 transition-colors" :class="isLinkActive('/dashboard/packing') ? 'text-emerald-400' : 'text-gray-400'" /> <span class="font-medium">Packing</span>
         </NuxtLink>
         <NuxtLink to="/dashboard/billing" class="flex items-center gap-3 rounded-md py-2.5 px-3 text-sm transition-colors" :class="[isLinkActive('/dashboard/billing') ? 'bg-[#223933] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50']">
-          <Receipt class="w-4 h-4 transition-colors" :class="isLinkActive('/dashboard/billing') ? 'text-emerald-400' : 'text-gray-400'" /> <span class="font-medium">Billing</span>
+          <IndianRupee class="w-4 h-4 transition-colors" :class="isLinkActive('/dashboard/billing') ? 'text-emerald-400' : 'text-gray-400'" /> <span class="font-medium">Billing</span>
         </NuxtLink>
         <NuxtLink to="/dashboard/delivery" class="flex items-center gap-3 rounded-md py-2.5 px-3 text-sm transition-colors" :class="[isLinkActive('/dashboard/delivery') ? 'bg-[#223933] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50']">
           <Truck class="w-4 h-4 transition-colors" :class="isLinkActive('/dashboard/delivery') ? 'text-emerald-400' : 'text-gray-400'" /> <span class="font-medium">Delivery</span>
@@ -284,7 +284,7 @@ import {
   LayoutDashboard, 
   ClipboardList, 
   PenTool, 
-  Receipt, 
+  IndianRupee, 
   CreditCard,
   Package, 
   Boxes, 
