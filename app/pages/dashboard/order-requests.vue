@@ -438,25 +438,24 @@ watch(() => data.value?.counts, () => {
       <!-- Table Content -->
       <div class="relative min-h-[200px]">
         <div v-if="isLoading" class="absolute inset-0 bg-white/50 backdrop-blur-[2px] z-10 animate-pulse"></div>
-        <div ref="desktopTableScrollRef" class="hidden md:block no-scrollbar" :class="isSidebarCollapsed ? 'overflow-hidden' : 'overflow-x-auto'">
+        <div ref="desktopTableScrollRef" class="hidden md:block no-scrollbar" :class="isSidebarCollapsed ? 'overflow-hidden' : 'overflow-x-auto'" style="scrollbar-width: none; -ms-overflow-style: none;">
           <table 
             class="w-full text-left border-collapse"
             :class="isSidebarCollapsed ? 'table-fixed' : 'min-w-[1000px]'"
           >
             <thead>
               <tr class="bg-gray-50 border-b border-gray-200 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
-                <th class="w-[12%] px-2.5 py-3.5 whitespace-nowrap">Request #</th>
-                <th class="w-[11%] px-2.5 py-3.5 whitespace-nowrap">Received</th>
-                <th class="w-[22%] px-2.5 py-3.5">Customer</th>
-                <th class="w-[22%] px-2.5 py-3.5">Items Summary</th>
-                <th class="w-[9%] px-2.5 py-3.5 whitespace-nowrap">Est. Value</th>
-                <th class="w-[9%] px-2.5 py-3.5 text-center whitespace-nowrap">Status</th>
-                <th class="w-[15%] px-2.5 py-3.5 text-right whitespace-nowrap pr-3">Action</th>
+                <th class="w-[14%] px-2.5 py-3.5 whitespace-nowrap">Request #</th>
+                <th class="w-[12%] px-2.5 py-3.5 whitespace-nowrap">Received</th>
+                <th class="w-[26%] px-2.5 py-3.5">Customer</th>
+                <th class="w-[24%] px-2.5 py-3.5">Items Summary</th>
+                <th class="w-[10%] px-2.5 py-3.5 text-center whitespace-nowrap">Status</th>
+                <th class="w-[14%] px-2.5 py-3.5 text-right whitespace-nowrap pr-3">Action</th>
               </tr>
             </thead>
             <tbody ref="tbodyRef" class="divide-y divide-gray-200 bg-white">
               <tr v-if="requestsList.length === 0 && !isLoading" class="text-center">
-                <td colspan="7" class="py-16 text-gray-400">
+                <td colspan="6" class="py-16 text-gray-400">
                   <Inbox class="w-10 h-10 mx-auto text-gray-300 mb-2 stroke-1" />
                   <p class="font-medium text-gray-600">No order requests found</p>
                   <p class="text-xs text-gray-400 mt-0.5">Customer requests submitted on the storefront will appear here instantly.</p>
@@ -492,9 +491,6 @@ watch(() => data.value?.counts, () => {
                   <div class="text-[11px] text-gray-400 truncate block mt-0.5" :title="req.items.map((i: any) => `${i.productName} (${i.quantity})`).join(', ')">
                     {{ req.items.map((i: any) => `${i.productName} (${i.quantity})`).join(', ') }}
                   </div>
-                </td>
-                <td class="px-2.5 py-3 whitespace-nowrap text-xs font-bold text-gray-900">
-                  {{ formatCurrency(req.totalEstimated) }}
                 </td>
                 <td class="px-2.5 py-3 whitespace-nowrap text-center">
                   <span 
@@ -597,10 +593,10 @@ watch(() => data.value?.counts, () => {
               </div>
             </div>
 
-            <!-- 3. Footer: Total Amount & Date -->
-            <div class="flex items-center justify-between pt-3 border-t border-gray-50">
-              <span class="text-sm font-bold text-[#1a5c4c]">
-                {{ formatCurrency(req.totalEstimated) }}
+            <!-- 3. Footer: Date & Details Action -->
+            <div class="flex items-center justify-between pt-2.5 border-t border-gray-50">
+              <span class="text-xs text-gray-500 font-medium">
+                {{ formatDateTime(req.createdAt) }}
               </span>
               <span class="text-xs font-medium text-gray-400 flex items-center gap-1">
                 {{ timeAgo(req.createdAt) }} ago <ArrowRight class="w-3.5 h-3.5 ml-1 text-gray-300" />

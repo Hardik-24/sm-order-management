@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Search, Filter, MoreHorizontal, ChevronRight, Check, Calendar, X } from 'lucide-vue-next'
+import { Search, Filter, MoreHorizontal, ChevronRight, Check, Calendar, X, ArrowRight, Clock, Package, Truck } from 'lucide-vue-next'
 import { formatTime, getDisplayStatus, getOverallColor, getStatusColor } from '~~/app/lib/utils'
 import CustomSelect from '~/components/ui/CustomSelect.vue'
 import TableFilterButtons from '~/components/dashboard/TableFilterButtons.vue'
@@ -110,6 +110,127 @@ const getDeliveryDot = (order: Order) => {
   if (status === 'ON_HOLD') return { bg: 'bg-amber-500', text: 'text-amber-700', label: 'Delivery: On Hold' }
   return { bg: 'bg-gray-300', text: 'text-gray-500', label: 'Delivery: Waiting' }
 }
+
+// Workflow Pipeline Helpers for 6-Column Desktop Layout
+interface PipelineStep {
+  key: string
+  label: string
+  shortLabel: string
+  status: 'completed' | 'in_progress' | 'waiting' | 'alert'
+}
+
+const getOrderPipeline = (order: Order): { steps: PipelineStep[], summary: string } => {
+  if (order.overallStatus === 'CANCELLED') {
+    return {
+      steps: [
+        { key: 'A', label: 'Approval', shortLabel: 'A', status: 'alert' },
+        { key: 'P', label: 'Packing', shortLabel: 'P', status: 'waiting' },
+        { key: 'B', label: 'Billing', shortLabel: 'B', status: 'waiting' },
+        { key: 'D', label: 'Delivery', shortLabel: 'D', status: 'waiting' },
+      ],
+      summary: 'Order Cancelled'
+    }
+  }
+
+  // 1. Approval
+  const isApproved = !!(order as any).isApproved
+  const approvalStep: PipelineStep = {
+    key: 'A',
+    label: 'Approval',
+    shortLabel: 'A',
+    status: isApproved ? 'completed' : 'in_progress'
+  }
+
+  // 2. Packing
+  const packStat = order.packingStatus?.status
+  let packStatus: PipelineStep['status'] = 'waiting'
+  if (packStat === 'PACKED' || packStat === 'COMPLETED') {
+    packStatus = 'completed'
+  } else if (packStat === 'IN_PROGRESS') {
+    packStatus = 'in_progress'
+  } else if (packStat === 'SHORTAGE' || packStat === 'ON_HOLD') {
+    packStatus = 'alert'
+  } else if (isApproved) {
+    packStatus = 'in_progress'
+  }
+
+  const packingStep: PipelineStep = {
+    key: 'P',
+    label: 'Packing',
+    shortLabel: 'P',
+    status: packStatus
+  }
+
+  // 3. Billing
+  const billStat = order.billingStatus?.status
+  let billStatus: PipelineStep['status'] = 'waiting'
+  if (billStat === 'GENERATED') {
+    billStatus = 'completed'
+  } else if (billStat === 'ON_HOLD' || billStat === 'ERROR') {
+    billStatus = 'alert'
+  } else if (packStatus === 'completed') {
+    billStatus = 'in_progress'
+  }
+
+  const billingStep: PipelineStep = {
+    key: 'B',
+    label: 'Billing',
+    shortLabel: 'B',
+    status: billStatus
+  }
+
+  // 4. Delivery
+  const delStat = order.deliveryStatus?.status
+  let delStatus: PipelineStep['status'] = 'waiting'
+  if (delStat === 'DELIVERED') {
+    delStatus = 'completed'
+  } else if (delStat === 'DISPATCHED' || delStat === 'ASSIGNED') {
+    delStatus = 'in_progress'
+  } else if (delStat === 'ON_HOLD') {
+    delStatus = 'alert'
+  } else if (billStatus === 'completed' && packStatus === 'completed') {
+    delStatus = 'in_progress'
+  }
+
+  const deliveryStep: PipelineStep = {
+    key: 'D',
+    label: 'Delivery',
+    shortLabel: 'D',
+    status: delStatus
+  }
+
+  // Human-readable stage summary
+  let summary = 'Order Received'
+  if (delStat === 'DELIVERED') {
+    summary = 'Delivered to Customer'
+  } else if (delStat === 'DISPATCHED') {
+    summary = 'Out for Delivery'
+  } else if (order.overallStatus === 'READY' || (billStatus === 'completed' && packStatus === 'completed')) {
+    summary = 'Ready for Dispatch'
+  } else if (packStat === 'SHORTAGE') {
+    summary = 'Packing Shortage'
+  } else if (packStat === 'IN_PROGRESS') {
+    summary = 'Packing In Progress'
+  } else if (billStat === 'PENDING' && packStatus === 'completed') {
+    summary = 'Billing Pending'
+  } else if (!isApproved) {
+    summary = 'Approval Pending'
+  } else if (packStat === 'PENDING') {
+    summary = 'Packing Queue'
+  }
+
+  return {
+    steps: [approvalStep, packingStep, billingStep, deliveryStep],
+    summary
+  }
+}
+
+const getItemsTotalQuantity = (order: Order) => {
+  if (!order.items || !order.items.length) return '0 items'
+  const totalUnits = order.items.reduce((sum: number, itm: any) => sum + (Number(itm.quantity) || 0), 0)
+  const unit = (order.items[0] as any)?.product?.unit || 'units'
+  return `${totalUnits} ${unit.toLowerCase()}`
+}
 </script>
 
 <template>
@@ -174,21 +295,17 @@ const getDeliveryDot = (order: Order) => {
     <div class="relative min-h-[200px]">
       <div v-if="isLoading" class="absolute inset-0 bg-white/50 backdrop-blur-[2px] z-10 animate-pulse"></div>
 
-      <!-- DESKTOP / TABLET VIEW: Full Multi-column Table -->
-      <div ref="tableScrollRef" class="hidden md:block overflow-x-auto no-scrollbar">
+      <!-- DESKTOP / TABLET VIEW: Redesigned 6-Column Layout with Connected Workflow Pipeline -->
+      <div ref="tableScrollRef" class="hidden md:block overflow-x-auto no-scrollbar" style="scrollbar-width: none; -ms-overflow-style: none;">
         <table class="w-full text-left border-collapse min-w-full">
           <thead>
-            <tr class="bg-gray-50 border-b border-gray-200 text-xs font-medium text-gray-500 uppercase tracking-wider">
-              <th class="px-6 py-4 whitespace-nowrap">Order ID</th>
-              <th class="px-6 py-4 whitespace-nowrap">Customer</th>
-              <th class="px-6 py-4 whitespace-nowrap">Items</th>
-              <th class="px-6 py-4 whitespace-nowrap text-center">Approval</th>
-              <th class="px-6 py-4 whitespace-nowrap text-center">Packing</th>
-              <th class="px-6 py-4 whitespace-nowrap text-center">Billing</th>
-              <th class="px-6 py-4 whitespace-nowrap text-center">Delivery</th>
-              <th class="px-6 py-4 whitespace-nowrap">Overall Status</th>
-              <th class="px-6 py-4 whitespace-nowrap">Created</th>
-              <th class="px-6 py-4 whitespace-nowrap"></th>
+            <tr class="bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+              <th class="w-[16%] px-5 py-3.5 whitespace-nowrap">Order</th>
+              <th class="w-[22%] px-5 py-3.5">Customer</th>
+              <th class="w-[13%] px-5 py-3.5">Items</th>
+              <th class="w-[28%] px-5 py-3.5">Workflow Pipeline</th>
+              <th class="w-[13%] px-5 py-3.5">Status</th>
+              <th class="w-[8%] px-5 py-3.5 text-right whitespace-nowrap pr-5">Action</th>
             </tr>
           </thead>
           <tbody ref="tbodyRef" class="divide-y divide-gray-200 bg-white">
@@ -201,86 +318,107 @@ const getDeliveryDot = (order: Order) => {
                 ? 'bg-gray-100/75 hover:bg-gray-200/60 text-gray-400 [&_td]:!text-gray-400 [&_span]:!text-gray-400 [&_div]:!text-gray-400 opacity-60 border-l-4 border-l-gray-400' 
                 : ((order as any).isUrgent ? 'bg-rose-50/20 hover:bg-gray-50 border-l-4 border-l-rose-500' : 'hover:bg-gray-50')"
             >
-              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                <div class="flex items-center gap-1.5">
-                  <span>{{ order.orderNumber }}</span>
-                  <span v-if="order.overallStatus === 'CANCELLED'" class="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[10px] font-bold bg-gray-200 !text-gray-600 border border-rose-500">
+              <!-- 1. ORDER -->
+              <td class="px-5 py-3.5 whitespace-nowrap">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <span class="text-xs font-bold text-gray-900 group-hover:text-[#1a5c4c] transition-colors">
+                    {{ order.orderNumber }}
+                  </span>
+                  <span v-if="order.overallStatus === 'CANCELLED'" class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-bold bg-gray-200 !text-gray-600 border border-rose-500">
                     🚫 CANCELLED
                   </span>
-                  <span v-else-if="(order as any).isUrgent" class="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[10px] font-bold bg-rose-100 text-rose-700 border border-rose-300 animate-pulse">
+                  <span v-else-if="(order as any).isUrgent" class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-bold bg-rose-100 text-rose-700 border border-rose-300 animate-pulse">
                     ⚡ URGENT
                   </span>
-                  <span v-if="(order as any).isApproved && order.overallStatus !== 'CANCELLED'" class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                    ✓
-                  </span>
                 </div>
+                <p class="text-[11px] text-gray-400 mt-0.5 tabular-nums">
+                  {{ formatTime(order.createdAt) }}
+                </p>
               </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+
+              <!-- 2. CUSTOMER -->
+              <td class="px-5 py-3.5 min-w-0">
+                <div class="text-xs font-semibold text-gray-900 truncate flex items-center gap-1.5" :title="order.customer?.name || 'Walk-in Customer'">
+                  <span class="truncate">{{ order.customer?.name || 'Walk-in Customer' }}</span>
+                  <span v-if="(order.customer as any)?.isPriorityClient" class="text-amber-500 font-bold text-xs shrink-0" title="Priority Client">★</span>
+                </div>
+                <p class="text-[11px] text-gray-500 truncate mt-0.5" :title="[order.customer?.company, order.customer?.city || order.customer?.phone].filter(Boolean).join(' • ') || '—'">
+                  {{ [order.customer?.company, order.customer?.city || order.customer?.phone].filter(Boolean).join(' • ') || '—' }}
+                </p>
+              </td>
+
+              <!-- 3. ITEMS (No Price/Amount) -->
+              <td class="px-5 py-3.5 whitespace-nowrap">
+                <div class="text-xs font-bold text-gray-800">
+                  {{ order.items?.length || 0 }} {{ (order.items?.length === 1) ? 'item' : 'items' }}
+                </div>
+                <p class="text-[11px] text-gray-400 mt-0.5">
+                  {{ getItemsTotalQuantity(order) }}
+                </p>
+              </td>
+
+              <!-- 4. WORKFLOW PIPELINE -->
+              <td class="px-5 py-3.5 min-w-0">
+                <!-- Connected Step Dots -->
                 <div class="flex items-center gap-1.5">
-                  <span>{{ order.customer?.name || '—' }}</span>
-                  <span v-if="(order.customer as any)?.isPriorityClient" class="text-amber-500 font-bold text-xs" title="Priority Client">★</span>
+                  <template v-for="(step, idx) in getOrderPipeline(order).steps" :key="step.key">
+                    <!-- Step Badge -->
+                    <div 
+                      class="flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold shrink-0 transition-colors"
+                      :class="[
+                        step.status === 'completed' ? 'bg-emerald-100 text-emerald-700 border border-emerald-400' :
+                        step.status === 'in_progress' ? 'bg-amber-100 text-amber-700 border border-amber-400 animate-pulse' :
+                        step.status === 'alert' ? 'bg-rose-100 text-rose-700 border border-rose-400' :
+                        'bg-gray-100 text-gray-400 border border-gray-200'
+                      ]"
+                      :title="step.label + ': ' + step.status"
+                    >
+                      <Check v-if="step.status === 'completed'" class="w-3 h-3 stroke-[2.5]" />
+                      <Clock v-else-if="step.status === 'in_progress' && step.key === 'A'" class="w-3 h-3" />
+                      <Package v-else-if="step.status === 'in_progress' && step.key === 'P'" class="w-3 h-3" />
+                      <Truck v-else-if="step.status === 'in_progress' && step.key === 'D'" class="w-3 h-3" />
+                      <span v-else>{{ step.shortLabel }}</span>
+                    </div>
+
+                    <!-- Connector Line (between steps) -->
+                    <div 
+                      v-if="idx < getOrderPipeline(order).steps.length - 1"
+                      class="w-3 sm:w-5 h-0.5 rounded-full shrink-0"
+                      :class="getOrderPipeline(order).steps[idx + 1].status !== 'waiting' ? 'bg-emerald-400' : 'bg-gray-200'"
+                    ></div>
+                  </template>
                 </div>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ order.items?.length || 0 }}</td>
-              
-              <!-- 1. Approval -->
-              <td class="px-6 py-4 whitespace-nowrap text-center">
-                <span v-if="(order as any).isApproved" class="text-emerald-600 flex items-center justify-center w-6 h-6 border border-emerald-500 rounded-full mx-auto" title="Approved">
-                  <Check class="w-4 h-4" />
-                </span>
-                <span 
-                  v-else 
-                  class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200 mx-auto"
-                >
-                  Pending
-                </span>
+
+                <!-- Stage Subtitle -->
+                <p class="text-[11px] font-medium text-gray-500 mt-1 truncate">
+                  {{ getOrderPipeline(order).summary }}
+                </p>
               </td>
 
-              <!-- 2. Packing -->
-              <td class="px-6 py-4 whitespace-nowrap text-center">
-                <span v-if="order.packingStatus?.status === 'PACKED' || order.packingStatus?.status === 'COMPLETED'" class="text-emerald-600 flex items-center justify-center w-6 h-6 border border-emerald-500 rounded-full mx-auto" title="Packed">
-                  <Check class="w-4 h-4" />
-                </span>
-                <span v-else-if="!order.packingStatus || order.packingStatus.status === 'NOT_STARTED'" class="text-gray-400 block text-center">—</span>
-                <StatusBadge v-else :status="order.packingStatus.status" class="mx-auto" />
-              </td>
-
-              <!-- 3. Billing -->
-              <td class="px-6 py-4 whitespace-nowrap text-center">
-                <span v-if="order.billingStatus?.status === 'GENERATED'" class="text-emerald-600 flex items-center justify-center w-6 h-6 border border-emerald-500 rounded-full mx-auto" title="Generated">
-                  <Check class="w-4 h-4" />
-                </span>
-                <StatusBadge v-else-if="order.billingStatus?.status" :status="order.billingStatus.status" class="mx-auto" />
-                <span v-else class="text-gray-400 block text-center">—</span>
-              </td>
-              
-              <!-- 4. Delivery -->
-              <td class="px-6 py-4 whitespace-nowrap text-center">
-                <span v-if="order.deliveryStatus?.status === 'DELIVERED'" class="text-emerald-600 flex items-center justify-center w-6 h-6 border border-emerald-500 rounded-full mx-auto" title="Delivered">
-                  <Check class="w-4 h-4" />
-                </span>
-                <span v-else-if="!order.deliveryStatus || order.deliveryStatus.status === 'NOT_STARTED'" class="text-gray-400 block text-center">—</span>
-                <StatusBadge v-else :status="order.deliveryStatus.status" class="mx-auto" />
-              </td>
-              
-              <td class="px-6 py-4 whitespace-nowrap">
+              <!-- 5. STATUS -->
+              <td class="px-5 py-3.5 whitespace-nowrap">
                 <StatusBadge 
                   :status="order.overallStatus" 
                   :display="getDisplayStatus(order)"
                   :class="getOverallColor(order)"
+                  class="!text-[11px] !py-0.5 !px-2.5"
                 />
               </td>
-              
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {{ formatTime(order.createdAt) }}
-              </td>
-              
-              <td class="px-6 py-4 whitespace-nowrap text-right">
-                <ChevronRight class="w-5 h-5 text-gray-400 group-hover:text-gray-700 ml-auto" />
+
+              <!-- 6. ACTION -->
+              <td class="px-5 py-3.5 whitespace-nowrap text-right pr-5">
+                <button 
+                  type="button"
+                  @click.stop="emit('select', order.id)"
+                  class="inline-flex items-center gap-1 text-xs font-semibold text-[#1a5c4c] bg-[#1a5c4c]/5 hover:bg-[#1a5c4c]/15 px-2.5 py-1.5 rounded-lg border border-[#1a5c4c]/20 group-hover:border-[#1a5c4c]/40 transition-all shadow-xs"
+                >
+                  <span>View</span>
+                  <ArrowRight class="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+                </button>
               </td>
             </tr>
             <tr v-if="!orders?.length">
-              <td colspan="10" class="px-6 py-8 text-center text-sm text-gray-500">
+              <td colspan="6" class="px-6 py-12 text-center text-sm text-gray-500">
                 No orders found.
               </td>
             </tr>
