@@ -292,11 +292,26 @@ async function initGoogleMaps(apiKey: string) {
   }, 120)
 }
 
+let lastDirectionsDestination = ''
+
 function renderGoogleDirections(maps: any) {
-  if (!props.isLive || !props.driverLocation || !props.destinationLocation || !googleMap) {
+  if (!props.driverLocation || !props.destinationLocation || !googleMap) {
     if (directionsRenderer) directionsRenderer.setMap(null)
     return
   }
+
+  // If server already provided road polyline coordinates, use those — do not call Directions API!
+  if (props.routeCoordinates && props.routeCoordinates.length > 2) {
+    if (directionsRenderer) directionsRenderer.setMap(null)
+    return
+  }
+
+  const destKey = `${props.destinationLocation.lat.toFixed(4)},${props.destinationLocation.lng.toFixed(4)}`
+  // Never re-request if we already fetched route preview for this destination
+  if (lastDirectionsDestination === destKey) {
+    return
+  }
+  lastDirectionsDestination = destKey
 
   try {
     if (!directionsService) directionsService = new maps.DirectionsService()
@@ -346,7 +361,7 @@ function updateGoogleRoute(googleMaps?: any) {
     })
   }
 
-  renderGoogleDirections(maps)
+  // NOTE: Directions API must NOT be called here! It was being triggered on every 1-second GPS ping.
 }
 
 let hasFitInitially = false

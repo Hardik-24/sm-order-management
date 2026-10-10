@@ -32,9 +32,18 @@ public class NavigationActivity extends AppCompatActivity {
     private double mLastLat = 0.0;
     private double mLastLng = 0.0;
     private String mEtaFormatted = "Calculating...";
+    private boolean mIsPreview = false;
 
     // Views
     private TextView mTvTitle;
+    private TextView mTvStatus;
+    private LinearLayout mLlPreview;
+    private TextView mTvPreviewBadge;
+    private TextView mTvPreviewOrderNum;
+    private TextView mTvPreviewDestInfo;
+    private TextView mTvPreviewRouteInfo;
+    private Button mBtnStartTripNav;
+
     private LinearLayout mLlExpanded;
     private LinearLayout mLlCollapsed;
     private TextView mTvOrderNum;
@@ -49,8 +58,10 @@ public class NavigationActivity extends AppCompatActivity {
     private final Runnable mTimerRunnable = new Runnable() {
         @Override
         public void run() {
-            updateElapsedTime();
-            mTimerHandler.postDelayed(this, 1000);
+            if (!mIsPreview) {
+                updateElapsedTime();
+                mTimerHandler.postDelayed(this, 1000);
+            }
         }
     };
 
@@ -70,22 +81,36 @@ public class NavigationActivity extends AppCompatActivity {
         }
         mDestLat = getIntent().getDoubleExtra("destLat", 0.0);
         mDestLng = getIntent().getDoubleExtra("destLng", 0.0);
-        mStartTimeMs = getIntent().getLongExtra("startTimeMs", System.currentTimeMillis());
+        mStartTimeMs = getIntent().getLongExtra("startTimeMs", 0);
         mCurrentDistanceKm = getIntent().getDoubleExtra("initialDistanceKm", 0.0);
+        mIsPreview = getIntent().getBooleanExtra("isPreview", false);
 
         initViews();
         setupListeners();
         setupNavigationStream();
 
-        mTimerHandler.post(mTimerRunnable);
+        if (!mIsPreview) {
+            if (mStartTimeMs == 0) mStartTimeMs = System.currentTimeMillis();
+            mTimerHandler.post(mTimerRunnable);
+        }
     }
 
     private void initViews() {
         mTvTitle = findViewById(R.id.tv_nav_title);
+        mTvStatus = findViewById(R.id.tv_nav_status);
         if (mTvTitle != null) {
             mTvTitle.setText(mTitle);
         }
 
+        // Preview Mode Views
+        mLlPreview = findViewById(R.id.ll_banner_preview);
+        mTvPreviewBadge = findViewById(R.id.tv_preview_badge);
+        mTvPreviewOrderNum = findViewById(R.id.tv_preview_order_num);
+        mTvPreviewDestInfo = findViewById(R.id.tv_preview_dest_info);
+        mTvPreviewRouteInfo = findViewById(R.id.tv_preview_route_info);
+        mBtnStartTripNav = findViewById(R.id.btn_start_trip_nav);
+
+        // Active Trip Views
         mLlExpanded = findViewById(R.id.ll_banner_expanded);
         mLlCollapsed = findViewById(R.id.ll_banner_collapsed);
         mTvOrderNum = findViewById(R.id.tv_banner_order_num);
@@ -99,12 +124,39 @@ public class NavigationActivity extends AppCompatActivity {
         if (mTvOrderNum != null) {
             mTvOrderNum.setText(mOrderNumber);
         }
+        if (mTvPreviewOrderNum != null) {
+            mTvPreviewOrderNum.setText(mOrderNumber);
+        }
+        if (mTvPreviewDestInfo != null) {
+            mTvPreviewDestInfo.setText(mTitle);
+        }
         if (mTvDistance != null) {
             mTvDistance.setText(String.format(Locale.US, "%.1f km", mCurrentDistanceKm));
         }
         if (mTvPayout != null) {
             int payout = Math.max(50, (int) Math.round(mCurrentDistanceKm * 15));
             mTvPayout.setText("₹" + payout);
+        }
+
+        if (mIsPreview) {
+            if (mTvStatus != null) {
+                mTvStatus.setText("🗺️ ROUTE PREVIEW");
+                mTvStatus.setTextColor(0xFF38BDF8); // Light Blue
+            }
+            if (mLlPreview != null) mLlPreview.setVisibility(View.VISIBLE);
+            if (mLlExpanded != null) mLlExpanded.setVisibility(View.GONE);
+            if (mLlCollapsed != null) mLlCollapsed.setVisibility(View.GONE);
+            if (mTvPreviewRouteInfo != null) {
+                mTvPreviewRouteInfo.setText("Tap Start Trip below to begin turn-by-turn guidance");
+            }
+        } else {
+            if (mTvStatus != null) {
+                mTvStatus.setText("🟢 LIVE NAVIGATION");
+                mTvStatus.setTextColor(0xFF34D399); // Emerald
+            }
+            if (mLlPreview != null) mLlPreview.setVisibility(View.GONE);
+            if (mLlExpanded != null) mLlExpanded.setVisibility(View.VISIBLE);
+            if (mLlCollapsed != null) mLlCollapsed.setVisibility(View.GONE);
         }
 
         // Initialize Google Navigation Fragment
@@ -145,6 +197,11 @@ public class NavigationActivity extends AppCompatActivity {
             exitText.setOnClickListener(exitListener);
         }
 
+        // Preview Mode: Start Trip Button
+        if (mBtnStartTripNav != null) {
+            mBtnStartTripNav.setOnClickListener(v -> executeStartTripFromNav());
+        }
+
         // Collapse / Expand toggle
         TextView btnToggleCollapse = findViewById(R.id.btn_toggle_collapse);
         if (btnToggleCollapse != null) {
@@ -166,7 +223,51 @@ public class NavigationActivity extends AppCompatActivity {
         }
     }
 
+    private void executeStartTripFromNav() {
+        if (mBtnStartTripNav != null) {
+            mBtnStartTripNav.setEnabled(false);
+            mBtnStartTripNav.setText("Starting Trip & Notifying Dispatch...");
+        }
+
+        double lat = mLastLat != 0.0 ? mLastLat : NavigationManager.getInstance().getLastLat();
+        double lng = mLastLng != 0.0 ? mLastLng : NavigationManager.getInstance().getLastLng();
+
+        NavigationManager.getInstance().startTripOnBackend(lat, lng, new NavigationManager.CompleteCallback() {
+            @Override
+            public void onSuccess(String message) {
+                runOnUiThread(() -> {
+                    mIsPreview = false;
+                    mStartTimeMs = System.currentTimeMillis();
+
+                    if (mTvStatus != null) {
+                        mTvStatus.setText("🟢 LIVE NAVIGATION");
+                        mTvStatus.setTextColor(0xFF34D399);
+                    }
+
+                    if (mLlPreview != null) mLlPreview.setVisibility(View.GONE);
+                    if (mLlExpanded != null) mLlExpanded.setVisibility(View.VISIBLE);
+                    if (mLlCollapsed != null) mLlCollapsed.setVisibility(View.GONE);
+
+                    mTimerHandler.post(mTimerRunnable);
+                    Toast.makeText(NavigationActivity.this, "✓ Trip started! Live tracking active.", Toast.LENGTH_LONG).show();
+                });
+            }
+
+            @Override
+            public void onError(String error) {
+                runOnUiThread(() -> {
+                    Toast.makeText(NavigationActivity.this, "⚠️ " + error, Toast.LENGTH_LONG).show();
+                    if (mBtnStartTripNav != null) {
+                        mBtnStartTripNav.setEnabled(true);
+                        mBtnStartTripNav.setText("▶ START TRIP");
+                    }
+                });
+            }
+        });
+    }
+
     private void setBannerCollapsed(boolean collapsed) {
+        if (mIsPreview) return; // Only collapse in active trip mode
         if (collapsed) {
             if (mLlExpanded != null) mLlExpanded.setVisibility(View.GONE);
             if (mLlCollapsed != null) mLlCollapsed.setVisibility(View.VISIBLE);
@@ -183,16 +284,6 @@ public class NavigationActivity extends AppCompatActivity {
         ) -> runOnUiThread(() -> {
             mLastLat = lat;
             mLastLng = lng;
-            mCurrentDistanceKm = Math.max(mCurrentDistanceKm, distanceDrivenKm);
-
-            if (mTvDistance != null) {
-                mTvDistance.setText(String.format(Locale.US, "%.1f km", mCurrentDistanceKm));
-            }
-
-            int payout = Math.max(50, (int) Math.round(mCurrentDistanceKm * 15));
-            if (mTvPayout != null) {
-                mTvPayout.setText("₹" + payout);
-            }
 
             if (remainingMeters >= 0) {
                 double remKm = Math.round((remainingMeters / 1000.0) * 10.0) / 10.0;
@@ -207,6 +298,25 @@ public class NavigationActivity extends AppCompatActivity {
                 mEtaFormatted = String.format(Locale.US, "%.1f km left (~%d min)", remKm, remMins);
             }
 
+            if (mIsPreview) {
+                if (mTvPreviewRouteInfo != null) {
+                    mTvPreviewRouteInfo.setText("📍 Destination ETA: " + mEtaFormatted);
+                }
+                return;
+            }
+
+            // In active trip mode:
+            mCurrentDistanceKm = Math.max(mCurrentDistanceKm, distanceDrivenKm);
+
+            if (mTvDistance != null) {
+                mTvDistance.setText(String.format(Locale.US, "%.1f km", mCurrentDistanceKm));
+            }
+
+            int payout = Math.max(50, (int) Math.round(mCurrentDistanceKm * 15));
+            if (mTvPayout != null) {
+                mTvPayout.setText("₹" + payout);
+            }
+
             if (mTvEta != null) {
                 mTvEta.setText(mEtaFormatted);
             }
@@ -216,6 +326,7 @@ public class NavigationActivity extends AppCompatActivity {
     }
 
     private void updateElapsedTime() {
+        if (mIsPreview || mStartTimeMs == 0) return;
         long now = System.currentTimeMillis();
         long diffSec = Math.max(0, (now - mStartTimeMs) / 1000);
         long hrs = diffSec / 3600;

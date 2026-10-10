@@ -93,7 +93,79 @@
         android:elevation="14dp"
         android:padding="9dp">
 
-        <!-- EXPANDED VIEW: Compact 3-metric row + ETA + Complete button -->
+        <!-- 1. PREVIEW MODE: Shown when viewing directions BEFORE trip is started -->
+        <LinearLayout
+            android:id="@+id/ll_banner_preview"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="4dp">
+
+                <TextView
+                    android:id="@+id/tv_preview_badge"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="🗺️ ROUTE PREVIEW"
+                    android:textSize="9sp"
+                    android:textStyle="bold"
+                    android:textColor="#a7f3d0"
+                    android:letterSpacing="0.08" />
+
+                <TextView
+                    android:id="@+id/tv_preview_order_num"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="8dp"
+                    android:text="#SO-0000"
+                    android:textSize="9sp"
+                    android:textStyle="bold"
+                    android:textColor="#6ee7b7"
+                    android:singleLine="true" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tv_preview_dest_info"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Customer Destination"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="#ffffff"
+                android:singleLine="true"
+                android:ellipsize="end" />
+
+            <TextView
+                android:id="@+id/tv_preview_route_info"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Calculating route..."
+                android:textSize="10sp"
+                android:textColor="#a7f3d0"
+                android:layout_marginBottom="8dp" />
+
+            <!-- Prominent Start Trip Button in Preview -->
+            <Button
+                android:id="@+id/btn_start_trip_nav"
+                android:layout_width="match_parent"
+                android:layout_height="38dp"
+                android:background="@drawable/bg_btn_start_trip"
+                android:text="▶ START TRIP"
+                android:textColor="#ffffff"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.08"
+                android:elevation="3dp" />
+        </LinearLayout>
+
+        <!-- 2. ACTIVE TRIP EXPANDED VIEW: Shown once trip is officially started -->
         <LinearLayout
             android:id="@+id/ll_banner_expanded"
             android:layout_width="match_parent"
@@ -293,7 +365,7 @@
                 android:elevation="2dp" />
         </LinearLayout>
 
-        <!-- COLLAPSED VIEW: Ultra-slim 32dp floating pill for 96% map visibility -->
+        <!-- 3. COLLAPSED VIEW: Ultra-slim 28dp floating pill for 96% map visibility -->
         <LinearLayout
             android:id="@+id/ll_banner_collapsed"
             android:layout_width="match_parent"

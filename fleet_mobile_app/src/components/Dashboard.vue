@@ -1309,6 +1309,7 @@ async function startTripPrompt(order: any) {
               apiUrl: API_URL,
               initialDistanceKm: displayDistanceKm.value || 0,
               startTimeMs: Date.now(),
+              isPreview: false,
             })
           } catch (e) {
             console.warn('Navigation SDK start warning:', e)
@@ -1466,7 +1467,10 @@ async function openDirections(order: any) {
     if (navPlugin) {
       try {
         const { value: token } = await Preferences.get({ key: 'auth_token' })
-        const startTime = activeTrip.value?.startTime ? new Date(activeTrip.value.startTime).getTime() : Date.now()
+        const isTripAlreadyActive = activeTripOrderId.value === order.id
+        const startTime = isTripAlreadyActive && activeTrip.value?.startTime 
+          ? new Date(activeTrip.value.startTime).getTime() 
+          : 0
         await navPlugin.startNavigation({
           destLat: lat,
           destLng: lng,
@@ -1476,8 +1480,9 @@ async function openDirections(order: any) {
           orderId: order.id || activeTripOrderId.value || '',
           authToken: token || '',
           apiUrl: API_URL,
-          initialDistanceKm: displayDistanceKm.value || 0,
+          initialDistanceKm: isTripAlreadyActive ? (displayDistanceKm.value || 0) : 0,
           startTimeMs: startTime,
+          isPreview: !isTripAlreadyActive,
         })
         if (!enableTurnByTurn.value) {
           showSaved('📍 Turn-by-Turn is OFF in settings: Road tracking is active in background')

@@ -40,6 +40,7 @@ public class NavigationManager {
     private LocationManager mNativeLocationManager;
     private OnRoadSnappedLocationCallback mLocationCallback;
     private boolean mIsNavigating = false;
+    private boolean mIsTripActive = false;
     private double mCurrentDestLat = 0;
     private double mCurrentDestLng = 0;
     private String mCurrentDestTitle = "";
@@ -97,6 +98,10 @@ public class NavigationManager {
         return mIsNavigating;
     }
 
+    public boolean isTripActive() {
+        return mIsTripActive;
+    }
+
     public double getTotalDistanceDrivenKm() {
         return Math.round((mTotalDistanceDrivenMeters / 1000.0) * 100.0) / 100.0;
     }
@@ -118,6 +123,7 @@ public class NavigationManager {
             String authToken,
             String apiUrl,
             double initialDistanceKm,
+            boolean isPreview,
             Runnable onReady
     ) {
         this.mCurrentDestLat = destLat;
@@ -129,6 +135,7 @@ public class NavigationManager {
             this.mApiUrl = apiUrl.trim();
         }
 
+        this.mIsTripActive = !isPreview;
         this.mTotalDistanceDrivenMeters = initialDistanceKm > 0 ? (initialDistanceKm * 1000.0) : 0.0;
         this.mLastLat = 0.0;
         this.mLastLng = 0.0;
@@ -138,7 +145,12 @@ public class NavigationManager {
             mPendingPings.clear();
         }
 
-        startBackgroundPingWorker();
+        if (mIsTripActive) {
+            startBackgroundPingWorker();
+        } else {
+            stopBackgroundPingWorker();
+        }
+
         setupNativeGpsFallback(activity);
 
         // Attempt Google Navigation SDK Road Snapped Provider
@@ -292,7 +304,7 @@ public class NavigationManager {
         float accuracy = location.getAccuracy();
         long timestamp = location.getTime() > 0 ? location.getTime() : System.currentTimeMillis();
 
-        if (mLastLat != 0.0 && mLastLng != 0.0) {
+        if (mIsTripActive && mLastLat != 0.0 && mLastLng != 0.0) {
             float[] results = new float[1];
             Location.distanceBetween(mLastLat, mLastLng, lat, lng, results);
             float deltaMeters = results[0];
@@ -323,8 +335,8 @@ public class NavigationManager {
             );
         }
 
-        // Buffer for native background HTTP ping (ALWAYS records while trip has an orderId)
-        if (mCurrentOrderId != null && !mCurrentOrderId.isEmpty()) {
+        // Buffer for native background HTTP ping (ONLY while trip is officially active)
+        if (mIsTripActive && mCurrentOrderId != null && !mCurrentOrderId.isEmpty()) {
             try {
                 JSONObject pt = new JSONObject();
                 pt.put("lat", lat);
@@ -361,13 +373,15 @@ public class NavigationManager {
                 public void onResult(Navigator.RouteStatus routeStatus) {
                     if (routeStatus == Navigator.RouteStatus.OK) {
                         try {
-                            mNavigator.startGuidance();
-                            mIsNavigating = true;
-                            Log.i(TAG, "Guidance started to destination. Road-snapping active.");
+                            if (mIsTripActive) {
+                                mNavigator.startGuidance();
+                                mIsNavigating = true;
+                                Log.i(TAG, "Guidance started to destination. Road-snapping active.");
+                            }
                             setupRemainingTimeOrDistanceListener();
                             updateTimeAndDistance();
                         } catch (Exception e) {
-                            Log.e(TAG, "Failed to start guidance", e);
+                            Log.e(TAG, "Failed to set guidance", e);
                         }
                     } else {
                         Log.w(TAG, "Route status returned: " + routeStatus.name());
@@ -378,6 +392,19 @@ public class NavigationManager {
         } catch (Exception e) {
             Log.w(TAG, "applyDestinationAndStart error: " + e.getMessage());
             if (onReady != null) onReady.run();
+        }
+    }
+
+    public void beginActiveGuidance() {
+        mIsTripActive = true;
+        startBackgroundPingWorker();
+        if (mNavigator != null) {
+            try {
+                mNavigator.startGuidance();
+                mIsNavigating = true;
+            } catch (Exception e) {
+                Log.w(TAG, "beginActiveGuidance error: " + e.getMessage());
+            }
         }
     }
 
@@ -397,7 +424,7 @@ public class NavigationManager {
     }
 
     private void sendPendingPingsToBackend() {
-        if (mCurrentOrderId == null || mCurrentOrderId.isEmpty() || mAuthToken == null || mAuthToken.isEmpty()) {
+        if (!mIsTripActive || mCurrentOrderId == null || mCurrentOrderId.isEmpty() || mAuthToken == null || mAuthToken.isEmpty()) {
             return;
         }
 
@@ -459,6 +486,57 @@ public class NavigationManager {
         }
     }
 
+    public void startTripOnBackend(double lat, double lng, CompleteCallback callback) {
+        new Thread(() -> {
+            try {
+                String baseUrl = (mApiUrl.endsWith("/")) ? mApiUrl.substring(0, mApiUrl.length() - 1) : mApiUrl;
+                URL url = new URL(baseUrl + "/api/driver/trip");
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("POST");
+                conn.setRequestProperty("Content-Type", "application/json");
+                conn.setRequestProperty("Authorization", "Bearer " + mAuthToken);
+                conn.setConnectTimeout(10000);
+                conn.setReadTimeout(10000);
+                conn.setDoOutput(true);
+
+                JSONObject body = new JSONObject();
+                body.put("action", "start");
+                body.put("orderId", mCurrentOrderId);
+
+                if (lat != 0.0 && lng != 0.0) {
+                    JSONObject coords = new JSONObject();
+                    coords.put("lat", lat);
+                    coords.put("lng", lng);
+                    body.put("coords", coords);
+                }
+
+                if (mCurrentDestLat != 0.0 && mCurrentDestLng != 0.0) {
+                    JSONObject destCoords = new JSONObject();
+                    destCoords.put("lat", mCurrentDestLat);
+                    destCoords.put("lng", mCurrentDestLng);
+                    body.put("destinationCoords", destCoords);
+                }
+
+                byte[] outputBytes = body.toString().getBytes("UTF-8");
+                try (OutputStream os = conn.getOutputStream()) {
+                    os.write(outputBytes);
+                    os.flush();
+                }
+
+                int code = conn.getResponseCode();
+                if (code == 200) {
+                    beginActiveGuidance();
+                    if (callback != null) callback.onSuccess("Trip started successfully!");
+                } else {
+                    if (callback != null) callback.onError("Failed to start trip (Code " + code + ")");
+                }
+                conn.disconnect();
+            } catch (Exception e) {
+                if (callback != null) callback.onError(e.getMessage());
+            }
+        }).start();
+    }
+
     public void completeTripOnBackend(double lat, double lng, CompleteCallback callback) {
         new Thread(() -> {
             try {
@@ -504,6 +582,7 @@ public class NavigationManager {
 
     public void stopNavigation() {
         mIsNavigating = false;
+        mIsTripActive = false;
         stopBackgroundPingWorker();
         new Thread(this::sendPendingPingsToBackend).start();
 

@@ -67,6 +67,7 @@ public class NavigationPlugin extends Plugin {
         String apiUrl = call.getString("apiUrl", "https://sm-order-management.vercel.app");
         Double initialDistanceKm = call.getDouble("initialDistanceKm", 0.0);
         Long startTimeMs = call.getLong("startTimeMs", System.currentTimeMillis());
+        Boolean isPreview = call.getBoolean("isPreview", false);
 
         if (lat == null || lng == null) {
             call.reject("Invalid destination coordinates");
@@ -82,6 +83,7 @@ public class NavigationPlugin extends Plugin {
                 authToken,
                 apiUrl,
                 initialDistanceKm != null ? initialDistanceKm : 0.0,
+                Boolean.TRUE.equals(isPreview),
                 () -> {
                     if (Boolean.TRUE.equals(enableTurnByTurn)) {
                         try {
@@ -95,6 +97,7 @@ public class NavigationPlugin extends Plugin {
                             intent.putExtra("initialDistanceKm", initialDistanceKm != null ? initialDistanceKm : 0.0);
                             intent.putExtra("authToken", authToken);
                             intent.putExtra("apiUrl", apiUrl);
+                            intent.putExtra("isPreview", Boolean.TRUE.equals(isPreview));
                             getActivity().startActivity(intent);
                         } catch (Exception e) {
                             Log.w(TAG, "NavigationActivity launch error: " + e.getMessage());
