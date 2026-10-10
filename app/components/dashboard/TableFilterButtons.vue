@@ -249,6 +249,15 @@ const getStatusDot = (val: string | undefined, options: { label: string; value: 
   return found?.dot || 'bg-gray-300'
 }
 
+const onFilterSectionClick = (e: MouseEvent) => {
+  if (!activeDropdown.value) return
+  const target = e.target as HTMLElement
+  if (!target.closest('.filter-dropdown-menu')) {
+    activeDropdown.value = null
+  }
+}
+
+// 1. Overall Status
 const overallStatusOptions = [
   { label: 'All Statuses', value: '', dot: 'bg-gray-300' },
   { label: 'Awaiting Billing & Packing', value: 'CONFIRMED', dot: 'bg-amber-400' },
@@ -259,13 +268,14 @@ const overallStatusOptions = [
   { label: 'Cancelled', value: 'CANCELLED', dot: 'bg-rose-500' }
 ]
 
-const billingStatusOptions = [
-  { label: 'All Billing States', value: '', dot: 'bg-gray-300' },
-  { label: 'Pending', value: 'PENDING', dot: 'bg-amber-400' },
-  { label: 'Generated', value: 'GENERATED', dot: 'bg-emerald-500' },
-  { label: 'On Hold', value: 'ON_HOLD', dot: 'bg-rose-500' }
+// 2. Approval Status
+const approvalStatusOptions = [
+  { label: 'All Orders', value: '', dot: 'bg-gray-300' },
+  { label: 'Approved', value: 'true', dot: 'bg-emerald-500' },
+  { label: 'Pending Approval', value: 'false', dot: 'bg-amber-400' }
 ]
 
+// 3. Packing Department (On Hold is orange)
 const packingStatusOptions = [
   { label: 'All Packing States', value: '', dot: 'bg-gray-300' },
   { label: 'Pending', value: 'PENDING', dot: 'bg-gray-400' },
@@ -274,6 +284,15 @@ const packingStatusOptions = [
   { label: 'On Hold', value: 'ON_HOLD', dot: 'bg-amber-500' }
 ]
 
+// 4. Billing Department (On Hold is red)
+const billingStatusOptions = [
+  { label: 'All Billing States', value: '', dot: 'bg-gray-300' },
+  { label: 'Pending', value: 'PENDING', dot: 'bg-amber-400' },
+  { label: 'Generated', value: 'GENERATED', dot: 'bg-emerald-500' },
+  { label: 'On Hold', value: 'ON_HOLD', dot: 'bg-rose-500' }
+]
+
+// 5. Delivery Department (On Hold is orange)
 const deliveryStatusOptions = [
   { label: 'All Delivery States', value: '', dot: 'bg-gray-300' },
   { label: 'Waiting', value: 'WAITING', dot: 'bg-gray-400' },
@@ -281,12 +300,6 @@ const deliveryStatusOptions = [
   { label: 'Dispatched', value: 'DISPATCHED', dot: 'bg-blue-600' },
   { label: 'Delivered', value: 'DELIVERED', dot: 'bg-emerald-500' },
   { label: 'On Hold', value: 'ON_HOLD', dot: 'bg-amber-500' }
-]
-
-const approvalStatusOptions = [
-  { label: 'All Orders', value: '', dot: 'bg-gray-300' },
-  { label: 'Approved', value: 'true', dot: 'bg-emerald-500' },
-  { label: 'Pending Approval', value: 'false', dot: 'bg-amber-400' }
 ]
 </script>
 
@@ -430,7 +443,7 @@ const approvalStatusOptions = [
         :style="{ maxHeight: filtersMaxHeight + 'px' }"
       >
         <!-- Header -->
-        <div class="p-4 pb-3 flex items-center justify-between border-b border-gray-100 flex-shrink-0">
+        <div class="p-4 pb-3 flex items-center justify-between border-b border-gray-100 flex-shrink-0" @click="activeDropdown = null">
           <div class="flex items-center gap-2">
             <h4 class="text-xs font-bold text-gray-900 uppercase tracking-wider">Filters</h4>
             <span v-if="activeFilterCount > 0" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#1a5c4c]/10 text-[#1a5c4c]">
@@ -442,8 +455,8 @@ const approvalStatusOptions = [
           </button>
         </div>
         
-        <!-- Scrollable Body with custom dropdown menus -->
-        <div class="p-4 space-y-3.5 overflow-y-auto flex-1 min-h-0">
+        <!-- Scrollable Body with custom dropdown menus in requested order -->
+        <div class="p-4 space-y-3.5 overflow-y-auto flex-1 min-h-0" @click="onFilterSectionClick">
           <!-- 1. Overall Status -->
           <div class="space-y-1.5 relative">
             <div class="flex items-center justify-between">
@@ -458,10 +471,10 @@ const approvalStatusOptions = [
               </button>
             </div>
             
-            <div class="relative">
+            <div class="relative filter-dropdown-menu">
               <button
                 type="button"
-                @click="toggleDropdown('status')"
+                @click.stop="toggleDropdown('status')"
                 class="w-full px-3.5 py-2.5 rounded-xl border text-sm flex items-center justify-between transition-all duration-150 text-left cursor-pointer"
                 :class="status ? 'border-[#1a5c4c] bg-[#1a5c4c]/5 text-gray-900 ring-1 ring-[#1a5c4c]/20 font-medium' : 'border-gray-200 bg-white hover:border-gray-300 text-gray-700 hover:bg-gray-50/50'"
               >
@@ -489,7 +502,7 @@ const approvalStatusOptions = [
                     v-for="opt in overallStatusOptions"
                     :key="opt.value"
                     type="button"
-                    @click="selectOption('status', opt.value)"
+                    @click.stop="selectOption('status', opt.value)"
                     class="w-full px-3.5 py-2 text-xs flex items-center justify-between text-left transition-colors cursor-pointer"
                     :class="status === opt.value ? 'bg-[#1a5c4c]/10 text-[#1a5c4c] font-semibold' : 'text-gray-700 hover:bg-gray-50'"
                   >
@@ -504,32 +517,32 @@ const approvalStatusOptions = [
             </div>
           </div>
 
-          <!-- 2. Billing Department -->
+          <!-- 2. Approval Status -->
           <div class="space-y-1.5 relative">
             <div class="flex items-center justify-between">
-              <label class="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Billing Department</label>
+              <label class="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Approval Status</label>
               <button 
-                v-if="billingStatus" 
+                v-if="isApproved !== undefined && isApproved !== ''" 
                 type="button"
-                @click.stop="emit('update:billingStatus', '')"
+                @click.stop="emit('update:isApproved', '')"
                 class="text-[10px] font-semibold text-[#1a5c4c] hover:underline cursor-pointer"
               >
                 Reset
               </button>
             </div>
             
-            <div class="relative">
+            <div class="relative filter-dropdown-menu">
               <button
                 type="button"
-                @click="toggleDropdown('billingStatus')"
+                @click.stop="toggleDropdown('isApproved')"
                 class="w-full px-3.5 py-2.5 rounded-xl border text-sm flex items-center justify-between transition-all duration-150 text-left cursor-pointer"
-                :class="billingStatus ? 'border-[#1a5c4c] bg-[#1a5c4c]/5 text-gray-900 ring-1 ring-[#1a5c4c]/20 font-medium' : 'border-gray-200 bg-white hover:border-gray-300 text-gray-700 hover:bg-gray-50/50'"
+                :class="(isApproved !== undefined && isApproved !== '') ? 'border-[#1a5c4c] bg-[#1a5c4c]/5 text-gray-900 ring-1 ring-[#1a5c4c]/20 font-medium' : 'border-gray-200 bg-white hover:border-gray-300 text-gray-700 hover:bg-gray-50/50'"
               >
                 <div class="flex items-center gap-2.5 truncate">
-                  <span class="w-2 h-2 rounded-full shrink-0" :class="getStatusDot(billingStatus, billingStatusOptions)" />
-                  <span class="truncate font-medium text-xs sm:text-sm">{{ getOptionLabel(billingStatus, billingStatusOptions) }}</span>
+                  <span class="w-2 h-2 rounded-full shrink-0" :class="getStatusDot(isApproved, approvalStatusOptions)" />
+                  <span class="truncate font-medium text-xs sm:text-sm">{{ getOptionLabel(isApproved, approvalStatusOptions) }}</span>
                 </div>
-                <ChevronDown class="w-4 h-4 text-gray-400 shrink-0 transition-transform duration-200" :class="{ 'rotate-180 text-[#1a5c4c]': activeDropdown === 'billingStatus' }" />
+                <ChevronDown class="w-4 h-4 text-gray-400 shrink-0 transition-transform duration-200" :class="{ 'rotate-180 text-[#1a5c4c]': activeDropdown === 'isApproved' }" />
               </button>
 
               <!-- Dropdown Menu -->
@@ -542,22 +555,22 @@ const approvalStatusOptions = [
                 leave-to-class="transform opacity-0 -translate-y-1 scale-98"
               >
                 <div 
-                  v-if="activeDropdown === 'billingStatus'"
+                  v-if="activeDropdown === 'isApproved'"
                   class="absolute left-0 right-0 top-full mt-1.5 bg-white border border-gray-200 rounded-xl shadow-xl z-30 py-1 max-h-52 overflow-y-auto divide-y divide-gray-50"
                 >
                   <button
-                    v-for="opt in billingStatusOptions"
+                    v-for="opt in approvalStatusOptions"
                     :key="opt.value"
                     type="button"
-                    @click="selectOption('billingStatus', opt.value)"
+                    @click.stop="selectOption('isApproved', opt.value)"
                     class="w-full px-3.5 py-2 text-xs flex items-center justify-between text-left transition-colors cursor-pointer"
-                    :class="billingStatus === opt.value ? 'bg-[#1a5c4c]/10 text-[#1a5c4c] font-semibold' : 'text-gray-700 hover:bg-gray-50'"
+                    :class="isApproved === opt.value ? 'bg-[#1a5c4c]/10 text-[#1a5c4c] font-semibold' : 'text-gray-700 hover:bg-gray-50'"
                   >
                     <div class="flex items-center gap-2.5 truncate">
                       <span class="w-2 h-2 rounded-full shrink-0" :class="opt.dot" />
                       <span class="truncate">{{ opt.label }}</span>
                     </div>
-                    <Check v-if="billingStatus === opt.value" class="w-3.5 h-3.5 text-[#1a5c4c] shrink-0 ml-1.5" />
+                    <Check v-if="isApproved === opt.value" class="w-3.5 h-3.5 text-[#1a5c4c] shrink-0 ml-1.5" />
                   </button>
                 </div>
               </Transition>
@@ -578,10 +591,10 @@ const approvalStatusOptions = [
               </button>
             </div>
             
-            <div class="relative">
+            <div class="relative filter-dropdown-menu">
               <button
                 type="button"
-                @click="toggleDropdown('packingStatus')"
+                @click.stop="toggleDropdown('packingStatus')"
                 class="w-full px-3.5 py-2.5 rounded-xl border text-sm flex items-center justify-between transition-all duration-150 text-left cursor-pointer"
                 :class="packingStatus ? 'border-[#1a5c4c] bg-[#1a5c4c]/5 text-gray-900 ring-1 ring-[#1a5c4c]/20 font-medium' : 'border-gray-200 bg-white hover:border-gray-300 text-gray-700 hover:bg-gray-50/50'"
               >
@@ -609,7 +622,7 @@ const approvalStatusOptions = [
                     v-for="opt in packingStatusOptions"
                     :key="opt.value"
                     type="button"
-                    @click="selectOption('packingStatus', opt.value)"
+                    @click.stop="selectOption('packingStatus', opt.value)"
                     class="w-full px-3.5 py-2 text-xs flex items-center justify-between text-left transition-colors cursor-pointer"
                     :class="packingStatus === opt.value ? 'bg-[#1a5c4c]/10 text-[#1a5c4c] font-semibold' : 'text-gray-700 hover:bg-gray-50'"
                   >
@@ -624,7 +637,67 @@ const approvalStatusOptions = [
             </div>
           </div>
 
-          <!-- 4. Delivery Department (opens upward) -->
+          <!-- 4. Billing Department (opens upward) -->
+          <div class="space-y-1.5 relative">
+            <div class="flex items-center justify-between">
+              <label class="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Billing Department</label>
+              <button 
+                v-if="billingStatus" 
+                type="button"
+                @click.stop="emit('update:billingStatus', '')"
+                class="text-[10px] font-semibold text-[#1a5c4c] hover:underline cursor-pointer"
+              >
+                Reset
+              </button>
+            </div>
+            
+            <div class="relative filter-dropdown-menu">
+              <button
+                type="button"
+                @click.stop="toggleDropdown('billingStatus')"
+                class="w-full px-3.5 py-2.5 rounded-xl border text-sm flex items-center justify-between transition-all duration-150 text-left cursor-pointer"
+                :class="billingStatus ? 'border-[#1a5c4c] bg-[#1a5c4c]/5 text-gray-900 ring-1 ring-[#1a5c4c]/20 font-medium' : 'border-gray-200 bg-white hover:border-gray-300 text-gray-700 hover:bg-gray-50/50'"
+              >
+                <div class="flex items-center gap-2.5 truncate">
+                  <span class="w-2 h-2 rounded-full shrink-0" :class="getStatusDot(billingStatus, billingStatusOptions)" />
+                  <span class="truncate font-medium text-xs sm:text-sm">{{ getOptionLabel(billingStatus, billingStatusOptions) }}</span>
+                </div>
+                <ChevronDown class="w-4 h-4 text-gray-400 shrink-0 transition-transform duration-200" :class="{ 'rotate-180 text-[#1a5c4c]': activeDropdown === 'billingStatus' }" />
+              </button>
+
+              <!-- Dropdown Menu (opens upward) -->
+              <Transition
+                enter-active-class="transition duration-150 ease-out"
+                enter-from-class="transform opacity-0 translate-y-1 scale-98"
+                enter-to-class="transform opacity-100 translate-y-0 scale-100"
+                leave-active-class="transition duration-100 ease-in"
+                leave-from-class="transform opacity-100 translate-y-0 scale-100"
+                leave-to-class="transform opacity-0 translate-y-1 scale-98"
+              >
+                <div 
+                  v-if="activeDropdown === 'billingStatus'"
+                  class="absolute left-0 right-0 bottom-full mb-1.5 bg-white border border-gray-200 rounded-xl shadow-xl z-30 py-1 max-h-52 overflow-y-auto divide-y divide-gray-50"
+                >
+                  <button
+                    v-for="opt in billingStatusOptions"
+                    :key="opt.value"
+                    type="button"
+                    @click.stop="selectOption('billingStatus', opt.value)"
+                    class="w-full px-3.5 py-2 text-xs flex items-center justify-between text-left transition-colors cursor-pointer"
+                    :class="billingStatus === opt.value ? 'bg-[#1a5c4c]/10 text-[#1a5c4c] font-semibold' : 'text-gray-700 hover:bg-gray-50'"
+                  >
+                    <div class="flex items-center gap-2.5 truncate">
+                      <span class="w-2 h-2 rounded-full shrink-0" :class="opt.dot" />
+                      <span class="truncate">{{ opt.label }}</span>
+                    </div>
+                    <Check v-if="billingStatus === opt.value" class="w-3.5 h-3.5 text-[#1a5c4c] shrink-0 ml-1.5" />
+                  </button>
+                </div>
+              </Transition>
+            </div>
+          </div>
+
+          <!-- 5. Delivery Department (opens upward) -->
           <div class="space-y-1.5 relative">
             <div class="flex items-center justify-between">
               <label class="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Delivery Department</label>
@@ -638,10 +711,10 @@ const approvalStatusOptions = [
               </button>
             </div>
             
-            <div class="relative">
+            <div class="relative filter-dropdown-menu">
               <button
                 type="button"
-                @click="toggleDropdown('deliveryStatus')"
+                @click.stop="toggleDropdown('deliveryStatus')"
                 class="w-full px-3.5 py-2.5 rounded-xl border text-sm flex items-center justify-between transition-all duration-150 text-left cursor-pointer"
                 :class="deliveryStatus ? 'border-[#1a5c4c] bg-[#1a5c4c]/5 text-gray-900 ring-1 ring-[#1a5c4c]/20 font-medium' : 'border-gray-200 bg-white hover:border-gray-300 text-gray-700 hover:bg-gray-50/50'"
               >
@@ -669,7 +742,7 @@ const approvalStatusOptions = [
                     v-for="opt in deliveryStatusOptions"
                     :key="opt.value"
                     type="button"
-                    @click="selectOption('deliveryStatus', opt.value)"
+                    @click.stop="selectOption('deliveryStatus', opt.value)"
                     class="w-full px-3.5 py-2 text-xs flex items-center justify-between text-left transition-colors cursor-pointer"
                     :class="deliveryStatus === opt.value ? 'bg-[#1a5c4c]/10 text-[#1a5c4c] font-semibold' : 'text-gray-700 hover:bg-gray-50'"
                   >
@@ -683,70 +756,10 @@ const approvalStatusOptions = [
               </Transition>
             </div>
           </div>
-
-          <!-- 5. Approval Status (opens upward) -->
-          <div class="space-y-1.5 relative">
-            <div class="flex items-center justify-between">
-              <label class="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Approval Status</label>
-              <button 
-                v-if="isApproved !== undefined && isApproved !== ''" 
-                type="button"
-                @click.stop="emit('update:isApproved', '')"
-                class="text-[10px] font-semibold text-[#1a5c4c] hover:underline cursor-pointer"
-              >
-                Reset
-              </button>
-            </div>
-            
-            <div class="relative">
-              <button
-                type="button"
-                @click="toggleDropdown('isApproved')"
-                class="w-full px-3.5 py-2.5 rounded-xl border text-sm flex items-center justify-between transition-all duration-150 text-left cursor-pointer"
-                :class="(isApproved !== undefined && isApproved !== '') ? 'border-[#1a5c4c] bg-[#1a5c4c]/5 text-gray-900 ring-1 ring-[#1a5c4c]/20 font-medium' : 'border-gray-200 bg-white hover:border-gray-300 text-gray-700 hover:bg-gray-50/50'"
-              >
-                <div class="flex items-center gap-2.5 truncate">
-                  <span class="w-2 h-2 rounded-full shrink-0" :class="getStatusDot(isApproved, approvalStatusOptions)" />
-                  <span class="truncate font-medium text-xs sm:text-sm">{{ getOptionLabel(isApproved, approvalStatusOptions) }}</span>
-                </div>
-                <ChevronDown class="w-4 h-4 text-gray-400 shrink-0 transition-transform duration-200" :class="{ 'rotate-180 text-[#1a5c4c]': activeDropdown === 'isApproved' }" />
-              </button>
-
-              <!-- Dropdown Menu (opens upward) -->
-              <Transition
-                enter-active-class="transition duration-150 ease-out"
-                enter-from-class="transform opacity-0 translate-y-1 scale-98"
-                enter-to-class="transform opacity-100 translate-y-0 scale-100"
-                leave-active-class="transition duration-100 ease-in"
-                leave-from-class="transform opacity-100 translate-y-0 scale-100"
-                leave-to-class="transform opacity-0 translate-y-1 scale-98"
-              >
-                <div 
-                  v-if="activeDropdown === 'isApproved'"
-                  class="absolute left-0 right-0 bottom-full mb-1.5 bg-white border border-gray-200 rounded-xl shadow-xl z-30 py-1 max-h-52 overflow-y-auto divide-y divide-gray-50"
-                >
-                  <button
-                    v-for="opt in approvalStatusOptions"
-                    :key="opt.value"
-                    type="button"
-                    @click="selectOption('isApproved', opt.value)"
-                    class="w-full px-3.5 py-2 text-xs flex items-center justify-between text-left transition-colors cursor-pointer"
-                    :class="isApproved === opt.value ? 'bg-[#1a5c4c]/10 text-[#1a5c4c] font-semibold' : 'text-gray-700 hover:bg-gray-50'"
-                  >
-                    <div class="flex items-center gap-2.5 truncate">
-                      <span class="w-2 h-2 rounded-full shrink-0" :class="opt.dot" />
-                      <span class="truncate">{{ opt.label }}</span>
-                    </div>
-                    <Check v-if="isApproved === opt.value" class="w-3.5 h-3.5 text-[#1a5c4c] shrink-0 ml-1.5" />
-                  </button>
-                </div>
-              </Transition>
-            </div>
-          </div>
         </div>
 
         <!-- Footer -->
-        <div class="p-3.5 bg-gray-50/90 rounded-b-xl border-t border-gray-100 flex justify-between items-center flex-shrink-0">
+        <div class="p-3.5 bg-gray-50/90 rounded-b-xl border-t border-gray-100 flex justify-between items-center flex-shrink-0" @click="activeDropdown = null">
           <button 
             type="button"
             @click="clearFilters" 
