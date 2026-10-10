@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Search, Filter, MoreHorizontal, ChevronRight, Check, Calendar, X, ArrowRight, Clock, Package, Truck } from 'lucide-vue-next'
+import { Search, Filter, MoreHorizontal, ChevronRight, Check, Calendar, X, ArrowRight, Clock, Package, Truck, Receipt, CheckCheck } from 'lucide-vue-next'
 import { formatTime, getDisplayStatus, getOverallColor, getStatusColor } from '~~/app/lib/utils'
 import CustomSelect from '~/components/ui/CustomSelect.vue'
 import TableFilterButtons from '~/components/dashboard/TableFilterButtons.vue'
@@ -116,17 +116,28 @@ interface PipelineStep {
   key: string
   label: string
   shortLabel: string
+  shortName: string
   status: 'completed' | 'in_progress' | 'waiting' | 'alert'
+}
+
+const getStepIcon = (key: string) => {
+  switch (key) {
+    case 'A': return CheckCheck
+    case 'P': return Package
+    case 'B': return Receipt
+    case 'D': return Truck
+    default: return Check
+  }
 }
 
 const getOrderPipeline = (order: Order): { steps: PipelineStep[], summary: string } => {
   if (order.overallStatus === 'CANCELLED') {
     return {
       steps: [
-        { key: 'A', label: 'Approval', shortLabel: 'A', status: 'alert' },
-        { key: 'P', label: 'Packing', shortLabel: 'P', status: 'waiting' },
-        { key: 'B', label: 'Billing', shortLabel: 'B', status: 'waiting' },
-        { key: 'D', label: 'Delivery', shortLabel: 'D', status: 'waiting' },
+        { key: 'A', label: 'Approval', shortLabel: 'A', shortName: 'Appr', status: 'alert' },
+        { key: 'P', label: 'Packing', shortLabel: 'P', shortName: 'Pack', status: 'waiting' },
+        { key: 'B', label: 'Billing', shortLabel: 'B', shortName: 'Bill', status: 'waiting' },
+        { key: 'D', label: 'Delivery', shortLabel: 'D', shortName: 'Delv', status: 'waiting' },
       ],
       summary: 'Order Cancelled'
     }
@@ -138,6 +149,7 @@ const getOrderPipeline = (order: Order): { steps: PipelineStep[], summary: strin
     key: 'A',
     label: 'Approval',
     shortLabel: 'A',
+    shortName: 'Appr',
     status: isApproved ? 'completed' : 'in_progress'
   }
 
@@ -158,6 +170,7 @@ const getOrderPipeline = (order: Order): { steps: PipelineStep[], summary: strin
     key: 'P',
     label: 'Packing',
     shortLabel: 'P',
+    shortName: 'Pack',
     status: packStatus
   }
 
@@ -176,6 +189,7 @@ const getOrderPipeline = (order: Order): { steps: PipelineStep[], summary: strin
     key: 'B',
     label: 'Billing',
     shortLabel: 'B',
+    shortName: 'Bill',
     status: billStatus
   }
 
@@ -196,6 +210,7 @@ const getOrderPipeline = (order: Order): { steps: PipelineStep[], summary: strin
     key: 'D',
     label: 'Delivery',
     shortLabel: 'D',
+    shortName: 'Delv',
     status: delStatus
   }
 
@@ -359,31 +374,55 @@ const getItemsTotalQuantity = (order: Order) => {
 
               <!-- 4. WORKFLOW PIPELINE -->
               <td class="px-5 py-3.5 min-w-0">
-                <!-- Connected Step Dots -->
-                <div class="flex items-center gap-1.5">
+                <!-- Connected Step Icons from Sidebar Menu -->
+                <div class="flex items-start gap-1 sm:gap-2">
                   <template v-for="(step, idx) in getOrderPipeline(order).steps" :key="step.key">
-                    <!-- Step Badge -->
-                    <div 
-                      class="flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold shrink-0 transition-colors"
-                      :class="[
-                        step.status === 'completed' ? 'bg-emerald-100 text-emerald-700 border border-emerald-400' :
-                        step.status === 'in_progress' ? 'bg-amber-100 text-amber-700 border border-amber-400 animate-pulse' :
-                        step.status === 'alert' ? 'bg-rose-100 text-rose-700 border border-rose-400' :
-                        'bg-gray-100 text-gray-400 border border-gray-200'
-                      ]"
-                      :title="step.label + ': ' + step.status"
-                    >
-                      <Check v-if="step.status === 'completed'" class="w-3 h-3 stroke-[2.5]" />
-                      <Clock v-else-if="step.status === 'in_progress' && step.key === 'A'" class="w-3 h-3" />
-                      <Package v-else-if="step.status === 'in_progress' && step.key === 'P'" class="w-3 h-3" />
-                      <Truck v-else-if="step.status === 'in_progress' && step.key === 'D'" class="w-3 h-3" />
-                      <span v-else>{{ step.shortLabel }}</span>
+                    <!-- Step Node (Icon + Micro-label) -->
+                    <div class="flex flex-col items-center shrink-0">
+                      <div 
+                        class="relative flex items-center justify-center w-6 h-6 rounded-full text-xs shrink-0 transition-all shadow-xs"
+                        :class="[
+                          step.status === 'completed' ? 'bg-emerald-50 text-emerald-700 border border-emerald-400' :
+                          step.status === 'in_progress' ? 'bg-amber-50 text-amber-700 border border-amber-400 animate-pulse ring-2 ring-amber-400/20' :
+                          step.status === 'alert' ? 'bg-rose-50 text-rose-700 border border-rose-400' :
+                          'bg-gray-50 text-gray-400 border border-gray-200/90 opacity-60'
+                        ]"
+                        :title="step.label + ': ' + (step.status === 'completed' ? 'Completed' : step.status === 'in_progress' ? 'In Progress' : step.status === 'alert' ? 'Action Needed' : 'Waiting')"
+                      >
+                        <!-- Exact Icon from Sidebar Menu -->
+                        <component 
+                          :is="getStepIcon(step.key)" 
+                          class="w-3.5 h-3.5" 
+                          :class="step.status === 'completed' ? 'stroke-[2.2]' : 'stroke-[1.8]'"
+                        />
+
+                        <!-- Completed mini check badge -->
+                        <span 
+                          v-if="step.status === 'completed'" 
+                          class="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[7px] font-black shadow-xs ring-1 ring-white"
+                        >
+                          ✓
+                        </span>
+                      </div>
+                      
+                      <!-- Micro-Label under icon -->
+                      <span 
+                        class="text-[9px] font-semibold mt-1 tracking-tight"
+                        :class="[
+                          step.status === 'completed' ? 'text-emerald-700' :
+                          step.status === 'in_progress' ? 'text-amber-700 font-bold' :
+                          step.status === 'alert' ? 'text-rose-600 font-bold' :
+                          'text-gray-400'
+                        ]"
+                      >
+                        {{ step.shortName }}
+                      </span>
                     </div>
 
                     <!-- Connector Line (between steps) -->
                     <div 
                       v-if="idx < getOrderPipeline(order).steps.length - 1"
-                      class="w-3 sm:w-5 h-0.5 rounded-full shrink-0"
+                      class="w-3 sm:w-5 h-0.5 rounded-full shrink-0 mt-3 transition-colors"
                       :class="getOrderPipeline(order).steps[idx + 1].status !== 'waiting' ? 'bg-emerald-400' : 'bg-gray-200'"
                     ></div>
                   </template>
@@ -480,50 +519,50 @@ const getItemsTotalQuantity = (order: Order) => {
               </span>
             </div>
 
-            <!-- Pipeline Status Dots (A, P, B, D) + Chevron -->
+            <!-- Pipeline Status Icons + Chevron -->
             <div class="flex items-center gap-1.5 shrink-0">
-              <!-- A / P / B / D Indicator Group -->
+              <!-- Sidebar Operational Icons Indicator Group -->
               <div class="flex items-center gap-1.5 bg-gray-50 border border-gray-200/80 rounded-full px-2 py-0.5" title="Pipeline Status (Approval • Packing • Billing • Delivery)">
-                <!-- Approval Dot -->
+                <!-- Approval Icon -->
                 <div 
-                  class="flex items-center gap-1" 
+                  class="flex items-center gap-0.5" 
                   :title="getApprovalDot(order).label"
                 >
                   <span class="w-1.5 h-1.5 rounded-full" :class="getApprovalDot(order).bg"></span>
-                  <span class="text-[9px] font-bold" :class="getApprovalDot(order).text">A</span>
+                  <CheckCheck class="w-2.5 h-2.5" :class="getApprovalDot(order).text" />
                 </div>
 
                 <span class="text-gray-200 text-[9px] leading-none">|</span>
 
-                <!-- Packing Dot -->
+                <!-- Packing Icon -->
                 <div 
-                  class="flex items-center gap-1" 
+                  class="flex items-center gap-0.5" 
                   :title="getPackingDot(order).label"
                 >
                   <span class="w-1.5 h-1.5 rounded-full" :class="getPackingDot(order).bg"></span>
-                  <span class="text-[9px] font-bold" :class="getPackingDot(order).text">P</span>
+                  <Package class="w-2.5 h-2.5" :class="getPackingDot(order).text" />
                 </div>
 
                 <span class="text-gray-200 text-[9px] leading-none">|</span>
 
-                <!-- Billing Dot -->
+                <!-- Billing Icon -->
                 <div 
-                  class="flex items-center gap-1" 
+                  class="flex items-center gap-0.5" 
                   :title="getBillingDot(order).label"
                 >
                   <span class="w-1.5 h-1.5 rounded-full" :class="getBillingDot(order).bg"></span>
-                  <span class="text-[9px] font-bold" :class="getBillingDot(order).text">B</span>
+                  <Receipt class="w-2.5 h-2.5" :class="getBillingDot(order).text" />
                 </div>
 
                 <span class="text-gray-200 text-[9px] leading-none">|</span>
 
-                <!-- Delivery Dot -->
+                <!-- Delivery Icon -->
                 <div 
-                  class="flex items-center gap-1" 
+                  class="flex items-center gap-0.5" 
                   :title="getDeliveryDot(order).label"
                 >
                   <span class="w-1.5 h-1.5 rounded-full" :class="getDeliveryDot(order).bg"></span>
-                  <span class="text-[9px] font-bold" :class="getDeliveryDot(order).text">D</span>
+                  <Truck class="w-2.5 h-2.5" :class="getDeliveryDot(order).text" />
                 </div>
               </div>
 
