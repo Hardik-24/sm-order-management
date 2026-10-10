@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Search, Filter, MoreHorizontal, ChevronRight, Check, Calendar, X } from 'lucide-vue-next'
-import { formatCurrency, formatTime, getDisplayStatus, getOverallColor, getStatusColor } from '~~/app/lib/utils'
+import { formatTime, getDisplayStatus, getOverallColor, getStatusColor } from '~~/app/lib/utils'
 import CustomSelect from '~/components/ui/CustomSelect.vue'
 import TableFilterButtons from '~/components/dashboard/TableFilterButtons.vue'
 import RowsPerPageSelect from '~/components/ui/RowsPerPageSelect.vue'
@@ -182,7 +182,6 @@ const getDeliveryDot = (order: Order) => {
               <th class="px-6 py-4 whitespace-nowrap">Order ID</th>
               <th class="px-6 py-4 whitespace-nowrap">Customer</th>
               <th class="px-6 py-4 whitespace-nowrap">Items</th>
-              <th class="px-6 py-4 whitespace-nowrap">Amount</th>
               <th class="px-6 py-4 whitespace-nowrap text-center">Approval</th>
               <th class="px-6 py-4 whitespace-nowrap text-center">Packing</th>
               <th class="px-6 py-4 whitespace-nowrap text-center">Billing</th>
@@ -223,7 +222,6 @@ const getDeliveryDot = (order: Order) => {
                 </div>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ order.items?.length || 0 }}</td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ formatCurrency(order.totalAmount || 0) }}</td>
               
               <!-- 1. Approval -->
               <td class="px-6 py-4 whitespace-nowrap text-center">
@@ -282,7 +280,7 @@ const getDeliveryDot = (order: Order) => {
               </td>
             </tr>
             <tr v-if="!orders?.length">
-              <td colspan="11" class="px-6 py-8 text-center text-sm text-gray-500">
+              <td colspan="10" class="px-6 py-8 text-center text-sm text-gray-500">
                 No orders found.
               </td>
             </tr>
@@ -332,14 +330,11 @@ const getDeliveryDot = (order: Order) => {
             />
           </div>
 
-          <!-- LINE 2: Amount, Items, Time & Pipeline Dots (B, P, D) -->
+          <!-- LINE 2: Items, Time & Pipeline Dots -->
           <div class="flex items-center justify-between gap-2 min-w-0 pt-0.5">
             <div class="flex items-baseline gap-1.5 shrink-0">
-              <span class="text-xs font-bold text-[#1a5c4c]">
-                {{ formatCurrency(order.totalAmount || 0) }}
-              </span>
-              <span class="text-[11px] text-gray-400 font-normal">
-                ({{ order.items?.length || 0 }} pcs)
+              <span class="text-xs font-medium text-gray-700">
+                {{ order.items?.length || 0 }} items
               </span>
               <span class="text-gray-200 text-[10px]">•</span>
               <span class="text-[11px] text-gray-400 tabular-nums">
