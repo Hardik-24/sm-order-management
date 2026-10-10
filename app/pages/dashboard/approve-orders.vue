@@ -281,11 +281,15 @@ const getPrivilegeColor = (tier: string) => {
   }
 }
 
-const getItemsTotalQuantity = (order: any) => {
-  if (!order.items || !order.items.length) return '0 items'
+const getItemsCountText = (order: any) => {
+  const count = order.items?.length || 0
+  return `${count} ${count === 1 ? 'item' : 'items'}`
+}
+
+const getTotalNos = (order: any) => {
+  if (!order.items || !order.items.length) return '0 nos.'
   const totalUnits = order.items.reduce((sum: number, itm: any) => sum + (Number(itm.quantity) || 0), 0)
-  const unit = (order.items[0] as any)?.product?.unit || 'units'
-  return `${totalUnits} ${unit.toLowerCase()}`
+  return `${totalUnits} nos.`
 }
 </script>
 
@@ -539,16 +543,13 @@ const getItemsTotalQuantity = (order: any) => {
                 </p>
               </td>
 
-              <!-- 3. ITEMS / QTY: First line SKUs, second line total nos -->
-              <td class="px-5 py-3.5 whitespace-nowrap">
-                <div 
-                  class="text-xs font-bold text-gray-800 truncate max-w-[200px]" 
-                  :title="order.items?.map((i: any) => i.sku || i.product?.sku || i.productName || i.product?.name).filter(Boolean).join(', ') || '—'"
-                >
-                  {{ order.items?.map((i: any) => i.sku || i.product?.sku || i.productName || i.product?.name).filter(Boolean).join(', ') || '—' }}
+              <!-- 3. ITEMS / QTY: First line n items, second line n nos. -->
+              <td class="px-5 py-3.5 whitespace-nowrap" :title="order.items?.map((i: any) => i.sku || i.product?.sku || i.productName || i.product?.name).filter(Boolean).join(', ') || '—'">
+                <div class="text-xs font-bold text-gray-800">
+                  {{ getItemsCountText(order) }}
                 </div>
                 <p class="text-[11px] text-gray-400 mt-0.5">
-                  {{ getItemsTotalQuantity(order) }}
+                  {{ getTotalNos(order) }}
                 </p>
               </td>
 

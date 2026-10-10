@@ -93,11 +93,15 @@ const getPrivilegeColor = (tier: string) => {
   }
 }
 
-const getItemsTotalQuantity = (order: any) => {
-  if (!order.items || !order.items.length) return '0 items'
+const getItemsCountText = (order: any) => {
+  const count = order.items?.length || 0
+  return `${count} ${count === 1 ? 'item' : 'items'}`
+}
+
+const getTotalNos = (order: any) => {
+  if (!order.items || !order.items.length) return '0 nos.'
   const totalUnits = order.items.reduce((sum: number, itm: any) => sum + (Number(itm.quantity) || 0), 0)
-  const unit = (order.items[0] as any)?.product?.unit || 'units'
-  return `${totalUnits} ${unit.toLowerCase()}`
+  return `${totalUnits} nos.`
 }
 
 const getPackingProgress = (order: any) => {
@@ -260,15 +264,12 @@ const getPackingProgress = (order: any) => {
               </td>
 
               <!-- 3. Items -->
-              <td class="px-5 py-3.5 whitespace-nowrap">
-                <div 
-                  class="text-xs font-bold text-gray-800 truncate max-w-[200px]" 
-                  :title="order.items?.map((i: any) => i.sku || i.product?.sku || i.productName || i.product?.name).filter(Boolean).join(', ') || '—'"
-                >
-                  {{ order.items?.map((i: any) => i.sku || i.product?.sku || i.productName || i.product?.name).filter(Boolean).join(', ') || '—' }}
+              <td class="px-5 py-3.5 whitespace-nowrap" :title="order.items?.map((i: any) => i.sku || i.product?.sku || i.productName || i.product?.name).filter(Boolean).join(', ') || '—'">
+                <div class="text-xs font-bold text-gray-800">
+                  {{ getItemsCountText(order) }}
                 </div>
                 <p class="text-[11px] text-gray-400 mt-0.5">
-                  {{ getItemsTotalQuantity(order) }}
+                  {{ getTotalNos(order) }}
                 </p>
               </td>
 
@@ -434,7 +435,7 @@ const getPackingProgress = (order: any) => {
                 {{ getPackingProgress(order).packed }}/{{ getPackingProgress(order).total }} SKUs
               </span>
               <span class="text-[11px] text-gray-400 font-normal">
-                ({{ order.items?.length || 0 }} items)
+                ({{ getTotalNos(order) }})
               </span>
               <span class="text-gray-300 text-[10px]">&bull;</span>
               <span class="text-[11px] text-gray-400 tabular-nums">

@@ -241,10 +241,9 @@ const getOrderPipeline = (order: Order): { steps: PipelineStep[], summary: strin
 }
 
 const getItemsTotalQuantity = (order: Order) => {
-  if (!order.items || !order.items.length) return '0 items'
+  if (!order.items || !order.items.length) return '0 nos.'
   const totalUnits = order.items.reduce((sum: number, itm: any) => sum + (Number(itm.quantity) || 0), 0)
-  const unit = (order.items[0] as any)?.product?.unit || 'units'
-  return `${totalUnits} ${unit.toLowerCase()}`
+  return `${totalUnits} nos.`
 }
 </script>
 
