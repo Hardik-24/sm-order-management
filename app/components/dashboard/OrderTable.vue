@@ -373,7 +373,7 @@ const getItemsTotalQuantity = (order: Order) => {
               </td>
 
               <!-- 4. WORKFLOW PIPELINE -->
-              <td class="px-5 py-3.5 min-w-0">
+              <td class="px-5 py-3.5 min-w-0" :title="'Pipeline: ' + getOrderPipeline(order).summary">
                 <!-- Connected Step Icons from Sidebar Menu -->
                 <div class="flex items-start gap-1 sm:gap-2">
                   <template v-for="(step, idx) in getOrderPipeline(order).steps" :key="step.key">
@@ -427,11 +427,6 @@ const getItemsTotalQuantity = (order: Order) => {
                     ></div>
                   </template>
                 </div>
-
-                <!-- Stage Subtitle -->
-                <p class="text-[11px] font-medium text-gray-500 mt-1 truncate">
-                  {{ getOrderPipeline(order).summary }}
-                </p>
               </td>
 
               <!-- 5. STATUS -->
