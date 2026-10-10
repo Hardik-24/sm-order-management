@@ -438,7 +438,7 @@ watch(() => data.value?.counts, () => {
       <!-- Table Content -->
       <div class="relative min-h-[200px]">
         <div v-if="isLoading" class="absolute inset-0 bg-white/50 backdrop-blur-[2px] z-10 animate-pulse"></div>
-        <div ref="desktopTableScrollRef" class="hidden md:block" :class="isSidebarCollapsed ? 'overflow-hidden' : 'overflow-x-auto'">
+        <div ref="desktopTableScrollRef" class="hidden md:block no-scrollbar" :class="isSidebarCollapsed ? 'overflow-hidden' : 'overflow-x-auto'">
           <table 
             class="w-full text-left border-collapse"
             :class="isSidebarCollapsed ? 'table-fixed' : 'min-w-[1000px]'"
@@ -1105,3 +1105,15 @@ watch(() => data.value?.counts, () => {
     />
   </div>
 </template>
+
+<style scoped>
+.no-scrollbar::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+.no-scrollbar {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+</style>
