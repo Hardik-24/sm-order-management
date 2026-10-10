@@ -32,6 +32,7 @@ import { useRealtimeSync } from '~/composables/useRealtimeSync'
 import { useSnackbar } from '~/composables/useSnackbar'
 import RowsPerPageSelect from '~/components/ui/RowsPerPageSelect.vue'
 import FloatingHorizontalScrollbar from '~/components/ui/FloatingHorizontalScrollbar.vue'
+import TableFilterButtons from '~/components/dashboard/TableFilterButtons.vue'
 
 definePageMeta({ layout: 'dashboard' })
 
@@ -44,7 +45,14 @@ const page = ref(1)
 const limit = ref(10)
 const approveTableRef = ref<HTMLElement | null>(null)
 const search = ref('')
+const startDate = ref('')
+const endDate = ref('')
 const activeTab = ref<'PENDING' | 'URGENT' | 'APPROVED' | 'ALL'>('PENDING')
+
+// Reset page on search or date change
+watch([search, startDate, endDate], () => {
+  page.value = 1
+})
 
 const queryObj = computed(() => {
   const q: any = {
@@ -59,6 +67,12 @@ const queryObj = computed(() => {
     q.isApproved = 'false'
   } else if (activeTab.value === 'APPROVED') {
     q.isApproved = 'true'
+  }
+  if (startDate.value) {
+    q.startDate = startDate.value
+  }
+  if (endDate.value) {
+    q.endDate = endDate.value
   }
   if (search.value.trim()) {
     q.search = search.value.trim()
@@ -191,19 +205,40 @@ const counts = computed(() => {
   }
 })
 
+const triggerStatAnimations = () => {
+  nextTick(() => {
+    if (numPending.value) animateNumber(numPending.value, counts.value.pending, { duration: 0.55 })
+    if (numUrgent.value) animateNumber(numUrgent.value, counts.value.urgent, { duration: 0.6 })
+    if (numApproved.value) animateNumber(numApproved.value, counts.value.approved, { duration: 0.65 })
+    if (numTotal.value) animateNumber(numTotal.value, counts.value.total, { duration: 0.5 })
+  })
+}
+
 onMounted(() => {
   initContext(statsContainer.value || undefined)
   if (statsContainer.value) {
     animateStagger(statsContainer.value.children, { duration: 0.35, stagger: 0.06, y: 12 })
   }
+  triggerStatAnimations()
 })
+
+watch(() => counts.value, () => {
+  triggerStatAnimations()
+}, { deep: true })
 
 const getPrivilegeColor = (tier: string) => {
   switch (tier) {
-    case 'GOLD': return 'bg-amber-100 text-amber-800 border-amber-300'
-    case 'SILVER': return 'bg-slate-100 text-slate-800 border-slate-300'
+    case 'GOLD': return 'bg-amber-50 text-amber-800 border-amber-300 ring-1 ring-amber-300/40'
+    case 'SILVER': return 'bg-slate-100 text-slate-700 border-slate-300 ring-1 ring-slate-300/40'
     default: return 'bg-orange-50 text-orange-700 border-orange-200'
   }
+}
+
+const getItemsTotalQuantity = (order: any) => {
+  if (!order.items || !order.items.length) return '0 items'
+  const totalUnits = order.items.reduce((sum: number, itm: any) => sum + (Number(itm.quantity) || 0), 0)
+  const unit = (order.items[0] as any)?.product?.unit || 'units'
+  return `${totalUnits} ${unit.toLowerCase()}`
 }
 </script>
 
@@ -240,7 +275,7 @@ const getPrivilegeColor = (tier: string) => {
       <!-- Pending Approval -->
       <div 
         @click="activeTab = 'PENDING'; page = 1"
-        class="bg-white rounded-xl border border-[#e5e2dc] p-5 shadow-sm cursor-pointer hover:shadow-md transition-shadow duration-200"
+        class="bg-white rounded-xl border border-[#e5e2dc] p-5 shadow-sm cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
       >
         <div class="flex gap-4">
           <div class="flex flex-col justify-between">
@@ -260,7 +295,7 @@ const getPrivilegeColor = (tier: string) => {
       <!-- Urgent Orders -->
       <div 
         @click="activeTab = 'URGENT'; page = 1"
-        class="bg-white rounded-xl border border-rose-200 p-5 shadow-sm cursor-pointer hover:shadow-md transition-shadow duration-200"
+        class="bg-white rounded-xl border border-rose-200/80 p-5 shadow-sm cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
       >
         <div class="flex gap-4">
           <div class="flex flex-col justify-between">
@@ -280,7 +315,7 @@ const getPrivilegeColor = (tier: string) => {
       <!-- Approved -->
       <div 
         @click="activeTab = 'APPROVED'; page = 1"
-        class="bg-white rounded-xl border border-[#e5e2dc] p-5 shadow-sm cursor-pointer hover:shadow-md transition-shadow duration-200"
+        class="bg-white rounded-xl border border-[#e5e2dc] p-5 shadow-sm cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
       >
         <div class="flex gap-4">
           <div class="flex flex-col justify-between">
@@ -300,7 +335,7 @@ const getPrivilegeColor = (tier: string) => {
       <!-- Total Orders -->
       <div 
         @click="activeTab = 'ALL'; page = 1"
-        class="bg-white rounded-xl border border-[#e5e2dc] p-5 shadow-sm cursor-pointer hover:shadow-md transition-shadow duration-200"
+        class="bg-white rounded-xl border border-[#e5e2dc] p-5 shadow-sm cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
       >
         <div class="flex gap-4">
           <div class="flex flex-col justify-between">
@@ -318,18 +353,28 @@ const getPrivilegeColor = (tier: string) => {
       </div>
     </div>
 
-    <!-- Underline Tabs -->
+    <!-- Underline Tabs with Badges -->
     <div class="border-b border-gray-200">
-      <nav class="-mb-px flex gap-8">
+      <nav class="-mb-px flex gap-6 sm:gap-8 overflow-x-auto no-scrollbar">
         <button 
           v-for="tab in (['PENDING', 'URGENT', 'APPROVED', 'ALL'] as const)" :key="tab"
           @click="activeTab = tab; page = 1"
-          class="whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm transition-colors flex items-center gap-2"
+          class="whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm transition-colors flex items-center gap-2 cursor-pointer"
           :class="activeTab === tab ? 'border-[#1a5c4c] text-[#1a5c4c]' : 'border-transparent text-gray-500 hover:text-gray-900 hover:border-gray-300'"
         >
           <span v-if="tab === 'URGENT'">⚡</span>
           <span>
             {{ tab === 'PENDING' ? 'Pending Approval' : tab === 'URGENT' ? 'Urgent Only' : tab === 'APPROVED' ? 'Approved Orders' : 'All Orders' }}
+          </span>
+          <span 
+            class="px-2 py-0.5 rounded-full text-[10px] font-bold transition-colors"
+            :class="[
+              activeTab === tab
+                ? (tab === 'URGENT' ? 'bg-rose-100 text-rose-700' : 'bg-[#1a5c4c]/10 text-[#1a5c4c]')
+                : 'bg-gray-100 text-gray-600'
+            ]"
+          >
+            {{ tab === 'PENDING' ? counts.pending : tab === 'URGENT' ? counts.urgent : tab === 'APPROVED' ? counts.approved : counts.total }}
           </span>
         </button>
       </nav>
@@ -337,18 +382,31 @@ const getPrivilegeColor = (tier: string) => {
 
     <!-- Table Toolbar -->
     <div class="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
-      <div class="p-4 border-b border-gray-200 flex flex-col sm:flex-row justify-between items-center gap-4 bg-gray-50/50">
+      <div class="p-4 border-b border-gray-200 flex flex-col sm:flex-row justify-between items-center gap-3.5 bg-gray-50/50">
+        <!-- Search -->
         <div class="relative w-full sm:w-80">
-          <Search class="w-4 h-4 absolute left-3 top-3 text-gray-400" />
+          <Search class="w-4 h-4 absolute left-3 top-2.5 text-gray-400" />
           <input 
             v-model="search"
             type="text"
             placeholder="Search order #, customer..." 
-            class="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#1a5c4c]"
+            class="w-full pl-9 pr-8 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#1a5c4c]/20 focus:border-[#1a5c4c] transition-all"
           />
+          <button 
+            v-if="search" 
+            @click="search = ''" 
+            class="absolute right-2.5 top-2.5 text-gray-400 hover:text-gray-600"
+          >
+            <X class="w-3.5 h-3.5" />
+          </button>
         </div>
 
-        <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
+        <!-- Filter Controls -->
+        <div class="flex items-center gap-3 w-full sm:w-auto justify-end flex-wrap">
+          <TableFilterButtons
+            v-model:startDate="startDate"
+            v-model:endDate="endDate"
+          />
           <RowsPerPageSelect v-model="limit" />
         </div>
       </div>
@@ -358,117 +416,127 @@ const getPrivilegeColor = (tier: string) => {
         <table class="w-full text-left text-sm text-gray-600">
           <thead class="bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider">
             <tr>
-              <th class="py-3 px-4">Order #</th>
-              <th class="py-3 px-4">Customer & Tier</th>
-              <th class="py-3 px-4">Items / Qty</th>
-              <th class="py-3 px-4">Total Amount</th>
-              <th class="py-3 px-4">Status & Approval</th>
-              <th class="py-3 px-4 text-right">Actions</th>
+              <th class="px-5 py-3.5 whitespace-nowrap">Order</th>
+              <th class="px-5 py-3.5">Customer & Tier</th>
+              <th class="px-5 py-3.5">Items</th>
+              <th class="px-5 py-3.5">Total Amount</th>
+              <th class="px-5 py-3.5">Status & Approval</th>
+              <th class="px-5 py-3.5 text-right whitespace-nowrap pr-5">Actions</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-100 bg-white">
             <tr v-if="isLoading" class="text-center py-8">
-              <td colspan="6" class="py-12 text-center text-gray-400">
+              <td colspan="6" class="py-14 text-center text-gray-400">
                 <Loader2 class="w-6 h-6 animate-spin mx-auto text-[#1a5c4c] mb-2" />
-                Loading orders...
+                <span class="text-xs font-medium">Loading orders...</span>
               </td>
             </tr>
             <tr v-else-if="!data?.orders || data.orders.length === 0" class="text-center py-8">
-              <td colspan="6" class="py-12 text-center text-gray-400">
-                <CheckCheck class="w-8 h-8 mx-auto text-emerald-400 mb-2 opacity-50" />
-                No orders pending approval matching criteria.
+              <td colspan="6" class="py-14 text-center text-gray-400">
+                <CheckCheck class="w-8 h-8 mx-auto text-emerald-500/50 mb-2" />
+                <p class="text-sm font-semibold text-gray-700">No orders pending approval</p>
+                <p class="text-xs text-gray-400 mt-0.5">All orders matching criteria have been reviewed.</p>
               </td>
             </tr>
             <tr 
               v-else 
               v-for="order in data.orders" 
               :key="order.id"
-              class="transition-colors"
+              class="transition-colors duration-150"
               :class="order.overallStatus === 'CANCELLED' 
-                ? 'bg-gray-100/75 hover:bg-gray-200/60 text-gray-400 [&_td]:!text-gray-400 [&_span]:!text-gray-400 [&_div]:!text-gray-400 [&_a]:!text-gray-400 opacity-60 border-l-4 border-l-gray-400' 
-                : (order.isUrgent ? 'bg-rose-50/20 hover:bg-gray-50/80 border-l-4 border-l-rose-500' : 'hover:bg-gray-50/80')"
+                ? 'bg-gray-100/60 hover:bg-gray-100/80 text-gray-400 opacity-60 border-l-4 border-l-gray-400' 
+                : (order.isUrgent ? 'bg-rose-50/25 hover:bg-rose-50/40 border-l-4 border-l-rose-500' : 'hover:bg-gray-50/80')"
             >
-              <!-- Order # -->
-              <td class="py-3 px-4 font-medium text-gray-900">
-                <div class="flex items-center gap-2">
-                  <NuxtLink :to="`/dashboard/orders/${order.id}`" class="text-[#1a5c4c] hover:underline font-semibold">
+              <!-- 1. ORDER: Order ID, urgent/cancelled badge, then created at -->
+              <td class="px-5 py-3.5 whitespace-nowrap">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <NuxtLink :to="`/dashboard/orders/${order.id}`" class="text-xs font-bold text-gray-900 hover:text-[#1a5c4c] transition-colors">
                     {{ order.orderNumber }}
                   </NuxtLink>
-                  <span v-if="order.overallStatus === 'CANCELLED'" class="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[10px] font-bold bg-gray-200 !text-gray-600 border border-rose-500">
+                  <span v-if="order.overallStatus === 'CANCELLED'" class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-bold bg-gray-200 !text-gray-600 border border-rose-500">
                     🚫 CANCELLED
                   </span>
-                  <span v-else-if="order.isUrgent" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-700 border border-rose-300 animate-pulse">
+                  <span v-else-if="order.isUrgent" class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-bold bg-rose-100 text-rose-700 border border-rose-300">
                     ⚡ URGENT
                   </span>
                 </div>
-                <div class="text-xs text-gray-400 mt-0.5">
+                <p class="text-[11px] text-gray-400 mt-0.5 tabular-nums">
                   {{ formatDateTime(order.createdAt) }}
-                </div>
+                </p>
               </td>
 
-              <!-- Customer -->
-              <td class="py-3 px-4">
-                <div class="font-medium text-gray-900 flex items-center gap-2">
-                  <span>{{ order.customer?.name }}</span>
+              <!-- 2. CUSTOMER & TIER: Name, Tier, Company • City/Phone (no address) -->
+              <td class="px-5 py-3.5 min-w-0">
+                <div class="text-xs font-semibold text-gray-900 truncate flex items-center gap-1.5" :title="order.customer?.name || 'Walk-in Customer'">
+                  <span class="truncate">{{ order.customer?.name || 'Walk-in Customer' }}</span>
                   <span 
                     v-if="order.customer?.privilegeTier" 
-                    class="text-[9px] px-1.5 py-0.2 rounded font-bold uppercase border"
+                    class="text-[9px] px-1.5 py-0.2 rounded font-bold uppercase border shadow-2xs"
                     :class="getPrivilegeColor(order.customer.privilegeTier)"
                   >
                     {{ order.customer.privilegeTier }}
                   </span>
+                  <span v-if="order.customer?.isPriorityClient" class="text-amber-500 font-bold text-xs shrink-0" title="Priority Client">★</span>
                 </div>
-                <div class="text-xs text-gray-500 truncate max-w-xs">
-                  {{ order.customer?.company || order.deliveryAddress }}
+                <p class="text-[11px] text-gray-500 truncate mt-0.5" :title="[order.customer?.company, order.customer?.city || order.customer?.phone].filter(Boolean).join(' • ') || '—'">
+                  {{ [order.customer?.company, order.customer?.city || order.customer?.phone].filter(Boolean).join(' • ') || '—' }}
+                </p>
+              </td>
+
+              <!-- 3. ITEMS / QTY: First line SKUs, second line total nos -->
+              <td class="px-5 py-3.5 whitespace-nowrap">
+                <div 
+                  class="text-xs font-bold text-gray-800 truncate max-w-[200px]" 
+                  :title="order.items?.map((i: any) => i.sku || i.product?.sku || i.productName || i.product?.name).filter(Boolean).join(', ') || '—'"
+                >
+                  {{ order.items?.map((i: any) => i.sku || i.product?.sku || i.productName || i.product?.name).filter(Boolean).join(', ') || '—' }}
+                </div>
+                <p class="text-[11px] text-gray-400 mt-0.5">
+                  {{ getItemsTotalQuantity(order) }}
+                </p>
+              </td>
+
+              <!-- 4. TOTAL AMOUNT -->
+              <td class="px-5 py-3.5 whitespace-nowrap">
+                <div class="text-xs font-bold text-gray-900">
+                  {{ formatCurrency(order.totalAmount) }}
+                </div>
+                <p v-if="order.customer?.paymentTerms" class="text-[11px] text-gray-400 mt-0.5">
+                  {{ order.customer.paymentTerms }}
+                </p>
+              </td>
+
+              <!-- 5. STATUS & APPROVAL (kept as requested) -->
+              <td class="px-5 py-3.5 whitespace-nowrap">
+                <div v-if="order.isApproved" class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  <CheckCircle2 class="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Approved {{ order.approvedBy ? `by ${order.approvedBy.name}` : '' }}</span>
+                </div>
+                <div v-else-if="order.overallStatus === 'CANCELLED'" class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">
+                  <XCircle class="w-3.5 h-3.5 text-rose-600" />
+                  <span>Cancelled</span>
+                </div>
+                <div v-else class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                  <Clock class="w-3.5 h-3.5 text-amber-600" />
+                  <span>Pending Approval</span>
                 </div>
               </td>
 
-              <!-- Items -->
-              <td class="py-3 px-4">
-                <div class="font-medium text-gray-800">
-                  {{ order.items?.length || 0 }} items
-                </div>
-                <div class="text-xs text-gray-400 truncate max-w-xs">
-                  {{ order.items?.map((i: any) => i.productName || i.product?.name).filter(Boolean).join(', ') }}
-                </div>
-              </td>
-
-              <!-- Total Amount -->
-              <td class="py-3 px-4 font-semibold text-gray-900">
-                {{ formatCurrency(order.totalAmount) }}
-              </td>
-
-              <!-- Approval Status -->
-              <td class="py-3 px-4">
-                <div v-if="order.isApproved" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                  <CheckCircle2 class="w-3.5 h-3.5" />
-                  Approved {{ order.approvedBy ? `by ${order.approvedBy.name}` : '' }}
-                </div>
-                <div v-else-if="order.overallStatus === 'CANCELLED'" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">
-                  <XCircle class="w-3.5 h-3.5" />
-                  Cancelled
-                </div>
-                <div v-else class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-                  <Clock class="w-3.5 h-3.5" />
-                  Pending Approval
-                </div>
-              </td>
-
-              <!-- Actions -->
-              <td class="py-3 px-4 text-right">
+              <!-- 6. ACTIONS -->
+              <td class="px-5 py-3.5 text-right whitespace-nowrap pr-5">
                 <div class="flex items-center justify-end gap-2">
                   <button 
                     v-if="!order.isApproved && order.overallStatus !== 'CANCELLED'"
                     @click="openReview(order)"
-                    class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#1a5c4c] text-white hover:bg-[#14473b] shadow-xs transition-colors flex items-center gap-1.5"
+                    class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#1a5c4c] text-white hover:bg-[#14473b] shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
                   >
                     <CheckCheck class="w-3.5 h-3.5" />
-                    Review & Approve
+                    <span>Review & Approve</span>
                   </button>
                   <button 
                     v-if="order.overallStatus !== 'CANCELLED' && order.overallStatus !== 'DELIVERED'"
                     @click="openCancelModal(order)"
-                    class="px-2.5 py-1.5 rounded-lg text-xs font-medium text-rose-600 hover:bg-rose-50 transition-colors border border-rose-200"
+                    class="px-2.5 py-1.5 rounded-lg text-xs font-medium text-rose-600 hover:bg-rose-50 transition-colors border border-rose-200 cursor-pointer"
                     title="Cancel Order"
                   >
                     Cancel
@@ -484,20 +552,20 @@ const getPrivilegeColor = (tier: string) => {
       <FloatingHorizontalScrollbar :target="approveTableRef" />
 
       <!-- Pagination -->
-      <div v-if="data?.totalPages > 1" class="p-4 border-t border-gray-200 flex justify-between items-center text-sm text-gray-500">
-        <div>Showing page {{ page }} of {{ data.totalPages }}</div>
+      <div v-if="data?.totalPages > 1" class="p-4 border-t border-gray-200 flex justify-between items-center text-xs text-gray-500 bg-gray-50/30">
+        <div>Showing page <span class="font-semibold text-gray-900">{{ page }}</span> of <span class="font-semibold text-gray-900">{{ data.totalPages }}</span></div>
         <div class="flex gap-2">
           <button 
             :disabled="page <= 1" 
             @click="page--"
-            class="px-3 py-1 border rounded hover:bg-gray-50 disabled:opacity-50"
+            class="px-3 py-1.5 border border-gray-300 rounded-lg bg-white text-gray-700 font-medium hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
             Prev
           </button>
           <button 
             :disabled="page >= data.totalPages" 
             @click="page++"
-            class="px-3 py-1 border rounded hover:bg-gray-50 disabled:opacity-50"
+            class="px-3 py-1.5 border border-gray-300 rounded-lg bg-white text-gray-700 font-medium hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
             Next
           </button>
@@ -507,105 +575,141 @@ const getPrivilegeColor = (tier: string) => {
 
     <!-- Review & Approve Modal -->
     <div v-if="isReviewModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-      <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden border border-gray-200">
+      <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden border border-gray-200/80">
         <!-- Modal Header -->
-        <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-[#1c1c1c] text-white">
+        <div class="px-6 py-4 border-b border-white/10 flex justify-between items-center bg-[#1c1c1c] text-white shrink-0">
           <div class="flex items-center gap-3">
-            <CheckCheck class="w-5 h-5 text-emerald-400" />
+            <div class="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+              <CheckCheck class="w-4 h-4" />
+            </div>
             <div>
-              <h3 class="text-lg font-bold">Approve Order: {{ selectedOrder?.orderNumber }}</h3>
+              <h3 class="text-base sm:text-lg font-bold">Approve Order: {{ selectedOrder?.orderNumber }}</h3>
               <p class="text-xs text-gray-400">Customer: {{ selectedOrder?.customer?.name }} ({{ selectedOrder?.customer?.company || 'Direct' }})</p>
             </div>
           </div>
-          <button @click="isReviewModalOpen = false" class="text-gray-400 hover:text-white p-1 rounded-lg">
+          <button @click="isReviewModalOpen = false" class="text-gray-400 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer">
             <X class="w-5 h-5" />
           </button>
         </div>
 
         <!-- Modal Body -->
         <div class="p-6 overflow-y-auto flex-1 space-y-6">
-          <!-- Client & Delivery Banner -->
-          <div class="bg-gray-50 rounded-xl p-4 border border-gray-200 flex flex-wrap gap-4 justify-between items-center text-xs">
-            <div>
-              <span class="text-gray-400 block font-medium">Privilege Tier</span>
-              <span class="font-bold text-gray-800 uppercase">{{ selectedOrder?.customer?.privilegeTier || 'BRONZE' }}</span>
+          <!-- Client & Delivery Card -->
+          <div class="bg-gray-50/80 rounded-xl p-4 border border-gray-200/80 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center text-xs">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-[#1a5c4c] text-white font-bold flex items-center justify-center text-sm shadow-xs shrink-0">
+                {{ (selectedOrder?.customer?.company || selectedOrder?.customer?.name || 'C')[0]?.toUpperCase() }}
+              </div>
+              <div>
+                <div class="font-bold text-gray-900 text-sm flex items-center gap-2">
+                  <span>{{ selectedOrder?.customer?.company || selectedOrder?.customer?.name }}</span>
+                  <span 
+                    v-if="selectedOrder?.customer?.privilegeTier" 
+                    class="text-[9px] px-1.5 py-0.5 rounded-md font-bold uppercase border shadow-2xs"
+                    :class="getPrivilegeColor(selectedOrder?.customer?.privilegeTier)"
+                  >
+                    {{ selectedOrder?.customer?.privilegeTier }}
+                  </span>
+                  <span 
+                    v-if="selectedOrder?.customer?.isPriorityClient"
+                    class="text-[9px] px-1.5 py-0.5 rounded-md font-bold text-amber-700 bg-amber-50 border border-amber-200 shadow-2xs"
+                  >
+                    ★ Priority Client
+                  </span>
+                </div>
+                <div class="text-xs text-gray-500 mt-0.5 flex items-center gap-2">
+                  <span v-if="selectedOrder?.customer?.name && selectedOrder?.customer?.company">{{ selectedOrder?.customer?.name }}</span>
+                  <span v-if="selectedOrder?.customer?.phone" class="text-gray-400 flex items-center gap-1">
+                    <Phone class="w-3 h-3" /> {{ selectedOrder?.customer?.phone }}
+                  </span>
+                </div>
+              </div>
             </div>
-            <div>
-              <span class="text-gray-400 block font-medium">Priority Client</span>
-              <span class="font-bold" :class="selectedOrder?.customer?.isPriorityClient ? 'text-amber-600' : 'text-gray-600'">
-                {{ selectedOrder?.customer?.isPriorityClient ? '★ Priority Customer' : 'Standard' }}
-              </span>
-            </div>
-            <div>
-              <span class="text-gray-400 block font-medium">Urgent Order Tag</span>
-              <span class="font-bold" :class="selectedOrder?.isUrgent ? 'text-rose-600' : 'text-gray-600'">
-                {{ selectedOrder?.isUrgent ? '⚡ Marked Urgent' : 'Normal Fulfillment' }}
-              </span>
-            </div>
-            <div class="max-w-xs">
-              <span class="text-gray-400 block font-medium">Destination Address</span>
-              <span class="font-semibold text-gray-800 truncate block">{{ selectedOrder?.deliveryAddress || 'Registered Location' }}</span>
+
+            <div class="flex flex-col sm:items-end gap-1 text-xs text-gray-600">
+              <div class="flex items-center gap-1.5">
+                <span v-if="selectedOrder?.isUrgent" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                  ⚡ URGENT ORDER
+                </span>
+                <span v-if="selectedOrder?.customer?.paymentTerms" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-700 border border-gray-200">
+                  {{ selectedOrder?.customer?.paymentTerms }}
+                </span>
+              </div>
+              <div class="flex items-center gap-1 text-gray-500 text-xs truncate max-w-xs mt-0.5">
+                <MapPin class="w-3 h-3 text-gray-400 shrink-0" />
+                <span class="truncate">{{ selectedOrder?.deliveryAddress || 'Registered Location' }}</span>
+              </div>
             </div>
           </div>
 
           <!-- Items Table -->
           <div>
-            <h4 class="text-sm font-bold text-gray-900 mb-3 flex items-center justify-between">
-              <span>Item Verification & Price Adjustment</span>
-              <span class="text-xs font-normal text-gray-500">Modify approved qty or final price if needed</span>
-            </h4>
-            <div class="border border-gray-200 rounded-xl overflow-hidden">
+            <div class="flex items-center justify-between mb-3">
+              <div>
+                <h4 class="text-sm font-bold text-gray-900">Item Verification & Rate Adjustment</h4>
+                <p class="text-xs text-gray-500 mt-0.5">Adjust approved quantities or rates if volume discounts apply</p>
+              </div>
+              <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-gray-100 text-gray-600">
+                {{ editableItems.length }} item{{ editableItems.length > 1 ? 's' : '' }}
+              </span>
+            </div>
+
+            <div class="border border-gray-200 rounded-xl overflow-hidden shadow-2xs">
               <table class="w-full text-left text-xs">
-                <thead class="bg-gray-50 border-b border-gray-200 font-semibold text-gray-600">
+                <thead class="bg-gray-50/80 border-b border-gray-200 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
                   <tr>
-                    <th class="py-2.5 px-3">Item / SKU</th>
-                    <th class="py-2.5 px-3">Ordered Qty</th>
+                    <th class="py-2.5 px-3.5">Item & SKU</th>
+                    <th class="py-2.5 px-3 text-center">Ordered</th>
                     <th class="py-2.5 px-3">Approved Qty</th>
-                    <th class="py-2.5 px-3">Final Rate (₹)</th>
-                    <th class="py-2.5 px-3">Tax Mode</th>
-                    <th class="py-2.5 px-3 text-right">Subtotal</th>
+                    <th class="py-2.5 px-3">Unit Rate (₹)</th>
+                    <th class="py-2.5 px-3 text-center">Tax Mode</th>
+                    <th class="py-2.5 px-3.5 text-right">Subtotal</th>
                   </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-100">
-                  <tr v-for="(item, idx) in editableItems" :key="item.id" class="hover:bg-gray-50/50">
-                    <td class="py-2.5 px-3 font-medium text-gray-900">
-                      <div>{{ item.productName }}</div>
+                <tbody class="divide-y divide-gray-100 bg-white">
+                  <tr v-for="item in editableItems" :key="item.id" class="hover:bg-gray-50/60 transition-colors">
+                    <td class="py-3 px-3.5">
+                      <div class="font-semibold text-gray-900 text-xs sm:text-sm">{{ item.productName }}</div>
                       <div class="text-[10px] text-gray-400 flex items-center gap-1.5 mt-0.5">
-                        <span>SKU: {{ item.sku }}</span>
-                        <span v-if="item.applyLastPrice" class="text-emerald-700 bg-emerald-50 px-1 py-0.2 rounded font-semibold border border-emerald-200">
+                        <span class="font-mono bg-gray-100 px-1.5 py-0.2 rounded text-gray-600">SKU: {{ item.sku }}</span>
+                        <span v-if="item.applyLastPrice" class="text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded font-semibold border border-emerald-200">
                           Last Price Applied
                         </span>
                       </div>
-                      <div v-if="item.itemNotes" class="mt-1 text-[11px] text-amber-700 bg-amber-50/80 p-1 rounded border border-amber-200">
-                        💬 Note: {{ item.itemNotes }}
+                      <div v-if="item.itemNotes" class="mt-1.5 text-xs text-amber-800 bg-amber-50/90 p-2 rounded-lg border border-amber-200/80 flex items-start gap-1.5">
+                        <span class="font-bold shrink-0">Note:</span>
+                        <span>{{ item.itemNotes }}</span>
                       </div>
                     </td>
-                    <td class="py-2.5 px-3 text-gray-600 font-semibold">
+                    <td class="py-3 px-3 text-center font-semibold text-gray-600">
                       {{ item.quantity }}
                     </td>
-                    <td class="py-2.5 px-3">
+                    <td class="py-3 px-3">
                       <input 
                         v-model.number="item.approvedQuantity" 
                         type="number" 
                         min="0"
-                        class="w-20 px-2 py-1 border border-gray-300 rounded font-bold text-gray-900 focus:ring-1 focus:ring-[#1a5c4c]"
+                        class="w-20 px-2.5 py-1.5 border border-gray-300 rounded-lg font-bold text-gray-900 text-xs focus:ring-2 focus:ring-[#1a5c4c]/20 focus:border-[#1a5c4c] outline-none transition-all"
                       />
                     </td>
-                    <td class="py-2.5 px-3">
-                      <input 
-                        v-model.number="item.unitPrice" 
-                        type="number" 
-                        step="0.01" 
-                        min="0"
-                        class="w-24 px-2 py-1 border border-gray-300 rounded font-bold text-gray-900 focus:ring-1 focus:ring-[#1a5c4c]"
-                      />
+                    <td class="py-3 px-3">
+                      <div class="relative flex items-center w-28">
+                        <span class="absolute left-2.5 text-xs text-gray-400 font-bold">₹</span>
+                        <input 
+                          v-model.number="item.unitPrice" 
+                          type="number" 
+                          step="0.01" 
+                          min="0"
+                          class="w-full pl-6 pr-2.5 py-1.5 border border-gray-300 rounded-lg font-bold text-gray-900 text-xs focus:ring-2 focus:ring-[#1a5c4c]/20 focus:border-[#1a5c4c] outline-none transition-all"
+                        />
+                      </div>
                     </td>
-                    <td class="py-2.5 px-3">
-                      <span class="px-1.5 py-0.5 rounded text-[10px] font-medium" :class="item.isTaxInclusive ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-gray-100 text-gray-600'">
+                    <td class="py-3 px-3 text-center">
+                      <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold" :class="item.isTaxInclusive ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-gray-100 text-gray-600'">
                         {{ item.isTaxInclusive ? 'Tax Incl.' : 'Tax Excl.' }}
                       </span>
                     </td>
-                    <td class="py-2.5 px-3 text-right font-bold text-gray-900">
+                    <td class="py-3 px-3.5 text-right font-bold text-gray-900">
                       {{ formatCurrency(Number(item.approvedQuantity || 0) * Number(item.unitPrice || 0)) }}
                     </td>
                   </tr>
@@ -621,32 +725,32 @@ const getPrivilegeColor = (tier: string) => {
               v-model="approvalNotes" 
               rows="2"
               placeholder="e.g. Special rate approved for volume discount, priority truck dispatch authorized..."
-              class="w-full p-2.5 border border-gray-300 rounded-lg text-xs focus:ring-2 focus:ring-[#1a5c4c]"
+              class="w-full p-3 border border-gray-300 rounded-xl text-xs focus:ring-2 focus:ring-[#1a5c4c]/20 focus:border-[#1a5c4c] outline-none transition-all resize-none"
             ></textarea>
           </div>
         </div>
 
         <!-- Modal Footer -->
-        <div class="px-6 py-4 border-t border-gray-200 flex justify-between items-center bg-gray-50">
+        <div class="px-6 py-4 border-t border-gray-100 flex justify-between items-center bg-gray-50/90 rounded-b-2xl shrink-0">
           <div>
-            <span class="text-xs text-gray-500 block">Total Approved Order Value:</span>
-            <span class="text-xl font-extrabold text-[#1a5c4c]">{{ formatCurrency(computedOrderTotal) }}</span>
+            <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider block">Total Approved Order Value</span>
+            <span class="text-2xl font-extrabold text-[#1a5c4c]">{{ formatCurrency(computedOrderTotal) }}</span>
           </div>
           <div class="flex items-center gap-3">
             <button 
               @click="isReviewModalOpen = false" 
-              class="px-4 py-2 text-xs font-semibold text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+              class="px-4 py-2 text-xs font-semibold text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer"
             >
               Cancel
             </button>
             <button 
               @click="submitApproval" 
               :disabled="isSubmittingApproval"
-              class="px-5 py-2 text-xs font-bold text-white bg-[#1a5c4c] hover:bg-[#14473b] rounded-lg shadow-sm flex items-center gap-2 disabled:opacity-50"
+              class="px-6 py-2.5 text-xs font-bold text-white bg-[#1a5c4c] hover:bg-[#14473b] rounded-xl shadow-sm hover:shadow transition-all flex items-center gap-2 disabled:opacity-50 cursor-pointer"
             >
               <Loader2 v-if="isSubmittingApproval" class="w-4 h-4 animate-spin" />
               <CheckCheck v-else class="w-4 h-4" />
-              Confirm & Approve Order
+              <span>Confirm & Approve Order</span>
             </button>
           </div>
         </div>
@@ -657,34 +761,34 @@ const getPrivilegeColor = (tier: string) => {
     <div v-if="isCancelModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
       <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden border border-gray-200">
         <div class="p-6">
-          <div class="w-12 h-12 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center mb-4 border border-rose-100">
+          <div class="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mb-4 border border-rose-100 ring-4 ring-rose-50/50">
             <AlertTriangle class="w-6 h-6" />
           </div>
           <h3 class="text-lg font-bold text-gray-900 mb-1">Cancel Order {{ orderToCancel?.orderNumber }}?</h3>
-          <p class="text-xs text-gray-500 mb-4">
+          <p class="text-xs text-gray-500 mb-4 leading-relaxed">
             Under company policy, orders cannot be deleted without audit. This will mark the order as Cancelled and record your audit log permanently.
           </p>
 
-          <label class="block text-xs font-bold text-gray-700 mb-1">Mandatory Cancellation Reason *</label>
+          <label class="block text-xs font-bold text-gray-700 mb-1.5">Mandatory Cancellation Reason *</label>
           <textarea 
             v-model="cancelReason" 
             rows="3"
             placeholder="e.g. Client requested cancellation due to project delay, duplicate entry, out of stock..."
-            class="w-full p-2.5 border border-gray-300 rounded-lg text-xs focus:ring-2 focus:ring-rose-500 focus:outline-none"
+            class="w-full p-3 border border-gray-300 rounded-xl text-xs focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 outline-none transition-all resize-none"
           ></textarea>
         </div>
 
-        <div class="px-6 py-3 bg-gray-50 border-t border-gray-200 flex justify-end gap-3">
+        <div class="px-6 py-3.5 bg-gray-50/90 border-t border-gray-100 flex justify-end gap-2.5 rounded-b-2xl">
           <button 
             @click="isCancelModalOpen = false"
-            class="px-4 py-2 text-xs font-semibold text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-100"
+            class="px-4 py-2 text-xs font-semibold text-gray-600 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer"
           >
             Go Back
           </button>
           <button 
             @click="submitCancel" 
             :disabled="isSubmittingCancel || !cancelReason.trim()"
-            class="px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-lg shadow-sm flex items-center gap-2 disabled:opacity-50"
+            class="px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl shadow-sm hover:shadow transition-all flex items-center gap-2 disabled:opacity-50 cursor-pointer"
           >
             <Loader2 v-if="isSubmittingCancel" class="w-4 h-4 animate-spin" />
             <span>Confirm Cancellation</span>
