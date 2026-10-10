@@ -227,6 +227,14 @@ const toggleDropdown = (name: string) => {
     activeDropdown.value = null
   } else {
     activeDropdown.value = name
+    if (name === 'deliveryStatus' || name === 'billingStatus') {
+      nextTick(() => {
+        const el = document.querySelector(`.dropdown-menu-${name}`) as HTMLElement | null
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+        }
+      })
+    }
   }
 }
 
@@ -456,7 +464,14 @@ const deliveryStatusOptions = [
         </div>
         
         <!-- Scrollable Body with custom dropdown menus in requested order -->
-        <div class="p-4 space-y-3.5 overflow-y-auto flex-1 min-h-0" @click="onFilterSectionClick">
+        <div 
+          class="p-4 space-y-3.5 overflow-y-auto flex-1 min-h-0 transition-all duration-200" 
+          :class="{
+            'pb-44': activeDropdown === 'deliveryStatus',
+            'pb-28': activeDropdown === 'billingStatus'
+          }"
+          @click="onFilterSectionClick"
+        >
           <!-- 1. Overall Status -->
           <div class="space-y-1.5 relative">
             <div class="flex items-center justify-between">
@@ -471,7 +486,7 @@ const deliveryStatusOptions = [
               </button>
             </div>
             
-            <div class="relative filter-dropdown-menu">
+            <div class="relative filter-dropdown-menu" :class="{ 'z-20': activeDropdown === 'status' }">
               <button
                 type="button"
                 @click.stop="toggleDropdown('status')"
@@ -496,7 +511,7 @@ const deliveryStatusOptions = [
               >
                 <div 
                   v-if="activeDropdown === 'status'"
-                  class="absolute left-0 right-0 top-full mt-1.5 bg-white border border-gray-200 rounded-xl shadow-xl z-30 py-1 max-h-52 overflow-y-auto divide-y divide-gray-50"
+                  class="dropdown-menu-status absolute left-0 right-0 top-full mt-1.5 bg-white border border-gray-200 rounded-xl shadow-xl z-30 py-1 max-h-52 overflow-y-auto divide-y divide-gray-50"
                 >
                   <button
                     v-for="opt in overallStatusOptions"
@@ -531,7 +546,7 @@ const deliveryStatusOptions = [
               </button>
             </div>
             
-            <div class="relative filter-dropdown-menu">
+            <div class="relative filter-dropdown-menu" :class="{ 'z-20': activeDropdown === 'isApproved' }">
               <button
                 type="button"
                 @click.stop="toggleDropdown('isApproved')"
@@ -556,7 +571,7 @@ const deliveryStatusOptions = [
               >
                 <div 
                   v-if="activeDropdown === 'isApproved'"
-                  class="absolute left-0 right-0 top-full mt-1.5 bg-white border border-gray-200 rounded-xl shadow-xl z-30 py-1 max-h-52 overflow-y-auto divide-y divide-gray-50"
+                  class="dropdown-menu-isApproved absolute left-0 right-0 top-full mt-1.5 bg-white border border-gray-200 rounded-xl shadow-xl z-30 py-1 max-h-52 overflow-y-auto divide-y divide-gray-50"
                 >
                   <button
                     v-for="opt in approvalStatusOptions"
@@ -591,7 +606,7 @@ const deliveryStatusOptions = [
               </button>
             </div>
             
-            <div class="relative filter-dropdown-menu">
+            <div class="relative filter-dropdown-menu" :class="{ 'z-20': activeDropdown === 'packingStatus' }">
               <button
                 type="button"
                 @click.stop="toggleDropdown('packingStatus')"
@@ -616,7 +631,7 @@ const deliveryStatusOptions = [
               >
                 <div 
                   v-if="activeDropdown === 'packingStatus'"
-                  class="absolute left-0 right-0 top-full mt-1.5 bg-white border border-gray-200 rounded-xl shadow-xl z-30 py-1 max-h-52 overflow-y-auto divide-y divide-gray-50"
+                  class="dropdown-menu-packingStatus absolute left-0 right-0 top-full mt-1.5 bg-white border border-gray-200 rounded-xl shadow-xl z-30 py-1 max-h-52 overflow-y-auto divide-y divide-gray-50"
                 >
                   <button
                     v-for="opt in packingStatusOptions"
@@ -637,7 +652,7 @@ const deliveryStatusOptions = [
             </div>
           </div>
 
-          <!-- 4. Billing Department (opens upward) -->
+          <!-- 4. Billing Department -->
           <div class="space-y-1.5 relative">
             <div class="flex items-center justify-between">
               <label class="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Billing Department</label>
@@ -651,7 +666,7 @@ const deliveryStatusOptions = [
               </button>
             </div>
             
-            <div class="relative filter-dropdown-menu">
+            <div class="relative filter-dropdown-menu" :class="{ 'z-20': activeDropdown === 'billingStatus' }">
               <button
                 type="button"
                 @click.stop="toggleDropdown('billingStatus')"
@@ -665,18 +680,18 @@ const deliveryStatusOptions = [
                 <ChevronDown class="w-4 h-4 text-gray-400 shrink-0 transition-transform duration-200" :class="{ 'rotate-180 text-[#1a5c4c]': activeDropdown === 'billingStatus' }" />
               </button>
 
-              <!-- Dropdown Menu (opens upward) -->
+              <!-- Dropdown Menu -->
               <Transition
                 enter-active-class="transition duration-150 ease-out"
-                enter-from-class="transform opacity-0 translate-y-1 scale-98"
+                enter-from-class="transform opacity-0 -translate-y-1 scale-98"
                 enter-to-class="transform opacity-100 translate-y-0 scale-100"
                 leave-active-class="transition duration-100 ease-in"
                 leave-from-class="transform opacity-100 translate-y-0 scale-100"
-                leave-to-class="transform opacity-0 translate-y-1 scale-98"
+                leave-to-class="transform opacity-0 -translate-y-1 scale-98"
               >
                 <div 
                   v-if="activeDropdown === 'billingStatus'"
-                  class="absolute left-0 right-0 bottom-full mb-1.5 bg-white border border-gray-200 rounded-xl shadow-xl z-30 py-1 max-h-52 overflow-y-auto divide-y divide-gray-50"
+                  class="dropdown-menu-billingStatus absolute left-0 right-0 top-full mt-1.5 bg-white border border-gray-200 rounded-xl shadow-xl z-30 py-1 max-h-52 overflow-y-auto divide-y divide-gray-50"
                 >
                   <button
                     v-for="opt in billingStatusOptions"
@@ -697,7 +712,7 @@ const deliveryStatusOptions = [
             </div>
           </div>
 
-          <!-- 5. Delivery Department (opens upward) -->
+          <!-- 5. Delivery Department -->
           <div class="space-y-1.5 relative">
             <div class="flex items-center justify-between">
               <label class="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Delivery Department</label>
@@ -711,7 +726,7 @@ const deliveryStatusOptions = [
               </button>
             </div>
             
-            <div class="relative filter-dropdown-menu">
+            <div class="relative filter-dropdown-menu" :class="{ 'z-20': activeDropdown === 'deliveryStatus' }">
               <button
                 type="button"
                 @click.stop="toggleDropdown('deliveryStatus')"
@@ -725,18 +740,18 @@ const deliveryStatusOptions = [
                 <ChevronDown class="w-4 h-4 text-gray-400 shrink-0 transition-transform duration-200" :class="{ 'rotate-180 text-[#1a5c4c]': activeDropdown === 'deliveryStatus' }" />
               </button>
 
-              <!-- Dropdown Menu (opens upward) -->
+              <!-- Dropdown Menu -->
               <Transition
                 enter-active-class="transition duration-150 ease-out"
-                enter-from-class="transform opacity-0 translate-y-1 scale-98"
+                enter-from-class="transform opacity-0 -translate-y-1 scale-98"
                 enter-to-class="transform opacity-100 translate-y-0 scale-100"
                 leave-active-class="transition duration-100 ease-in"
                 leave-from-class="transform opacity-100 translate-y-0 scale-100"
-                leave-to-class="transform opacity-0 translate-y-1 scale-98"
+                leave-to-class="transform opacity-0 -translate-y-1 scale-98"
               >
                 <div 
                   v-if="activeDropdown === 'deliveryStatus'"
-                  class="absolute left-0 right-0 bottom-full mb-1.5 bg-white border border-gray-200 rounded-xl shadow-xl z-30 py-1 max-h-52 overflow-y-auto divide-y divide-gray-50"
+                  class="dropdown-menu-deliveryStatus absolute left-0 right-0 top-full mt-1.5 bg-white border border-gray-200 rounded-xl shadow-xl z-30 py-1 max-h-52 overflow-y-auto divide-y divide-gray-50"
                 >
                   <button
                     v-for="opt in deliveryStatusOptions"
