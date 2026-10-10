@@ -25,52 +25,80 @@ export default defineEventHandler(async (event) => {
   const skip = isUnlimited ? undefined : (page - 1) * limit
   const take = isUnlimited ? undefined : limit
 
-  const where: any = {}
+  const andConditions: any[] = []
   
   if (search) {
-    where.OR = [
-      { orderNumber: { contains: search, mode: 'insensitive' } },
-      { customer: { company: { contains: search, mode: 'insensitive' } } },
-      { customer: { name: { contains: search, mode: 'insensitive' } } }
-    ]
+    andConditions.push({
+      OR: [
+        { orderNumber: { contains: search, mode: 'insensitive' } },
+        { customer: { company: { contains: search, mode: 'insensitive' } } },
+        { customer: { name: { contains: search, mode: 'insensitive' } } },
+        { customer: { phone: { contains: search, mode: 'insensitive' } } },
+        { customer: { city: { contains: search, mode: 'insensitive' } } }
+      ]
+    })
   }
 
   if (isApproved !== undefined && isApproved !== '') {
-    where.isApproved = isApproved === 'true'
+    andConditions.push({ isApproved: isApproved === 'true' })
   }
   if (isUrgent !== undefined && isUrgent !== '') {
-    where.isUrgent = isUrgent === 'true'
+    andConditions.push({ isUrgent: isUrgent === 'true' })
   }
-  if (status) where.overallStatus = status
-  if (billingStatus) where.billingStatus = { status: billingStatus }
-  if (packingStatus) where.packingStatus = { status: packingStatus }
+  if (status) {
+    andConditions.push({ overallStatus: status })
+  }
+  if (billingStatus) {
+    if (billingStatus === 'ON_HOLD') {
+      andConditions.push({ billingStatus: { status: { in: ['ON_HOLD', 'ERROR'] } } })
+    } else {
+      andConditions.push({ billingStatus: { status: billingStatus } })
+    }
+  }
+  if (packingStatus) {
+    andConditions.push({ packingStatus: { status: packingStatus } })
+  }
   if (deliveryStatus) {
     if (deliveryStatus === 'WAITING') {
-      where.deliveryStatus = { status: { in: ['WAITING', 'ASSIGNED'] } }
+      andConditions.push({ deliveryStatus: { status: { in: ['WAITING', 'ASSIGNED'] } } })
     } else {
-      where.deliveryStatus = { status: deliveryStatus }
+      andConditions.push({ deliveryStatus: { status: deliveryStatus } })
     }
   }
   if (paymentStatus) {
     if (paymentStatus === 'UNPAID') {
-      where.OR = [
-        { paymentStatus: { status: 'UNPAID' } },
-        { paymentStatus: null }
-      ]
+      andConditions.push({
+        OR: [
+          { paymentStatus: { status: 'UNPAID' } },
+          { paymentStatus: null }
+        ]
+      })
     } else {
-      where.paymentStatus = { status: paymentStatus }
+      andConditions.push({ paymentStatus: { status: paymentStatus } })
     }
   }
   
   if (startDate || endDate) {
-    where.orderDate = {}
-    if (startDate) where.orderDate.gte = new Date(startDate)
+    const dateCondition: any = {}
+    if (startDate) {
+      const d = new Date(`${startDate}T00:00:00`)
+      if (!isNaN(d.getTime())) dateCondition.gte = d
+    }
     if (endDate) {
-      const end = new Date(endDate)
-      end.setHours(23, 59, 59, 999)
-      where.orderDate.lte = end
+      const d = new Date(`${endDate}T23:59:59.999`)
+      if (!isNaN(d.getTime())) dateCondition.lte = d
+    }
+    if (dateCondition.gte || dateCondition.lte) {
+      andConditions.push({
+        OR: [
+          { orderDate: dateCondition },
+          { createdAt: dateCondition }
+        ]
+      })
     }
   }
+
+  const where: any = andConditions.length > 0 ? { AND: andConditions } : {}
 
   const [orders, total] = await Promise.all([
     prisma.order.findMany({

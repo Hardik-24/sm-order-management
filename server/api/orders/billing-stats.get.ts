@@ -11,12 +11,12 @@ export default defineEventHandler(async (event) => {
   if (query.startDate || query.endDate) {
     where.orderDate = {}
     if (query.startDate) {
-      where.orderDate.gte = new Date(query.startDate as string)
+      const sd = new Date(`${query.startDate as string}T00:00:00`)
+      if (!isNaN(sd.getTime())) where.orderDate.gte = sd
     }
     if (query.endDate) {
-      const ed = new Date(query.endDate as string)
-      ed.setHours(23, 59, 59, 999)
-      where.orderDate.lte = ed
+      const ed = new Date(`${query.endDate as string}T23:59:59.999`)
+      if (!isNaN(ed.getTime())) where.orderDate.lte = ed
     }
   }
 

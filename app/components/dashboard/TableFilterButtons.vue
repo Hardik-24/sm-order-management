@@ -141,16 +141,78 @@ const clearDates = () => {
   isDatePickerOpen.value = false
 }
 
+const formatDateYMD = (d: Date) => {
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+const isPresetActive = (preset: 'today' | 'yesterday' | 'last7' | 'thisMonth') => {
+  const now = new Date()
+  const todayStr = formatDateYMD(now)
+  if (preset === 'today') {
+    return props.startDate === todayStr && props.endDate === todayStr
+  }
+  if (preset === 'yesterday') {
+    const yest = new Date(now)
+    yest.setDate(yest.getDate() - 1)
+    const yestStr = formatDateYMD(yest)
+    return props.startDate === yestStr && props.endDate === yestStr
+  }
+  if (preset === 'last7') {
+    const past = new Date(now)
+    past.setDate(past.getDate() - 6)
+    return props.startDate === formatDateYMD(past) && props.endDate === todayStr
+  }
+  if (preset === 'thisMonth') {
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+    return props.startDate === formatDateYMD(startOfMonth) && props.endDate === todayStr
+  }
+  return false
+}
+
+const setDatePreset = (preset: 'today' | 'yesterday' | 'last7' | 'thisMonth') => {
+  const now = new Date()
+  const todayStr = formatDateYMD(now)
+  if (preset === 'today') {
+    emit('update:startDate', todayStr)
+    emit('update:endDate', todayStr)
+  } else if (preset === 'yesterday') {
+    const yest = new Date(now)
+    yest.setDate(yest.getDate() - 1)
+    const yestStr = formatDateYMD(yest)
+    emit('update:startDate', yestStr)
+    emit('update:endDate', yestStr)
+  } else if (preset === 'last7') {
+    const past = new Date(now)
+    past.setDate(past.getDate() - 6)
+    emit('update:startDate', formatDateYMD(past))
+    emit('update:endDate', todayStr)
+  } else if (preset === 'thisMonth') {
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+    emit('update:startDate', formatDateYMD(startOfMonth))
+    emit('update:endDate', todayStr)
+  }
+}
+
 const dateButtonText = computed(() => {
   if (props.startDate && props.endDate) {
-    const start = new Date(props.startDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
-    const end = new Date(props.endDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+    if (isPresetActive('today')) return 'Today'
+    if (isPresetActive('yesterday')) return 'Yesterday'
+    if (isPresetActive('last7')) return 'Last 7 Days'
+    if (isPresetActive('thisMonth')) return 'This Month'
+    if (props.startDate === props.endDate) {
+      return new Date(`${props.startDate}T00:00:00`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+    }
+    const start = new Date(`${props.startDate}T00:00:00`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+    const end = new Date(`${props.endDate}T00:00:00`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
     return `${start} - ${end}`
   } else if (props.startDate) {
-    const start = new Date(props.startDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+    const start = new Date(`${props.startDate}T00:00:00`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
     return `${start} onwards`
   } else if (props.endDate) {
-    const end = new Date(props.endDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+    const end = new Date(`${props.endDate}T00:00:00`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
     return `Until ${end}`
   }
   return 'Date Range'
@@ -162,7 +224,8 @@ const overallStatusOptions = [
   { label: 'Awaiting / Action Required', value: 'PROCESSING' },
   { label: 'Ready for Dispatch', value: 'READY' },
   { label: 'In Transit', value: 'DISPATCHED' },
-  { label: 'Delivered', value: 'DELIVERED' }
+  { label: 'Delivered', value: 'DELIVERED' },
+  { label: 'Cancelled', value: 'CANCELLED' }
 ]
 
 const billingStatusOptions = [
@@ -223,7 +286,7 @@ const approvalStatusOptions = [
       <!-- Date Popover Content -->
       <div 
         v-if="isDatePickerOpen" 
-        class="fixed sm:absolute inset-x-4 top-1/2 -translate-y-1/2 sm:translate-y-0 sm:inset-x-auto bg-white border border-gray-200 shadow-2xl rounded-xl z-[100] w-auto sm:w-72 flex flex-col transform translate-z-0"
+        class="fixed sm:absolute inset-x-4 top-1/2 -translate-y-1/2 sm:translate-y-0 sm:inset-x-auto bg-white border border-gray-200 shadow-2xl rounded-xl z-[100] w-auto sm:w-80 flex flex-col transform translate-z-0"
         :class="[
           dateOpenUpward ? 'sm:bottom-full sm:mb-2 sm:top-auto' : 'sm:top-full sm:mt-2 sm:bottom-auto',
           dateAlignLeft ? 'sm:left-0 sm:right-auto' : 'sm:right-0 sm:left-auto'
@@ -238,25 +301,66 @@ const approvalStatusOptions = [
           </button>
         </div>
         
-        <!-- Inputs -->
+        <!-- Inputs and Presets -->
         <div class="p-4 space-y-4 overflow-y-auto flex-1 min-h-0">
+          <!-- Quick Presets -->
           <div>
-            <label class="block text-xs font-semibold text-gray-600 mb-1">Start Date</label>
-            <input 
-              :value="startDate"
-              @input="e => emit('update:startDate', (e.target as HTMLInputElement).value)"
-              type="date" 
-              class="w-full text-sm border border-gray-300 rounded-lg p-2 text-gray-900 focus:ring-2 focus:ring-[#1a5c4c]/20 focus:border-[#1a5c4c] outline-none" 
-            />
+            <label class="block text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wider">Quick Presets</label>
+            <div class="grid grid-cols-2 gap-1.5">
+              <button 
+                type="button"
+                @click="setDatePreset('today')"
+                class="px-2.5 py-1.5 text-xs font-medium rounded-lg border text-left transition-colors"
+                :class="isPresetActive('today') ? 'bg-[#1a5c4c]/10 border-[#1a5c4c] text-[#1a5c4c] font-semibold' : 'border-gray-200 text-gray-700 hover:bg-gray-50'"
+              >
+                Today
+              </button>
+              <button 
+                type="button"
+                @click="setDatePreset('yesterday')"
+                class="px-2.5 py-1.5 text-xs font-medium rounded-lg border text-left transition-colors"
+                :class="isPresetActive('yesterday') ? 'bg-[#1a5c4c]/10 border-[#1a5c4c] text-[#1a5c4c] font-semibold' : 'border-gray-200 text-gray-700 hover:bg-gray-50'"
+              >
+                Yesterday
+              </button>
+              <button 
+                type="button"
+                @click="setDatePreset('last7')"
+                class="px-2.5 py-1.5 text-xs font-medium rounded-lg border text-left transition-colors"
+                :class="isPresetActive('last7') ? 'bg-[#1a5c4c]/10 border-[#1a5c4c] text-[#1a5c4c] font-semibold' : 'border-gray-200 text-gray-700 hover:bg-gray-50'"
+              >
+                Last 7 Days
+              </button>
+              <button 
+                type="button"
+                @click="setDatePreset('thisMonth')"
+                class="px-2.5 py-1.5 text-xs font-medium rounded-lg border text-left transition-colors"
+                :class="isPresetActive('thisMonth') ? 'bg-[#1a5c4c]/10 border-[#1a5c4c] text-[#1a5c4c] font-semibold' : 'border-gray-200 text-gray-700 hover:bg-gray-50'"
+              >
+                This Month
+              </button>
+            </div>
           </div>
-          <div>
-            <label class="block text-xs font-semibold text-gray-600 mb-1">End Date</label>
-            <input 
-              :value="endDate"
-              @input="e => emit('update:endDate', (e.target as HTMLInputElement).value)"
-              type="date" 
-              class="w-full text-sm border border-gray-300 rounded-lg p-2 text-gray-900 focus:ring-2 focus:ring-[#1a5c4c]/20 focus:border-[#1a5c4c] outline-none" 
-            />
+
+          <div class="border-t border-gray-100 pt-3 space-y-3">
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1">Start Date</label>
+              <input 
+                :value="startDate"
+                @input="e => emit('update:startDate', (e.target as HTMLInputElement).value)"
+                type="date" 
+                class="w-full text-sm border border-gray-300 rounded-lg p-2 text-gray-900 focus:ring-2 focus:ring-[#1a5c4c]/20 focus:border-[#1a5c4c] outline-none" 
+              />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1">End Date</label>
+              <input 
+                :value="endDate"
+                @input="e => emit('update:endDate', (e.target as HTMLInputElement).value)"
+                type="date" 
+                class="w-full text-sm border border-gray-300 rounded-lg p-2 text-gray-900 focus:ring-2 focus:ring-[#1a5c4c]/20 focus:border-[#1a5c4c] outline-none" 
+              />
+            </div>
           </div>
         </div>
 

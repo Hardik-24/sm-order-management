@@ -259,14 +259,14 @@ const getItemsTotalQuantity = (order: Order) => {
             </div>
             <input 
               :value="search"
-              @input="e => emit('update:search', (e.target as HTMLInputElement).value)"
+              @input="e => { emit('update:search', (e.target as HTMLInputElement).value); emit('update:page', 1) }"
               type="text" 
               placeholder="Search orders, customers..."
               class="block w-full pl-10 pr-9 py-2 border border-gray-300 rounded-lg text-sm bg-white placeholder:text-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1a5c4c]/20 focus:border-[#1a5c4c] transition-all shadow-sm"
             />
             <button 
               v-if="search"
-              @click="emit('update:search', '')"
+              @click="{ emit('update:search', ''); emit('update:page', 1) }"
               class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
             >
               <X class="h-4 w-4" />
@@ -291,13 +291,13 @@ const getItemsTotalQuantity = (order: Order) => {
             :packingStatus="packingStatus"
             :deliveryStatus="deliveryStatus"
             :isApproved="isApproved"
-            @update:startDate="val => emit('update:startDate', val)"
-            @update:endDate="val => emit('update:endDate', val)"
-            @update:status="val => emit('update:status', val)"
-            @update:billingStatus="val => emit('update:billingStatus', val)"
-            @update:packingStatus="val => emit('update:packingStatus', val)"
-            @update:deliveryStatus="val => emit('update:deliveryStatus', val)"
-            @update:isApproved="val => emit('update:isApproved', val)"
+            @update:startDate="val => { emit('update:startDate', val); emit('update:page', 1) }"
+            @update:endDate="val => { emit('update:endDate', val); emit('update:page', 1) }"
+            @update:status="val => { emit('update:status', val); emit('update:page', 1) }"
+            @update:billingStatus="val => { emit('update:billingStatus', val); emit('update:page', 1) }"
+            @update:packingStatus="val => { emit('update:packingStatus', val); emit('update:page', 1) }"
+            @update:deliveryStatus="val => { emit('update:deliveryStatus', val); emit('update:page', 1) }"
+            @update:isApproved="val => { emit('update:isApproved', val); emit('update:page', 1) }"
           />
           <RowsPerPageSelect 
             :modelValue="limit" 

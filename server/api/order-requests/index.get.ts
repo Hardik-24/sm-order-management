@@ -35,12 +35,12 @@ export default defineEventHandler(async (event) => {
   if (startDate || endDate) {
     where.createdAt = {}
     if (startDate) {
-      where.createdAt.gte = new Date(startDate)
+      const sd = new Date(`${startDate}T00:00:00`)
+      if (!isNaN(sd.getTime())) where.createdAt.gte = sd
     }
     if (endDate) {
-      const end = new Date(endDate)
-      end.setHours(23, 59, 59, 999)
-      where.createdAt.lte = end
+      const ed = new Date(`${endDate}T23:59:59.999`)
+      if (!isNaN(ed.getTime())) where.createdAt.lte = ed
     }
   }
 

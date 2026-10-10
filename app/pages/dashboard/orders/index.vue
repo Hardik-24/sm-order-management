@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed, watch } from 'vue'
 import OrderTable from '~/components/dashboard/OrderTable.vue'
 import OrderDetailPanel from '~/components/dashboard/OrderDetailPanel.vue'
 
@@ -21,21 +21,31 @@ const endDate = ref('')
 const selectedOrderId = ref<string | null>(null)
 const isPanelOpen = ref(false)
 
+// Reset page to 1 whenever any filter or search changes
+watch([search, status, billingStatus, packingStatus, deliveryStatus, isApproved, startDate, endDate], () => {
+  page.value = 1
+})
+
+const queryObj = computed(() => {
+  const q: Record<string, any> = { 
+    page: page.value, 
+    limit: limit.value 
+  }
+  if (search.value && search.value.trim()) q.search = search.value.trim()
+  if (status.value) q.status = status.value
+  if (billingStatus.value) q.billingStatus = billingStatus.value
+  if (packingStatus.value) q.packingStatus = packingStatus.value
+  if (deliveryStatus.value) q.deliveryStatus = deliveryStatus.value
+  if (isApproved.value !== '') q.isApproved = isApproved.value
+  if (startDate.value) q.startDate = startDate.value
+  if (endDate.value) q.endDate = endDate.value
+  return q
+})
+
 const nuxtApp = useNuxtApp()
 const { data, refresh, pending } = useFetch('/api/orders', {
-  query: { 
-    page, 
-    limit,
-    search,
-    status,
-    billingStatus,
-    packingStatus,
-    deliveryStatus,
-    isApproved,
-    startDate,
-    endDate
-  },
-  watch: [page, limit, search, status, billingStatus, packingStatus, deliveryStatus, isApproved, startDate, endDate]
+  query: queryObj,
+  watch: [queryObj]
 })
 
 const handleSelect = (id: string) => {
