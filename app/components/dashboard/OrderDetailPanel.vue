@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
-import { X, MoreHorizontal, Lock, Edit, Package, Receipt, PackageCheck, Truck, Check, Box, Plus, Trash2, MapPin, AlertCircle, Ban, CheckCheck } from 'lucide-vue-next'
+import { X, MoreHorizontal, Lock, Edit, Package, Receipt, PackageCheck, Truck, Check, Box, Plus, Trash2, MapPin, AlertCircle, Ban, CheckCheck, CheckCircle2 } from 'lucide-vue-next'
 import StatusBadge from '~/components/ui/StatusBadge.vue'
 import GenerateBillModal from '~/components/dashboard/GenerateBillModal.vue'
 import SetDeliveryPinModal from '~/components/dashboard/SetDeliveryPinModal.vue'
@@ -20,12 +20,13 @@ const itemsTbodyRef = ref<HTMLElement | null>(null)
 const props = defineProps<{
   orderId: string | null
   isOpen: boolean
-  context?: 'billing' | 'packing' | 'delivery' | 'overview'
+  context?: 'billing' | 'packing' | 'delivery' | 'overview' | 'approval'
 }>()
 
 const emit = defineEmits<{
   (e: 'close'): void
   (e: 'updated', updatedOrder?: any): void
+  (e: 'reviewApprove', order: Order): void
 }>()
 
 const { user, hasRole } = useAuth()
@@ -827,6 +828,49 @@ const updateDelivery = async () => {
                   </table>
                 </div>
 
+                <!-- Action Area: Approval -->
+                <div 
+                  v-if="context === 'approval' || (!order.isApproved && order.overallStatus !== 'CANCELLED')" 
+                  class="p-4 bg-amber-50/50 border-t border-amber-200/60 rounded-b-lg relative"
+                >
+                  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                      <div class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full" :class="order.isApproved ? 'bg-emerald-500' : 'bg-amber-500 animate-ping'"></span>
+                        <p class="text-sm font-bold text-gray-900">
+                          {{ order.isApproved ? 'Order Approved' : 'Approval Required' }}
+                        </p>
+                      </div>
+                      <p class="text-xs text-gray-500 mt-0.5">
+                        {{ order.isApproved 
+                          ? `Approved by ${(order as any).approvedBy?.name || 'Administrator'} on ${formatDateTime((order as any).approvedAt || order.updatedAt)}` 
+                          : 'Inspect line items, verify agreed rates, and authorize before dispatch.' 
+                        }}
+                      </p>
+                    </div>
+
+                    <div class="flex items-center gap-2 shrink-0">
+                      <button 
+                        v-if="order.overallStatus !== 'CANCELLED' && order.overallStatus !== 'DELIVERED'"
+                        @click="openCancelModal"
+                        class="px-3 py-1.5 text-xs font-semibold text-rose-600 bg-white border border-rose-200 hover:bg-rose-50 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                      >
+                        <Ban class="w-3.5 h-3.5" />
+                        <span>Cancel Order</span>
+                      </button>
+
+                      <button 
+                        v-if="!order.isApproved && order.overallStatus !== 'CANCELLED'"
+                        @click="emit('reviewApprove', order)"
+                        class="px-3.5 py-1.5 text-xs font-bold text-white bg-[#1a5c4c] hover:bg-[#14473b] rounded-lg shadow-sm hover:shadow transition-all flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <CheckCheck class="w-4 h-4" />
+                        <span>Review & Approve</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
                 <!-- Action Area: Billing -->
                 <div v-if="context === 'billing'" class="p-4 bg-gray-50 border-t border-gray-200 rounded-b-lg relative">
                   <div class="flex items-center justify-between mb-4">
@@ -1063,6 +1107,45 @@ const updateDelivery = async () => {
             <p v-else class="italic text-gray-400">No internal notes for this order.</p>
           </div>
 
+        </div>
+
+        <!-- Sticky Bottom Action Footer -->
+        <div 
+          v-if="order"
+          class="px-6 py-3.5 bg-white border-t border-gray-200 flex items-center justify-between gap-3 shrink-0 shadow-lg z-20"
+        >
+          <div>
+            <span class="text-[10px] uppercase font-bold text-gray-400 tracking-wider block">Total Amount</span>
+            <span class="text-base font-extrabold text-[#1a5c4c]">{{ formatCurrency(order.totalAmount || 0) }}</span>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button 
+              v-if="order.overallStatus !== 'CANCELLED' && order.overallStatus !== 'DELIVERED'"
+              @click="openCancelModal"
+              class="px-3 py-1.5 text-xs font-semibold text-rose-600 bg-white border border-rose-200 hover:bg-rose-50 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
+            >
+              <Ban class="w-3.5 h-3.5" />
+              <span>Cancel Order</span>
+            </button>
+
+            <button 
+              v-if="!order.isApproved && order.overallStatus !== 'CANCELLED'"
+              @click="emit('reviewApprove', order)"
+              class="px-4 py-2 text-xs font-bold text-white bg-[#1a5c4c] hover:bg-[#14473b] rounded-lg shadow-sm hover:shadow transition-all flex items-center gap-1.5 cursor-pointer"
+            >
+              <CheckCheck class="w-4 h-4" />
+              <span>Review & Approve</span>
+            </button>
+
+            <div 
+              v-else-if="order.isApproved" 
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200"
+            >
+              <CheckCircle2 class="w-4 h-4 text-emerald-600" />
+              <span>Approved</span>
+            </div>
+          </div>
         </div>
       </template>
       

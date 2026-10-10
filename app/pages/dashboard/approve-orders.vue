@@ -33,6 +33,7 @@ import { useSnackbar } from '~/composables/useSnackbar'
 import RowsPerPageSelect from '~/components/ui/RowsPerPageSelect.vue'
 import FloatingHorizontalScrollbar from '~/components/ui/FloatingHorizontalScrollbar.vue'
 import TableFilterButtons from '~/components/dashboard/TableFilterButtons.vue'
+import OrderDetailPanel from '~/components/dashboard/OrderDetailPanel.vue'
 
 definePageMeta({ layout: 'dashboard' })
 
@@ -90,6 +91,28 @@ const { onOrderSync, notifyChange } = useRealtimeSync()
 onOrderSync(() => {
   refresh()
 })
+
+// Drawer state
+const selectedDrawerOrderId = ref<string | null>(null)
+const isDrawerOpen = ref(false)
+
+const openDrawer = (order: any) => {
+  selectedDrawerOrderId.value = order.id
+  isDrawerOpen.value = true
+}
+
+const handleDrawerClose = () => {
+  isDrawerOpen.value = false
+  selectedDrawerOrderId.value = null
+}
+
+const handleDrawerUpdate = () => {
+  refresh()
+}
+
+const onDrawerReviewApprove = (order: any) => {
+  openReview(order)
+}
 
 // Modal / Review state
 const isReviewModalOpen = ref(false)
@@ -442,17 +465,18 @@ const getItemsTotalQuantity = (order: any) => {
               v-else 
               v-for="order in data.orders" 
               :key="order.id"
-              class="transition-colors duration-150"
+              @click="openDrawer(order)"
+              class="cursor-pointer transition-colors duration-150 group"
               :class="order.overallStatus === 'CANCELLED' 
                 ? 'bg-gray-100/60 hover:bg-gray-100/80 text-gray-400 opacity-60 border-l-4 border-l-gray-400' 
                 : (order.isUrgent ? 'bg-rose-50/25 hover:bg-rose-50/40 border-l-4 border-l-rose-500' : 'hover:bg-gray-50/80')"
             >
-              <!-- 1. ORDER: Order ID, urgent/cancelled badge, then created at -->
+              <!-- 1. ORDER: Order ID (not clickable link), urgent/cancelled badge, then created at -->
               <td class="px-5 py-3.5 whitespace-nowrap">
                 <div class="flex items-center gap-1.5 flex-wrap">
-                  <NuxtLink :to="`/dashboard/orders/${order.id}`" class="text-xs font-bold text-gray-900 hover:text-[#1a5c4c] transition-colors">
+                  <span class="text-xs font-bold text-gray-900 group-hover:text-[#1a5c4c] transition-colors">
                     {{ order.orderNumber }}
-                  </NuxtLink>
+                  </span>
                   <span v-if="order.overallStatus === 'CANCELLED'" class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-bold bg-gray-200 !text-gray-600 border border-rose-500">
                     🚫 CANCELLED
                   </span>
@@ -527,7 +551,7 @@ const getItemsTotalQuantity = (order: any) => {
                 <div class="flex items-center justify-end gap-2">
                   <button 
                     v-if="!order.isApproved && order.overallStatus !== 'CANCELLED'"
-                    @click="openReview(order)"
+                    @click.stop="openReview(order)"
                     class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#1a5c4c] text-white hover:bg-[#14473b] shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
                   >
                     <CheckCheck class="w-3.5 h-3.5" />
@@ -535,7 +559,7 @@ const getItemsTotalQuantity = (order: any) => {
                   </button>
                   <button 
                     v-if="order.overallStatus !== 'CANCELLED' && order.overallStatus !== 'DELIVERED'"
-                    @click="openCancelModal(order)"
+                    @click.stop="openCancelModal(order)"
                     class="px-2.5 py-1.5 rounded-lg text-xs font-medium text-rose-600 hover:bg-rose-50 transition-colors border border-rose-200 cursor-pointer"
                     title="Cancel Order"
                   >
@@ -574,7 +598,8 @@ const getItemsTotalQuantity = (order: any) => {
     </div>
 
     <!-- Review & Approve Modal -->
-    <div v-if="isReviewModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+    <Teleport to="body">
+      <div v-if="isReviewModalOpen" class="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
       <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden border border-gray-200/80">
         <!-- Modal Header -->
         <div class="px-6 py-4 border-b border-white/10 flex justify-between items-center bg-[#1c1c1c] text-white shrink-0">
@@ -756,46 +781,59 @@ const getItemsTotalQuantity = (order: any) => {
         </div>
       </div>
     </div>
+    </Teleport>
 
     <!-- Mandatory Cancellation Modal -->
-    <div v-if="isCancelModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-      <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden border border-gray-200">
-        <div class="p-6">
-          <div class="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mb-4 border border-rose-100 ring-4 ring-rose-50/50">
-            <AlertTriangle class="w-6 h-6" />
+    <Teleport to="body">
+      <div v-if="isCancelModalOpen" class="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+        <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden border border-gray-200">
+          <div class="p-6">
+            <div class="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mb-4 border border-rose-100 ring-4 ring-rose-50/50">
+              <AlertTriangle class="w-6 h-6" />
+            </div>
+            <h3 class="text-lg font-bold text-gray-900 mb-1">Cancel Order {{ orderToCancel?.orderNumber }}?</h3>
+            <p class="text-xs text-gray-500 mb-4 leading-relaxed">
+              Under company policy, orders cannot be deleted without audit. This will mark the order as Cancelled and record your audit log permanently.
+            </p>
+
+            <label class="block text-xs font-bold text-gray-700 mb-1.5">Mandatory Cancellation Reason *</label>
+            <textarea 
+              v-model="cancelReason" 
+              rows="3"
+              placeholder="e.g. Client requested cancellation due to project delay, duplicate entry, out of stock..."
+              class="w-full p-3 border border-gray-300 rounded-xl text-xs focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 outline-none transition-all resize-none"
+            ></textarea>
           </div>
-          <h3 class="text-lg font-bold text-gray-900 mb-1">Cancel Order {{ orderToCancel?.orderNumber }}?</h3>
-          <p class="text-xs text-gray-500 mb-4 leading-relaxed">
-            Under company policy, orders cannot be deleted without audit. This will mark the order as Cancelled and record your audit log permanently.
-          </p>
 
-          <label class="block text-xs font-bold text-gray-700 mb-1.5">Mandatory Cancellation Reason *</label>
-          <textarea 
-            v-model="cancelReason" 
-            rows="3"
-            placeholder="e.g. Client requested cancellation due to project delay, duplicate entry, out of stock..."
-            class="w-full p-3 border border-gray-300 rounded-xl text-xs focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 outline-none transition-all resize-none"
-          ></textarea>
-        </div>
-
-        <div class="px-6 py-3.5 bg-gray-50/90 border-t border-gray-100 flex justify-end gap-2.5 rounded-b-2xl">
-          <button 
-            @click="isCancelModalOpen = false"
-            class="px-4 py-2 text-xs font-semibold text-gray-600 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer"
-          >
-            Go Back
-          </button>
-          <button 
-            @click="submitCancel" 
-            :disabled="isSubmittingCancel || !cancelReason.trim()"
-            class="px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl shadow-sm hover:shadow transition-all flex items-center gap-2 disabled:opacity-50 cursor-pointer"
-          >
-            <Loader2 v-if="isSubmittingCancel" class="w-4 h-4 animate-spin" />
-            <span>Confirm Cancellation</span>
-          </button>
+          <div class="px-6 py-3.5 bg-gray-50/90 border-t border-gray-100 flex justify-end gap-2.5 rounded-b-2xl">
+            <button 
+              @click="isCancelModalOpen = false"
+              class="px-4 py-2 text-xs font-semibold text-gray-600 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer"
+            >
+              Go Back
+            </button>
+            <button 
+              @click="submitCancel" 
+              :disabled="isSubmittingCancel || !cancelReason.trim()"
+              class="px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl shadow-sm hover:shadow transition-all flex items-center gap-2 disabled:opacity-50 cursor-pointer"
+            >
+              <Loader2 v-if="isSubmittingCancel" class="w-4 h-4 animate-spin" />
+              <span>Confirm Cancellation</span>
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+    </Teleport>
+
+    <!-- Order Detail Panel (Slide-over drawer at the right) -->
+    <OrderDetailPanel 
+      :orderId="selectedDrawerOrderId"
+      :isOpen="isDrawerOpen"
+      context="approval"
+      @close="handleDrawerClose"
+      @updated="handleDrawerUpdate"
+      @review-approve="onDrawerReviewApprove"
+    />
   </div>
 </template>
 
