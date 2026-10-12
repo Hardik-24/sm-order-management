@@ -606,18 +606,21 @@ public class NavigationManager {
     public void startTripOnBackend(double lat, double lng, CompleteCallback callback) {
         new Thread(() -> {
             try {
-                if (lat == 0.0 || lng == 0.0) {
-                    lat = getLastLat();
-                    lng = getLastLng();
+                double reqLat = lat;
+                double reqLng = lng;
+
+                if (reqLat == 0.0 || reqLng == 0.0) {
+                    reqLat = getLastLat();
+                    reqLng = getLastLng();
                 }
 
-                if (lat == 0.0 || lng == 0.0) {
+                if (reqLat == 0.0 || reqLng == 0.0) {
                     Location loc = getLastKnownLocationSafely(mContext);
                     if (loc != null) {
-                        lat = loc.getLatitude();
-                        lng = loc.getLongitude();
-                        mLastLat = lat;
-                        mLastLng = lng;
+                        reqLat = loc.getLatitude();
+                        reqLng = loc.getLongitude();
+                        mLastLat = reqLat;
+                        mLastLng = reqLng;
                     }
                 }
 
@@ -635,10 +638,10 @@ public class NavigationManager {
                 body.put("action", "start");
                 body.put("orderId", mCurrentOrderId);
 
-                if (lat != 0.0 && lng != 0.0) {
+                if (reqLat != 0.0 && reqLng != 0.0) {
                     JSONObject coords = new JSONObject();
-                    coords.put("lat", lat);
-                    coords.put("lng", lng);
+                    coords.put("lat", reqLat);
+                    coords.put("lng", reqLng);
                     body.put("coords", coords);
                 }
 
@@ -688,6 +691,22 @@ public class NavigationManager {
     public void completeTripOnBackend(double lat, double lng, CompleteCallback callback) {
         new Thread(() -> {
             try {
+                double reqLat = lat;
+                double reqLng = lng;
+
+                if (reqLat == 0.0 || reqLng == 0.0) {
+                    reqLat = getLastLat();
+                    reqLng = getLastLng();
+                }
+
+                if (reqLat == 0.0 || reqLng == 0.0) {
+                    Location loc = getLastKnownLocationSafely(mContext);
+                    if (loc != null) {
+                        reqLat = loc.getLatitude();
+                        reqLng = loc.getLongitude();
+                    }
+                }
+
                 String baseUrl = (mApiUrl.endsWith("/")) ? mApiUrl.substring(0, mApiUrl.length() - 1) : mApiUrl;
                 URL url = new URL(baseUrl + "/api/driver/trip");
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -701,10 +720,10 @@ public class NavigationManager {
                 JSONObject body = new JSONObject();
                 body.put("action", "complete");
                 body.put("orderId", mCurrentOrderId);
-                if (lat != 0.0 && lng != 0.0) {
+                if (reqLat != 0.0 && reqLng != 0.0) {
                     JSONObject coords = new JSONObject();
-                    coords.put("lat", lat);
-                    coords.put("lng", lng);
+                    coords.put("lat", reqLat);
+                    coords.put("lng", reqLng);
                     body.put("coords", coords);
                 }
 
