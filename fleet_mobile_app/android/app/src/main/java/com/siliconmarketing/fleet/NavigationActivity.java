@@ -1,6 +1,7 @@
 package com.siliconmarketing.fleet;
 
 import android.app.AlertDialog;
+import android.location.Location;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
