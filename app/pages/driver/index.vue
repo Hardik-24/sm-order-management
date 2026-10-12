@@ -185,6 +185,228 @@
         </div>
       </div>
 
+      <!-- Trips Manifest Section (Shown when driver has assigned multi-stop trips) -->
+      <div v-else-if="assignedTrips.length > 0" class="space-y-4">
+        <div 
+          v-for="trip in assignedTrips" 
+          :key="trip.id"
+          class="bg-white rounded-2xl p-4 shadow-sm border border-gray-200 space-y-3 transition"
+        >
+          <!-- Trip Card Header -->
+          <div class="flex items-start justify-between border-b border-gray-100 pb-3">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-black font-mono text-[#1a5c4c] bg-emerald-50 px-2.5 py-1 rounded-lg">
+                  {{ trip.tripNumber }}
+                </span>
+                <span 
+                  class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
+                  :class="trip.status === 'IN_TRANSIT' ? 'bg-emerald-100 text-emerald-800 animate-pulse' : 'bg-blue-100 text-blue-800'"
+                >
+                  {{ trip.status === 'IN_TRANSIT' ? 'In Transit' : 'Planned' }}
+                </span>
+              </div>
+              <h2 class="text-sm font-bold text-gray-900 mt-1">Vehicle: {{ trip.vehicleNumber || 'Standard Delivery' }}</h2>
+              <p class="text-xs text-gray-500">{{ trip.totalStops }} Stops • {{ trip.completedStops }} Delivered</p>
+            </div>
+            
+            <div class="text-right">
+              <span class="text-[10px] uppercase font-bold text-gray-400 block">Progress</span>
+              <span class="text-xs font-extrabold text-[#1a5c4c]">
+                {{ trip.completedStops }}/{{ trip.totalStops }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Trip Stops Manifest with Driver Reorder Controls -->
+          <div class="space-y-2.5">
+            <div class="flex items-center justify-between text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+              <span>Delivery Stops</span>
+              <span class="text-[10px] text-gray-400 font-normal">Use ▲ / ▼ to reorder sequence</span>
+            </div>
+
+            <div 
+              v-for="(stop, sIdx) in trip.stops" 
+              :key="stop.id"
+              class="p-3 rounded-xl border transition space-y-2"
+              :class="stop.status === 'DELIVERED' 
+                ? 'bg-gray-50/70 border-gray-200 opacity-70' 
+                : 'bg-white border-gray-200 hover:border-emerald-300 shadow-2xs'"
+            >
+              <!-- Stop Top: Sequence Badge, Reorder, Order #, Status -->
+              <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2 min-w-0">
+                  <span 
+                    class="w-6 h-6 rounded-full font-black text-xs flex items-center justify-center shrink-0"
+                    :class="stop.status === 'DELIVERED' ? 'bg-gray-200 text-gray-600' : 'bg-[#1a5c4c] text-white'"
+                  >
+                    {{ stop.stopSequence }}
+                  </span>
+                  <div class="min-w-0">
+                    <span class="font-bold text-xs text-gray-900 mr-1.5">{{ stop.orderNumber }}</span>
+                    <span class="font-bold text-xs text-gray-800 truncate">{{ stop.customerName }}</span>
+                  </div>
+                </div>
+
+                <!-- Reorder arrows -->
+                <div v-if="stop.status !== 'DELIVERED'" class="flex items-center gap-1 shrink-0">
+                  <button
+                    type="button"
+                    @click="driverReorderStop(trip, sIdx, -1)"
+                    :disabled="sIdx === 0"
+                    class="p-1 rounded bg-gray-100 hover:bg-gray-200 text-gray-600 disabled:opacity-20 transition cursor-pointer"
+                    title="Move stop earlier"
+                  >
+                    <ArrowUp class="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    @click="driverReorderStop(trip, sIdx, 1)"
+                    :disabled="sIdx === trip.stops.length - 1"
+                    class="p-1 rounded bg-gray-100 hover:bg-gray-200 text-gray-600 disabled:opacity-20 transition cursor-pointer"
+                    title="Move stop later"
+                  >
+                    <ArrowDown class="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <span v-else class="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                  ✓ Delivered
+                </span>
+              </div>
+
+              <!-- Address & Phone -->
+              <div class="text-xs text-gray-600 flex items-start gap-1.5">
+                <MapPin class="w-3.5 h-3.5 text-rose-500 shrink-0 mt-0.5" />
+                <span class="leading-relaxed">{{ stop.addressLine }} {{ stop.city ? `• ${stop.city}` : '' }}</span>
+              </div>
+
+              <!-- Stop Actions (Navigate & Mark Delivered) -->
+              <div v-if="stop.status !== 'DELIVERED'" class="flex gap-2 pt-1 border-t border-gray-100">
+                <button 
+                  type="button"
+                  @click="openDirections(stop)"
+                  class="flex-1 py-2 bg-blue-50 hover:bg-blue-100 text-blue-800 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer"
+                >
+                  <Navigation class="w-3.5 h-3.5 text-blue-600" />
+                  Directions
+                </button>
+
+                <button 
+                  type="button"
+                  @click="deliverStopPrompt(trip, stop)"
+                  class="flex-1 py-2 bg-[#1a5c4c] hover:bg-[#134336] text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs transition cursor-pointer"
+                >
+                  <CheckCircle2 class="w-3.5 h-3.5 text-white" />
+                  Deliver Stop
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Standalone Deliveries (if any orders exist outside trips) -->
+        <div v-if="standaloneOrders.length > 0" class="space-y-4 pt-2">
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">Other Assigned Deliveries</span>
+            <div class="flex-1 h-px bg-gray-200"></div>
+          </div>
+          <div 
+            v-for="order in standaloneOrders" 
+            :key="order.id"
+            class="bg-white rounded-2xl p-4 shadow-sm border border-gray-200 space-y-3 transition"
+            :class="{ 'border-emerald-500 ring-2 ring-emerald-500/20': activeTripOrderId === order.id }"
+          >
+            <!-- Card Header -->
+            <div class="flex items-start justify-between">
+              <div>
+                <span class="text-xs font-bold font-mono text-[#1a5c4c] bg-emerald-50 px-2 py-0.5 rounded">
+                  {{ order.orderNumber }}
+                </span>
+                <h2 class="text-base font-bold text-gray-900 mt-1">{{ order.customer?.name }}</h2>
+                <p class="text-xs text-gray-500">{{ order.customer?.company }}</p>
+              </div>
+              <span 
+                class="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full"
+                :class="order.deliveryStatus === 'DISPATCHED' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'"
+              >
+                {{ order.deliveryStatus }}
+              </span>
+            </div>
+
+            <!-- Customer Address & Contact -->
+            <div class="bg-gray-50 rounded-xl p-3 space-y-2 text-xs">
+              <div class="flex items-start gap-2 text-gray-700">
+                <MapPin class="w-4 h-4 text-rose-500 flex-shrink-0 mt-0.5" />
+                <span class="leading-relaxed">{{ order.deliveryAddress }}</span>
+              </div>
+              <div class="flex items-center justify-between pt-1 border-t border-gray-200">
+                <span class="text-gray-500 flex items-center gap-1">
+                  <Phone class="w-3.5 h-3.5 text-gray-400" />
+                  {{ order.customer?.phone || 'No phone' }}
+                </span>
+                <a 
+                  v-if="order.customer?.phone" 
+                  :href="`tel:${order.customer.phone}`"
+                  class="px-2.5 py-1 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold rounded-lg transition"
+                >
+                  Call Customer
+                </a>
+              </div>
+            </div>
+
+            <!-- Collapsible "What's in this truck" Checklist -->
+            <details class="group bg-gray-50/50 rounded-xl border border-gray-200 overflow-hidden">
+              <summary class="p-3 text-xs font-bold text-gray-700 cursor-pointer flex items-center justify-between list-none">
+                <span class="flex items-center gap-1.5">
+                  <Box class="w-4 h-4 text-[#1a5c4c]" />
+                  In This Truck ({{ order.items.length }} items)
+                </span>
+                <ChevronDown class="w-4 h-4 text-gray-400 group-open:rotate-180 transition-transform" />
+              </summary>
+              <div class="px-3 pb-3 divide-y divide-gray-200 text-xs">
+                <div v-for="item in order.items" :key="item.id" class="py-2 flex items-center justify-between">
+                  <div>
+                    <p class="font-bold text-gray-900">{{ item.sku }}</p>
+                    <p class="text-[11px] text-gray-500">{{ item.productName }}</p>
+                  </div>
+                  <span class="font-bold text-gray-900 bg-white px-2 py-1 rounded border border-gray-200">
+                    {{ item.quantity }} {{ item.unit }}
+                  </span>
+                </div>
+              </div>
+            </details>
+
+            <!-- Action Buttons -->
+            <div class="pt-1 flex gap-2">
+              <button 
+                @click="openDirections(order)"
+                class="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95 transition"
+              >
+                <Navigation class="w-4 h-4 text-blue-600" />
+                Directions
+              </button>
+
+              <button 
+                v-if="activeTripOrderId !== order.id"
+                @click="startTripPrompt(order)"
+                class="flex-1 py-3 bg-[#1a5c4c] hover:bg-[#134336] text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow active:scale-95 transition"
+              >
+                <Play class="w-4 h-4" />
+                Start Trip
+              </button>
+              <button 
+                v-else
+                @click="completeTripPrompt(order.id)"
+                class="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow active:scale-95 transition"
+              >
+                <CheckCircle2 class="w-4 h-4" />
+                Complete Delivery
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Empty State -->
       <div v-else-if="assignedOrders.length === 0" class="bg-white rounded-2xl p-8 text-center shadow-sm border border-gray-200">
         <div class="w-14 h-14 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-3">
@@ -196,7 +418,7 @@
         </p>
       </div>
 
-      <!-- Orders List -->
+      <!-- Orders List (Fallback if no trips) -->
       <div v-else class="space-y-4">
         <div 
           v-for="order in assignedOrders" 
@@ -573,7 +795,8 @@ const geo = {
 }
 import { 
   Truck, LogOut, RefreshCw, PackageCheck, History, MapPin, 
-  Phone, Box, ChevronDown, Navigation, Play, CheckCircle2, Loader2, X, AlertTriangle, Clock 
+  Phone, Box, ChevronDown, Navigation, Play, CheckCircle2, Loader2, X, AlertTriangle, Clock,
+  ArrowUp, ArrowDown
 } from 'lucide-vue-next'
 import LiveTrackingMap from '~/components/ui/LiveTrackingMap.vue'
 import { useSnackbar } from '~/composables/useSnackbar'
@@ -597,10 +820,71 @@ const isRefreshing = ref(false)
 const isLoading = ref(true)
 
 const assignedOrders = ref<any[]>([])
+const assignedTrips = ref<any[]>([])
+const standaloneOrders = computed(() => {
+  const tripOrderIds = new Set(
+    assignedTrips.value.flatMap((t: any) => t.stops?.map((s: any) => s.orderId) || [])
+  )
+  return assignedOrders.value.filter((o: any) => !tripOrderIds.has(o.id))
+})
 const historyData = ref<{ trips: any[]; summary: any }>({ trips: [], summary: {} })
 const activeTripOrderId = ref<string | null>(null)
 const activeTrip = ref<any | null>(null)
 const selectedSnapshotTrip = ref<any | null>(null)
+
+async function driverReorderStop(trip: any, stopIndex: number, direction: number) {
+  const targetIndex = stopIndex + direction
+  if (targetIndex < 0 || targetIndex >= trip.stops.length) return
+
+  const newStops = [...trip.stops]
+  const temp = newStops[stopIndex]
+  newStops[stopIndex] = newStops[targetIndex]
+  newStops[targetIndex] = temp
+
+  trip.stops = newStops
+
+  const stopOrder = newStops.map((s: any, idx: number) => ({
+    stopId: s.id,
+    stopSequence: idx + 1
+  }))
+
+  try {
+    await $fetch('/api/driver/trip/reorder-stops', {
+      method: 'PATCH',
+      body: {
+        tripId: trip.id,
+        stopOrder
+      }
+    })
+    showSaved('Stop sequence updated!')
+  } catch (e: any) {
+    console.error('Failed to reorder stop', e)
+    fetchAssignedDeliveries()
+  }
+}
+
+async function deliverStopPrompt(trip: any, stop: any) {
+  if (!confirm(`Mark delivery completed for ${stop.customerName} (${stop.orderNumber})?`)) return
+
+  showSaving('Delivering stop...')
+  try {
+    const res = await $fetch('/api/driver/trip', {
+      method: 'POST',
+      body: {
+        action: 'deliver_stop',
+        tripId: trip.id,
+        stopId: stop.id,
+        orderId: stop.orderId,
+        coords: currentCoords || undefined
+      }
+    })
+    showSaved(`✓ Delivered to ${stop.customerName}!`)
+    await fetchAssignedDeliveries()
+  } catch (e: any) {
+    console.error('Failed to deliver stop', e)
+    showEditing(e.message || 'Failed to deliver stop')
+  }
+}
 
 // Auto-refresh driver screen when office assigns a new order or puts one on hold
 const { onOrderSync } = useRealtimeSync()
@@ -775,8 +1059,12 @@ function stopBackgroundAudioKeepAlive() {
 // Fetch driver assigned deliveries
 async function fetchAssignedDeliveries() {
   try {
-    const data = await $fetch<any[]>('/api/driver/assigned')
-    assignedOrders.value = data
+    const [data, tripsRes] = await Promise.all([
+      $fetch<any[]>('/api/driver/assigned').catch(() => []),
+      $fetch<any>('/api/driver/trips').catch(() => ({ trips: [] }))
+    ])
+    assignedOrders.value = data || []
+    assignedTrips.value = tripsRes?.trips || []
 
     // Check if active trip was cancelled or modified by office
     if (activeTripOrderId.value) {
@@ -1206,8 +1494,8 @@ function handleVisibilityChange() {
 
 // Open Google Maps Driving Directions from Driver's Current Location to Pinned Customer Location
 function openDirections(order: any) {
-  const lat = order.destinationCoords?.lat || order.customer?.latitude || order.trip?.destinationCoords?.lat
-  const lng = order.destinationCoords?.lng || order.customer?.longitude || order.trip?.destinationCoords?.lng
+  const lat = order.coords?.lat || order.destinationCoords?.lat || order.customer?.latitude || order.trip?.destinationCoords?.lat
+  const lng = order.coords?.lng || order.destinationCoords?.lng || order.customer?.longitude || order.trip?.destinationCoords?.lng
 
   // Block directions if no pin exists
   if (!lat || !lng) {

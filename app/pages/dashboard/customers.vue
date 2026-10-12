@@ -764,15 +764,19 @@
                           <span>{{ addr.isDefault ? 'Default Address' : 'Set as Default' }}</span>
                         </button>
 
-                        <!-- Pin status badge -->
-                        <span 
-                          v-if="addr.latitude && addr.longitude" 
-                          class="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-800 bg-emerald-100/80 px-2 py-1 rounded-lg border border-emerald-200"
-                          :title="`Pin: ${Number(addr.latitude).toFixed(4)}, ${Number(addr.longitude).toFixed(4)}`"
+                        <!-- Set / Edit Pin Button Directly in Modal -->
+                        <button
+                          type="button"
+                          @click="openFormAddressPinModal(addr, idx)"
+                          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all select-none border cursor-pointer"
+                          :class="addr.latitude && addr.longitude 
+                            ? 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100' 
+                            : 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100'"
+                          :title="addr.latitude && addr.longitude ? `Pin: ${Number(addr.latitude).toFixed(4)}, ${Number(addr.longitude).toFixed(4)}` : 'Set GPS delivery pin'"
                         >
-                          <MapPin class="w-3 h-3 fill-emerald-700 text-emerald-700" />
-                          <span>Pin Saved</span>
-                        </span>
+                          <MapPin class="w-3.5 h-3.5" :class="addr.latitude && addr.longitude ? 'fill-emerald-600 text-emerald-600' : 'text-amber-600'" />
+                          <span>{{ addr.latitude && addr.longitude ? 'Edit Pin' : 'Set Pin' }}</span>
+                        </button>
 
                         <!-- Delete Button -->
                         <button 
@@ -940,11 +944,39 @@ const openAddressPinModal = (customer: any, address: any, addressIndex: number) 
   isCustomerPinModalOpen.value = true
 }
 
+const openFormAddressPinModal = (address: any, addressIndex: number) => {
+  selectedCustomerForPin.value = {
+    id: editingCustomer.value?.id,
+    name: form.value.name || 'Customer',
+    company: form.value.company || '',
+    address: [address.addressLine, address.city].filter(Boolean).join(', ')
+  }
+  selectedAddressForPin.value = {
+    ...address,
+    index: addressIndex
+  }
+  isCustomerPinModalOpen.value = true
+}
+
 const onCustomerPinSaved = (pin: any) => {
-  if (selectedCustomerForPin.value && selectedAddressForPin.value) {
+  if (selectedAddressForPin.value) {
     const addrId = selectedAddressForPin.value.id
     const addrIdx = selectedAddressForPin.value.index
-    if (selectedCustomerForPin.value.addresses && selectedCustomerForPin.value.addresses.length > 0) {
+
+    // 1. Sync in active form state (inside customer edit modal)
+    if (form.value.addresses && form.value.addresses[addrIdx]) {
+      form.value.addresses[addrIdx].latitude = pin ? pin.lat : null
+      form.value.addresses[addrIdx].longitude = pin ? pin.lng : null
+      form.value.addresses[addrIdx].landmark = pin ? pin.landmark : null
+      if (form.value.addresses[addrIdx].isDefault) {
+        form.value.latitude = pin ? pin.lat : null
+        form.value.longitude = pin ? pin.lng : null
+        form.value.landmark = pin ? pin.landmark : null
+      }
+    }
+
+    // 2. Sync in selectedCustomer if detail panel is open
+    if (selectedCustomerForPin.value && selectedCustomerForPin.value.addresses && selectedCustomerForPin.value.addresses.length > 0) {
       const target = addrId 
         ? selectedCustomerForPin.value.addresses.find((a: any) => a.id === addrId)
         : selectedCustomerForPin.value.addresses[addrIdx]
@@ -954,7 +986,7 @@ const onCustomerPinSaved = (pin: any) => {
         target.landmark = pin ? pin.landmark : null
       }
     }
-    if (!selectedAddressForPin.value.id || selectedAddressForPin.value.isDefault) {
+    if (selectedCustomerForPin.value && (!selectedAddressForPin.value.id || selectedAddressForPin.value.isDefault)) {
       selectedCustomerForPin.value.latitude = pin ? pin.lat : null
       selectedCustomerForPin.value.longitude = pin ? pin.lng : null
       selectedCustomerForPin.value.landmark = pin ? pin.landmark : null

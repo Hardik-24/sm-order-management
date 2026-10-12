@@ -80,6 +80,21 @@ enum PaymentState {
   OVERDUE
 }
 
+enum TripState {
+  PLANNED
+  IN_TRANSIT
+  COMPLETED
+  CANCELLED
+}
+
+enum TripStopState {
+  PENDING
+  IN_TRANSIT
+  DELIVERED
+  FAILED
+  CANCELLED
+}
+
 // ─── Models ───────────────────────────────────────────────────────────────────
 
 model User {
@@ -272,6 +287,7 @@ model Order {
   timeline       OrderTimeline[]
   tripRoute      TripRoute?
   orderRequest   OrderRequest?
+  tripStops      TripStop[]
 
   @@index([orderDate])
   @@index([overallStatus])
@@ -498,4 +514,62 @@ model OrderRequestItem {
   product      Product?     @relation(fields: [productId], references: [id])
 
   @@map("order_request_items")
+}
+
+model Trip {
+  id               String      @id @default(uuid())
+  tripNumber       String      @unique
+  driverId         String
+  driverName       String
+  driverPhone      String?
+  vehicleNumber    String?
+  status           TripState   @default(PLANNED)
+  startLat         Float?
+  startLng         Float?
+  currentLat       Float?
+  currentLng       Float?
+  startTime        DateTime?
+  endTime          DateTime?
+  breadcrumbs      Json        @default("[]")
+  totalDistanceKm  Float       @default(0)
+  ratePerKm        Float       @default(15)
+  calculatedPayout Float       @default(0)
+  durationMinutes  Int?
+  notes            String?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  stops TripStop[]
+
+  @@index([driverId])
+  @@index([status])
+  @@map("trips")
+}
+
+model TripStop {
+  id                String        @id @default(uuid())
+  tripId            String
+  orderId           String
+  stopSequence      Int           @default(1)
+  customerAddressId String?
+  customerName      String
+  customerPhone     String?
+  addressLine       String
+  city              String?
+  landmark          String?
+  latitude          Float
+  longitude         Float
+  status            TripStopState @default(PENDING)
+  deliveredAt       DateTime?
+  proofUrl          String?
+  notes             String?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  trip  Trip  @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([tripId])
+  @@index([orderId])
+  @@map("trip_stops")
 }

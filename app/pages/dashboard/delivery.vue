@@ -2,11 +2,63 @@
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import DeliveryTable from '~/components/dashboard/DeliveryTable.vue'
 import OrderDetailPanel from '~/components/dashboard/OrderDetailPanel.vue'
-import { Truck, Clock, MapPin, PackageCheck, CheckCircle2, RefreshCw } from 'lucide-vue-next'
+import CreateTripModal from '~/components/dashboard/CreateTripModal.vue'
+import {
+  Truck, Clock, MapPin, PackageCheck, CheckCircle2, RefreshCw,
+  Plus, ArrowUp, ArrowDown, ChevronRight, User, ExternalLink, Calendar, AlertTriangle
+} from 'lucide-vue-next'
 import { useGsapAnimation } from '~/composables/useGsapAnimation'
 import { useRealtimeSync } from '~/composables/useRealtimeSync'
 
 definePageMeta({ layout: 'dashboard' })
+
+const viewMode = ref<'TRIPS' | 'ORDERS'>('TRIPS')
+const isCreateTripModalOpen = ref(false)
+
+// Trips Fetching
+const { data: tripsData, refresh: refreshTrips, pending: pendingTrips } = useFetch<any>('/api/trips')
+const tripCounts = computed(() => ({
+  total: tripsData.value?.counts?.total ?? 0,
+  planned: tripsData.value?.counts?.planned ?? 0,
+  inTransit: tripsData.value?.counts?.inTransit ?? 0,
+  completed: tripsData.value?.counts?.completed ?? 0,
+}))
+
+const isReorderingStop = ref(false)
+const handleReorderStop = async (trip: any, stopIndex: number, direction: number) => {
+  const targetIndex = stopIndex + direction
+  if (targetIndex < 0 || targetIndex >= trip.stops.length) return
+
+  isReorderingStop.value = true
+  try {
+    const newStops = [...trip.stops]
+    const temp = newStops[stopIndex]
+    newStops[stopIndex] = newStops[targetIndex]
+    newStops[targetIndex] = temp
+
+    const stopOrder = newStops.map((s, idx) => ({
+      stopId: s.id,
+      stopSequence: idx + 1
+    }))
+
+    await $fetch(`/api/trips/${trip.id}/reorder`, {
+      method: 'PATCH',
+      body: { stopOrder }
+    })
+    await refreshTrips()
+  } catch (e: any) {
+    console.error('Failed to reorder stop', e)
+    alert(e.data?.message || 'Failed to reorder stop sequence')
+  } finally {
+    isReorderingStop.value = false
+  }
+}
+
+const onTripCreated = () => {
+  refresh()
+  refreshStats()
+  refreshTrips()
+}
 
 const page = ref(1)
 const limit = ref(10)
@@ -204,17 +256,26 @@ watch(counts, () => {
 
       <div class="flex items-center gap-2.5">
         <button 
-          @click="() => { refresh(); refreshStats(); }" 
+          @click="() => { refresh(); refreshStats(); refreshTrips(); }" 
           :disabled="pending"
           class="inline-flex items-center gap-2 px-3 py-2 text-xs sm:text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 shadow-xs transition-colors cursor-pointer"
         >
-          <RefreshCw class="w-4 h-4" :class="{ 'animate-spin': pending }" />
+          <RefreshCw class="w-4 h-4" :class="{ 'animate-spin': pending || pendingTrips }" />
           <span>Refresh</span>
         </button>
+
+        <button 
+          @click="isCreateTripModalOpen = true"
+          class="inline-flex items-center gap-2 px-3.5 py-2 bg-[#1a5c4c] hover:bg-[#134336] text-white rounded-lg text-xs sm:text-sm font-bold shadow-sm transition-colors cursor-pointer"
+        >
+          <Plus class="w-4 h-4" />
+          <span>Create New Trip</span>
+        </button>
+
         <a 
           href="/driver" 
           target="_blank"
-          class="inline-flex items-center gap-2 px-3.5 py-2 bg-[#1a5c4c] text-white rounded-lg text-xs font-bold shadow-sm hover:bg-[#134336] transition-colors"
+          class="inline-flex items-center gap-2 px-3.5 py-2 bg-gray-900 text-white rounded-lg text-xs font-bold shadow-sm hover:bg-black transition-colors"
         >
           <Truck class="w-4 h-4" />
           <span>Open Driver App ↗</span>
@@ -301,62 +362,271 @@ watch(counts, () => {
       </div>
     </div>
 
-    <!-- Underline Tabs with Badges (Matching Billing & Packing) -->
-    <div class="border-b border-gray-200">
-      <nav class="-mb-px flex gap-6 sm:gap-8 overflow-x-auto no-scrollbar">
-        <button 
-          v-for="tab in (['WAITING', 'DISPATCHED', 'DELIVERED', 'ON_HOLD', 'ALL'] as const)" :key="tab"
-          @click="handleTabChange(tab)"
-          class="whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm transition-colors flex items-center gap-2 cursor-pointer"
-          :class="activeTab === tab ? 'border-[#1a5c4c] text-[#1a5c4c]' : 'border-transparent text-gray-500 hover:text-gray-900 hover:border-gray-300'"
+    <!-- Primary Mode Switcher: Trips & Fleet Manifests vs Individual Orders -->
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-gray-200 pb-3">
+      <div class="flex items-center gap-2 bg-gray-100 p-1 rounded-xl">
+        <button
+          type="button"
+          @click="viewMode = 'TRIPS'"
+          class="px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 cursor-pointer"
+          :class="viewMode === 'TRIPS' ? 'bg-white text-[#1a5c4c] shadow-xs' : 'text-gray-600 hover:text-gray-900'"
         >
-          <span>
-            {{ 
-              tab === 'WAITING' ? 'Awaiting Dispatch' : 
-              tab === 'DISPATCHED' ? 'In Transit' : 
-              tab === 'DELIVERED' ? 'Delivered' : 
-              tab === 'ON_HOLD' ? 'On Hold' : 'All Orders' 
-            }}
-          </span>
-          <span 
-            class="px-2 py-0.5 rounded-full text-[10px] font-bold transition-colors"
-            :class="[
-              activeTab === tab
-                ? 'bg-[#1a5c4c]/10 text-[#1a5c4c]'
-                : 'bg-gray-100 text-gray-600'
-            ]"
-          >
-            {{ 
-              tab === 'WAITING' ? counts.waiting : 
-              tab === 'DISPATCHED' ? counts.dispatched : 
-              tab === 'DELIVERED' ? counts.delivered : 
-              tab === 'ON_HOLD' ? counts.onHold : counts.total 
-            }}
+          <Truck class="w-4 h-4" />
+          <span>Trips & Fleet Manifests</span>
+          <span class="px-2 py-0.5 rounded-full text-[10px] bg-[#1a5c4c]/10 text-[#1a5c4c] font-extrabold">
+            {{ tripCounts.total }}
           </span>
         </button>
-      </nav>
+
+        <button
+          type="button"
+          @click="viewMode = 'ORDERS'"
+          class="px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 cursor-pointer"
+          :class="viewMode === 'ORDERS' ? 'bg-white text-[#1a5c4c] shadow-xs' : 'text-gray-600 hover:text-gray-900'"
+        >
+          <PackageCheck class="w-4 h-4" />
+          <span>Individual Orders</span>
+          <span class="px-2 py-0.5 rounded-full text-[10px] bg-gray-200 text-gray-700 font-extrabold">
+            {{ counts.total }}
+          </span>
+        </button>
+      </div>
+
+      <div v-if="viewMode === 'TRIPS'" class="text-xs text-gray-500">
+        <span class="font-bold text-gray-900">{{ tripCounts.inTransit }}</span> active trips • 
+        <span class="font-bold text-gray-900">{{ tripCounts.planned }}</span> planned • 
+        <span class="font-bold text-gray-900">{{ tripCounts.completed }}</span> completed
+      </div>
     </div>
 
-    <!-- Table -->
-    <div class="relative">
-      
-      
-      <DeliveryTable 
-        :isLoading="isSwitchingTab || isInitialLoading"
-        :orders="data?.orders || []"
-        :total="data?.total || 0"
-        v-model:page="page"
-        v-model:limit="limit"
-        v-model:search="search"
-        v-model:startDate="startDate"
-        v-model:endDate="endDate"
-        v-model:status="status"
-        v-model:billingStatus="billingStatus"
-        v-model:packingStatus="packingStatus"
-        v-model:deliveryStatus="deliveryStatus"
-        @select="handleSelect"
-        @refresh="() => { refresh(); refreshStats(); }"
-      />
+    <!-- VIEW 1: TRIPS & FLEET MANIFESTS -->
+    <div v-if="viewMode === 'TRIPS'" class="space-y-4">
+      <div v-if="pendingTrips" class="py-12 text-center text-gray-500 bg-white rounded-xl border border-gray-200">
+        <RefreshCw class="w-6 h-6 animate-spin mx-auto text-gray-400 mb-2" />
+        <p class="text-xs font-semibold">Loading fleet trips...</p>
+      </div>
+
+      <div v-else-if="!tripsData?.trips || tripsData.trips.length === 0" class="py-16 text-center bg-white rounded-xl border border-dashed border-gray-300 space-y-3">
+        <Truck class="w-10 h-10 text-gray-300 mx-auto" />
+        <h3 class="text-base font-bold text-gray-800">No Trips Created Yet</h3>
+        <p class="text-xs text-gray-500 max-w-sm mx-auto">
+          Bundle multiple orders into a single trip, assign driver, choose specific customer delivery addresses, set pins, and sequence driver stops.
+        </p>
+        <button
+          type="button"
+          @click="isCreateTripModalOpen = true"
+          class="mt-2 inline-flex items-center gap-2 px-4 py-2 bg-[#1a5c4c] hover:bg-[#134336] text-white rounded-lg text-xs font-bold shadow-sm transition cursor-pointer"
+        >
+          <Plus class="w-4 h-4" />
+          <span>Create First Trip Manifest</span>
+        </button>
+      </div>
+
+      <!-- Trips List -->
+      <div v-else class="space-y-4">
+        <div
+          v-for="trip in tripsData.trips"
+          :key="trip.id"
+          class="bg-white rounded-xl border border-[#e5e2dc] shadow-xs overflow-hidden transition hover:shadow-sm"
+        >
+          <!-- Trip Card Header -->
+          <div class="p-4 sm:p-5 bg-gray-50/70 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+              <div
+                class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                :class="trip.status === 'IN_TRANSIT' ? 'bg-emerald-500 text-white animate-pulse' : trip.status === 'COMPLETED' ? 'bg-gray-100 text-gray-600' : 'bg-[#1a5c4c]/10 text-[#1a5c4c]'"
+              >
+                <Truck class="w-5 h-5" />
+              </div>
+              <div>
+                <div class="flex items-center gap-2.5 flex-wrap">
+                  <h3 class="font-extrabold text-sm text-gray-900 tracking-tight font-mono">{{ trip.tripNumber }}</h3>
+                  <span
+                    class="px-2.5 py-0.5 rounded-full text-[10px] font-bold"
+                    :class="trip.status === 'IN_TRANSIT'
+                      ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                      : trip.status === 'COMPLETED'
+                      ? 'bg-gray-100 text-gray-700 border border-gray-200'
+                      : 'bg-blue-50 text-blue-800 border border-blue-200'"
+                  >
+                    {{ trip.status === 'IN_TRANSIT' ? '🟢 In Transit (Live GPS)' : trip.status === 'COMPLETED' ? '✓ Completed' : 'Planned' }}
+                  </span>
+                </div>
+                <div class="text-xs text-gray-500 mt-0.5 flex items-center gap-3 flex-wrap">
+                  <span class="font-medium text-gray-700">Driver: <strong>{{ trip.driverName }}</strong></span>
+                  <span v-if="trip.vehicleNumber">• Vehicle: {{ trip.vehicleNumber }}</span>
+                  <span>• {{ trip.stops?.length || 0 }} Stops Manifest</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Progress Bar & Summary -->
+            <div class="flex items-center gap-3 shrink-0">
+              <div class="text-right">
+                <span class="text-[11px] font-bold text-gray-600 block">
+                  {{ trip.stops?.filter((s: any) => s.status === 'DELIVERED').length || 0 }} of {{ trip.stops?.length || 0 }} Delivered
+                </span>
+                <div class="w-28 h-1.5 bg-gray-200 rounded-full mt-1 overflow-hidden">
+                  <div
+                    class="h-full bg-emerald-500 rounded-full transition-all duration-300"
+                    :style="{ width: `${((trip.stops?.filter((s: any) => s.status === 'DELIVERED').length || 0) / Math.max(1, trip.stops?.length || 1)) * 100}%` }"
+                  ></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Stops Table / Manifest Breakdown -->
+          <div class="p-4 sm:p-5 space-y-3">
+            <div class="text-[11px] font-bold text-gray-400 uppercase tracking-wider flex items-center justify-between">
+              <span>Delivery Sequence & Stops Manifest</span>
+              <span class="text-gray-400 text-[10px] font-normal">Use arrows (▲ / ▼) to reorder sequence</span>
+            </div>
+
+            <div class="space-y-2">
+              <div
+                v-for="(stop, sIdx) in trip.stops"
+                :key="stop.id"
+                class="p-3 bg-white rounded-lg border border-gray-100 hover:border-gray-300 transition flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
+              >
+                <!-- Stop Number + Reorder Arrows + Customer Info -->
+                <div class="flex items-center gap-3 min-w-0 flex-1">
+                  <!-- Sequence Number -->
+                  <div class="w-7 h-7 rounded-full bg-gray-100 text-gray-700 font-extrabold text-xs flex items-center justify-center shrink-0 border border-gray-200">
+                    {{ stop.stopSequence }}
+                  </div>
+
+                  <!-- Reorder Sequence Controls -->
+                  <div class="flex items-center gap-1 shrink-0">
+                    <button
+                      type="button"
+                      @click="handleReorderStop(trip, sIdx, -1)"
+                      :disabled="sIdx === 0 || trip.status === 'COMPLETED' || isReorderingStop"
+                      class="p-1 rounded hover:bg-gray-100 text-gray-500 disabled:opacity-20 transition cursor-pointer"
+                      title="Move stop earlier in sequence"
+                    >
+                      <ArrowUp class="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      @click="handleReorderStop(trip, sIdx, 1)"
+                      :disabled="sIdx === trip.stops.length - 1 || trip.status === 'COMPLETED' || isReorderingStop"
+                      class="p-1 rounded hover:bg-gray-100 text-gray-500 disabled:opacity-20 transition cursor-pointer"
+                      title="Move stop later in sequence"
+                    >
+                      <ArrowDown class="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+
+                  <!-- Customer / Address Info -->
+                  <div class="min-w-0 flex-1">
+                    <div class="flex items-center gap-2 flex-wrap">
+                      <button
+                        type="button"
+                        @click="handleSelect(stop.orderId)"
+                        class="font-bold text-gray-900 hover:text-[#1a5c4c] underline cursor-pointer"
+                      >
+                        {{ stop.order?.orderNumber || 'Order' }}
+                      </button>
+                      <span class="font-semibold text-gray-800">{{ stop.customerName }}</span>
+                      <span v-if="stop.order?.customer?.company" class="text-gray-400">({{ stop.order.customer.company }})</span>
+                    </div>
+                    <div class="text-[11px] text-gray-500 truncate mt-0.5">
+                      📍 {{ stop.addressLine }} {{ stop.city ? `• ${stop.city}` : '' }}
+                      <span v-if="stop.landmark" class="text-gray-400">({{ stop.landmark }})</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Stop Status & Track Button -->
+                <div class="flex items-center gap-2.5 shrink-0 justify-end">
+                  <!-- Status Badge -->
+                  <span
+                    class="px-2.5 py-1 rounded-md text-[11px] font-bold"
+                    :class="stop.status === 'DELIVERED'
+                      ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                      : stop.status === 'IN_TRANSIT'
+                      ? 'bg-blue-50 text-blue-800 border border-blue-200'
+                      : 'bg-gray-50 text-gray-600 border border-gray-200'"
+                  >
+                    {{ stop.status === 'DELIVERED' ? '✓ Delivered' : stop.status === 'IN_TRANSIT' ? '🚚 Next Delivery' : '⏳ Pending' }}
+                  </span>
+
+                  <!-- Live Tracking Link -->
+                  <a
+                    v-if="stop.order?.orderNumber"
+                    :href="`/track/${stop.order.orderNumber}`"
+                    target="_blank"
+                    class="p-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 text-gray-600 hover:text-[#1a5c4c] transition"
+                    title="Open Customer Live GPS Tracking Page"
+                  >
+                    <ExternalLink class="w-3.5 h-3.5" />
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEW 2: INDIVIDUAL ORDERS QUEUE -->
+    <div v-else class="space-y-4">
+      <!-- Underline Tabs with Badges (Matching Billing & Packing) -->
+      <div class="border-b border-gray-200">
+        <nav class="-mb-px flex gap-6 sm:gap-8 overflow-x-auto no-scrollbar">
+          <button 
+            v-for="tab in (['WAITING', 'DISPATCHED', 'DELIVERED', 'ON_HOLD', 'ALL'] as const)" :key="tab"
+            @click="handleTabChange(tab)"
+            class="whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm transition-colors flex items-center gap-2 cursor-pointer"
+            :class="activeTab === tab ? 'border-[#1a5c4c] text-[#1a5c4c]' : 'border-transparent text-gray-500 hover:text-gray-900 hover:border-gray-300'"
+          >
+            <span>
+              {{ 
+                tab === 'WAITING' ? 'Awaiting Dispatch' : 
+                tab === 'DISPATCHED' ? 'In Transit' : 
+                tab === 'DELIVERED' ? 'Delivered' : 
+                tab === 'ON_HOLD' ? 'On Hold' : 'All Orders' 
+              }}
+            </span>
+            <span 
+              class="px-2 py-0.5 rounded-full text-[10px] font-bold transition-colors"
+              :class="[
+                activeTab === tab
+                  ? 'bg-[#1a5c4c]/10 text-[#1a5c4c]'
+                  : 'bg-gray-100 text-gray-600'
+              ]"
+            >
+              {{ 
+                tab === 'WAITING' ? counts.waiting : 
+                tab === 'DISPATCHED' ? counts.dispatched : 
+                tab === 'DELIVERED' ? counts.delivered : 
+                tab === 'ON_HOLD' ? counts.onHold : counts.total 
+              }}
+            </span>
+          </button>
+        </nav>
+      </div>
+
+      <!-- Orders Table -->
+      <div class="relative">
+        <DeliveryTable 
+          :isLoading="isSwitchingTab || isInitialLoading"
+          :orders="data?.orders || []"
+          :total="data?.total || 0"
+          v-model:page="page"
+          v-model:limit="limit"
+          v-model:search="search"
+          v-model:startDate="startDate"
+          v-model:endDate="endDate"
+          v-model:status="status"
+          v-model:billingStatus="billingStatus"
+          v-model:packingStatus="packingStatus"
+          v-model:deliveryStatus="deliveryStatus"
+          @select="handleSelect"
+          @refresh="() => { refresh(); refreshStats(); refreshTrips(); }"
+        />
+      </div>
     </div>
 
     <!-- Detail Panel -->
@@ -366,6 +636,13 @@ watch(counts, () => {
       context="delivery"
       @close="handlePanelClose"
       @updated="(updatedOrder) => { performSilentSync(updatedOrder); }"
+    />
+
+    <!-- Create Trip Manifest Modal -->
+    <CreateTripModal
+      :isOpen="isCreateTripModalOpen"
+      @close="isCreateTripModalOpen = false"
+      @created="onTripCreated"
     />
   </div>
 </template>

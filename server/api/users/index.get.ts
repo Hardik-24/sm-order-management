@@ -2,7 +2,7 @@ import { requireRole } from '~~/server/utils/auth'
 import { prisma } from '~~/server/utils/prisma'
 
 export default defineEventHandler(async (event) => {
-  await requireRole(event, ['ADMIN', 'SALES'])
+  await requireRole(event, ['ADMIN', 'SALES', 'DELIVERY'])
   
   const users = await prisma.user.findMany({
     select: {

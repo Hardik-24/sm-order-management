@@ -85,9 +85,17 @@
                       {{ trackingData.driverName?.charAt(0) || 'D' }}
                     </div>
                     <div>
-                      <p class="text-[11px] text-emerald-700 font-semibold flex items-center gap-1">
-                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                        En Route to You
+                      <p class="text-[11px] font-semibold flex items-center gap-1" :class="trackingData.multiStop?.stopsAhead ? 'text-amber-700' : 'text-emerald-700'">
+                        <span class="w-2 h-2 rounded-full animate-pulse" :class="trackingData.multiStop?.stopsAhead ? 'bg-amber-500' : 'bg-emerald-500'"></span>
+                        <span v-if="trackingData.multiStop?.stopsAhead">
+                          Completing earlier stop ({{ trackingData.multiStop.stopsAhead }} delivery before yours)
+                        </span>
+                        <span v-else-if="trackingData.multiStop">
+                          En Route to You • Stop #{{ trackingData.multiStop.stopSequence }} of {{ trackingData.multiStop.totalStops }}
+                        </span>
+                        <span v-else>
+                          En Route to You
+                        </span>
                       </p>
                       <h3 class="text-sm font-bold text-gray-900">{{ trackingData.driverName || 'Delivery Partner' }}</h3>
                     </div>

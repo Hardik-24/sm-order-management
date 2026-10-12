@@ -16,6 +16,7 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
         multiDexEnabled true
+        resourceConfigurations += ['en']
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
