@@ -107,9 +107,13 @@ const getTotalNos = (order: any) => {
 const getPackingProgress = (order: any) => {
   const items = order.items || []
   if (!items.length) return { packed: 0, total: 0, percent: 0 }
-  const packedCount = items.filter((i: any) => i.packedQuantity !== null && i.packedQuantity !== undefined && i.packedQuantity >= i.quantity).length
-  const percent = Math.min(100, Math.round((packedCount / items.length) * 100))
-  return { packed: packedCount, total: items.length, percent }
+  const isOrderPacked = order.packingStatus?.status === 'PACKED'
+  const packedCount = items.filter((i: any) => {
+    if (isOrderPacked) return true
+    return Boolean(i.isPacked) || (i.packedQuantity !== null && i.packedQuantity !== undefined && Number(i.packedQuantity) > 0)
+  }).length
+  const percent = isOrderPacked ? 100 : Math.min(100, Math.round((packedCount / items.length) * 100))
+  return { packed: isOrderPacked ? items.length : packedCount, total: items.length, percent }
 }
 </script>
 

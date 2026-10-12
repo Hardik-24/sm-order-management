@@ -1239,6 +1239,16 @@ function openDirections(order: any) {
 }
 
 onMounted(async () => {
+  // Prompt for location and notification permissions on startup if not granted
+  if (typeof navigator !== 'undefined' && navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(() => {}, () => {}, { timeout: 6000, enableHighAccuracy: true })
+  }
+  if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+    try {
+      Notification.requestPermission()
+    } catch (e) {}
+  }
+
   isLoading.value = true
   if (!user.value) {
     await fetchUser()

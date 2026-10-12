@@ -297,6 +297,7 @@ model OrderItem {
   isTaxInclusive   Boolean  @default(false)
   applyLastPrice   Boolean  @default(false)
   itemNotes        String?
+  isPacked         Boolean  @default(false)
 
   // Relations
   order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)

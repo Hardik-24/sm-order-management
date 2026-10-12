@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, nextTick, watch, onMounted } from 'vue'
 import { onClickOutside } from '@vueuse/core'
-import { Filter, Search, MoreHorizontal, Calendar, X, MapPin, Share2, Loader2, UserPlus, Truck } from 'lucide-vue-next'
+import { Filter, Search, MoreHorizontal, Calendar, X, MapPin, Share2, Loader2, UserPlus, Truck, Check, CheckCircle2, ChevronRight, Zap } from 'lucide-vue-next'
 import { formatDate } from '~~/app/lib/utils'
 import CustomSelect from '~/components/ui/CustomSelect.vue'
 import TableFilterButtons from '~/components/dashboard/TableFilterButtons.vue'
@@ -13,6 +13,25 @@ import { useGsapAnimation } from '~/composables/useGsapAnimation'
 import LiveTrackingMap from '~/components/ui/LiveTrackingMap.vue'
 import SetDeliveryPinModal from '~/components/dashboard/SetDeliveryPinModal.vue'
 import { useSnackbar } from '~/composables/useSnackbar'
+
+const getPrivilegeColor = (tier?: string) => {
+  switch (tier) {
+    case 'GOLD': return 'bg-amber-50 text-amber-800 border-amber-300 ring-1 ring-amber-300/40'
+    case 'SILVER': return 'bg-slate-100 text-slate-700 border-slate-300 ring-1 ring-slate-300/40'
+    default: return 'bg-orange-50 text-orange-700 border-orange-200'
+  }
+}
+
+const getItemsCountText = (order: any) => {
+  const count = order.items?.length || 0
+  return `${count} ${count === 1 ? 'item' : 'items'}`
+}
+
+const getTotalNos = (order: any) => {
+  if (!order.items || !order.items.length) return '0 nos.'
+  const totalUnits = order.items.reduce((sum: number, itm: any) => sum + (Number(itm.quantity) || 0), 0)
+  return `${totalUnits} nos.`
+}
 
 const { showSaving, showSaved, showEditing } = useSnackbar()
 
@@ -371,15 +390,15 @@ const saveDriverAssignment = async () => {
 
       <!-- DESKTOP / TABLET VIEW: Full Multi-column Table -->
       <div ref="tableScrollRef" class="hidden md:block overflow-x-auto no-scrollbar">
-        <table class="w-full text-left border-collapse min-w-full">
+        <table class="w-full text-left border-collapse min-w-full text-sm text-gray-600">
           <thead>
-            <tr class="bg-gray-50 border-b border-gray-200 text-xs font-medium text-gray-500 uppercase tracking-wider">
-              <th class="px-6 py-4 whitespace-nowrap">Order ID</th>
-              <th class="px-6 py-4 whitespace-nowrap">Customer & Address</th>
-              <th class="px-6 py-4 whitespace-nowrap text-center">Driver</th>
-              <th class="px-6 py-4 whitespace-nowrap text-center">Dispatch / ETA</th>
-              <th class="px-6 py-4 whitespace-nowrap text-center">Status</th>
-              <th class="px-6 py-4 whitespace-nowrap text-right">Action</th>
+            <tr class="bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+              <th class="px-5 py-3.5 whitespace-nowrap">Order</th>
+              <th class="px-5 py-3.5">Customer & Destination</th>
+              <th class="px-5 py-3.5 whitespace-nowrap text-center">Items</th>
+              <th class="px-5 py-3.5 whitespace-nowrap text-center">Driver</th>
+              <th class="px-5 py-3.5 whitespace-nowrap text-center">Status</th>
+              <th class="px-5 py-3.5 whitespace-nowrap text-right pr-6">Action</th>
             </tr>
           </thead>
           <tbody ref="tbodyRef" class="divide-y divide-gray-200 bg-white relative">
@@ -387,29 +406,86 @@ const saveDriverAssignment = async () => {
               v-for="order in orders" 
               :key="order.id"
               @click="emit('select', order.id)"
-              class="cursor-pointer transition-colors group"
+              class="cursor-pointer transition-colors duration-150 group"
               :class="order.overallStatus === 'CANCELLED' 
-                ? 'bg-gray-100/75 hover:bg-gray-200/60 text-gray-400 [&_td]:!text-gray-400 [&_span]:!text-gray-400 [&_div]:!text-gray-400 opacity-60 border-l-4 border-l-gray-400' 
-                : 'hover:bg-gray-50'"
+                ? 'bg-gray-100/60 hover:bg-gray-100/80 text-gray-400 opacity-60 border-l-4 border-l-gray-400' 
+                : (order.isUrgent ? 'bg-rose-50/25 hover:bg-rose-50/40 border-l-4 border-l-rose-500' : 'hover:bg-gray-50/80')"
             >
-              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                <div class="flex items-center gap-1.5">
-                  <span>{{ order.orderNumber }}</span>
-                  <span v-if="order.overallStatus === 'CANCELLED'" class="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[10px] font-bold bg-gray-200 !text-gray-600 border border-rose-500">
-                    🚫 CANCELLED
+              <!-- 1. Order ID -->
+              <td class="px-5 py-3.5 whitespace-nowrap">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <span class="text-xs font-bold text-gray-900 group-hover:text-[#1a5c4c] transition-colors">
+                    {{ order.orderNumber }}
+                  </span>
+                  <span v-if="order.isUrgent && order.overallStatus !== 'CANCELLED'" class="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                    <Zap class="w-2.5 h-2.5 fill-rose-600" /> Urgent
+                  </span>
+                  <span v-if="order.overallStatus === 'CANCELLED'" class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-bold bg-gray-200 !text-gray-600 border border-rose-500">
+                    CANCELLED
                   </span>
                 </div>
+                <div class="text-[11px] text-gray-400 mt-0.5 tabular-nums">
+                  {{ formatDate(order.createdAt) }}
+                </div>
               </td>
-              <td class="px-6 py-4 text-sm text-gray-900 max-w-[250px] truncate">
-                <span class="font-medium block">{{ order.customer?.name || '-' }}</span>
-                <span class="text-xs text-gray-500 block truncate">{{ order.deliveryAddress || '-' }}</span>
+
+              <!-- 2. Customer & Destination -->
+              <td class="px-5 py-3.5 min-w-[200px] max-w-[280px]">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <span class="text-xs font-bold text-gray-900 truncate">{{ order.customer?.name || 'Walk-in Customer' }}</span>
+                  <span 
+                    v-if="order.customer?.privilegeTier" 
+                    class="text-[9px] px-1.5 py-0.2 rounded font-bold uppercase border shadow-2xs"
+                    :class="getPrivilegeColor(order.customer.privilegeTier)"
+                  >
+                    {{ order.customer.privilegeTier }}
+                  </span>
+                  <span v-if="order.customer?.isPriorityClient" class="text-amber-500 font-bold text-xs shrink-0" title="Priority Client">★</span>
+                </div>
+                <p class="text-[11px] text-gray-500 truncate mt-0.5 flex items-center gap-1" :title="order.deliveryAddress || order.customer?.city || '—'">
+                  <MapPin class="w-3 h-3 text-gray-400 shrink-0" />
+                  <span class="truncate">{{ order.deliveryAddress || order.customer?.city || 'No address' }}</span>
+                </p>
+                <!-- GPS Pin Indicator -->
+                <div class="mt-1">
+                  <button
+                    v-if="(order as any).hasDestinationPin || (order as any).destinationCoords"
+                    @click.stop="openPinModal(order)"
+                    class="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-1.5 py-0.5 rounded border border-emerald-200 transition cursor-pointer"
+                    title="Verified GPS destination pin. Click to change pin."
+                  >
+                    <MapPin class="w-2.5 h-2.5 text-emerald-600" />
+                    <span>Pin Set</span>
+                  </button>
+                  <button
+                    v-else-if="order.overallStatus !== 'CANCELLED' && order.deliveryStatus?.status !== 'DELIVERED'"
+                    @click.stop="openPinModal(order)"
+                    class="inline-flex items-center gap-1 text-[10px] font-bold text-amber-900 bg-amber-50 hover:bg-amber-100 px-1.5 py-0.5 rounded border border-amber-300 transition animate-pulse cursor-pointer shadow-2xs"
+                    title="⚠️ Missing GPS Pin! Click to set map pin."
+                  >
+                    <MapPin class="w-2.5 h-2.5 text-amber-600" />
+                    <span>+ Set Pin</span>
+                  </button>
+                </div>
               </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-center font-medium">
+
+              <!-- 3. Items -->
+              <td class="px-5 py-3.5 whitespace-nowrap text-center">
+                <div class="text-xs font-bold text-gray-800">
+                  {{ getItemsCountText(order) }}
+                </div>
+                <p class="text-[11px] text-gray-400 mt-0.5 tabular-nums">
+                  {{ getTotalNos(order) }}
+                </p>
+              </td>
+
+              <!-- 4. Driver -->
+              <td class="px-5 py-3.5 whitespace-nowrap text-center">
                 <button 
-                  v-if="!order.deliveryDriver && (!order.deliveryStatus || order.deliveryStatus.status === 'WAITING')"
+                  v-if="!order.deliveryDriver && (!order.deliveryStatus || order.deliveryStatus.status === 'WAITING' || order.deliveryStatus.status === 'PENDING')"
                   @click.stop="openAssignModal(order)"
-                  class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300/80 rounded-lg text-xs font-bold transition active:scale-95 shadow-xs"
-                  title="Click to assign a driver"
+                  class="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-dashed border-amber-300 rounded-lg text-xs font-bold transition active:scale-95 shadow-2xs cursor-pointer"
+                  title="Click to assign a delivery driver"
                 >
                   <UserPlus class="w-3.5 h-3.5 text-amber-600" />
                   <span>Assign Driver</span>
@@ -417,94 +493,83 @@ const saveDriverAssignment = async () => {
                 <button 
                   v-else
                   @click.stop="openAssignModal(order)"
-                  class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-[#1a5c4c] border border-emerald-200 rounded-lg text-xs font-semibold transition active:scale-95"
-                  title="Click to change driver"
+                  class="inline-flex items-center gap-2 px-2.5 py-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg text-xs font-semibold text-gray-800 transition active:scale-95 cursor-pointer shadow-2xs group/driver"
+                  title="Click to change assigned driver"
                 >
-                  <Truck class="w-3.5 h-3.5 text-emerald-600" />
-                  <span>{{ order.deliveryDriver || order.deliveryStatus?.driverName || 'Assigned' }}</span>
+                  <div class="w-5 h-5 rounded-full bg-[#1a5c4c] text-white flex items-center justify-center text-[10px] font-bold shrink-0">
+                    {{ (order.deliveryDriver || order.deliveryStatus?.driverName || 'D')[0]?.toUpperCase() }}
+                  </div>
+                  <span class="truncate max-w-[110px]">{{ order.deliveryDriver || order.deliveryStatus?.driverName || 'Assigned' }}</span>
                 </button>
               </td>
-              
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
-                <span class="block text-gray-900">{{ order.dispatchDate ? formatDate(order.dispatchDate) : 'TBD' }}</span>
-                <span class="block text-[10px] text-gray-400">ETA: {{ order.eta ? formatDate(order.eta) : '-' }}</span>
-              </td>
-              
-              <td class="px-6 py-4 whitespace-nowrap text-center">
-                <StatusBadge v-if="order.deliveryStatus?.status" :status="order.deliveryStatus.status" class="mx-auto" />
-                <span v-else class="text-gray-400 block text-center">-</span>
-              </td>
-              
-              <td class="px-6 py-4 whitespace-nowrap text-right text-gray-400">
-                <div class="flex items-center justify-end gap-1.5">
-                  <!-- WhatsApp Share (Dispatched) -->
-                  <button 
-                    v-if="order.deliveryStatus?.status === 'DISPATCHED'"
-                    @click.stop="shareOnWhatsApp(order)"
-                    title="Share Live Tracking on WhatsApp"
-                    class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded border border-emerald-200 transition-colors"
-                  >
-                    <Share2 class="w-3.5 h-3.5" />
-                    <span class="hidden xl:inline">WhatsApp</span>
-                  </button>
 
-                  <!-- Live Map (Dispatched) -->
+              <!-- 5. Status -->
+              <td class="px-5 py-3.5 whitespace-nowrap text-center">
+                <StatusBadge v-if="order.deliveryStatus?.status" :status="order.deliveryStatus.status" class="mx-auto" />
+                <span v-else class="text-gray-400 text-xs block text-center">—</span>
+              </td>
+
+              <!-- 7. Action -->
+              <td class="px-5 py-3.5 whitespace-nowrap text-right pr-6">
+                <div class="flex items-center justify-end gap-1.5">
+                  <!-- Live GPS Tracking (Dispatched) -->
                   <button 
                     v-if="order.deliveryStatus?.status === 'DISPATCHED'"
                     @click.stop="openTrackingModal(order)"
-                    title="View Live GPS"
-                    class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold bg-[#1a5c4c] text-white hover:bg-[#134336] rounded transition-colors shadow-sm"
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-[#1a5c4c] text-white hover:bg-[#14473b] rounded-lg shadow-sm hover:shadow transition-all cursor-pointer"
+                    title="View Live GPS Driver Route"
                   >
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
                     <MapPin class="w-3.5 h-3.5" />
                     <span>Track Live</span>
                   </button>
 
-                  <!-- Route Snapshot (Delivered) -->
+                  <!-- Completed Route Map (Delivered) -->
                   <button 
                     v-else-if="order.deliveryStatus?.status === 'DELIVERED'"
                     @click.stop="openTrackingModal(order)"
-                    title="View Completed Route Snapshot"
-                    class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold bg-blue-50 text-blue-700 hover:bg-blue-100 rounded border border-blue-200 transition-colors"
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg border border-blue-200 transition-all cursor-pointer"
+                    title="View Completed Delivery Route Map"
                   >
                     <MapPin class="w-3.5 h-3.5" />
                     <span>Route Map</span>
                   </button>
 
-                  <!-- Change Pin Button (If pin already set) -->
+                  <!-- Manage Details -->
                   <button 
-                    v-if="order.deliveryStatus?.status !== 'DELIVERED' && ((order as any).hasDestinationPin || (order as any).destinationCoords)"
-                    @click.stop="openPinModal(order)"
-                    title="Customer pin is verified. Click to change pin on map."
-                    class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold rounded border transition-colors bg-emerald-50 text-[#1a5c4c] hover:bg-emerald-100 border-emerald-200"
+                    v-else
+                    @click.stop="emit('select', order.id)" 
+                    class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold bg-white text-gray-700 hover:bg-gray-50 rounded-lg border border-gray-300 transition-all shadow-2xs cursor-pointer"
                   >
-                    <MapPin class="w-3.5 h-3.5 text-[#1a5c4c]" />
-                    <span class="hidden xl:inline">Change Pin</span>
+                    <span>Manage</span>
                   </button>
 
-                  <!-- Set Pin Button (If pin is missing) -->
+                  <!-- WhatsApp Quick Share -->
                   <button 
-                    v-else-if="order.deliveryStatus?.status !== 'DELIVERED'"
-                    @click.stop="openPinModal(order)"
-                    title="⚠️ Pin missing! Click to drop destination pin on map."
-                    class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold rounded border transition-colors bg-amber-50 text-amber-900 hover:bg-amber-100 border-amber-300 shadow-sm animate-pulse"
+                    v-if="order.deliveryStatus?.status === 'DISPATCHED' || (order as any).hasDestinationPin"
+                    @click.stop="shareOnWhatsApp(order)"
+                    class="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors border border-transparent hover:border-emerald-200 cursor-pointer"
+                    title="Share Tracking Link on WhatsApp"
                   >
-                    <MapPin class="w-3.5 h-3.5 text-amber-600" />
-                    <span class="hidden xl:inline">Set Pin</span>
+                    <Share2 class="w-3.5 h-3.5" />
                   </button>
 
-                  <!-- Update Button -->
+                  <!-- Inspect Arrow -->
                   <button 
                     @click.stop="emit('select', order.id)" 
-                    class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded border border-gray-200 transition-colors"
+                    class="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
+                    title="Inspect Order Details"
                   >
-                    Manage
+                    <ChevronRight class="w-4 h-4" />
                   </button>
                 </div>
               </td>
             </tr>
             <tr v-if="!orders?.length">
-              <td colspan="10" class="px-6 py-8 text-center text-sm text-gray-500">
-                No orders found.
+              <td colspan="10" class="px-6 py-12 text-center text-sm text-gray-400">
+                <Truck class="w-8 h-8 mx-auto text-gray-300 mb-2" />
+                <p class="font-semibold text-gray-700">No delivery orders found</p>
+                <p class="text-xs text-gray-400 mt-0.5">Try adjusting your filters or search criteria.</p>
               </td>
             </tr>
           </tbody>
@@ -527,16 +592,26 @@ const saveDriverAssignment = async () => {
         >
           <!-- LINE 1: Identity & Delivery Status -->
           <div class="flex items-center justify-between gap-2 min-w-0">
-            <div class="flex items-center gap-1.5 min-w-0">
-              <span class="text-sm font-semibold text-gray-900 shrink-0">
+            <div class="flex items-center gap-1.5 min-w-0 flex-wrap">
+              <span class="text-xs font-bold text-gray-900 shrink-0">
                 {{ order.orderNumber }}
               </span>
+              <span v-if="order.isUrgent && order.overallStatus !== 'CANCELLED'" class="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[9px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                <Zap class="w-2.5 h-2.5 fill-rose-600" /> Urgent
+              </span>
               <span v-if="order.overallStatus === 'CANCELLED'" class="text-[9px] font-bold text-gray-600 bg-gray-200 px-1 py-0.2 rounded border border-rose-500">
-                🚫 CANCELLED
+                CANCELLED
               </span>
               <span class="text-gray-300 text-xs shrink-0">•</span>
               <span class="text-xs font-medium text-gray-700 truncate" :title="order.customer?.name || ''">
                 {{ order.customer?.name || 'Walk-in Customer' }}
+              </span>
+              <span 
+                v-if="order.customer?.privilegeTier" 
+                class="text-[9px] px-1 py-0.2 rounded font-bold uppercase border"
+                :class="getPrivilegeColor(order.customer.privilegeTier)"
+              >
+                {{ order.customer.privilegeTier }}
               </span>
             </div>
             
@@ -544,7 +619,7 @@ const saveDriverAssignment = async () => {
             <StatusBadge 
               v-if="order.deliveryStatus?.status" 
               :status="order.deliveryStatus.status" 
-              class="!text-[10px] !py-0.5 !px-2.5 shrink-0 min-w-[95px] text-center"
+              class="!text-[10px] !py-0.5 !px-2 shrink-0 min-w-[85px] text-center"
             />
             <span v-else class="text-gray-400 text-xs shrink-0">—</span>
           </div>

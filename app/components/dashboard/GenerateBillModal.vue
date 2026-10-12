@@ -128,9 +128,24 @@
                     </td>
                     <td class="px-3 py-2.5 text-center text-gray-600 font-semibold">{{ item.quantity }}</td>
                     <td class="px-3 py-2.5 text-center">
-                      <span class="font-bold px-1.5 py-0.5 rounded text-[11px]" :class="(item.packedQuantity ?? item.quantity) < item.quantity ? 'bg-amber-100 text-amber-800' : 'bg-green-100 text-green-800'">
-                        {{ item.packedQuantity !== undefined ? item.packedQuantity : item.quantity }}
-                      </span>
+                      <div class="inline-flex flex-col items-center">
+                        <span 
+                          v-if="item.packedQuantity === 0"
+                          class="font-bold px-2 py-0.5 rounded text-[10px] bg-rose-100 text-rose-800 border border-rose-200 whitespace-nowrap"
+                        >
+                          0 (Out of Stock)
+                        </span>
+                        <span 
+                          v-else
+                          class="font-bold px-2 py-0.5 rounded text-[11px]" 
+                          :class="item.packedQuantity < item.quantity ? 'bg-amber-100 text-amber-800 border border-amber-200' : 'bg-green-100 text-green-800 border border-green-200'"
+                        >
+                          {{ item.packedQuantity }}
+                        </span>
+                        <span v-if="item.packedQuantity < item.quantity && item.packedQuantity > 0" class="text-[9px] font-bold text-amber-600 mt-0.5 whitespace-nowrap">
+                          -{{ item.quantity - item.packedQuantity }} short
+                        </span>
+                      </div>
                     </td>
                     <td class="px-3 py-2.5 text-center">
                       <input 
@@ -256,8 +271,20 @@ watch(() => props.isOpen, async (isOpen) => {
       // Initialize editable items reconciling packed vs ordered
       editableItems.value = (data.items || []).map((item: any) => {
         const approvedQty = item.approvedQuantity ?? item.quantity
-        const packedQty = item.packedQuantity !== undefined && item.packedQuantity !== null ? item.packedQuantity : approvedQty
-        const billedQty = item.billedQuantity !== undefined && item.billedQuantity !== null ? item.billedQuantity : packedQty
+        const isPackingActive = data.packingStatus?.status === 'PACKED' || data.packingStatus?.status === 'IN_PROGRESS'
+        
+        // Take actual packedQuantity recorded by the warehouse packing team (accounts for stock shortages)
+        let packedQty = approvedQty
+        if (item.packedQuantity !== undefined && item.packedQuantity !== null) {
+          if (isPackingActive || Number(item.packedQuantity) > 0) {
+            packedQty = Number(item.packedQuantity)
+          }
+        }
+
+        // Billed quantity defaults to physically packed quantity so bill accounts for stock shortage
+        const billedQty = item.billedQuantity !== undefined && item.billedQuantity !== null 
+          ? Number(item.billedQuantity) 
+          : packedQty
 
         return {
           ...item,

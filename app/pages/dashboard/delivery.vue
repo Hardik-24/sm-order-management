@@ -2,7 +2,9 @@
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import DeliveryTable from '~/components/dashboard/DeliveryTable.vue'
 import OrderDetailPanel from '~/components/dashboard/OrderDetailPanel.vue'
-import { Truck, Clock, MapPin, PackageCheck } from 'lucide-vue-next'
+import { Truck, Clock, MapPin, PackageCheck, CheckCircle2, RefreshCw } from 'lucide-vue-next'
+import { useGsapAnimation } from '~/composables/useGsapAnimation'
+import { useRealtimeSync } from '~/composables/useRealtimeSync'
 
 definePageMeta({ layout: 'dashboard' })
 
@@ -64,6 +66,14 @@ const { data: statsData, refresh: refreshStats } = useFetch('/api/orders/deliver
   watch: [statsQuery]
 })
 
+const counts = computed(() => ({
+  waiting: statsData.value?.waiting ?? 0,
+  dispatched: statsData.value?.dispatched ?? 0,
+  delivered: statsData.value?.delivered ?? 0,
+  onHold: statsData.value?.onHold ?? 0,
+  total: statsData.value?.total ?? 0
+}))
+
 const nuxtApp = useNuxtApp()
 const { data, refresh, pending } = useFetch('/api/orders', {
   query: queryObj,
@@ -85,14 +95,17 @@ const applyOrderUpdate = (updatedOrder: any) => {
   if (data.value && Array.isArray(data.value.orders)) {
     const idx = data.value.orders.findIndex((o: any) => o.id === updatedOrder.id)
     if (idx !== -1) {
-      data.value.orders[idx] = { ...data.value.orders[idx], ...updatedOrder }
+      data.value.orders[idx] = { 
+        ...data.value.orders[idx], 
+        ...updatedOrder,
+        items: updatedOrder.items ? updatedOrder.items.map((i: any) => ({ ...i })) : data.value.orders[idx].items
+      }
     }
   }
 }
 
 function performSilentSync(updatedOrder?: any) {
   if (updatedOrder) applyOrderUpdate(updatedOrder)
-  // 
   
   if (typeof document !== 'undefined') {
     // Only sync if tab is currently visible
@@ -123,7 +136,6 @@ const handlePanelClose = () => {
 }
 
 // GSAP Animations
-import { useGsapAnimation } from '~/composables/useGsapAnimation'
 const { animateNumber, animateStagger, initContext } = useGsapAnimation()
 const statsContainer = ref<HTMLElement | null>(null)
 const numWaiting = ref<HTMLElement | null>(null)
@@ -134,10 +146,10 @@ const numTotal = ref<HTMLElement | null>(null)
 const triggerStatAnimations = () => {
   if (!statsData.value) return
   nextTick(() => {
-    animateNumber(numWaiting.value, statsData.value?.waiting || 0, { duration: 0.6 })
-    animateNumber(numDispatched.value, statsData.value?.dispatched || 0, { duration: 0.65 })
-    animateNumber(numDelivered.value, statsData.value?.delivered || 0, { duration: 0.7 })
-    animateNumber(numTotal.value, statsData.value?.total || 0, { duration: 0.75 })
+    animateNumber(numWaiting.value, counts.value.waiting, { duration: 0.6 })
+    animateNumber(numDispatched.value, counts.value.dispatched, { duration: 0.65 })
+    animateNumber(numDelivered.value, counts.value.delivered, { duration: 0.7 })
+    animateNumber(numTotal.value, counts.value.total, { duration: 0.75 })
   })
 }
 
@@ -169,81 +181,158 @@ onUnmounted(() => {
   if (syncChannel) syncChannel.close()
 })
 
-watch(statsData, () => {
+watch(counts, () => {
   triggerStatAnimations()
 }, { deep: true })
 </script>
 
 <template>
-  <div class="space-y-6">
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+  <div class="space-y-8">
+    <!-- Top Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
-        <h1 class="text-2xl font-bold text-[#1a1a1a]">Delivery Management</h1>
-        <p class="text-sm text-gray-500 mt-1">Assign drivers, update ETAs, and track deliveries</p>
+        <div class="flex items-center gap-2.5">
+          <div class="p-2.5 rounded-xl bg-[#1a5c4c]/10 border border-[#1a5c4c]/20 text-[#1a5c4c]">
+            <Truck class="w-5 h-5" />
+          </div>
+          <h1 class="text-2xl font-bold tracking-tight text-gray-900">Delivery & Dispatch</h1>
+        </div>
+        <p class="text-xs sm:text-sm text-gray-500 mt-1">
+          Assign drivers, monitor live GPS transit, verify destination pins, and manage fulfillment.
+        </p>
       </div>
 
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2.5">
+        <button 
+          @click="() => { refresh(); refreshStats(); }" 
+          :disabled="pending"
+          class="inline-flex items-center gap-2 px-3 py-2 text-xs sm:text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 shadow-xs transition-colors cursor-pointer"
+        >
+          <RefreshCw class="w-4 h-4" :class="{ 'animate-spin': pending }" />
+          <span>Refresh</span>
+        </button>
         <a 
           href="/driver" 
           target="_blank"
           class="inline-flex items-center gap-2 px-3.5 py-2 bg-[#1a5c4c] text-white rounded-lg text-xs font-bold shadow-sm hover:bg-[#134336] transition-colors"
         >
           <Truck class="w-4 h-4" />
-          Open Driver App ↗
+          <span>Open Driver App ↗</span>
         </a>
       </div>
     </div>
 
-    <!-- Quick Stats -->
-    <div ref="statsContainer" class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-      <div class="bg-white rounded-xl border border-[#e5e2dc] p-3.5 sm:p-5 shadow-sm flex items-center gap-2.5 sm:gap-4">
-        <div class="bg-amber-100 p-2.5 sm:p-3 rounded-lg text-amber-600 shrink-0">
-          <Clock class="w-5 h-5 sm:w-6 sm:h-6" />
-        </div>
-        <div class="min-w-0">
-          <p class="text-[10px] font-medium text-gray-500 uppercase tracking-widest truncate">Waiting</p>
-          <h3 ref="numWaiting" class="text-xl sm:text-2xl font-bold text-gray-900 mt-0.5 truncate">0</h3>
-        </div>
-      </div>
-      <div class="bg-white rounded-xl border border-[#e5e2dc] p-3.5 sm:p-5 shadow-sm flex items-center gap-2.5 sm:gap-4">
-        <div class="bg-blue-100 p-2.5 sm:p-3 rounded-lg text-blue-600 shrink-0">
-          <Truck class="w-5 h-5 sm:w-6 sm:h-6" />
-        </div>
-        <div class="min-w-0">
-          <p class="text-[10px] font-medium text-gray-500 uppercase tracking-widest truncate">Dispatched</p>
-          <h3 ref="numDispatched" class="text-xl sm:text-2xl font-bold text-gray-900 mt-0.5 truncate">0</h3>
-        </div>
-      </div>
-      <div class="bg-white rounded-xl border border-[#e5e2dc] p-3.5 sm:p-5 shadow-sm flex items-center gap-2.5 sm:gap-4">
-        <div class="bg-green-100 p-2.5 sm:p-3 rounded-lg text-green-600 shrink-0">
-          <MapPin class="w-5 h-5 sm:w-6 sm:h-6" />
-        </div>
-        <div class="min-w-0">
-          <p class="text-[10px] font-medium text-gray-500 uppercase tracking-widest truncate">Delivered</p>
-          <h3 ref="numDelivered" class="text-xl sm:text-2xl font-bold text-gray-900 mt-0.5 truncate">0</h3>
+    <!-- Quick Stats Cards (Matching Approve Orders & Billing Design) -->
+    <div ref="statsContainer" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <!-- 1. Awaiting Dispatch -->
+      <div 
+        class="bg-white rounded-xl border border-[#e5e2dc] p-5 shadow-sm"
+      >
+        <div class="flex gap-4">
+          <div class="flex flex-col justify-between">
+            <div class="bg-amber-50 p-2.5 rounded-lg text-amber-600 border border-amber-100/50">
+              <Clock class="w-5 h-5" />
+            </div>
+            <div class="w-8 h-1 bg-amber-500 rounded-full mt-6"></div>
+          </div>
+          <div class="flex flex-col justify-center min-w-0">
+            <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">Awaiting Dispatch</p>
+            <h3 ref="numWaiting" class="text-2xl font-bold text-gray-900 mb-0.5 tabular-nums">{{ counts.waiting }}</h3>
+            <p class="text-xs text-amber-600 font-medium truncate">Ready for driver</p>
+          </div>
         </div>
       </div>
-      <div class="bg-white rounded-xl border border-[#e5e2dc] p-3.5 sm:p-5 shadow-sm flex items-center gap-2.5 sm:gap-4">
-        <div class="bg-[#e5f6f4] p-2.5 sm:p-3 rounded-lg text-[#1a5c4c] shrink-0">
-          <PackageCheck class="w-5 h-5 sm:w-6 sm:h-6" />
+
+      <!-- 2. In Transit -->
+      <div 
+        class="bg-white rounded-xl border border-[#e5e2dc] p-5 shadow-sm"
+      >
+        <div class="flex gap-4">
+          <div class="flex flex-col justify-between">
+            <div class="bg-blue-50 p-2.5 rounded-lg text-blue-600 border border-blue-100/50">
+              <Truck class="w-5 h-5" />
+            </div>
+            <div class="w-8 h-1 bg-blue-500 rounded-full mt-6"></div>
+          </div>
+          <div class="flex flex-col justify-center min-w-0">
+            <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">In Transit</p>
+            <h3 ref="numDispatched" class="text-2xl font-bold text-gray-900 mb-0.5 tabular-nums">{{ counts.dispatched }}</h3>
+            <p class="text-xs text-blue-600 font-medium truncate">Live on GPS route</p>
+          </div>
         </div>
-        <div class="min-w-0">
-          <p class="text-[10px] font-medium text-gray-500 uppercase tracking-widest truncate">Total Orders</p>
-          <h3 ref="numTotal" class="text-xl sm:text-2xl font-bold text-gray-900 mt-0.5 truncate">0</h3>
+      </div>
+
+      <!-- 3. Delivered Today -->
+      <div 
+        class="bg-white rounded-xl border border-[#e5e2dc] p-5 shadow-sm"
+      >
+        <div class="flex gap-4">
+          <div class="flex flex-col justify-between">
+            <div class="bg-emerald-50 p-2.5 rounded-lg text-emerald-600 border border-emerald-100/50">
+              <CheckCircle2 class="w-5 h-5" />
+            </div>
+            <div class="w-8 h-1 bg-emerald-500 rounded-full mt-6"></div>
+          </div>
+          <div class="flex flex-col justify-center min-w-0">
+            <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">Delivered</p>
+            <h3 ref="numDelivered" class="text-2xl font-bold text-gray-900 mb-0.5 tabular-nums">{{ counts.delivered }}</h3>
+            <p class="text-xs text-emerald-600 font-medium truncate">Completed orders</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. Total Orders -->
+      <div 
+        class="bg-white rounded-xl border border-[#e5e2dc] p-5 shadow-sm"
+      >
+        <div class="flex gap-4">
+          <div class="flex flex-col justify-between">
+            <div class="bg-[#1a5c4c]/10 p-2.5 rounded-lg text-[#1a5c4c] border border-[#1a5c4c]/20">
+              <PackageCheck class="w-5 h-5" />
+            </div>
+            <div class="w-8 h-1 bg-[#1a5c4c] rounded-full mt-6"></div>
+          </div>
+          <div class="flex flex-col justify-center min-w-0">
+            <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">Total Orders</p>
+            <h3 ref="numTotal" class="text-2xl font-bold text-gray-900 mb-0.5 tabular-nums">{{ counts.total }}</h3>
+            <p class="text-xs text-[#1a5c4c] font-medium truncate">All delivery records</p>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Tabs -->
-    <div class="border-b border-gray-200 tab-scroll-container">
-      <nav class="-mb-px flex gap-6 min-w-max">
+    <!-- Underline Tabs with Badges (Matching Billing & Packing) -->
+    <div class="border-b border-gray-200">
+      <nav class="-mb-px flex gap-6 sm:gap-8 overflow-x-auto no-scrollbar">
         <button 
-          v-for="tab in ['WAITING', 'DISPATCHED', 'DELIVERED', 'ON_HOLD', 'ALL']" :key="tab"
+          v-for="tab in (['WAITING', 'DISPATCHED', 'DELIVERED', 'ON_HOLD', 'ALL'] as const)" :key="tab"
           @click="handleTabChange(tab)"
-          class="whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm transition-colors shrink-0"
-          :class="activeTab === tab ? 'border-[#1a5c4c] text-[#1a5c4c]' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+          class="whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm transition-colors flex items-center gap-2 cursor-pointer"
+          :class="activeTab === tab ? 'border-[#1a5c4c] text-[#1a5c4c]' : 'border-transparent text-gray-500 hover:text-gray-900 hover:border-gray-300'"
         >
-          {{ tab === 'ALL' ? 'All Orders' : tab === 'WAITING' ? 'Awaiting Dispatch' : tab === 'ON_HOLD' ? 'On Hold' : tab === 'DISPATCHED' ? 'In Transit' : 'Delivered' }}
+          <span>
+            {{ 
+              tab === 'WAITING' ? 'Awaiting Dispatch' : 
+              tab === 'DISPATCHED' ? 'In Transit' : 
+              tab === 'DELIVERED' ? 'Delivered' : 
+              tab === 'ON_HOLD' ? 'On Hold' : 'All Orders' 
+            }}
+          </span>
+          <span 
+            class="px-2 py-0.5 rounded-full text-[10px] font-bold transition-colors"
+            :class="[
+              activeTab === tab
+                ? 'bg-[#1a5c4c]/10 text-[#1a5c4c]'
+                : 'bg-gray-100 text-gray-600'
+            ]"
+          >
+            {{ 
+              tab === 'WAITING' ? counts.waiting : 
+              tab === 'DISPATCHED' ? counts.dispatched : 
+              tab === 'DELIVERED' ? counts.delivered : 
+              tab === 'ON_HOLD' ? counts.onHold : counts.total 
+            }}
+          </span>
         </button>
       </nav>
     </div>

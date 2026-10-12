@@ -28,9 +28,13 @@ export default defineEventHandler(async (event) => {
 
   if (items && items.length > 0) {
     for (const item of items) {
+      const updateData: any = { packedQuantity: Number(item.packedQuantity ?? 0) }
+      if (item.isPacked !== undefined) {
+        updateData.isPacked = Boolean(item.isPacked)
+      }
       await prisma.orderItem.update({
         where: { id: item.id },
-        data: { packedQuantity: item.packedQuantity }
+        data: updateData
       })
     }
   }
@@ -61,7 +65,13 @@ export default defineEventHandler(async (event) => {
         }
       }
     },
-    include: { packingStatus: true }
+    include: {
+      packingStatus: true,
+      items: { include: { product: true } },
+      billingStatus: true,
+      deliveryStatus: true,
+      customer: true
+    }
   })
 
   return updatedOrder

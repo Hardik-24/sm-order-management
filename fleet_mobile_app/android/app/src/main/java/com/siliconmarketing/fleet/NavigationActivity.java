@@ -89,6 +89,16 @@ public class NavigationActivity extends AppCompatActivity {
         mCurrentDistanceKm = getIntent().getDoubleExtra("initialDistanceKm", 0.0);
         mIsPreview = getIntent().getBooleanExtra("isPreview", false);
 
+        double sLat = getIntent().getDoubleExtra("startLat", 0.0);
+        double sLng = getIntent().getDoubleExtra("startLng", 0.0);
+        if (sLat != 0.0 && sLng != 0.0) {
+            mLastLat = sLat;
+            mLastLng = sLng;
+        } else {
+            mLastLat = NavigationManager.getInstance().getLastLat();
+            mLastLng = NavigationManager.getInstance().getLastLng();
+        }
+
         initViews();
         setupListeners();
         setupNavigationStream();
@@ -96,6 +106,8 @@ public class NavigationActivity extends AppCompatActivity {
         if (!mIsPreview) {
             if (mStartTimeMs == 0) mStartTimeMs = System.currentTimeMillis();
             mTimerHandler.post(mTimerRunnable);
+        } else {
+            updatePreviewRouteInfo();
         }
     }
 
@@ -151,9 +163,7 @@ public class NavigationActivity extends AppCompatActivity {
             if (mLlPreview != null) mLlPreview.setVisibility(View.VISIBLE);
             if (mLlExpanded != null) mLlExpanded.setVisibility(View.GONE);
             if (mLlCollapsed != null) mLlCollapsed.setVisibility(View.GONE);
-            if (mTvPreviewRouteInfo != null) {
-                mTvPreviewRouteInfo.setText("Loading route preview & road geometry...");
-            }
+            updatePreviewRouteInfo();
         } else {
             if (mTvStatus != null) {
                 mTvStatus.setText("🟢 LIVE NAVIGATION");
@@ -245,6 +255,34 @@ public class NavigationActivity extends AppCompatActivity {
         }
     }
 
+    private void updatePreviewRouteInfo() {
+        if (!mIsPreview || mTvPreviewRouteInfo == null) return;
+
+        double sLat = mLastLat != 0.0 ? mLastLat : NavigationManager.getInstance().getLastLat();
+        double sLng = mLastLng != 0.0 ? mLastLng : NavigationManager.getInstance().getLastLng();
+
+        if (sLat == 0.0 || sLng == 0.0) {
+            Location loc = NavigationManager.getInstance().getLastKnownLocationSafely(this);
+            if (loc != null) {
+                sLat = loc.getLatitude();
+                sLng = loc.getLongitude();
+                mLastLat = sLat;
+                mLastLng = sLng;
+            }
+        }
+
+        if (sLat != 0.0 && sLng != 0.0 && mDestLat != 0.0 && mDestLng != 0.0) {
+            float[] res = new float[1];
+            android.location.Location.distanceBetween(sLat, sLng, mDestLat, mDestLng, res);
+            double remKm = Math.round(((res[0] * 1.30) / 1000.0) * 10.0) / 10.0;
+            int remMins = Math.max(1, (int) Math.round((remKm / 25.0) * 60));
+            mEtaFormatted = String.format(Locale.US, "%.1f km left (~%d min drive)", remKm, remMins);
+            mTvPreviewRouteInfo.setText("Route: " + mEtaFormatted + " • Tap START TRIP to begin guidance");
+        } else {
+            mTvPreviewRouteInfo.setText("📍 Ready for dispatch • Tap START TRIP to begin guidance");
+        }
+    }
+
     private void executeStartTripFromNav() {
         if (mBtnStartTripNav != null) {
             mBtnStartTripNav.setEnabled(false);
@@ -253,6 +291,25 @@ public class NavigationActivity extends AppCompatActivity {
 
         double lat = mLastLat != 0.0 ? mLastLat : NavigationManager.getInstance().getLastLat();
         double lng = mLastLng != 0.0 ? mLastLng : NavigationManager.getInstance().getLastLng();
+
+        if (lat == 0.0 || lng == 0.0) {
+            Location loc = NavigationManager.getInstance().getLastKnownLocationSafely(this);
+            if (loc != null) {
+                lat = loc.getLatitude();
+                lng = loc.getLongitude();
+                mLastLat = lat;
+                mLastLng = lng;
+            }
+        }
+
+        if (lat == 0.0 || lng == 0.0) {
+            Toast.makeText(this, "Acquiring GPS location... Please ensure Location is enabled.", Toast.LENGTH_SHORT).show();
+            if (mBtnStartTripNav != null) {
+                mBtnStartTripNav.setEnabled(true);
+                mBtnStartTripNav.setText("▶ START TRIP");
+            }
+            return;
+        }
 
         NavigationManager.getInstance().startTripOnBackend(lat, lng, new NavigationManager.CompleteCallback() {
             @Override
@@ -320,6 +377,14 @@ public class NavigationActivity extends AppCompatActivity {
             double startLat = mLastLat != 0.0 ? mLastLat : NavigationManager.getInstance().getLastLat();
             double startLng = mLastLng != 0.0 ? mLastLng : NavigationManager.getInstance().getLastLng();
 
+            if (startLat == 0.0 || startLng == 0.0) {
+                Location loc = NavigationManager.getInstance().getLastKnownLocationSafely(this);
+                if (loc != null) {
+                    startLat = loc.getLatitude();
+                    startLng = loc.getLongitude();
+                }
+            }
+
             if (startLat != 0.0 && startLng != 0.0) {
                 try {
                     LatLngBounds bounds = new LatLngBounds.Builder()
@@ -341,6 +406,8 @@ public class NavigationActivity extends AppCompatActivity {
                 if (mTvPreviewRouteInfo != null && mIsPreview) {
                     mTvPreviewRouteInfo.setText("Route: " + mEtaFormatted + " • Tap START TRIP to begin guidance");
                 }
+            } else {
+                updatePreviewRouteInfo();
             }
 
             if (mIsPreview) {
@@ -369,9 +436,7 @@ public class NavigationActivity extends AppCompatActivity {
             }
 
             if (mIsPreview) {
-                if (mTvPreviewRouteInfo != null) {
-                    mTvPreviewRouteInfo.setText("📍 Destination ETA: " + mEtaFormatted);
-                }
+                updatePreviewRouteInfo();
                 return;
             }
 

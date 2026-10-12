@@ -14,6 +14,35 @@ import Snackbar from './components/Snackbar.vue'
 
 const isAuthenticated = ref(false)
 
+async function requestPermissionsOnStartup() {
+  const cap = (window as any).Capacitor
+  if (cap && cap.isNativePlatform()) {
+    try {
+      const navPlugin = cap.Plugins?.NavigationPlugin
+      if (navPlugin?.requestPermissions) {
+        await navPlugin.requestPermissions()
+      }
+    } catch (e) {}
+
+    try {
+      const Geo = cap.Plugins?.Geolocation
+      if (Geo?.requestPermissions) {
+        await Geo.requestPermissions()
+      }
+    } catch (e) {}
+  } else {
+    // Browser / PWA: ask for location and notification
+    if (typeof navigator !== 'undefined' && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(() => {}, () => {}, { timeout: 6000, enableHighAccuracy: true })
+    }
+    if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+      try {
+        await Notification.requestPermission()
+      } catch (e) {}
+    }
+  }
+}
+
 onMounted(async () => {
   try {
     // Make status bar transparent and text light, app draws underneath it
@@ -22,6 +51,9 @@ onMounted(async () => {
   } catch (e) {
     // Ignore on web
   }
+
+  // Ask for location and notification permissions on every app launch if not granted
+  await requestPermissionsOnStartup()
 
   const { value } = await Preferences.get({ key: 'auth_token' })
   if (value) {

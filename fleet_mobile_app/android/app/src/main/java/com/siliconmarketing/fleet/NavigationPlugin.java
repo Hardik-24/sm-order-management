@@ -56,9 +56,22 @@ public class NavigationPlugin extends Plugin {
     }
 
     @PluginMethod
+    public void requestPermissions(PluginCall call) {
+        if (getActivity() instanceof MainActivity) {
+            MainActivity activity = (MainActivity) getActivity();
+            activity.runOnUiThread(() -> activity.checkAndRequestPermissions());
+        }
+        JSObject ret = new JSObject();
+        ret.put("success", true);
+        call.resolve(ret);
+    }
+
+    @PluginMethod
     public void startNavigation(PluginCall call) {
         Double lat = call.getDouble("destLat");
         Double lng = call.getDouble("destLng");
+        Double startLat = call.getDouble("startLat", 0.0);
+        Double startLng = call.getDouble("startLng", 0.0);
         String title = call.getString("title", "Delivery Destination");
         Boolean enableTurnByTurn = call.getBoolean("enableTurnByTurn", false);
         String orderId = call.getString("orderId", "");
@@ -74,10 +87,15 @@ public class NavigationPlugin extends Plugin {
             return;
         }
 
+        double sLat = startLat != null ? startLat : 0.0;
+        double sLng = startLng != null ? startLng : 0.0;
+
         NavigationManager.getInstance().startNavigation(
                 getActivity(),
                 lat,
                 lng,
+                sLat,
+                sLng,
                 title,
                 orderId,
                 authToken,
@@ -90,6 +108,8 @@ public class NavigationPlugin extends Plugin {
                             Intent intent = new Intent(getContext(), NavigationActivity.class);
                             intent.putExtra("destLat", lat);
                             intent.putExtra("destLng", lng);
+                            intent.putExtra("startLat", sLat);
+                            intent.putExtra("startLng", sLng);
                             intent.putExtra("title", title);
                             intent.putExtra("orderId", orderId);
                             intent.putExtra("orderNumber", orderNumber);

@@ -38,6 +38,7 @@ public class NavigationManager {
     private RoadSnappedLocationProvider.LocationListener mLocationListener;
     private LocationListener mNativeGpsListener;
     private LocationManager mNativeLocationManager;
+    private Context mContext;
     private OnRoadSnappedLocationCallback mLocationCallback;
     private boolean mIsNavigating = false;
     private boolean mIsTripActive = false;
@@ -119,11 +120,48 @@ public class NavigationManager {
         return Math.round((mTotalDistanceDrivenMeters / 1000.0) * 100.0) / 100.0;
     }
 
+    public Location getLastKnownLocationSafely(Context context) {
+        if (context != null && mContext == null) {
+            mContext = context.getApplicationContext();
+        }
+        if (mNativeLocationManager == null && context != null) {
+            try {
+                mNativeLocationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
+            } catch (Exception ignored) {}
+        }
+        if (mNativeLocationManager == null) return null;
+
+        Location bestLocation = null;
+        try {
+            List<String> providers = mNativeLocationManager.getProviders(true);
+            for (String provider : providers) {
+                Location l = mNativeLocationManager.getLastKnownLocation(provider);
+                if (l == null) continue;
+                if (bestLocation == null || l.getAccuracy() < bestLocation.getAccuracy() || l.getTime() > bestLocation.getTime()) {
+                    bestLocation = l;
+                }
+            }
+        } catch (SecurityException ignored) {}
+        return bestLocation;
+    }
+
     public double getLastLat() {
+        if (mLastLat != 0.0) return mLastLat;
+        Location loc = getLastKnownLocationSafely(mContext);
+        if (loc != null) {
+            mLastLat = loc.getLatitude();
+            mLastLng = loc.getLongitude();
+        }
         return mLastLat;
     }
 
     public double getLastLng() {
+        if (mLastLng != 0.0) return mLastLng;
+        Location loc = getLastKnownLocationSafely(mContext);
+        if (loc != null) {
+            mLastLat = loc.getLatitude();
+            mLastLng = loc.getLongitude();
+        }
         return mLastLng;
     }
 
@@ -139,6 +177,26 @@ public class NavigationManager {
             boolean isPreview,
             Runnable onReady
     ) {
+        startNavigation(activity, destLat, destLng, 0.0, 0.0, title, orderId, authToken, apiUrl, initialDistanceKm, isPreview, onReady);
+    }
+
+    public void startNavigation(
+            Activity activity,
+            double destLat,
+            double destLng,
+            double startLat,
+            double startLng,
+            String title,
+            String orderId,
+            String authToken,
+            String apiUrl,
+            double initialDistanceKm,
+            boolean isPreview,
+            Runnable onReady
+    ) {
+        if (activity != null) {
+            this.mContext = activity.getApplicationContext();
+        }
         this.mCurrentDestLat = destLat;
         this.mCurrentDestLng = destLng;
         this.mCurrentDestTitle = (title != null && !title.trim().isEmpty()) ? title : "Customer Delivery";
@@ -150,8 +208,19 @@ public class NavigationManager {
 
         this.mIsTripActive = !isPreview;
         this.mTotalDistanceDrivenMeters = initialDistanceKm > 0 ? (initialDistanceKm * 1000.0) : 0.0;
-        this.mLastLat = 0.0;
-        this.mLastLng = 0.0;
+        
+        // Preserve or set valid start coordinates instead of zeroing out
+        if (startLat != 0.0 && startLng != 0.0) {
+            this.mLastLat = startLat;
+            this.mLastLng = startLng;
+        } else if (activity != null) {
+            Location loc = getLastKnownLocationSafely(activity);
+            if (loc != null) {
+                this.mLastLat = loc.getLatitude();
+                this.mLastLng = loc.getLongitude();
+            }
+        }
+
         this.mLastRemainingMeters = -1;
         this.mLastRemainingSeconds = -1;
         synchronized (mPendingPings) {
@@ -165,6 +234,9 @@ public class NavigationManager {
         }
 
         setupNativeGpsFallback(activity);
+
+        // Compute initial estimate right away so preview is never stuck loading
+        computeFallbackRemaining();
 
         // Attempt Google Navigation SDK Road Snapped Provider
         if (mRoadSnappedProvider == null && activity != null) {
@@ -192,11 +264,13 @@ public class NavigationManager {
                 @Override
                 public void onError(@NavigationApi.ErrorCode int errorCode) {
                     Log.w(TAG, "NavigationApi.getNavigator errorCode: " + errorCode + " (Using native hardware GPS)");
+                    computeFallbackRemaining();
                     if (onReady != null) onReady.run();
                 }
             });
         } catch (Exception e) {
             Log.w(TAG, "NavigationApi getNavigator error: " + e.getMessage());
+            computeFallbackRemaining();
             if (onReady != null) onReady.run();
         }
     }
@@ -289,14 +363,37 @@ public class NavigationManager {
         if (mNavigator != null) {
             try {
                 TimeAndDistance tad = mNavigator.getCurrentTimeAndDistance();
-                if (tad != null) {
+                if (tad != null && tad.getMeters() >= 0) {
                     mLastRemainingMeters = tad.getMeters();
                     mLastRemainingSeconds = tad.getSeconds();
                     if (mRouteReadyListener != null) {
                         mRouteReadyListener.onRouteReady(mLastRemainingMeters, mLastRemainingSeconds);
                     }
+                    return;
                 }
             } catch (Exception ignored) {}
+        }
+        computeFallbackRemaining();
+    }
+
+    private void computeFallbackRemaining() {
+        double startLat = mLastLat != 0.0 ? mLastLat : getLastLat();
+        double startLng = mLastLng != 0.0 ? mLastLng : getLastLng();
+
+        if (startLat != 0.0 && startLng != 0.0 && mCurrentDestLat != 0.0 && mCurrentDestLng != 0.0) {
+            float[] res = new float[1];
+            Location.distanceBetween(startLat, startLng, mCurrentDestLat, mCurrentDestLng, res);
+            // Road curvature factor: driving distance is ~1.30x straight-line distance
+            int estimatedMeters = Math.max(100, Math.round(res[0] * 1.30f));
+            // Assuming average urban delivery speed of 25 km/h = ~6.94 m/s
+            int estimatedSeconds = Math.max(60, Math.round(estimatedMeters / 6.94f));
+
+            mLastRemainingMeters = estimatedMeters;
+            mLastRemainingSeconds = estimatedSeconds;
+
+            if (mRouteReadyListener != null) {
+                mRouteReadyListener.onRouteReady(mLastRemainingMeters, mLastRemainingSeconds);
+            }
         }
     }
 
@@ -373,6 +470,7 @@ public class NavigationManager {
 
     private void applyDestinationAndStart(Runnable onReady) {
         if (mNavigator == null || (mCurrentDestLat == 0 && mCurrentDestLng == 0)) {
+            computeFallbackRemaining();
             if (onReady != null) onReady.run();
             return;
         }
@@ -396,20 +494,20 @@ public class NavigationManager {
                             }
                             setupRemainingTimeOrDistanceListener();
                             updateTimeAndDistance();
-                            if (mRouteReadyListener != null) {
-                                mRouteReadyListener.onRouteReady(mLastRemainingMeters, mLastRemainingSeconds);
-                            }
                         } catch (Exception e) {
                             Log.e(TAG, "Failed to set guidance", e);
+                            computeFallbackRemaining();
                         }
                     } else {
                         Log.w(TAG, "Route status returned: " + routeStatus.name());
+                        computeFallbackRemaining();
                     }
                     if (onReady != null) onReady.run();
                 }
             });
         } catch (Exception e) {
             Log.w(TAG, "applyDestinationAndStart error: " + e.getMessage());
+            computeFallbackRemaining();
             if (onReady != null) onReady.run();
         }
     }
@@ -508,6 +606,21 @@ public class NavigationManager {
     public void startTripOnBackend(double lat, double lng, CompleteCallback callback) {
         new Thread(() -> {
             try {
+                if (lat == 0.0 || lng == 0.0) {
+                    lat = getLastLat();
+                    lng = getLastLng();
+                }
+
+                if (lat == 0.0 || lng == 0.0) {
+                    Location loc = getLastKnownLocationSafely(mContext);
+                    if (loc != null) {
+                        lat = loc.getLatitude();
+                        lng = loc.getLongitude();
+                        mLastLat = lat;
+                        mLastLng = lng;
+                    }
+                }
+
                 String baseUrl = (mApiUrl.endsWith("/")) ? mApiUrl.substring(0, mApiUrl.length() - 1) : mApiUrl;
                 URL url = new URL(baseUrl + "/api/driver/trip");
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -547,7 +660,23 @@ public class NavigationManager {
                     beginActiveGuidance();
                     if (callback != null) callback.onSuccess("Trip started successfully!");
                 } else {
-                    if (callback != null) callback.onError("Failed to start trip (Code " + code + ")");
+                    String errorMsg = "Failed to start trip (Code " + code + ")";
+                    try {
+                        java.io.InputStream es = conn.getErrorStream();
+                        if (es != null) {
+                            java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+                            byte[] buf = new byte[1024];
+                            int n;
+                            while ((n = es.read(buf)) != -1) {
+                                baos.write(buf, 0, n);
+                            }
+                            String resp = baos.toString("UTF-8");
+                            JSONObject j = new JSONObject(resp);
+                            if (j.has("statusMessage")) errorMsg = j.getString("statusMessage");
+                            else if (j.has("message")) errorMsg = j.getString("message");
+                        }
+                    } catch (Exception ignored) {}
+                    if (callback != null) callback.onError(errorMsg);
                 }
                 conn.disconnect();
             } catch (Exception e) {

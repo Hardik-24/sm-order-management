@@ -153,6 +153,9 @@ export function useRealtimeSync() {
       if (bc) bc.postMessage(payload)
     } catch (e) {}
 
+    // Also trigger listeners immediately in current window/tab
+    triggerListeners(payload)
+
     // B. WebSocket Broadcast across devices (sub-100ms multi-device instant sync)
     try {
       if (sharedChannel && isSubscribed) {

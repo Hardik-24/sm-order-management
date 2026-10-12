@@ -28,18 +28,13 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000)
-
   const [pendingOrders, urgentOrders, generatedOrders, onHoldOrders, totalOrders] = await Promise.all([
     prisma.order.count({ where: { ...where, billingStatus: { status: 'PENDING' } } }),
     prisma.order.count({ 
       where: { 
         ...where, 
         billingStatus: { status: 'PENDING' }, 
-        OR: [
-          { isUrgent: true },
-          { createdAt: { lt: twoHoursAgo } }
-        ]
+        isUrgent: true
       } 
     }),
     prisma.order.count({ where: { ...where, billingStatus: { status: 'GENERATED' } } }),

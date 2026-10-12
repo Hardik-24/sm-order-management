@@ -79,7 +79,11 @@ const applyOrderUpdate = (updatedOrder: any) => {
   if (data.value && Array.isArray(data.value.orders)) {
     const idx = data.value.orders.findIndex((o: any) => o.id === updatedOrder.id)
     if (idx !== -1) {
-      data.value.orders[idx] = { ...data.value.orders[idx], ...updatedOrder }
+      data.value.orders[idx] = { 
+        ...data.value.orders[idx], 
+        ...updatedOrder,
+        items: updatedOrder.items ? updatedOrder.items.map((i: any) => ({ ...i })) : data.value.orders[idx].items
+      }
     }
   }
 }
@@ -174,8 +178,7 @@ watch(() => counts.value, () => {
     <div ref="statsContainer" class="grid grid-cols-2 md:grid-cols-4 gap-4">
       <!-- 1. Pending Packing -->
       <div 
-        @click="activeTab = 'PENDING'; page = 1"
-        class="bg-white rounded-xl border border-[#e5e2dc] p-5 shadow-sm cursor-pointer hover:shadow-md transition-shadow duration-200"
+        class="bg-white rounded-xl border border-[#e5e2dc] p-5 shadow-sm"
       >
         <div class="flex gap-4">
           <div class="flex flex-col justify-between">
@@ -194,8 +197,7 @@ watch(() => counts.value, () => {
 
       <!-- 2. Urgent Orders -->
       <div 
-        @click="activeTab = 'URGENT'; page = 1"
-        class="bg-white rounded-xl border border-rose-200/80 p-5 shadow-sm cursor-pointer hover:shadow-md transition-shadow duration-200"
+        class="bg-white rounded-xl border border-rose-200/80 p-5 shadow-sm"
       >
         <div class="flex gap-4">
           <div class="flex flex-col justify-between">
@@ -214,8 +216,7 @@ watch(() => counts.value, () => {
 
       <!-- 3. Currently Packing -->
       <div 
-        @click="activeTab = 'IN_PROGRESS'; page = 1"
-        class="bg-white rounded-xl border border-[#e5e2dc] p-5 shadow-sm cursor-pointer hover:shadow-md transition-shadow duration-200"
+        class="bg-white rounded-xl border border-[#e5e2dc] p-5 shadow-sm"
       >
         <div class="flex gap-4">
           <div class="flex flex-col justify-between">
@@ -234,8 +235,7 @@ watch(() => counts.value, () => {
 
       <!-- 4. Ready / Packed -->
       <div 
-        @click="activeTab = 'PACKED'; page = 1"
-        class="bg-white rounded-xl border border-[#e5e2dc] p-5 shadow-sm cursor-pointer hover:shadow-md transition-shadow duration-200"
+        class="bg-white rounded-xl border border-[#e5e2dc] p-5 shadow-sm"
       >
         <div class="flex gap-4">
           <div class="flex flex-col justify-between">

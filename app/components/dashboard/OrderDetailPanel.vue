@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
-import { X, MoreHorizontal, Lock, Edit, Package, PackageCheck, Truck, Check, Box, Plus, Trash2, MapPin, AlertCircle, Ban, CheckCheck, CheckCircle2, Zap, User, IndianRupee, Clock, Building2, Phone, FileText, Calendar, Copy, ChevronRight } from 'lucide-vue-next'
+import { X, MoreHorizontal, Lock, Edit, Package, PackageCheck, Truck, Check, Box, Plus, Trash2, MapPin, AlertCircle, AlertTriangle, Ban, CheckCheck, CheckCircle2, Zap, User, IndianRupee, Clock, Building2, Phone, FileText, Calendar, Copy, ChevronRight } from 'lucide-vue-next'
 import StatusBadge from '~/components/ui/StatusBadge.vue'
 import GenerateBillModal from '~/components/dashboard/GenerateBillModal.vue'
 import SetDeliveryPinModal from '~/components/dashboard/SetDeliveryPinModal.vue'
@@ -50,7 +50,7 @@ const canGenerateBill = computed(() => {
   if (!order.value) return false
   if (order.value.overallStatus === 'CANCELLED') return false
   if (order.value.billingStatus?.status === 'GENERATED') return false
-  if (props.context === 'approval') return false
+  if (props.context === 'approval' || props.context === 'packing') return false
   return hasRole('ADMIN', 'BILLING') || props.context === 'billing'
 })
 
@@ -160,11 +160,17 @@ const fetchOrder = async (id: string) => {
       status: data.packingStatus?.status || 'PENDING',
       items: data.items?.map(i => {
         const approvedQty = i.approvedQuantity ?? i.quantity
-        const packedQty = i.packedQuantity !== undefined && i.packedQuantity !== null ? i.packedQuantity : approvedQty
+        const isOrderAlreadyPacked = data.packingStatus?.status === 'PACKED'
+        const dbPackedQty = i.packedQuantity !== undefined && i.packedQuantity !== null ? Number(i.packedQuantity) : null
+        const isItemPacked = Boolean((i as any).isPacked) || (dbPackedQty !== null && dbPackedQty > 0) || isOrderAlreadyPacked
+
+        const packedQty = dbPackedQty !== null ? dbPackedQty : 0
+        const isPacked = isItemPacked
+
         return {
           id: i.id,
           packedQuantity: packedQty,
-          isPacked: packedQty >= approvedQty,
+          isPacked,
           quantity: approvedQty,
           sku: i.product?.sku || i.product?.name
         }
@@ -209,11 +215,21 @@ const initPackingForm = () => {
   if (order.value) {
     packingForm.value = {
       status: order.value.packingStatus?.status || 'PENDING',
-      items: order.value.items?.map(i => ({ 
-        id: i.id, 
-        isPacked: i.packedQuantity === i.quantity,
-        quantity: i.quantity 
-      })) || [],
+      items: order.value.items?.map(i => {
+        const approvedQty = i.approvedQuantity ?? i.quantity
+        const isOrderAlreadyPacked = order.value?.packingStatus?.status === 'PACKED'
+        const dbPackedQty = i.packedQuantity !== undefined && i.packedQuantity !== null ? Number(i.packedQuantity) : null
+        const isItemPacked = Boolean((i as any).isPacked) || (dbPackedQty !== null && dbPackedQty > 0) || isOrderAlreadyPacked
+        const packedQty = dbPackedQty !== null ? dbPackedQty : 0
+        const isPacked = isItemPacked
+        return {
+          id: i.id,
+          packedQuantity: packedQty,
+          isPacked,
+          quantity: approvedQty,
+          sku: i.product?.sku || i.product?.name
+        }
+      }) || [],
       holdReason: order.value.packingStatus?.holdReason || ''
     }
     showEditing()
@@ -386,17 +402,15 @@ const updatePacking = async () => {
   }
 }
 
-const handlePackedQtyChange = async (idx: number) => {
-  const item = packingForm.value.items[idx]
-  if (!item) return
-  const approvedQty = Number(item.quantity || 0)
-  const currentPacked = Number(item.packedQuantity || 0)
-  item.isPacked = currentPacked >= approvedQty
+let packingSyncTimer: any = null
 
-  const anyPacked = packingForm.value.items.some(i => (i.packedQuantity || 0) > 0)
-  const allFull = packingForm.value.items.every(i => (i.packedQuantity || 0) >= (i.quantity || 0))
+const recalculatePackingStatus = () => {
+  if (!packingForm.value.items || !packingForm.value.items.length) return
+  // An order is considered fully packed when all line items have been confirmed/packed by the packer
+  const allPacked = packingForm.value.items.length > 0 && packingForm.value.items.every(i => i.isPacked)
+  const anyPacked = packingForm.value.items.some(i => i.isPacked || Number(i.packedQuantity || 0) > 0)
 
-  if (allFull) {
+  if (allPacked) {
     packingForm.value.status = 'PACKED'
   } else if (anyPacked) {
     packingForm.value.status = 'IN_PROGRESS'
@@ -404,38 +418,253 @@ const handlePackedQtyChange = async (idx: number) => {
     packingForm.value.status = 'PENDING'
   }
 
-  await updatePacking()
+  if (order.value && order.value.packingStatus) {
+    order.value.packingStatus.status = packingForm.value.status as any
+  }
 }
 
-const handlePackingChange = async (idx: number, event: Event) => {
-  const isChecked = (event.target as HTMLInputElement).checked
-  packingForm.value.items[idx].isPacked = isChecked
-  packingForm.value.items[idx].packedQuantity = isChecked ? packingForm.value.items[idx].quantity : 0
-  
-  const anyPacked = packingForm.value.items.some(i => i.isPacked)
-  const allFull = packingForm.value.items.every(i => i.isPacked)
-  
-  if (allFull) {
-    packingForm.value.status = 'PACKED'
-  } else if (anyPacked) {
-    packingForm.value.status = 'IN_PROGRESS'
-  } else {
-    packingForm.value.status = 'PENDING'
+const syncPackingState = (immediate = false) => {
+  if (!order.value) return
+
+  // 1. Instant local optimistic update on order.value items (0ms latency)
+  if (order.value.items && packingForm.value.items) {
+    order.value.items.forEach(ordItem => {
+      const match = packingForm.value.items.find(p => p.id === ordItem.id)
+      if (match) {
+        ordItem.packedQuantity = match.packedQuantity
+        ;(ordItem as any).isPacked = Boolean(match.isPacked)
+      }
+    })
   }
-  
-  await updatePacking()
+
+  // 2. Broadcast immediately over local broadcast channel & websockets for instant cross-tab / device sync
+  const optimisticOrder = {
+    ...order.value,
+    items: order.value.items ? order.value.items.map(it => ({ ...it })) : [],
+    packingStatus: {
+      ...(order.value.packingStatus || {}),
+      status: packingForm.value.status
+    }
+  }
+
+  // Optimistically inform parent table so row progress updates instantly
+  emit('updated', optimisticOrder)
+
+  notifyChange({
+    orderId: order.value.id,
+    action: 'PACKING_ITEM_UPDATED',
+    status: packingForm.value.status,
+    order: optimisticOrder
+  })
+
+  const runPatch = async () => {
+    try {
+      const itemsData = (packingForm.value.items || []).map(i => ({
+        id: i.id,
+        packedQuantity: Math.max(0, Number(i.packedQuantity || 0)),
+        isPacked: Boolean(i.isPacked)
+      }))
+      const res = await $fetch<any>(`/api/orders/${order.value!.id}/packing`, {
+        method: 'PATCH',
+        body: {
+          status: packingForm.value.status,
+          items: itemsData,
+          holdReason: packingForm.value.status === 'ON_HOLD' ? packingForm.value.holdReason : undefined
+        }
+      })
+      // Broadcast verified backend update to everyone via WebSockets
+      notifyChange({
+        orderId: order.value!.id,
+        action: 'PACKING_UPDATED',
+        status: packingForm.value.status,
+        order: res
+      })
+      emit('updated', res)
+    } catch (err: any) {
+      console.error('Failed to sync packing:', err)
+    }
+  }
+
+  if (immediate) {
+    if (packingSyncTimer) clearTimeout(packingSyncTimer)
+    runPatch()
+  } else {
+    if (packingSyncTimer) clearTimeout(packingSyncTimer)
+    packingSyncTimer = setTimeout(runPatch, 250)
+  }
+}
+
+const isMismatchModalOpen = ref(false)
+const mismatchModalItem = ref<{
+  idx: number
+  sku: string
+  name: string
+  approvedQty: number
+  packedQty: number
+} | null>(null)
+
+const decrementPackedQty = (idx: number) => {
+  const item = packingForm.value.items[idx]
+  if (!item) return
+  const current = Number(item.packedQuantity || 0)
+  if (current <= 0) return
+  item.packedQuantity = current - 1
+  const target = Number(item.quantity || 0)
+  if (item.packedQuantity === 0) {
+    item.isPacked = false
+  } else if (item.isPacked && item.packedQuantity !== target) {
+    // If quantity was altered while checked to something not matching target, require explicit re-confirmation
+    item.isPacked = false
+  }
+  recalculatePackingStatus()
+  syncPackingState(false)
+}
+
+const incrementPackedQty = (idx: number) => {
+  const item = packingForm.value.items[idx]
+  if (!item) return
+  const target = Number(item.quantity || 0)
+  const current = Number(item.packedQuantity || 0)
+  if (current >= target) return
+  item.packedQuantity = current + 1
+  if (item.packedQuantity === target) {
+    // Reached 100% full match -> mark as packed
+    item.isPacked = true
+  } else if (item.isPacked) {
+    // If adjusted to a count less than target while checked, require explicit re-confirmation
+    item.isPacked = false
+  }
+  recalculatePackingStatus()
+  syncPackingState(false)
+}
+
+const handlePackedQtyInput = (idx: number) => {
+  const item = packingForm.value.items[idx]
+  if (!item) return
+  const target = Number(item.quantity || 0)
+  let val = Number(item.packedQuantity)
+  if (isNaN(val) || val < 0) val = 0
+  if (val > target) val = target
+  item.packedQuantity = val
+  if (val === target) {
+    item.isPacked = true
+  } else {
+    // Mismatch / partial: requires explicit confirmation via the checkbox
+    item.isPacked = false
+  }
+  recalculatePackingStatus()
+  syncPackingState(false)
+}
+
+const handlePackingCheckboxToggle = (idx: number, event: Event) => {
+  const isChecked = (event.target as HTMLInputElement).checked
+  const item = packingForm.value.items[idx]
+  if (!item) return
+  const target = Number(item.quantity || 0)
+  const currentPacked = Number(item.packedQuantity || 0)
+
+  if (!isChecked) {
+    // Unchecking an already-checked item
+    item.isPacked = false
+    item.packedQuantity = 0
+    recalculatePackingStatus()
+    syncPackingState(true)
+    return
+  }
+
+  // User is ticking the checkbox
+  if (currentPacked === target && target > 0) {
+    // Quantities match full approved quantity exactly
+    item.isPacked = true
+    recalculatePackingStatus()
+    syncPackingState(true)
+    return
+  }
+
+  // Quantity mismatch detected (either currentPacked === 0 or currentPacked < target)!
+  // Revert the visual checkbox state until explicitly confirmed by the packer
+  item.isPacked = false
+  if (event.target) {
+    (event.target as HTMLInputElement).checked = false
+  }
+
+  mismatchModalItem.value = {
+    idx,
+    sku: item.sku || order.value?.items?.[idx]?.product?.sku || 'Line Item',
+    name: order.value?.items?.[idx]?.product?.name || item.sku || '',
+    approvedQty: target,
+    packedQty: currentPacked
+  }
+  isMismatchModalOpen.value = true
+}
+
+const confirmMismatchPacked = () => {
+  if (!mismatchModalItem.value) return
+  const idx = mismatchModalItem.value.idx
+  const item = packingForm.value.items[idx]
+  if (item) {
+    item.isPacked = true
+    item.packedQuantity = mismatchModalItem.value.packedQty
+    recalculatePackingStatus()
+    syncPackingState(true)
+  }
+  isMismatchModalOpen.value = false
+  mismatchModalItem.value = null
+}
+
+const confirmFullPacked = () => {
+  if (!mismatchModalItem.value) return
+  const idx = mismatchModalItem.value.idx
+  const item = packingForm.value.items[idx]
+  if (item) {
+    item.isPacked = true
+    item.packedQuantity = mismatchModalItem.value.approvedQty
+    recalculatePackingStatus()
+    syncPackingState(true)
+  }
+  isMismatchModalOpen.value = false
+  mismatchModalItem.value = null
+}
+
+const cancelMismatchModal = () => {
+  isMismatchModalOpen.value = false
+  mismatchModalItem.value = null
 }
 
 const markAsPacked = async () => {
+  const hasMismatched = packingForm.value.items.some(i => (i.packedQuantity || 0) > 0 && (i.packedQuantity || 0) < i.quantity)
+  if (hasMismatched) {
+    const confirmShortages = confirm("Some items have packed quantities less than approved. Mark all items as packed with these quantities?")
+    if (!confirmShortages) return
+  }
   packingForm.value.status = 'PACKED'
   packingForm.value.items.forEach(i => {
     i.isPacked = true
-    i.packedQuantity = i.quantity
+    // If an item already has a custom packed quantity (e.g. 7 due to stock shortage), keep it!
+    // Only default to full approved quantity if untouched (0)
+    if (!i.packedQuantity || i.packedQuantity <= 0) {
+      i.packedQuantity = i.quantity
+    }
   })
-  await updatePacking()
+  recalculatePackingStatus()
+  syncPackingState(true)
 }
 
-  
+const getItemTotal = (item: any) => {
+  if (item.total) return Number(item.total)
+  const price = Number(item.unitPrice || 0)
+  const approvedQty = Number(item.approvedQuantity ?? item.quantity ?? 0)
+  if (props.context === 'billing') {
+    if (item.billedQuantity !== undefined && item.billedQuantity !== null) {
+      return price * Number(item.billedQuantity)
+    }
+    if (order.value?.packingStatus?.status === 'PACKED' && item.packedQuantity !== undefined && item.packedQuantity !== null) {
+      return price * Number(item.packedQuantity)
+    }
+  }
+  return price * approvedQty
+}
+
 const getStepStatus = (step: string) => {
   if (!order.value) return 'PENDING'
   switch(step) {
@@ -681,11 +910,125 @@ const updateDelivery = async () => {
     </div>
   </Teleport>
 
+  <!-- Explicit Confirmation for Quantity Mismatch Modal -->
+  <Teleport to="body">
+    <div v-if="isMismatchModalOpen && mismatchModalItem" class="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+      <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden border border-gray-200">
+        <div class="p-6">
+          <div 
+            class="w-12 h-12 rounded-full flex items-center justify-center mb-4 border"
+            :class="mismatchModalItem.packedQty === 0 ? 'bg-rose-50 text-rose-600 border-rose-200' : 'bg-amber-50 text-amber-600 border-amber-200'"
+          >
+            <AlertCircle v-if="mismatchModalItem.packedQty === 0" class="w-6 h-6" />
+            <AlertTriangle v-else class="w-6 h-6" />
+          </div>
+
+          <h3 class="text-lg font-bold text-gray-900 mb-1">
+            {{ mismatchModalItem.packedQty === 0 ? 'Confirm 0 Packed (Out of Stock)?' : 'Confirm Packing with Shortage?' }}
+          </h3>
+          <p class="text-xs text-gray-500 mb-4">
+            <span v-if="mismatchModalItem.packedQty === 0">
+              The packing quantity is 0 of {{ mismatchModalItem.approvedQty }} approved units. If this item is completely unavailable, confirm 0 packed so billing reconciles it. Or pack the full quantity if all {{ mismatchModalItem.approvedQty }} units are available.
+            </span>
+            <span v-else>
+              The packing quantity ({{ mismatchModalItem.packedQty }}) does not match the approved quantity ({{ mismatchModalItem.approvedQty }}). Please confirm if you want to mark this item as packed with the available count.
+            </span>
+          </p>
+
+          <div 
+            class="border rounded-xl p-3.5 space-y-2 mb-4"
+            :class="mismatchModalItem.packedQty === 0 ? 'bg-rose-50/60 border-rose-200/80' : 'bg-amber-50/70 border-amber-200/80'"
+          >
+            <div class="flex items-center justify-between text-xs">
+              <span class="font-bold text-gray-700">Item / SKU:</span>
+              <span class="font-mono font-bold text-gray-900">{{ mismatchModalItem.sku }}</span>
+            </div>
+            <div v-if="mismatchModalItem.name" class="text-xs text-gray-600 truncate">
+              {{ mismatchModalItem.name }}
+            </div>
+            <div 
+              class="border-t pt-2 flex items-center justify-between text-xs"
+              :class="mismatchModalItem.packedQty === 0 ? 'border-rose-200/60' : 'border-amber-200/60'"
+            >
+              <div>
+                <span class="text-gray-500">Approved:</span>
+                <span class="font-bold text-gray-900 ml-1">{{ mismatchModalItem.approvedQty }}</span>
+              </div>
+              <div>
+                <span class="text-gray-500">Packed:</span>
+                <span 
+                  class="font-bold ml-1"
+                  :class="mismatchModalItem.packedQty === 0 ? 'text-rose-600' : 'text-amber-700'"
+                >
+                  {{ mismatchModalItem.packedQty }}
+                </span>
+              </div>
+              <div>
+                <span class="text-gray-500">Shortage:</span>
+                <span class="font-bold text-rose-600 ml-1">-{{ mismatchModalItem.approvedQty - mismatchModalItem.packedQty }}</span>
+              </div>
+            </div>
+          </div>
+
+          <p class="text-[11px] text-gray-500">
+            Billing will be alerted to this difference and will reconcile the invoice to charge for only the {{ mismatchModalItem.packedQty }} packed units.
+          </p>
+        </div>
+
+        <div class="px-6 py-3 bg-gray-50 border-t border-gray-200 flex flex-wrap justify-end gap-2 sm:gap-3">
+          <button 
+            type="button"
+            @click="cancelMismatchModal"
+            class="px-3.5 py-2 text-xs font-semibold text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+          >
+            Cancel
+          </button>
+          
+          <!-- When 0 packed: Option to Confirm 0 Packed (Out of stock) -->
+          <button 
+            v-if="mismatchModalItem.packedQty === 0"
+            type="button"
+            @click="confirmMismatchPacked" 
+            class="px-3.5 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-lg shadow-sm flex items-center gap-1.5 transition-all cursor-pointer"
+          >
+            <Ban class="w-3.5 h-3.5" />
+            <span>Confirm 0 Packed (Out of Stock)</span>
+          </button>
+
+          <!-- When > 0 packed: Confirm that partial quantity -->
+          <button 
+            v-else
+            type="button"
+            @click="confirmMismatchPacked" 
+            class="px-3.5 py-2 text-xs font-bold text-white bg-[#1a5c4c] hover:bg-[#14493c] rounded-lg shadow-sm flex items-center gap-1.5 transition-all cursor-pointer"
+          >
+            <Check class="w-3.5 h-3.5" />
+            <span>Mark as Packed ({{ mismatchModalItem.packedQty }})</span>
+          </button>
+
+          <!-- Always available: Option to Pack Full Quantity -->
+          <button 
+            type="button"
+            @click="confirmFullPacked" 
+            class="px-3.5 py-2 text-xs font-bold rounded-lg shadow-sm flex items-center gap-1.5 transition-all cursor-pointer"
+            :class="mismatchModalItem.packedQty === 0 ? 'bg-[#1a5c4c] hover:bg-[#14493c] text-white' : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-100'"
+          >
+            <CheckCheck class="w-3.5 h-3.5" />
+            <span>Pack Full ({{ mismatchModalItem.approvedQty }})</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </Teleport>
+
   <Teleport to="body">
     <div v-if="isOpen" class="fixed inset-0 z-[100] overflow-hidden pointer-events-none">
       <div class="absolute inset-0 bg-black/30 backdrop-blur-[2px] pointer-events-auto transition-opacity" @click="closePanel"></div>
       
-      <div class="absolute inset-y-0 right-0 max-w-full sm:max-w-[500px] md:max-w-[540px] w-full bg-white shadow-2xl pointer-events-auto flex flex-col h-full overflow-hidden transform transition-transform duration-300 border-l border-gray-200/80">
+      <div 
+        class="absolute inset-y-0 right-0 max-w-full w-full bg-white shadow-2xl pointer-events-auto flex flex-col h-full overflow-hidden transform transition-all duration-300 border-l border-gray-200/80"
+        :class="context === 'packing' ? 'sm:max-w-[760px] md:max-w-[880px] lg:max-w-[960px] xl:max-w-[1020px]' : 'sm:max-w-[500px] md:max-w-[540px]'"
+      >
       
       <template v-if="order">
         <!-- Loading Overlay -->
@@ -942,13 +1285,17 @@ const updateDelivery = async () => {
                   <table class="w-full text-left text-xs sm:text-sm">
                     <thead class="bg-gray-50/80 text-[11px] font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-200/70">
                       <tr>
-                        <th class="px-3.5 py-2.5 font-semibold">Product</th>
-                        <th class="px-3 py-2.5 font-semibold text-right">Rate</th>
-                        <th class="px-3 py-2.5 font-semibold text-right">
-                          {{ context === 'approval' && (order as any)?.isApproved ? 'Approved Qty' : 'Qty' }}
+                        <th class="px-3.5 py-2.5 font-semibold" :class="context === 'packing' ? 'min-w-[240px]' : ''">Product</th>
+                        <th v-if="context !== 'packing'" class="px-3 py-2.5 font-semibold text-right">Rate</th>
+                        <th 
+                          class="px-3 py-2.5 font-semibold" 
+                          :class="context === 'packing' ? 'text-center whitespace-nowrap w-28' : 'text-right'"
+                        >
+                          {{ context === 'approval' && (order as any)?.isApproved ? 'Approved Qty' : (context === 'packing' ? 'Approved Qty' : 'Qty') }}
                         </th>
-                        <th class="px-3.5 py-2.5 font-semibold text-right">Total</th>
-                        <th v-if="context === 'packing'" class="px-3 py-2.5 font-semibold text-center">Packed</th>
+                        <th v-if="context !== 'packing'" class="px-3.5 py-2.5 font-semibold text-right">Total</th>
+                        <th v-if="context === 'packing'" class="px-3 py-2.5 font-semibold text-center whitespace-nowrap w-40">Packing Qty</th>
+                        <th v-if="context === 'packing'" class="px-3.5 py-2.5 font-semibold text-center whitespace-nowrap w-24">Packed</th>
                       </tr>
                     </thead>
                     <tbody ref="itemsTbodyRef" class="divide-y divide-gray-100">
@@ -956,13 +1303,23 @@ const updateDelivery = async () => {
                         v-for="(item, idx) in order.items" 
                         :key="item.id" 
                         class="bg-white hover:bg-gray-50/60 transition-colors" 
-                        :class="{ 'bg-amber-50/30': context === 'packing' && ((packingForm.items[idx]?.packedQuantity || 0) < (item.approvedQuantity ?? item.quantity)) }"
+                        :class="{ 
+                          'bg-rose-50/40': context === 'packing' && packingForm.items[idx]?.isPacked && (packingForm.items[idx]?.packedQuantity || 0) === 0,
+                          'bg-amber-50/30': context === 'packing' && ((packingForm.items[idx]?.packedQuantity || 0) < (item.approvedQuantity ?? item.quantity)) && (packingForm.items[idx]?.packedQuantity || 0) > 0,
+                          'bg-emerald-50/20': context === 'packing' && packingForm.items[idx]?.isPacked && (packingForm.items[idx]?.packedQuantity || 0) >= (item.approvedQuantity ?? item.quantity)
+                        }"
                       >
                         <td class="px-3.5 py-3">
-                          <div class="font-mono font-bold text-xs sm:text-sm text-gray-900 truncate max-w-[150px] sm:max-w-[180px]">
+                          <div 
+                            class="font-mono font-bold text-xs sm:text-sm text-gray-900"
+                            :class="context === 'packing' ? 'break-words' : 'truncate max-w-[150px] sm:max-w-[180px]'"
+                          >
                             {{ item.product?.sku }}
                           </div>
-                          <div class="text-[11px] sm:text-xs text-gray-500 truncate max-w-[150px] sm:max-w-[180px] mt-0.5">
+                          <div 
+                            class="text-[11px] sm:text-xs text-gray-600 mt-0.5 leading-snug"
+                            :class="context === 'packing' ? 'break-words whitespace-normal' : 'truncate max-w-[150px] sm:max-w-[180px]'"
+                          >
                             {{ item.product?.name }}
                           </div>
                           <div class="flex flex-wrap items-center gap-1 mt-1.5">
@@ -972,45 +1329,112 @@ const updateDelivery = async () => {
                             <span v-if="(item as any)?.applyLastPrice" class="text-[9px] font-bold uppercase tracking-wider bg-teal-50 text-teal-700 px-1.5 py-0.5 rounded border border-teal-200/70" title="Apply Last Price">
                               Last Price
                             </span>
-                            <div v-if="(item as any)?.itemNotes" class="text-[10px] text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200/70 inline-block truncate max-w-[180px]" :title="(item as any)?.itemNotes">
+                            <div 
+                              v-if="(item as any)?.itemNotes" 
+                              class="text-[10px] text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200/70 inline-block" 
+                              :class="context === 'packing' ? 'break-words' : 'truncate max-w-[180px]'"
+                              :title="(item as any)?.itemNotes"
+                            >
                               💬 {{ (item as any)?.itemNotes }}
                             </div>
                           </div>
                         </td>
-                        <td class="px-3 py-3 text-right font-medium text-gray-600 tabular-nums whitespace-nowrap">
+
+                        <!-- Rate Column (Hidden in Packing) -->
+                        <td v-if="context !== 'packing'" class="px-3 py-3 text-right font-medium text-gray-600 tabular-nums whitespace-nowrap">
                           {{ formatCurrency(item.unitPrice || 0) }}
                         </td>
-                        <td class="px-3 py-3 text-right font-bold text-gray-900 tabular-nums whitespace-nowrap">
-                          {{ item.approvedQuantity ?? item.quantity }}
-                        </td>
-                        <td class="px-3.5 py-3 text-right font-bold text-[#1a5c4c] tabular-nums whitespace-nowrap">
-                          {{ formatCurrency(item.total || ((item.unitPrice || 0) * (item.approvedQuantity ?? item.quantity))) }}
-                        </td>
-                        <td v-if="context === 'packing'" class="px-3 py-3 text-center whitespace-nowrap">
-                          <div class="flex items-center justify-center gap-1.5">
-                            <input 
-                              type="number" 
-                              min="0"
-                              :max="item.approvedQuantity ?? item.quantity"
-                              v-model.number="packingForm.items[idx].packedQuantity" 
-                              @change="handlePackedQtyChange(idx)" 
-                              class="w-14 px-1.5 py-1 text-xs border border-gray-300 rounded-md font-bold text-center focus:ring-[#1a5c4c]" 
-                              :disabled="!hasRole('ADMIN', 'PACKING')"
-                            />
+
+                        <!-- Approved Qty Column -->
+                        <td 
+                          class="px-3 py-3 font-bold tabular-nums whitespace-nowrap" 
+                          :class="context === 'packing' ? 'text-center' : 'text-right text-gray-900'"
+                        >
+                          <span 
+                            v-if="context === 'packing'" 
+                            class="inline-flex items-center px-2 py-0.5 rounded-md bg-gray-100 text-gray-800 text-xs font-bold border border-gray-200/60"
+                          >
+                            {{ item.approvedQuantity ?? item.quantity }}
+                          </span>
+                          <div v-else class="flex flex-col items-end">
+                            <span>{{ item.approvedQuantity ?? item.quantity }}</span>
                             <span 
-                              v-if="(packingForm.items[idx]?.packedQuantity || 0) < (item.approvedQuantity ?? item.quantity)" 
-                              class="text-[10px] px-1.5 py-0.5 rounded font-bold bg-amber-100 text-amber-700 border border-amber-200 whitespace-nowrap"
-                              title="Shortage alert"
+                              v-if="context === 'billing' && item.packedQuantity !== undefined && item.packedQuantity !== null && item.packedQuantity !== (item.approvedQuantity ?? item.quantity) && (order.packingStatus?.status === 'PACKED' || order.packingStatus?.status === 'IN_PROGRESS' || Number(item.packedQuantity) > 0)" 
+                              class="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 mt-1"
+                              title="Packed quantity differs from approved quantity due to stock availability"
                             >
-                              -{{ (item.approvedQuantity ?? item.quantity) - (packingForm.items[idx]?.packedQuantity || 0) }}
-                            </span>
-                            <span 
-                              v-else 
-                              class="text-[10px] px-1.5 py-0.5 rounded font-bold bg-green-100 text-green-700 border border-green-200"
-                            >
-                              ✓
+                              Packed: {{ item.packedQuantity }}
+                              <span v-if="item.packedQuantity < (item.approvedQuantity ?? item.quantity)" class="text-amber-600">
+                                (-{{ (item.approvedQuantity ?? item.quantity) - item.packedQuantity }})
+                              </span>
                             </span>
                           </div>
+                        </td>
+
+                        <!-- Total Column (Hidden in Packing) -->
+                        <td v-if="context !== 'packing'" class="px-3.5 py-3 text-right font-bold text-[#1a5c4c] tabular-nums whitespace-nowrap">
+                          {{ formatCurrency(getItemTotal(item)) }}
+                        </td>
+
+                        <!-- Packing Qty with - and + buttons (Shown only in Packing) -->
+                        <td v-if="context === 'packing'" class="px-3 py-3 text-center whitespace-nowrap">
+                          <div class="inline-flex flex-col items-center">
+                            <div class="inline-flex items-center justify-center gap-1 bg-gray-50 border border-gray-200/80 rounded-lg p-0.5 shadow-2xs">
+                              <button 
+                                type="button"
+                                @click.stop="decrementPackedQty(idx)" 
+                                :disabled="!hasRole('ADMIN', 'PACKING') || (packingForm.items[idx]?.packedQuantity || 0) <= 0"
+                                class="w-7 h-7 flex items-center justify-center rounded-md bg-white border border-gray-200 text-gray-700 hover:bg-gray-100 hover:text-gray-900 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed transition-all font-bold text-sm select-none cursor-pointer shadow-2xs"
+                                title="Decrease packed quantity"
+                              >
+                                -
+                              </button>
+                              <input 
+                                type="number" 
+                                min="0"
+                                :max="item.approvedQuantity ?? item.quantity"
+                                v-model.number="packingForm.items[idx].packedQuantity" 
+                                @change="handlePackedQtyInput(idx)" 
+                                class="w-12 h-7 px-1 text-xs sm:text-sm font-bold text-center bg-transparent border-0 text-gray-900 focus:outline-none focus:ring-0 tabular-nums" 
+                                :disabled="!hasRole('ADMIN', 'PACKING')"
+                              />
+                              <button 
+                                type="button"
+                                @click.stop="incrementPackedQty(idx)" 
+                                :disabled="!hasRole('ADMIN', 'PACKING') || (packingForm.items[idx]?.packedQuantity || 0) >= (item.approvedQuantity ?? item.quantity)"
+                                class="w-7 h-7 flex items-center justify-center rounded-md bg-white border border-gray-200 text-gray-700 hover:bg-gray-100 hover:text-gray-900 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed transition-all font-bold text-sm select-none cursor-pointer shadow-2xs"
+                                title="Increase packed quantity"
+                              >
+                                +
+                              </button>
+                            </div>
+                            <span 
+                              v-if="packingForm.items[idx]?.isPacked && (packingForm.items[idx]?.packedQuantity || 0) === 0" 
+                              class="text-[10px] font-bold text-rose-600 bg-rose-50 border border-rose-200 px-1.5 py-0.5 rounded mt-1 whitespace-nowrap"
+                            >
+                              Out of Stock (0 packed)
+                            </span>
+                            <span 
+                              v-else-if="(packingForm.items[idx]?.packedQuantity || 0) < (item.approvedQuantity ?? item.quantity) && (packingForm.items[idx]?.packedQuantity || 0) > 0" 
+                              class="text-[10px] font-bold text-amber-600 mt-1 whitespace-nowrap"
+                            >
+                              -{{ (item.approvedQuantity ?? item.quantity) - (packingForm.items[idx]?.packedQuantity || 0) }} short
+                            </span>
+                          </div>
+                        </td>
+
+                        <!-- Packed Checkbox Column (Shown only in Packing) -->
+                        <td v-if="context === 'packing'" class="px-3.5 py-3 text-center whitespace-nowrap">
+                          <label class="inline-flex items-center justify-center cursor-pointer select-none">
+                            <input 
+                              type="checkbox" 
+                              :checked="packingForm.items[idx]?.isPacked"
+                              @change="handlePackingCheckboxToggle(idx, $event)"
+                              class="w-5 h-5 rounded text-[#1a5c4c] border-gray-300 focus:ring-[#1a5c4c] focus:ring-offset-0 transition-all cursor-pointer accent-[#1a5c4c]"
+                              :disabled="!hasRole('ADMIN', 'PACKING')"
+                              title="Check to mark item as packed"
+                            />
+                          </label>
                         </td>
                       </tr>
                     </tbody>
@@ -1119,17 +1543,19 @@ const updateDelivery = async () => {
                 <div v-if="context === 'packing' && hasRole('ADMIN', 'PACKING')" class="p-4 bg-gray-50 border-t border-gray-200 rounded-b-lg relative">
                   <div class="flex items-center justify-between mb-4">
                     <div>
-                      <p class="text-sm font-medium text-gray-900">Finalize Packing</p>
-                      <p class="text-xs text-gray-500 mt-1">Tick all items to activate</p>
+                      <p class="text-sm font-bold text-gray-900">Packing Progress</p>
+                      <p class="text-xs text-gray-500 mt-1">
+                        {{ packingForm.items.filter(i => i.isPacked).length }} of {{ packingForm.items.length }} items packed
+                      </p>
                     </div>
                     
                     <div class="flex flex-col gap-2 items-end">
                       <button 
                         @click="markAsPacked" 
-                        :disabled="!packingForm.items.every(i => i.isPacked) || packingForm.status === 'PACKED'"
-                        class="px-4 py-2 text-xs font-semibold bg-[#1a5c4c] text-white rounded-md transition-all shadow-sm disabled:bg-gray-300 disabled:cursor-not-allowed disabled:text-gray-500 cursor-pointer"
+                        :disabled="packingForm.status === 'PACKED'"
+                        class="px-4 py-2 text-xs font-semibold bg-[#1a5c4c] text-white rounded-md transition-all shadow-sm hover:bg-[#154a3d] active:scale-95 disabled:bg-gray-200 disabled:cursor-not-allowed disabled:text-gray-400 cursor-pointer"
                       >
-                        {{ packingForm.status === 'PACKED' ? 'Packing Completed' : 'Mark as Packed' }}
+                        {{ packingForm.status === 'PACKED' ? '✓ All Items Packed' : 'Pack All Items' }}
                       </button>
                       <button 
                         v-if="!showPackingForm" 
@@ -1317,7 +1743,7 @@ const updateDelivery = async () => {
           <div class="flex items-center gap-2">
             <!-- Generate Bill button before Cancel Order -->
             <button 
-              v-if="canGenerateBill"
+              v-if="canGenerateBill && context !== 'packing'"
               @click="markBillGenerated"
               class="px-3.5 py-2 text-xs font-bold text-white bg-[#1a5c4c] hover:bg-[#14473b] rounded-lg shadow-sm hover:shadow transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
             >

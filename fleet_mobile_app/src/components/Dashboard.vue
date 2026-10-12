@@ -1459,6 +1459,25 @@ async function openDirections(order: any) {
     return
   }
 
+  // Ensure we have current driver coordinates to pass to navigation plugin
+  let startLat = currentCoords?.lat
+  let startLng = currentCoords?.lng
+
+  if (!startLat || !startLng) {
+    try {
+      const pos = await new Promise<any>((resolve, reject) => {
+        geo.getCurrentPosition(resolve, reject, { timeout: 3500, enableHighAccuracy: true, maximumAge: 10000 })
+      })
+      if (pos?.coords) {
+        startLat = pos.coords.latitude
+        startLng = pos.coords.longitude
+        currentCoords = { lat: startLat, lng: startLng }
+      }
+    } catch (e) {
+      console.warn('Could not get quick GPS fix before opening directions:', e)
+    }
+  }
+
   const customerTitle = order.customer?.name || order.customerName || `Order #${order.orderNumber}`
 
   const cap = getCapacitor()
@@ -1474,6 +1493,8 @@ async function openDirections(order: any) {
         await navPlugin.startNavigation({
           destLat: lat,
           destLng: lng,
+          startLat: startLat || 0.0,
+          startLng: startLng || 0.0,
           title: customerTitle,
           orderNumber: order.orderNumber || activeTrip.value?.orderNumber || '',
           enableTurnByTurn: true,
@@ -1493,8 +1514,8 @@ async function openDirections(order: any) {
 
   // Web or external fallback to Google Maps
   const dest = `${lat},${lng}`
-  if (currentCoords && currentCoords.lat && currentCoords.lng) {
-    window.open(`https://www.google.com/maps/dir/?api=1&origin=${currentCoords.lat},${currentCoords.lng}&destination=${dest}&travelmode=driving`, '_blank')
+  if (startLat && startLng) {
+    window.open(`https://www.google.com/maps/dir/?api=1&origin=${startLat},${startLng}&destination=${dest}&travelmode=driving`, '_blank')
   } else {
     window.open(`https://www.google.com/maps/dir/?api=1&origin=Current+Location&destination=${dest}&travelmode=driving`, '_blank')
   }

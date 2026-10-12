@@ -28,18 +28,12 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000)
-
   const [pending, urgent, inProgress, packed, onHold, total] = await Promise.all([
     prisma.order.count({ where: { ...where, packingStatus: { status: 'PENDING' } } }),
     prisma.order.count({ 
       where: { 
         ...where, 
-        packingStatus: { status: { in: ['PENDING', 'IN_PROGRESS'] } },
-        OR: [
-          { isUrgent: true },
-          { createdAt: { lt: twoHoursAgo } }
-        ]
+        isUrgent: true
       } 
     }),
     prisma.order.count({ where: { ...where, packingStatus: { status: 'IN_PROGRESS' } } }),
