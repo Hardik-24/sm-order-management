@@ -89,9 +89,10 @@
               <button
                 type="button"
                 @click="showOrderPicker = !showOrderPicker"
-                class="text-xs font-bold text-[#1a5c4c] hover:text-[#134336] flex items-center gap-1.5 px-3 py-1 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition"
+                class="text-xs font-bold text-[#1a5c4c] hover:text-[#134336] flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition border border-emerald-200/60 cursor-pointer"
               >
-                <Plus class="w-3.5 h-3.5" />
+                <Minus v-if="showOrderPicker" class="w-3.5 h-3.5" />
+                <Plus v-else class="w-3.5 h-3.5" />
                 <span>{{ showOrderPicker ? 'Done Adding Orders' : 'Add Orders to Trip' }}</span>
               </button>
             </div>
@@ -363,7 +364,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
 import {
-  Truck, X, Plus, Trash2, ArrowUp, ArrowDown, MapPin,
+  Truck, X, Plus, Minus, Trash2, ArrowUp, ArrowDown, MapPin,
   CheckCircle2, AlertTriangle, UserCheck, PackageCheck, Loader2, Search
 } from 'lucide-vue-next'
 import SetDeliveryPinModal from './SetDeliveryPinModal.vue'
