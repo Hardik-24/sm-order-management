@@ -46,7 +46,11 @@ export default defineEventHandler(async (event) => {
                   productName: true,
                   quantity: true,
                   unitPrice: true,
-                  unit: true
+                  product: {
+                    select: {
+                      unit: true
+                    }
+                  }
                 }
               }
             }
@@ -80,7 +84,14 @@ export default defineEventHandler(async (event) => {
           lng: stop.longitude
         },
         itemsCount: order?.items?.length || 0,
-        items: order?.items || [],
+        items: (order?.items || []).map((i: any) => ({
+          id: i.id,
+          sku: i.sku,
+          productName: i.productName,
+          quantity: i.quantity,
+          unitPrice: i.unitPrice,
+          unit: i.product?.unit || 'PIECE'
+        })),
         totalAmount: Number(order?.totalAmount || 0),
         holdReason: order?.deliveryStatus?.holdReason || null
       }
