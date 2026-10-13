@@ -23,6 +23,9 @@ const tripCounts = computed(() => ({
   inTransit: tripsData.value?.counts?.inTransit ?? 0,
   completed: tripsData.value?.counts?.completed ?? 0,
 }))
+const isInitialTripsLoading = computed(() => {
+  return pendingTrips.value && (!tripsData.value?.trips || tripsData.value.trips.length === 0)
+})
 
 const isReorderingStop = ref(false)
 const handleReorderStop = async (trip: any, stopIndex: number, direction: number) => {
@@ -164,6 +167,7 @@ watch(data, (newVal) => {
 
 let syncChannel: BroadcastChannel | null = null
 let silentSyncTimer: any = null
+let syncDebounceTimer: ReturnType<typeof setTimeout> | null = null
 
 const applyOrderUpdate = (updatedOrder: any) => {
   if (!updatedOrder || !updatedOrder.id) return
@@ -177,6 +181,15 @@ const applyOrderUpdate = (updatedOrder: any) => {
       }
     }
   }
+}
+
+function triggerSilentSync(updatedOrder?: any) {
+  if (updatedOrder) applyOrderUpdate(updatedOrder)
+  
+  if (syncDebounceTimer) clearTimeout(syncDebounceTimer)
+  syncDebounceTimer = setTimeout(() => {
+    performSilentSync()
+  }, 400)
 }
 
 function performSilentSync(updatedOrder?: any) {
@@ -198,7 +211,7 @@ function performSilentSync(updatedOrder?: any) {
 const { onOrderSync, notifyChange } = useRealtimeSync()
 onOrderSync((event) => {
   if (event?.order) applyOrderUpdate(event.order)
-  performSilentSync()
+  triggerSilentSync()
 })
 
 const handleSelect = (id: string) => {
@@ -242,23 +255,39 @@ onMounted(() => {
       syncChannel = new BroadcastChannel('sm_delivery_channel')
       syncChannel.onmessage = (event) => {
         if (event.data?.type === 'DELIVERY_STATUS_CHANGED') {
-          performSilentSync()
+          triggerSilentSync()
         }
       }
     } catch (e) {}
   }
 
-  // 2. Gentle silent background poll (every 8 seconds)
-  silentSyncTimer = setInterval(performSilentSync, 8000)
+  // 2. Gentle silent background poll fallback (every 30 seconds, only when tab is visible)
+  silentSyncTimer = setInterval(() => {
+    if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+      triggerSilentSync()
+    }
+  }, 30000)
 })
 
 onUnmounted(() => {
+  if (syncDebounceTimer) clearTimeout(syncDebounceTimer)
   if (silentSyncTimer) clearInterval(silentSyncTimer)
   if (syncChannel) syncChannel.close()
 })
 
-watch(counts, () => {
-  triggerStatAnimations()
+let lastCounts = { waiting: -1, dispatched: -1, delivered: -1, onHold: -1, total: -1 }
+
+watch(counts, (newVal) => {
+  if (
+    newVal.waiting !== lastCounts.waiting ||
+    newVal.dispatched !== lastCounts.dispatched ||
+    newVal.delivered !== lastCounts.delivered ||
+    newVal.onHold !== lastCounts.onHold ||
+    newVal.total !== lastCounts.total
+  ) {
+    lastCounts = { ...newVal }
+    triggerStatAnimations()
+  }
 }, { deep: true })
 </script>
 
@@ -416,16 +445,22 @@ watch(counts, () => {
         </button>
       </div>
 
-      <div v-if="viewMode === 'TRIPS'" class="text-xs text-gray-500">
-        <span class="font-bold text-gray-900">{{ tripCounts.inTransit }}</span> active trips • 
-        <span class="font-bold text-gray-900">{{ tripCounts.planned }}</span> planned • 
-        <span class="font-bold text-gray-900">{{ tripCounts.completed }}</span> completed
+      <div v-if="viewMode === 'TRIPS'" class="text-xs text-gray-500 flex items-center gap-2">
+        <span v-if="pendingTrips && !isInitialTripsLoading" class="inline-flex items-center gap-1 text-[11px] text-[#1a5c4c] font-semibold">
+          <RefreshCw class="w-3 h-3 animate-spin" /> Syncing...
+        </span>
+        <span>
+          <span class="font-bold text-gray-900">{{ tripCounts.inTransit }}</span> active trips • 
+          <span class="font-bold text-gray-900">{{ tripCounts.planned }}</span> planned • 
+          <span class="font-bold text-gray-900">{{ tripCounts.completed }}</span> completed
+        </span>
       </div>
     </div>
 
     <!-- VIEW 1: TRIPS & FLEET MANIFESTS -->
     <div v-if="viewMode === 'TRIPS'" class="space-y-4">
-      <div v-if="pendingTrips" class="py-12 text-center text-gray-500 bg-white rounded-xl border border-gray-200">
+      <!-- Initial Loading (only when trips have never loaded yet) -->
+      <div v-if="isInitialTripsLoading" class="py-12 text-center text-gray-500 bg-white rounded-xl border border-gray-200">
         <RefreshCw class="w-6 h-6 animate-spin mx-auto text-gray-400 mb-2" />
         <p class="text-xs font-semibold">Loading fleet trips...</p>
       </div>
