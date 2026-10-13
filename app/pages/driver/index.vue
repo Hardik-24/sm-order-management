@@ -303,6 +303,7 @@
             </div>
           </div>
         </div>
+      </div>
 
       <!-- Empty State (No trips assigned) -->
       <div v-else class="bg-white rounded-2xl p-8 text-center shadow-sm border border-gray-200">
