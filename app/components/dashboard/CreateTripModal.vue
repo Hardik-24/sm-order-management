@@ -3,28 +3,36 @@
     <div v-if="isOpen" class="fixed inset-0 z-[9990] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
       <div class="bg-white rounded-2xl shadow-2xl border border-gray-100 w-full max-w-4xl overflow-hidden flex flex-col max-h-[92vh]">
         <!-- Header -->
-        <div class="px-6 py-4.5 bg-[#1a1a1a] text-white flex items-center justify-between">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-[#1a5c4c] flex items-center justify-center text-white">
-              <Truck class="w-5 h-5" />
+        <div class="px-7 sm:px-8 py-6 bg-[#1a1a1a] text-white flex items-center justify-between border-b border-white/10 shrink-0">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-2xl bg-[#1a5c4c] flex items-center justify-center text-white shadow-md shrink-0">
+              <Truck class="w-6 h-6 text-emerald-100" />
             </div>
-            <div>
-              <h3 class="font-bold text-base text-[#e8e0d4] flex items-center gap-2">
-                <span>Create Delivery Trip Manifest</span>
-                <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#1a5c4c] text-emerald-100 border border-emerald-400/30">
+            <div class="space-y-1">
+              <div class="flex items-center gap-3 flex-wrap">
+                <h3 class="font-bold text-lg sm:text-xl text-[#e8e0d4] tracking-tight">
+                  Create Delivery Trip Manifest
+                </h3>
+                <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-[#1a5c4c] text-emerald-100 border border-emerald-400/30">
                   {{ stops.length }} Stop{{ stops.length === 1 ? '' : 's' }}
                 </span>
-              </h3>
-              <p class="text-xs text-gray-400">Assign a driver, vehicle, and sequence multi-stop customer deliveries</p>
+              </div>
+              <p class="text-xs sm:text-sm text-gray-400 leading-normal">
+                Assign a driver, vehicle, and sequence multi-stop customer deliveries
+              </p>
             </div>
           </div>
-          <button @click="$emit('close')" class="p-1.5 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition-colors">
+          <button 
+            @click="$emit('close')" 
+            class="p-2.5 rounded-xl hover:bg-white/10 text-gray-400 hover:text-white transition-colors cursor-pointer shrink-0 ml-4"
+            title="Close modal"
+          >
             <X class="w-5 h-5" />
           </button>
         </div>
 
         <!-- Body -->
-        <div class="p-6 overflow-y-auto space-y-6 flex-1 text-sm bg-gray-50/50">
+        <div class="p-6 sm:p-8 overflow-y-auto space-y-6 flex-1 text-sm bg-gray-50/50">
           <!-- Step 1: Fleet & Driver Assignment -->
           <div class="bg-white p-5 rounded-xl border border-[#e5e2dc] shadow-xs space-y-4">
             <div class="flex items-center justify-between border-b border-gray-100 pb-2.5">
@@ -264,7 +272,7 @@
         </div>
 
         <!-- Footer -->
-        <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
+        <div class="px-7 sm:px-8 py-5 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
           <div class="text-xs text-gray-500">
             <span v-if="hasPinErrors" class="text-rose-600 font-bold flex items-center gap-1">
               <AlertTriangle class="w-3.5 h-3.5" />
@@ -282,7 +290,7 @@
             <button
               type="button"
               @click="$emit('close')"
-              class="px-4 py-2 border border-gray-300 text-gray-700 font-semibold rounded-lg text-xs hover:bg-gray-100 transition"
+              class="px-4 py-2 border border-gray-300 text-gray-700 font-semibold rounded-lg text-xs hover:bg-gray-100 transition cursor-pointer"
             >
               Cancel
             </button>
@@ -291,7 +299,7 @@
               type="button"
               @click="submitTrip"
               :disabled="isSubmitting || stops.length === 0 || !form.driverId || hasPinErrors"
-              class="px-5 py-2 bg-[#1a5c4c] hover:bg-[#134336] text-white font-bold rounded-lg text-xs shadow-sm transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              class="px-5 py-2.5 bg-[#1a5c4c] hover:bg-[#134336] text-white font-bold rounded-lg text-xs shadow-sm transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
               <Loader2 v-if="isSubmitting" class="w-3.5 h-3.5 animate-spin" />
               <Truck v-else class="w-3.5 h-3.5" />

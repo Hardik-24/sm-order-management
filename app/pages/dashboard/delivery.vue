@@ -683,11 +683,9 @@ watch(counts, () => {
               <Truck class="w-5 h-5" />
             </div>
             <div class="min-w-0">
-              <div class="flex items-center gap-2">
+              <div class="flex items-center gap-2.5">
                 <span class="text-sm font-bold text-white tracking-tight">Trip Draft in Progress</span>
-                <span class="px-2 py-0.5 rounded-full text-xs font-black bg-emerald-400 text-gray-950">
-                  {{ selectedTripOrderIds.length }} {{ selectedTripOrderIds.length === 1 ? 'order' : 'orders' }}
-                </span>
+                <span class="inline-flex items-center justify-center text-center px-2.5 py-1 rounded-full text-xs font-black bg-emerald-400 text-gray-950 leading-none select-none tracking-normal shrink-0">{{ selectedTripOrderIds.length }} {{ selectedTripOrderIds.length === 1 ? 'order' : 'orders' }}</span>
               </div>
               <p class="text-[11px] text-gray-300 truncate hidden sm:block">
                 Select more orders from table or proceed to assign driver & manifest.
