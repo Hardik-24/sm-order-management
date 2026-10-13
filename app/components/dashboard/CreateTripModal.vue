@@ -391,7 +391,7 @@ const loadInitialData = async () => {
       $fetch<any>('/api/orders', {
         query: {
           limit: 100,
-          status: 'READY'
+          deliveryStatus: 'WAITING'
         }
       }).catch(() => ({ orders: [] }))
     ])
@@ -419,7 +419,13 @@ const loadInitialData = async () => {
     // If preselected order IDs passed, add them
     if (props.preselectedOrderIds && props.preselectedOrderIds.length > 0) {
       for (const oid of props.preselectedOrderIds) {
-        const found = unassignedOrders.value.find(o => o.id === oid)
+        let found = unassignedOrders.value.find(o => o.id === oid)
+        if (!found) {
+          try {
+            found = await $fetch<any>(`/api/orders/${oid}`)
+            if (found) unassignedOrders.value.push(found)
+          } catch (e) {}
+        }
         if (found) addOrderToTrip(found)
       }
     }

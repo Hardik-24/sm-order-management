@@ -50,7 +50,7 @@ const canGenerateBill = computed(() => {
   if (!order.value) return false
   if (order.value.overallStatus === 'CANCELLED') return false
   if (order.value.billingStatus?.status === 'GENERATED') return false
-  if (props.context === 'approval' || props.context === 'packing') return false
+  if (props.context === 'approval' || props.context === 'packing' || props.context === 'delivery') return false
   return hasRole('ADMIN', 'BILLING') || props.context === 'billing'
 })
 
@@ -1111,7 +1111,7 @@ const updateDelivery = async () => {
               </p>
             </div>
             <div class="text-right shrink-0">
-              <div class="text-base sm:text-lg font-black text-[#1a5c4c] tracking-tight tabular-nums">
+              <div v-if="context !== 'delivery'" class="text-base sm:text-lg font-black text-[#1a5c4c] tracking-tight tabular-nums">
                 {{ formatCurrency(order.totalAmount || 0) }}
               </div>
               <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-200/70 text-gray-700 mt-0.5">
@@ -1286,14 +1286,14 @@ const updateDelivery = async () => {
                     <thead class="bg-gray-50/80 text-[11px] font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-200/70">
                       <tr>
                         <th class="px-3.5 py-2.5 font-semibold" :class="context === 'packing' ? 'min-w-[240px]' : ''">Product</th>
-                        <th v-if="context !== 'packing'" class="px-3 py-2.5 font-semibold text-right">Rate</th>
+                        <th v-if="context !== 'packing' && context !== 'delivery'" class="px-3 py-2.5 font-semibold text-right">Rate</th>
                         <th 
                           class="px-3 py-2.5 font-semibold" 
                           :class="context === 'packing' ? 'text-center whitespace-nowrap w-28' : 'text-right'"
                         >
                           {{ context === 'approval' && (order as any)?.isApproved ? 'Approved Qty' : (context === 'packing' ? 'Approved Qty' : 'Qty') }}
                         </th>
-                        <th v-if="context !== 'packing'" class="px-3.5 py-2.5 font-semibold text-right">Total</th>
+                        <th v-if="context !== 'packing' && context !== 'delivery'" class="px-3.5 py-2.5 font-semibold text-right">Total</th>
                         <th v-if="context === 'packing'" class="px-3 py-2.5 font-semibold text-center whitespace-nowrap w-40">Packing Qty</th>
                         <th v-if="context === 'packing'" class="px-3.5 py-2.5 font-semibold text-center whitespace-nowrap w-24">Packed</th>
                       </tr>
@@ -1323,10 +1323,10 @@ const updateDelivery = async () => {
                             {{ item.product?.name }}
                           </div>
                           <div class="flex flex-wrap items-center gap-1 mt-1.5">
-                            <span v-if="(item as any)?.isTaxInclusive" class="text-[9px] font-bold uppercase tracking-wider bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded border border-indigo-200/70" title="Tax Inclusive Rate">
+                            <span v-if="(item as any)?.isTaxInclusive && context !== 'delivery'" class="text-[9px] font-bold uppercase tracking-wider bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded border border-indigo-200/70" title="Tax Inclusive Rate">
                               Tax Inc.
                             </span>
-                            <span v-if="(item as any)?.applyLastPrice" class="text-[9px] font-bold uppercase tracking-wider bg-teal-50 text-teal-700 px-1.5 py-0.5 rounded border border-teal-200/70" title="Apply Last Price">
+                            <span v-if="(item as any)?.applyLastPrice && context !== 'delivery'" class="text-[9px] font-bold uppercase tracking-wider bg-teal-50 text-teal-700 px-1.5 py-0.5 rounded border border-teal-200/70" title="Apply Last Price">
                               Last Price
                             </span>
                             <div 
@@ -1340,8 +1340,8 @@ const updateDelivery = async () => {
                           </div>
                         </td>
 
-                        <!-- Rate Column (Hidden in Packing) -->
-                        <td v-if="context !== 'packing'" class="px-3 py-3 text-right font-medium text-gray-600 tabular-nums whitespace-nowrap">
+                        <!-- Rate Column (Hidden in Packing and Delivery) -->
+                        <td v-if="context !== 'packing' && context !== 'delivery'" class="px-3 py-3 text-right font-medium text-gray-600 tabular-nums whitespace-nowrap">
                           {{ formatCurrency(item.unitPrice || 0) }}
                         </td>
 
@@ -1371,8 +1371,8 @@ const updateDelivery = async () => {
                           </div>
                         </td>
 
-                        <!-- Total Column (Hidden in Packing) -->
-                        <td v-if="context !== 'packing'" class="px-3.5 py-3 text-right font-bold text-[#1a5c4c] tabular-nums whitespace-nowrap">
+                        <!-- Total Column (Hidden in Packing and Delivery) -->
+                        <td v-if="context !== 'packing' && context !== 'delivery'" class="px-3.5 py-3 text-right font-bold text-[#1a5c4c] tabular-nums whitespace-nowrap">
                           {{ formatCurrency(getItemTotal(item)) }}
                         </td>
 
@@ -1734,16 +1734,24 @@ const updateDelivery = async () => {
           class="px-5 sm:px-6 py-3.5 bg-white border-t border-gray-200 flex items-center justify-between gap-3 shrink-0 shadow-lg z-20"
         >
           <div>
-            <span class="text-[10px] sm:text-[11px] uppercase font-bold text-gray-400 tracking-wider block">Grand Total</span>
-            <span class="text-lg sm:text-xl font-black text-[#1a5c4c] tracking-tight tabular-nums">
-              {{ formatCurrency(order.totalAmount || 0) }}
-            </span>
+            <template v-if="context !== 'delivery'">
+              <span class="text-[10px] sm:text-[11px] uppercase font-bold text-gray-400 tracking-wider block">Grand Total</span>
+              <span class="text-lg sm:text-xl font-black text-[#1a5c4c] tracking-tight tabular-nums">
+                {{ formatCurrency(order.totalAmount || 0) }}
+              </span>
+            </template>
+            <template v-else>
+              <span class="text-[10px] sm:text-[11px] uppercase font-bold text-gray-400 tracking-wider block">Total Quantity</span>
+              <span class="text-lg sm:text-xl font-black text-[#1a5c4c] tracking-tight tabular-nums">
+                {{ order.items?.reduce((sum, i) => sum + (Number(i.approvedQuantity ?? i.quantity) || 0), 0) }} nos.
+              </span>
+            </template>
           </div>
 
           <div class="flex items-center gap-2">
             <!-- Generate Bill button before Cancel Order -->
             <button 
-              v-if="canGenerateBill && context !== 'packing'"
+              v-if="canGenerateBill && context !== 'packing' && context !== 'delivery'"
               @click="markBillGenerated"
               class="px-3.5 py-2 text-xs font-bold text-white bg-[#1a5c4c] hover:bg-[#14473b] rounded-lg shadow-sm hover:shadow transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
             >

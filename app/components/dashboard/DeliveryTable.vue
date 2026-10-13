@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, nextTick, watch, onMounted } from 'vue'
 import { onClickOutside } from '@vueuse/core'
-import { Filter, Search, MoreHorizontal, Calendar, X, MapPin, Share2, Loader2, UserPlus, Truck, Check, CheckCircle2, ChevronRight, Zap } from 'lucide-vue-next'
+import { Filter, Search, MoreHorizontal, Calendar, X, MapPin, Share2, Loader2, UserPlus, Truck, Check, CheckCircle2, ChevronRight, Zap, Plus } from 'lucide-vue-next'
 import { formatDate } from '~~/app/lib/utils'
 import CustomSelect from '~/components/ui/CustomSelect.vue'
 import TableFilterButtons from '~/components/dashboard/TableFilterButtons.vue'
@@ -35,7 +35,7 @@ const getTotalNos = (order: any) => {
 
 const { showSaving, showSaved, showEditing } = useSnackbar()
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   orders: Order[]
   isLoading?: boolean
   total: number
@@ -48,7 +48,10 @@ const props = defineProps<{
   deliveryStatus: string
   billingStatus?: string
   packingStatus?: string
-}>()
+  selectedTripOrderIds?: string[]
+}>(), {
+  selectedTripOrderIds: () => []
+})
 
 const emit = defineEmits<{
   (e: 'update:page', val: number): void
@@ -61,6 +64,7 @@ const emit = defineEmits<{
   (e: 'update:billingStatus', val: string): void
   (e: 'update:packingStatus', val: string): void
   (e: 'select', orderId: string): void
+  (e: 'toggleTripOrder', orderId: string): void
   (e: 'refresh'): void
 }>()
 
@@ -407,9 +411,13 @@ const saveDriverAssignment = async () => {
               :key="order.id"
               @click="emit('select', order.id)"
               class="cursor-pointer transition-colors duration-150 group"
-              :class="order.overallStatus === 'CANCELLED' 
-                ? 'bg-gray-100/60 hover:bg-gray-100/80 text-gray-400 opacity-60 border-l-4 border-l-gray-400' 
-                : (order.isUrgent ? 'bg-rose-50/25 hover:bg-rose-50/40 border-l-4 border-l-rose-500' : 'hover:bg-gray-50/80')"
+              :class="[
+                selectedTripOrderIds?.includes(order.id)
+                  ? 'bg-emerald-50/70 hover:bg-emerald-100/60 ring-1 ring-emerald-500/40 border-l-4 border-l-[#1a5c4c]'
+                  : (order.overallStatus === 'CANCELLED' 
+                    ? 'bg-gray-100/60 hover:bg-gray-100/80 text-gray-400 opacity-60 border-l-4 border-l-gray-400' 
+                    : (order.isUrgent ? 'bg-rose-50/25 hover:bg-rose-50/40 border-l-4 border-l-rose-500' : 'hover:bg-gray-50/80'))
+              ]"
             >
               <!-- 1. Order ID -->
               <td class="px-5 py-3.5 whitespace-nowrap">
@@ -481,26 +489,17 @@ const saveDriverAssignment = async () => {
 
               <!-- 4. Driver -->
               <td class="px-5 py-3.5 whitespace-nowrap text-center">
-                <button 
-                  v-if="!order.deliveryDriver && (!order.deliveryStatus || order.deliveryStatus.status === 'WAITING' || order.deliveryStatus.status === 'PENDING')"
-                  @click.stop="openAssignModal(order)"
-                  class="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-dashed border-amber-300 rounded-lg text-xs font-bold transition active:scale-95 shadow-2xs cursor-pointer"
-                  title="Click to assign a delivery driver"
-                >
-                  <UserPlus class="w-3.5 h-3.5 text-amber-600" />
-                  <span>Assign Driver</span>
-                </button>
-                <button 
-                  v-else
-                  @click.stop="openAssignModal(order)"
-                  class="inline-flex items-center gap-2 px-2.5 py-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg text-xs font-semibold text-gray-800 transition active:scale-95 cursor-pointer shadow-2xs group/driver"
-                  title="Click to change assigned driver"
+                <div 
+                  v-if="order.deliveryDriver || order.deliveryStatus?.driverName"
+                  class="inline-flex items-center gap-2 px-2.5 py-1 bg-emerald-50 border border-emerald-200 rounded-lg text-xs font-semibold text-emerald-900 shadow-2xs"
+                  :title="order.deliveryDriver || order.deliveryStatus?.driverName"
                 >
                   <div class="w-5 h-5 rounded-full bg-[#1a5c4c] text-white flex items-center justify-center text-[10px] font-bold shrink-0">
                     {{ (order.deliveryDriver || order.deliveryStatus?.driverName || 'D')[0]?.toUpperCase() }}
                   </div>
-                  <span class="truncate max-w-[110px]">{{ order.deliveryDriver || order.deliveryStatus?.driverName || 'Assigned' }}</span>
-                </button>
+                  <span class="truncate max-w-[110px]">{{ order.deliveryDriver || order.deliveryStatus?.driverName }}</span>
+                </div>
+                <span v-else class="text-gray-400 text-xs font-mono">—</span>
               </td>
 
               <!-- 5. Status -->
@@ -535,7 +534,54 @@ const saveDriverAssignment = async () => {
                     <span>Route Map</span>
                   </button>
 
-                  <!-- Manage Details -->
+                  <!-- Trip Selection Button + Manage (For orders waiting/ready for trip) -->
+                  <template v-else-if="order.deliveryStatus?.status === 'WAITING' || !order.deliveryStatus || order.deliveryStatus?.status === 'PENDING' || order.deliveryStatus?.status === 'ASSIGNED'">
+                    <!-- Selected in Trip draft -->
+                    <button
+                      v-if="selectedTripOrderIds?.includes(order.id)"
+                      type="button"
+                      @click.stop="emit('toggleTripOrder', order.id)"
+                      class="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-bold bg-[#1a5c4c] text-white rounded-lg shadow-sm hover:bg-[#134336] transition-all cursor-pointer ring-2 ring-[#1a5c4c]/30"
+                      title="Click to remove from trip draft"
+                    >
+                      <Check class="w-3.5 h-3.5" />
+                      <span>Added</span>
+                    </button>
+
+                    <!-- Add to Trip (when draft has at least 1 order) -->
+                    <button
+                      v-else-if="(selectedTripOrderIds?.length || 0) > 0"
+                      type="button"
+                      @click.stop="emit('toggleTripOrder', order.id)"
+                      class="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100 rounded-lg shadow-2xs transition-all cursor-pointer"
+                      title="Add this order to the trip draft"
+                    >
+                      <Plus class="w-3.5 h-3.5 text-emerald-700" />
+                      <span>Add to Trip</span>
+                    </button>
+
+                    <!-- Create Trip (normal state) -->
+                    <button
+                      v-else
+                      type="button"
+                      @click.stop="emit('toggleTripOrder', order.id)"
+                      class="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-bold bg-[#1a5c4c]/10 text-[#1a5c4c] hover:bg-[#1a5c4c] hover:text-white border border-[#1a5c4c]/30 rounded-lg transition-all shadow-2xs cursor-pointer"
+                      title="Create a new trip with this order"
+                    >
+                      <Plus class="w-3.5 h-3.5" />
+                      <span>Create Trip</span>
+                    </button>
+
+                    <!-- Manage Details -->
+                    <button 
+                      @click.stop="emit('select', order.id)" 
+                      class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold bg-white text-gray-700 hover:bg-gray-50 rounded-lg border border-gray-300 transition-all shadow-2xs cursor-pointer"
+                    >
+                      <span>Manage</span>
+                    </button>
+                  </template>
+
+                  <!-- Manage Details (Fallback for any other state) -->
                   <button 
                     v-else
                     @click.stop="emit('select', order.id)" 
@@ -586,9 +632,13 @@ const saveDriverAssignment = async () => {
           :key="'mob-deliv-' + order.id"
           @click="emit('select', order.id)"
           class="px-3.5 py-3 cursor-pointer transition-colors flex flex-col gap-1.5"
-          :class="order.overallStatus === 'CANCELLED' 
-            ? 'bg-gray-100/75 active:bg-gray-200/60 text-gray-400 [&_span]:!text-gray-400 [&_p]:!text-gray-400 opacity-60 border-l-4 border-l-gray-400' 
-            : 'hover:bg-gray-50 active:bg-gray-100'"
+          :class="[
+            selectedTripOrderIds?.includes(order.id)
+              ? 'bg-emerald-50/70 border-l-4 border-l-[#1a5c4c]'
+              : (order.overallStatus === 'CANCELLED' 
+                ? 'bg-gray-100/75 active:bg-gray-200/60 text-gray-400 [&_span]:!text-gray-400 [&_p]:!text-gray-400 opacity-60 border-l-4 border-l-gray-400' 
+                : 'hover:bg-gray-50 active:bg-gray-100')
+          ]"
         >
           <!-- LINE 1: Identity & Delivery Status -->
           <div class="flex items-center justify-between gap-2 min-w-0">
@@ -694,14 +744,41 @@ const saveDriverAssignment = async () => {
                 <span>Route</span>
               </button>
 
-              <!-- Assign Driver if unassigned -->
-              <button 
-                v-else-if="!order.deliveryDriver && (!order.deliveryStatus || order.deliveryStatus.status === 'WAITING')"
-                @click.stop="openAssignModal(order)"
-                class="px-2.5 py-1 bg-amber-50 text-amber-800 border border-amber-300 rounded-md text-[11px] font-bold active:scale-95 transition-all shadow-xs"
-              >
-                Assign
-              </button>
+              <!-- Trip Selection / Unassigned Actions -->
+              <template v-else-if="(!order.deliveryDriver && (!order.deliveryStatus || order.deliveryStatus.status === 'WAITING' || order.deliveryStatus.status === 'PENDING')) && order.overallStatus !== 'CANCELLED'">
+                <!-- Added (in current trip selection) -->
+                <button
+                  v-if="selectedTripOrderIds?.includes(order.id)"
+                  type="button"
+                  @click.stop="emit('toggleTripOrder', order.id)"
+                  class="px-2.5 py-1 bg-[#1a5c4c] text-white text-[11px] font-bold rounded-md hover:bg-[#134336] active:scale-95 transition-all shadow-xs flex items-center gap-1 cursor-pointer"
+                >
+                  <Check class="w-3 h-3" />
+                  <span>Added</span>
+                </button>
+
+                <!-- Add to Trip (selection in progress) -->
+                <button
+                  v-else-if="(selectedTripOrderIds?.length || 0) > 0"
+                  type="button"
+                  @click.stop="emit('toggleTripOrder', order.id)"
+                  class="px-2 py-1 bg-emerald-50 text-emerald-800 border border-emerald-300 rounded-md text-[11px] font-bold active:scale-95 transition-all shadow-xs flex items-center gap-1 cursor-pointer"
+                >
+                  <Plus class="w-3 h-3 text-emerald-700" />
+                  <span>+ Add</span>
+                </button>
+
+                <!-- Create Trip -->
+                <button
+                  v-else
+                  type="button"
+                  @click.stop="emit('toggleTripOrder', order.id)"
+                  class="px-2 py-1 bg-[#1a5c4c]/10 text-[#1a5c4c] border border-[#1a5c4c]/30 rounded-md text-[11px] font-bold active:scale-95 transition-all shadow-xs flex items-center gap-1 cursor-pointer"
+                >
+                  <Plus class="w-3 h-3" />
+                  <span>+ Trip</span>
+                </button>
+              </template>
 
               <!-- Manage / Details otherwise -->
               <button 

@@ -321,132 +321,15 @@
         </div>
       </div>
 
-      <!-- Empty State -->
-      <div v-else-if="assignedOrders.length === 0" class="bg-white rounded-2xl p-8 text-center shadow-sm border border-gray-200">
+      <!-- Empty State (No trips assigned) -->
+      <div v-else class="bg-white rounded-2xl p-8 text-center shadow-sm border border-gray-200">
         <div class="w-14 h-14 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-3">
           <CheckCircle2 class="w-7 h-7" />
         </div>
         <h3 class="text-base font-bold text-gray-800">All Done for Now!</h3>
         <p class="text-xs text-gray-500 mt-1 max-w-xs mx-auto">
-          You have no pending deliveries assigned. New dispatch orders will appear here automatically.
+          You have no pending trips assigned. New dispatch trips will appear here automatically.
         </p>
-      </div>
-
-      <!-- Orders List -->
-      <div v-else class="space-y-4">
-        <div 
-          v-for="order in assignedOrders" 
-          :key="order.id"
-          class="bg-white rounded-2xl p-4 shadow-sm border border-gray-200 space-y-3 transition"
-          :class="{ 'border-emerald-500 ring-2 ring-emerald-500/20': activeTripOrderId === order.id }"
-        >
-          <!-- Card Header -->
-          <div class="flex items-start justify-between">
-            <div>
-              <span class="text-xs font-bold font-mono text-[#1a5c4c] bg-emerald-50 px-2 py-0.5 rounded">
-                {{ order.orderNumber }}
-              </span>
-              <h2 class="text-base font-bold text-gray-900 mt-1">{{ order.customer?.name }}</h2>
-              <p class="text-xs text-gray-500">{{ order.customer?.company }}</p>
-            </div>
-            <span 
-              class="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full"
-              :class="order.deliveryStatus === 'DISPATCHED' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'"
-            >
-              {{ order.deliveryStatus }}
-            </span>
-          </div>
-
-          <!-- Customer Address & Contact -->
-          <div class="bg-gray-50 rounded-xl p-3 space-y-2 text-xs">
-            <div class="flex items-start gap-2 text-gray-700">
-              <MapPin class="w-4 h-4 text-rose-500 flex-shrink-0 mt-0.5" />
-              <span class="leading-relaxed">{{ order.deliveryAddress }}</span>
-            </div>
-            <div class="flex items-center justify-between pt-1 border-t border-gray-200">
-              <span class="text-gray-500 flex items-center gap-1">
-                <Phone class="w-3.5 h-3.5 text-gray-400" />
-                {{ order.customer?.phone || 'No phone' }}
-              </span>
-              <a 
-                v-if="order.customer?.phone" 
-                :href="`tel:${order.customer.phone}`"
-                class="px-2.5 py-1 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold rounded-lg transition"
-              >
-                Call Customer
-              </a>
-            </div>
-          </div>
-
-          <!-- Collapsible "What's in this truck" Checklist -->
-          <details class="group bg-gray-50/50 rounded-xl border border-gray-200 overflow-hidden">
-            <summary class="p-3 text-xs font-bold text-gray-700 cursor-pointer flex items-center justify-between list-none">
-              <span class="flex items-center gap-1.5">
-                <Box class="w-4 h-4 text-[#1a5c4c]" />
-                In This Truck ({{ order.items.length }} items)
-              </span>
-              <ChevronDown class="w-4 h-4 text-gray-400 group-open:rotate-180 transition-transform" />
-            </summary>
-            <div class="px-3 pb-3 divide-y divide-gray-200 text-xs">
-              <div v-for="item in order.items" :key="item.id" class="py-2 flex items-center justify-between">
-                <div>
-                  <p class="font-bold text-gray-900">{{ item.sku }}</p>
-                  <p class="text-[11px] text-gray-500">{{ item.productName }}</p>
-                </div>
-                <span class="font-bold text-gray-900 bg-white px-2 py-1 rounded border border-gray-200">
-                  {{ item.quantity }} {{ item.unit }}
-                </span>
-              </div>
-            </div>
-          </details>
-
-          <!-- Action Buttons -->
-          <div class="pt-1 flex gap-2">
-            <!-- Navigation Button -->
-            <button 
-              @click="openDirections(order)"
-              class="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95 transition"
-            >
-              <Navigation class="w-4 h-4 text-blue-600" />
-              Directions
-            </button>
-
-            <!-- Start / Complete Trip Button -->
-            <button 
-              v-if="activeTripOrderId !== order.id"
-              @click="startTripPrompt(order)"
-              class="flex-1 py-3 bg-[#1a5c4c] hover:bg-[#134336] text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow active:scale-95 transition"
-            >
-              <Play class="w-4 h-4" />
-              Start Trip
-            </button>
-            <button 
-              v-else
-              @click="completeTripPrompt(order.id)"
-              class="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow active:scale-95 transition"
-            >
-              <CheckCircle2 class="w-4 h-4" />
-              Complete Delivery
-            </button>
-          </div>
-
-          <!-- No Pin Warning -->
-          <div
-            v-if="order.deliveryStatus !== 'DISPATCHED' && !order.hasPinSet"
-            class="mt-1 bg-red-50 border border-red-200 rounded-xl p-3 flex flex-col gap-2"
-          >
-            <div class="flex items-start gap-2">
-              <MapPin class="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
-              <p class="text-[11px] text-red-700 font-medium leading-relaxed">
-                <strong>No delivery pin set.</strong> Contact the dispatch office to drop a pin on the map for this customer before you can start this trip.
-              </p>
-            </div>
-            <button @click="handleCheckAgain" :disabled="isChecking" class="self-end px-3 py-1 bg-red-100 hover:bg-red-200 text-red-800 text-[10px] font-bold rounded flex items-center gap-1 transition disabled:opacity-50">
-              <RefreshCw :class="['w-3 h-3', { 'animate-spin': isChecking }]" /> 
-              {{ isChecking ? 'Checking...' : 'Check Again' }}
-            </button>
-          </div>
-        </div>
       </div>
     </main>
 

@@ -54,7 +54,23 @@ const handleReorderStop = async (trip: any, stopIndex: number, direction: number
   }
 }
 
+const selectedTripOrderIds = ref<string[]>([])
+
+const handleToggleTripOrder = (orderId: string) => {
+  const idx = selectedTripOrderIds.value.indexOf(orderId)
+  if (idx > -1) {
+    selectedTripOrderIds.value.splice(idx, 1)
+  } else {
+    selectedTripOrderIds.value.push(orderId)
+  }
+}
+
+const handleClearTripSelection = () => {
+  selectedTripOrderIds.value = []
+}
+
 const onTripCreated = () => {
+  selectedTripOrderIds.value = []
   refresh()
   refreshStats()
   refreshTrips()
@@ -614,6 +630,7 @@ watch(counts, () => {
           :isLoading="isSwitchingTab || isInitialLoading"
           :orders="data?.orders || []"
           :total="data?.total || 0"
+          :selectedTripOrderIds="selectedTripOrderIds"
           v-model:page="page"
           v-model:limit="limit"
           v-model:search="search"
@@ -624,6 +641,7 @@ watch(counts, () => {
           v-model:packingStatus="packingStatus"
           v-model:deliveryStatus="deliveryStatus"
           @select="handleSelect"
+          @toggleTripOrder="handleToggleTripOrder"
           @refresh="() => { refresh(); refreshStats(); refreshTrips(); }"
         />
       </div>
@@ -641,8 +659,61 @@ watch(counts, () => {
     <!-- Create Trip Manifest Modal -->
     <CreateTripModal
       :isOpen="isCreateTripModalOpen"
+      :preselectedOrderIds="selectedTripOrderIds"
       @close="isCreateTripModalOpen = false"
       @created="onTripCreated"
     />
+
+    <!-- Floating Bottom Trip Draft Confirmation Bar -->
+    <Transition
+      enter-active-class="transition duration-300 ease-out transform"
+      enter-from-class="translate-y-20 opacity-0"
+      enter-to-class="translate-y-0 opacity-100"
+      leave-active-class="transition duration-200 ease-in transform"
+      leave-from-class="translate-y-0 opacity-100"
+      leave-to-class="translate-y-20 opacity-0"
+    >
+      <div 
+        v-if="selectedTripOrderIds.length > 0"
+        class="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-full max-w-xl px-4 pointer-events-auto"
+      >
+        <div class="bg-gray-900/95 backdrop-blur-md text-white rounded-2xl shadow-2xl border border-gray-700/60 p-3 sm:p-4 flex items-center justify-between gap-4">
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="w-10 h-10 rounded-xl bg-[#1a5c4c] flex items-center justify-center shrink-0 shadow-sm text-white">
+              <Truck class="w-5 h-5" />
+            </div>
+            <div class="min-w-0">
+              <div class="flex items-center gap-2">
+                <span class="text-sm font-bold text-white tracking-tight">Trip Draft in Progress</span>
+                <span class="px-2 py-0.5 rounded-full text-xs font-black bg-emerald-400 text-gray-950">
+                  {{ selectedTripOrderIds.length }} {{ selectedTripOrderIds.length === 1 ? 'order' : 'orders' }}
+                </span>
+              </div>
+              <p class="text-[11px] text-gray-300 truncate hidden sm:block">
+                Select more orders from table or proceed to assign driver & manifest.
+              </p>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              @click="handleClearTripSelection"
+              class="px-3 py-2 text-xs font-semibold text-gray-400 hover:text-white transition cursor-pointer"
+            >
+              Clear
+            </button>
+            <button
+              type="button"
+              @click="isCreateTripModalOpen = true"
+              class="inline-flex items-center gap-2 px-4 py-2.5 bg-[#1a5c4c] hover:bg-[#154a3d] text-white rounded-xl text-xs sm:text-sm font-bold shadow-md transition-all active:scale-95 cursor-pointer"
+            >
+              <span>Confirm & Create Trip</span>
+              <ChevronRight class="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
   </div>
 </template>
