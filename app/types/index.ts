@@ -149,6 +149,8 @@ export interface Order {
   paymentStatus?: PaymentStatus | null
   paymentRecords?: PaymentRecord[]
   timeline?: TimelineEntry[]
+  deliveryDriver?: string | null
+  assignedTrip?: any
   createdAt: string
   updatedAt: string
 }
