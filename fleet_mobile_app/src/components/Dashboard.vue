@@ -815,6 +815,15 @@ async function deliverStopPrompt(trip: any, stop: any) {
       }
     })
     showSaved(`✓ Delivered to ${stop.customerName}!`)
+    try {
+      if (realtimeDriverChannel) {
+        realtimeDriverChannel.send({
+          type: 'broadcast',
+          event: 'TRIP_CHANGE',
+          payload: { type: 'STOP_DELIVERED', tripId: trip.id, stopId: stop.id, orderId: stop.orderId }
+        })
+      }
+    } catch (e) {}
     await fetchAssignedDeliveries()
   } catch (e: any) {
     console.error('Failed to deliver stop', e)
@@ -861,6 +870,15 @@ async function startManifestTripPrompt(trip: any) {
       activeTrip.value = res.trip
       startGpsTracking()
       showSaved(`Trip ${trip.tripNumber} started! Live GPS is active. Drive safe!`)
+      try {
+        if (realtimeDriverChannel) {
+          realtimeDriverChannel.send({
+            type: 'broadcast',
+            event: 'TRIP_CHANGE',
+            payload: { type: 'TRIP_STARTED', tripId: trip.id }
+          })
+        }
+      } catch (e) {}
       await fetchAssignedDeliveries()
     } catch (e: any) {
       console.error('Failed to start manifest trip:', e)
@@ -1738,7 +1756,7 @@ onMounted(async () => {
 
   // 5. Supabase Realtime WebSocket sync across all company devices (<100ms)
   try {
-    realtimeDriverChannel = supabase.channel('sm_driver_realtime', {
+    realtimeDriverChannel = supabase.channel('sm_orders_realtime', {
       config: { broadcast: { ack: false, self: false } }
     })
 
@@ -1746,10 +1764,19 @@ onMounted(async () => {
       .on('broadcast', { event: 'ORDER_CHANGE' }, () => {
         fetchAssignedDeliveries()
       })
+      .on('broadcast', { event: 'TRIP_CHANGE' }, () => {
+        fetchAssignedDeliveries()
+      })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
         fetchAssignedDeliveries()
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'delivery_statuses' }, () => {
+        fetchAssignedDeliveries()
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'trips' }, () => {
+        fetchAssignedDeliveries()
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'trip_stops' }, () => {
         fetchAssignedDeliveries()
       })
       .subscribe()

@@ -78,6 +78,9 @@ function setupRealtimeChannel() {
     sharedChannel.on('broadcast', { event: 'ORDER_CHANGE' }, (payload) => {
       triggerListeners(payload?.payload || { type: 'ORDER_CHANGE' })
     })
+    sharedChannel.on('broadcast', { event: 'TRIP_CHANGE' }, (payload) => {
+      triggerListeners(payload?.payload || { type: 'TRIP_CHANGE' })
+    })
 
     // 2. Direct Postgres database changes fallback
     sharedChannel
@@ -116,6 +119,12 @@ function setupRealtimeChannel() {
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'order_requests' }, (payload) => {
         triggerListeners({ type: 'DB_ORDER_REQUEST_CHANGE', table: 'order_requests', record: payload.new || payload.old })
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'trips' }, (payload) => {
+        triggerListeners({ type: 'DB_TRIP_CHANGE', table: 'trips', record: payload.new || payload.old })
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'trip_stops' }, (payload) => {
+        triggerListeners({ type: 'DB_TRIP_STOP_CHANGE', table: 'trip_stops', record: payload.new || payload.old })
       })
 
     sharedChannel.subscribe((status) => {
@@ -164,6 +173,13 @@ export function useRealtimeSync() {
           event: 'ORDER_CHANGE',
           payload,
         })
+        if (payload.type?.includes('TRIP') || payload.action?.includes('TRIP')) {
+          sharedChannel.send({
+            type: 'broadcast',
+            event: 'TRIP_CHANGE',
+            payload,
+          })
+        }
       }
     } catch (e) {
       console.warn('[RealtimeSync] Failed to send broadcast:', e)

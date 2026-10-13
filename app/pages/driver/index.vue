@@ -691,6 +691,7 @@ async function deliverStopPrompt(trip: any, stop: any) {
       }
     })
     showSaved(`✓ Delivered to ${stop.customerName}!`)
+    notifyDeliveryChange('deliver_stop', stop.orderId)
     await fetchAssignedDeliveries()
   } catch (e: any) {
     console.error('Failed to deliver stop', e)
@@ -1472,8 +1473,23 @@ onMounted(async () => {
   if (supabaseUrl && supabaseKey) {
     import('@supabase/supabase-js').then(({ createClient }) => {
       supabaseClient = createClient(supabaseUrl, supabaseKey)
-      realtimeDriverChannel = supabaseClient.channel('driver-updates')
+      realtimeDriverChannel = supabaseClient.channel('sm_orders_realtime', {
+        config: { broadcast: { ack: false, self: false } }
+      })
+      realtimeDriverChannel
+        .on('broadcast', { event: 'ORDER_CHANGE' }, () => {
+          fetchAssignedDeliveries()
+        })
+        .on('broadcast', { event: 'TRIP_CHANGE' }, () => {
+          fetchAssignedDeliveries()
+        })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'delivery_statuses' }, () => {
+          fetchAssignedDeliveries()
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'trips' }, () => {
+          fetchAssignedDeliveries()
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'trip_stops' }, () => {
           fetchAssignedDeliveries()
         })
         .subscribe()

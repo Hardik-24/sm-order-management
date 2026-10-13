@@ -69,11 +69,14 @@ const handleClearTripSelection = () => {
   selectedTripOrderIds.value = []
 }
 
-const onTripCreated = () => {
+const onTripCreated = (createdTrip?: any) => {
   selectedTripOrderIds.value = []
   refresh()
   refreshStats()
   refreshTrips()
+  try {
+    notifyChange({ type: 'TRIP_CREATED', action: 'TRIP_CREATED', trip: createdTrip })
+  } catch (e) {}
 }
 
 const page = ref(1)
@@ -184,10 +187,11 @@ function performSilentSync(updatedOrder?: any) {
   }
   refresh()
   refreshStats()
+  refreshTrips()
 }
 
 // Realtime instant synchronization across all devices
-const { onOrderSync } = useRealtimeSync()
+const { onOrderSync, notifyChange } = useRealtimeSync()
 onOrderSync((event) => {
   if (event?.order) applyOrderUpdate(event.order)
   performSilentSync()
