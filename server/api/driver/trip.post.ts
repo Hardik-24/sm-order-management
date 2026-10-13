@@ -173,6 +173,52 @@ export default defineEventHandler(async (event) => {
           currentLng: Number(coords.lng)
         }
       }).catch(() => {})
+
+      // Update all stops and their orders in this trip to DISPATCHED
+      try {
+        const tripStops = await prisma.tripStop.findMany({
+          where: { tripId },
+          include: { order: { include: { billingStatus: true, packingStatus: true } } }
+        })
+
+        for (const ts of tripStops) {
+          if (ts.status === 'PENDING') {
+            await prisma.tripStop.update({
+              where: { id: ts.id },
+              data: { status: 'IN_TRANSIT' }
+            }).catch(() => {})
+          }
+          await prisma.order.update({
+            where: { id: ts.orderId },
+            data: {
+              overallStatus: 'DISPATCHED',
+              deliveryStatus: {
+                upsert: {
+                  create: {
+                    status: 'DISPATCHED',
+                    driverName: user.name,
+                    dispatchDate: new Date()
+                  },
+                  update: {
+                    status: 'DISPATCHED',
+                    driverName: user.name,
+                    dispatchDate: new Date()
+                  }
+                }
+              },
+              timeline: {
+                create: {
+                  action: 'Trip Started',
+                  description: `Driver ${user.name} started live delivery trip. Tracking active.`,
+                  performedById: user.id
+                }
+              }
+            }
+          }).catch(() => {})
+        }
+      } catch (err) {
+        console.warn('Failed to dispatch all trip stop orders on trip start:', err)
+      }
     }
 
     // Resolve customer destination pin

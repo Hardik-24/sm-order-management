@@ -73,32 +73,39 @@ export default defineEventHandler(async (event) => {
       }
     })
 
-    // 4. Update each order to DISPATCHED
+    // 4. Assign each order to driver in PLANNED trip (Driver will start the trip)
     for (const s of stops) {
+      const existingOrder = await tx.order.findUnique({
+        where: { id: s.orderId },
+        include: { billingStatus: true, packingStatus: true }
+      })
+
+      const bStatus = existingOrder?.billingStatus?.status || 'PENDING'
+      const pStatus = existingOrder?.packingStatus?.status || 'PENDING'
+      const newOverallStatus = (bStatus === 'GENERATED' && pStatus === 'PACKED') ? 'READY' : (existingOrder?.overallStatus || 'PROCESSING')
+
       await tx.order.update({
         where: { id: s.orderId },
         data: {
-          overallStatus: 'DISPATCHED',
+          overallStatus: newOverallStatus,
           deliveryAddress: s.addressLine || undefined,
           deliveryAddressId: s.customerAddressId || undefined,
           deliveryStatus: {
             upsert: {
               create: {
-                status: 'DISPATCHED',
-                driverName,
-                dispatchDate: new Date()
+                status: 'ASSIGNED',
+                driverName
               },
               update: {
-                status: 'DISPATCHED',
-                driverName,
-                dispatchDate: new Date()
+                status: 'ASSIGNED',
+                driverName
               }
             }
           },
           timeline: {
             create: {
-              action: 'Dispatched in Trip',
-              description: `Assigned to Trip ${tripNumber} (Stop #${s.stopSequence || 1}) with driver ${driverName} (${vehicleNumber || 'Standard Fleet'}).`,
+              action: 'Trip Assigned',
+              description: `Assigned to Trip ${tripNumber} (Stop #${s.stopSequence || 1}) with driver ${driverName} (${vehicleNumber || 'Standard Fleet'}). Waiting for driver departure.`,
               performedById: user.id
             }
           }

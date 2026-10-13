@@ -218,6 +218,36 @@
             </div>
           </div>
 
+          <!-- Start Trip Action Bar (When Trip is Planned) -->
+          <div v-if="trip.status === 'PLANNED'" class="p-3.5 bg-emerald-50/90 rounded-xl border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div class="min-w-0">
+              <div class="flex items-center gap-1.5 text-xs font-black text-emerald-950">
+                <Truck class="w-4 h-4 text-[#1a5c4c]" />
+                <span>Trip Assigned & Ready</span>
+              </div>
+              <p class="text-[11px] text-emerald-800 mt-0.5">
+                Review your delivery stops below, then tap Start Trip to begin live route navigation.
+              </p>
+            </div>
+            <button
+              type="button"
+              @click="startManifestTripPrompt(trip)"
+              class="px-4 py-2.5 bg-[#1a5c4c] hover:bg-[#134336] text-white text-xs font-black rounded-xl shadow-sm transition flex items-center justify-center gap-2 shrink-0 active:scale-95 cursor-pointer"
+            >
+              <Play class="w-4 h-4 fill-current" />
+              <span>Start Trip Now</span>
+            </button>
+          </div>
+
+          <!-- In Transit Live Indicator -->
+          <div v-else-if="trip.status === 'IN_TRANSIT'" class="px-3 py-2 bg-emerald-50 rounded-xl border border-emerald-200/80 flex items-center justify-between text-xs">
+            <div class="flex items-center gap-2 text-emerald-800 font-bold">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
+              <span>Live GPS Transit Active</span>
+            </div>
+            <span class="text-[11px] text-emerald-700 font-semibold">Deliver stops in sequence</span>
+          </div>
+
           <!-- Trip Stops Manifest with Driver Reorder Controls -->
           <div class="space-y-2.5">
             <div class="flex items-center justify-between text-[11px] font-bold text-gray-500 uppercase tracking-wider">
@@ -666,6 +696,102 @@ async function deliverStopPrompt(trip: any, stop: any) {
     console.error('Failed to deliver stop', e)
     showEditing(e.message || 'Failed to deliver stop')
   }
+}
+
+async function startManifestTripPrompt(trip: any) {
+  if (typeof navigator === 'undefined' || !navigator.geolocation) {
+    showEditing('GPS geolocation is not supported on this device/browser.')
+    return
+  }
+
+  showSaving(`Starting Trip ${trip.tripNumber}... Acquiring GPS location.`)
+
+  const geoPlugin = geo
+  let bestPos: any = null
+  let watchHandle: any = null
+  let timeoutHandle: any = null
+  let resolved = false
+
+  const doStart = async (pos: any) => {
+    if (resolved) return
+    resolved = true
+    if (watchHandle !== null) geoPlugin.clearWatch(watchHandle)
+    if (timeoutHandle) clearTimeout(timeoutHandle)
+
+    currentCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude }
+
+    try {
+      const res = await $fetch<{ success: boolean; trip: any }>('/api/driver/trip', {
+        method: 'POST',
+        body: {
+          action: 'start',
+          tripId: trip.id,
+          coords: currentCoords
+        }
+      })
+      const firstOrderId = trip.stops?.[0]?.orderId
+      if (firstOrderId) {
+        activeTripOrderId.value = firstOrderId
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('sm_active_trip_order_id', firstOrderId)
+        }
+        notifyDeliveryChange('start', firstOrderId)
+      }
+      activeTrip.value = res.trip
+      startGpsTracking()
+      showSaved(`Trip ${trip.tripNumber} started! Live GPS is active. Drive safe!`)
+      await fetchAssignedDeliveries()
+    } catch (e: any) {
+      console.error('Failed to start manifest trip:', e)
+      showEditing(e?.data?.statusMessage || e?.data?.message || 'Failed to start trip. Please try again.')
+    }
+  }
+
+  geoPlugin.watchPosition(
+    (pos: any) => {
+      const accuracy = pos.coords.accuracy
+      if (!bestPos || accuracy < bestPos.coords.accuracy) {
+        bestPos = pos
+      }
+      if (accuracy <= 50) {
+        doStart(pos)
+      }
+    },
+    (_err: any) => {
+      if (!resolved) {
+        geoPlugin.getCurrentPosition(
+          (pos: any) => doStart(pos),
+          (_e: any) => {
+            if (!resolved) {
+              resolved = true
+              showEditing('Please allow Location / GPS access on your phone to start trip.')
+            }
+          },
+          { enableHighAccuracy: true, timeout: 8000, maximumAge: 10000 }
+        )
+      }
+    },
+    { enableHighAccuracy: true, timeout: 12000, maximumAge: 5000 }
+  ).then((id: any) => { watchHandle = id })
+
+  timeoutHandle = setTimeout(() => {
+    if (!resolved) {
+      if (bestPos) {
+        doStart(bestPos)
+      } else {
+        geoPlugin.getCurrentPosition(
+          (pos: any) => doStart(pos),
+          (_e: any) => {
+            if (!resolved) {
+              resolved = true
+              showEditing('Could not get GPS fix. Please ensure location services are enabled.')
+            }
+          },
+          { enableHighAccuracy: false, timeout: 5000, maximumAge: 30000 }
+        )
+      }
+    }
+  }, 4000)
 }
 
 // Auto-refresh driver screen when office assigns a new order or puts one on hold

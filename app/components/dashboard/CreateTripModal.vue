@@ -309,7 +309,7 @@
           <div class="text-xs text-gray-500">
             <span v-if="hasPinErrors" class="text-rose-600 font-bold flex items-center gap-1">
               <AlertTriangle class="w-3.5 h-3.5" />
-              All stops must have a verified GPS pin before dispatching.
+              All stops must have a verified GPS pin before creating trip.
             </span>
             <span v-else-if="stops.length > 0" class="text-emerald-700 font-medium">
               ✓ All {{ stops.length }} stop pins verified and sequenced.
@@ -336,7 +336,7 @@
             >
               <Loader2 v-if="isSubmitting" class="w-3.5 h-3.5 animate-spin" />
               <Truck v-else class="w-3.5 h-3.5" />
-              <span>{{ isSubmitting ? 'Creating Manifest...' : 'Dispatch Trip' }}</span>
+              <span>{{ isSubmitting ? 'Creating Trip...' : 'Create Trip' }}</span>
             </button>
           </div>
         </div>
@@ -646,7 +646,7 @@ const submitTrip = async () => {
   }
 
   if (hasPinErrors.value) {
-    alert('Every stop must have a valid GPS pin. Please set pin on flagged stops before dispatching.')
+    alert('Every stop must have a valid GPS pin. Please set pin on flagged stops before creating trip.')
     return
   }
 
