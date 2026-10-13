@@ -668,6 +668,9 @@ async function driverReorderStop(trip: any, stopIndex: number, direction: number
         stopOrder
       }
     })
+    try {
+      notifyChange({ type: 'TRIP_CHANGE', action: 'REORDER_STOPS', tripId: trip.id, stopOrder })
+    } catch (e) {}
     showSaved('Stop sequence updated!')
   } catch (e: any) {
     console.error('Failed to reorder stop', e)

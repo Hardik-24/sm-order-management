@@ -25,14 +25,18 @@ export default defineEventHandler(async (event) => {
   }
 
   // Update stop sequences in a transaction
-  await prisma.$transaction(
-    stopOrder.map((item: { stopId: string; stopSequence: number }) =>
+  await prisma.$transaction([
+    ...stopOrder.map((item: { stopId: string; stopSequence: number }) =>
       prisma.tripStop.update({
         where: { id: item.stopId },
         data: { stopSequence: Number(item.stopSequence) }
       })
-    )
-  )
+    ),
+    prisma.trip.update({
+      where: { id: tripId },
+      data: { updatedAt: new Date() }
+    })
+  ])
 
   const updatedStops = await prisma.tripStop.findMany({
     where: { tripId },

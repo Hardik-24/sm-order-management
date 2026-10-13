@@ -792,6 +792,15 @@ async function driverReorderStop(trip: any, stopIndex: number, direction: number
         stopOrder
       }
     })
+    try {
+      if (realtimeDriverChannel) {
+        realtimeDriverChannel.send({
+          type: 'broadcast',
+          event: 'TRIP_CHANGE',
+          payload: { type: 'REORDER_STOPS', tripId: trip.id, stopOrder }
+        })
+      }
+    } catch (e) {}
     showSaved('Stop sequence updated!')
   } catch (e: any) {
     console.error('Failed to reorder stop', e)

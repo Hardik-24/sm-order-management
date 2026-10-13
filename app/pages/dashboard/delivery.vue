@@ -48,6 +48,9 @@ const handleReorderStop = async (trip: any, stopIndex: number, direction: number
       method: 'PATCH',
       body: { stopOrder }
     })
+    try {
+      notifyChange({ type: 'TRIP_CHANGE', action: 'REORDER_STOPS', tripId: trip.id, stopOrder })
+    } catch (e) {}
     await refreshTrips()
   } catch (e: any) {
     console.error('Failed to reorder stop', e)
