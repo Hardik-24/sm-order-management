@@ -534,14 +534,14 @@ const saveDriverAssignment = async () => {
                     <span>Route Map</span>
                   </button>
 
-                  <!-- Trip Selection Button + Manage (For orders waiting/ready for trip) -->
+                  <!-- Trip Selection Button (For orders waiting/ready for trip) -->
                   <template v-else-if="order.deliveryStatus?.status === 'WAITING' || !order.deliveryStatus || order.deliveryStatus?.status === 'PENDING' || order.deliveryStatus?.status === 'ASSIGNED'">
                     <!-- Selected in Trip draft -->
                     <button
                       v-if="selectedTripOrderIds?.includes(order.id)"
                       type="button"
                       @click.stop="emit('toggleTripOrder', order.id)"
-                      class="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-bold bg-[#1a5c4c] text-white rounded-lg shadow-sm hover:bg-[#134336] transition-all cursor-pointer ring-2 ring-[#1a5c4c]/30"
+                      class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-[#1a5c4c] text-white rounded-lg shadow-sm hover:bg-[#134336] transition-all cursor-pointer ring-2 ring-[#1a5c4c]/30"
                       title="Click to remove from trip draft"
                     >
                       <Check class="w-3.5 h-3.5" />
@@ -553,7 +553,7 @@ const saveDriverAssignment = async () => {
                       v-else-if="(selectedTripOrderIds?.length || 0) > 0"
                       type="button"
                       @click.stop="emit('toggleTripOrder', order.id)"
-                      class="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100 rounded-lg shadow-2xs transition-all cursor-pointer"
+                      class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100 rounded-lg shadow-2xs transition-all cursor-pointer"
                       title="Add this order to the trip draft"
                     >
                       <Plus class="w-3.5 h-3.5 text-emerald-700" />
@@ -565,30 +565,13 @@ const saveDriverAssignment = async () => {
                       v-else
                       type="button"
                       @click.stop="emit('toggleTripOrder', order.id)"
-                      class="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-bold bg-[#1a5c4c]/10 text-[#1a5c4c] hover:bg-[#1a5c4c] hover:text-white border border-[#1a5c4c]/30 rounded-lg transition-all shadow-2xs cursor-pointer"
+                      class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-[#1a5c4c]/10 text-[#1a5c4c] hover:bg-[#1a5c4c] hover:text-white border border-[#1a5c4c]/30 rounded-lg transition-all shadow-2xs cursor-pointer"
                       title="Create a new trip with this order"
                     >
                       <Plus class="w-3.5 h-3.5" />
                       <span>Create Trip</span>
                     </button>
-
-                    <!-- Manage Details -->
-                    <button 
-                      @click.stop="emit('select', order.id)" 
-                      class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold bg-white text-gray-700 hover:bg-gray-50 rounded-lg border border-gray-300 transition-all shadow-2xs cursor-pointer"
-                    >
-                      <span>Manage</span>
-                    </button>
                   </template>
-
-                  <!-- Manage Details (Fallback for any other state) -->
-                  <button 
-                    v-else
-                    @click.stop="emit('select', order.id)" 
-                    class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold bg-white text-gray-700 hover:bg-gray-50 rounded-lg border border-gray-300 transition-all shadow-2xs cursor-pointer"
-                  >
-                    <span>Manage</span>
-                  </button>
 
                   <!-- WhatsApp Quick Share -->
                   <button 
@@ -779,15 +762,6 @@ const saveDriverAssignment = async () => {
                   <span>+ Trip</span>
                 </button>
               </template>
-
-              <!-- Manage / Details otherwise -->
-              <button 
-                v-else
-                @click.stop="emit('select', order.id)"
-                class="px-2.5 py-1 border border-gray-200 bg-gray-50 text-gray-700 text-[11px] font-medium rounded-md hover:bg-gray-100 transition-colors"
-              >
-                Manage
-              </button>
               
               <ChevronRight class="w-4 h-4 text-gray-300 shrink-0 -mr-1" />
             </div>
