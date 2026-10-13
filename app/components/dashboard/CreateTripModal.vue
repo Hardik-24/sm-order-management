@@ -476,12 +476,14 @@ const loadInitialData = async () => {
       form.value.driverPhone = availableDrivers.value[0].phone || ''
     }
 
-    // Set available orders
+    // Set available orders (excluding Party Vehicle orders)
     const ords = Array.isArray(ordersRes.orders) ? ordersRes.orders : []
     unassignedOrders.value = ords.filter((o: any) =>
-      o.deliveryStatus?.status === 'WAITING' ||
-      o.deliveryStatus?.status === 'ASSIGNED' ||
-      (o.billingStatus?.status === 'GENERATED' && o.packingStatus?.status === 'PACKED' && o.deliveryStatus?.status !== 'DELIVERED')
+      o.vehicleMode !== 'PARTY_VEHICLE' && (
+        o.deliveryStatus?.status === 'WAITING' ||
+        o.deliveryStatus?.status === 'ASSIGNED' ||
+        (o.billingStatus?.status === 'GENERATED' && o.packingStatus?.status === 'PACKED' && o.deliveryStatus?.status !== 'DELIVERED')
+      )
     )
 
     // If preselected order IDs passed, add them
@@ -491,10 +493,10 @@ const loadInitialData = async () => {
         if (!found) {
           try {
             found = await $fetch<any>(`/api/orders/${oid}`)
-            if (found) unassignedOrders.value.push(found)
+            if (found && found.vehicleMode !== 'PARTY_VEHICLE') unassignedOrders.value.push(found)
           } catch (e) {}
         }
-        if (found) addOrderToTrip(found)
+        if (found && found.vehicleMode !== 'PARTY_VEHICLE') addOrderToTrip(found)
       }
     }
   } catch (e) {

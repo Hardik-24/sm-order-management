@@ -13,6 +13,7 @@ export default defineEventHandler(async (event) => {
     paymentTerms, 
     notes, 
     isUrgent = false,
+    vehicleMode = 'OUR_FLEET',
     items 
   } = body
 
@@ -83,6 +84,7 @@ export default defineEventHandler(async (event) => {
           salesPersonId: user.id,
           deliveryAddress: resolvedDeliveryAddress,
           deliveryAddressId: deliveryAddressId || null,
+          vehicleMode: vehicleMode === 'PARTY_VEHICLE' ? 'PARTY_VEHICLE' : 'OUR_FLEET',
           isUrgent: Boolean(isUrgent),
           isApproved: false,
           paymentTerms,
@@ -97,7 +99,7 @@ export default defineEventHandler(async (event) => {
           timeline: {
             create: {
               action: 'Order Created',
-              description: `Order ${orderNumber} created by ${user.name}`,
+              description: `Order ${orderNumber} created by ${user.name} (${vehicleMode === 'PARTY_VEHICLE' ? 'Party Vehicle Pickup' : 'Our Fleet Delivery'})`,
               performedById: user.id
             }
           }

@@ -57,6 +57,10 @@ const handleReorderStop = async (trip: any, stopIndex: number, direction: number
 const selectedTripOrderIds = ref<string[]>([])
 
 const handleToggleTripOrder = (orderId: string) => {
+  const ord = data.value?.orders?.find((o: any) => o.id === orderId)
+  if (ord && ord.vehicleMode === 'PARTY_VEHICLE') {
+    return
+  }
   const idx = selectedTripOrderIds.value.indexOf(orderId)
   if (idx > -1) {
     selectedTripOrderIds.value.splice(idx, 1)

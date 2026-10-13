@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { X, Plus, Trash2, Zap, MapPin, UserCheck, ShieldAlert, Award, FileText, IndianRupee } from 'lucide-vue-next'
+import { X, Plus, Trash2, Zap, MapPin, UserCheck, ShieldAlert, Award, FileText, IndianRupee, Truck, Car, AlertCircle } from 'lucide-vue-next'
 import { formatCurrency } from '~/lib/utils'
 import CustomSelect from '~/components/ui/CustomSelect.vue'
 import { useSnackbar } from '~/composables/useSnackbar'
@@ -17,6 +17,7 @@ const form = ref({
   customerId: '',
   deliveryAddressId: '',
   deliveryAddress: '',
+  vehicleMode: 'OUR_FLEET',
   paymentTerms: '',
   notes: '',
   isUrgent: false,
@@ -254,6 +255,79 @@ const getPrivilegeColor = (tier: string) => {
               placeholder="Select Terms"
               class="w-full"
             />
+          </div>
+
+          <!-- Transport / Vehicle Selection Mode -->
+          <div class="md:col-span-2">
+            <label class="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-2 flex items-center justify-between">
+              <span>Transport & Delivery Vehicle *</span>
+              <span class="text-[11px] font-semibold" :class="form.vehicleMode === 'OUR_FLEET' ? 'text-[#1a5c4c]' : 'text-amber-700'">
+                {{ form.vehicleMode === 'OUR_FLEET' ? '✓ Company Fleet Dispatch' : '🚗 Party Transport (Direct Handover)' }}
+              </span>
+            </label>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <!-- Option 1: Our Fleet -->
+              <div
+                @click="form.vehicleMode = 'OUR_FLEET'"
+                class="p-4 rounded-xl border-2 cursor-pointer transition-all flex items-start gap-3 select-none"
+                :class="form.vehicleMode === 'OUR_FLEET'
+                  ? 'border-[#1a5c4c] bg-emerald-50/50 shadow-xs ring-1 ring-[#1a5c4c]/20'
+                  : 'border-gray-200 bg-white hover:border-gray-300 text-gray-600'"
+              >
+                <div
+                  class="p-2.5 rounded-lg shrink-0 mt-0.5 transition-colors"
+                  :class="form.vehicleMode === 'OUR_FLEET' ? 'bg-[#1a5c4c] text-white shadow-xs' : 'bg-gray-100 text-gray-500'"
+                >
+                  <Truck class="w-4 h-4" />
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-gray-900">Our Vehicle (Company Fleet)</span>
+                    <span v-if="form.vehicleMode === 'OUR_FLEET'" class="w-2 h-2 rounded-full bg-[#1a5c4c]"></span>
+                  </div>
+                  <p class="text-[11px] text-gray-500 mt-1 leading-relaxed">
+                    Bundled into fleet trips. Drivers assigned via OMS, tracked via GPS mobile app with multi-stop routes.
+                  </p>
+                </div>
+              </div>
+
+              <!-- Option 2: Party Vehicle -->
+              <div
+                @click="form.vehicleMode = 'PARTY_VEHICLE'"
+                class="p-4 rounded-xl border-2 cursor-pointer transition-all flex items-start gap-3 select-none"
+                :class="form.vehicleMode === 'PARTY_VEHICLE'
+                  ? 'border-amber-600 bg-amber-50/60 shadow-xs ring-1 ring-amber-500/20'
+                  : 'border-gray-200 bg-white hover:border-gray-300 text-gray-600'"
+              >
+                <div
+                  class="p-2.5 rounded-lg shrink-0 mt-0.5 transition-colors"
+                  :class="form.vehicleMode === 'PARTY_VEHICLE' ? 'bg-amber-600 text-white shadow-xs' : 'bg-gray-100 text-gray-500'"
+                >
+                  <Car class="w-4 h-4" />
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-gray-900">Party Vehicle (Customer Arranged)</span>
+                    <span v-if="form.vehicleMode === 'PARTY_VEHICLE'" class="w-2 h-2 rounded-full bg-amber-600"></span>
+                  </div>
+                  <p class="text-[11px] text-gray-500 mt-1 leading-relaxed">
+                    Customer sends own vehicle / driver. Ineligible for trips; warehouse staff marks as Handed Over directly.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Party Vehicle Informational Notice -->
+            <div
+              v-if="form.vehicleMode === 'PARTY_VEHICLE'"
+              class="mt-2.5 p-3 bg-amber-50/80 border border-amber-200/90 rounded-lg flex items-start gap-2 text-xs text-amber-900"
+            >
+              <AlertCircle class="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+              <div class="leading-relaxed">
+                <strong>Party Vehicle Pickup:</strong> This order will not appear in Trip Creation. Once billing and packing are done, warehouse staff will see a <strong>"Hand Over"</strong> button to complete delivery.
+              </div>
+            </div>
           </div>
           
           <!-- Registered Address Picker Dropdown -->

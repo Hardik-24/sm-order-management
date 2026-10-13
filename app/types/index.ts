@@ -138,6 +138,7 @@ export interface Order {
   salesPerson: { id: string; name: string }
   orderDate: string
   deliveryAddress: string
+  vehicleMode?: 'OUR_FLEET' | 'PARTY_VEHICLE' | string
   paymentTerms: string
   notes?: string | null
   totalAmount: number

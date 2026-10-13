@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
-import { X, MoreHorizontal, Lock, Edit, Package, PackageCheck, Truck, Check, Box, Plus, Trash2, MapPin, AlertCircle, AlertTriangle, Ban, CheckCheck, CheckCircle2, Zap, User, IndianRupee, Clock, Building2, Phone, FileText, Calendar, Copy, ChevronRight } from 'lucide-vue-next'
+import { X, MoreHorizontal, Lock, Edit, Package, PackageCheck, Truck, Check, Box, Plus, Trash2, MapPin, AlertCircle, AlertTriangle, Ban, CheckCheck, CheckCircle2, Zap, User, IndianRupee, Clock, Building2, Phone, FileText, Calendar, Copy, ChevronRight, Car } from 'lucide-vue-next'
 import StatusBadge from '~/components/ui/StatusBadge.vue'
 import GenerateBillModal from '~/components/dashboard/GenerateBillModal.vue'
 import SetDeliveryPinModal from '~/components/dashboard/SetDeliveryPinModal.vue'
+import PartyVehicleHandoverModal from '~/components/dashboard/PartyVehicleHandoverModal.vue'
 import CustomSelect from '~/components/ui/CustomSelect.vue'
 import { formatCurrency, formatDateTime, formatDate, formatTime, getDisplayStatus, getOverallColor, getStatusColor } from '~~/app/lib/utils'
 import type { Order } from '~/types'
@@ -11,6 +12,7 @@ import { useSnackbar } from '~/composables/useSnackbar'
 import { useRealtimeSync } from '~/composables/useRealtimeSync'
 
 const isPinModalOpen = ref(false)
+const isHandoverModalOpen = ref(false)
 
 const { showEditing, showSaving, showSaved, hide } = useSnackbar()
 const { notifyChange, onOrderSync } = useRealtimeSync()
@@ -1171,8 +1173,71 @@ watch(editForm, () => {
               </div>
             </div>
 
-            <!-- C. Trip & Driver Manifest Assignment (Read-Only) -->
-            <div class="bg-white rounded-xl border border-gray-200/80 p-4 shadow-2xs space-y-3">
+            <!-- C1. Party Vehicle Transport Mode -->
+            <div v-if="order.vehicleMode === 'PARTY_VEHICLE'" class="bg-white rounded-xl border border-gray-200/80 p-4 shadow-2xs space-y-3">
+              <div class="flex justify-between items-center pb-2.5 border-b border-gray-100">
+                <h3 class="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-1.5">
+                  <Car class="w-3.5 h-3.5 text-amber-600" />
+                  Party Vehicle Transport
+                </h3>
+                <span 
+                  class="font-mono text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded border"
+                  :class="order.deliveryStatus?.status === 'DELIVERED'
+                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                    : 'bg-amber-50 text-amber-800 border-amber-200'"
+                >
+                  {{ order.deliveryStatus?.status === 'DELIVERED' ? 'HANDED OVER' : 'CUSTOMER PICKUP' }}
+                </span>
+              </div>
+
+              <!-- Delivered State -->
+              <div v-if="order.deliveryStatus?.status === 'DELIVERED'" class="space-y-3">
+                <div class="grid grid-cols-2 gap-y-3 gap-x-4 text-xs sm:text-sm">
+                  <div>
+                    <span class="block text-[10px] sm:text-[11px] uppercase font-bold text-gray-400 tracking-wider mb-0.5">Handover Info</span>
+                    <div class="flex items-center gap-1.5 font-bold text-gray-900">
+                      <Car class="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                      <span>{{ order.deliveryStatus?.driverName || 'Party Vehicle' }}</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <span class="block text-[10px] sm:text-[11px] uppercase font-bold text-gray-400 tracking-wider mb-0.5">Delivered At</span>
+                    <span class="font-semibold text-gray-800 block text-xs">
+                      {{ order.deliveryStatus?.deliveredAt ? formatDateTime(order.deliveryStatus.deliveredAt) : 'Recorded' }}
+                    </span>
+                    <span class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 mt-1">
+                      <CheckCircle2 class="w-3 h-3 text-emerald-600" /> Handover Complete
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Pending Handover State -->
+              <div v-else class="text-xs text-gray-600 bg-amber-50/60 rounded-xl p-3.5 border border-amber-200/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div class="space-y-0.5">
+                  <div class="font-bold text-amber-950 flex items-center gap-1.5">
+                    <AlertCircle class="w-4 h-4 text-amber-600 shrink-0" />
+                    <span>Customer-Arranged Pickup</span>
+                  </div>
+                  <p class="text-amber-900/80 text-[11px] leading-relaxed">
+                    This order is picked up via the customer's vehicle. It is not bundled into fleet trips.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  @click="isHandoverModalOpen = true"
+                  class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-lg shadow-sm transition flex items-center gap-1.5 shrink-0 cursor-pointer"
+                >
+                  <PackageCheck class="w-4 h-4" />
+                  <span>Hand Over</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- C2. Trip & Driver Manifest Assignment (Read-Only for Our Fleet) -->
+            <div v-else class="bg-white rounded-xl border border-gray-200/80 p-4 shadow-2xs space-y-3">
               <div class="flex justify-between items-center pb-2.5 border-b border-gray-100">
                 <h3 class="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-1.5">
                   <Truck class="w-3.5 h-3.5 text-gray-400" />
@@ -1613,32 +1678,54 @@ watch(editForm, () => {
 
                 <!-- Action Area: Delivery (Read-Only Pin & Tracking) -->
                 <div v-if="context === 'delivery'" class="p-4 bg-gray-50 border-t border-gray-200 rounded-b-lg relative flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-                  <div class="flex items-center gap-2">
-                    <button 
-                      v-if="(order as any)?.hasDestinationPin || (order as any)?.destinationCoords"
-                      @click="isPinModalOpen = true"
-                      class="px-3.5 py-2 text-xs font-semibold border border-emerald-300 text-[#1a5c4c] bg-emerald-50 hover:bg-emerald-100 rounded-lg shadow-sm flex items-center justify-center gap-1.5 transition cursor-pointer"
+                  <!-- Party Vehicle Handover Actions -->
+                  <template v-if="order.vehicleMode === 'PARTY_VEHICLE'">
+                    <span 
+                      v-if="order.deliveryStatus?.status === 'DELIVERED'"
+                      class="px-3.5 py-2 text-xs font-bold text-emerald-800 bg-emerald-50 rounded-lg border border-emerald-200 flex items-center gap-1.5"
                     >
-                      <MapPin class="w-3.5 h-3.5 text-[#1a5c4c]" /> Change Destination Pin
-                    </button>
+                      <CheckCircle2 class="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Handed Over to Party Vehicle</span>
+                    </span>
                     <button 
-                      v-else
-                      @click="isPinModalOpen = true"
-                      class="px-3.5 py-2 text-xs font-bold border border-amber-400 text-amber-900 bg-amber-50 hover:bg-amber-100 rounded-lg shadow-sm flex items-center justify-center gap-1.5 transition animate-pulse cursor-pointer"
+                      v-else-if="order.overallStatus !== 'CANCELLED'"
+                      @click="isHandoverModalOpen = true"
+                      class="px-4 py-2 text-xs font-bold bg-amber-600 text-white rounded-lg hover:bg-amber-700 shadow-sm flex items-center justify-center gap-1.5 transition cursor-pointer"
                     >
-                      <MapPin class="w-3.5 h-3.5 text-amber-600" /> Set Destination Pin
+                      <PackageCheck class="w-3.5 h-3.5 text-white" />
+                      <span>Hand Over to Party Vehicle</span>
                     </button>
-                  </div>
+                  </template>
 
-                  <a 
-                    v-if="order.deliveryStatus?.status === 'DISPATCHED' || (order as any)?.assignedTrip?.status === 'IN_TRANSIT'"
-                    :href="`/track/${order.orderNumber}`"
-                    target="_blank"
-                    class="px-4 py-2 text-xs font-bold bg-[#1a5c4c] text-white rounded-lg hover:bg-[#154a3d] shadow-sm flex items-center justify-center gap-1.5 transition"
-                  >
-                    <MapPin class="w-3.5 h-3.5 text-white" />
-                    <span>Track Live GPS ↗</span>
-                  </a>
+                  <!-- Fleet Multi-Stop Route & GPS Tracking -->
+                  <template v-else>
+                    <div class="flex items-center gap-2">
+                      <button 
+                        v-if="(order as any)?.hasDestinationPin || (order as any)?.destinationCoords"
+                        @click="isPinModalOpen = true"
+                        class="px-3.5 py-2 text-xs font-semibold border border-emerald-300 text-[#1a5c4c] bg-emerald-50 hover:bg-emerald-100 rounded-lg shadow-sm flex items-center justify-center gap-1.5 transition cursor-pointer"
+                      >
+                        <MapPin class="w-3.5 h-3.5 text-[#1a5c4c]" /> Change Destination Pin
+                      </button>
+                      <button 
+                        v-else
+                        @click="isPinModalOpen = true"
+                        class="px-3.5 py-2 text-xs font-bold border border-amber-400 text-amber-900 bg-amber-50 hover:bg-amber-100 rounded-lg shadow-sm flex items-center justify-center gap-1.5 transition animate-pulse cursor-pointer"
+                      >
+                        <MapPin class="w-3.5 h-3.5 text-amber-600" /> Set Destination Pin
+                      </button>
+                    </div>
+
+                    <a 
+                      v-if="order.deliveryStatus?.status === 'DISPATCHED' || (order as any)?.assignedTrip?.status === 'IN_TRANSIT'"
+                      :href="`/track/${order.orderNumber}`"
+                      target="_blank"
+                      class="px-4 py-2 text-xs font-bold bg-[#1a5c4c] text-white rounded-lg hover:bg-[#154a3d] shadow-sm flex items-center justify-center gap-1.5 transition"
+                    >
+                      <MapPin class="w-3.5 h-3.5 text-white" />
+                      <span>Track Live GPS ↗</span>
+                    </a>
+                  </template>
                 </div>
 
               </div>
@@ -2105,6 +2192,17 @@ watch(editForm, () => {
           notifyChange({ orderId: order.id, action: 'PIN_CHANGED' })
         }
         emit('updated')
+      }"
+    />
+
+    <!-- Party Vehicle Handover Modal -->
+    <PartyVehicleHandoverModal
+      :isOpen="isHandoverModalOpen"
+      :order="order"
+      @close="isHandoverModalOpen = false"
+      @handedOver="() => {
+        if (order?.id) fetchOrder(order.id);
+        emit('updated');
       }"
     />
   </Teleport>

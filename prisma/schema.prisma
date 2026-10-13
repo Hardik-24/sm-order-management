@@ -259,6 +259,7 @@ model Order {
   orderDate         DateTime        @default(now())
   deliveryAddressId String?
   deliveryAddress   String
+  vehicleMode       String          @default("OUR_FLEET")
   isUrgent          Boolean         @default(false)
   isApproved        Boolean         @default(false)
   approvedById      String?

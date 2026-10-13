@@ -38,8 +38,12 @@ export default defineEventHandler(async (event) => {
   if (deliveredAt !== undefined) deliveryData.deliveredAt = deliveredAt ? new Date(deliveredAt) : null
   if (status === 'DELIVERED' && !deliveryData.deliveredAt) deliveryData.deliveredAt = new Date()
 
+  let action = 'Delivery Status Updated'
   let desc = `Delivery status updated to ${status}.`
-  if (status === 'ON_HOLD') {
+  if (status === 'DELIVERED' && (order as any).vehicleMode === 'PARTY_VEHICLE') {
+    action = 'Handed Over to Party Vehicle'
+    desc = driverName ? `Goods handed over: ${driverName}` : 'Goods handed over to customer party vehicle'
+  } else if (status === 'ON_HOLD') {
     deliveryData.holdReason = holdReason
     if (holdReason) desc += ` Reason: ${holdReason}`
   } else {
@@ -55,7 +59,7 @@ export default defineEventHandler(async (event) => {
       deliveryStatus: { update: deliveryData },
       timeline: {
         create: {
-          action: 'Delivery Status Updated',
+          action,
           description: desc,
           performedById: user.id
         }
