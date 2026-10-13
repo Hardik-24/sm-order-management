@@ -46,16 +46,15 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label class="block text-xs font-bold text-gray-700 mb-1.5">Assign Driver *</label>
-                <select
-                  v-model="form.driverId"
-                  @change="onDriverChange"
-                  class="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-xs font-semibold text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#1a5c4c]/20 focus:border-[#1a5c4c]"
-                >
-                  <option value="" disabled>Select delivery driver</option>
-                  <option v-for="d in availableDrivers" :key="d.id" :value="d.id">
-                    {{ d.name }} ({{ d.role }})
-                  </option>
-                </select>
+                <CustomSelect
+                  :modelValue="form.driverId"
+                  @update:modelValue="onDriverSelect"
+                  :options="driverOptions"
+                  placeholder="Select delivery driver..."
+                  :searchable="true"
+                  searchPlaceholder="Search driver name..."
+                  triggerClass="px-3 py-2 text-xs font-semibold text-gray-800"
+                />
               </div>
 
               <div>
@@ -99,25 +98,65 @@
 
             <!-- Available Orders Selection Drawer -->
             <div v-if="showOrderPicker" class="p-4 bg-emerald-50/40 rounded-xl border border-emerald-100 space-y-3">
-              <div class="flex items-center justify-between">
+              <div class="flex items-center justify-between gap-2">
                 <span class="text-xs font-bold text-emerald-950">Select Orders Ready for Delivery:</span>
-                <span class="text-[11px] text-emerald-700">{{ unassignedOrders.length }} orders available</span>
+                <span class="text-[11px] font-semibold text-emerald-700">
+                  {{ filteredPickerOrders.length }} of {{ unassignedOrders.length }} available
+                </span>
               </div>
 
-              <div v-if="unassignedOrders.length === 0" class="text-xs text-gray-500 py-3 text-center bg-white rounded-lg border border-dashed border-gray-200">
+              <!-- Search Bar for Available Orders -->
+              <div class="relative">
+                <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-emerald-700/60" />
+                <input
+                  v-model="pickerSearch"
+                  type="text"
+                  placeholder="Search by order ID (e.g. SO-2026), customer name, company, or phone..."
+                  class="w-full pl-9 pr-8 py-2 bg-white border border-emerald-200/90 rounded-lg text-xs font-medium text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1a5c4c]/20 focus:border-[#1a5c4c] transition shadow-2xs"
+                />
+                <button
+                  v-if="pickerSearch"
+                  type="button"
+                  @click="pickerSearch = ''"
+                  class="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 rounded-md transition cursor-pointer"
+                  title="Clear search"
+                >
+                  <X class="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              <!-- Empty states -->
+              <div v-if="unassignedOrders.length === 0" class="text-xs text-gray-500 py-4 text-center bg-white rounded-lg border border-dashed border-gray-200">
                 No waiting or packed orders available for dispatch.
               </div>
 
-              <div v-else class="max-h-52 overflow-y-auto space-y-2 pr-1">
+              <div v-else-if="filteredPickerOrders.length === 0" class="text-xs text-gray-500 py-4 text-center bg-white rounded-lg border border-dashed border-gray-200 space-y-1.5">
+                <p>No orders match "<span class="font-semibold text-gray-700">{{ pickerSearch }}</span>"</p>
+                <button
+                  type="button"
+                  @click="pickerSearch = ''"
+                  class="text-[11px] text-[#1a5c4c] hover:underline font-bold cursor-pointer"
+                >
+                  Clear search filter
+                </button>
+              </div>
+
+              <!-- Filtered Orders List -->
+              <div v-else class="max-h-56 overflow-y-auto space-y-2 pr-1">
                 <div
-                  v-for="order in unassignedOrders"
+                  v-for="order in filteredPickerOrders"
                   :key="order.id"
                   class="p-2.5 bg-white rounded-lg border border-gray-200 flex items-center justify-between hover:border-emerald-300 transition"
                 >
                   <div class="min-w-0 pr-3">
-                    <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-2 flex-wrap">
                       <span class="font-bold text-xs text-gray-900">{{ order.orderNumber }}</span>
-                      <span class="text-[11px] text-gray-500 truncate">{{ order.customer?.company || order.customer?.name }}</span>
+                      <span class="text-[11px] font-semibold text-gray-700 truncate">
+                        {{ order.customer?.company || order.customer?.name }}
+                      </span>
+                      <span v-if="order.customer?.phone" class="text-[10px] text-gray-400 font-mono">
+                        • {{ order.customer.phone }}
+                      </span>
                     </div>
                     <div class="text-[11px] text-gray-400 truncate mt-0.5">
                       {{ order.deliveryAddress || 'No address' }} • ₹{{ Number(order.totalAmount || 0).toLocaleString('en-IN') }}
@@ -127,7 +166,7 @@
                     type="button"
                     @click="addOrderToTrip(order)"
                     :disabled="isOrderAlreadyInTrip(order.id)"
-                    class="px-2.5 py-1 text-xs font-bold rounded-lg transition shrink-0"
+                    class="px-2.5 py-1 text-xs font-bold rounded-lg transition shrink-0 cursor-pointer"
                     :class="isOrderAlreadyInTrip(order.id)
                       ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                       : 'bg-[#1a5c4c] text-white hover:bg-[#134336]'"
@@ -206,20 +245,13 @@
                     <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">
                       Deliver To Which Address?
                     </label>
-                    <select
-                      v-model="stop.selectedAddressId"
-                      @change="onStopAddressSelect(stop)"
-                      class="w-full px-2.5 py-1.5 bg-gray-50 border border-gray-300 rounded-lg text-xs font-semibold text-gray-800 focus:outline-none focus:border-[#1a5c4c]"
-                    >
-                      <option
-                        v-for="addr in stop.customerAddresses"
-                        :key="addr.id"
-                        :value="addr.id"
-                      >
-                        {{ addr.label || 'Address' }} {{ addr.isDefault ? '(Default)' : '' }}
-                      </option>
-                      <option value="CUSTOM">Custom / One-Time Site Address</option>
-                    </select>
+                    <CustomSelect
+                      :modelValue="stop.selectedAddressId"
+                      @update:modelValue="(val: string) => { stop.selectedAddressId = val; onStopAddressSelect(stop) }"
+                      :options="getStopAddressOptions(stop)"
+                      placeholder="Select address..."
+                      triggerClass="px-2.5 py-1.5 text-xs font-semibold text-gray-800 bg-white"
+                    />
                   </div>
 
                   <div class="sm:col-span-7">
@@ -332,9 +364,10 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import {
   Truck, X, Plus, Trash2, ArrowUp, ArrowDown, MapPin,
-  CheckCircle2, AlertTriangle, UserCheck, PackageCheck, Loader2
+  CheckCircle2, AlertTriangle, UserCheck, PackageCheck, Loader2, Search
 } from 'lucide-vue-next'
 import SetDeliveryPinModal from './SetDeliveryPinModal.vue'
+import CustomSelect from '~/components/ui/CustomSelect.vue'
 
 const props = defineProps<{
   isOpen: boolean
@@ -354,8 +387,34 @@ const form = ref({
 
 const isSubmitting = ref(false)
 const showOrderPicker = ref(false)
+const pickerSearch = ref('')
 const availableDrivers = ref<any[]>([])
 const unassignedOrders = ref<any[]>([])
+
+const filteredPickerOrders = computed(() => {
+  const q = pickerSearch.value.trim().toLowerCase()
+  if (!q) return unassignedOrders.value
+
+  return unassignedOrders.value.filter((order: any) => {
+    const orderNo = String(order.orderNumber || '').toLowerCase()
+    const name = String(order.customer?.name || '').toLowerCase()
+    const company = String(order.customer?.company || '').toLowerCase()
+    const phone = String(order.customer?.phone || '').toLowerCase()
+    const altPhone = String(order.customer?.alternatePhone || '').toLowerCase()
+    const code = String(order.customer?.customerCode || '').toLowerCase()
+    const city = String(order.customer?.city || '').toLowerCase()
+    const addr = String(order.deliveryAddress || '').toLowerCase()
+
+    return orderNo.includes(q) ||
+      name.includes(q) ||
+      company.includes(q) ||
+      phone.includes(q) ||
+      altPhone.includes(q) ||
+      code.includes(q) ||
+      city.includes(q) ||
+      addr.includes(q)
+  })
+})
 
 // Stops in current manifest
 interface StopItem {
@@ -445,8 +504,17 @@ const loadInitialData = async () => {
 watch(() => props.isOpen, (open) => {
   if (open) {
     stops.value = []
+    pickerSearch.value = ''
     loadInitialData()
   }
+})
+
+const driverOptions = computed(() => {
+  return availableDrivers.value.map(d => ({
+    label: `${d.name} (${d.role})`,
+    value: d.id,
+    subtitle: d.phone ? `Phone: ${d.phone}` : undefined
+  }))
 })
 
 const onDriverChange = () => {
@@ -455,6 +523,25 @@ const onDriverChange = () => {
     form.value.driverName = d.name
     form.value.driverPhone = d.phone || ''
   }
+}
+
+const onDriverSelect = (driverId: string) => {
+  form.value.driverId = driverId
+  onDriverChange()
+}
+
+const getStopAddressOptions = (stop: StopItem) => {
+  const opts: { label: string; value: string; subtitle?: string }[] = (stop.customerAddresses || []).map((addr: any) => ({
+    label: `${addr.label || 'Address'}${addr.isDefault ? ' (Default)' : ''}`,
+    value: addr.id,
+    subtitle: addr.addressLine ? `${addr.addressLine}${addr.landmark ? ` • ${addr.landmark}` : ''}` : undefined
+  }))
+  opts.push({
+    label: 'Custom / One-Time Site Address',
+    value: 'CUSTOM',
+    subtitle: 'Enter destination and drop pin manually'
+  })
+  return opts
 }
 
 const isOrderAlreadyInTrip = (orderId: string) => {

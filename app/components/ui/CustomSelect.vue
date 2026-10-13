@@ -3,7 +3,8 @@
     <!-- Trigger -->
     <div 
       @click="toggleOpen"
-      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#4ecdc4] focus:ring-1 focus:ring-[#4ecdc4] text-sm bg-white text-gray-700 cursor-pointer flex items-center justify-between transition-colors hover:bg-gray-50 select-none"
+      class="w-full border border-gray-300 rounded-lg focus:outline-none focus:border-[#1a5c4c] focus:ring-2 focus:ring-[#1a5c4c]/20 bg-white text-gray-800 cursor-pointer flex items-center justify-between transition-colors hover:bg-gray-50/80 select-none"
+      :class="triggerClass || 'px-3 py-2 text-sm'"
     >
       <span class="block w-full text-left line-clamp-2" :title="displayLabel">{{ displayLabel }}</span>
       <ChevronDown class="w-4 h-4 text-gray-400 shrink-0 ml-2 transition-transform duration-200" :class="{ 'rotate-180': isOpen }" />
@@ -117,6 +118,7 @@ const props = defineProps<{
   placeholder?: string
   searchable?: boolean
   searchPlaceholder?: string
+  triggerClass?: string
 }>()
 
 const emit = defineEmits(['update:modelValue'])

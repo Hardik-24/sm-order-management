@@ -107,7 +107,7 @@ export default defineEventHandler(async (event) => {
       take,
       orderBy: { [sortBy]: sortOrder },
       include: {
-        customer: { select: { id: true, name: true, company: true, city: true, latitude: true, longitude: true, landmark: true, privilegeTier: true, isPriorityClient: true } },
+        customer: { select: { id: true, name: true, company: true, address: true, city: true, latitude: true, longitude: true, landmark: true, privilegeTier: true, isPriorityClient: true, addresses: true } },
         salesPerson: { select: { name: true } },
         approvedBy: { select: { name: true } },
         billingStatus: { select: { status: true, invoiceNumber: true, invoiceDate: true, invoicePdfUrl: true } },
