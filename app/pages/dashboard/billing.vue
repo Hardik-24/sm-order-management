@@ -3,6 +3,7 @@ import { ref, watch, computed, nextTick, onMounted } from 'vue'
 import BillingTable from '~/components/dashboard/BillingTable.vue'
 import OrderDetailPanel from '~/components/dashboard/OrderDetailPanel.vue'
 import GenerateBillModal from '~/components/dashboard/GenerateBillModal.vue'
+import SplitOrderModal from '~/components/dashboard/SplitOrderModal.vue'
 import { IndianRupee, Zap, CheckCircle2, AlertCircle, RefreshCw } from 'lucide-vue-next'
 import { useGsapAnimation } from '~/composables/useGsapAnimation'
 import { useRealtimeSync } from '~/composables/useRealtimeSync'
@@ -123,6 +124,18 @@ const onInvoiceGenerated = () => {
   handleUpdate()
 }
 
+const isSplitModalOpen = ref(false)
+const splittingOrderId = ref<string | null>(null)
+
+const openSplitModal = (id: string) => {
+  splittingOrderId.value = id
+  isSplitModalOpen.value = true
+}
+
+const onOrderSplit = () => {
+  handleUpdate()
+}
+
 // GSAP Animations
 const { animateNumber, animateStagger, initContext } = useGsapAnimation()
 const statsContainer = ref<HTMLElement | null>(null)
@@ -161,6 +174,15 @@ watch(() => counts.value, () => {
       :orderId="generatingOrderId"
       @close="isGenerateModalOpen = false"
       @generated="onInvoiceGenerated"
+      @openSplit="openSplitModal"
+    />
+
+    <!-- Split Order Modal -->
+    <SplitOrderModal
+      :isOpen="isSplitModalOpen"
+      :orderId="splittingOrderId"
+      @close="isSplitModalOpen = false"
+      @splitSuccess="onOrderSplit"
     />
 
     <!-- Header -->
@@ -309,6 +331,7 @@ watch(() => counts.value, () => {
         v-model:deliveryStatus="deliveryStatus"
         @select="handleSelect"
         @generate-invoice="openGenerateModal"
+        @split-order="openSplitModal"
       />
     </div>
 
@@ -319,6 +342,7 @@ watch(() => counts.value, () => {
       context="billing"
       @close="handlePanelClose"
       @updated="handleUpdate"
+      @split-order="openSplitModal"
     />
 
   </div>

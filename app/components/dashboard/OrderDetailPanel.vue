@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
-import { X, MoreHorizontal, Lock, Edit, Package, PackageCheck, Truck, Check, Box, Plus, Trash2, MapPin, AlertCircle, AlertTriangle, Ban, CheckCheck, CheckCircle2, Zap, User, IndianRupee, Clock, Building2, Phone, FileText, Calendar, Copy, ChevronRight, Car } from 'lucide-vue-next'
+import { X, MoreHorizontal, Lock, Edit, Package, PackageCheck, Truck, Check, Box, Plus, Trash2, MapPin, AlertCircle, AlertTriangle, Ban, CheckCheck, CheckCircle2, Zap, User, IndianRupee, Clock, Building2, Phone, FileText, Calendar, Copy, ChevronRight, Car, GitFork } from 'lucide-vue-next'
 import StatusBadge from '~/components/ui/StatusBadge.vue'
 import GenerateBillModal from '~/components/dashboard/GenerateBillModal.vue'
 import SetDeliveryPinModal from '~/components/dashboard/SetDeliveryPinModal.vue'
@@ -31,6 +31,7 @@ const emit = defineEmits<{
   (e: 'close'): void
   (e: 'updated', updatedOrder?: any): void
   (e: 'reviewApprove', order: Order): void
+  (e: 'split-order', id: string): void
 }>()
 
 const { user, hasRole } = useAuth()
@@ -1827,6 +1828,16 @@ watch(editForm, () => {
           </div>
 
           <div class="flex items-center gap-2">
+            <!-- Split Order button -->
+            <button 
+              v-if="(context === 'billing' || hasRole('ADMIN', 'BILLING')) && order.billingStatus?.status !== 'GENERATED' && order.overallStatus !== 'CANCELLED' && order.deliveryStatus?.status !== 'DISPATCHED' && order.deliveryStatus?.status !== 'DELIVERED'"
+              @click="emit('split-order', order.id)"
+              class="px-3.5 py-2 text-xs font-semibold text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs whitespace-nowrap"
+            >
+              <GitFork class="w-3.5 h-3.5 text-[#1a5c4c]" />
+              <span>Split Order</span>
+            </button>
+
             <!-- Generate Bill button before Cancel Order -->
             <button 
               v-if="canGenerateBill && context !== 'packing' && context !== 'delivery'"

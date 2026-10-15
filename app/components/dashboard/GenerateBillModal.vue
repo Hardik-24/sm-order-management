@@ -76,9 +76,20 @@
               <h3 class="text-xs font-bold text-gray-900 uppercase tracking-widest">
                 Reconcile & Adjust Billed Quantities
               </h3>
-              <span class="text-xs text-gray-500">
-                Ordered vs Physically Packed vs Billed
-              </span>
+              <div class="flex items-center gap-3">
+                <span class="text-xs text-gray-500">
+                  Ordered vs Physically Packed vs Billed
+                </span>
+                <button 
+                  type="button" 
+                  @click="emit('openSplit', order.id); closeModal()"
+                  class="text-xs font-bold text-[#1a5c4c] hover:underline flex items-center gap-1 cursor-pointer"
+                  title="Split unbilled or shortage quantities into a separate order"
+                >
+                  <GitFork class="w-3.5 h-3.5" />
+                  <span>Split Order</span>
+                </button>
+              </div>
             </div>
             <div class="border border-gray-200 rounded-xl overflow-x-auto">
               <table class="w-full text-left border-collapse min-w-[850px] text-xs">
@@ -236,14 +247,14 @@
 
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
-import { X, FileText, Loader2, Check } from 'lucide-vue-next'
+import { X, FileText, Loader2, Check, GitFork } from 'lucide-vue-next'
 
 const props = defineProps<{
   isOpen: boolean
   orderId: string | null
 }>()
 
-const emit = defineEmits(['close', 'generated'])
+const emit = defineEmits(['close', 'generated', 'openSplit'])
 
 const order = ref<any>(null)
 const pending = ref(false)
