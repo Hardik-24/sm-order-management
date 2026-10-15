@@ -2,6 +2,7 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
     android:background="#121212">
 
     <!-- Fragment container hosting Google Navigation / Map -->
@@ -11,7 +12,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
-    <!-- Top Floating Header: Sleek, compact pill (does not block upcoming maneuvers) -->
+    <!-- Top Floating Header: Sleek, compact pill inside safe area -->
     <LinearLayout
         android:id="@+id/ll_top_nav_bar"
         android:layout_width="match_parent"
@@ -23,7 +24,7 @@
         android:paddingTop="6dp"
         android:paddingBottom="6dp"
         android:gravity="center_vertical"
-        android:layout_marginTop="28dp"
+        android:layout_marginTop="10dp"
         android:layout_marginStart="12dp"
         android:layout_marginEnd="12dp"
         android:background="@drawable/bg_nav_header"

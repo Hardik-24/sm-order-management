@@ -45,9 +45,10 @@ async function requestPermissionsOnStartup() {
 
 onMounted(async () => {
   try {
-    // Make status bar transparent and text light, app draws underneath it
+    // Keep status bar solid with dark style and brand background; do NOT overlay so webview respects status bar
     await StatusBar.setStyle({ style: Style.Dark })
-    await StatusBar.setOverlaysWebView({ overlay: true })
+    await StatusBar.setOverlaysWebView({ overlay: false })
+    await StatusBar.setBackgroundColor({ color: '#123e33' })
   } catch (e) {
     // Ignore on web
   }
@@ -75,9 +76,9 @@ async function logout() {
 <style>
 /* Global Safe Area Padding classes */
 .safe-area-pt {
-  padding-top: env(safe-area-inset-top, 40px) !important;
+  padding-top: env(safe-area-inset-top, 0px) !important;
 }
 .safe-area-pb {
-  padding-bottom: env(safe-area-inset-bottom, 20px) !important;
+  padding-bottom: env(safe-area-inset-bottom, 0px) !important;
 }
 </style>

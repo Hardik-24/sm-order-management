@@ -113,11 +113,103 @@ export default defineEventHandler(async (event) => {
       }
     })
 
+    const nextPendingStop = updatedTrip?.stops.find(s => s.status === 'PENDING') || null
+
     return {
       success: true,
       stopId: stop.id,
       orderId: stop.orderId,
       isTripCompleted,
+      nextPendingStop,
+      trip: updatedTrip
+    }
+  }
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // ACTION: CANCEL_NAVIGATION (Accidental start safety reset)
+  // ───────────────────────────────────────────────────────────────────────────
+  if (action === 'cancel_navigation') {
+    const targetOrderId = orderId || (stopId ? (await prisma.tripStop.findUnique({ where: { id: stopId } }))?.orderId : null)
+
+    if (!targetOrderId && !tripId) {
+      throw createError({ statusCode: 400, message: 'Missing orderId or tripId to cancel navigation' })
+    }
+
+    if (targetOrderId) {
+      const ord = await prisma.order.findUnique({
+        where: { id: targetOrderId },
+        include: { billingStatus: true, packingStatus: true }
+      })
+
+      if (ord) {
+        const prevOverall = calculateOverallStatus(
+          ord.billingStatus?.status || 'PENDING',
+          ord.packingStatus?.status || 'PENDING',
+          'ASSIGNED'
+        )
+
+        await prisma.order.update({
+          where: { id: targetOrderId },
+          data: {
+            overallStatus: prevOverall as any,
+            deliveryStatus: {
+              update: {
+                status: 'ASSIGNED',
+                dispatchDate: null
+              }
+            },
+            timeline: {
+              create: {
+                action: 'Navigation Reset',
+                description: `Driver ${user.name} cancelled active navigation for #${ord.orderNumber}. Reverted to ready.`,
+                performedById: user.id
+              }
+            }
+          }
+        }).catch(() => {})
+      }
+
+      // Reset tripStop if part of trip
+      if (tripId) {
+        await prisma.tripStop.updateMany({
+          where: { tripId, orderId: targetOrderId, status: 'IN_TRANSIT' },
+          data: { status: 'PENDING' }
+        }).catch(() => {})
+      }
+
+      // Clean up standalone route record
+      await prisma.tripRoute.deleteMany({
+        where: { orderId: targetOrderId }
+      }).catch(() => {})
+    }
+
+    // Check if trip should revert to PLANNED if no stops are active or delivered
+    if (tripId) {
+      const activeOrDeliveredCount = await prisma.tripStop.count({
+        where: { tripId, status: { in: ['IN_TRANSIT', 'DELIVERED'] } }
+      })
+
+      if (activeOrDeliveredCount === 0) {
+        await prisma.trip.update({
+          where: { id: tripId },
+          data: {
+            status: 'PLANNED',
+            startTime: null
+          }
+        }).catch(() => {})
+      }
+    }
+
+    const updatedTrip = tripId ? await prisma.trip.findUnique({
+      where: { id: tripId },
+      include: {
+        stops: { orderBy: { stopSequence: 'asc' } }
+      }
+    }) : null
+
+    return {
+      success: true,
+      message: 'Active navigation cancelled and delivery reset to ready',
       trip: updatedTrip
     }
   }
@@ -128,7 +220,7 @@ export default defineEventHandler(async (event) => {
   let targetOrderId = orderId
   if (!targetOrderId && tripId) {
     const firstStop = await prisma.tripStop.findFirst({
-      where: { tripId },
+      where: { tripId, status: 'PENDING' },
       orderBy: { stopSequence: 'asc' }
     })
     if (firstStop) {
@@ -174,50 +266,48 @@ export default defineEventHandler(async (event) => {
         }
       }).catch(() => {})
 
-      // Update all stops and their orders in this trip to DISPATCHED
+      // Update ONLY the targeted stop to IN_TRANSIT and order to DISPATCHED
       try {
-        const tripStops = await prisma.tripStop.findMany({
-          where: { tripId },
-          include: { order: { include: { billingStatus: true, packingStatus: true } } }
+        const targetStop = await prisma.tripStop.findFirst({
+          where: stopId ? { id: stopId } : { tripId, orderId: targetOrderId }
         })
 
-        for (const ts of tripStops) {
-          if (ts.status === 'PENDING') {
-            await prisma.tripStop.update({
-              where: { id: ts.id },
-              data: { status: 'IN_TRANSIT' }
-            }).catch(() => {})
-          }
-          await prisma.order.update({
-            where: { id: ts.orderId },
-            data: {
-              overallStatus: 'DISPATCHED',
-              deliveryStatus: {
-                upsert: {
-                  create: {
-                    status: 'DISPATCHED',
-                    driverName: user.name,
-                    dispatchDate: new Date()
-                  },
-                  update: {
-                    status: 'DISPATCHED',
-                    driverName: user.name,
-                    dispatchDate: new Date()
-                  }
-                }
-              },
-              timeline: {
-                create: {
-                  action: 'Trip Started',
-                  description: `Driver ${user.name} started live delivery trip. Tracking active.`,
-                  performedById: user.id
-                }
-              }
-            }
+        if (targetStop) {
+          await prisma.tripStop.update({
+            where: { id: targetStop.id },
+            data: { status: 'IN_TRANSIT' }
           }).catch(() => {})
         }
+
+        await prisma.order.update({
+          where: { id: targetOrderId },
+          data: {
+            overallStatus: 'DISPATCHED',
+            deliveryStatus: {
+              upsert: {
+                create: {
+                  status: 'DISPATCHED',
+                  driverName: user.name,
+                  dispatchDate: new Date()
+                },
+                update: {
+                  status: 'DISPATCHED',
+                  driverName: user.name,
+                  dispatchDate: new Date()
+                }
+              }
+            },
+            timeline: {
+              create: {
+                action: 'Delivery Started',
+                description: `Driver ${user.name} started delivery for #${order.orderNumber}. Live tracking active.`,
+                performedById: user.id
+              }
+            }
+          }
+        }).catch(() => {})
       } catch (err) {
-        console.warn('Failed to dispatch all trip stop orders on trip start:', err)
+        console.warn('Failed to dispatch target trip stop order:', err)
       }
     }
 

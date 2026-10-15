@@ -123,7 +123,9 @@ export default defineEventHandler(async (event) => {
       stopSequence: stopInfo.stopSequence,
       totalStops: stopInfo.trip.stops.length,
       stopsAhead,
-      isNextStop: stopsAhead === 0
+      isNextStop: stopsAhead === 0,
+      tripStatus: stopInfo.trip.status,
+      isTripInProgress: stopInfo.trip.status === 'IN_TRANSIT'
     } : null,
     items: order.items.map((i) => ({
       id: i.id,

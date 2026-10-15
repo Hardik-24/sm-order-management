@@ -180,7 +180,20 @@
                 <div class="w-12 h-12 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center mx-auto">
                   <Truck class="w-7 h-7" />
                 </div>
-                <div>
+                <div v-if="trackingData.multiStop?.isTripInProgress">
+                  <h2 class="text-base font-bold text-blue-950">Your Delivery is on the Way!</h2>
+                  <p class="text-xs text-blue-800 mt-1 max-w-md mx-auto leading-relaxed">
+                    Driver <strong class="text-blue-950 font-bold">{{ trackingData.driverName || 'Assigned Driver' }}</strong> is currently delivering an earlier order in this trip and will head towards your location soon.
+                  </p>
+                  <div class="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-100/90 text-blue-900 rounded-full text-xs font-semibold mt-2.5">
+                    <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+                    <span>Stop #{{ trackingData.multiStop.stopSequence }} in driver's route • {{ trackingData.multiStop.stopsAhead }} stop(s) ahead</span>
+                  </div>
+                  <p class="text-[11px] text-blue-600 mt-2 font-medium">
+                    Live GPS route map will appear on this screen as soon as the driver begins travel to your address.
+                  </p>
+                </div>
+                <div v-else>
                   <h2 class="text-base font-bold text-blue-950">Assigned to Delivery Partner</h2>
                   <p class="text-xs text-blue-800 mt-1 max-w-md mx-auto leading-relaxed">
                     Driver <strong class="text-blue-950 font-bold">{{ trackingData.driverName || 'Assigned Driver' }}</strong> has been allocated to your shipment and is preparing for departure at our Mysuru warehouse.

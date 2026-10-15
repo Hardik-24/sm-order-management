@@ -100,10 +100,22 @@
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">
             <span class="w-3 h-3 rounded-full bg-emerald-300 animate-ping"></span>
-            <span class="text-xs font-bold uppercase tracking-wider text-emerald-200">Trip Active</span>
+            <span class="text-xs font-bold uppercase tracking-wider text-emerald-200">
+              {{ activeDeliveryStop ? `Stop ${activeDeliveryStop.stopSequence} Active` : 'Trip Active' }}
+            </span>
           </div>
           <span class="text-xs font-mono bg-emerald-800/80 px-2 py-0.5 rounded text-white font-semibold">
             {{ activeTrip.orderNumber }}
+          </span>
+        </div>
+
+        <!-- Customer & Destination Summary -->
+        <div v-if="activeDeliveryStop || activeTrip.customerName" class="text-xs text-emerald-100 flex items-center justify-between bg-emerald-800/40 px-2.5 py-1.5 rounded-lg">
+          <span class="font-bold text-white truncate max-w-[210px]">
+            To: {{ activeDeliveryStop?.customerName || activeTrip.customerName }}
+          </span>
+          <span v-if="activeDeliveryStop?.city" class="text-[11px] text-emerald-200 opacity-90 truncate">
+            {{ activeDeliveryStop.city }}
           </span>
         </div>
 
@@ -141,28 +153,38 @@
         <div class="flex gap-2">
           <button 
             type="button"
-            @click="openDirections(activeTrip)"
-            class="flex-1 py-2.5 bg-white text-emerald-900 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow active:scale-95 transition"
+            @click="openDirections(activeDeliveryStop || activeTrip)"
+            class="flex-1 py-2.5 bg-white text-emerald-900 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow active:scale-95 transition cursor-pointer"
           >
             <Navigation class="w-4 h-4 text-emerald-700" />
             Directions
           </button>
           <button 
             v-if="!isHoldActive"
-            @click="completeTripPrompt(activeTrip.orderId)" 
-            class="flex-1 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow active:scale-95 transition"
+            @click="activeDeliveryStop ? deliverStopPrompt(activeDeliveryStop.trip, activeDeliveryStop) : completeTripPrompt(activeTrip.orderId)" 
+            class="flex-1 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow active:scale-95 transition cursor-pointer"
           >
             <CheckCircle2 class="w-4 h-4" />
-            Complete Trip
+            Deliver Stop
           </button>
           <a 
             v-else
             href="tel:+919876543210"
-            class="flex-1 py-2.5 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow active:scale-95 transition"
+            class="flex-1 py-2.5 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow active:scale-95 transition cursor-pointer"
           >
             <Phone class="w-4 h-4" />
             Call Office
           </a>
+          <!-- Cancel Navigation / Accidental Start Reset Button -->
+          <button
+            type="button"
+            @click="cancelNavigationPrompt"
+            class="px-3 py-2.5 bg-emerald-900/60 hover:bg-red-900/80 text-emerald-100 hover:text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1 border border-emerald-500/40 hover:border-red-500/60 shadow active:scale-95 transition cursor-pointer"
+            title="Cancel active navigation and reset delivery to ready"
+          >
+            <XCircle class="w-4 h-4 text-red-300" />
+            <span>Cancel</span>
+          </button>
         </div>
       </div>
 
@@ -218,34 +240,37 @@
             </div>
           </div>
 
-          <!-- Start Trip Action Bar (When Trip is Planned) -->
-          <div v-if="trip.status === 'PLANNED'" class="p-3.5 bg-emerald-50/90 rounded-xl border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <!-- Start Trip Action Bar (When Trip is Planned & No Active Stop) -->
+          <div v-if="trip.status === 'PLANNED' && !activeTripOrderId" class="p-3.5 bg-emerald-50/90 rounded-xl border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div class="min-w-0">
               <div class="flex items-center gap-1.5 text-xs font-black text-emerald-950">
                 <Truck class="w-4 h-4 text-[#1a5c4c]" />
-                <span>Trip Assigned & Ready</span>
+                <span>Multi-Stop Route Ready</span>
               </div>
               <p class="text-[11px] text-emerald-800 mt-0.5">
-                Review your delivery stops below, then tap Start Trip to begin live route navigation.
+                Deliver stops in sequence. Tap Start Delivery on Stop 1 below to begin navigation.
               </p>
             </div>
             <button
+              v-if="trip.stops?.length > 0"
               type="button"
-              @click="startManifestTripPrompt(trip)"
+              @click="startStopDeliveryPrompt(trip, trip.stops.find((s: any) => s.status === 'PENDING') || trip.stops[0])"
               class="px-4 py-2.5 bg-[#1a5c4c] hover:bg-[#134336] text-white text-xs font-black rounded-xl shadow-sm transition flex items-center justify-center gap-2 shrink-0 active:scale-95 cursor-pointer"
             >
               <Play class="w-4 h-4 fill-current" />
-              <span>Start Trip Now</span>
+              <span>Start Delivery ➔</span>
             </button>
           </div>
 
           <!-- In Transit Live Indicator -->
           <div v-else-if="trip.status === 'IN_TRANSIT'" class="px-3 py-2 bg-emerald-50 rounded-xl border border-emerald-200/80 flex items-center justify-between text-xs">
             <div class="flex items-center gap-2 text-emerald-800 font-bold">
-              <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
-              <span>Live GPS Transit Active</span>
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-500" :class="activeTripOrderId ? 'animate-ping' : ''"></span>
+              <span>{{ activeDeliveryStop ? `Stop ${activeDeliveryStop.stopSequence} in Transit` : 'Trip in Progress • Ready for Next Stop' }}</span>
             </div>
-            <span class="text-[11px] text-emerald-700 font-semibold">Deliver stops in sequence</span>
+            <span class="text-[11px] text-emerald-700 font-semibold">
+              {{ trip.completedStops }}/{{ trip.totalStops }} Delivered
+            </span>
           </div>
 
           <!-- Trip Stops Manifest with Driver Reorder Controls -->
@@ -255,82 +280,168 @@
               <span class="text-[10px] text-gray-400 font-normal">Use ▲ / ▼ to reorder sequence</span>
             </div>
 
-            <div 
-              v-for="(stop, sIdx) in trip.stops" 
-              :key="stop.id"
-              class="p-3 rounded-xl border transition space-y-2"
-              :class="stop.status === 'DELIVERED' 
-                ? 'bg-gray-50/70 border-gray-200 opacity-70' 
-                : 'bg-white border-gray-200 hover:border-emerald-300 shadow-2xs'"
+            <!-- TransitionGroup for silky-smooth sliding reorder animation -->
+            <TransitionGroup 
+              name="stop-slide" 
+              tag="div" 
+              class="space-y-3 relative"
             >
-              <!-- Stop Top: Sequence Badge, Reorder, Order #, Status -->
-              <div class="flex items-center justify-between gap-2">
-                <div class="flex items-center gap-2 min-w-0">
-                  <span 
-                    class="w-6 h-6 rounded-full font-black text-xs flex items-center justify-center shrink-0"
-                    :class="stop.status === 'DELIVERED' ? 'bg-gray-200 text-gray-600' : 'bg-[#1a5c4c] text-white'"
-                  >
-                    {{ stop.stopSequence }}
-                  </span>
-                  <div class="min-w-0">
-                    <span class="font-bold text-xs text-gray-900 mr-1.5">{{ stop.orderNumber }}</span>
-                    <span class="font-bold text-xs text-gray-800 truncate">{{ stop.customerName }}</span>
+              <div 
+                v-for="(stop, sIdx) in trip.stops" 
+                :key="stop.id"
+                class="p-3.5 rounded-xl border transition-all duration-300 space-y-3"
+                :class="stop.status === 'DELIVERED' 
+                  ? 'bg-gray-50/70 border-gray-200 opacity-70' 
+                  : (activeTripOrderId === stop.orderId ? 'bg-emerald-50/50 border-emerald-500 ring-2 ring-emerald-500/30 shadow-md' : 'bg-white border-gray-200 hover:border-emerald-300 shadow-xs')"
+              >
+                <!-- Stop Top: Sequence Badge, Reorder, Order #, Status -->
+                <div class="flex items-start justify-between gap-2">
+                  <div class="flex items-start gap-2.5 min-w-0 flex-1">
+                    <span 
+                      class="w-6 h-6 rounded-full font-black text-xs flex items-center justify-center shrink-0 mt-0.5 shadow-xs"
+                      :class="stop.status === 'DELIVERED' 
+                        ? 'bg-gray-200 text-gray-600' 
+                        : (activeTripOrderId === stop.orderId ? 'bg-emerald-600 text-white animate-pulse' : 'bg-[#1a5c4c] text-white')"
+                    >
+                      {{ stop.stopSequence }}
+                    </span>
+                    <div class="min-w-0 flex-1">
+                      <div class="flex items-center gap-2">
+                        <span class="font-mono font-bold text-xs text-[#1a5c4c] bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/60">
+                          {{ stop.orderNumber }}
+                        </span>
+                      </div>
+                      <!-- Full Customer Name (no truncation) -->
+                      <h3 class="font-bold text-sm text-gray-900 mt-1 leading-snug break-words">
+                        {{ stop.customerName }}
+                      </h3>
+                      <p v-if="stop.customerCompany" class="text-xs text-gray-500 font-medium">
+                        {{ stop.customerCompany }}
+                      </p>
+                    </div>
+                  </div>
+
+                  <!-- Reorder arrows / Status badge -->
+                  <div class="shrink-0 flex items-center gap-1.5">
+                    <!-- Reorder arrows (only when not delivered and no stop actively in transit) -->
+                    <div v-if="stop.status !== 'DELIVERED' && !activeTripOrderId" class="flex items-center gap-1">
+                      <button
+                        type="button"
+                        @click="driverReorderStop(trip, sIdx, -1)"
+                        :disabled="sIdx === 0"
+                        class="p-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 disabled:opacity-20 transition cursor-pointer active:scale-95"
+                        title="Move stop earlier"
+                      >
+                        <ArrowUp class="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        @click="driverReorderStop(trip, sIdx, 1)"
+                        :disabled="sIdx === trip.stops.length - 1"
+                        class="p-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 disabled:opacity-20 transition cursor-pointer active:scale-95"
+                        title="Move stop later"
+                      >
+                        <ArrowDown class="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                    <span v-if="stop.status === 'DELIVERED'" class="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+                      ✓ Delivered
+                    </span>
+                    <span v-else-if="activeTripOrderId === stop.orderId" class="text-[11px] font-bold text-emerald-800 bg-emerald-100 px-2.5 py-1 rounded-full border border-emerald-300 flex items-center gap-1">
+                      <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
+                      In Progress
+                    </span>
+                    <span v-else class="text-[11px] font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+                      Queued
+                    </span>
                   </div>
                 </div>
 
-                <!-- Reorder arrows -->
-                <div v-if="stop.status !== 'DELIVERED'" class="flex items-center gap-1 shrink-0">
-                  <button
-                    type="button"
-                    @click="driverReorderStop(trip, sIdx, -1)"
-                    :disabled="sIdx === 0"
-                    class="p-1 rounded bg-gray-100 hover:bg-gray-200 text-gray-600 disabled:opacity-20 transition cursor-pointer"
-                    title="Move stop earlier"
-                  >
-                    <ArrowUp class="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    @click="driverReorderStop(trip, sIdx, 1)"
-                    :disabled="sIdx === trip.stops.length - 1"
-                    class="p-1 rounded bg-gray-100 hover:bg-gray-200 text-gray-600 disabled:opacity-20 transition cursor-pointer"
-                    title="Move stop later"
-                  >
-                    <ArrowDown class="w-3.5 h-3.5" />
-                  </button>
+                <!-- Complete Untruncated Address Details -->
+                <div class="bg-gray-50/90 p-3 rounded-xl border border-gray-100 space-y-1.5 text-xs">
+                  <div class="flex items-start justify-between gap-2">
+                    <div class="flex items-start gap-2 text-gray-800 leading-relaxed break-words flex-1">
+                      <MapPin class="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
+                      <div class="space-y-1 min-w-0 flex-1">
+                        <p class="font-medium text-gray-900 text-xs leading-relaxed break-words">
+                          {{ stop.addressLine }}
+                        </p>
+                        <p v-if="stop.landmark" class="text-[11px] text-gray-500">
+                          <span class="font-semibold text-gray-700">Landmark:</span> {{ stop.landmark }}
+                        </p>
+                        <p v-if="stop.city" class="text-[11px] font-bold text-emerald-800">
+                          📍 {{ stop.city }}
+                        </p>
+                        <p v-if="stop.itemsCount" class="text-[10px] text-gray-500 font-medium pt-0.5">
+                          📦 {{ stop.itemsCount }} {{ stop.itemsCount === 1 ? 'item' : 'items' }} to unload
+                        </p>
+                      </div>
+                    </div>
+                    <a 
+                      v-if="stop.customerPhone" 
+                      :href="`tel:${stop.customerPhone}`"
+                      class="px-2.5 py-1.5 rounded-lg bg-emerald-100 hover:bg-emerald-200 text-[#1a5c4c] transition shrink-0 flex items-center gap-1 text-xs font-bold shadow-2xs"
+                      title="Call Customer"
+                    >
+                      <Phone class="w-3.5 h-3.5 text-[#1a5c4c]" />
+                      <span>Call</span>
+                    </a>
+                  </div>
                 </div>
-                <span v-else class="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                  ✓ Delivered
-                </span>
-              </div>
 
-              <!-- Address & Phone -->
-              <div class="text-xs text-gray-600 flex items-start gap-1.5">
-                <MapPin class="w-3.5 h-3.5 text-rose-500 shrink-0 mt-0.5" />
-                <span class="leading-relaxed">{{ stop.addressLine }} {{ stop.city ? `• ${stop.city}` : '' }}</span>
-              </div>
+                <!-- Stop Actions (Navigate & Mark Delivered / Start Delivery) -->
+                <div v-if="stop.status !== 'DELIVERED'" class="flex gap-2 pt-1 border-t border-gray-100">
+                  <button 
+                    type="button"
+                    @click="openDirections(stop)"
+                    class="flex-1 py-2.5 bg-blue-50 hover:bg-blue-100 text-blue-800 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer"
+                  >
+                    <Navigation class="w-3.5 h-3.5 text-blue-600" />
+                    Directions
+                  </button>
 
-              <!-- Stop Actions (Navigate & Mark Delivered) -->
-              <div v-if="stop.status !== 'DELIVERED'" class="flex gap-2 pt-1 border-t border-gray-100">
-                <button 
-                  type="button"
-                  @click="openDirections(stop)"
-                  class="flex-1 py-2 bg-blue-50 hover:bg-blue-100 text-blue-800 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer"
-                >
-                  <Navigation class="w-3.5 h-3.5 text-blue-600" />
-                  Directions
-                </button>
+                  <!-- When THIS stop is actively in transit -->
+                  <template v-if="activeTripOrderId === stop.orderId">
+                    <button 
+                      type="button"
+                      @click="deliverStopPrompt(trip, stop)"
+                      class="flex-1 py-2.5 bg-[#1a5c4c] hover:bg-[#134336] text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs transition cursor-pointer"
+                    >
+                      <CheckCircle2 class="w-3.5 h-3.5 text-white" />
+                      Deliver Stop
+                    </button>
+                    <button 
+                      type="button"
+                      @click="cancelNavigationPrompt"
+                      class="px-3 py-2.5 bg-red-50 hover:bg-red-100 text-red-700 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition cursor-pointer border border-red-200"
+                      title="Cancel Navigation"
+                    >
+                      <XCircle class="w-3.5 h-3.5 text-red-600" />
+                      <span>Cancel</span>
+                    </button>
+                  </template>
 
-                <button 
-                  type="button"
-                  @click="deliverStopPrompt(trip, stop)"
-                  class="flex-1 py-2 bg-[#1a5c4c] hover:bg-[#134336] text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs transition cursor-pointer"
-                >
-                  <CheckCircle2 class="w-3.5 h-3.5 text-white" />
-                  Deliver Stop
-                </button>
+                  <!-- When NO stop is actively in transit: driver can start delivery -->
+                  <button 
+                    v-else-if="!activeTripOrderId"
+                    type="button"
+                    @click="startStopDeliveryPrompt(trip, stop)"
+                    class="flex-1 py-2.5 bg-[#1a5c4c] hover:bg-[#134336] text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs transition cursor-pointer active:scale-95"
+                  >
+                    <Play class="w-3.5 h-3.5 fill-current text-white" />
+                    <span>Start Delivery</span>
+                  </button>
+
+                  <!-- When ANOTHER stop is actively in transit -->
+                  <div 
+                    v-else
+                    class="flex-1 py-2 bg-gray-50 text-gray-400 rounded-lg text-xs font-medium flex items-center justify-center gap-1 text-center"
+                  >
+                    <span>Finish active stop first</span>
+                  </div>
+                </div>
               </div>
-            </div>
+            </TransitionGroup>
           </div>
         </div>
       </div>
@@ -519,6 +630,57 @@
         </div>
       </div>
     </div>
+
+    <!-- Next Delivery Prompt Modal (Shown after a stop is delivered) -->
+    <div v-if="showNextDeliveryModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+      <div class="bg-white rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl border border-gray-100">
+        <div class="text-center space-y-2">
+          <div class="w-12 h-12 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto shadow-inner">
+            <CheckCircle2 class="w-6 h-6" />
+          </div>
+          <h3 class="text-base font-extrabold text-gray-900">Delivery Completed!</h3>
+          <p class="text-xs text-gray-500">
+            Order <strong class="text-gray-800">{{ completedStopInfo?.orderNumber }}</strong> for {{ completedStopInfo?.customerName }} marked delivered.
+          </p>
+        </div>
+
+        <div v-if="nextDeliveryStop" class="p-3 bg-emerald-50/80 rounded-xl border border-emerald-200/70 space-y-1.5">
+          <div class="flex items-center justify-between text-[11px] font-bold text-emerald-900">
+            <span class="flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-emerald-600 animate-ping"></span>
+              Next Delivery in Trip
+            </span>
+            <span class="bg-emerald-200/80 text-emerald-950 px-2 py-0.5 rounded-full font-mono text-[10px]">
+              Stop {{ nextDeliveryStop.stopSequence }}
+            </span>
+          </div>
+          <p class="text-xs font-bold text-gray-900">{{ nextDeliveryStop.customerName }}</p>
+          <p class="text-[11px] text-gray-600 leading-tight flex items-start gap-1">
+            <MapPin class="w-3 h-3 text-rose-500 shrink-0 mt-0.5" />
+            <span>{{ nextDeliveryStop.addressLine }} {{ nextDeliveryStop.city ? `• ${nextDeliveryStop.city}` : '' }}</span>
+          </p>
+        </div>
+
+        <div class="space-y-2 pt-1">
+          <button
+            v-if="nextDeliveryStop && currentTripContext"
+            type="button"
+            @click="showNextDeliveryModal = false; startStopDeliveryPrompt(currentTripContext, nextDeliveryStop)"
+            class="w-full py-3 bg-[#1a5c4c] hover:bg-[#134336] text-white rounded-xl text-xs font-extrabold shadow-sm transition flex items-center justify-center gap-2 cursor-pointer active:scale-98"
+          >
+            <Play class="w-4 h-4 fill-current" />
+            <span>Start Delivery to {{ nextDeliveryStop.customerName }} ➔</span>
+          </button>
+          <button
+            type="button"
+            @click="showNextDeliveryModal = false"
+            class="w-full py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-bold transition cursor-pointer"
+          >
+            Return to Dashboard
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -608,7 +770,7 @@ const geo = {
 import { 
   Truck, LogOut, RefreshCw, PackageCheck, History, MapPin, 
   Phone, Box, ChevronDown, Navigation, Play, CheckCircle2, Loader2, X, AlertTriangle, Clock,
-  ArrowUp, ArrowDown
+  ArrowUp, ArrowDown, XCircle
 } from 'lucide-vue-next'
 import LiveTrackingMap from '~/components/ui/LiveTrackingMap.vue'
 import { useSnackbar } from '~/composables/useSnackbar'
@@ -644,7 +806,28 @@ const activeTripOrderId = ref<string | null>(null)
 const activeTrip = ref<any | null>(null)
 const selectedSnapshotTrip = ref<any | null>(null)
 
+// Modal state for Next Delivery transition
+const showNextDeliveryModal = ref(false)
+const completedStopInfo = ref<any>(null)
+const nextDeliveryStop = ref<any>(null)
+const currentTripContext = ref<any>(null)
+
+// Computed helper to locate currently active stop inside multi-stop trips
+const activeDeliveryStop = computed(() => {
+  if (!activeTripOrderId.value) return null
+  for (const trip of assignedTrips.value) {
+    const s = trip.stops?.find((st: any) => st.orderId === activeTripOrderId.value)
+    if (s) return { ...s, trip }
+  }
+  return null
+})
+
 async function driverReorderStop(trip: any, stopIndex: number, direction: number) {
+  if (activeTripOrderId.value) {
+    showEditing('Cannot reorder stops while a delivery is actively in progress!')
+    return
+  }
+
   const targetIndex = stopIndex + direction
   if (targetIndex < 0 || targetIndex >= trip.stops.length) return
 
@@ -678,12 +861,13 @@ async function driverReorderStop(trip: any, stopIndex: number, direction: number
   }
 }
 
+// Driver clicks "Deliver Stop"
 async function deliverStopPrompt(trip: any, stop: any) {
   if (!confirm(`Mark delivery completed for ${stop.customerName} (${stop.orderNumber})?`)) return
 
-  showSaving('Delivering stop...')
+  showSaving('Completing delivery...')
   try {
-    const res = await $fetch('/api/driver/trip', {
+    const res = await $fetch<{ success: boolean; isTripCompleted?: boolean; nextPendingStop?: any }>('/api/driver/trip', {
       method: 'POST',
       body: {
         action: 'deliver_stop',
@@ -693,22 +877,86 @@ async function deliverStopPrompt(trip: any, stop: any) {
         coords: currentCoords || undefined
       }
     })
+
+    stopGpsTracking()
+    activeTripOrderId.value = null
+    activeTrip.value = null
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem('sm_active_trip_order_id')
+    }
+
     showSaved(`✓ Delivered to ${stop.customerName}!`)
-    notifyDeliveryChange('deliver_stop', stop.orderId)
+    notifyDeliveryChange('complete', stop.orderId)
     await fetchAssignedDeliveries()
+
+    if (res.isTripCompleted) {
+      showSaved(`🎉 Entire trip completed! All stops delivered successfully!`)
+      await fetchTripHistory()
+    } else if (res.nextPendingStop) {
+      completedStopInfo.value = stop
+      nextDeliveryStop.value = res.nextPendingStop
+      currentTripContext.value = trip
+      showNextDeliveryModal.value = true
+    }
   } catch (e: any) {
     console.error('Failed to deliver stop', e)
     showEditing(e.message || 'Failed to deliver stop')
   }
 }
 
-async function startManifestTripPrompt(trip: any) {
-  if (typeof navigator === 'undefined' || !navigator.geolocation) {
-    showEditing('GPS geolocation is not supported on this device/browser.')
+// Accidental Start Reset ("Cancel Navigation")
+async function cancelNavigationPrompt() {
+  const currentStop = activeDeliveryStop.value
+  const targetOrderId = activeTripOrderId.value
+  const tripId = currentStop?.trip?.id || activeTrip.value?.tripId || activeTrip.value?.id
+
+  if (!confirm('Cancel active navigation for this delivery? The order will be reset to ready without deleting it.')) {
     return
   }
 
-  showSaving(`Starting Trip ${trip.tripNumber}... Acquiring GPS location.`)
+  showSaving('Cancelling navigation...')
+  try {
+    await $fetch('/api/driver/trip', {
+      method: 'POST',
+      body: {
+        action: 'cancel_navigation',
+        tripId: tripId || undefined,
+        orderId: targetOrderId || undefined
+      }
+    })
+
+    stopGpsTracking()
+    activeTripOrderId.value = null
+    activeTrip.value = null
+    isHoldActive.value = false
+    showHoldModal.value = false
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem('sm_active_trip_order_id')
+    }
+
+    notifyDeliveryChange('cancel_navigation', targetOrderId || '')
+    showSaved('Active navigation cancelled. Delivery is ready to start again.')
+    await fetchAssignedDeliveries()
+  } catch (err: any) {
+    console.error('Failed to cancel navigation:', err)
+    showEditing(err.message || 'Failed to cancel navigation')
+  }
+}
+
+// Start Delivery for an Individual Stop
+async function startStopDeliveryPrompt(trip: any, stop: any) {
+  if (activeTripOrderId.value && activeTripOrderId.value !== stop.orderId) {
+    showEditing('You already have an active delivery in progress! Finish or cancel it first.')
+    return
+  }
+
+  showSaving(`Starting delivery to ${stop.customerName}... Acquiring GPS.`)
+
+  const cap = getCapacitor()
+  if (!navigator.geolocation && !(cap && cap.isNativePlatform())) {
+    showEditing('Please allow Location / GPS access on your phone to start delivery.')
+    return
+  }
 
   const geoPlugin = geo
   let bestPos: any = null
@@ -725,29 +973,49 @@ async function startManifestTripPrompt(trip: any) {
     currentCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude }
 
     try {
+      const dest = (stop.latitude && stop.longitude) 
+        ? { lat: stop.latitude, lng: stop.longitude }
+        : (stop.coords?.lat && stop.coords?.lng) 
+          ? { lat: stop.coords.lat, lng: stop.coords.lng }
+          : undefined
+
       const res = await $fetch<{ success: boolean; trip: any }>('/api/driver/trip', {
         method: 'POST',
         body: {
           action: 'start',
           tripId: trip.id,
-          coords: currentCoords
+          stopId: stop.id,
+          orderId: stop.orderId,
+          coords: currentCoords,
+          destinationCoords: dest
         }
       })
-      const firstOrderId = trip.stops?.[0]?.orderId
-      if (firstOrderId) {
-        activeTripOrderId.value = firstOrderId
-        if (typeof localStorage !== 'undefined') {
-          localStorage.setItem('sm_active_trip_order_id', firstOrderId)
-        }
-        notifyDeliveryChange('start', firstOrderId)
+
+      activeTripOrderId.value = stop.orderId
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('sm_active_trip_order_id', stop.orderId)
       }
-      activeTrip.value = res.trip
+
+      activeTrip.value = res.trip || {
+        orderId: stop.orderId,
+        orderNumber: stop.orderNumber,
+        customerName: stop.customerName,
+        deliveryAddress: stop.addressLine,
+        startTime: new Date().toISOString(),
+        totalDistanceKm: 0,
+        destinationCoords: dest
+      }
+
+      ensureElapsedTimerStarted()
+      lastNavPt = currentCoords ? { lat: currentCoords.lat, lng: currentCoords.lng } : null
+
       startGpsTracking()
-      showSaved(`Trip ${trip.tripNumber} started! Live GPS is active. Drive safe!`)
+      notifyDeliveryChange('start', stop.orderId)
+      showSaved(`Delivery started for #${stop.orderNumber}! Live tracking active. Drive safe!`)
       await fetchAssignedDeliveries()
     } catch (e: any) {
-      console.error('Failed to start manifest trip:', e)
-      showEditing(e?.data?.statusMessage || e?.data?.message || 'Failed to start trip. Please try again.')
+      console.error('Failed to start stop delivery:', e)
+      showEditing(e?.data?.statusMessage || e?.data?.message || e?.message || 'Failed to start delivery. Please try again.')
     }
   }
 
@@ -768,7 +1036,7 @@ async function startManifestTripPrompt(trip: any) {
           (_e: any) => {
             if (!resolved) {
               resolved = true
-              showEditing('Please allow Location / GPS access on your phone to start trip.')
+              showEditing('Please allow Location / GPS access on your phone to start delivery.')
             }
           },
           { enableHighAccuracy: true, timeout: 8000, maximumAge: 10000 }
@@ -796,6 +1064,14 @@ async function startManifestTripPrompt(trip: any) {
       }
     }
   }, 4000)
+}
+
+// Starts the next pending stop in the manifest
+async function startManifestTripPrompt(trip: any) {
+  const nextPending = trip.stops?.find((s: any) => s.status === 'PENDING') || trip.stops?.[0]
+  if (nextPending) {
+    await startStopDeliveryPrompt(trip, nextPending)
+  }
 }
 
 // Auto-refresh driver screen when office assigns a new order or puts one on hold
@@ -1020,6 +1296,27 @@ async function fetchAssignedDeliveries() {
       activeTripOrderId.value = active.id
       activeTrip.value = active.trip
       startGpsTracking()
+    } else if (tripsRes?.trips?.length > 0) {
+      for (const t of tripsRes.trips) {
+        const activeStop = t.stops?.find((s: any) => s.status === 'IN_TRANSIT')
+        if (activeStop) {
+          activeTripOrderId.value = activeStop.orderId
+          const orderMatch = data.find((o: any) => o.id === activeStop.orderId)
+          activeTrip.value = orderMatch?.trip || {
+            orderId: activeStop.orderId,
+            orderNumber: activeStop.orderNumber,
+            customerName: activeStop.customerName,
+            deliveryAddress: activeStop.addressLine,
+            startTime: t.startTime || new Date().toISOString(),
+            totalDistanceKm: 0,
+            destinationCoords: (activeStop.latitude && activeStop.longitude) 
+              ? { lat: activeStop.latitude, lng: activeStop.longitude } 
+              : undefined
+          }
+          startGpsTracking()
+          break
+        }
+      }
     }
     // If nothing active and we weren't tracking, leave state alone (no false clears)
   } catch (e) {
@@ -1527,3 +1824,20 @@ onBeforeUnmount(() => {
   }
 })
 </script>
+
+<style scoped>
+/* Smooth sliding animation when stops are reordered with arrows */
+.stop-slide-move {
+  transition: transform 0.45s cubic-bezier(0.2, 0.9, 0.3, 1), opacity 0.3s ease;
+  z-index: 10;
+}
+.stop-slide-enter-active,
+.stop-slide-leave-active {
+  transition: all 0.35s ease;
+}
+.stop-slide-enter-from,
+.stop-slide-leave-to {
+  opacity: 0;
+  transform: translateY(15px);
+}
+</style>
