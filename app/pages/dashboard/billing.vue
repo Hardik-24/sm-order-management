@@ -133,6 +133,8 @@ const openSplitModal = (id: string) => {
 }
 
 const onOrderSplit = () => {
+  isSplitModalOpen.value = false
+  splittingOrderId.value = null
   handleUpdate()
 }
 
@@ -167,7 +169,7 @@ watch(() => counts.value, () => {
 </script>
 
 <template>
-  <div class="space-y-8 p-6 max-w-7xl mx-auto">
+  <div class="space-y-5 sm:space-y-6 md:space-y-8 max-w-7xl mx-auto">
     <!-- Invoice Modal -->
     <GenerateBillModal 
       :isOpen="isGenerateModalOpen"
@@ -186,10 +188,10 @@ watch(() => counts.value, () => {
     />
 
     <!-- Header -->
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
         <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Billing & Invoicing</h1>
-        <p class="text-sm text-gray-500 mt-1">
+        <p class="text-xs sm:text-sm text-gray-500 mt-1">
           Review orders, generate GST invoices, track SLA turnaround, and manage billing holds.
         </p>
       </div>
@@ -198,7 +200,7 @@ watch(() => counts.value, () => {
         <button 
           @click="handleRefresh" 
           :disabled="isLoading"
-          class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 shadow-sm transition-colors cursor-pointer"
+          class="inline-flex items-center gap-2 px-3 py-2 text-xs sm:text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 shadow-sm transition-colors cursor-pointer"
         >
           <RefreshCw class="w-4 h-4" :class="{ 'animate-spin': isLoading }" />
           <span>Refresh</span>
@@ -207,71 +209,71 @@ watch(() => counts.value, () => {
     </div>
 
     <!-- Quick Stats Cards (Matching Approve Orders Design) -->
-    <div ref="statsContainer" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div ref="statsContainer" class="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-4">
       <!-- 1. Awaiting Billing -->
-      <div class="bg-white rounded-xl border border-[#e5e2dc] p-5 shadow-sm">
-        <div class="flex gap-4">
-          <div class="flex flex-col justify-between">
-            <div class="bg-amber-50 p-2.5 rounded-lg text-amber-600 border border-amber-100/50">
-              <IndianRupee class="w-5 h-5" />
+      <div class="bg-white rounded-xl border border-[#e5e2dc] p-3.5 sm:p-5 shadow-sm">
+        <div class="flex gap-2.5 sm:gap-4">
+          <div class="flex flex-col justify-between shrink-0">
+            <div class="bg-amber-50 p-2 sm:p-2.5 rounded-lg text-amber-600 border border-amber-100/50">
+              <IndianRupee class="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <div class="w-8 h-1 bg-amber-500 rounded-full mt-6"></div>
+            <div class="w-6 sm:w-8 h-1 bg-amber-500 rounded-full mt-4 sm:mt-6"></div>
           </div>
-          <div class="flex flex-col justify-center">
-            <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5">Awaiting Billing</p>
-            <h3 ref="numPending" class="text-2xl font-bold text-gray-900 mb-0.5">{{ counts.pending }}</h3>
-            <p class="text-xs text-amber-600 font-medium">Pending invoice creation</p>
+          <div class="flex flex-col justify-center min-w-0">
+            <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">Awaiting Billing</p>
+            <h3 ref="numPending" class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">{{ counts.pending }}</h3>
+            <p class="text-[11px] sm:text-xs text-amber-600 font-medium truncate">Pending creation</p>
           </div>
         </div>
       </div>
 
       <!-- 2. Urgent / SLA Breached -->
-      <div class="bg-white rounded-xl border border-rose-200/80 p-5 shadow-sm">
-        <div class="flex gap-4">
-          <div class="flex flex-col justify-between">
-            <div class="bg-rose-50 p-2.5 rounded-lg text-rose-600 border border-rose-100/50">
-              <Zap class="w-5 h-5" />
+      <div class="bg-white rounded-xl border border-rose-200/80 p-3.5 sm:p-5 shadow-sm">
+        <div class="flex gap-2.5 sm:gap-4">
+          <div class="flex flex-col justify-between shrink-0">
+            <div class="bg-rose-50 p-2 sm:p-2.5 rounded-lg text-rose-600 border border-rose-100/50">
+              <Zap class="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <div class="w-8 h-1 bg-rose-500 rounded-full mt-6"></div>
+            <div class="w-6 sm:w-8 h-1 bg-rose-500 rounded-full mt-4 sm:mt-6"></div>
           </div>
-          <div class="flex flex-col justify-center">
-            <p class="text-[10px] font-bold text-rose-600 uppercase tracking-widest mb-0.5">⚡ Urgent Orders</p>
-            <h3 ref="numUrgent" class="text-2xl font-bold text-gray-900 mb-0.5">{{ counts.urgent }}</h3>
-            <p class="text-xs text-rose-500 font-medium">High priority billing</p>
+          <div class="flex flex-col justify-center min-w-0">
+            <p class="text-[10px] font-bold text-rose-600 uppercase tracking-widest mb-0.5 truncate">⚡ Urgent Orders</p>
+            <h3 ref="numUrgent" class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">{{ counts.urgent }}</h3>
+            <p class="text-[11px] sm:text-xs text-rose-500 font-medium truncate">High priority</p>
           </div>
         </div>
       </div>
 
       <!-- 3. Invoices Generated -->
-      <div class="bg-white rounded-xl border border-[#e5e2dc] p-5 shadow-sm">
-        <div class="flex gap-4">
-          <div class="flex flex-col justify-between">
-            <div class="bg-[#1a5c4c]/10 p-2.5 rounded-lg text-[#1a5c4c] border border-[#1a5c4c]/20">
-              <CheckCircle2 class="w-5 h-5" />
+      <div class="bg-white rounded-xl border border-[#e5e2dc] p-3.5 sm:p-5 shadow-sm">
+        <div class="flex gap-2.5 sm:gap-4">
+          <div class="flex flex-col justify-between shrink-0">
+            <div class="bg-[#1a5c4c]/10 p-2 sm:p-2.5 rounded-lg text-[#1a5c4c] border border-[#1a5c4c]/20">
+              <CheckCircle2 class="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <div class="w-8 h-1 bg-[#1a5c4c] rounded-full mt-6"></div>
+            <div class="w-6 sm:w-8 h-1 bg-[#1a5c4c] rounded-full mt-4 sm:mt-6"></div>
           </div>
-          <div class="flex flex-col justify-center">
-            <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5">Invoices Generated</p>
-            <h3 ref="numGenerated" class="text-2xl font-bold text-gray-900 mb-0.5">{{ counts.generated }}</h3>
-            <p class="text-xs text-emerald-600 font-medium">Generated invoices</p>
+          <div class="flex flex-col justify-center min-w-0">
+            <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">Generated</p>
+            <h3 ref="numGenerated" class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">{{ counts.generated }}</h3>
+            <p class="text-[11px] sm:text-xs text-emerald-600 font-medium truncate">Ready invoices</p>
           </div>
         </div>
       </div>
 
       <!-- 4. Flagged / On Hold -->
-      <div class="bg-white rounded-xl border border-[#e5e2dc] p-5 shadow-sm">
-        <div class="flex gap-4">
-          <div class="flex flex-col justify-between">
-            <div class="bg-orange-50 p-2.5 rounded-lg text-orange-600 border border-orange-100/50">
-              <AlertCircle class="w-5 h-5" />
+      <div class="bg-white rounded-xl border border-[#e5e2dc] p-3.5 sm:p-5 shadow-sm">
+        <div class="flex gap-2.5 sm:gap-4">
+          <div class="flex flex-col justify-between shrink-0">
+            <div class="bg-orange-50 p-2 sm:p-2.5 rounded-lg text-orange-600 border border-orange-100/50">
+              <AlertCircle class="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <div class="w-8 h-1 bg-orange-500 rounded-full mt-6"></div>
+            <div class="w-6 sm:w-8 h-1 bg-orange-500 rounded-full mt-4 sm:mt-6"></div>
           </div>
-          <div class="flex flex-col justify-center">
-            <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5">Flagged / On Hold</p>
-            <h3 ref="numOnHold" class="text-2xl font-bold text-gray-900 mb-0.5">{{ counts.onHold }}</h3>
-            <p class="text-xs text-orange-500 font-medium">Needs clarification</p>
+          <div class="flex flex-col justify-center min-w-0">
+            <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">On Hold</p>
+            <h3 ref="numOnHold" class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">{{ counts.onHold }}</h3>
+            <p class="text-[11px] sm:text-xs text-orange-500 font-medium truncate">Needs check</p>
           </div>
         </div>
       </div>

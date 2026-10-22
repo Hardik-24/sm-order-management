@@ -178,9 +178,6 @@ export default defineEventHandler(async (event) => {
       deliveryStatus: {
         create: { status: 'WAITING' }
       },
-      paymentStatus: {
-        create: { status: 'UNPAID', amountPaid: 0, balanceDue: totalAmount }
-      },
       timeline: {
         create: {
           action: 'Order Created from Storefront Request',
@@ -194,8 +191,7 @@ export default defineEventHandler(async (event) => {
       items: { include: { product: true } },
       billingStatus: true,
       packingStatus: true,
-      deliveryStatus: true,
-      paymentStatus: true
+      deliveryStatus: true
     }
   })
 

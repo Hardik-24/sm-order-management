@@ -295,7 +295,7 @@ watch(counts, (newVal) => {
 </script>
 
 <template>
-  <div class="space-y-8">
+  <div class="space-y-5 sm:space-y-6 md:space-y-8 max-w-7xl mx-auto">
     <!-- Top Header -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
@@ -310,7 +310,7 @@ watch(counts, (newVal) => {
         </p>
       </div>
 
-      <div class="flex items-center gap-2.5">
+      <div class="flex flex-wrap items-center gap-2 sm:gap-2.5">
         <button 
           @click="() => { refresh(); refreshStats(); refreshTrips(); }" 
           :disabled="pending"
@@ -322,97 +322,97 @@ watch(counts, (newVal) => {
 
         <button 
           @click="isCreateTripModalOpen = true"
-          class="inline-flex items-center gap-2 px-3.5 py-2 bg-[#1a5c4c] hover:bg-[#134336] text-white rounded-lg text-xs sm:text-sm font-bold shadow-sm transition-colors cursor-pointer"
+          class="inline-flex items-center gap-2 px-3 sm:px-3.5 py-2 bg-[#1a5c4c] hover:bg-[#134336] text-white rounded-lg text-xs sm:text-sm font-bold shadow-sm transition-colors cursor-pointer"
         >
           <Plus class="w-4 h-4" />
-          <span>Create New Trip</span>
+          <span>Create Trip</span>
         </button>
 
         <a 
           href="/driver" 
           target="_blank"
-          class="inline-flex items-center gap-2 px-3.5 py-2 bg-gray-900 text-white rounded-lg text-xs font-bold shadow-sm hover:bg-black transition-colors"
+          class="inline-flex items-center gap-2 px-3 sm:px-3.5 py-2 bg-gray-900 text-white rounded-lg text-xs font-bold shadow-sm hover:bg-black transition-colors"
         >
           <Truck class="w-4 h-4" />
-          <span>Open Driver App ↗</span>
+          <span>Driver App ↗</span>
         </a>
       </div>
     </div>
 
     <!-- Quick Stats Cards (Matching Approve Orders & Billing Design) -->
-    <div ref="statsContainer" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div ref="statsContainer" class="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-4">
       <!-- 1. Awaiting Dispatch -->
       <div 
-        class="bg-white rounded-xl border border-[#e5e2dc] p-5 shadow-sm"
+        class="bg-white rounded-xl border border-[#e5e2dc] p-3.5 sm:p-5 shadow-sm"
       >
-        <div class="flex gap-4">
-          <div class="flex flex-col justify-between">
-            <div class="bg-amber-50 p-2.5 rounded-lg text-amber-600 border border-amber-100/50">
-              <Clock class="w-5 h-5" />
+        <div class="flex gap-2.5 sm:gap-4">
+          <div class="flex flex-col justify-between shrink-0">
+            <div class="bg-amber-50 p-2 sm:p-2.5 rounded-lg text-amber-600 border border-amber-100/50">
+              <Clock class="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <div class="w-8 h-1 bg-amber-500 rounded-full mt-6"></div>
+            <div class="w-6 sm:w-8 h-1 bg-amber-500 rounded-full mt-4 sm:mt-6"></div>
           </div>
           <div class="flex flex-col justify-center min-w-0">
             <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">Awaiting Dispatch</p>
-            <h3 ref="numWaiting" class="text-2xl font-bold text-gray-900 mb-0.5 tabular-nums">{{ counts.waiting }}</h3>
-            <p class="text-xs text-amber-600 font-medium truncate">Ready for driver</p>
+            <h3 ref="numWaiting" class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 tabular-nums truncate">{{ counts.waiting }}</h3>
+            <p class="text-[11px] sm:text-xs text-amber-600 font-medium truncate">Ready for driver</p>
           </div>
         </div>
       </div>
 
       <!-- 2. In Transit -->
       <div 
-        class="bg-white rounded-xl border border-[#e5e2dc] p-5 shadow-sm"
+        class="bg-white rounded-xl border border-[#e5e2dc] p-3.5 sm:p-5 shadow-sm"
       >
-        <div class="flex gap-4">
-          <div class="flex flex-col justify-between">
-            <div class="bg-blue-50 p-2.5 rounded-lg text-blue-600 border border-blue-100/50">
-              <Truck class="w-5 h-5" />
+        <div class="flex gap-2.5 sm:gap-4">
+          <div class="flex flex-col justify-between shrink-0">
+            <div class="bg-blue-50 p-2 sm:p-2.5 rounded-lg text-blue-600 border border-blue-100/50">
+              <Truck class="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <div class="w-8 h-1 bg-blue-500 rounded-full mt-6"></div>
+            <div class="w-6 sm:w-8 h-1 bg-blue-500 rounded-full mt-4 sm:mt-6"></div>
           </div>
           <div class="flex flex-col justify-center min-w-0">
             <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">In Transit</p>
-            <h3 ref="numDispatched" class="text-2xl font-bold text-gray-900 mb-0.5 tabular-nums">{{ counts.dispatched }}</h3>
-            <p class="text-xs text-blue-600 font-medium truncate">Live on GPS route</p>
+            <h3 ref="numDispatched" class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 tabular-nums truncate">{{ counts.dispatched }}</h3>
+            <p class="text-[11px] sm:text-xs text-blue-600 font-medium truncate">Live on GPS</p>
           </div>
         </div>
       </div>
 
       <!-- 3. Delivered Today -->
       <div 
-        class="bg-white rounded-xl border border-[#e5e2dc] p-5 shadow-sm"
+        class="bg-white rounded-xl border border-[#e5e2dc] p-3.5 sm:p-5 shadow-sm"
       >
-        <div class="flex gap-4">
-          <div class="flex flex-col justify-between">
-            <div class="bg-emerald-50 p-2.5 rounded-lg text-emerald-600 border border-emerald-100/50">
-              <CheckCircle2 class="w-5 h-5" />
+        <div class="flex gap-2.5 sm:gap-4">
+          <div class="flex flex-col justify-between shrink-0">
+            <div class="bg-emerald-50 p-2 sm:p-2.5 rounded-lg text-emerald-600 border border-emerald-100/50">
+              <CheckCircle2 class="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <div class="w-8 h-1 bg-emerald-500 rounded-full mt-6"></div>
+            <div class="w-6 sm:w-8 h-1 bg-emerald-500 rounded-full mt-4 sm:mt-6"></div>
           </div>
           <div class="flex flex-col justify-center min-w-0">
             <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">Delivered</p>
-            <h3 ref="numDelivered" class="text-2xl font-bold text-gray-900 mb-0.5 tabular-nums">{{ counts.delivered }}</h3>
-            <p class="text-xs text-emerald-600 font-medium truncate">Completed orders</p>
+            <h3 ref="numDelivered" class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 tabular-nums truncate">{{ counts.delivered }}</h3>
+            <p class="text-[11px] sm:text-xs text-emerald-600 font-medium truncate">Completed orders</p>
           </div>
         </div>
       </div>
 
       <!-- 4. Total Orders -->
       <div 
-        class="bg-white rounded-xl border border-[#e5e2dc] p-5 shadow-sm"
+        class="bg-white rounded-xl border border-[#e5e2dc] p-3.5 sm:p-5 shadow-sm"
       >
-        <div class="flex gap-4">
-          <div class="flex flex-col justify-between">
-            <div class="bg-[#1a5c4c]/10 p-2.5 rounded-lg text-[#1a5c4c] border border-[#1a5c4c]/20">
-              <PackageCheck class="w-5 h-5" />
+        <div class="flex gap-2.5 sm:gap-4">
+          <div class="flex flex-col justify-between shrink-0">
+            <div class="bg-[#1a5c4c]/10 p-2 sm:p-2.5 rounded-lg text-[#1a5c4c] border border-[#1a5c4c]/20">
+              <PackageCheck class="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <div class="w-8 h-1 bg-[#1a5c4c] rounded-full mt-6"></div>
+            <div class="w-6 sm:w-8 h-1 bg-[#1a5c4c] rounded-full mt-4 sm:mt-6"></div>
           </div>
           <div class="flex flex-col justify-center min-w-0">
             <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">Total Orders</p>
-            <h3 ref="numTotal" class="text-2xl font-bold text-gray-900 mb-0.5 tabular-nums">{{ counts.total }}</h3>
-            <p class="text-xs text-[#1a5c4c] font-medium truncate">All delivery records</p>
+            <h3 ref="numTotal" class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 tabular-nums truncate">{{ counts.total }}</h3>
+            <p class="text-[11px] sm:text-xs text-[#1a5c4c] font-medium truncate">All records</p>
           </div>
         </div>
       </div>
@@ -721,36 +721,52 @@ watch(counts, (newVal) => {
     >
       <div 
         v-if="selectedTripOrderIds.length > 0"
-        class="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-full max-w-xl px-4 pointer-events-auto"
+        class="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-full max-w-xl px-3 sm:px-4 pointer-events-auto"
       >
-        <div class="bg-gray-900/95 backdrop-blur-md text-white rounded-2xl shadow-2xl border border-gray-700/60 p-3 sm:p-4 flex items-center justify-between gap-4">
-          <div class="flex items-center gap-3 min-w-0">
-            <div class="w-10 h-10 rounded-xl bg-[#1a5c4c] flex items-center justify-center shrink-0 shadow-sm text-white">
-              <Truck class="w-5 h-5" />
-            </div>
-            <div class="min-w-0">
-              <div class="flex items-center gap-2.5">
-                <span class="text-sm font-bold text-white tracking-tight">Trip Draft in Progress</span>
-                <span class="inline-flex items-center justify-center text-center px-2.5 py-1 rounded-full text-xs font-black bg-emerald-400 text-gray-950 leading-none select-none tracking-normal shrink-0">{{ selectedTripOrderIds.length }} {{ selectedTripOrderIds.length === 1 ? 'order' : 'orders' }}</span>
+        <div class="bg-gray-900/95 backdrop-blur-md text-white rounded-2xl shadow-2xl border border-gray-700/60 p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4">
+          <!-- Row 1 on mobile, Left side on desktop -->
+          <div class="flex items-center justify-between sm:justify-start gap-3 min-w-0">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-[#1a5c4c] flex items-center justify-center shrink-0 shadow-sm text-white">
+                <Truck class="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
-              <p class="text-[11px] text-gray-300 truncate hidden sm:block">
-                Select more orders from table or proceed to assign driver & manifest.
-              </p>
+              <div class="min-w-0">
+                <div class="flex items-center gap-2">
+                  <span class="text-xs sm:text-sm font-bold text-white tracking-tight">Trip Draft</span>
+                  <span class="inline-flex items-center justify-center text-center px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-black bg-emerald-400 text-gray-950 leading-none select-none tracking-normal shrink-0">
+                    {{ selectedTripOrderIds.length }} {{ selectedTripOrderIds.length === 1 ? 'order' : 'orders' }}
+                  </span>
+                </div>
+                <p class="text-[11px] text-gray-300 truncate hidden sm:block">
+                  Select more orders from table or proceed to assign driver & manifest.
+                </p>
+              </div>
             </div>
-          </div>
 
-          <div class="flex items-center gap-2 shrink-0">
+            <!-- Clear button on mobile (top right) -->
             <button
               type="button"
               @click="handleClearTripSelection"
-              class="px-3 py-2 text-xs font-semibold text-gray-400 hover:text-white transition cursor-pointer"
+              class="sm:hidden px-2.5 py-1 text-xs font-semibold text-gray-400 hover:text-white transition cursor-pointer shrink-0"
+            >
+              Clear
+            </button>
+          </div>
+
+          <!-- Row 2 on mobile (Full-width action button), Right side on desktop -->
+          <div class="flex items-center gap-2 shrink-0 w-full sm:w-auto">
+            <!-- Clear button on desktop -->
+            <button
+              type="button"
+              @click="handleClearTripSelection"
+              class="hidden sm:block px-3 py-2 text-xs font-semibold text-gray-400 hover:text-white transition cursor-pointer"
             >
               Clear
             </button>
             <button
               type="button"
               @click="isCreateTripModalOpen = true"
-              class="inline-flex items-center gap-2 px-4 py-2.5 bg-[#1a5c4c] hover:bg-[#154a3d] text-white rounded-xl text-xs sm:text-sm font-bold shadow-md transition-all active:scale-95 cursor-pointer"
+              class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-[#1a5c4c] hover:bg-[#154a3d] text-white rounded-xl text-xs sm:text-sm font-bold shadow-md transition-all active:scale-95 cursor-pointer"
             >
               <span>Confirm & Create Trip</span>
               <ChevronRight class="w-4 h-4" />

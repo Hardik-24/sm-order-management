@@ -402,7 +402,7 @@ watch(() => data.value?.counts, () => {
       </div>
     </div>
 
-    <!-- Tabs (Underline style matching billing/payments) -->
+    <!-- Tabs (Underline style) -->
     <div class="border-b border-gray-200 tab-scroll-container">
       <nav class="-mb-px flex gap-6 sm:gap-8 min-w-max">
         <button 

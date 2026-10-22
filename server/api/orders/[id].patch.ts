@@ -1,14 +1,14 @@
-import { requireRole, getUserFromEvent } from '~~/server/utils/auth'
+import { requireActionPermission, getUserFromEvent } from '~~/server/utils/auth'
 import { prisma } from '~~/server/utils/prisma'
 
 export default defineEventHandler(async (event) => {
   const user = await getUserFromEvent(event)
-  await requireRole(event, ['ADMIN', 'SALES'])
+  await requireActionPermission(event, 'canEditOrders')
   const id = event.context.params?.id
   if (!id) throw createError({ statusCode: 400, message: 'Missing order ID' })
   
   const body = await readBody(event)
-  const { orderNumber, customerId, deliveryAddress, deliveryAddressId, paymentTerms, notes, isUrgent, items } = body
+  const { orderNumber, customerId, deliveryAddress, deliveryAddressId, paymentTerms, notes, isUrgent, vehicleMode, items } = body
   
   let totalAmount = 0
   const itemsToCreate = []
@@ -70,7 +70,8 @@ export default defineEventHandler(async (event) => {
     ...(orderNumber && { orderNumber }),
     ...(customerId && { customerId }),
     ...(paymentTerms && { paymentTerms }),
-    ...(isUrgent !== undefined && { isUrgent: Boolean(isUrgent) })
+    ...(isUrgent !== undefined && { isUrgent: Boolean(isUrgent) }),
+    ...(vehicleMode && { vehicleMode: vehicleMode === 'PARTY_VEHICLE' ? 'PARTY_VEHICLE' : 'OUR_FLEET' })
   }
 
   if (items && Array.isArray(items)) {

@@ -358,9 +358,9 @@ const getTotalNos = (order: any) => {
             ? 'bg-gray-100/60 active:bg-gray-100/80 text-gray-400 opacity-60 border-l-4 border-l-gray-400' 
             : (order.isUrgent ? 'bg-rose-50/25 active:bg-rose-50/40 border-l-4 border-l-rose-500' : 'hover:bg-gray-50 active:bg-gray-100')"
         >
-          <!-- LINE 1: Identity & Billing Status -->
+          <!-- LINE 1: Identity & Billing Status / Split Action -->
           <div class="flex items-center justify-between gap-2 min-w-0">
-            <div class="flex items-center gap-1.5 min-w-0">
+            <div class="flex items-center gap-1.5 min-w-0 flex-1">
               <span class="text-xs font-bold text-gray-900 shrink-0">
                 {{ order.orderNumber }}
               </span>
@@ -376,45 +376,49 @@ const getTotalNos = (order: any) => {
               </span>
             </div>
             
-            <!-- Billing Status Badge -->
-            <span 
-              class="inline-flex items-center justify-center rounded-full font-semibold px-2 py-0.5 text-[10px] shrink-0"
-              :class="[
-                order.billingStatus?.status === 'GENERATED' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-                order.billingStatus?.status === 'ON_HOLD' ? 'bg-orange-50 text-orange-700 border border-orange-200' :
-                'bg-amber-50 text-amber-700 border border-amber-200'
-              ]"
-            >
-              {{ order.billingStatus?.status === 'GENERATED' ? 'Generated' : order.billingStatus?.status === 'ON_HOLD' ? 'On Hold' : 'Awaiting' }}
-            </span>
+            <div class="flex items-center gap-1.5 shrink-0">
+              <!-- Split Button at Top -->
+              <button 
+                v-if="order.billingStatus?.status !== 'GENERATED' && order.overallStatus !== 'CANCELLED' && order.deliveryStatus?.status !== 'DISPATCHED' && order.deliveryStatus?.status !== 'DELIVERED'"
+                @click.stop="emit('split-order', order.id)"
+                class="px-2 py-0.5 border border-gray-200 bg-white text-gray-700 text-[10px] font-semibold rounded hover:bg-gray-100 transition-colors flex items-center gap-1 cursor-pointer"
+                title="Split Order"
+              >
+                <GitFork class="w-2.5 h-2.5 text-[#1a5c4c]" />
+                <span>Split</span>
+              </button>
+
+              <!-- Billing Status Badge -->
+              <span 
+                class="inline-flex items-center justify-center rounded-full font-semibold px-2 py-0.5 text-[10px] shrink-0"
+                :class="[
+                  order.billingStatus?.status === 'GENERATED' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                  order.billingStatus?.status === 'ON_HOLD' ? 'bg-orange-50 text-orange-700 border border-orange-200' :
+                  'bg-amber-50 text-amber-700 border border-amber-200'
+                ]"
+              >
+                {{ order.billingStatus?.status === 'GENERATED' ? 'Generated' : order.billingStatus?.status === 'ON_HOLD' ? 'On Hold' : 'Awaiting' }}
+              </span>
+            </div>
           </div>
 
-          <!-- LINE 2: Amount, Items, Time & Quick Action -->
+          <!-- LINE 2: Amount, Items, Time & Quick Action (Generate at Bottom) -->
           <div class="flex items-center justify-between gap-2 min-w-0 pt-0.5">
-            <div class="flex items-baseline gap-1.5 shrink-0">
-              <span class="text-xs font-bold text-gray-900 tabular-nums">
+            <div class="flex items-baseline gap-1.5 min-w-0">
+              <span class="text-xs font-bold text-gray-900 tabular-nums shrink-0">
                 {{ formatCurrency(order.totalAmount || 0) }}
               </span>
-              <span class="text-[11px] text-gray-400 font-normal">
+              <span class="text-[11px] text-gray-400 font-normal shrink-0">
                 ({{ getTotalNos(order) }})
               </span>
-              <span class="text-gray-300 text-[10px]">&bull;</span>
-              <span class="text-[11px] text-gray-400 tabular-nums">
+              <span class="text-gray-300 text-[10px] shrink-0">&bull;</span>
+              <span class="text-[11px] text-gray-400 tabular-nums truncate">
                 {{ formatDateTime(order.createdAt) }}
               </span>
             </div>
 
-            <!-- Direct 1-Tap Action Button -->
-            <div class="flex items-center gap-1.5 shrink-0">
-              <button 
-                v-if="order.billingStatus?.status !== 'GENERATED' && order.overallStatus !== 'CANCELLED' && order.deliveryStatus?.status !== 'DISPATCHED' && order.deliveryStatus?.status !== 'DELIVERED'"
-                @click.stop="emit('split-order', order.id)"
-                class="px-2 py-1 border border-gray-200 bg-white text-gray-700 text-[11px] font-semibold rounded-md hover:bg-gray-100 transition-colors flex items-center gap-1 cursor-pointer"
-              >
-                <GitFork class="w-3 h-3 text-[#1a5c4c]" />
-                <span>Split</span>
-              </button>
-
+            <!-- Direct 1-Tap Action Button: Generate / View -->
+            <div class="flex items-center shrink-0">
               <button 
                 v-if="order.billingStatus?.status === 'PENDING' && order.overallStatus !== 'CANCELLED'"
                 @click.stop="emit('generate-invoice', order.id)"

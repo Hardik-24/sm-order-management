@@ -1,9 +1,10 @@
-import { requireRole, getUserFromEvent } from '~~/server/utils/auth'
+import { requireActionPermission, getUserFromEvent } from '~~/server/utils/auth'
 import { prisma } from '~~/server/utils/prisma'
+import { syncOrderTripState } from '~~/server/utils/tripSync'
 
 export default defineEventHandler(async (event) => {
   const user = await getUserFromEvent(event)
-  await requireRole(event, ['ADMIN', 'SALES'])
+  await requireActionPermission(event, 'canCancelOrders')
 
   const id = event.context.params?.id
   if (!id) throw createError({ statusCode: 400, message: 'Missing order ID' })
@@ -30,6 +31,12 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: 'Cannot cancel an order that has already been delivered' })
   }
 
+  // Remove from any active or planned trips
+  await syncOrderTripState(prisma, id, 'CANCELLED', {
+    notes: `Order cancelled: ${reason}`,
+    userId: user.id
+  })
+
   const updatedOrder = await prisma.order.update({
     where: { id },
     data: {
@@ -37,6 +44,16 @@ export default defineEventHandler(async (event) => {
       cancelReason: reason,
       cancelledById: user.id,
       cancelledAt: new Date(),
+      deliveryStatus: {
+        update: {
+          status: 'WAITING',
+          driverName: null,
+          dispatchDate: null,
+          eta: null,
+          deliveredAt: null,
+          holdReason: `Cancelled: ${reason}`
+        }
+      },
       timeline: {
         create: {
           action: 'Order Cancelled',

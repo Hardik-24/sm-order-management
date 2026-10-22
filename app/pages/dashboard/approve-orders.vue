@@ -223,6 +223,7 @@ const submitCancel = async () => {
 const { animateNumber, animateStagger, initContext } = useGsapAnimation()
 const statsContainer = ref<HTMLElement | null>(null)
 const tbodyRef = ref<HTMLElement | null>(null)
+const mobileListRef = ref<HTMLElement | null>(null)
 const numPending = ref<HTMLElement | null>(null)
 const numUrgent = ref<HTMLElement | null>(null)
 const numApproved = ref<HTMLElement | null>(null)
@@ -248,10 +249,16 @@ const triggerStatAnimations = () => {
 
 const triggerRowAnimation = () => {
   nextTick(() => {
-    if (!isLoading.value && tbodyRef.value) {
-      const rows = tbodyRef.value.querySelectorAll('tr')
-      const targetRows = Array.from(rows).slice(0, 15)
-      animateStagger(targetRows, { duration: 0.18, stagger: 0.015, y: 4 })
+    if (!isLoading.value) {
+      if (tbodyRef.value) {
+        const rows = tbodyRef.value.querySelectorAll('tr')
+        const targetRows = Array.from(rows).slice(0, 15)
+        animateStagger(targetRows, { duration: 0.18, stagger: 0.015, y: 4 })
+      }
+      if (mobileListRef.value) {
+        const targetCards = Array.from(mobileListRef.value.children).slice(0, 15)
+        animateStagger(targetCards, { duration: 0.18, stagger: 0.015, y: 4 })
+      }
     }
   })
 }
@@ -294,94 +301,94 @@ const getTotalNos = (order: any) => {
 </script>
 
 <template>
-  <div class="space-y-8 p-6 max-w-7xl mx-auto">
+  <div class="space-y-5 sm:space-y-6 md:space-y-8 max-w-7xl mx-auto">
     <!-- Header -->
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Approve Orders</h1>
-        <p class="text-sm text-gray-500 mt-1">
+        <h1 class="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight">Approve Orders</h1>
+        <p class="text-xs sm:text-sm text-gray-500 mt-0.5">
           Verify product rates, inspect custom notes, and approve orders before fulfillment.
         </p>
       </div>
 
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2 self-start sm:self-auto">
         <button 
           @click="handleRefresh" 
           :disabled="isLoading"
-          class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 shadow-sm transition-colors"
+          class="inline-flex items-center gap-2 px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 shadow-sm transition-colors"
         >
-          <RefreshCw class="w-4 h-4" :class="{ 'animate-spin': isLoading }" />
+          <RefreshCw class="w-3.5 h-3.5 sm:w-4 sm:h-4" :class="{ 'animate-spin': isLoading }" />
           <span>Refresh</span>
         </button>
       </div>
     </div>
 
     <!-- Quick Stats Cards -->
-    <div ref="statsContainer" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div ref="statsContainer" class="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-4">
       <!-- Pending Approval -->
-      <div class="bg-white rounded-xl border border-[#e5e2dc] p-5 shadow-sm">
-        <div class="flex gap-4">
+      <div class="bg-white rounded-xl border border-[#e5e2dc] p-3.5 sm:p-5 shadow-sm">
+        <div class="flex gap-2.5 sm:gap-4">
           <div class="flex flex-col justify-between">
-            <div class="bg-amber-50 p-2.5 rounded-lg text-amber-600 border border-amber-100/50">
-              <Clock class="w-5 h-5" />
+            <div class="bg-amber-50 p-2 sm:p-2.5 rounded-lg text-amber-600 border border-amber-100/50">
+              <Clock class="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <div class="w-8 h-1 bg-amber-500 rounded-full mt-6"></div>
+            <div class="w-6 sm:w-8 h-1 bg-amber-500 rounded-full mt-4 sm:mt-6"></div>
           </div>
-          <div class="flex flex-col justify-center">
-            <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5">Pending Approval</p>
-            <h3 ref="numPending" class="text-2xl font-bold text-gray-900 mb-0.5">{{ counts.pending }}</h3>
-            <p class="text-xs text-amber-600 font-medium">Awaiting rate review</p>
+          <div class="flex flex-col justify-center min-w-0">
+            <p class="text-[9px] sm:text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">Pending</p>
+            <h3 ref="numPending" class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5">{{ counts.pending }}</h3>
+            <p class="text-[10px] sm:text-xs text-amber-600 font-medium truncate">Awaiting review</p>
           </div>
         </div>
       </div>
 
       <!-- Urgent Orders -->
-      <div class="bg-white rounded-xl border border-rose-200/80 p-5 shadow-sm">
-        <div class="flex gap-4">
+      <div class="bg-white rounded-xl border border-rose-200/80 p-3.5 sm:p-5 shadow-sm">
+        <div class="flex gap-2.5 sm:gap-4">
           <div class="flex flex-col justify-between">
-            <div class="bg-rose-50 p-2.5 rounded-lg text-rose-600 border border-rose-100/50">
-              <Zap class="w-5 h-5" />
+            <div class="bg-rose-50 p-2 sm:p-2.5 rounded-lg text-rose-600 border border-rose-100/50">
+              <Zap class="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <div class="w-8 h-1 bg-rose-500 rounded-full mt-6"></div>
+            <div class="w-6 sm:w-8 h-1 bg-rose-500 rounded-full mt-4 sm:mt-6"></div>
           </div>
-          <div class="flex flex-col justify-center">
-            <p class="text-[10px] font-bold text-rose-600 uppercase tracking-widest mb-0.5">⚡ Urgent Orders</p>
-            <h3 ref="numUrgent" class="text-2xl font-bold text-gray-900 mb-0.5">{{ counts.urgent }}</h3>
-            <p class="text-xs text-rose-500 font-medium">High priority dispatch</p>
+          <div class="flex flex-col justify-center min-w-0">
+            <p class="text-[9px] sm:text-[10px] font-bold text-rose-600 uppercase tracking-widest mb-0.5 truncate">⚡ Urgent</p>
+            <h3 ref="numUrgent" class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5">{{ counts.urgent }}</h3>
+            <p class="text-[10px] sm:text-xs text-rose-500 font-medium truncate">High priority</p>
           </div>
         </div>
       </div>
 
       <!-- Approved -->
-      <div class="bg-white rounded-xl border border-[#e5e2dc] p-5 shadow-sm">
-        <div class="flex gap-4">
+      <div class="bg-white rounded-xl border border-[#e5e2dc] p-3.5 sm:p-5 shadow-sm">
+        <div class="flex gap-2.5 sm:gap-4">
           <div class="flex flex-col justify-between">
-            <div class="bg-[#1a5c4c]/10 p-2.5 rounded-lg text-[#1a5c4c] border border-[#1a5c4c]/20">
-              <CheckCircle2 class="w-5 h-5" />
+            <div class="bg-[#1a5c4c]/10 p-2 sm:p-2.5 rounded-lg text-[#1a5c4c] border border-[#1a5c4c]/20">
+              <CheckCircle2 class="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <div class="w-8 h-1 bg-[#1a5c4c] rounded-full mt-6"></div>
+            <div class="w-6 sm:w-8 h-1 bg-[#1a5c4c] rounded-full mt-4 sm:mt-6"></div>
           </div>
-          <div class="flex flex-col justify-center">
-            <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5">Approved</p>
-            <h3 ref="numApproved" class="text-2xl font-bold text-gray-900 mb-0.5">{{ counts.approved }}</h3>
-            <p class="text-xs text-emerald-600 font-medium">Approved orders</p>
+          <div class="flex flex-col justify-center min-w-0">
+            <p class="text-[9px] sm:text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">Approved</p>
+            <h3 ref="numApproved" class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5">{{ counts.approved }}</h3>
+            <p class="text-[10px] sm:text-xs text-emerald-600 font-medium truncate">Approved</p>
           </div>
         </div>
       </div>
 
       <!-- Total Orders -->
-      <div class="bg-white rounded-xl border border-[#e5e2dc] p-5 shadow-sm">
-        <div class="flex gap-4">
+      <div class="bg-white rounded-xl border border-[#e5e2dc] p-3.5 sm:p-5 shadow-sm">
+        <div class="flex gap-2.5 sm:gap-4">
           <div class="flex flex-col justify-between">
-            <div class="bg-gray-100 p-2.5 rounded-lg text-gray-600 border border-gray-200/50">
-              <Package class="w-5 h-5" />
+            <div class="bg-gray-100 p-2 sm:p-2.5 rounded-lg text-gray-600 border border-gray-200/50">
+              <Package class="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <div class="w-8 h-1 bg-gray-500 rounded-full mt-6"></div>
+            <div class="w-6 sm:w-8 h-1 bg-gray-500 rounded-full mt-4 sm:mt-6"></div>
           </div>
-          <div class="flex flex-col justify-center">
-            <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5">Total Listed</p>
-            <h3 ref="numTotal" class="text-2xl font-bold text-gray-900 mb-0.5">{{ counts.total }}</h3>
-            <p class="text-xs text-gray-500">Orders in database</p>
+          <div class="flex flex-col justify-center min-w-0">
+            <p class="text-[9px] sm:text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">Total</p>
+            <h3 ref="numTotal" class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5">{{ counts.total }}</h3>
+            <p class="text-[10px] sm:text-xs text-gray-500 truncate">Total listed</p>
           </div>
         </div>
       </div>
@@ -389,7 +396,7 @@ const getTotalNos = (order: any) => {
 
     <!-- Underline Tabs with Badges -->
     <div class="border-b border-gray-200">
-      <nav class="-mb-px flex gap-6 sm:gap-8 overflow-x-auto no-scrollbar">
+      <nav class="-mb-px flex gap-4 sm:gap-8 overflow-x-auto no-scrollbar">
         <button 
           v-for="tab in (['PENDING', 'URGENT', 'APPROVED', 'ALL'] as const)" :key="tab"
           @click="activeTab = tab; page = 1"
@@ -449,8 +456,8 @@ const getTotalNos = (order: any) => {
       <div class="relative min-h-[220px]">
         <div v-if="isLoading" class="absolute inset-0 bg-white/50 backdrop-blur-[2px] z-10 animate-pulse pointer-events-none"></div>
 
-        <!-- Orders Table -->
-        <div ref="approveTableRef" class="overflow-x-auto no-scrollbar">
+        <!-- Orders Table (Desktop Only - 100% Unchanged) -->
+        <div ref="approveTableRef" class="hidden md:block overflow-x-auto no-scrollbar">
           <table class="w-full text-left text-sm text-gray-600">
             <thead class="bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider">
               <tr>
@@ -596,12 +603,132 @@ const getTotalNos = (order: any) => {
         </table>
       </div>
 
+      <!-- Mobile Card List View (Mobile Only: md:hidden) -->
+      <div ref="mobileListRef" class="md:hidden divide-y divide-gray-100 bg-white">
+        <!-- Mobile Skeleton Loading -->
+        <template v-if="isLoading && (!data?.orders || data.orders.length === 0)">
+          <div v-for="i in 5" :key="'mob-skel-' + i" class="p-3.5 space-y-2.5 animate-pulse">
+            <div class="flex justify-between items-center">
+              <div class="h-4 bg-gray-200 rounded w-24"></div>
+              <div class="h-5 bg-gray-200 rounded-full w-20"></div>
+            </div>
+            <div class="h-3.5 bg-gray-200 rounded w-40"></div>
+            <div class="h-3 bg-gray-100 rounded w-28"></div>
+            <div class="h-8 bg-gray-200 rounded-lg w-full mt-2"></div>
+          </div>
+        </template>
+
+        <!-- Mobile Empty State -->
+        <div v-else-if="!isLoading && (!data?.orders || data.orders.length === 0)" class="py-12 px-4 text-center text-gray-400">
+          <CheckCheck class="w-8 h-8 mx-auto text-emerald-500/50 mb-2" />
+          <p class="text-sm font-semibold text-gray-700">No orders pending approval</p>
+          <p class="text-xs text-gray-400 mt-0.5">All orders matching criteria have been reviewed.</p>
+        </div>
+
+        <!-- Mobile Order Cards -->
+        <div
+          v-else
+          v-for="order in data.orders"
+          :key="'mob-' + order.id"
+          @click="openDrawer(order)"
+          class="p-3.5 space-y-2.5 cursor-pointer transition-colors active:bg-gray-100/70"
+          :class="order.overallStatus === 'CANCELLED' 
+            ? 'bg-gray-100/60 opacity-60 border-l-4 border-l-gray-400' 
+            : (order.isUrgent ? 'bg-rose-50/25 border-l-4 border-l-rose-500' : 'hover:bg-gray-50/80')"
+        >
+          <!-- Line 1: Order #, Tag, Date, and Status Badge -->
+          <div class="flex items-center justify-between gap-2">
+            <div class="flex items-center gap-1.5 flex-wrap min-w-0">
+              <span class="text-xs font-bold text-gray-900 tracking-tight">
+                {{ order.orderNumber }}
+              </span>
+              <span v-if="order.overallStatus === 'CANCELLED'" class="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold bg-gray-200 !text-gray-600 border border-rose-500">
+                🚫 CANCELLED
+              </span>
+              <span v-else-if="order.isUrgent" class="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold bg-rose-100 text-rose-700 border border-rose-300">
+                ⚡ URGENT
+              </span>
+              <span class="text-gray-300 text-xs">•</span>
+              <span class="text-[10px] text-gray-400 tabular-nums">
+                {{ formatDateTime(order.createdAt) }}
+              </span>
+            </div>
+
+            <!-- Approval Status Pill -->
+            <div v-if="order.isApproved" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
+              <CheckCircle2 class="w-3 h-3 text-emerald-600" />
+              <span>Approved</span>
+            </div>
+            <div v-else-if="order.overallStatus === 'CANCELLED'" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-50 text-rose-700 border border-rose-200 shrink-0">
+              <XCircle class="w-3 h-3 text-rose-600" />
+              <span>Cancelled</span>
+            </div>
+            <div v-else class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200 shrink-0">
+              <Clock class="w-3 h-3 text-amber-600" />
+              <span>Pending</span>
+            </div>
+          </div>
+
+          <!-- Line 2: Customer Name, Tier Badge & Items / Units Summary -->
+          <div class="flex items-start justify-between gap-2 min-w-0">
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-1.5">
+                <span class="text-xs font-semibold text-gray-900 truncate">
+                  {{ order.customer?.name || 'Walk-in Customer' }}
+                </span>
+                <span 
+                  v-if="order.customer?.privilegeTier" 
+                  class="text-[9px] px-1.5 py-0.2 rounded font-bold uppercase border shadow-2xs"
+                  :class="getPrivilegeColor(order.customer.privilegeTier)"
+                >
+                  {{ order.customer.privilegeTier }}
+                </span>
+                <span v-if="order.customer?.isPriorityClient" class="text-amber-500 font-bold text-xs shrink-0" title="Priority Client">★</span>
+              </div>
+              <p class="text-[11px] text-gray-500 truncate mt-0.5">
+                {{ [order.customer?.company, order.customer?.city || order.customer?.phone].filter(Boolean).join(' • ') || '—' }}
+              </p>
+            </div>
+
+            <div class="text-right shrink-0">
+              <div class="text-xs font-bold text-gray-800">
+                {{ getItemsCountText(order) }}
+              </div>
+              <div class="text-[10px] text-gray-400">
+                {{ getTotalNos(order) }}
+              </div>
+            </div>
+          </div>
+
+          <!-- Line 3: Touch-Friendly Action Buttons -->
+          <div class="flex items-center gap-2 pt-1 border-t border-gray-100">
+            <button 
+              v-if="!order.isApproved && order.overallStatus !== 'CANCELLED'"
+              @click.stop="openReview(order)"
+              class="flex-1 py-2 rounded-lg text-xs font-semibold bg-[#1a5c4c] text-white hover:bg-[#14473b] shadow-2xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer active:scale-[0.99]"
+            >
+              <CheckCheck class="w-3.5 h-3.5" />
+              <span>Review & Approve</span>
+            </button>
+            <button 
+              v-if="order.overallStatus !== 'CANCELLED' && order.overallStatus !== 'DELIVERED'"
+              @click.stop="openCancelModal(order)"
+              class="px-3 py-2 rounded-lg text-xs font-medium text-rose-600 hover:bg-rose-50 transition-colors border border-rose-200 flex items-center justify-center gap-1 cursor-pointer"
+              title="Cancel Order"
+            >
+              <Ban class="w-3.5 h-3.5 text-rose-500" />
+              <span>Cancel</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- Floating Horizontal Scrollbar (Desktop only) -->
       <FloatingHorizontalScrollbar :target="approveTableRef" />
     </div>
 
       <!-- Pagination -->
-      <div v-if="data?.totalPages > 1" class="p-4 border-t border-gray-200 flex justify-between items-center text-xs text-gray-500 bg-gray-50/30">
+      <div v-if="data?.totalPages > 1" class="p-3 sm:p-4 border-t border-gray-200 flex justify-between items-center text-xs text-gray-500 bg-gray-50/30">
         <div>Showing page <span class="font-semibold text-gray-900">{{ page }}</span> of <span class="font-semibold text-gray-900">{{ data.totalPages }}</span></div>
         <div class="flex gap-2">
           <button 

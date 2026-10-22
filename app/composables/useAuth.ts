@@ -49,6 +49,24 @@ export const useAuth = () => {
     return roles.includes(user.value.role)
   }
 
+  /** Check if current user can access a specific page key */
+  function canAccessPage(pageKey: string): boolean {
+    return userCanAccessPage(user.value, pageKey)
+  }
+
+  /** Check if current user can access a route path */
+  function canAccessRoute(path: string): boolean {
+    return userCanAccessRoute(user.value, path)
+  }
+
+  /** Reactive action permissions for buttons and operations */
+  const actionPermissions = computed(() => getEffectiveActionPermissions(user.value))
+  const canEditOrders = computed(() => user.value?.role === 'ADMIN' || actionPermissions.value.canEditOrders)
+  const canEditOrderStatus = computed(() => user.value?.role === 'ADMIN' || actionPermissions.value.canEditOrderStatus)
+  const canCancelOrders = computed(() => user.value?.role === 'ADMIN' || actionPermissions.value.canCancelOrders)
+  const canEditCustomers = computed(() => user.value?.role === 'ADMIN' || actionPermissions.value.canEditCustomers)
+  const canEditProducts = computed(() => user.value?.role === 'ADMIN' || actionPermissions.value.canEditProducts)
+
   return {
     user,
     isLoggedIn,
@@ -56,5 +74,14 @@ export const useAuth = () => {
     logout,
     fetchUser,
     hasRole,
+    canAccessPage,
+    canAccessRoute,
+    actionPermissions,
+    canEditOrders,
+    canEditOrderStatus,
+    canCancelOrders,
+    canEditCustomers,
+    canEditProducts,
   }
 }
+

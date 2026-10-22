@@ -43,14 +43,15 @@ export default defineEventHandler(async (event) => {
         ? { lat: order.customer.latitude, lng: order.customer.longitude }
         : null)
 
-  const isDispatched = order.deliveryStatus?.status === 'DISPATCHED'
-  const isDelivered = order.deliveryStatus?.status === 'DELIVERED'
+  const isWaiting = (order.deliveryStatus?.status === 'WAITING') || order.overallStatus === 'CANCELLED'
+  const isDispatched = !isWaiting && order.deliveryStatus?.status === 'DISPATCHED'
+  const isDelivered = !isWaiting && order.deliveryStatus?.status === 'DELIVERED'
 
   // Read real trip from Supabase only if actively dispatched or completed
   let trip = (isDispatched || isDelivered) ? await getTrip(order.id) : null
 
   // Check if order belongs to a multi-stop Trip manifest
-  const stopInfo = await prisma.tripStop.findFirst({
+  const stopInfo = !isWaiting ? await prisma.tripStop.findFirst({
     where: { orderId: order.id },
     include: {
       trip: {
@@ -61,7 +62,7 @@ export default defineEventHandler(async (event) => {
         }
       }
     }
-  })
+  }) : null
 
   // If order trip route isn't set standalone, use manifest Trip coordinates
   if (!trip && stopInfo?.trip && (isDispatched || isDelivered)) {
@@ -113,12 +114,12 @@ export default defineEventHandler(async (event) => {
     overallStatus: order.overallStatus,
     deliveryStatus: order.deliveryStatus?.status || 'WAITING',
     holdReason: order.deliveryStatus?.holdReason || null,
-    driverName: order.deliveryStatus?.driverName || trip?.driverName || stopInfo?.trip?.driverName || (order.deliveryStatus?.status === 'ASSIGNED' ? 'Assigned Driver' : null),
-    driverPhone: stopInfo?.trip?.driverPhone || '+91 98765 43210',
+    driverName: isWaiting ? null : (order.deliveryStatus?.driverName || trip?.driverName || stopInfo?.trip?.driverName || (order.deliveryStatus?.status === 'ASSIGNED' ? 'Assigned Driver' : null)),
+    driverPhone: isWaiting ? null : (stopInfo?.trip?.driverPhone || (order.deliveryStatus?.status === 'ASSIGNED' ? '+91 98765 43210' : null)),
     dispatchDate: order.deliveryStatus?.dispatchDate,
     eta: order.deliveryStatus?.eta,
     deliveredAt: order.deliveryStatus?.deliveredAt,
-    multiStop: stopInfo ? {
+    multiStop: (!isWaiting && stopInfo) ? {
       tripNumber: stopInfo.trip.tripNumber,
       stopSequence: stopInfo.stopSequence,
       totalStops: stopInfo.trip.stops.length,

@@ -19,6 +19,18 @@ export default defineEventHandler(async (event) => {
   // Hash password with bcrypt
   const hashedPassword = await hashPassword(body.password)
 
+  let actionPermissions = body.actionPermissions
+  if (body.role === 'ADMIN') {
+    actionPermissions = {
+      canEditOrders: true,
+      canEditOrderStatus: true,
+      canCancelOrders: true,
+      canEditCustomers: true,
+      canEditProducts: true,
+      canDeleteQuotations: true,
+    }
+  }
+
   const user = await prisma.user.create({
     data: {
       email: body.email.toLowerCase(),
@@ -26,6 +38,8 @@ export default defineEventHandler(async (event) => {
       name: body.name,
       role: body.role,
       isActive: body.isActive ?? true,
+      allowedPages: body.allowedPages ?? [],
+      actionPermissions: actionPermissions ?? undefined,
     },
     select: {
       id: true,
@@ -33,6 +47,8 @@ export default defineEventHandler(async (event) => {
       name: true,
       role: true,
       isActive: true,
+      allowedPages: true,
+      actionPermissions: true,
       createdAt: true,
     },
   })

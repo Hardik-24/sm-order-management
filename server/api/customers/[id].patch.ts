@@ -1,8 +1,8 @@
-import { requireRole } from '~~/server/utils/auth'
+import { requireActionPermission } from '~~/server/utils/auth'
 import { prisma } from '~~/server/utils/prisma'
 
 export default defineEventHandler(async (event) => {
-  const user = await requireRole(event, ['ADMIN', 'SALES'])
+  const user = await requireActionPermission(event, 'canEditCustomers')
   const id = event.context.params?.id
   if (!id) throw createError({ statusCode: 400, message: 'Missing customer ID' })
 

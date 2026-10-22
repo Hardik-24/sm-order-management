@@ -1,6 +1,6 @@
 import { requireRole, getUserFromEvent } from '~~/server/utils/auth'
 import { prisma } from '~~/server/utils/prisma'
-import { deleteTrip } from '~~/server/utils/driverTrips'
+import { syncOrderTripState } from '~~/server/utils/tripSync'
 
 function calculateOverallStatus(billing: string, packing: string, delivery: string) {
   if (delivery === 'DELIVERED') return 'DELIVERED';
@@ -27,16 +27,29 @@ export default defineEventHandler(async (event) => {
 
   if (!order) throw createError({ statusCode: 404, message: 'Order not found' })
 
-  if (status === 'WAITING' || status === 'ASSIGNED') {
-    await deleteTrip(id)
+  // Synchronize trip manifest and stops
+  if (status) {
+    await syncOrderTripState(prisma, id, status, {
+      driverName,
+      notes: holdReason,
+      userId: user.id
+    })
   }
 
   const deliveryData: any = { status }
-  if (driverName !== undefined) deliveryData.driverName = driverName
-  if (dispatchDate !== undefined) deliveryData.dispatchDate = dispatchDate ? new Date(dispatchDate) : null
-  if (eta !== undefined) deliveryData.eta = eta ? new Date(eta) : null
-  if (deliveredAt !== undefined) deliveryData.deliveredAt = deliveredAt ? new Date(deliveredAt) : null
-  if (status === 'DELIVERED' && !deliveryData.deliveredAt) deliveryData.deliveredAt = new Date()
+  if (status === 'WAITING') {
+    deliveryData.driverName = null
+    deliveryData.dispatchDate = null
+    deliveryData.eta = null
+    deliveryData.deliveredAt = null
+    deliveryData.holdReason = null
+  } else {
+    if (driverName !== undefined) deliveryData.driverName = driverName
+    if (dispatchDate !== undefined) deliveryData.dispatchDate = dispatchDate ? new Date(dispatchDate) : null
+    if (eta !== undefined) deliveryData.eta = eta ? new Date(eta) : null
+    if (deliveredAt !== undefined) deliveryData.deliveredAt = deliveredAt ? new Date(deliveredAt) : null
+    if (status === 'DELIVERED' && !deliveryData.deliveredAt) deliveryData.deliveredAt = new Date()
+  }
 
   let action = 'Delivery Status Updated'
   let desc = `Delivery status updated to ${status}.`

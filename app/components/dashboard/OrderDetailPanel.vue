@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
-import { X, MoreHorizontal, Lock, Edit, Package, PackageCheck, Truck, Check, Box, Plus, Trash2, MapPin, AlertCircle, AlertTriangle, Ban, CheckCheck, CheckCircle2, Zap, User, IndianRupee, Clock, Building2, Phone, FileText, Calendar, Copy, ChevronRight, Car, GitFork } from 'lucide-vue-next'
+import { X, MoreHorizontal, Lock, Edit, Package, PackageCheck, Truck, Check, Box, Plus, Trash2, MapPin, AlertCircle, AlertTriangle, Ban, CheckCheck, CheckCircle2, Zap, User, IndianRupee, Clock, Building2, Phone, FileText, Calendar, Copy, ChevronRight, Car, GitFork, SlidersHorizontal } from 'lucide-vue-next'
 import StatusBadge from '~/components/ui/StatusBadge.vue'
 import GenerateBillModal from '~/components/dashboard/GenerateBillModal.vue'
 import SetDeliveryPinModal from '~/components/dashboard/SetDeliveryPinModal.vue'
 import PartyVehicleHandoverModal from '~/components/dashboard/PartyVehicleHandoverModal.vue'
+import AdminOrderStatusModal from '~/components/dashboard/AdminOrderStatusModal.vue'
 import CustomSelect from '~/components/ui/CustomSelect.vue'
 import { formatCurrency, formatDateTime, formatDate, formatTime, getDisplayStatus, getOverallColor, getStatusColor } from '~~/app/lib/utils'
 import type { Order } from '~/types'
@@ -13,8 +14,21 @@ import { useRealtimeSync } from '~/composables/useRealtimeSync'
 
 const isPinModalOpen = ref(false)
 const isHandoverModalOpen = ref(false)
+const isAdminStatusModalOpen = ref(false)
+
+const openAdminStatusModal = () => {
+  isAdminStatusModalOpen.value = true
+}
+
+const onAdminStatusUpdated = (updatedOrder: any) => {
+  if (updatedOrder) {
+    order.value = { ...order.value, ...updatedOrder }
+  }
+  emit('updated', updatedOrder)
+}
 
 const { showEditing, showSaving, showSaved, hide } = useSnackbar()
+const { paymentTermsOptions } = useMasters()
 const { notifyChange, onOrderSync } = useRealtimeSync()
 const { animateStagger } = useGsapAnimation()
 const itemsTbodyRef = ref<HTMLElement | null>(null)
@@ -34,7 +48,7 @@ const emit = defineEmits<{
   (e: 'split-order', id: string): void
 }>()
 
-const { user, hasRole } = useAuth()
+const { user, hasRole, canEditOrders, canCancelOrders, canEditOrderStatus } = useAuth()
 const order = ref<Order | null>(null)
 const isLoading = ref(false)
 const activeTab = ref<'DETAILS' | 'TIMELINE' | 'NOTES'>('DETAILS')
@@ -43,18 +57,15 @@ const canCancelOrder = computed(() => {
   if (!order.value) return false
   if (order.value.overallStatus === 'CANCELLED' || order.value.overallStatus === 'DELIVERED') return false
 
-  if (props.context === 'approval') {
-    return hasRole('ADMIN', 'SALES')
-  }
-  return hasRole('ADMIN')
+  return canCancelOrders.value
 })
 
 const canGenerateBill = computed(() => {
+  if (props.context !== 'billing') return false
   if (!order.value) return false
   if (order.value.overallStatus === 'CANCELLED') return false
   if (order.value.billingStatus?.status === 'GENERATED') return false
-  if (props.context === 'approval' || props.context === 'packing' || props.context === 'delivery') return false
-  return hasRole('ADMIN', 'BILLING') || props.context === 'billing'
+  return hasRole('ADMIN', 'BILLING')
 })
 
 const copiedOrderNumber = ref(false)
@@ -639,6 +650,7 @@ const editForm = ref({
   paymentTerms: '', 
   notes: '', 
   isUrgent: false,
+  vehicleMode: 'OUR_FLEET',
   items: [] as any[] 
 })
 const customersList = ref<any[]>([])
@@ -674,6 +686,7 @@ const openEditModal = async () => {
     paymentTerms: order.value.paymentTerms || '',
     notes: order.value.notes || '',
     isUrgent: Boolean(order.value.isUrgent),
+    vehicleMode: order.value.vehicleMode || 'OUR_FLEET',
     items: order.value.items.map(i => ({
       id: i.id,
       productId: i.productId,
@@ -774,10 +787,18 @@ watch(editForm, () => {
     @generated="handleBillGenerated"
   />
 
+  <!-- Admin Department Status Override Modal -->
+  <AdminOrderStatusModal
+    :isOpen="isAdminStatusModalOpen"
+    :order="order"
+    @close="isAdminStatusModalOpen = false"
+    @updated="onAdminStatusUpdated"
+  />
+
 
   <!-- Mandatory Order Cancellation Modal -->
   <Teleport to="body">
-    <div v-if="isCancelModalOpen" class="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+    <div v-if="isCancelModalOpen" class="fixed inset-x-0 bottom-0 top-14 md:inset-0 z-[150] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
       <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden border border-gray-200">
         <div class="p-6">
           <div class="w-12 h-12 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center mb-4 border border-rose-100">
@@ -818,7 +839,7 @@ watch(editForm, () => {
 
   <!-- Explicit Confirmation for Quantity Mismatch Modal -->
   <Teleport to="body">
-    <div v-if="isMismatchModalOpen && mismatchModalItem" class="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+    <div v-if="isMismatchModalOpen && mismatchModalItem" class="fixed inset-x-0 bottom-0 top-14 md:inset-0 z-[150] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
       <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden border border-gray-200">
         <div class="p-6">
           <div 
@@ -928,7 +949,7 @@ watch(editForm, () => {
   </Teleport>
 
   <Teleport to="body">
-    <div v-if="isOpen" class="fixed inset-0 z-[100] overflow-hidden pointer-events-none">
+    <div v-if="isOpen" class="fixed inset-x-0 bottom-0 top-14 md:inset-0 z-[60] overflow-hidden pointer-events-none">
       <div class="absolute inset-0 bg-black/30 backdrop-blur-[2px] pointer-events-auto transition-opacity" @click="closePanel"></div>
       
       <div 
@@ -973,6 +994,16 @@ watch(editForm, () => {
           </div>
 
           <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            <button 
+              v-if="canEditOrderStatus"
+              @click="openAdminStatusModal" 
+              title="Edit Status Across Departments"
+              class="px-2.5 py-1 text-xs font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+            >
+              <SlidersHorizontal class="w-3.5 h-3.5" />
+              <span class="hidden sm:inline">Edit Status</span>
+            </button>
+
             <button 
               v-if="canCancelOrder"
               @click="openCancelModal" 
@@ -1121,7 +1152,7 @@ watch(editForm, () => {
                   Customer & Order Details
                 </h3>
                 <button 
-                  v-if="hasRole('ADMIN', 'SALES')" 
+                  v-if="canEditOrders" 
                   @click="openEditModal" 
                   class="text-xs font-semibold text-[#1a5c4c] flex items-center gap-1 hover:underline cursor-pointer"
                 >
@@ -1161,6 +1192,18 @@ watch(editForm, () => {
                   <span class="block text-[10px] sm:text-[11px] uppercase font-bold text-gray-400 tracking-wider mb-0.5">Payment Terms</span>
                   <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-gray-100 text-gray-800 border border-gray-200">
                     {{ order.paymentTerms || order.customer?.paymentTerms || '—' }}
+                  </span>
+                </div>
+
+                <div>
+                  <span class="block text-[10px] sm:text-[11px] uppercase font-bold text-gray-400 tracking-wider mb-0.5">Transport Mode</span>
+                  <span 
+                    class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold border"
+                    :class="order.vehicleMode === 'PARTY_VEHICLE' ? 'bg-amber-50 text-amber-800 border-amber-200' : 'bg-[#1a5c4c]/10 text-[#1a5c4c] border-[#1a5c4c]/20'"
+                  >
+                    <Car v-if="order.vehicleMode === 'PARTY_VEHICLE'" class="w-3 h-3 text-amber-600" />
+                    <Truck v-else class="w-3 h-3 text-[#1a5c4c]" />
+                    <span>{{ order.vehicleMode === 'PARTY_VEHICLE' ? 'Party Vehicle / Pickup' : 'Our Delivery Fleet' }}</span>
                   </span>
                 </div>
 
@@ -1777,7 +1820,7 @@ watch(editForm, () => {
                 Internal Notes
               </h3>
               <button 
-                v-if="hasRole('ADMIN', 'SALES')" 
+                v-if="canEditOrders" 
                 @click="openEditModal" 
                 class="text-xs font-semibold text-[#1a5c4c] hover:underline flex items-center gap-1 cursor-pointer"
               >
@@ -1796,7 +1839,7 @@ watch(editForm, () => {
               <FileText class="w-8 h-8 text-gray-300 mx-auto mb-2" />
               <p class="text-xs font-medium text-gray-500">No internal notes for this order.</p>
               <button 
-                v-if="hasRole('ADMIN', 'SALES')" 
+                v-if="canEditOrders" 
                 @click="openEditModal" 
                 class="mt-3 text-xs font-semibold text-[#1a5c4c] hover:underline cursor-pointer inline-flex items-center gap-1"
               >
@@ -1828,9 +1871,20 @@ watch(editForm, () => {
           </div>
 
           <div class="flex items-center gap-2">
-            <!-- Split Order button -->
+            <!-- Edit Status across departments -->
             <button 
-              v-if="(context === 'billing' || hasRole('ADMIN', 'BILLING')) && order.billingStatus?.status !== 'GENERATED' && order.overallStatus !== 'CANCELLED' && order.deliveryStatus?.status !== 'DISPATCHED' && order.deliveryStatus?.status !== 'DELIVERED'"
+              v-if="canEditOrderStatus"
+              @click="openAdminStatusModal"
+              title="Edit status across all departments"
+              class="px-3.5 py-2 text-xs font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs whitespace-nowrap"
+            >
+              <SlidersHorizontal class="w-3.5 h-3.5" />
+              <span>Edit Status</span>
+            </button>
+
+            <!-- Split Order button (Strictly Billing context only) -->
+            <button 
+              v-if="context === 'billing' && hasRole('ADMIN', 'BILLING') && order.billingStatus?.status !== 'GENERATED' && order.overallStatus !== 'CANCELLED' && order.deliveryStatus?.status !== 'DISPATCHED' && order.deliveryStatus?.status !== 'DELIVERED'"
               @click="emit('split-order', order.id)"
               class="px-3.5 py-2 text-xs font-semibold text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs whitespace-nowrap"
             >
@@ -1838,9 +1892,9 @@ watch(editForm, () => {
               <span>Split Order</span>
             </button>
 
-            <!-- Generate Bill button before Cancel Order -->
+            <!-- Generate Bill button (Strictly Billing context only) -->
             <button 
-              v-if="canGenerateBill && context !== 'packing' && context !== 'delivery'"
+              v-if="context === 'billing' && canGenerateBill"
               @click="markBillGenerated"
               class="px-3.5 py-2 text-xs font-bold text-white bg-[#1a5c4c] hover:bg-[#14473b] rounded-lg shadow-sm hover:shadow transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
             >
@@ -1848,7 +1902,7 @@ watch(editForm, () => {
               <span>Generate Bill</span>
             </button>
             <div 
-              v-else-if="order.billingStatus?.status === 'GENERATED' && context === 'billing'"
+              v-else-if="context === 'billing' && order.billingStatus?.status === 'GENERATED'"
               class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 whitespace-nowrap"
             >
               <CheckCircle2 class="w-4 h-4 text-emerald-600" />
@@ -1942,10 +1996,10 @@ watch(editForm, () => {
 
   <!-- Edit Order Modal -->
   <Teleport to="body">
-    <div v-if="isEditModalOpen" class="fixed inset-0 z-[110] flex items-center justify-center p-2 sm:p-4">
+    <div v-if="isEditModalOpen" class="fixed inset-x-0 bottom-0 top-14 md:inset-0 z-[150] flex items-center justify-center p-2 sm:p-4">
       <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" @click="isEditModalOpen = false; hide()"></div>
       
-      <div class="relative bg-[#faf8f5] w-full max-w-4xl rounded-xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[92vh] overflow-hidden transform transition-all border border-gray-200">
+      <div class="relative bg-[#faf8f5] w-full max-w-4xl rounded-xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[calc(100vh-4.5rem)] md:max-h-[92vh] overflow-hidden transform transition-all border border-gray-200">
         <div class="px-4 py-3 sm:px-6 sm:py-4 border-b border-gray-200 bg-white flex items-center justify-between shrink-0">
           <h2 class="text-base sm:text-lg font-bold text-gray-900 truncate">Edit Order: {{ order?.orderNumber }}</h2>
           <div class="flex items-center gap-3">
@@ -2034,14 +2088,21 @@ watch(editForm, () => {
                   <CustomSelect 
                     :modelValue="editForm.paymentTerms"
                     @update:modelValue="val => editForm.paymentTerms = val"
-                    :options="[
-                      { label: 'Net 30', value: 'Net 30' },
-                      { label: 'Net 60', value: 'Net 60' },
-                      { label: 'Due on Receipt', value: 'Due on Receipt' },
-                      { label: 'Advanced Payment', value: 'Advanced Payment' },
-                      { label: 'COD', value: 'COD' }
-                    ]"
+                    :options="paymentTermsOptions"
                     placeholder="Select Terms"
+                    class="w-full"
+                  />
+                </div>
+                <div>
+                  <label class="block text-[10px] sm:text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Transport Mode</label>
+                  <CustomSelect 
+                    :modelValue="editForm.vehicleMode"
+                    @update:modelValue="val => editForm.vehicleMode = val"
+                    :options="[
+                      { label: '🚚 Our Delivery Fleet', value: 'OUR_FLEET' },
+                      { label: '🚗 Party Vehicle / Customer Pickup', value: 'PARTY_VEHICLE' }
+                    ]"
+                    placeholder="Select Transport Mode"
                     class="w-full"
                   />
                 </div>

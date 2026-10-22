@@ -95,7 +95,6 @@ export default defineEventHandler(async (event) => {
           billingStatus: { create: { status: 'PENDING' } },
           packingStatus: { create: { status: 'PENDING' } },
           deliveryStatus: { create: { status: 'WAITING' } },
-          paymentStatus: { create: { status: 'UNPAID', amountPaid: 0, balanceDue: totalAmount } },
           timeline: {
             create: {
               action: 'Order Created',
@@ -110,7 +109,6 @@ export default defineEventHandler(async (event) => {
           billingStatus: true,
           packingStatus: true,
           deliveryStatus: true,
-          paymentStatus: true,
           timeline: true
         }
       })

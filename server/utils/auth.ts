@@ -19,7 +19,15 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
 /** Create a JWT token with user data */
 export function createToken(user: SessionUser): string {
   return jwt.sign(
-    { id: user.id, name: user.name, email: user.email, role: user.role },
+    { 
+      id: user.id, 
+      name: user.name, 
+      email: user.email, 
+      role: user.role,
+      avatar: user.avatar,
+      allowedPages: user.allowedPages,
+      actionPermissions: user.actionPermissions
+    },
     SECRET,
     { expiresIn: '7d' }
   )
@@ -82,3 +90,51 @@ export function requireRole(event: H3Event, allowedRoles: string[]): SessionUser
   }
   return user
 }
+
+/** Require specific action permission (e.g. canEditOrders, canEditOrderStatus, canCancelOrders, canEditCustomers, canEditProducts, canDeleteQuotations) */
+export async function requireActionPermission(
+  event: H3Event,
+  permission: 'canEditOrders' | 'canEditOrderStatus' | 'canCancelOrders' | 'canEditCustomers' | 'canEditProducts' | 'canDeleteQuotations'
+): Promise<SessionUser> {
+  const sessionUser = requireAuth(event)
+  if (sessionUser.role === 'ADMIN') {
+    return sessionUser
+  }
+
+  const { prisma } = await import('~~/server/utils/prisma')
+  const dbUser = await prisma.user.findUnique({
+    where: { id: sessionUser.id },
+    select: { id: true, name: true, email: true, role: true, isActive: true, actionPermissions: true }
+  })
+
+  if (!dbUser || !dbUser.isActive) {
+    throw createError({ statusCode: 401, statusMessage: 'User inactive or not found' })
+  }
+
+  if (dbUser.role === 'ADMIN') {
+    return sessionUser
+  }
+
+  const perms = (dbUser.actionPermissions && typeof dbUser.actionPermissions === 'object')
+    ? (dbUser.actionPermissions as Record<string, boolean>)
+    : {}
+
+  let hasPerm = false
+  if (perms[permission] !== undefined) {
+    hasPerm = Boolean(perms[permission])
+  } else {
+    // Default role capabilities
+    if (permission === 'canEditOrders' && dbUser.role === 'SALES') hasPerm = true
+    if (permission === 'canEditCustomers' && dbUser.role === 'SALES') hasPerm = true
+  }
+
+  if (!hasPerm) {
+    throw createError({
+      statusCode: 403,
+      statusMessage: `Forbidden: You do not have permission to perform this action (${permission}).`
+    })
+  }
+
+  return sessionUser
+}
+

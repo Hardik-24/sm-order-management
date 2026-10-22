@@ -1,30 +1,30 @@
 <template>
   <Teleport to="body">
-    <div v-if="isOpen" class="fixed inset-0 z-[9990] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-      <div class="bg-white rounded-2xl shadow-2xl border border-gray-100 w-full max-w-4xl overflow-hidden flex flex-col max-h-[92vh]">
+    <div v-if="isOpen" class="fixed inset-x-0 bottom-0 top-14 md:inset-0 z-[60] flex items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
+      <div class="bg-white rounded-2xl shadow-2xl border border-gray-100 w-full max-w-4xl overflow-hidden flex flex-col max-h-[calc(100vh-4.5rem)] md:max-h-[92vh]">
         <!-- Header -->
-        <div class="px-7 sm:px-8 py-6 bg-[#1a1a1a] text-white flex items-center justify-between border-b border-white/10 shrink-0">
-          <div class="flex items-center gap-4">
-            <div class="w-12 h-12 rounded-2xl bg-[#1a5c4c] flex items-center justify-center text-white shadow-md shrink-0">
-              <Truck class="w-6 h-6 text-emerald-100" />
+        <div class="px-4 sm:px-8 py-4 sm:py-6 bg-[#1a1a1a] text-white flex items-center justify-between border-b border-white/10 shrink-0">
+          <div class="flex items-center gap-3 sm:gap-4 min-w-0">
+            <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-[#1a5c4c] flex items-center justify-center text-white shadow-md shrink-0">
+              <Truck class="w-5 h-5 sm:w-6 sm:h-6 text-emerald-100" />
             </div>
-            <div class="space-y-1">
-              <div class="flex items-center gap-3 flex-wrap">
-                <h3 class="font-bold text-lg sm:text-xl text-[#e8e0d4] tracking-tight">
+            <div class="space-y-0.5 sm:space-y-1 min-w-0">
+              <div class="flex items-center gap-2 sm:gap-3 flex-wrap">
+                <h3 class="font-bold text-base sm:text-xl text-[#e8e0d4] tracking-tight">
                   Create Delivery Trip Manifest
                 </h3>
-                <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-[#1a5c4c] text-emerald-100 border border-emerald-400/30">
+                <span class="text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full bg-[#1a5c4c] text-emerald-100 border border-emerald-400/30">
                   {{ stops.length }} Stop{{ stops.length === 1 ? '' : 's' }}
                 </span>
               </div>
-              <p class="text-xs sm:text-sm text-gray-400 leading-normal">
-                Assign a driver, vehicle, and sequence multi-stop customer deliveries
+              <p class="text-xs sm:text-sm text-gray-400 leading-normal truncate">
+                Assign a driver, vehicle, and sequence multi-stop deliveries
               </p>
             </div>
           </div>
           <button 
             @click="$emit('close')" 
-            class="p-2.5 rounded-xl hover:bg-white/10 text-gray-400 hover:text-white transition-colors cursor-pointer shrink-0 ml-4"
+            class="p-2 sm:p-2.5 rounded-xl hover:bg-white/10 text-gray-400 hover:text-white transition-colors cursor-pointer shrink-0 ml-2"
             title="Close modal"
           >
             <X class="w-5 h-5" />
@@ -32,7 +32,7 @@
         </div>
 
         <!-- Body -->
-        <div class="p-6 sm:p-8 overflow-y-auto space-y-6 flex-1 text-sm bg-gray-50/50">
+        <div class="p-4 sm:p-8 overflow-y-auto space-y-4 sm:space-y-6 flex-1 text-sm bg-gray-50/50">
           <!-- Step 1: Fleet & Driver Assignment -->
           <div class="bg-white p-5 rounded-xl border border-[#e5e2dc] shadow-xs space-y-4">
             <div class="flex items-center justify-between border-b border-gray-100 pb-2.5">
@@ -305,11 +305,11 @@
         </div>
 
         <!-- Footer -->
-        <div class="px-7 sm:px-8 py-5 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
+        <div class="px-4 sm:px-8 py-3.5 sm:py-5 bg-gray-50 border-t border-gray-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shrink-0">
           <div class="text-xs text-gray-500">
             <span v-if="hasPinErrors" class="text-rose-600 font-bold flex items-center gap-1">
-              <AlertTriangle class="w-3.5 h-3.5" />
-              All stops must have a verified GPS pin before creating trip.
+              <AlertTriangle class="w-3.5 h-3.5 shrink-0" />
+              <span>All stops must have a verified GPS pin before creating trip.</span>
             </span>
             <span v-else-if="stops.length > 0" class="text-emerald-700 font-medium">
               ✓ All {{ stops.length }} stop pins verified and sequenced.
@@ -319,11 +319,11 @@
             </span>
           </div>
 
-          <div class="flex items-center gap-3">
+          <div class="flex items-center justify-end gap-2.5 sm:gap-3">
             <button
               type="button"
               @click="$emit('close')"
-              class="px-4 py-2 border border-gray-300 text-gray-700 font-semibold rounded-lg text-xs hover:bg-gray-100 transition cursor-pointer"
+              class="flex-1 sm:flex-initial text-center px-4 py-2 border border-gray-300 text-gray-700 font-semibold rounded-lg text-xs hover:bg-gray-100 transition cursor-pointer"
             >
               Cancel
             </button>
@@ -332,7 +332,7 @@
               type="button"
               @click="submitTrip"
               :disabled="isSubmitting || stops.length === 0 || !form.driverId || hasPinErrors"
-              class="px-5 py-2.5 bg-[#1a5c4c] hover:bg-[#134336] text-white font-bold rounded-lg text-xs shadow-sm transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              class="flex-1 sm:flex-initial text-center justify-center px-5 py-2.5 bg-[#1a5c4c] hover:bg-[#134336] text-white font-bold rounded-lg text-xs shadow-sm transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
               <Loader2 v-if="isSubmitting" class="w-3.5 h-3.5 animate-spin" />
               <Truck v-else class="w-3.5 h-3.5" />

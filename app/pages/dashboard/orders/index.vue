@@ -94,7 +94,7 @@ onOrderSync((event) => {
 </script>
 
 <template>
-  <div>
+  <div class="space-y-5 sm:space-y-6 md:space-y-8 max-w-7xl mx-auto">
 
     <!-- Table -->
     <OrderTable 

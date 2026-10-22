@@ -11,6 +11,8 @@ export default defineEventHandler(async (event) => {
       name: true,
       role: true,
       isActive: true,
+      allowedPages: true,
+      actionPermissions: true,
       createdAt: true,
       updatedAt: true
     },

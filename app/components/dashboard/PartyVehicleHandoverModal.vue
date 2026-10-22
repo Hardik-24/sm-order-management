@@ -1,20 +1,20 @@
 <template>
   <Teleport to="body">
-    <div v-if="isOpen" class="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6">
+    <div v-if="isOpen" class="fixed inset-x-0 bottom-0 top-14 md:inset-0 z-[60] flex items-center justify-center p-2 sm:p-4 md:p-6 overflow-y-auto">
       <div class="absolute inset-0 bg-black/60 backdrop-blur-xs" @click="closeModal"></div>
       
-      <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col max-h-[92vh] overflow-hidden border border-[#e5e2dc]">
+      <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col max-h-[calc(100vh-4.5rem)] md:max-h-[92vh] overflow-hidden border border-[#e5e2dc]">
         <!-- Header -->
-        <div class="flex items-center justify-between p-5 border-b border-gray-100 bg-amber-50/70">
-          <div class="flex items-center gap-3">
-            <div class="p-2.5 bg-amber-500 text-white rounded-xl shadow-xs">
-              <Car class="w-5 h-5" />
+        <div class="flex items-center justify-between p-4 sm:p-5 border-b border-gray-100 bg-amber-50/70 shrink-0">
+          <div class="flex items-center gap-2.5 sm:gap-3 min-w-0">
+            <div class="p-2 sm:p-2.5 bg-amber-500 text-white rounded-xl shadow-xs shrink-0">
+              <Car class="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <div>
-              <h2 class="text-base font-bold text-gray-900 flex items-center gap-2">
+            <div class="min-w-0">
+              <h2 class="text-sm sm:text-base font-bold text-gray-900 flex items-center gap-2 truncate">
                 Hand Over to Party Vehicle
               </h2>
-              <p class="text-xs text-amber-900/80 font-medium mt-0.5">
+              <p class="text-xs text-amber-900/80 font-medium mt-0.5 truncate">
                 {{ order?.orderNumber }} • {{ order?.customer?.name }}
               </p>
             </div>
@@ -22,14 +22,14 @@
           <button 
             type="button" 
             @click="closeModal" 
-            class="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-200/60 transition-colors cursor-pointer"
+            class="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-200/60 transition-colors cursor-pointer shrink-0 ml-2"
           >
             <X class="w-5 h-5" />
           </button>
         </div>
 
         <!-- Body -->
-        <div class="flex-1 overflow-y-auto p-6 space-y-5">
+        <div class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-5">
           <!-- Order Highlights Banner -->
           <div class="p-4 bg-gray-50 rounded-xl border border-gray-200 space-y-2.5 text-xs">
             <div class="flex items-center justify-between">
@@ -127,11 +127,11 @@
         </div>
 
         <!-- Footer -->
-        <div class="p-4 bg-gray-50 border-t border-gray-200 flex items-center justify-end gap-3">
+        <div class="p-3.5 sm:p-4 bg-gray-50 border-t border-gray-200 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2.5 sm:gap-3 shrink-0">
           <button
             type="button"
             @click="closeModal"
-            class="px-4 py-2 border border-gray-300 text-gray-700 font-semibold rounded-lg text-xs hover:bg-gray-100 transition cursor-pointer"
+            class="w-full sm:w-auto text-center px-4 py-2 border border-gray-300 text-gray-700 font-semibold rounded-lg text-xs hover:bg-gray-100 transition cursor-pointer"
             :disabled="isSubmitting"
           >
             Cancel
@@ -141,7 +141,7 @@
             type="button"
             @click="confirmHandover"
             :disabled="isSubmitting"
-            class="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg text-xs shadow-sm transition flex items-center gap-2 cursor-pointer disabled:opacity-50"
+            class="w-full sm:w-auto justify-center px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg text-xs shadow-sm transition flex items-center gap-2 cursor-pointer disabled:opacity-50"
           >
             <Loader2 v-if="isSubmitting" class="w-4 h-4 animate-spin" />
             <PackageCheck v-else class="w-4 h-4" />

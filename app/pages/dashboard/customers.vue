@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-6">
+  <div class="space-y-5 sm:space-y-6 md:space-y-8 max-w-7xl mx-auto">
     <!-- Header -->
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
       <div>
@@ -58,7 +58,7 @@
         </div>
       </div>
 
-      <div ref="tableContainerRef" class="w-full overflow-x-auto no-scrollbar min-h-[350px]">
+      <div ref="tableContainerRef" class="hidden md:block w-full overflow-x-auto no-scrollbar min-h-[350px]">
         <table class="w-full text-left border-collapse table-fixed md:min-w-[940px] xl:min-w-full">
           <thead>
             <tr class="bg-gray-50 border-b border-gray-200">
@@ -69,7 +69,7 @@
               <th class="hidden md:table-cell px-4 py-3.5 text-[10px] font-bold text-gray-500 uppercase tracking-widest md:w-[23%]">Locations & Addresses</th>
               <th class="hidden md:table-cell px-4 py-3.5 text-[10px] font-bold text-gray-500 uppercase tracking-widest md:w-[9%]">Terms</th>
               <th class="px-4 py-3.5 text-[10px] font-bold text-gray-500 uppercase tracking-widest w-[22%] md:w-[6%] text-center md:text-left">Status</th>
-              <th v-if="user?.role === 'ADMIN'" class="pl-2 pr-8 md:pr-10 py-3.5 text-[10px] font-bold text-gray-500 uppercase tracking-widest w-[22%] md:w-[8%] text-right">Actions</th>
+              <th v-if="canEditCustomers" class="pl-2 pr-8 md:pr-10 py-3.5 text-[10px] font-bold text-gray-500 uppercase tracking-widest w-[22%] md:w-[8%] text-right">Actions</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-200 text-sm">
@@ -82,7 +82,7 @@
                 <td class="hidden md:table-cell px-4 py-3.5 md:py-4"><div class="h-4 bg-gray-200 rounded w-full"></div></td>
                 <td class="hidden md:table-cell px-4 py-3.5 md:py-4"><div class="h-4 bg-gray-200 rounded w-3/4"></div></td>
                 <td class="px-4 py-3.5 md:py-4"><div class="h-5 bg-gray-200 rounded-full w-12 mx-auto md:mx-0"></div></td>
-                <td v-if="user?.role === 'ADMIN'" class="pl-2 pr-8 md:pr-10 py-3.5 md:py-4"><div class="h-4 bg-gray-200 rounded w-6 ml-auto"></div></td>
+                <td v-if="canEditCustomers" class="pl-2 pr-8 md:pr-10 py-3.5 md:py-4"><div class="h-4 bg-gray-200 rounded w-6 ml-auto"></div></td>
               </tr>
             </template>
             <template v-else>
@@ -206,7 +206,7 @@
                 </td>
 
                 <!-- Actions -->
-                <td v-if="user?.role === 'ADMIN'" @click.stop class="pl-2 pr-8 md:pr-10 py-3.5 md:py-4 text-right whitespace-nowrap">
+                <td v-if="canEditCustomers" @click.stop class="pl-2 pr-8 md:pr-10 py-3.5 md:py-4 text-right whitespace-nowrap">
                   <div class="flex items-center justify-end">
                     <button 
                       @click="openModal(customer)"
@@ -225,6 +225,121 @@
 
       <!-- Floating Horizontal Scrollbar (Desktop only) -->
       <FloatingHorizontalScrollbar :target="tableContainerRef" />
+
+      <!-- MOBILE VIEW: High-Density Customer Cards (md:hidden) -->
+      <div ref="mobileListRef" class="md:hidden divide-y divide-gray-100 bg-white">
+        <!-- Skeleton Loading for Mobile Cards -->
+        <template v-if="pending">
+          <div v-for="i in 5" :key="'mob-cust-skel-' + i" class="p-3.5 space-y-2 animate-pulse">
+            <div class="flex justify-between">
+              <div class="h-4 bg-gray-200 rounded w-24"></div>
+              <div class="h-4 bg-gray-200 rounded w-16"></div>
+            </div>
+            <div class="h-4 bg-gray-200 rounded w-3/4"></div>
+            <div class="flex justify-between">
+              <div class="h-3 bg-gray-100 rounded w-32"></div>
+              <div class="h-3 bg-gray-100 rounded w-20"></div>
+            </div>
+          </div>
+        </template>
+
+        <template v-else>
+          <div v-if="filteredCustomers.length === 0" class="p-8 text-center text-sm text-gray-500">
+            No customers found.
+          </div>
+
+          <div 
+            v-for="customer in paginatedCustomers" 
+            :key="'mob-cust-' + customer.id"
+            @click="openCustomerDetail(customer)"
+            class="p-3.5 space-y-2 hover:bg-gray-50 active:bg-gray-100 transition-colors cursor-pointer"
+          >
+            <!-- Line 1: Code, Priority, Tier & Status -->
+            <div class="flex items-center justify-between gap-2">
+              <div class="flex items-center gap-1.5 flex-wrap min-w-0">
+                <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-gray-100 text-gray-700 font-bold border border-gray-200 shrink-0">
+                  {{ customer.customerCode || 'NO CODE' }}
+                </span>
+                <span 
+                  class="text-[8px] px-1.5 py-0.5 rounded font-bold uppercase border shrink-0"
+                  :class="getPrivilegeTierClass(customer.privilegeTier || 'BRONZE')"
+                >
+                  {{ customer.privilegeTier || 'BRONZE' }}
+                </span>
+                <span v-if="customer.isPriorityClient" class="text-amber-500 font-bold text-[10px] shrink-0">
+                  ★ Priority
+                </span>
+              </div>
+
+              <span 
+                class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold shrink-0"
+                :class="customer.isActive !== false ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'"
+              >
+                {{ customer.isActive !== false ? 'Active' : 'Inactive' }}
+              </span>
+            </div>
+
+            <!-- Line 2: Company Name & Alias -->
+            <div class="min-w-0">
+              <h3 class="text-sm font-semibold text-gray-900 leading-snug">
+                {{ customer.company || customer.name }}
+              </h3>
+              <p v-if="customer.alias" class="text-[11px] text-gray-400 italic mt-0.5">
+                Alias: {{ customer.alias }}
+              </p>
+            </div>
+
+            <!-- Line 3: Contact Person & Phone -->
+            <div class="flex items-center justify-between gap-2 text-xs text-gray-600 pt-0.5">
+              <div class="flex items-center gap-1 min-w-0">
+                <User class="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                <span class="truncate font-medium text-gray-800">{{ customer.name }}</span>
+              </div>
+
+              <a 
+                v-if="getMainPhone(customer.phone) !== 'NA'"
+                :href="'tel:' + getMainPhone(customer.phone)"
+                @click.stop
+                class="font-mono text-xs text-[#1a5c4c] font-semibold hover:underline shrink-0 flex items-center gap-1 bg-[#1a5c4c]/5 px-2 py-0.5 rounded"
+              >
+                <Phone class="w-3 h-3" />
+                {{ getMainPhone(customer.phone) }}
+              </a>
+            </div>
+
+            <!-- Line 4: Locations / Terms & Quick Actions -->
+            <div class="flex items-center justify-between gap-2 text-xs pt-1 border-t border-gray-100">
+              <div class="flex items-center gap-2 min-w-0 flex-wrap">
+                <span class="inline-flex items-center gap-1 text-[11px] text-gray-500">
+                  <MapPin class="w-3 h-3 text-gray-400 shrink-0" />
+                  <span class="truncate">{{ getCustomerAddresses(customer).length }} {{ getCustomerAddresses(customer).length === 1 ? 'Location' : 'Locations' }}</span>
+                </span>
+
+                <span v-if="customer.customerManager" class="inline-flex items-center gap-1 text-[11px] text-gray-500">
+                  <UserCheck class="w-3 h-3 text-[#1a5c4c] shrink-0" />
+                  <span class="truncate">{{ customer.customerManager.name }}</span>
+                </span>
+
+                <span class="px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 text-[9px] font-medium shrink-0">
+                  {{ formatPaymentTerms(customer.paymentTerms) }}
+                </span>
+              </div>
+
+              <div class="flex items-center gap-1 shrink-0">
+                <button 
+                  v-if="canEditCustomers"
+                  @click.stop="openModal(customer)"
+                  class="text-gray-400 hover:text-[#1a5c4c] hover:bg-[#1a5c4c]/10 p-1.5 rounded-lg transition-colors inline-flex items-center"
+                  title="Edit Customer"
+                >
+                  <Edit2 class="w-3.5 h-3.5" />
+                </button>
+                <ChevronRight class="w-4 h-4 text-gray-400" />
+              </div>
+            </div>
+          </div>
+        </template>
+      </div>
 
       <!-- Pagination Footer -->
       <div v-if="filteredCustomers.length > 0 && pageSize !== -1" class="px-5 py-3.5 border-t border-gray-100 bg-gray-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -411,7 +526,7 @@
         <!-- Footer -->
         <div class="px-6 py-3.5 bg-gray-50/80 border-t border-gray-100 flex items-center justify-between">
           <button 
-            v-if="user?.role === 'ADMIN'"
+            v-if="canEditCustomers"
             @click="editCustomerFromDetail()"
             class="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-[#1a5c4c] bg-[#1a5c4c]/10 hover:bg-[#1a5c4c]/20 rounded-lg transition-colors"
           >
@@ -825,15 +940,15 @@
           </div>
 
           <!-- Sticky Modal Footer -->
-          <div class="px-5 sm:px-6 py-4 bg-white border-t border-gray-200 flex items-center justify-between gap-3 shrink-0">
+          <div class="px-4 sm:px-6 py-3.5 sm:py-4 bg-white border-t border-gray-200 flex items-center justify-between gap-3 shrink-0">
             <div class="text-xs text-gray-500 hidden sm:block">
               {{ form.addresses.length }} delivery location{{ form.addresses.length === 1 ? '' : 's' }} registered
             </div>
-            <div class="flex items-center gap-3 ml-auto">
+            <div class="flex items-center gap-2.5 sm:gap-3 w-full sm:w-auto justify-end">
               <button
                 type="button"
                 @click="closeModal"
-                class="px-4 py-2 border border-gray-300 text-gray-700 rounded-xl text-xs font-semibold hover:bg-gray-50 transition-colors"
+                class="flex-1 sm:flex-initial text-center px-4 py-2 border border-gray-300 text-gray-700 rounded-xl text-xs font-semibold hover:bg-gray-50 transition-colors cursor-pointer"
               >
                 Cancel
               </button>
@@ -841,7 +956,7 @@
                 type="submit"
                 form="customerForm"
                 :disabled="isSaving"
-                class="px-5 py-2 bg-[#1a5c4c] text-white rounded-xl text-xs font-bold hover:bg-[#14483b] transition-colors flex items-center gap-2 shadow-sm disabled:opacity-50"
+                class="flex-1 sm:flex-initial text-center justify-center px-5 py-2 bg-[#1a5c4c] text-white rounded-xl text-xs font-bold hover:bg-[#14483b] transition-colors flex items-center gap-2 shadow-sm disabled:opacity-50 cursor-pointer"
               >
                 <Loader2 v-if="isSaving" class="w-4 h-4 animate-spin" />
                 <span>{{ isSaving ? 'Saving...' : (editingCustomer ? 'Save Changes' : 'Create Customer') }}</span>
@@ -887,7 +1002,7 @@ import FloatingHorizontalScrollbar from '~/components/ui/FloatingHorizontalScrol
 
 definePageMeta({ layout: 'dashboard' })
 
-const { user } = useAuth()
+const { user, canEditCustomers } = useAuth()
 const { showEditing, showSaving, showSaved, hide, snackbarState } = useSnackbar()
 const { animateModalOpen, animateStagger, initContext } = useGsapAnimation()
 const { notifyChange, onOrderSync } = useRealtimeSync()
@@ -899,13 +1014,7 @@ onOrderSync((event) => {
   }
 })
 
-const paymentTermsOptions = [
-  { label: 'COD (Cash on Delivery)', value: 'COD' },
-  { label: '15 Days', value: '15_DAYS' },
-  { label: '30 Days', value: '30_DAYS' },
-  { label: '45 Days', value: '45_DAYS' },
-  { label: '60 Days', value: '60_DAYS' }
-]
+const { paymentTermsOptions } = useMasters()
 
 const privilegeTierOptions = [
   { label: 'Bronze (Standard)', value: 'BRONZE', subtitle: 'Standard rates & terms' },
@@ -1121,7 +1230,9 @@ const endIndex = computed(() => {
 })
 
 const formatPaymentTerms = (term: string) => {
-  return term ? term.replace('_', ' ') : 'N/A'
+  if (!term) return 'N/A'
+  const found = paymentTermsOptions.value.find(o => o.value === term || o.label === term)
+  return found ? found.label : term.replace('_', ' ')
 }
 
 const getPrivilegeTierClass = (tier: string) => {
@@ -1304,6 +1415,24 @@ const saveCustomer = async () => {
 const currentPage = ref(1)
 const pageSize = ref(50)
 const tableRootRef = ref<HTMLElement | null>(null)
+const mobileListRef = ref<HTMLElement | null>(null)
+
+const triggerCardAnimation = () => {
+  nextTick(() => {
+    if (mobileListRef.value && !pending.value) {
+      const cards = Array.from(mobileListRef.value.children).slice(0, 15)
+      animateStagger(cards, { duration: 0.2, stagger: 0.02, y: 6 })
+    }
+  })
+}
+
+watch([paginatedCustomers, pending], () => {
+  triggerCardAnimation()
+})
+
+onMounted(() => {
+  triggerCardAnimation()
+})
 
 watch(currentPage, () => {
   nextTick(() => {

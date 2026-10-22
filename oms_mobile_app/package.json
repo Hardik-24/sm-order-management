@@ -1,0 +1,26 @@
+{
+  "name": "oms_mobile_app",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "description": "Silicon Marketing Order Management System Mobile App",
+  "scripts": {
+    "cap:sync": "cap sync",
+    "cap:open": "cap open android",
+    "cap:build": "cap sync android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.5.1",
+    "@capacitor/app": "^8.0.0",
+    "@capacitor/core": "^8.5.1",
+    "@capacitor/haptics": "^8.0.0",
+    "@capacitor/network": "^8.0.0",
+    "@capacitor/preferences": "^8.0.1",
+    "@capacitor/splash-screen": "^8.0.0",
+    "@capacitor/status-bar": "^8.0.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.5.1",
+    "typescript": "^7.0.2"
+  }
+}

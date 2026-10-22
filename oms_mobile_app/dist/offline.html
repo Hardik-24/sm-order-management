@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Offline • Silicon Marketing OMS</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background-color: #1c1c1c;
+      color: #e8e0d4;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      padding: env(safe-area-inset-top, 24px) 24px env(safe-area-inset-bottom, 24px) 24px;
+      text-align: center;
+    }
+    .top-header {
+      padding-top: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .brand-title {
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #e8e0d4;
+    }
+    .brand-accent {
+      color: #4ecdc4;
+    }
+    .content-box {
+      max-width: 380px;
+      width: 100%;
+      background: #242424;
+      border: 1px solid #333333;
+      border-radius: 24px;
+      padding: 32px 24px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .signal-icon-wrapper {
+      width: 72px;
+      height: 72px;
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.25);
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+      position: relative;
+    }
+    .pulse-ring {
+      position: absolute;
+      inset: -4px;
+      border: 2px solid rgba(239, 68, 68, 0.4);
+      border-radius: 24px;
+      animation: pulse 2s infinite ease-out;
+    }
+    @keyframes pulse {
+      0% { transform: scale(0.95); opacity: 0.8; }
+      100% { transform: scale(1.15); opacity: 0; }
+    }
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      border-radius: 100px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #f87171;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 12px;
+    }
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #ef4444;
+    }
+    h1 {
+      font-size: 20px;
+      font-weight: 800;
+      color: #ffffff;
+      margin-bottom: 8px;
+      line-height: 1.25;
+    }
+    p {
+      font-size: 13px;
+      color: #9ca3af;
+      line-height: 1.5;
+      margin-bottom: 24px;
+    }
+    .retry-btn {
+      width: 100%;
+      padding: 14px 20px;
+      background: #1a5c4c;
+      color: #ffffff;
+      border: none;
+      border-radius: 14px;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 14px rgba(26, 92, 76, 0.4);
+      transition: all 0.2s ease;
+    }
+    .retry-btn:active {
+      transform: scale(0.98);
+      background: #14483b;
+    }
+    .countdown-text {
+      margin-top: 14px;
+      font-size: 11px;
+      color: #6b7280;
+      font-family: monospace;
+    }
+    .footer-tools {
+      padding-bottom: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    .settings-btn {
+      background: transparent;
+      border: none;
+      color: #6b7280;
+      font-size: 12px;
+      cursor: pointer;
+      padding: 6px 12px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .settings-btn:active {
+      color: #9ca3af;
+      background: rgba(255,255,255,0.05);
+    }
+    /* Settings Modal Dialog */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.8);
+      backdrop-filter: blur(4px);
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 1000;
+    }
+    .modal-overlay.open {
+      display: flex;
+    }
+    .modal-card {
+      background: #242424;
+      border: 1px solid #3a3a3a;
+      border-radius: 20px;
+      padding: 24px;
+      width: 100%;
+      max-width: 360px;
+      text-align: left;
+    }
+    .input-field {
+      width: 100%;
+      padding: 12px;
+      background: #1c1c1c;
+      border: 1px solid #444;
+      border-radius: 10px;
+      color: #fff;
+      font-size: 13px;
+      font-family: monospace;
+      margin-top: 6px;
+      margin-bottom: 16px;
+      outline: none;
+    }
+    .input-field:focus {
+      border-color: #1a5c4c;
+    }
+    .modal-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+    .btn-secondary {
+      padding: 8px 14px;
+      background: #333;
+      color: #ddd;
+      border: none;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-primary {
+      padding: 8px 16px;
+      background: #1a5c4c;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <!-- Top App Brand -->
+  <div class="top-header">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4ecdc4" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+      <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+      <line x1="12" y1="22.08" x2="12" y2="12"></line>
+    </svg>
+    <div class="brand-title">SILICON <span class="brand-accent">OMS</span></div>
+  </div>
+
+  <!-- Central Card -->
+  <div class="content-box">
+    <div class="signal-icon-wrapper">
+      <div class="pulse-ring"></div>
+      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="1" y1="1" x2="23" y2="23"></line>
+        <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"></path>
+        <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"></path>
+        <path d="M10.71 5.05A16 16 0 0 1 22.58 9"></path>
+        <path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"></path>
+        <path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path>
+        <line x1="12" y1="20" x2="12.01" y2="20"></line>
+      </svg>
+    </div>
+
+    <div class="status-badge">
+      <span class="status-dot"></span>
+      <span>No Connection</span>
+    </div>
+
+    <h1>Unable to Reach OMS</h1>
+    <p>We couldn't connect to the Silicon Marketing workspace. Please check your internet or Wi-Fi.</p>
+
+    <button id="retryBtn" class="retry-btn" onclick="retryConnection()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="23 4 23 10 17 10"></polyline>
+        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+      </svg>
+      <span>Retry Connection</span>
+    </button>
+
+    <div id="countdown" class="countdown-text">Auto-retrying in 5s...</div>
+  </div>
+
+  <!-- Bottom Footer Settings -->
+  <div class="footer-tools">
+    <button class="settings-btn" onclick="openSettings()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"></circle>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+      </svg>
+      <span>Server URL Settings</span>
+    </button>
+    <span style="font-size: 10px; color: #444;">Silicon Marketing &bull; Order Management System</span>
+  </div>
+
+  <!-- Settings Dialog Modal -->
+  <div id="settingsModal" class="modal-overlay">
+    <div class="modal-card">
+      <h3 style="font-size: 15px; font-weight: 700; color: #fff; margin-bottom: 4px;">OMS Server Address</h3>
+      <p style="font-size: 11px; color: #888; margin-bottom: 12px;">Specify the remote server URL or local dev IP.</p>
+      
+      <label style="font-size: 10px; font-weight: 700; color: #aaa; text-transform: uppercase;">Server Endpoint</label>
+      <input type="text" id="serverUrlInput" class="input-field" placeholder="http://192.168.1.100:3001" />
+
+      <div class="modal-actions">
+        <button class="btn-secondary" onclick="closeSettings()">Cancel</button>
+        <button class="btn-primary" onclick="saveSettings()">Save & Reconnect</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const DEFAULT_SERVER_URL = localStorage.getItem('sm_oms_server_url') || 'http://192.168.1.100:3001';
+    let countdownSec = 5;
+    let timer = null;
+    let isRetrying = false;
+
+    function getServerUrl() {
+      return localStorage.getItem('sm_oms_server_url') || DEFAULT_SERVER_URL;
+    }
+
+    async function checkServerConnection(url) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3500);
+        // Ping health check or favicon
+        const res = await fetch(url.replace(/\/$/, '') + '/api/dashboard', {
+          method: 'HEAD',
+          mode: 'no-cors',
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    async function retryConnection() {
+      if (isRetrying) return;
+      isRetrying = true;
+      const btn = document.getElementById('retryBtn');
+      const countEl = document.getElementById('countdown');
+      btn.innerHTML = '<span>Connecting...</span>';
+      btn.style.opacity = '0.7';
+      countEl.innerText = 'Checking server reachability...';
+
+      const target = getServerUrl();
+      const online = navigator.onLine;
+
+      if (!online) {
+        setTimeout(() => {
+          btn.innerHTML = '<span>Retry Connection</span>';
+          btn.style.opacity = '1';
+          countEl.innerText = 'Device is in Airplane / Offline mode';
+          isRetrying = false;
+        }, 1000);
+        return;
+      }
+
+      const reachable = await checkServerConnection(target);
+      if (reachable) {
+        countEl.innerText = 'Reconnected! Loading workspace...';
+        window.location.replace(target);
+      } else {
+        btn.innerHTML = '<span>Retry Connection</span>';
+        btn.style.opacity = '1';
+        countEl.innerText = 'Server unreachable. Retrying in 5s...';
+        countdownSec = 5;
+        isRetrying = false;
+      }
+    }
+
+    // Auto-retry loop
+    function startCountdown() {
+      clearInterval(timer);
+      timer = setInterval(() => {
+        if (isRetrying) return;
+        countdownSec--;
+        if (countdownSec <= 0) {
+          countdownSec = 5;
+          retryConnection();
+        } else {
+          document.getElementById('countdown').innerText = `Auto-retrying in ${countdownSec}s...`;
+        }
+      }, 1000);
+    }
+
+    // Listen to device network status change
+    window.addEventListener('online', () => {
+      document.getElementById('countdown').innerText = 'Network detected! Reconnecting...';
+      retryConnection();
+    });
+
+    // Settings Modal
+    function openSettings() {
+      document.getElementById('serverUrlInput').value = getServerUrl();
+      document.getElementById('settingsModal').classList.add('open');
+    }
+    function closeSettings() {
+      document.getElementById('settingsModal').classList.remove('open');
+    }
+    function saveSettings() {
+      let val = document.getElementById('serverUrlInput').value.trim();
+      if (val) {
+        if (!val.startsWith('http://') && !val.startsWith('https://')) {
+          val = 'http://' + val;
+        }
+        localStorage.setItem('sm_oms_server_url', val);
+        closeSettings();
+        retryConnection();
+      }
+    }
+
+    startCountdown();
+  </script>
+</body>
+</html>

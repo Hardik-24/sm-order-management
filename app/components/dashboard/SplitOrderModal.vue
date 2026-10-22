@@ -28,6 +28,7 @@ const newOrderNumber = ref('')
 const splitNotes = ref('')
 const selectedAddressId = ref<string>('')
 const customAddressText = ref<string>('')
+const selectedVehicleMode = ref<'OUR_FLEET' | 'PARTY_VEHICLE'>('OUR_FLEET')
 
 interface SplitRow {
   id: string
@@ -60,6 +61,7 @@ watch(() => [props.isOpen, props.orderId], async ([open, id]) => {
       splitNotes.value = ''
       selectedAddressId.value = data.deliveryAddressId || ''
       customAddressText.value = data.deliveryAddress || ''
+      selectedVehicleMode.value = data.vehicleMode === 'PARTY_VEHICLE' ? 'PARTY_VEHICLE' : 'OUR_FLEET'
 
       splitRows.value = (data.items || []).map((item: any) => {
         const total = item.approvedQuantity ?? item.quantity
@@ -92,8 +94,8 @@ watch(() => [props.isOpen, props.orderId], async ([open, id]) => {
   }
 })
 
-const closeModal = () => {
-  if (!isSubmitting.value) {
+const closeModal = (force = false) => {
+  if (force || !isSubmitting.value) {
     emit('close')
   }
 }
@@ -225,6 +227,7 @@ const confirmSplit = async () => {
       notes: splitNotes.value.trim() || undefined,
       deliveryAddress: customAddressText.value.trim() || undefined,
       deliveryAddressId: selectedAddressId.value || undefined,
+      vehicleMode: selectedVehicleMode.value,
       items: splitRows.value.map(r => ({
         orderItemId: r.id,
         keepQuantity: r.keepQty,
@@ -239,8 +242,9 @@ const confirmSplit = async () => {
 
     showSaved(`Order split into ${order.value.orderNumber} & ${res.newOrder.orderNumber}!`)
     notifyChange({ orderId: order.value.id, action: 'ORDER_SPLIT' })
+    isSubmitting.value = false
+    closeModal(true)
     emit('splitSuccess', res)
-    closeModal()
   } catch (err: any) {
     console.error('Failed to split order:', err)
     alert(err.data?.message || 'Failed to split order. Please check inputs.')
@@ -252,12 +256,12 @@ const confirmSplit = async () => {
 
 <template>
   <Teleport to="body">
-    <div v-if="isOpen" class="fixed inset-0 z-[200] flex items-center justify-center p-3 sm:p-5">
+    <div v-if="isOpen" class="fixed inset-x-0 bottom-0 top-14 md:inset-0 z-[60] flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
       <!-- Backdrop -->
       <div class="absolute inset-0 bg-black/60 backdrop-blur-xs transition-opacity" @click="closeModal"></div>
 
       <!-- Modal Card -->
-      <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-5xl flex flex-col max-h-[92vh] overflow-hidden border border-gray-200">
+      <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-5xl flex flex-col max-h-[calc(100vh-4.5rem)] md:max-h-[92vh] overflow-hidden border border-gray-200">
         
         <!-- Header -->
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-[#faf8f5] shrink-0">
@@ -580,20 +584,46 @@ const confirmSplit = async () => {
                 </div>
               </div>
 
-              <!-- Right: Split Notes / Reason -->
-              <div>
-                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">
-                  Reason / Split Notes (Optional)
-                </label>
-                <textarea 
-                  rows="4" 
-                  v-model="splitNotes" 
-                  placeholder="e.g. Split for partial dispatch on tempo; remaining sheets will be delivered tomorrow..."
-                  class="w-full text-xs border border-gray-300 rounded-lg p-2 bg-white focus:ring-[#1a5c4c] focus:border-[#1a5c4c]"
-                ></textarea>
-                <p class="text-[10px] text-gray-400 mt-1">
-                  These notes will appear on the new order's timeline and manifest.
-                </p>
+              <!-- Right: Transport Mode & Split Notes -->
+              <div class="space-y-3">
+                <div>
+                  <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">
+                    Transport Mode for New Order *
+                  </label>
+                  <div class="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      @click="selectedVehicleMode = 'OUR_FLEET'"
+                      class="px-3 py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 border transition cursor-pointer"
+                      :class="selectedVehicleMode === 'OUR_FLEET' ? 'bg-[#1a5c4c] text-white border-[#1a5c4c] shadow-xs' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'"
+                    >
+                      <span>🚚 Our Fleet</span>
+                    </button>
+                    <button
+                      type="button"
+                      @click="selectedVehicleMode = 'PARTY_VEHICLE'"
+                      class="px-3 py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 border transition cursor-pointer"
+                      :class="selectedVehicleMode === 'PARTY_VEHICLE' ? 'bg-amber-600 text-white border-amber-600 shadow-xs' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'"
+                    >
+                      <span>🚗 Party Vehicle</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">
+                    Reason / Split Notes (Optional)
+                  </label>
+                  <textarea 
+                    rows="2" 
+                    v-model="splitNotes" 
+                    placeholder="e.g. Split for partial dispatch on tempo; remaining sheets will be delivered tomorrow..."
+                    class="w-full text-xs border border-gray-300 rounded-lg p-2 bg-white focus:ring-[#1a5c4c] focus:border-[#1a5c4c]"
+                  ></textarea>
+                  <p class="text-[10px] text-gray-400 mt-1">
+                    These notes will appear on the new order's timeline and manifest.
+                  </p>
+                </div>
               </div>
             </div>
           </template>

@@ -1,30 +1,30 @@
 <template>
   <Teleport to="body">
-    <div v-if="isOpen" class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div class="bg-white rounded-2xl shadow-2xl border border-gray-100 w-full max-w-2xl overflow-hidden flex flex-col max-h-[92vh]">
+    <div v-if="isOpen" class="fixed inset-x-0 bottom-0 top-14 md:inset-0 z-[60] flex items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
+      <div class="bg-white rounded-2xl shadow-2xl border border-gray-100 w-full max-w-2xl overflow-hidden flex flex-col max-h-[calc(100vh-4.5rem)] md:max-h-[92vh]">
         <!-- Header -->
-        <div class="px-6 py-4 bg-[#1a1a1a] text-white flex items-center justify-between">
-          <div class="flex items-center gap-3">
-            <div class="w-9 h-9 rounded-xl bg-[#1a5c4c] flex items-center justify-center text-white">
-              <MapPin class="w-5 h-5" />
+        <div class="px-4 sm:px-6 py-3.5 sm:py-4 bg-[#1a1a1a] text-white flex items-center justify-between shrink-0">
+          <div class="flex items-center gap-2.5 sm:gap-3 min-w-0">
+            <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[#1a5c4c] flex items-center justify-center text-white shrink-0">
+              <MapPin class="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <div>
-              <h3 class="font-bold text-base text-[#e8e0d4] flex items-center gap-2">
+            <div class="min-w-0">
+              <h3 class="font-bold text-sm sm:text-base text-[#e8e0d4] flex items-center gap-2">
                 <span>Set Delivery Pin</span>
-                <span v-if="addressLabel" class="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#1a5c4c] text-emerald-100 border border-emerald-400/30">
+                <span v-if="addressLabel" class="text-[10px] sm:text-xs font-semibold px-2 py-0.5 rounded-full bg-[#1a5c4c] text-emerald-100 border border-emerald-400/30 truncate">
                   {{ addressLabel }}
                 </span>
               </h3>
-              <p class="text-xs text-gray-400 truncate max-w-md">{{ customerName }} • {{ customerCompany || deliveryAddress }}</p>
+              <p class="text-[11px] sm:text-xs text-gray-400 truncate max-w-xs sm:max-w-md">{{ customerName }} • {{ customerCompany || deliveryAddress }}</p>
             </div>
           </div>
-          <button @click="close" class="p-1.5 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition-colors">
+          <button @click="close" class="p-1.5 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition-colors cursor-pointer shrink-0 ml-2">
             <X class="w-5 h-5" />
           </button>
         </div>
 
       <!-- Content -->
-      <div class="p-6 overflow-y-auto space-y-4 flex-1">
+      <div class="p-4 sm:p-6 overflow-y-auto space-y-4 flex-1">
         <!-- Currently Saved Pin Banner -->
         <div v-if="savedPinInfo" class="bg-emerald-50/90 border border-emerald-200 rounded-xl p-3.5 flex items-center justify-between gap-3 animate-in fade-in">
           <div class="flex items-center gap-2.5 text-xs text-emerald-900 min-w-0">
@@ -175,14 +175,14 @@
       </div>
 
       <!-- Footer -->
-      <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
-        <div class="flex items-center gap-3">
+      <div class="px-4 sm:px-6 py-3.5 sm:py-4 bg-gray-50 border-t border-gray-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shrink-0">
+        <div class="flex items-center justify-between sm:justify-start gap-3">
           <button
             v-if="savedPinInfo"
             type="button"
             @click="deletePin"
             :disabled="isDeleting"
-            class="px-3.5 py-2 text-xs font-bold text-rose-700 hover:bg-rose-100 bg-rose-50 border border-rose-200 rounded-xl flex items-center gap-1.5 transition-colors disabled:opacity-50"
+            class="px-3.5 py-2 text-xs font-bold text-rose-700 hover:bg-rose-100 bg-rose-50 border border-rose-200 rounded-xl flex items-center gap-1.5 transition-colors disabled:opacity-50 cursor-pointer shrink-0"
             title="Remove currently saved pin"
           >
             <Trash2 v-if="!isDeleting" class="w-3.5 h-3.5 text-rose-600" />
@@ -197,11 +197,11 @@
           </div>
         </div>
 
-        <div class="flex items-center gap-3">
+        <div class="flex items-center justify-end gap-2.5 sm:gap-3">
           <button 
             type="button" 
             @click="close" 
-            class="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-200 rounded-xl transition-colors"
+            class="flex-1 sm:flex-initial text-center px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-200 rounded-xl transition-colors cursor-pointer"
           >
             Cancel
           </button>
@@ -209,7 +209,7 @@
             type="button" 
             @click="savePin" 
             :disabled="!currentLat || !currentLng || isSaving || isDeleting"
-            class="px-5 py-2 text-xs font-bold text-white bg-[#1a5c4c] hover:bg-[#14483b] disabled:opacity-50 disabled:cursor-not-allowed rounded-xl shadow-sm transition-all flex items-center gap-2"
+            class="flex-1 sm:flex-initial text-center justify-center px-5 py-2 text-xs font-bold text-white bg-[#1a5c4c] hover:bg-[#14483b] disabled:opacity-50 disabled:cursor-not-allowed rounded-xl shadow-sm transition-all flex items-center gap-2 cursor-pointer"
           >
             <Loader2 v-if="isSaving" class="w-4 h-4 animate-spin" />
             <span>{{ isSaving ? 'Saving...' : 'Save Delivery Pin' }}</span>

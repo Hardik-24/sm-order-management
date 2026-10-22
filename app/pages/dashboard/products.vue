@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-8">
+  <div class="space-y-5 sm:space-y-6 md:space-y-8 max-w-7xl mx-auto">
     <!-- PRODUCTS SECTION -->
     <section>
       <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-4">
@@ -125,7 +125,7 @@
           </div>
         </div>
 
-        <div ref="tableContainerRef" class="overflow-x-auto no-scrollbar min-h-[350px]">
+        <div ref="tableContainerRef" class="hidden md:block overflow-x-auto no-scrollbar min-h-[350px]">
           <table class="w-full text-left border-collapse table-auto">
             <thead>
               <tr class="bg-gray-50 border-b border-gray-200">
@@ -136,7 +136,7 @@
                 <th class="px-5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest w-28 min-w-[110px] text-right">Price</th>
                 <th class="px-5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest w-24 min-w-[90px] text-right">Stock</th>
                 <th class="px-5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest w-24 min-w-[90px]">Status</th>
-                <th v-if="user?.role === 'ADMIN'" class="px-5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest w-24 min-w-[90px] text-right">Actions</th>
+                <th v-if="canEditProducts" class="px-5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest w-24 min-w-[90px] text-right">Actions</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-200 text-sm">
@@ -149,7 +149,7 @@
                     <td class="px-5 py-3.5"><div class="h-4 bg-gray-200 rounded w-16 ml-auto"></div></td>
                     <td class="px-5 py-3.5"><div class="h-4 bg-gray-200 rounded w-12 ml-auto"></div></td>
                     <td class="px-5 py-3.5"><div class="h-5 bg-gray-200 rounded-full w-16"></div></td>
-                    <td v-if="user?.role === 'ADMIN'" class="px-5 py-3.5"><div class="h-4 bg-gray-200 rounded w-8 ml-auto"></div></td>
+                    <td v-if="canEditProducts" class="px-5 py-3.5"><div class="h-4 bg-gray-200 rounded w-8 ml-auto"></div></td>
                   </tr>
                 </template>
                 <template v-else>
@@ -198,7 +198,7 @@
                     {{ product.isActive !== false ? 'Active' : 'Inactive' }}
                   </span>
                 </td>
-                <td v-if="user?.role === 'ADMIN'" @click.stop class="px-5 py-3 text-right w-24 min-w-[90px]">
+                <td v-if="canEditProducts" @click.stop class="px-5 py-3 text-right w-24 min-w-[90px]">
                   <div class="flex items-center justify-end gap-2">
                     <button @click="product.isEditingPrice = true; product.editPrice = product.price" class="text-gray-400 hover:text-gray-700 p-1" title="Quick Edit Price">
                       <IndianRupee class="w-3.5 h-3.5" />
@@ -219,6 +219,100 @@
 
         <!-- Floating Horizontal Scrollbar (Desktop only) -->
         <FloatingHorizontalScrollbar :target="tableContainerRef" />
+
+        <!-- MOBILE VIEW: High-Density Product Cards (md:hidden) -->
+        <div ref="mobileListRef" class="md:hidden divide-y divide-gray-100 bg-white">
+          <!-- Skeleton Loading -->
+          <template v-if="productsPending">
+            <div v-for="i in 6" :key="'mob-prod-skel-' + i" class="p-3.5 space-y-2 animate-pulse">
+              <div class="flex justify-between">
+                <div class="h-4 bg-gray-200 rounded w-24"></div>
+                <div class="h-4 bg-gray-200 rounded w-16"></div>
+              </div>
+              <div class="h-4 bg-gray-200 rounded w-3/4"></div>
+              <div class="flex justify-between">
+                <div class="h-4 bg-gray-100 rounded w-28"></div>
+                <div class="h-4 bg-gray-100 rounded w-20"></div>
+              </div>
+            </div>
+          </template>
+
+          <template v-else>
+            <div v-if="filteredProducts.length === 0" class="p-8 text-center text-sm text-gray-500">
+              No products found.
+            </div>
+
+            <div 
+              v-for="product in paginatedProducts" 
+              :key="'mob-prod-' + product.id"
+              @click="openProductDetail(product)"
+              class="p-3.5 space-y-2 hover:bg-gray-50 active:bg-gray-100 transition-colors cursor-pointer"
+            >
+              <!-- Line 1: SKU, Category & Status -->
+              <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center gap-1.5 flex-wrap min-w-0">
+                  <span class="text-xs font-mono font-bold text-gray-900 bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200 shrink-0">
+                    {{ product.sku }}
+                  </span>
+                  <span class="text-[10px] font-semibold text-gray-600 bg-gray-50 px-1.5 py-0.5 rounded border border-gray-200/80 shrink-0">
+                    {{ getCategoryName(product.categoryId) }}
+                  </span>
+                </div>
+
+                <span 
+                  class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold shrink-0"
+                  :class="product.isActive !== false ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'"
+                >
+                  {{ product.isActive !== false ? 'Active' : 'Inactive' }}
+                </span>
+              </div>
+
+              <!-- Line 2: Product Name & HSN -->
+              <div class="min-w-0">
+                <h3 class="text-sm font-semibold text-gray-900 leading-snug">
+                  {{ product.name }}
+                </h3>
+                <p v-if="product.hsnCode" class="text-[11px] text-gray-400 font-mono mt-0.5">
+                  HSN: {{ product.hsnCode }}
+                </p>
+              </div>
+
+              <!-- Line 3: Price, Stock & Quick Actions -->
+              <div class="flex items-center justify-between gap-2 pt-1 border-t border-gray-100">
+                <div class="flex items-center gap-3">
+                  <div class="flex items-baseline gap-1">
+                    <span class="text-xs font-bold text-gray-900">
+                      ₹{{ Number(product.price || 0).toLocaleString('en-IN') }}
+                    </span>
+                    <span class="text-[10px] text-gray-500">/ {{ product.unit }}</span>
+                  </div>
+
+                  <span 
+                    class="text-[11px] font-semibold px-1.5 py-0.5 rounded"
+                    :class="(product.stock !== undefined ? product.stock : (product.stockQuantity || 0)) < 10 
+                      ? 'bg-rose-50 text-rose-700 border border-rose-200' 
+                      : 'bg-emerald-50 text-emerald-700 border border-emerald-200'"
+                  >
+                    {{ product.stock !== undefined ? product.stock : (product.stockQuantity || 0) }} in stock
+                  </span>
+                </div>
+
+                <div class="flex items-center gap-1 shrink-0">
+                  <div v-if="canEditProducts" @click.stop class="flex items-center gap-0.5">
+                    <button 
+                      @click="openProductModal(product)" 
+                      class="text-[#1a5c4c] hover:bg-[#1a5c4c]/10 p-1.5 rounded-lg transition-colors" 
+                      title="Edit Product"
+                    >
+                      <Edit2 class="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  <ChevronRight class="w-4 h-4 text-gray-400" />
+                </div>
+              </div>
+            </div>
+          </template>
+        </div>
 
         <!-- Pagination Footer -->
         <div v-if="filteredProducts.length > 0 && pageSize !== -1" class="p-4 border-t border-gray-100 bg-gray-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -392,7 +486,7 @@
         <div class="px-6 py-3.5 bg-gray-50/80 border-t border-gray-100 flex items-center justify-between">
           <div>
             <button 
-              v-if="user?.role === 'ADMIN'"
+              v-if="canEditProducts"
               @click="editProductFromDetail()"
               class="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-[#1a5c4c] bg-[#1a5c4c]/10 hover:bg-[#1a5c4c]/20 rounded-lg transition-colors"
             >
@@ -509,11 +603,11 @@
           </div>
 
           <!-- Sticky Modal Footer -->
-          <div class="px-4 sm:px-6 py-3.5 bg-gray-50 border-t border-gray-200 flex items-center justify-end gap-3 shrink-0">
+          <div class="px-4 sm:px-6 py-3.5 bg-gray-50 border-t border-gray-200 flex items-center justify-end gap-2.5 sm:gap-3 shrink-0">
             <button
               type="button"
               @click="closeProductModal"
-              class="px-4 py-2 border border-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors"
+              class="flex-1 sm:flex-initial text-center px-4 py-2 border border-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors cursor-pointer"
             >
               Cancel
             </button>
@@ -521,7 +615,7 @@
               type="submit"
               form="productForm"
               :disabled="isSavingProduct"
-              class="px-5 py-2 bg-[#1a5c4c] text-white rounded-lg text-sm font-medium hover:bg-[#14483b] transition-colors flex items-center gap-2 shadow-sm disabled:opacity-50"
+              class="flex-1 sm:flex-initial text-center justify-center px-5 py-2 bg-[#1a5c4c] text-white rounded-lg text-sm font-medium hover:bg-[#14483b] transition-colors flex items-center gap-2 shadow-sm disabled:opacity-50 cursor-pointer"
             >
               <Loader2 v-if="isSavingProduct" class="w-4 h-4 animate-spin" />
               <span>{{ isSavingProduct ? 'Saving...' : (editingProduct ? 'Save Changes' : 'Create Product') }}</span>
@@ -563,11 +657,11 @@
           </div>
 
           <!-- Sticky Modal Footer -->
-          <div class="px-6 py-3.5 bg-gray-50 border-t border-gray-200 flex items-center justify-end gap-3 shrink-0">
+          <div class="px-4 sm:px-6 py-3.5 bg-gray-50 border-t border-gray-200 flex items-center justify-end gap-2.5 sm:gap-3 shrink-0">
             <button
               type="button"
               @click="closeCategoryModal"
-              class="px-4 py-2 border border-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors"
+              class="flex-1 sm:flex-initial text-center px-4 py-2 border border-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors cursor-pointer"
             >
               Cancel
             </button>
@@ -575,7 +669,7 @@
               type="submit"
               form="categoryForm"
               :disabled="isSavingCategory"
-              class="px-5 py-2 bg-[#1a5c4c] text-white rounded-lg text-sm font-medium hover:bg-[#14483b] transition-colors flex items-center gap-2 shadow-sm disabled:opacity-50"
+              class="flex-1 sm:flex-initial text-center justify-center px-5 py-2 bg-[#1a5c4c] text-white rounded-lg text-sm font-medium hover:bg-[#14483b] transition-colors flex items-center gap-2 shadow-sm disabled:opacity-50 cursor-pointer"
             >
               <Loader2 v-if="isSavingCategory" class="w-4 h-4 animate-spin" />
               <span>{{ isSavingCategory ? 'Saving...' : 'Create Category' }}</span>
@@ -603,7 +697,7 @@ import FloatingHorizontalScrollbar from '~/components/ui/FloatingHorizontalScrol
 
 definePageMeta({ layout: 'dashboard' })
 
-const { user } = useAuth()
+const { user, canEditProducts } = useAuth()
 const { showEditing, showSaving, showSaved, hide, snackbarState } = useSnackbar()
 const { animateModalOpen, animateStagger, initContext } = useGsapAnimation()
 const { notifyChange, onOrderSync } = useRealtimeSync()
@@ -642,18 +736,7 @@ onOrderSync((event) => {
   }
 })
 
-const unitOptions = [
-  { label: 'PIECE', value: 'PIECE' },
-  { label: 'SHEET', value: 'SHEET' },
-  { label: 'Nos.', value: 'Nos.' },
-  { label: 'SQFT', value: 'SQFT' },
-  { label: 'BOX', value: 'BOX' },
-  { label: 'KG', value: 'KG' },
-  { label: 'METER', value: 'METER' },
-  { label: 'ROLL', value: 'ROLL' },
-  { label: 'SET', value: 'SET' },
-  { label: 'PAIR', value: 'PAIR' }
-]
+const { unitOptions } = useMasters()
 
 // 2. State refs
 const searchQuery = ref('')
@@ -665,6 +748,24 @@ const categorySearchInput = ref<HTMLInputElement | null>(null)
 const categoryListRef = ref<HTMLUListElement | null>(null)
 const tableRootRef = ref<HTMLElement | null>(null)
 const tableContainerRef = ref<HTMLElement | null>(null)
+const mobileListRef = ref<HTMLElement | null>(null)
+
+const triggerCardAnimation = () => {
+  nextTick(() => {
+    if (mobileListRef.value && !productsPending.value) {
+      const cards = Array.from(mobileListRef.value.children).slice(0, 15)
+      animateStagger(cards, { duration: 0.2, stagger: 0.02, y: 6 })
+    }
+  })
+}
+
+watch([() => paginatedProducts.value, () => productsPending.value], () => {
+  triggerCardAnimation()
+})
+
+onMounted(() => {
+  triggerCardAnimation()
+})
 
 // Pagination state
 const currentPage = ref(1)

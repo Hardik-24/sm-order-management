@@ -36,6 +36,7 @@ export default defineEventHandler(async (event) => {
     notes: splitNotes, 
     deliveryAddress: customDeliveryAddress,
     deliveryAddressId: customDeliveryAddressId,
+    vehicleMode: requestedVehicleMode,
     items: splitItems 
   } = body
 
@@ -51,8 +52,7 @@ export default defineEventHandler(async (event) => {
       items: true,
       billingStatus: true,
       packingStatus: true,
-      deliveryStatus: true,
-      paymentStatus: true
+      deliveryStatus: true
     }
   })
 
@@ -221,7 +221,9 @@ export default defineEventHandler(async (event) => {
         orderDate: new Date(),
         deliveryAddress: finalDeliveryAddress,
         deliveryAddressId: finalDeliveryAddressId,
-        vehicleMode: parentOrder.vehicleMode,
+        vehicleMode: requestedVehicleMode === 'PARTY_VEHICLE' 
+          ? 'PARTY_VEHICLE' 
+          : (requestedVehicleMode === 'OUR_FLEET' ? 'OUR_FLEET' : parentOrder.vehicleMode),
         isUrgent: parentOrder.isUrgent,
         isApproved: parentOrder.isApproved,
         approvedById: parentOrder.approvedById,
@@ -250,13 +252,6 @@ export default defineEventHandler(async (event) => {
             status: 'WAITING'
           }
         },
-        paymentStatus: {
-          create: {
-            status: 'UNPAID',
-            amountPaid: 0,
-            balanceDue: newOrderTotal
-          }
-        },
         timeline: {
           create: {
             action: 'Order Split Created',
@@ -270,7 +265,6 @@ export default defineEventHandler(async (event) => {
         billingStatus: true,
         packingStatus: true,
         deliveryStatus: true,
-        paymentStatus: true,
         customer: true
       }
     })
@@ -278,15 +272,19 @@ export default defineEventHandler(async (event) => {
     // ── Update Parent Order Items & Total (Order A) ──
     let parentRemainingTotal = 0
 
+    // 1. Batch delete items completely moved to new order in 1 query
+    const itemsToDelete = validatedMoves.filter(m => m.keepQuantity === 0).map(m => m.originalItem.id)
+    if (itemsToDelete.length > 0) {
+      await tx.orderItem.deleteMany({
+        where: { id: { in: itemsToDelete } }
+      })
+    }
+
+    // 2. Parallelize updates for items retained in parent order
+    const updatePromises: any[] = []
     for (const move of validatedMoves) {
-      const itm = move.originalItem
-      if (move.keepQuantity === 0) {
-        // Line item completely moved to new order — remove from parent
-        await tx.orderItem.delete({
-          where: { id: itm.id }
-        })
-      } else {
-        // Line item partially or fully retained in parent
+      if (move.keepQuantity > 0) {
+        const itm = move.originalItem
         const unitPrice = Number(itm.unitPrice)
         const disc = Number(itm.discount || 0)
         const taxRate = Number(itm.taxRate || 0)
@@ -298,40 +296,32 @@ export default defineEventHandler(async (event) => {
         // Adjust packedQuantity if it exceeds new kept quantity
         const adjustedPacked = Math.min(Number(itm.packedQuantity || 0), move.keepQuantity)
 
-        await tx.orderItem.update({
-          where: { id: itm.id },
-          data: {
-            quantity: move.keepQuantity,
-            approvedQuantity: move.keepQuantity,
-            packedQuantity: adjustedPacked,
-            billedQuantity: null,
-            taxAmount: fin.taxAmt,
-            totalPrice: fin.totalPrice,
-            isPacked: adjustedPacked >= move.keepQuantity
-          }
-        })
+        updatePromises.push(
+          tx.orderItem.update({
+            where: { id: itm.id },
+            data: {
+              quantity: move.keepQuantity,
+              approvedQuantity: move.keepQuantity,
+              packedQuantity: adjustedPacked,
+              billedQuantity: null,
+              taxAmount: fin.taxAmt,
+              totalPrice: fin.totalPrice,
+              isPacked: adjustedPacked >= move.keepQuantity
+            }
+          })
+        )
       }
     }
 
-    // ── Update Parent Order Overall Totals & Payment ──
-    const existingPaid = Number(parentOrder.paymentStatus?.amountPaid || 0)
-    const newParentBalanceDue = Math.max(0, parentRemainingTotal - existingPaid)
-    const newPaymentState = existingPaid >= parentRemainingTotal && parentRemainingTotal > 0
-      ? 'PAID'
-      : existingPaid > 0
-        ? 'PARTIAL'
-        : 'UNPAID'
+    if (updatePromises.length > 0) {
+      await Promise.all(updatePromises)
+    }
 
+    // ── Update Parent Order Overall Totals ──
     const updatedParent = await tx.order.update({
       where: { id: parentOrder.id },
       data: {
         totalAmount: parentRemainingTotal,
-        paymentStatus: {
-          update: {
-            balanceDue: newParentBalanceDue,
-            status: newPaymentState
-          }
-        },
         timeline: {
           create: {
             action: 'Order Split',
@@ -345,7 +335,6 @@ export default defineEventHandler(async (event) => {
         billingStatus: true,
         packingStatus: true,
         deliveryStatus: true,
-        paymentStatus: true,
         customer: true
       }
     })
@@ -354,6 +343,9 @@ export default defineEventHandler(async (event) => {
       parentOrder: updatedParent,
       newOrder
     }
+  }, {
+    maxWait: 10000, // Wait up to 10s to acquire transaction connection from pool
+    timeout: 25000  // Allow up to 25s for execution (prevents 5s timeout on remote DB)
   })
 
   return {

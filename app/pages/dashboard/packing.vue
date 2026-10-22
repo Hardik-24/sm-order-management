@@ -152,12 +152,12 @@ watch(() => counts.value, () => {
 </script>
 
 <template>
-  <div class="space-y-8 p-6 max-w-7xl mx-auto">
+  <div class="space-y-5 sm:space-y-6 md:space-y-8 max-w-7xl mx-auto">
     <!-- Header -->
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
         <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Packing Department</h1>
-        <p class="text-sm text-gray-500 mt-1">
+        <p class="text-xs sm:text-sm text-gray-500 mt-1">
           Verify warehouse inventory, track SKU picking progress, and prepare orders for dispatch.
         </p>
       </div>
@@ -166,7 +166,7 @@ watch(() => counts.value, () => {
         <button 
           @click="handleRefresh" 
           :disabled="pending"
-          class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 shadow-sm transition-colors cursor-pointer"
+          class="inline-flex items-center gap-2 px-3 py-2 text-xs sm:text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 shadow-sm transition-colors cursor-pointer"
         >
           <RefreshCw class="w-4 h-4" :class="{ 'animate-spin': pending }" />
           <span>Refresh</span>
@@ -175,79 +175,79 @@ watch(() => counts.value, () => {
     </div>
 
     <!-- Quick Stats Cards (Matching Approve Orders & Billing Design) -->
-    <div ref="statsContainer" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div ref="statsContainer" class="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-4">
       <!-- 1. Pending Packing -->
       <div 
-        class="bg-white rounded-xl border border-[#e5e2dc] p-5 shadow-sm"
+        class="bg-white rounded-xl border border-[#e5e2dc] p-3.5 sm:p-5 shadow-sm"
       >
-        <div class="flex gap-4">
-          <div class="flex flex-col justify-between">
-            <div class="bg-amber-50 p-2.5 rounded-lg text-amber-600 border border-amber-100/50">
-              <Clock class="w-5 h-5" />
+        <div class="flex gap-2.5 sm:gap-4">
+          <div class="flex flex-col justify-between shrink-0">
+            <div class="bg-amber-50 p-2 sm:p-2.5 rounded-lg text-amber-600 border border-amber-100/50">
+              <Clock class="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <div class="w-8 h-1 bg-amber-500 rounded-full mt-6"></div>
+            <div class="w-6 sm:w-8 h-1 bg-amber-500 rounded-full mt-4 sm:mt-6"></div>
           </div>
-          <div class="flex flex-col justify-center">
-            <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5">Pending Packing</p>
-            <h3 ref="numPending" class="text-2xl font-bold text-gray-900 mb-0.5">{{ counts.pending }}</h3>
-            <p class="text-xs text-amber-600 font-medium">Awaiting picking</p>
+          <div class="flex flex-col justify-center min-w-0">
+            <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">Pending Packing</p>
+            <h3 ref="numPending" class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">{{ counts.pending }}</h3>
+            <p class="text-[11px] sm:text-xs text-amber-600 font-medium truncate">Awaiting picking</p>
           </div>
         </div>
       </div>
 
       <!-- 2. Urgent Orders -->
       <div 
-        class="bg-white rounded-xl border border-rose-200/80 p-5 shadow-sm"
+        class="bg-white rounded-xl border border-rose-200/80 p-3.5 sm:p-5 shadow-sm"
       >
-        <div class="flex gap-4">
-          <div class="flex flex-col justify-between">
-            <div class="bg-rose-50 p-2.5 rounded-lg text-rose-600 border border-rose-100/50">
-              <Zap class="w-5 h-5" />
+        <div class="flex gap-2.5 sm:gap-4">
+          <div class="flex flex-col justify-between shrink-0">
+            <div class="bg-rose-50 p-2 sm:p-2.5 rounded-lg text-rose-600 border border-rose-100/50">
+              <Zap class="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <div class="w-8 h-1 bg-rose-500 rounded-full mt-6"></div>
+            <div class="w-6 sm:w-8 h-1 bg-rose-500 rounded-full mt-4 sm:mt-6"></div>
           </div>
-          <div class="flex flex-col justify-center">
-            <p class="text-[10px] font-bold text-rose-600 uppercase tracking-widest mb-0.5">⚡ Urgent Orders</p>
-            <h3 ref="numUrgent" class="text-2xl font-bold text-gray-900 mb-0.5">{{ counts.urgent }}</h3>
-            <p class="text-xs text-rose-500 font-medium">High priority dispatch</p>
+          <div class="flex flex-col justify-center min-w-0">
+            <p class="text-[10px] font-bold text-rose-600 uppercase tracking-widest mb-0.5 truncate">⚡ Urgent Orders</p>
+            <h3 ref="numUrgent" class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">{{ counts.urgent }}</h3>
+            <p class="text-[11px] sm:text-xs text-rose-500 font-medium truncate">High priority</p>
           </div>
         </div>
       </div>
 
       <!-- 3. Currently Packing -->
       <div 
-        class="bg-white rounded-xl border border-[#e5e2dc] p-5 shadow-sm"
+        class="bg-white rounded-xl border border-[#e5e2dc] p-3.5 sm:p-5 shadow-sm"
       >
-        <div class="flex gap-4">
-          <div class="flex flex-col justify-between">
-            <div class="bg-blue-50 p-2.5 rounded-lg text-blue-600 border border-blue-100/50">
-              <PlayCircle class="w-5 h-5" />
+        <div class="flex gap-2.5 sm:gap-4">
+          <div class="flex flex-col justify-between shrink-0">
+            <div class="bg-blue-50 p-2 sm:p-2.5 rounded-lg text-blue-600 border border-blue-100/50">
+              <PlayCircle class="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <div class="w-8 h-1 bg-blue-500 rounded-full mt-6"></div>
+            <div class="w-6 sm:w-8 h-1 bg-blue-500 rounded-full mt-4 sm:mt-6"></div>
           </div>
-          <div class="flex flex-col justify-center">
-            <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5">Currently Packing</p>
-            <h3 ref="numInProgress" class="text-2xl font-bold text-gray-900 mb-0.5">{{ counts.inProgress }}</h3>
-            <p class="text-xs text-blue-600 font-medium">On warehouse floor</p>
+          <div class="flex flex-col justify-center min-w-0">
+            <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">Currently Packing</p>
+            <h3 ref="numInProgress" class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">{{ counts.inProgress }}</h3>
+            <p class="text-[11px] sm:text-xs text-blue-600 font-medium truncate">On floor</p>
           </div>
         </div>
       </div>
 
       <!-- 4. Ready / Packed -->
       <div 
-        class="bg-white rounded-xl border border-[#e5e2dc] p-5 shadow-sm"
+        class="bg-white rounded-xl border border-[#e5e2dc] p-3.5 sm:p-5 shadow-sm"
       >
-        <div class="flex gap-4">
-          <div class="flex flex-col justify-between">
-            <div class="bg-[#1a5c4c]/10 p-2.5 rounded-lg text-[#1a5c4c] border border-[#1a5c4c]/20">
-              <CheckCircle2 class="w-5 h-5" />
+        <div class="flex gap-2.5 sm:gap-4">
+          <div class="flex flex-col justify-between shrink-0">
+            <div class="bg-[#1a5c4c]/10 p-2 sm:p-2.5 rounded-lg text-[#1a5c4c] border border-[#1a5c4c]/20">
+              <CheckCircle2 class="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <div class="w-8 h-1 bg-[#1a5c4c] rounded-full mt-6"></div>
+            <div class="w-6 sm:w-8 h-1 bg-[#1a5c4c] rounded-full mt-4 sm:mt-6"></div>
           </div>
-          <div class="flex flex-col justify-center">
-            <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5">Ready / Packed</p>
-            <h3 ref="numPacked" class="text-2xl font-bold text-gray-900 mb-0.5">{{ counts.packed }}</h3>
-            <p class="text-xs text-emerald-600 font-medium">Ready for dispatch</p>
+          <div class="flex flex-col justify-center min-w-0">
+            <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">Ready / Packed</p>
+            <h3 ref="numPacked" class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">{{ counts.packed }}</h3>
+            <p class="text-[11px] sm:text-xs text-emerald-600 font-medium truncate">Ready for dispatch</p>
           </div>
         </div>
       </div>

@@ -32,6 +32,8 @@ export default defineEventHandler(async (event) => {
     email: user.email,
     role: user.role,
     avatar: user.avatar,
+    allowedPages: (user.allowedPages as any) || [],
+    actionPermissions: (user.actionPermissions as any) || null,
   }
   const token = createToken(sessionUser)
 

@@ -14,7 +14,6 @@ export default defineEventHandler(async (event) => {
   const billingStatus = query.billingStatus as string
   const packingStatus = query.packingStatus as string
   const deliveryStatus = query.deliveryStatus as string
-  const paymentStatus = query.paymentStatus as string
   const startDate = query.startDate as string
   const endDate = query.endDate as string
   const isApproved = query.isApproved as string
@@ -65,18 +64,6 @@ export default defineEventHandler(async (event) => {
       andConditions.push({ deliveryStatus: { status: deliveryStatus } })
     }
   }
-  if (paymentStatus) {
-    if (paymentStatus === 'UNPAID') {
-      andConditions.push({
-        OR: [
-          { paymentStatus: { status: 'UNPAID' } },
-          { paymentStatus: null }
-        ]
-      })
-    } else {
-      andConditions.push({ paymentStatus: { status: paymentStatus } })
-    }
-  }
   
   if (startDate || endDate) {
     const dateCondition: any = {}
@@ -113,7 +100,6 @@ export default defineEventHandler(async (event) => {
         billingStatus: { select: { status: true, invoiceNumber: true, invoiceDate: true, invoicePdfUrl: true } },
         packingStatus: { select: { status: true } },
         deliveryStatus: { select: { status: true, driverName: true } },
-        paymentStatus: { select: { status: true, amountPaid: true, balanceDue: true, paymentMethod: true, referenceNo: true, dueDate: true, paidAt: true } },
         items: {
           include: {
             product: { select: { name: true, sku: true, unit: true, price: true } }
@@ -136,20 +122,9 @@ export default defineEventHandler(async (event) => {
       order.customer,
       preloadedPins
     )
-    const total = Number(order.totalAmount || 0)
-    const ps = order.paymentStatus || {
-      status: 'UNPAID',
-      amountPaid: 0,
-      balanceDue: total,
-      paymentMethod: null,
-      referenceNo: null,
-      dueDate: null,
-      paidAt: null
-    }
 
     return {
       ...order,
-      paymentStatus: ps,
       destinationCoords: pin ? { lat: pin.lat, lng: pin.lng, areaName: pin.areaName, landmark: pin.landmark } : null,
       hasDestinationPin: !!pin,
     }

@@ -26,24 +26,19 @@ async function main() {
   const routes = await prisma.tripRoute.deleteMany({})
   console.log(`Deleted ${routes.count} trip routes.`)
 
-  // 5. Delete all Payment Records
-  const paymentRecords = await prisma.paymentRecord.deleteMany({})
-  console.log(`Deleted ${paymentRecords.count} payment records.`)
-
-  // 6. Delete all Order Timelines
+  // 5. Delete all Order Timelines
   const timelines = await prisma.orderTimeline.deleteMany({})
   console.log(`Deleted ${timelines.count} order timeline entries.`)
 
-  // 7. Delete all Order Items
+  // 6. Delete all Order Items
   const items = await prisma.orderItem.deleteMany({})
   console.log(`Deleted ${items.count} order items.`)
 
-  // 8. Delete Billing, Packing, Delivery, Payment Statuses
+  // 7. Delete Billing, Packing, Delivery Statuses
   const billing = await prisma.billingStatus.deleteMany({})
   const packing = await prisma.packingStatus.deleteMany({})
   const delivery = await prisma.deliveryStatus.deleteMany({})
-  const payment = await prisma.paymentStatus.deleteMany({})
-  console.log(`Deleted ${billing.count} billing, ${packing.count} packing, ${delivery.count} delivery, and ${payment.count} payment statuses.`)
+  console.log(`Deleted ${billing.count} billing, ${packing.count} packing, and ${delivery.count} delivery statuses.`)
 
   // 9. Delete all Orders
   const orders = await prisma.order.deleteMany({})

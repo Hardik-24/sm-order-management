@@ -1,26 +1,26 @@
 <template>
   <Teleport to="body">
-    <div v-if="isOpen" class="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6">
+    <div v-if="isOpen" class="fixed inset-x-0 bottom-0 top-14 md:inset-0 z-[60] flex items-center justify-center p-2 sm:p-4 md:p-6 overflow-y-auto">
       <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="closeModal"></div>
       
-      <div class="relative bg-white rounded-xl shadow-2xl w-full max-w-5xl flex flex-col max-h-[90vh] overflow-hidden">
+      <div class="relative bg-white rounded-xl shadow-2xl w-full max-w-5xl flex flex-col max-h-[calc(100vh-4.5rem)] md:max-h-[90vh] overflow-hidden">
       
       <!-- Header -->
-      <div class="flex items-center justify-between p-5 border-b border-gray-100 bg-gray-50">
+      <div class="flex items-center justify-between p-4 sm:p-5 border-b border-gray-100 bg-gray-50">
         <div>
-          <h2 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+          <h2 class="text-base sm:text-lg font-bold text-gray-900 flex items-center gap-2">
             <FileText class="w-5 h-5 text-[#1a5c4c]" />
-            Generate & Reconcile Invoice
+            <span>Generate & Reconcile Invoice</span>
           </h2>
-          <p class="text-sm text-gray-500 mt-1">Order: {{ order?.orderNumber || 'Loading...' }}</p>
+          <p class="text-xs sm:text-sm text-gray-500 mt-0.5 sm:mt-1">Order: {{ order?.orderNumber || 'Loading...' }}</p>
         </div>
-        <button @click="closeModal" class="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-200 transition-colors">
+        <button @click="closeModal" class="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-200 transition-colors cursor-pointer">
           <X class="w-5 h-5" />
         </button>
       </div>
 
       <!-- Content -->
-      <div class="flex-1 overflow-y-auto p-6">
+      <div class="flex-1 overflow-y-auto p-4 sm:p-6">
         <div v-if="pending" class="flex justify-center py-12">
           <Loader2 class="w-8 h-8 animate-spin text-[#1a5c4c]" />
         </div>
@@ -202,7 +202,7 @@
 
           <!-- Summary -->
           <div class="flex justify-end">
-            <div class="w-80 bg-gray-50 rounded-xl p-4 border border-gray-200 space-y-2 text-xs">
+            <div class="w-full sm:w-80 bg-gray-50 rounded-xl p-4 border border-gray-200 space-y-2 text-xs">
               <div class="flex justify-between items-center text-gray-600">
                 <span>Subtotal (Billed)</span>
                 <span class="font-semibold">₹{{ grandSubtotal.toFixed(2) }}</span>
@@ -226,14 +226,14 @@
       </div>
 
       <!-- Footer -->
-      <div class="p-4 border-t border-gray-100 bg-white flex justify-end gap-3">
-        <button @click="closeModal" class="px-4 py-2 text-xs font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+      <div class="p-4 border-t border-gray-100 bg-white flex flex-col-reverse sm:flex-row justify-end gap-2.5 sm:gap-3">
+        <button @click="closeModal" class="w-full sm:w-auto text-center px-4 py-2 text-xs font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
           Cancel
         </button>
         <button 
           @click="confirmGenerate" 
           :disabled="isGenerating || !invoiceNumber.trim()"
-          class="flex items-center gap-2 px-6 py-2 bg-[#1a5c4c] text-white text-xs font-bold rounded-lg hover:bg-[#134336] transition-colors disabled:opacity-50 shadow-sm"
+          class="w-full sm:w-auto justify-center flex items-center gap-2 px-6 py-2 bg-[#1a5c4c] text-white text-xs font-bold rounded-lg hover:bg-[#134336] transition-colors disabled:opacity-50 shadow-sm cursor-pointer"
         >
           <Loader2 v-if="isGenerating" class="w-4 h-4 animate-spin" />
           <Check v-else class="w-4 h-4" />

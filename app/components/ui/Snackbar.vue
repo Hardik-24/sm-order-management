@@ -2,8 +2,13 @@
   <Transition name="slide-up">
     <div 
       v-if="snackbarState !== 'hidden'" 
-      class="fixed bottom-6 sm:bottom-8 left-1/2 -translate-x-1/2 z-[100000] w-[calc(100%-2rem)] sm:w-auto max-w-md sm:max-w-xl flex items-center justify-between gap-3 px-4 py-3 sm:px-5 sm:py-3.5 rounded-2xl shadow-[0_12px_40px_rgb(0,0,0,0.18)] border transition-all duration-300 backdrop-blur-md" 
-      :class="colorClasses"
+      class="fixed bottom-6 sm:bottom-8 left-1/2 -translate-x-1/2 z-[100000] w-[calc(100%-2rem)] sm:w-auto max-w-md sm:max-w-xl flex justify-between px-4 py-3 sm:px-5 sm:py-3.5 rounded-2xl shadow-[0_12px_40px_rgb(0,0,0,0.18)] border transition-all duration-300 backdrop-blur-md" 
+      :class="[
+        colorClasses,
+        snackbarState === 'editing' && hasActions 
+          ? 'flex-col sm:flex-row sm:items-center items-stretch gap-2.5 sm:gap-3' 
+          : 'items-center gap-3'
+      ]"
     >
       <div class="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
         <component :is="currentIcon" class="w-5 h-5 flex-shrink-0" :class="{'animate-spin': snackbarState === 'saving'}" />
@@ -11,16 +16,16 @@
       </div>
 
       <!-- Action Buttons -->
-      <div v-if="snackbarState === 'editing' && hasActions" class="flex items-center gap-2 pl-3 sm:pl-4 border-l border-amber-200/50 flex-shrink-0">
-        <button @click="handleCancel" class="text-xs font-semibold px-2.5 py-1.5 rounded-lg hover:bg-amber-100 transition-colors">Discard</button>
-        <button @click="handleSave" class="text-xs font-bold px-3.5 py-1.5 rounded-lg bg-amber-600 text-white shadow-sm hover:bg-amber-700 hover:shadow transition-all whitespace-nowrap">Save Changes</button>
+      <div v-if="snackbarState === 'editing' && hasActions" class="flex items-center justify-end gap-2 pt-2 sm:pt-0 sm:pl-4 border-t sm:border-t-0 sm:border-l border-amber-200/60 flex-shrink-0">
+        <button @click="handleCancel" class="flex-1 sm:flex-initial text-center text-xs font-semibold px-2.5 py-1.5 rounded-lg hover:bg-amber-100 transition-colors cursor-pointer">Discard</button>
+        <button @click="handleSave" class="flex-1 sm:flex-initial text-center text-xs font-bold px-3.5 py-1.5 rounded-lg bg-amber-600 text-white shadow-sm hover:bg-amber-700 hover:shadow transition-all whitespace-nowrap cursor-pointer">Save Changes</button>
       </div>
 
       <!-- Dismiss Button for Informational Alerts -->
       <button 
         v-else-if="snackbarState !== 'saving'" 
         @click="hide" 
-        class="p-1 rounded-lg hover:bg-black/5 text-gray-500 hover:text-gray-900 transition-colors flex-shrink-0"
+        class="p-1 rounded-lg hover:bg-black/5 text-gray-500 hover:text-gray-900 transition-colors flex-shrink-0 cursor-pointer"
         title="Dismiss"
       >
         <X class="w-4 h-4" />

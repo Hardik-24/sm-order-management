@@ -372,11 +372,9 @@ onMounted(async () => {
   // 1. Cross-tab instant 0ms broadcast channel (testing & same-device updates)
   if (typeof BroadcastChannel !== 'undefined') {
     try {
-      broadcastChannel = new BroadcastChannel('sm_delivery_channel')
-      broadcastChannel.onmessage = (event) => {
-        if (event.data?.type === 'DELIVERY_STATUS_CHANGED') {
-          fetchTracking(true)
-        }
+      broadcastChannel = new BroadcastChannel('sm_instant_order_sync')
+      broadcastChannel.onmessage = () => {
+        fetchTracking(true)
       }
     } catch (e) {}
   }
@@ -410,6 +408,12 @@ onMounted(async () => {
           fetchTracking(true)
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'delivery_statuses' }, () => {
+          fetchTracking(true)
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'trips' }, () => {
+          fetchTracking(true)
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'trip_stops' }, () => {
           fetchTracking(true)
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'trip_routes' }, () => {

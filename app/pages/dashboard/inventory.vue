@@ -40,6 +40,7 @@ let pollingInterval: any = null
 
 const tbodyRef = ref<HTMLElement | null>(null)
 const inventoryTableRef = ref<HTMLElement | null>(null)
+const mobileListRef = ref<HTMLElement | null>(null)
 
 const triggerRowAnimation = () => {
   nextTick(() => {
@@ -47,6 +48,10 @@ const triggerRowAnimation = () => {
       const rows = tbodyRef.value.querySelectorAll('tr')
       const targetRows = Array.from(rows).slice(0, 15)
       animateStagger(targetRows, { duration: 0.18, stagger: 0.015, y: 4 })
+    }
+    if (mobileListRef.value) {
+      const cards = Array.from(mobileListRef.value.children).slice(0, 15)
+      animateStagger(cards, { duration: 0.18, stagger: 0.015, y: 4 })
     }
   })
 }
@@ -196,7 +201,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="max-w-7xl mx-auto space-y-6 pb-12">
+  <div class="max-w-7xl mx-auto space-y-5 sm:space-y-6 md:space-y-8 pb-12">
     <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-2">
       <div>
@@ -313,7 +318,7 @@ onUnmounted(() => {
       </div>
 
       <!-- Table Container -->
-      <div ref="inventoryTableRef" class="overflow-x-auto no-scrollbar relative min-h-[350px]">
+      <div ref="inventoryTableRef" class="hidden md:block overflow-x-auto no-scrollbar relative min-h-[350px]">
 
         <!-- Localized Table Blur Loading Animation -->
         <Transition
@@ -415,6 +420,97 @@ onUnmounted(() => {
 
       <!-- Floating Horizontal Scrollbar (Desktop only) -->
       <FloatingHorizontalScrollbar :target="inventoryTableRef" />
+
+      <!-- MOBILE VIEW: High-Density Inventory Stock Cards (md:hidden) -->
+      <div ref="mobileListRef" class="md:hidden divide-y divide-gray-100 bg-white relative min-h-[250px]">
+        <!-- Localized Mobile Blur Loading Animation -->
+        <Transition
+          enter-active-class="transition-opacity duration-200 ease-out"
+          enter-from-class="opacity-0"
+          enter-to-class="opacity-100"
+          leave-active-class="transition-opacity duration-200 ease-in"
+          leave-from-class="opacity-100"
+          leave-to-class="opacity-0"
+        >
+          <div 
+            v-if="productsLoading" 
+            class="absolute inset-0 z-20 bg-white/75 backdrop-blur-sm flex flex-col items-center justify-center gap-3 py-16"
+          >
+            <div class="w-10 h-10 rounded-xl bg-[#1a5c4c]/10 flex items-center justify-center text-[#1a5c4c] shadow-sm animate-pulse">
+              <RefreshCw class="w-5 h-5 animate-spin text-[#1a5c4c]" />
+            </div>
+            <span class="text-xs font-semibold text-gray-700">Loading Inventory...</span>
+          </div>
+        </Transition>
+
+        <div v-if="filteredProducts.length === 0" class="p-8 text-center text-sm text-gray-500">
+          <AlertTriangle class="w-8 h-8 text-gray-400 mx-auto mb-2" />
+          <p class="font-medium text-gray-900">No items found</p>
+          <p class="text-xs text-gray-500 mt-0.5">Try adjusting your search query.</p>
+        </div>
+
+        <div 
+          v-for="product in paginatedProducts" 
+          :key="'mob-inv-' + product.id"
+          @click="openProductDetail(product)"
+          class="p-3.5 space-y-2 hover:bg-gray-50 active:bg-gray-100 transition-colors cursor-pointer"
+        >
+          <!-- Line 1: SKU, Group & Stock Status -->
+          <div class="flex items-center justify-between gap-2">
+            <div class="flex items-center gap-1.5 flex-wrap min-w-0">
+              <span class="text-xs font-mono font-bold text-gray-900 bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200 shrink-0">
+                {{ product.sku }}
+              </span>
+              <span v-if="product.category?.name" class="text-[10px] font-semibold text-gray-600 bg-gray-50 px-1.5 py-0.5 rounded border border-gray-200/80 shrink-0">
+                {{ product.category.name }}
+              </span>
+            </div>
+
+            <span 
+              v-if="product.stock > 0" 
+              class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 text-green-800 border border-green-200 shrink-0"
+            >
+              <CheckCircle2 class="w-3 h-3 text-green-600" />
+              In Stock
+            </span>
+            <span 
+              v-else 
+              class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-100 text-red-800 border border-red-200 shrink-0"
+            >
+              <XCircle class="w-3 h-3 text-red-600" />
+              Out of Stock
+            </span>
+          </div>
+
+          <!-- Line 2: Item Name & HSN -->
+          <div class="min-w-0">
+            <h3 class="text-sm font-semibold text-gray-900 leading-snug">
+              {{ product.name }}
+            </h3>
+            <p v-if="product.hsnCode" class="text-[11px] text-gray-400 font-mono mt-0.5">
+              HSN: {{ product.hsnCode }}
+            </p>
+          </div>
+
+          <!-- Line 3: Stock Quantity & Detail Arrow -->
+          <div class="flex items-center justify-between gap-2 pt-1 border-t border-gray-100">
+            <div class="flex items-baseline gap-1.5">
+              <span class="text-[11px] text-gray-500 font-medium">Quantity Available:</span>
+              <span 
+                class="text-sm font-bold tabular-nums"
+                :class="product.stock > 0 ? (product.stock < 10 ? 'text-amber-600' : 'text-gray-900') : 'text-rose-600'"
+              >
+                {{ product.stock }} {{ product.unit || '' }}
+              </span>
+            </div>
+
+            <div class="flex items-center gap-1 text-xs text-gray-400 font-medium shrink-0">
+              <span>Details</span>
+              <ChevronRight class="w-4 h-4 text-gray-400" />
+            </div>
+          </div>
+        </div>
+      </div>
 
       <!-- Pagination Footer -->
       <div v-if="filteredProducts.length > 0 && pageSize !== -1" class="p-4 border-t border-gray-100 bg-gray-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">

@@ -276,42 +276,42 @@ const submitConversion = async () => {
 
 <template>
   <Teleport to="body">
-    <div v-if="isOpen" class="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+    <div v-if="isOpen" class="fixed inset-x-0 bottom-0 top-14 md:inset-0 z-[60] flex items-center justify-center p-2 sm:p-4 md:p-6 overflow-y-auto">
       <!-- Backdrop -->
       <div class="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity" @click="closeModal"></div>
 
       <!-- Modal Card -->
-      <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[calc(100vh-4.5rem)] md:max-h-[92vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         
         <!-- Header -->
-        <div class="flex items-center justify-between p-5 border-b border-gray-100 bg-gray-50/90 shrink-0">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-[#1a5c4c]/10 text-[#1a5c4c] flex items-center justify-center shrink-0">
+        <div class="flex items-center justify-between p-4 sm:p-5 border-b border-gray-100 bg-gray-50/90 shrink-0">
+          <div class="flex items-center gap-2.5 sm:gap-3 min-w-0">
+            <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#1a5c4c]/10 text-[#1a5c4c] flex items-center justify-center shrink-0">
               <CheckCircle2 class="w-5 h-5 text-[#1a5c4c]" />
             </div>
-            <div>
-              <div class="flex items-center gap-2">
-                <h2 class="text-base font-bold text-gray-900">Review & Create Sales Order</h2>
-                <span class="font-mono text-xs font-semibold px-2 py-0.5 rounded bg-gray-200 text-gray-700">
+            <div class="min-w-0">
+              <div class="flex items-center gap-2 flex-wrap">
+                <h2 class="text-sm sm:text-base font-bold text-gray-900 truncate">Review & Create Sales Order</h2>
+                <span class="font-mono text-[10px] sm:text-xs font-semibold px-2 py-0.5 rounded bg-gray-200 text-gray-700 shrink-0">
                   {{ orderRequest?.requestNumber }}
                 </span>
               </div>
-              <p class="text-xs text-gray-500 mt-0.5">
-                Review customer terms, verify stock, and adjust pricing before generating the active sales order.
+              <p class="text-xs text-gray-500 mt-0.5 truncate max-w-xs sm:max-w-md">
+                Review terms, verify stock, and adjust pricing before generating sales order.
               </p>
             </div>
           </div>
           <button 
             type="button"
             @click="closeModal" 
-            class="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-200/60 transition"
+            class="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-200/60 transition cursor-pointer shrink-0 ml-2"
           >
             <X class="w-5 h-5" />
           </button>
         </div>
 
         <!-- Scrollable Form Body -->
-        <div class="p-6 overflow-y-auto space-y-6 flex-1 text-xs">
+        <div class="p-4 sm:p-6 overflow-y-auto space-y-4 sm:space-y-6 flex-1 text-xs">
           
           <!-- Error Alert -->
           <div v-if="errorMessage" class="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl flex items-center gap-2">
@@ -531,12 +531,12 @@ const submitConversion = async () => {
         </div>
 
         <!-- Footer -->
-        <div class="p-4 border-t border-gray-100 bg-gray-50 flex items-center justify-between gap-3 shrink-0">
+        <div class="p-3.5 sm:p-4 border-t border-gray-100 bg-gray-50 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-3 shrink-0">
           <button 
             type="button" 
             @click="closeModal" 
             :disabled="isSubmitting"
-            class="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-200/70 rounded-xl transition"
+            class="w-full sm:w-auto text-center px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-200/70 rounded-xl transition cursor-pointer"
           >
             Cancel
           </button>
@@ -545,7 +545,7 @@ const submitConversion = async () => {
             type="button" 
             @click="submitConversion" 
             :disabled="isSubmitting || !form.items.length"
-            class="px-5 py-2.5 bg-[#1a5c4c] hover:bg-[#14473b] text-white rounded-xl text-xs font-bold shadow-md transition disabled:opacity-50 flex items-center gap-2"
+            class="w-full sm:w-auto justify-center px-5 py-2.5 bg-[#1a5c4c] hover:bg-[#14473b] text-white rounded-xl text-xs font-bold shadow-md transition disabled:opacity-50 flex items-center gap-2 cursor-pointer"
           >
             <Loader2 v-if="isSubmitting" class="w-4 h-4 animate-spin" />
             <CheckCircle2 v-else class="w-4 h-4" />

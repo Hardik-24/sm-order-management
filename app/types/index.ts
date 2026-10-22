@@ -6,8 +6,16 @@ export type OrderStatus = 'CONFIRMED' | 'PROCESSING' | 'READY' | 'DISPATCHED' | 
 export type BillingState = 'PENDING' | 'IN_PROGRESS' | 'GENERATED'
 export type PackingState = 'PENDING' | 'IN_PROGRESS' | 'PACKED'
 export type DeliveryState = 'WAITING' | 'ASSIGNED' | 'DISPATCHED' | 'DELIVERED'
-export type PaymentState = 'UNPAID' | 'PARTIAL' | 'PAID' | 'OVERDUE'
 export type ProductUnit = 'SHEET' | 'PIECE' | 'SQFT' | 'BOX' | 'KG' | 'METER'
+
+export interface UserActionPermissions {
+  canEditOrders: boolean
+  canEditOrderStatus: boolean
+  canCancelOrders: boolean
+  canEditCustomers: boolean
+  canEditProducts: boolean
+  canDeleteQuotations: boolean
+}
 
 export interface SessionUser {
   id: string
@@ -15,6 +23,16 @@ export interface SessionUser {
   email: string
   role: UserRole
   avatar?: string
+  allowedPages?: string[] | null
+  actionPermissions?: UserActionPermissions | null
+}
+
+export interface AppPageDef {
+  key: string
+  path: string
+  label: string
+  category: 'Dashboard' | 'Operations' | 'Data' | 'Administration'
+  description?: string
 }
 
 export interface Category {
@@ -92,34 +110,6 @@ export interface DeliveryStatus {
   deliveredAt?: string | null
 }
 
-export interface PaymentStatus {
-  id: string
-  orderId: string
-  status: PaymentState
-  amountPaid: number
-  balanceDue: number
-  paymentMethod?: string | null
-  referenceNo?: string | null
-  dueDate?: string | null
-  paidAt?: string | null
-  notes?: string | null
-}
-
-export interface PaymentRecord {
-  id: string
-  orderId: string
-  amount: number
-  paymentMethod: string
-  referenceNo?: string | null
-  notes?: string | null
-  recordedById?: string | null
-  recordedBy?: { name: string } | null
-  isVoided?: boolean
-  voidedAt?: string | null
-  voidReason?: string | null
-  createdAt: string
-}
-
 export interface TimelineEntry {
   id: string
   orderId: string
@@ -147,8 +137,6 @@ export interface Order {
   billingStatus?: BillingStatus | null
   packingStatus?: PackingStatus | null
   deliveryStatus?: DeliveryStatus | null
-  paymentStatus?: PaymentStatus | null
-  paymentRecords?: PaymentRecord[]
   timeline?: TimelineEntry[]
   deliveryDriver?: string | null
   assignedTrip?: any

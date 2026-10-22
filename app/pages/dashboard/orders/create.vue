@@ -12,6 +12,7 @@ definePageMeta({ layout: 'dashboard' })
 const router = useRouter()
 const { user } = useAuth()
 const { showSaving, showSaved, hide } = useSnackbar()
+const { paymentTermsOptions } = useMasters()
 
 const form = ref({
   customerId: '',
@@ -163,21 +164,21 @@ const getPrivilegeColor = (tier: string) => {
 </script>
 
 <template>
-  <div class="max-w-4xl mx-auto space-y-6 pb-12">
-    <div class="flex items-center justify-between mb-8">
+  <div class="max-w-4xl mx-auto space-y-5 sm:space-y-6 md:space-y-8 pb-12">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
       <div>
         <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Create New Order</h1>
         <p class="text-xs text-gray-500 mt-1">Capture customer requirements, choose delivery destinations, and specify rates.</p>
       </div>
       
       <!-- Urgent Order Toggle Header -->
-      <label class="flex items-center gap-3 px-4 py-2.5 rounded-xl border cursor-pointer select-none transition-all shadow-xs"
+      <label class="flex items-center gap-2.5 sm:gap-3 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl border cursor-pointer select-none transition-all shadow-xs self-start sm:self-auto shrink-0"
         :class="form.isUrgent ? 'bg-rose-50 border-rose-300 text-rose-700 shadow-rose-100' : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'"
       >
         <input type="checkbox" v-model="form.isUrgent" class="w-4 h-4 text-rose-600 rounded focus:ring-rose-500" />
         <div class="flex items-center gap-1.5 font-bold text-xs uppercase tracking-wider">
           <Zap class="w-4 h-4 text-rose-600" />
-          <span>⚡ Mark as Urgent Order</span>
+          <span>⚡ Urgent Order</span>
         </div>
       </label>
     </div>
@@ -185,7 +186,7 @@ const getPrivilegeColor = (tier: string) => {
     <form @submit.prevent="submitOrder" class="space-y-6">
       
       <!-- Section 1: Customer Profile & Order Info -->
-      <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm space-y-4">
+      <div class="bg-white p-4 sm:p-6 rounded-xl border border-gray-200 shadow-sm space-y-4">
         <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider border-b border-gray-100 pb-2 mb-4 flex items-center justify-between">
           <span>Customer & Fulfillment Details</span>
           <span v-if="selectedCustomer" class="text-xs font-normal normal-case text-gray-500">
@@ -193,7 +194,7 @@ const getPrivilegeColor = (tier: string) => {
           </span>
         </h3>
         
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
           <!-- Customer Picker -->
           <div class="md:col-span-2">
             <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Customer *</label>
@@ -243,15 +244,7 @@ const getPrivilegeColor = (tier: string) => {
             <CustomSelect 
               :modelValue="form.paymentTerms"
               @update:modelValue="val => form.paymentTerms = val"
-              :options="[
-                {label: 'Net 30', value: 'Net 30'},
-                {label: 'Net 15', value: 'Net 15'},
-                {label: 'Net 45', value: 'Net 45'},
-                {label: 'Net 60', value: 'Net 60'},
-                {label: 'Due on Receipt', value: 'Due on Receipt'},
-                {label: 'Advanced Payment', value: 'Advanced Payment'},
-                {label: 'Cash on Delivery (COD)', value: 'COD'}
-              ]"
+              :options="paymentTermsOptions"
               placeholder="Select Terms"
               class="w-full"
             />
@@ -359,17 +352,17 @@ const getPrivilegeColor = (tier: string) => {
       </div>
 
       <!-- Section 2: Items -->
-      <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm space-y-4">
+      <div class="bg-white p-4 sm:p-6 rounded-xl border border-gray-200 shadow-sm space-y-4">
         <div class="flex items-center justify-between border-b border-gray-100 pb-2 mb-4">
           <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider">Order Items</h3>
-          <button type="button" @click="addItem" class="text-xs font-bold text-[#1a5c4c] flex items-center gap-1 hover:underline">
-            <Plus class="w-3 h-3" /> Add Product
+          <button type="button" @click="addItem" class="text-xs font-bold text-[#1a5c4c] flex items-center gap-1 hover:underline cursor-pointer">
+            <Plus class="w-3.5 h-3.5" /> Add Product
           </button>
         </div>
 
         <div class="space-y-4">
-          <div v-for="(item, idx) in form.items" :key="idx" class="bg-gray-50/80 p-4 rounded-xl border border-gray-200 space-y-3">
-            <div class="flex flex-wrap md:flex-nowrap gap-4 items-end">
+          <div v-for="(item, idx) in form.items" :key="idx" class="bg-gray-50/80 p-3.5 sm:p-4 rounded-xl border border-gray-200 space-y-3">
+            <div class="flex flex-col md:flex-row md:items-end gap-3 md:gap-4">
               <!-- Product Select -->
               <div class="flex-1 w-full min-w-0">
                 <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1.5">Product *</label>
@@ -384,36 +377,41 @@ const getPrivilegeColor = (tier: string) => {
                 />
               </div>
 
-              <!-- Qty -->
-              <div class="w-full md:w-24 shrink-0">
-                <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1.5">Qty *</label>
-                <input type="number" v-model.number="item.quantity" min="1" required class="w-full border border-gray-300 rounded-lg shadow-xs p-2 bg-white text-sm font-bold focus:ring-[#1a5c4c] focus:border-[#1a5c4c]" />
-              </div>
+              <!-- Quantity, Rate, Subtotal & Remove in a responsive flex layout -->
+              <div class="grid grid-cols-12 gap-2 items-end w-full md:w-auto">
+                <!-- Qty -->
+                <div class="col-span-3 md:w-24">
+                  <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1.5">Qty *</label>
+                  <input type="number" v-model.number="item.quantity" min="1" required class="w-full border border-gray-300 rounded-lg shadow-xs p-2 bg-white text-sm font-bold focus:ring-[#1a5c4c] focus:border-[#1a5c4c]" />
+                </div>
 
-              <!-- Unit Price -->
-              <div class="w-full md:w-28 shrink-0">
-                <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1.5 flex items-center gap-1">
-                  <IndianRupee class="w-3 h-3 text-gray-400" />
-                  <span>Rate *</span>
-                </label>
-                <div class="relative flex items-center">
-                  <IndianRupee class="absolute left-2.5 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
-                  <input type="number" v-model.number="item.unitPrice" min="0" step="0.01" required class="w-full pl-7 border border-gray-300 rounded-lg shadow-xs p-2 bg-white text-sm font-bold focus:ring-[#1a5c4c] focus:border-[#1a5c4c]" />
+                <!-- Unit Price -->
+                <div class="col-span-4 md:w-28">
+                  <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1.5 flex items-center gap-1 truncate">
+                    <IndianRupee class="w-3 h-3 text-gray-400 shrink-0" />
+                    <span>Rate *</span>
+                  </label>
+                  <div class="relative flex items-center">
+                    <IndianRupee class="absolute left-2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+                    <input type="number" v-model.number="item.unitPrice" min="0" step="0.01" required class="w-full pl-6 border border-gray-300 rounded-lg shadow-xs p-2 bg-white text-sm font-bold focus:ring-[#1a5c4c] focus:border-[#1a5c4c]" />
+                  </div>
+                </div>
+
+                <!-- Line Total -->
+                <div class="col-span-4 md:w-28">
+                  <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1.5">Subtotal</label>
+                  <div class="p-2 bg-white text-gray-900 rounded-lg font-bold text-xs sm:text-sm border border-gray-200 truncate">
+                    {{ formatCurrency(item.quantity * item.unitPrice) }}
+                  </div>
+                </div>
+
+                <!-- Remove -->
+                <div class="col-span-1 md:w-auto flex justify-center pb-0.5">
+                  <button type="button" @click="removeItem(idx)" class="p-2 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg shrink-0 transition-colors cursor-pointer" title="Remove Item">
+                    <Trash2 class="w-4 h-4" />
+                  </button>
                 </div>
               </div>
-
-              <!-- Line Total -->
-              <div class="w-full md:w-28 shrink-0">
-                <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1.5">Subtotal</label>
-                <div class="p-2 bg-white text-gray-900 rounded-lg font-bold text-sm border border-gray-200">
-                  {{ formatCurrency(item.quantity * item.unitPrice) }}
-                </div>
-              </div>
-
-              <!-- Remove -->
-              <button type="button" @click="removeItem(idx)" class="p-2 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg shrink-0 transition-colors" title="Remove Item">
-                <Trash2 class="w-4 h-4" />
-              </button>
             </div>
 
             <!-- Item-Level Options & Notes -->
