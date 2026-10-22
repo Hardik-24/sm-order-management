@@ -1,8 +1,8 @@
 <template>
-  <div class="min-h-screen bg-[#1a5c4c] flex flex-col justify-center items-center p-6 text-white font-sans">
+  <div class="min-h-screen bg-[#1b3b5f] flex flex-col justify-center items-center p-6 text-white font-sans">
     <div class="w-full max-w-sm bg-white text-[#1a1a1a] rounded-2xl shadow-2xl p-8">
       <div class="text-center mb-8">
-        <h1 class="text-2xl font-bold text-[#1a5c4c] tracking-widest">SM FLEET</h1>
+        <h1 class="text-2xl font-bold text-[#1b3b5f] tracking-widest">SM FLEET</h1>
         <p class="text-sm text-gray-500 mt-2">Driver Authentication</p>
       </div>
 
@@ -36,7 +36,7 @@
         <button 
           type="submit" 
           :disabled="loading"
-          class="w-full bg-[#1a5c4c] hover:bg-[#134237] text-white font-bold py-3.5 rounded-xl transition-all active:scale-95 disabled:opacity-50 mt-4"
+          class="w-full bg-[#1b3b5f] hover:bg-[#132c49] text-white font-bold py-3.5 rounded-xl transition-all active:scale-95 disabled:opacity-50 mt-4"
         >
           {{ loading ? 'AUTHENTICATING...' : 'SIGN IN' }}
         </button>

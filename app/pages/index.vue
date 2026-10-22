@@ -28,7 +28,7 @@ definePageMeta({
 
       <NuxtLink 
         to="/dashboard"
-        class="group flex items-center gap-3 px-8 py-4 border border-[#4ecdc4] bg-transparent text-[#e8e0d4] uppercase tracking-widest text-sm font-medium transition-colors duration-300 hover:bg-[#1a5c4c] hover:border-[#1a5c4c]"
+        class="group flex items-center gap-3 px-8 py-4 border border-[#4ecdc4] bg-transparent text-[#e8e0d4] uppercase tracking-widest text-sm font-medium transition-colors duration-300 hover:bg-[#1b3b5f] hover:border-[#1b3b5f]"
       >
         Enter Dashboard
         <ArrowRight class="w-5 h-5 transition-transform group-hover:translate-x-1" />

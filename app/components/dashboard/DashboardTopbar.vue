@@ -36,7 +36,7 @@
       <!-- Suggestions Dropdown -->
       <div v-if="showSuggestions && searchQuery" class="absolute top-12 left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-xl overflow-hidden z-50">
         <div v-if="isLoadingSuggestions" class="px-4 py-3 text-sm text-gray-500 flex items-center justify-center">
-          <div class="w-4 h-4 border-2 border-[#1a5c4c] border-t-transparent rounded-full animate-spin"></div>
+          <div class="w-4 h-4 border-2 border-[#1b3b5f] border-t-transparent rounded-full animate-spin"></div>
         </div>
         <div v-else-if="suggestions.length === 0" class="px-4 py-3 text-sm text-gray-500 text-center">
           No results found for "{{ searchQuery }}"
@@ -103,14 +103,14 @@
               class="flex flex-col px-4 py-3 border-b border-gray-100 last:border-0 hover:bg-[#f2fcf9] cursor-pointer transition-colors"
             >
               <div class="flex items-start gap-3">
-                <img :src="notif.performedBy?.avatar || 'https://ui-avatars.com/api/?name=' + (notif.performedBy?.name || 'User') + '&background=1a5c4c&color=e8e0d4'" class="w-8 h-8 rounded-full flex-shrink-0" />
+                <img :src="notif.performedBy?.avatar || 'https://ui-avatars.com/api/?name=' + (notif.performedBy?.name || 'User') + '&background=1b3b5f&color=e8e0d4'" class="w-8 h-8 rounded-full flex-shrink-0" />
                 <div class="flex flex-col">
                   <span class="text-sm text-[#1a1a1a] leading-tight">
                     <span class="font-semibold">{{ notif.performedBy?.name || 'Someone' }}</span> 
                     {{ formatNotificationDesc(notif) }}
                   </span>
                   <div class="flex items-center gap-2 mt-1">
-                    <span class="text-xs font-semibold text-[#1a5c4c]" v-if="notif.order?.orderNumber">{{ notif.order.orderNumber }}</span>
+                    <span class="text-xs font-semibold text-[#1b3b5f]" v-if="notif.order?.orderNumber">{{ notif.order.orderNumber }}</span>
                     <span class="text-[10px] text-gray-400">{{ formatTimeAgo(new Date(notif.timestamp)) }}</span>
                   </div>
                 </div>
@@ -128,7 +128,7 @@
         </div>
         
         <div class="relative group cursor-pointer">
-          <img :src="'https://ui-avatars.com/api/?name=' + (user?.name || 'Hardik') + '&background=1a5c4c&color=e8e0d4'" alt="Profile" class="h-10 w-10 rounded-full object-cover shadow-sm border border-gray-100 transition-transform group-hover:scale-105" />
+          <img :src="'https://ui-avatars.com/api/?name=' + (user?.name || 'Hardik') + '&background=1b3b5f&color=e8e0d4'" alt="Profile" class="h-10 w-10 rounded-full object-cover shadow-sm border border-gray-100 transition-transform group-hover:scale-105" />
           
           <!-- Standard Speech Bubble Tooltip -->
           <div class="absolute top-full mt-2 right-0 opacity-0 group-hover:opacity-100 invisible group-hover:visible transition-all duration-200 z-50 origin-top-right scale-95 group-hover:scale-100 pointer-events-none whitespace-nowrap">

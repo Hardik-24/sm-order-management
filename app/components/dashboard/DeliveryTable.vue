@@ -364,7 +364,7 @@ const saveDriverAssignment = async () => {
           @input="e => emit('update:search', (e.target as HTMLInputElement).value)"
           type="text" 
           placeholder="Search by order ID, customer, driver..." 
-          class="block w-full pl-10 pr-9 py-2 border border-gray-300 rounded-lg text-sm bg-white placeholder:text-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1a5c4c]/20 focus:border-[#1a5c4c] transition-all shadow-sm"
+          class="block w-full pl-10 pr-9 py-2 border border-gray-300 rounded-lg text-sm bg-white placeholder:text-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f] transition-all shadow-sm"
         />
         <button 
           v-if="search"
@@ -426,7 +426,7 @@ const saveDriverAssignment = async () => {
               class="cursor-pointer transition-colors duration-150 group"
               :class="[
                 selectedTripOrderIds?.includes(order.id)
-                  ? 'bg-emerald-50/70 hover:bg-emerald-100/60 ring-1 ring-emerald-500/40 border-l-4 border-l-[#1a5c4c]'
+                  ? 'bg-emerald-50/70 hover:bg-emerald-100/60 ring-1 ring-emerald-500/40 border-l-4 border-l-[#1b3b5f]'
                   : (order.overallStatus === 'CANCELLED' 
                     ? 'bg-gray-100/60 hover:bg-gray-100/80 text-gray-400 opacity-60 border-l-4 border-l-gray-400' 
                     : (order.isUrgent ? 'bg-rose-50/25 hover:bg-rose-50/40 border-l-4 border-l-rose-500' : 'hover:bg-gray-50/80'))
@@ -435,7 +435,7 @@ const saveDriverAssignment = async () => {
               <!-- 1. Order ID -->
               <td class="px-5 py-3.5 whitespace-nowrap">
                 <div class="flex items-center gap-1.5 flex-wrap">
-                  <span class="text-xs font-bold text-gray-900 group-hover:text-[#1a5c4c] transition-colors">
+                  <span class="text-xs font-bold text-gray-900 group-hover:text-[#1b3b5f] transition-colors">
                     {{ order.orderNumber }}
                   </span>
                   <span v-if="order.isUrgent && order.overallStatus !== 'CANCELLED'" class="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
@@ -517,7 +517,7 @@ const saveDriverAssignment = async () => {
                   class="inline-flex items-center gap-2 px-2.5 py-1 bg-emerald-50 border border-emerald-200 rounded-lg text-xs font-semibold text-emerald-900 shadow-2xs"
                   :title="order.deliveryDriver || order.deliveryStatus?.driverName"
                 >
-                  <div class="w-5 h-5 rounded-full bg-[#1a5c4c] text-white flex items-center justify-center text-[10px] font-bold shrink-0">
+                  <div class="w-5 h-5 rounded-full bg-[#1b3b5f] text-white flex items-center justify-center text-[10px] font-bold shrink-0">
                     {{ (order.deliveryDriver || order.deliveryStatus?.driverName || 'D')[0]?.toUpperCase() }}
                   </div>
                   <span class="truncate max-w-[110px]">{{ order.deliveryDriver || order.deliveryStatus?.driverName }}</span>
@@ -565,7 +565,7 @@ const saveDriverAssignment = async () => {
                     <button 
                       v-if="order.deliveryStatus?.status === 'DISPATCHED'"
                       @click.stop="openTrackingModal(order)"
-                      class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-[#1a5c4c] text-white hover:bg-[#14473b] rounded-lg shadow-sm hover:shadow transition-all cursor-pointer"
+                      class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-[#1b3b5f] text-white hover:bg-[#132c49] rounded-lg shadow-sm hover:shadow transition-all cursor-pointer"
                       title="View Live GPS Driver Route"
                     >
                       <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
@@ -591,7 +591,7 @@ const saveDriverAssignment = async () => {
                         v-if="selectedTripOrderIds?.includes(order.id)"
                         type="button"
                         @click.stop="emit('toggleTripOrder', order.id)"
-                        class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-[#1a5c4c] text-white rounded-lg shadow-sm hover:bg-[#134336] transition-all cursor-pointer ring-2 ring-[#1a5c4c]/30"
+                        class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-[#1b3b5f] text-white rounded-lg shadow-sm hover:bg-[#132c49] transition-all cursor-pointer ring-2 ring-[#1b3b5f]/30"
                         title="Click to remove from trip draft"
                       >
                         <Check class="w-3.5 h-3.5" />
@@ -615,7 +615,7 @@ const saveDriverAssignment = async () => {
                         v-else
                         type="button"
                         @click.stop="emit('toggleTripOrder', order.id)"
-                        class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-[#1a5c4c]/10 text-[#1a5c4c] hover:bg-[#1a5c4c] hover:text-white border border-[#1a5c4c]/30 rounded-lg transition-all shadow-2xs cursor-pointer"
+                        class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-[#1b3b5f]/10 text-[#1b3b5f] hover:bg-[#1b3b5f] hover:text-white border border-[#1b3b5f]/30 rounded-lg transition-all shadow-2xs cursor-pointer"
                         title="Create a new trip with this order"
                       >
                         <Plus class="w-3.5 h-3.5" />
@@ -668,7 +668,7 @@ const saveDriverAssignment = async () => {
           class="px-3.5 py-3 cursor-pointer transition-colors flex flex-col gap-1.5"
           :class="[
             selectedTripOrderIds?.includes(order.id)
-              ? 'bg-emerald-50/70 border-l-4 border-l-[#1a5c4c]'
+              ? 'bg-emerald-50/70 border-l-4 border-l-[#1b3b5f]'
               : (order.overallStatus === 'CANCELLED' 
                 ? 'bg-gray-100/75 active:bg-gray-200/60 text-gray-400 [&_span]:!text-gray-400 [&_p]:!text-gray-400 opacity-60 border-l-4 border-l-gray-400' 
                 : 'hover:bg-gray-50 active:bg-gray-100')
@@ -792,7 +792,7 @@ const saveDriverAssignment = async () => {
                 <button 
                   v-if="order.deliveryStatus?.status === 'DISPATCHED'"
                   @click.stop="openTrackingModal(order)"
-                  class="px-2.5 py-1 bg-[#1a5c4c] text-white text-[11px] font-semibold rounded-md hover:bg-[#154a3d] active:scale-95 transition-all shadow-xs flex items-center gap-1"
+                  class="px-2.5 py-1 bg-[#1b3b5f] text-white text-[11px] font-semibold rounded-md hover:bg-[#132c49] active:scale-95 transition-all shadow-xs flex items-center gap-1"
                 >
                   <MapPin class="w-3 h-3" />
                   <span>Track Live</span>
@@ -815,7 +815,7 @@ const saveDriverAssignment = async () => {
                     v-if="selectedTripOrderIds?.includes(order.id)"
                     type="button"
                     @click.stop="emit('toggleTripOrder', order.id)"
-                    class="px-2.5 py-1 bg-[#1a5c4c] text-white text-[11px] font-bold rounded-md hover:bg-[#134336] active:scale-95 transition-all shadow-xs flex items-center gap-1 cursor-pointer"
+                    class="px-2.5 py-1 bg-[#1b3b5f] text-white text-[11px] font-bold rounded-md hover:bg-[#132c49] active:scale-95 transition-all shadow-xs flex items-center gap-1 cursor-pointer"
                   >
                     <Check class="w-3 h-3" />
                     <span>Added</span>
@@ -837,7 +837,7 @@ const saveDriverAssignment = async () => {
                     v-else
                     type="button"
                     @click.stop="emit('toggleTripOrder', order.id)"
-                    class="px-2 py-1 bg-[#1a5c4c]/10 text-[#1a5c4c] border border-[#1a5c4c]/30 rounded-md text-[11px] font-bold active:scale-95 transition-all shadow-xs flex items-center gap-1 cursor-pointer"
+                    class="px-2 py-1 bg-[#1b3b5f]/10 text-[#1b3b5f] border border-[#1b3b5f]/30 rounded-md text-[11px] font-bold active:scale-95 transition-all shadow-xs flex items-center gap-1 cursor-pointer"
                   >
                     <Plus class="w-3 h-3" />
                     <span>Trip</span>
@@ -925,7 +925,7 @@ const saveDriverAssignment = async () => {
           <button 
             @click="saveDriverAssignment" 
             :disabled="isAssigning"
-            class="px-4 py-2 text-xs font-bold bg-[#1a5c4c] hover:bg-[#15463a] text-white rounded-lg transition shadow flex items-center gap-1.5 disabled:opacity-50"
+            class="px-4 py-2 text-xs font-bold bg-[#1b3b5f] hover:bg-[#15463a] text-white rounded-lg transition shadow flex items-center gap-1.5 disabled:opacity-50"
           >
             <Loader2 v-if="isAssigning" class="w-3.5 h-3.5 animate-spin" />
             <span>Save & Assign</span>
@@ -940,7 +940,7 @@ const saveDriverAssignment = async () => {
       <div v-if="trackingModalOrder" class="fixed inset-x-0 bottom-0 top-14 md:inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
       <div class="bg-white w-full max-w-2xl rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[calc(100vh-4.5rem)] md:max-h-[92vh]">
         <!-- Modal Header -->
-        <div class="p-4 bg-[#1a5c4c] text-white flex items-center justify-between">
+        <div class="p-4 bg-[#1b3b5f] text-white flex items-center justify-between">
           <div class="flex items-center gap-3">
             <div class="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center font-bold text-white">
               <MapPin class="w-5 h-5" />
@@ -978,7 +978,7 @@ const saveDriverAssignment = async () => {
 
         <!-- Loading State -->
         <div v-if="isTrackingLoading" class="h-80 flex flex-col items-center justify-center gap-2 text-gray-400">
-          <Loader2 class="w-8 h-8 animate-spin text-[#1a5c4c]" />
+          <Loader2 class="w-8 h-8 animate-spin text-[#1b3b5f]" />
           <p class="text-xs">Fetching GPS coordinates & route...</p>
         </div>
 

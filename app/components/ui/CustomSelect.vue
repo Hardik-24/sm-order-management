@@ -3,7 +3,7 @@
     <!-- Trigger -->
     <div 
       @click="toggleOpen"
-      class="w-full border border-gray-300 rounded-lg focus:outline-none focus:border-[#1a5c4c] focus:ring-2 focus:ring-[#1a5c4c]/20 bg-white text-gray-800 cursor-pointer flex items-center justify-between transition-colors hover:bg-gray-50/80 select-none"
+      class="w-full border border-gray-300 rounded-lg focus:outline-none focus:border-[#1b3b5f] focus:ring-2 focus:ring-[#1b3b5f]/20 bg-white text-gray-800 cursor-pointer flex items-center justify-between transition-colors hover:bg-gray-50/80 select-none"
       :class="triggerClass || 'px-3 py-2 text-sm'"
     >
       <span class="block w-full text-left line-clamp-2" :title="displayLabel">{{ displayLabel }}</span>
@@ -69,7 +69,7 @@
             @click="selectOption(option.value)"
             class="px-3 py-2 text-sm rounded-lg cursor-pointer flex flex-col justify-center transition-colors"
             :class="{
-              'text-[#1a5c4c] font-semibold bg-[#1a5c4c]/5': modelValue === option.value,
+              'text-[#1b3b5f] font-semibold bg-[#1b3b5f]/5': modelValue === option.value,
               'bg-gray-100': focusedIndex === index && modelValue !== option.value,
               'hover:bg-gray-50': focusedIndex !== index
             }"
@@ -78,7 +78,7 @@
           >
             <div class="flex items-center justify-between w-full min-w-0">
               <span class="truncate">{{ option.label }}</span>
-              <Check v-if="modelValue === option.value" class="w-4 h-4 shrink-0 ml-2 text-[#1a5c4c]" />
+              <Check v-if="modelValue === option.value" class="w-4 h-4 shrink-0 ml-2 text-[#1b3b5f]" />
             </div>
             <span v-if="option.subtitle" class="text-[10px] text-gray-400 text-right mt-0.5 truncate">{{ option.subtitle }}</span>
           </li>

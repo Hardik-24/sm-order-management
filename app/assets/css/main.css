@@ -10,8 +10,8 @@
     --bg-dark-secondary: #2d2d2d;
     --bg-light: #faf8f5;
     --bg-card: #ffffff;
-    --accent-primary: #1a5c4c;
-    --accent-primary-hover: #164d40;
+    --accent-primary: #1b3b5f;
+    --accent-primary-hover: #132c49;
     --accent-mint: #4ecdc4;
     --text-dark: #1a1a1a;
     --text-light: #e8e0d4;
@@ -94,8 +94,8 @@
   .tab-scroll-container:active::-webkit-scrollbar-thumb,
   .tab-scroll-container:focus-within::-webkit-scrollbar-thumb,
   .tab-scroll-container.is-scrolling::-webkit-scrollbar-thumb {
-    background: rgba(26, 92, 76, 0.22);
-    scrollbar-color: rgba(26, 92, 76, 0.22) transparent;
+    background: rgba(27, 59, 95, 0.22);
+    scrollbar-color: rgba(27, 59, 95, 0.22) transparent;
   }
 }
 

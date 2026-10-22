@@ -266,7 +266,7 @@ const confirmSplit = async () => {
         <!-- Header -->
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-[#faf8f5] shrink-0">
           <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-[#1a5c4c]/10 text-[#1a5c4c] flex items-center justify-center font-bold">
+            <div class="w-10 h-10 rounded-xl bg-[#1b3b5f]/10 text-[#1b3b5f] flex items-center justify-center font-bold">
               <GitFork class="w-5 h-5" />
             </div>
             <div>
@@ -297,7 +297,7 @@ const confirmSplit = async () => {
         <!-- Body Content -->
         <div class="flex-1 overflow-y-auto p-5 sm:p-6 space-y-5">
           <div v-if="isLoadingOrder" class="flex flex-col items-center justify-center py-16 space-y-3">
-            <Loader2 class="w-8 h-8 animate-spin text-[#1a5c4c]" />
+            <Loader2 class="w-8 h-8 animate-spin text-[#1b3b5f]" />
             <p class="text-xs text-gray-500 font-medium">Loading order line items...</p>
           </div>
 
@@ -324,7 +324,7 @@ const confirmSplit = async () => {
                   type="button" 
                   @click="moveUnpackedItems" 
                   title="Move un-packed quantities to the new split order"
-                  class="px-2.5 py-1.5 text-[11px] font-semibold text-[#1a5c4c] bg-white border border-[#1a5c4c]/30 rounded-lg hover:bg-[#1a5c4c]/10 shadow-2xs transition-colors flex items-center gap-1 cursor-pointer"
+                  class="px-2.5 py-1.5 text-[11px] font-semibold text-[#1b3b5f] bg-white border border-[#1b3b5f]/30 rounded-lg hover:bg-[#1b3b5f]/10 shadow-2xs transition-colors flex items-center gap-1 cursor-pointer"
                 >
                   <Package class="w-3 h-3" />
                   <span>Split Unpacked</span>
@@ -359,17 +359,17 @@ const confirmSplit = async () => {
               </div>
 
               <!-- Right Card: New Split Order -->
-              <div class="bg-white rounded-xl border-2 border-[#1a5c4c]/40 p-4 shadow-sm relative overflow-hidden bg-radial from-transparent to-[#1a5c4c]/5">
-                <div class="absolute top-0 right-0 bg-[#1a5c4c] text-white text-[9px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-bl-lg">
+              <div class="bg-white rounded-xl border-2 border-[#1b3b5f]/40 p-4 shadow-sm relative overflow-hidden bg-radial from-transparent to-[#1b3b5f]/5">
+                <div class="absolute top-0 right-0 bg-[#1b3b5f] text-white text-[9px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-bl-lg">
                   Order B (New Split)
                 </div>
                 <div class="flex items-center gap-2">
-                  <GitFork class="w-4 h-4 text-[#1a5c4c]" />
+                  <GitFork class="w-4 h-4 text-[#1b3b5f]" />
                   <span class="text-xs font-bold text-gray-900 font-mono">{{ newOrderNumber || 'SO-YYYY-NNNN-B' }}</span>
                 </div>
                 <div class="mt-3 flex items-baseline justify-between">
                   <div>
-                    <span class="text-2xl font-black text-[#1a5c4c] tabular-nums">
+                    <span class="text-2xl font-black text-[#1b3b5f] tabular-nums">
                       {{ formatCurrency(moveTotalAmount) }}
                     </span>
                     <span class="text-xs text-gray-500 block mt-0.5">
@@ -378,7 +378,7 @@ const confirmSplit = async () => {
                   </div>
                   <span 
                     class="text-xs font-bold px-2.5 py-1 rounded-lg border transition-colors"
-                    :class="totalMoveUnits > 0 ? 'bg-[#1a5c4c]/10 text-[#1a5c4c] border-[#1a5c4c]/20' : 'bg-gray-100 text-gray-400 border-gray-200'"
+                    :class="totalMoveUnits > 0 ? 'bg-[#1b3b5f]/10 text-[#1b3b5f] border-[#1b3b5f]/20' : 'bg-gray-100 text-gray-400 border-gray-200'"
                   >
                     {{ totalMoveUnits > 0 ? 'Ready to create' : 'Add items to move' }}
                   </span>
@@ -407,7 +407,7 @@ const confirmSplit = async () => {
                       <th class="px-3 py-2.5 text-center w-40 bg-emerald-50/60 border-x border-emerald-100">
                         Keep in {{ order.orderNumber }}
                       </th>
-                      <th class="px-3 py-2.5 text-center w-40 bg-[#1a5c4c]/5 border-r border-[#1a5c4c]/10">
+                      <th class="px-3 py-2.5 text-center w-40 bg-[#1b3b5f]/5 border-r border-[#1b3b5f]/10">
                         Move to {{ newOrderNumber || 'Split' }}
                       </th>
                       <th class="px-3 py-2.5 text-center w-28">Quick Action</th>
@@ -474,7 +474,7 @@ const confirmSplit = async () => {
                       </td>
 
                       <!-- Move Qty Column -->
-                      <td class="px-3 py-3 bg-[#1a5c4c]/5 border-r border-[#1a5c4c]/10">
+                      <td class="px-3 py-3 bg-[#1b3b5f]/5 border-r border-[#1b3b5f]/10">
                         <div class="flex items-center justify-center gap-1.5">
                           <button 
                             type="button" 
@@ -490,7 +490,7 @@ const confirmSplit = async () => {
                             :max="row.totalQty"
                             :value="row.moveQty" 
                             @input="e => onMoveQtyInput(row, e)"
-                            class="w-14 text-center font-bold text-xs border border-[#1a5c4c]/40 rounded-md py-1 bg-white focus:ring-1 focus:ring-[#1a5c4c] text-[#1a5c4c]"
+                            class="w-14 text-center font-bold text-xs border border-[#1b3b5f]/40 rounded-md py-1 bg-white focus:ring-1 focus:ring-[#1b3b5f] text-[#1b3b5f]"
                           />
                           <button 
                             type="button" 
@@ -509,7 +509,7 @@ const confirmSplit = async () => {
                           <button 
                             type="button" 
                             @click="moveAll(row)"
-                            class="px-2 py-0.5 text-[10px] font-semibold bg-gray-100 hover:bg-[#1a5c4c] hover:text-white rounded text-gray-700 transition"
+                            class="px-2 py-0.5 text-[10px] font-semibold bg-gray-100 hover:bg-[#1b3b5f] hover:text-white rounded text-gray-700 transition"
                             title="Move all units of this line item to split order"
                           >
                             Move All
@@ -551,7 +551,7 @@ const confirmSplit = async () => {
                     type="text" 
                     v-model="newOrderNumber" 
                     placeholder="e.g. SO-2026-1045-B" 
-                    class="w-full text-xs font-mono font-bold border border-gray-300 rounded-lg p-2 bg-white focus:ring-[#1a5c4c] focus:border-[#1a5c4c]" 
+                    class="w-full text-xs font-mono font-bold border border-gray-300 rounded-lg p-2 bg-white focus:ring-[#1b3b5f] focus:border-[#1b3b5f]" 
                   />
                   <p class="text-[10px] text-gray-400 mt-0.5">Recommended format: SO-YYYY-NNNN-B</p>
                 </div>
@@ -564,7 +564,7 @@ const confirmSplit = async () => {
                     v-if="order.customer?.addresses?.length"
                     :value="selectedAddressId"
                     @change="e => onAddressSelect((e.target as HTMLSelectElement).value)"
-                    class="w-full text-xs border border-gray-300 rounded-lg p-2 bg-white focus:ring-[#1a5c4c] focus:border-[#1a5c4c] mb-1.5"
+                    class="w-full text-xs border border-gray-300 rounded-lg p-2 bg-white focus:ring-[#1b3b5f] focus:border-[#1b3b5f] mb-1.5"
                   >
                     <option value="">Current Order Delivery Address</option>
                     <option 
@@ -579,7 +579,7 @@ const confirmSplit = async () => {
                     rows="2" 
                     v-model="customAddressText" 
                     placeholder="Delivery destination for the split order..."
-                    class="w-full text-xs border border-gray-300 rounded-lg p-2 bg-white focus:ring-[#1a5c4c] focus:border-[#1a5c4c]"
+                    class="w-full text-xs border border-gray-300 rounded-lg p-2 bg-white focus:ring-[#1b3b5f] focus:border-[#1b3b5f]"
                   ></textarea>
                 </div>
               </div>
@@ -595,7 +595,7 @@ const confirmSplit = async () => {
                       type="button"
                       @click="selectedVehicleMode = 'OUR_FLEET'"
                       class="px-3 py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 border transition cursor-pointer"
-                      :class="selectedVehicleMode === 'OUR_FLEET' ? 'bg-[#1a5c4c] text-white border-[#1a5c4c] shadow-xs' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'"
+                      :class="selectedVehicleMode === 'OUR_FLEET' ? 'bg-[#1b3b5f] text-white border-[#1b3b5f] shadow-xs' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'"
                     >
                       <span>🚚 Our Fleet</span>
                     </button>
@@ -618,7 +618,7 @@ const confirmSplit = async () => {
                     rows="2" 
                     v-model="splitNotes" 
                     placeholder="e.g. Split for partial dispatch on tempo; remaining sheets will be delivered tomorrow..."
-                    class="w-full text-xs border border-gray-300 rounded-lg p-2 bg-white focus:ring-[#1a5c4c] focus:border-[#1a5c4c]"
+                    class="w-full text-xs border border-gray-300 rounded-lg p-2 bg-white focus:ring-[#1b3b5f] focus:border-[#1b3b5f]"
                   ></textarea>
                   <p class="text-[10px] text-gray-400 mt-1">
                     These notes will appear on the new order's timeline and manifest.
@@ -655,7 +655,7 @@ const confirmSplit = async () => {
               type="button" 
               @click="confirmSplit"
               :disabled="!isFormValid || isSubmitting"
-              class="px-5 py-2 text-xs font-bold text-white bg-[#1a5c4c] hover:bg-[#14473b] disabled:opacity-50 disabled:cursor-not-allowed rounded-lg shadow-sm transition flex items-center gap-1.5 cursor-pointer"
+              class="px-5 py-2 text-xs font-bold text-white bg-[#1b3b5f] hover:bg-[#132c49] disabled:opacity-50 disabled:cursor-not-allowed rounded-lg shadow-sm transition flex items-center gap-1.5 cursor-pointer"
             >
               <Loader2 v-if="isSubmitting" class="w-3.5 h-3.5 animate-spin" />
               <GitFork v-else class="w-3.5 h-3.5" />

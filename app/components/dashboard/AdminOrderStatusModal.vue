@@ -196,7 +196,7 @@ const submitStatusUpdate = async () => {
                 <span>&bull;</span>
                 <span>{{ order?.customer?.company || order?.customer?.name }}</span>
                 <span>&bull;</span>
-                <span class="font-bold text-[#1a5c4c]">{{ formatCurrency(order?.totalAmount || 0) }}</span>
+                <span class="font-bold text-[#1b3b5f]">{{ formatCurrency(order?.totalAmount || 0) }}</span>
               </p>
             </div>
           </div>
@@ -225,7 +225,7 @@ const submitStatusUpdate = async () => {
           <div class="bg-gray-50/70 rounded-xl p-4 border border-gray-200/80 space-y-3">
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-2">
-                <div class="p-1.5 rounded-lg bg-teal-50 text-[#1a5c4c] border border-teal-100">
+                <div class="p-1.5 rounded-lg bg-teal-50 text-[#1b3b5f] border border-teal-100">
                   <CheckCheck class="w-4 h-4" />
                 </div>
                 <div>
@@ -247,7 +247,7 @@ const submitStatusUpdate = async () => {
                 type="button"
                 @click="isApproved = true"
                 class="px-3 py-2.5 rounded-lg text-xs font-bold flex items-center justify-center gap-2 border transition cursor-pointer"
-                :class="isApproved ? 'bg-[#1a5c4c] text-white border-[#1a5c4c] shadow-xs' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'"
+                :class="isApproved ? 'bg-[#1b3b5f] text-white border-[#1b3b5f] shadow-xs' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'"
               >
                 <Check class="w-4 h-4" />
                 <span>Mark Approved</span>
@@ -289,7 +289,7 @@ const submitStatusUpdate = async () => {
                 type="button"
                 @click="billingStatus = opt.value"
                 class="px-3 py-2 rounded-lg text-left border transition cursor-pointer"
-                :class="billingStatus === opt.value ? 'bg-[#1a5c4c] text-white border-[#1a5c4c] shadow-xs' : 'bg-white text-gray-800 border-gray-200 hover:bg-gray-50'"
+                :class="billingStatus === opt.value ? 'bg-[#1b3b5f] text-white border-[#1b3b5f] shadow-xs' : 'bg-white text-gray-800 border-gray-200 hover:bg-gray-50'"
               >
                 <div class="font-bold text-xs">{{ opt.label }}</div>
                 <div class="text-[10px] opacity-80 mt-0.5">{{ opt.desc }}</div>
@@ -305,7 +305,7 @@ const submitStatusUpdate = async () => {
                 type="text" 
                 v-model="invoiceNumber" 
                 placeholder="e.g. INV-2026-1045" 
-                class="w-full text-xs font-mono border border-gray-300 rounded-lg p-2 bg-white focus:ring-[#1a5c4c] focus:border-[#1a5c4c]" 
+                class="w-full text-xs font-mono border border-gray-300 rounded-lg p-2 bg-white focus:ring-[#1b3b5f] focus:border-[#1b3b5f]" 
               />
             </div>
 
@@ -318,7 +318,7 @@ const submitStatusUpdate = async () => {
                 type="text" 
                 v-model="billingHoldReason" 
                 placeholder="e.g. Rate clarification requested by client" 
-                class="w-full text-xs border border-gray-300 rounded-lg p-2 bg-white focus:ring-[#1a5c4c] focus:border-[#1a5c4c]" 
+                class="w-full text-xs border border-gray-300 rounded-lg p-2 bg-white focus:ring-[#1b3b5f] focus:border-[#1b3b5f]" 
               />
             </div>
           </div>
@@ -348,7 +348,7 @@ const submitStatusUpdate = async () => {
                 type="button"
                 @click="packingStatus = opt.value"
                 class="px-3 py-2 rounded-lg text-left border transition cursor-pointer"
-                :class="packingStatus === opt.value ? 'bg-[#1a5c4c] text-white border-[#1a5c4c] shadow-xs' : 'bg-white text-gray-800 border-gray-200 hover:bg-gray-50'"
+                :class="packingStatus === opt.value ? 'bg-[#1b3b5f] text-white border-[#1b3b5f] shadow-xs' : 'bg-white text-gray-800 border-gray-200 hover:bg-gray-50'"
               >
                 <div class="font-bold text-xs">{{ opt.label }}</div>
                 <div class="text-[10px] opacity-80 mt-0.5">{{ opt.desc }}</div>
@@ -364,7 +364,7 @@ const submitStatusUpdate = async () => {
                 type="text" 
                 v-model="packingHoldReason" 
                 placeholder="e.g. Awaiting 18mm MDF arrival from central warehouse" 
-                class="w-full text-xs border border-gray-300 rounded-lg p-2 bg-white focus:ring-[#1a5c4c] focus:border-[#1a5c4c]" 
+                class="w-full text-xs border border-gray-300 rounded-lg p-2 bg-white focus:ring-[#1b3b5f] focus:border-[#1b3b5f]" 
               />
             </div>
           </div>
@@ -400,7 +400,7 @@ const submitStatusUpdate = async () => {
                 type="button"
                 @click="deliveryStatus = opt.value"
                 class="px-3 py-2 rounded-lg text-left border transition cursor-pointer"
-                :class="deliveryStatus === opt.value ? 'bg-[#1a5c4c] text-white border-[#1a5c4c] shadow-xs' : 'bg-white text-gray-800 border-gray-200 hover:bg-gray-50'"
+                :class="deliveryStatus === opt.value ? 'bg-[#1b3b5f] text-white border-[#1b3b5f] shadow-xs' : 'bg-white text-gray-800 border-gray-200 hover:bg-gray-50'"
               >
                 <div class="font-bold text-xs">{{ opt.label }}</div>
                 <div class="text-[10px] opacity-80 mt-0.5 truncate">{{ opt.desc }}</div>
@@ -416,7 +416,7 @@ const submitStatusUpdate = async () => {
                 type="text" 
                 v-model="driverName" 
                 placeholder="e.g. Handed over to Mr. Rajesh (Customer Tempo KA-09-EA-1234)" 
-                class="w-full text-xs border border-gray-300 rounded-lg p-2 bg-white focus:ring-[#1a5c4c] focus:border-[#1a5c4c]" 
+                class="w-full text-xs border border-gray-300 rounded-lg p-2 bg-white focus:ring-[#1b3b5f] focus:border-[#1b3b5f]" 
               />
             </div>
 
@@ -429,7 +429,7 @@ const submitStatusUpdate = async () => {
                 type="text" 
                 v-model="deliveryHoldReason" 
                 placeholder="e.g. Site gate closed / Customer requested tomorrow morning" 
-                class="w-full text-xs border border-gray-300 rounded-lg p-2 bg-white focus:ring-[#1a5c4c] focus:border-[#1a5c4c]" 
+                class="w-full text-xs border border-gray-300 rounded-lg p-2 bg-white focus:ring-[#1b3b5f] focus:border-[#1b3b5f]" 
               />
             </div>
           </div>
@@ -457,7 +457,7 @@ const submitStatusUpdate = async () => {
                 <input 
                   type="checkbox" 
                   v-model="autoCalculateOverall" 
-                  class="rounded text-[#1a5c4c] focus:ring-[#1a5c4c] w-4 h-4" 
+                  class="rounded text-[#1b3b5f] focus:ring-[#1b3b5f] w-4 h-4" 
                 />
                 <span>Auto-calculate overall status from departments (Recommended)</span>
               </label>
@@ -490,7 +490,7 @@ const submitStatusUpdate = async () => {
               rows="2" 
               v-model="notes" 
               placeholder="e.g. Manually marked packed and ready per telephone confirmation from warehouse foreman..."
-              class="w-full text-xs border border-gray-300 rounded-lg p-2.5 bg-white focus:ring-[#1a5c4c] focus:border-[#1a5c4c] resize-none"
+              class="w-full text-xs border border-gray-300 rounded-lg p-2.5 bg-white focus:ring-[#1b3b5f] focus:border-[#1b3b5f] resize-none"
             ></textarea>
             <p class="text-[10px] text-gray-400 mt-1">
               This note will be logged in the permanent order timeline alongside the admin user ID.

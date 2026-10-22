@@ -1,7 +1,7 @@
 <template>
   <div class="min-h-screen bg-gray-100 flex flex-col font-sans pb-16">
     <!-- Top Header with Silicon Marketing Branding -->
-    <header class="bg-[#1a5c4c] text-white shadow-md sticky top-0 z-30">
+    <header class="bg-[#1b3b5f] text-white shadow-md sticky top-0 z-30">
       <!-- Silicon Marketing Brand Ribbon -->
       <div class="px-4 py-1.5 bg-[#123e33] border-b border-emerald-800/60 flex items-center justify-between text-xs">
         <div class="flex items-center gap-2">
@@ -30,7 +30,7 @@
               {{ userInitials }}
             </div>
             <span 
-              class="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[#1a5c4c]"
+              class="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[#1b3b5f]"
               :class="activeTripOrderId ? 'bg-emerald-300 animate-ping' : 'bg-emerald-400'"
               title="Online"
             ></span>
@@ -71,7 +71,7 @@
       <button 
         @click="activeTab = 'DELIVERIES'; fetchAssignedDeliveries()" 
         class="flex-1 py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5"
-        :class="activeTab === 'DELIVERIES' ? 'bg-[#1a5c4c] text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
+        :class="activeTab === 'DELIVERIES' ? 'bg-[#1b3b5f] text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
       >
         <PackageCheck class="w-4 h-4" />
         Active Deliveries ({{ assignedOrders.length }})
@@ -80,7 +80,7 @@
       <button 
         @click="activeTab = 'HISTORY'; fetchTripHistory()" 
         class="flex-1 py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5"
-        :class="activeTab === 'HISTORY' ? 'bg-[#1a5c4c] text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
+        :class="activeTab === 'HISTORY' ? 'bg-[#1b3b5f] text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
       >
         <History class="w-4 h-4" />
         My Trips & Payouts
@@ -218,7 +218,7 @@
           <div class="flex items-start justify-between border-b border-gray-100 pb-3">
             <div>
               <div class="flex items-center gap-2">
-                <span class="text-xs font-black font-mono text-[#1a5c4c] bg-emerald-50 px-2.5 py-1 rounded-lg">
+                <span class="text-xs font-black font-mono text-[#1b3b5f] bg-emerald-50 px-2.5 py-1 rounded-lg">
                   {{ trip.tripNumber }}
                 </span>
                 <span 
@@ -234,7 +234,7 @@
             
             <div class="text-right">
               <span class="text-[10px] uppercase font-bold text-gray-400 block">Progress</span>
-              <span class="text-xs font-extrabold text-[#1a5c4c]">
+              <span class="text-xs font-extrabold text-[#1b3b5f]">
                 {{ trip.completedStops }}/{{ trip.totalStops }}
               </span>
             </div>
@@ -244,7 +244,7 @@
           <div v-if="trip.status === 'PLANNED' && !activeTripOrderId" class="p-3.5 bg-emerald-50/90 rounded-xl border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div class="min-w-0">
               <div class="flex items-center gap-1.5 text-xs font-black text-emerald-950">
-                <Truck class="w-4 h-4 text-[#1a5c4c]" />
+                <Truck class="w-4 h-4 text-[#1b3b5f]" />
                 <span>Multi-Stop Route Ready</span>
               </div>
               <p class="text-[11px] text-emerald-800 mt-0.5">
@@ -255,7 +255,7 @@
               v-if="trip.stops?.length > 0"
               type="button"
               @click="startStopDeliveryPrompt(trip, trip.stops.find((s: any) => s.status === 'PENDING') || trip.stops[0])"
-              class="px-4 py-2.5 bg-[#1a5c4c] hover:bg-[#134336] text-white text-xs font-black rounded-xl shadow-sm transition flex items-center justify-center gap-2 shrink-0 active:scale-95 cursor-pointer"
+              class="px-4 py-2.5 bg-[#1b3b5f] hover:bg-[#132c49] text-white text-xs font-black rounded-xl shadow-sm transition flex items-center justify-center gap-2 shrink-0 active:scale-95 cursor-pointer"
             >
               <Play class="w-4 h-4 fill-current" />
               <span>Start Delivery ➔</span>
@@ -301,13 +301,13 @@
                       class="w-6 h-6 rounded-full font-black text-xs flex items-center justify-center shrink-0 mt-0.5 shadow-xs"
                       :class="stop.status === 'DELIVERED' 
                         ? 'bg-gray-200 text-gray-600' 
-                        : (activeTripOrderId === stop.orderId ? 'bg-emerald-600 text-white animate-pulse' : 'bg-[#1a5c4c] text-white')"
+                        : (activeTripOrderId === stop.orderId ? 'bg-emerald-600 text-white animate-pulse' : 'bg-[#1b3b5f] text-white')"
                     >
                       {{ stop.stopSequence }}
                     </span>
                     <div class="min-w-0 flex-1">
                       <div class="flex items-center gap-2">
-                        <span class="font-mono font-bold text-xs text-[#1a5c4c] bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/60">
+                        <span class="font-mono font-bold text-xs text-[#1b3b5f] bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/60">
                           {{ stop.orderNumber }}
                         </span>
                       </div>
@@ -380,10 +380,10 @@
                     <a 
                       v-if="stop.customerPhone" 
                       :href="`tel:${stop.customerPhone}`"
-                      class="px-2.5 py-1.5 rounded-lg bg-emerald-100 hover:bg-emerald-200 text-[#1a5c4c] transition shrink-0 flex items-center gap-1 text-xs font-bold shadow-2xs"
+                      class="px-2.5 py-1.5 rounded-lg bg-emerald-100 hover:bg-emerald-200 text-[#1b3b5f] transition shrink-0 flex items-center gap-1 text-xs font-bold shadow-2xs"
                       title="Call Customer"
                     >
-                      <Phone class="w-3.5 h-3.5 text-[#1a5c4c]" />
+                      <Phone class="w-3.5 h-3.5 text-[#1b3b5f]" />
                       <span>Call</span>
                     </a>
                   </div>
@@ -405,7 +405,7 @@
                     <button 
                       type="button"
                       @click="deliverStopPrompt(trip, stop)"
-                      class="flex-1 py-2.5 bg-[#1a5c4c] hover:bg-[#134336] text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs transition cursor-pointer"
+                      class="flex-1 py-2.5 bg-[#1b3b5f] hover:bg-[#132c49] text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs transition cursor-pointer"
                     >
                       <CheckCircle2 class="w-3.5 h-3.5 text-white" />
                       Deliver Stop
@@ -426,7 +426,7 @@
                     v-else-if="!activeTripOrderId"
                     type="button"
                     @click="startStopDeliveryPrompt(trip, stop)"
-                    class="flex-1 py-2.5 bg-[#1a5c4c] hover:bg-[#134336] text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs transition cursor-pointer active:scale-95"
+                    class="flex-1 py-2.5 bg-[#1b3b5f] hover:bg-[#132c49] text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs transition cursor-pointer active:scale-95"
                   >
                     <Play class="w-3.5 h-3.5 fill-current text-white" />
                     <span>Start Delivery</span>
@@ -468,7 +468,7 @@
         </div>
         <div class="bg-white p-3 rounded-xl border border-gray-200 shadow-sm text-center">
           <span class="text-[10px] uppercase font-bold text-gray-400 block">Total Distance</span>
-          <span class="text-lg font-extrabold text-[#1a5c4c]">{{ historyData.summary?.totalKm || 0 }} <span class="text-xs font-normal">km</span></span>
+          <span class="text-lg font-extrabold text-[#1b3b5f]">{{ historyData.summary?.totalKm || 0 }} <span class="text-xs font-normal">km</span></span>
         </div>
         <div class="bg-white p-3 rounded-xl border border-gray-200 shadow-sm text-center">
           <span class="text-[10px] uppercase font-bold text-gray-400 block">Total Payout</span>
@@ -503,7 +503,7 @@
             <span class="font-medium text-gray-700">{{ trip.totalDistanceKm || 0 }} km • {{ trip.durationMinutes ?? 0 }} min</span>
             <button 
               @click="viewRouteSnapshot(trip)" 
-              class="text-[#1a5c4c] font-bold hover:underline flex items-center gap-1"
+              class="text-[#1b3b5f] font-bold hover:underline flex items-center gap-1"
             >
               <MapPin class="w-3 h-3" />
               Route
@@ -516,7 +516,7 @@
     <!-- Silicon Marketing Footer Branding -->
     <footer class="mt-8 mb-4 text-center text-xs text-gray-400 space-y-1">
       <div class="flex items-center justify-center gap-1.5 text-gray-500 font-semibold text-[11px] tracking-wider uppercase">
-        <div class="w-4 h-4 rounded bg-[#1a5c4c] text-white text-[9px] font-black flex items-center justify-center">
+        <div class="w-4 h-4 rounded bg-[#1b3b5f] text-white text-[9px] font-black flex items-center justify-center">
           SM
         </div>
         <span>Silicon Marketing</span>
@@ -585,7 +585,7 @@
     <!-- Route Snapshot Modal -->
     <div v-if="selectedSnapshotTrip" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
       <div class="bg-white w-full max-w-md rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
-        <div class="p-4 bg-[#1a5c4c] text-white flex items-center justify-between">
+        <div class="p-4 bg-[#1b3b5f] text-white flex items-center justify-between">
           <div>
             <h3 class="text-sm font-bold">Trip Route Snapshot</h3>
             <p class="text-xs text-white/80">{{ selectedSnapshotTrip.orderNumber }} • {{ selectedSnapshotTrip.customerName }}</p>
@@ -666,7 +666,7 @@
             v-if="nextDeliveryStop && currentTripContext"
             type="button"
             @click="showNextDeliveryModal = false; startStopDeliveryPrompt(currentTripContext, nextDeliveryStop)"
-            class="w-full py-3 bg-[#1a5c4c] hover:bg-[#134336] text-white rounded-xl text-xs font-extrabold shadow-sm transition flex items-center justify-center gap-2 cursor-pointer active:scale-98"
+            class="w-full py-3 bg-[#1b3b5f] hover:bg-[#132c49] text-white rounded-xl text-xs font-extrabold shadow-sm transition flex items-center justify-center gap-2 cursor-pointer active:scale-98"
           >
             <Play class="w-4 h-4 fill-current" />
             <span>Start Delivery to {{ nextDeliveryStop.customerName }} ➔</span>

@@ -4,7 +4,7 @@
     <header class="bg-[#1a1a1a] text-white px-4 py-3.5 shadow-md sticky top-0 z-30">
       <div class="max-w-2xl mx-auto flex items-center justify-between">
         <div class="flex items-center gap-3">
-          <div class="w-9 h-9 rounded-xl bg-[#1a5c4c] flex items-center justify-center font-extrabold text-white text-sm shadow-inner tracking-wider">
+          <div class="w-9 h-9 rounded-xl bg-[#1b3b5f] flex items-center justify-center font-extrabold text-white text-sm shadow-inner tracking-wider">
             SM
           </div>
           <div>
@@ -27,7 +27,7 @@
     <main class="flex-1 max-w-2xl mx-auto w-full p-4 sm:p-6 space-y-6 pb-28">
       <!-- Loading State -->
       <div v-if="isLoading" class="py-20 text-center text-gray-400">
-        <Loader2 class="w-10 h-10 animate-spin mx-auto mb-3 text-[#1a5c4c]" />
+        <Loader2 class="w-10 h-10 animate-spin mx-auto mb-3 text-[#1b3b5f]" />
         <p class="text-sm font-medium">Connecting to tracking server...</p>
       </div>
 
@@ -43,7 +43,7 @@
         <!-- Order Header Card -->
         <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-200 flex items-start justify-between">
           <div>
-            <span class="text-xs font-bold font-mono text-[#1a5c4c] bg-emerald-50 px-2 py-0.5 rounded">
+            <span class="text-xs font-bold font-mono text-[#1b3b5f] bg-emerald-50 px-2 py-0.5 rounded">
               Order #{{ trackingData.orderNumber }}
             </span>
             <h2 class="text-lg font-bold text-gray-900 mt-1">{{ trackingData.customerName }}</h2>
@@ -52,7 +52,7 @@
 
           <div class="text-right">
             <span class="text-[10px] uppercase font-bold text-gray-400 block">Status</span>
-            <span class="text-xs font-extrabold text-[#1a5c4c]">{{ trackingData.overallStatus }}</span>
+            <span class="text-xs font-extrabold text-[#1b3b5f]">{{ trackingData.overallStatus }}</span>
           </div>
         </div>
 
@@ -81,7 +81,7 @@
                 <!-- Driver Info Bar -->
                 <div class="p-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between gap-3">
                   <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-full bg-[#1a5c4c] text-white flex items-center justify-center font-bold">
+                    <div class="w-10 h-10 rounded-full bg-[#1b3b5f] text-white flex items-center justify-center font-bold">
                       {{ trackingData.driverName?.charAt(0) || 'D' }}
                     </div>
                     <div>
@@ -209,7 +209,7 @@
             <div v-else class="space-y-4">
               <div class="bg-white border border-gray-200 rounded-2xl p-6 text-center space-y-3 shadow-xs">
                 <div class="w-12 h-12 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center mx-auto">
-                  <Clock class="w-6 h-6 text-[#1a5c4c]" />
+                  <Clock class="w-6 h-6 text-[#1b3b5f]" />
                 </div>
                 <div>
                   <h2 class="text-base font-bold text-gray-900">Order Confirmed & Preparing</h2>
@@ -227,16 +227,16 @@
           <h3 class="text-xs font-bold text-gray-700 uppercase tracking-wider">Shipment Progress</h3>
           <div class="grid grid-cols-4 gap-2 text-center text-[10px]">
             <div class="space-y-1.5">
-              <div class="h-2 rounded-full" :class="stepIndex >= 1 ? 'bg-[#1a5c4c]' : 'bg-gray-200'"></div>
-              <span class="font-bold block" :class="stepIndex >= 1 ? 'text-[#1a5c4c]' : 'text-gray-400'">Confirmed</span>
+              <div class="h-2 rounded-full" :class="stepIndex >= 1 ? 'bg-[#1b3b5f]' : 'bg-gray-200'"></div>
+              <span class="font-bold block" :class="stepIndex >= 1 ? 'text-[#1b3b5f]' : 'text-gray-400'">Confirmed</span>
             </div>
             <div class="space-y-1.5">
-              <div class="h-2 rounded-full" :class="stepIndex >= 2 ? 'bg-[#1a5c4c]' : 'bg-gray-200'"></div>
-              <span class="font-bold block" :class="stepIndex >= 2 ? 'text-[#1a5c4c]' : 'text-gray-400'">Packed</span>
+              <div class="h-2 rounded-full" :class="stepIndex >= 2 ? 'bg-[#1b3b5f]' : 'bg-gray-200'"></div>
+              <span class="font-bold block" :class="stepIndex >= 2 ? 'text-[#1b3b5f]' : 'text-gray-400'">Packed</span>
             </div>
             <div class="space-y-1.5">
-              <div class="h-2 rounded-full" :class="stepIndex >= 3 ? (trackingData.deliveryStatus === 'ON_HOLD' ? 'bg-amber-500' : 'bg-[#1a5c4c]') : 'bg-gray-200'"></div>
-              <span class="font-bold block" :class="stepIndex >= 3 ? (trackingData.deliveryStatus === 'ON_HOLD' ? 'text-amber-600' : 'text-[#1a5c4c]') : 'text-gray-400'">
+              <div class="h-2 rounded-full" :class="stepIndex >= 3 ? (trackingData.deliveryStatus === 'ON_HOLD' ? 'bg-amber-500' : 'bg-[#1b3b5f]') : 'bg-gray-200'"></div>
+              <span class="font-bold block" :class="stepIndex >= 3 ? (trackingData.deliveryStatus === 'ON_HOLD' ? 'text-amber-600' : 'text-[#1b3b5f]') : 'text-gray-400'">
                 {{ trackingData.deliveryStatus === 'ON_HOLD' ? 'Paused' : (trackingData.deliveryStatus === 'DISPATCHED' ? 'En Route' : 'Assigned') }}
               </span>
             </div>
@@ -260,7 +260,7 @@
         <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-200 space-y-3">
           <div class="flex items-center justify-between border-b border-gray-100 pb-2">
             <span class="text-xs font-bold text-gray-800 flex items-center gap-1.5">
-              <Box class="w-4 h-4 text-[#1a5c4c]" />
+              <Box class="w-4 h-4 text-[#1b3b5f]" />
               Shipment Contents ({{ trackingData.items?.length || 0 }})
             </span>
           </div>
@@ -281,7 +281,7 @@
         <!-- Support Footer -->
         <div class="text-center text-xs text-gray-400 py-3 space-y-1">
           <p class="font-medium text-gray-500">Silicon Marketing OMS • Live Tracking System</p>
-          <p>Need support? Contact us at <a href="tel:+919876543210" class="text-[#1a5c4c] font-semibold underline">+91 98765 43210</a></p>
+          <p>Need support? Contact us at <a href="tel:+919876543210" class="text-[#1b3b5f] font-semibold underline">+91 98765 43210</a></p>
         </div>
       </div>
     </main>

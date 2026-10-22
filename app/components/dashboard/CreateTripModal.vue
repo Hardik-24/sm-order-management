@@ -5,7 +5,7 @@
         <!-- Header -->
         <div class="px-4 sm:px-8 py-4 sm:py-6 bg-[#1a1a1a] text-white flex items-center justify-between border-b border-white/10 shrink-0">
           <div class="flex items-center gap-3 sm:gap-4 min-w-0">
-            <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-[#1a5c4c] flex items-center justify-center text-white shadow-md shrink-0">
+            <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-[#1b3b5f] flex items-center justify-center text-white shadow-md shrink-0">
               <Truck class="w-5 h-5 sm:w-6 sm:h-6 text-emerald-100" />
             </div>
             <div class="space-y-0.5 sm:space-y-1 min-w-0">
@@ -13,7 +13,7 @@
                 <h3 class="font-bold text-base sm:text-xl text-[#e8e0d4] tracking-tight">
                   Create Delivery Trip Manifest
                 </h3>
-                <span class="text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full bg-[#1a5c4c] text-emerald-100 border border-emerald-400/30">
+                <span class="text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full bg-[#1b3b5f] text-emerald-100 border border-emerald-400/30">
                   {{ stops.length }} Stop{{ stops.length === 1 ? '' : 's' }}
                 </span>
               </div>
@@ -37,7 +37,7 @@
           <div class="bg-white p-5 rounded-xl border border-[#e5e2dc] shadow-xs space-y-4">
             <div class="flex items-center justify-between border-b border-gray-100 pb-2.5">
               <h4 class="font-bold text-gray-900 flex items-center gap-2 text-xs uppercase tracking-wider text-gray-500">
-                <UserCheck class="w-4 h-4 text-[#1a5c4c]" />
+                <UserCheck class="w-4 h-4 text-[#1b3b5f]" />
                 1. Driver & Vehicle Assignment
               </h4>
               <span class="text-[11px] text-gray-400">Required</span>
@@ -63,7 +63,7 @@
                   v-model="form.vehicleNumber"
                   type="text"
                   placeholder="e.g. KA-09-EA-1234 (Tata Ace)"
-                  class="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-xs font-semibold text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#1a5c4c]/20 focus:border-[#1a5c4c]"
+                  class="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-xs font-semibold text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f]"
                 />
               </div>
             </div>
@@ -74,7 +74,7 @@
                 v-model="form.notes"
                 type="text"
                 placeholder="e.g. Route through Ring Road first, urgent site delivery"
-                class="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-xs text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#1a5c4c]/20 focus:border-[#1a5c4c]"
+                class="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-xs text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f]"
               />
             </div>
           </div>
@@ -83,13 +83,13 @@
           <div class="bg-white p-5 rounded-xl border border-[#e5e2dc] shadow-xs space-y-4">
             <div class="flex items-center justify-between border-b border-gray-100 pb-2.5">
               <h4 class="font-bold text-gray-900 flex items-center gap-2 text-xs uppercase tracking-wider text-gray-500">
-                <MapPin class="w-4 h-4 text-[#1a5c4c]" />
+                <MapPin class="w-4 h-4 text-[#1b3b5f]" />
                 2. Delivery Sequence & Customer Addresses
               </h4>
               <button
                 type="button"
                 @click="showOrderPicker = !showOrderPicker"
-                class="text-xs font-bold text-[#1a5c4c] hover:text-[#134336] flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition border border-emerald-200/60 cursor-pointer"
+                class="text-xs font-bold text-[#1b3b5f] hover:text-[#132c49] flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition border border-emerald-200/60 cursor-pointer"
               >
                 <Minus v-if="showOrderPicker" class="w-3.5 h-3.5" />
                 <Plus v-else class="w-3.5 h-3.5" />
@@ -113,7 +113,7 @@
                   v-model="pickerSearch"
                   type="text"
                   placeholder="Search by order ID (e.g. SO-2026), customer name, company, or phone..."
-                  class="w-full pl-9 pr-8 py-2 bg-white border border-emerald-200/90 rounded-lg text-xs font-medium text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1a5c4c]/20 focus:border-[#1a5c4c] transition shadow-2xs"
+                  class="w-full pl-9 pr-8 py-2 bg-white border border-emerald-200/90 rounded-lg text-xs font-medium text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f] transition shadow-2xs"
                 />
                 <button
                   v-if="pickerSearch"
@@ -136,7 +136,7 @@
                 <button
                   type="button"
                   @click="pickerSearch = ''"
-                  class="text-[11px] text-[#1a5c4c] hover:underline font-bold cursor-pointer"
+                  class="text-[11px] text-[#1b3b5f] hover:underline font-bold cursor-pointer"
                 >
                   Clear search filter
                 </button>
@@ -170,7 +170,7 @@
                     class="px-2.5 py-1 text-xs font-bold rounded-lg transition shrink-0 cursor-pointer"
                     :class="isOrderAlreadyInTrip(order.id)
                       ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                      : 'bg-[#1a5c4c] text-white hover:bg-[#134336]'"
+                      : 'bg-[#1b3b5f] text-white hover:bg-[#132c49]'"
                   >
                     {{ isOrderAlreadyInTrip(order.id) ? 'Added' : '+ Add' }}
                   </button>
@@ -195,7 +195,7 @@
                 <!-- Top Row: Sequence Badge, Order info, Reorder and Remove buttons -->
                 <div class="flex items-center justify-between gap-2 border-b border-gray-100 pb-2.5">
                   <div class="flex items-center gap-2.5 min-w-0">
-                    <span class="w-6 h-6 rounded-full bg-[#1a5c4c] text-white font-extrabold text-xs flex items-center justify-center shrink-0">
+                    <span class="w-6 h-6 rounded-full bg-[#1b3b5f] text-white font-extrabold text-xs flex items-center justify-center shrink-0">
                       {{ sIdx + 1 }}
                     </span>
                     <div class="min-w-0">
@@ -263,7 +263,7 @@
                       v-model="stop.addressLine"
                       type="text"
                       placeholder="Street address, site name, area..."
-                      class="w-full px-2.5 py-1.5 bg-white border border-gray-300 rounded-lg text-xs text-gray-800 focus:outline-none focus:border-[#1a5c4c]"
+                      class="w-full px-2.5 py-1.5 bg-white border border-gray-300 rounded-lg text-xs text-gray-800 focus:outline-none focus:border-[#1b3b5f]"
                     />
                   </div>
                 </div>
@@ -295,7 +295,7 @@
                       ? 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
                       : 'bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-500 shadow-xs'"
                   >
-                    <MapPin class="w-3.5 h-3.5" :class="hasValidPin(stop) ? 'text-[#1a5c4c]' : 'text-white'" />
+                    <MapPin class="w-3.5 h-3.5" :class="hasValidPin(stop) ? 'text-[#1b3b5f]' : 'text-white'" />
                     <span>{{ hasValidPin(stop) ? 'Edit Pin' : 'Set Pin Now' }}</span>
                   </button>
                 </div>
@@ -332,7 +332,7 @@
               type="button"
               @click="submitTrip"
               :disabled="isSubmitting || stops.length === 0 || !form.driverId || hasPinErrors"
-              class="flex-1 sm:flex-initial text-center justify-center px-5 py-2.5 bg-[#1a5c4c] hover:bg-[#134336] text-white font-bold rounded-lg text-xs shadow-sm transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              class="flex-1 sm:flex-initial text-center justify-center px-5 py-2.5 bg-[#1b3b5f] hover:bg-[#132c49] text-white font-bold rounded-lg text-xs shadow-sm transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
               <Loader2 v-if="isSubmitting" class="w-3.5 h-3.5 animate-spin" />
               <Truck v-else class="w-3.5 h-3.5" />

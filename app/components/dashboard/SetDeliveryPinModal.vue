@@ -5,13 +5,13 @@
         <!-- Header -->
         <div class="px-4 sm:px-6 py-3.5 sm:py-4 bg-[#1a1a1a] text-white flex items-center justify-between shrink-0">
           <div class="flex items-center gap-2.5 sm:gap-3 min-w-0">
-            <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[#1a5c4c] flex items-center justify-center text-white shrink-0">
+            <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[#1b3b5f] flex items-center justify-center text-white shrink-0">
               <MapPin class="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div class="min-w-0">
               <h3 class="font-bold text-sm sm:text-base text-[#e8e0d4] flex items-center gap-2">
                 <span>Set Delivery Pin</span>
-                <span v-if="addressLabel" class="text-[10px] sm:text-xs font-semibold px-2 py-0.5 rounded-full bg-[#1a5c4c] text-emerald-100 border border-emerald-400/30 truncate">
+                <span v-if="addressLabel" class="text-[10px] sm:text-xs font-semibold px-2 py-0.5 rounded-full bg-[#1b3b5f] text-emerald-100 border border-emerald-400/30 truncate">
                   {{ addressLabel }}
                 </span>
               </h3>
@@ -74,7 +74,7 @@
               @keydown.enter.prevent="searchLocation(false)"
               type="text"
               placeholder="e.g. Hebbal Industrial Area, Vontikoppal, Ring Road, or factory name..."
-              class="w-full pl-9 pr-24 py-2.5 text-xs bg-white border border-gray-300 rounded-xl focus:border-[#1a5c4c] focus:ring-2 focus:ring-[#1a5c4c]/20 focus:outline-none shadow-sm transition-all"
+              class="w-full pl-9 pr-24 py-2.5 text-xs bg-white border border-gray-300 rounded-xl focus:border-[#1b3b5f] focus:ring-2 focus:ring-[#1b3b5f]/20 focus:outline-none shadow-sm transition-all"
             />
             <div class="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
               <button
@@ -89,7 +89,7 @@
                 type="button"
                 @click="searchLocation(false)"
                 :disabled="isSearching || !searchQuery.trim()"
-                class="px-3 py-1 bg-[#1a5c4c] text-white hover:bg-[#14483b] disabled:opacity-40 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1 shadow-sm"
+                class="px-3 py-1 bg-[#1b3b5f] text-white hover:bg-[#132c49] disabled:opacity-40 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1 shadow-sm"
               >
                 <Loader2 v-if="isSearching" class="w-3.5 h-3.5 animate-spin" />
                 <span>{{ isSearching ? 'Searching...' : 'Find' }}</span>
@@ -112,11 +112,11 @@
               @click="selectSearchResult(res)"
               class="w-full text-left px-3 py-2.5 text-xs hover:bg-emerald-50 rounded-lg flex items-start gap-2.5 transition-colors group cursor-pointer"
             >
-              <div class="w-6 h-6 rounded-full bg-emerald-100 text-[#1a5c4c] flex items-center justify-center shrink-0 mt-0.5 group-hover:bg-[#1a5c4c] group-hover:text-white transition-colors">
+              <div class="w-6 h-6 rounded-full bg-emerald-100 text-[#1b3b5f] flex items-center justify-center shrink-0 mt-0.5 group-hover:bg-[#1b3b5f] group-hover:text-white transition-colors">
                 <MapPin class="w-3.5 h-3.5" />
               </div>
               <div class="min-w-0 flex-1">
-                <p class="font-bold text-gray-900 group-hover:text-[#1a5c4c] transition-colors truncate">{{ res.title }}</p>
+                <p class="font-bold text-gray-900 group-hover:text-[#1b3b5f] transition-colors truncate">{{ res.title }}</p>
                 <p class="text-[11px] text-gray-500 truncate mt-0.5">{{ res.subtitle }}</p>
               </div>
             </button>
@@ -146,7 +146,7 @@
               v-model.number="currentLat" 
               type="number" 
               step="0.0001" 
-              class="w-full px-3 py-2 text-xs font-mono bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-[#1a5c4c] focus:outline-none"
+              class="w-full px-3 py-2 text-xs font-mono bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-[#1b3b5f] focus:outline-none"
               placeholder="12.3080"
               @input="onCoordInput"
             />
@@ -157,7 +157,7 @@
               v-model.number="currentLng" 
               type="number" 
               step="0.0001" 
-              class="w-full px-3 py-2 text-xs font-mono bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-[#1a5c4c] focus:outline-none"
+              class="w-full px-3 py-2 text-xs font-mono bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-[#1b3b5f] focus:outline-none"
               placeholder="76.6420"
               @input="onCoordInput"
             />
@@ -167,7 +167,7 @@
             <input 
               v-model="landmark" 
               type="text" 
-              class="w-full px-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-[#1a5c4c] focus:outline-none"
+              class="w-full px-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-[#1b3b5f] focus:outline-none"
               placeholder="e.g. Opposite Gate #2"
             />
           </div>
@@ -209,7 +209,7 @@
             type="button" 
             @click="savePin" 
             :disabled="!currentLat || !currentLng || isSaving || isDeleting"
-            class="flex-1 sm:flex-initial text-center justify-center px-5 py-2 text-xs font-bold text-white bg-[#1a5c4c] hover:bg-[#14483b] disabled:opacity-50 disabled:cursor-not-allowed rounded-xl shadow-sm transition-all flex items-center gap-2 cursor-pointer"
+            class="flex-1 sm:flex-initial text-center justify-center px-5 py-2 text-xs font-bold text-white bg-[#1b3b5f] hover:bg-[#132c49] disabled:opacity-50 disabled:cursor-not-allowed rounded-xl shadow-sm transition-all flex items-center gap-2 cursor-pointer"
           >
             <Loader2 v-if="isSaving" class="w-4 h-4 animate-spin" />
             <span>{{ isSaving ? 'Saving...' : 'Save Delivery Pin' }}</span>

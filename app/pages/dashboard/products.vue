@@ -57,7 +57,7 @@
                     @click="selectedCategory = null; isCategoryFilterOpen = false"
                     class="px-3 py-2 text-sm rounded cursor-pointer flex items-center justify-between"
                     :class="{
-                      'text-[#1a5c4c] font-medium bg-[#1a5c4c]/5': selectedCategory === null,
+                      'text-[#1b3b5f] font-medium bg-[#1b3b5f]/5': selectedCategory === null,
                       'bg-gray-100': focusedCategoryIndex === 0 && selectedCategory !== null,
                       'hover:bg-gray-100': focusedCategoryIndex !== 0
                     }"
@@ -72,7 +72,7 @@
                     @click="selectedCategory = category.id; isCategoryFilterOpen = false"
                     class="px-3 py-2 text-sm rounded cursor-pointer flex items-center justify-between"
                     :class="{
-                      'text-[#1a5c4c] font-medium bg-[#1a5c4c]/5': selectedCategory === category.id,
+                      'text-[#1b3b5f] font-medium bg-[#1b3b5f]/5': selectedCategory === category.id,
                       'bg-gray-100': focusedCategoryIndex === index + 1 && selectedCategory !== category.id,
                       'hover:bg-gray-100': focusedCategoryIndex !== index + 1
                     }"
@@ -92,7 +92,7 @@
             <button 
               v-if="user?.role === 'ADMIN'"
               @click="openCategoryModal()"
-              class="flex items-center justify-center gap-1.5 bg-white border border-[#1a5c4c] text-[#1a5c4c] px-2.5 sm:px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors shadow-sm whitespace-nowrap text-xs sm:text-sm font-medium shrink-0"
+              class="flex items-center justify-center gap-1.5 bg-white border border-[#1b3b5f] text-[#1b3b5f] px-2.5 sm:px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors shadow-sm whitespace-nowrap text-xs sm:text-sm font-medium shrink-0"
             >
               <Plus class="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span>Category</span>
@@ -100,7 +100,7 @@
             <button 
               v-if="user?.role === 'ADMIN'"
               @click="openProductModal()"
-              class="flex items-center justify-center gap-1.5 bg-[#1a5c4c] text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-[#134336] transition-colors shadow-sm whitespace-nowrap text-xs sm:text-sm font-medium shrink-0"
+              class="flex items-center justify-center gap-1.5 bg-[#1b3b5f] text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-[#132c49] transition-colors shadow-sm whitespace-nowrap text-xs sm:text-sm font-medium shrink-0"
             >
               <Plus class="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span>Product</span>
@@ -162,10 +162,10 @@
                     @click="openProductDetail(product)"
                     class="hover:bg-teal-50/40 cursor-pointer transition-colors group"
                   >
-                <td class="px-5 py-3 font-mono text-xs text-gray-600 w-36 min-w-[130px] max-w-[160px] group-hover:text-[#1a5c4c]">
+                <td class="px-5 py-3 font-mono text-xs text-gray-600 w-36 min-w-[130px] max-w-[160px] group-hover:text-[#1b3b5f]">
                   <span class="break-words line-clamp-2" :title="product.sku">{{ product.sku }}</span>
                 </td>
-                <td class="px-5 py-3 font-medium text-[#1a1a1a] min-w-[220px] group-hover:text-[#1a5c4c] transition-colors">
+                <td class="px-5 py-3 font-medium text-[#1a1a1a] min-w-[220px] group-hover:text-[#1b3b5f] transition-colors">
                   <span class="break-words line-clamp-2" :title="product.name">{{ product.name }}</span>
                 </td>
                 <td class="px-5 py-3 text-gray-600 w-40 min-w-[140px]">
@@ -206,7 +206,7 @@
                     <button @click="product.isEditingStock = true; product.editStock = (product.stock !== undefined ? product.stock : product.stockQuantity)" class="text-gray-400 hover:text-gray-700 p-1" title="Quick Edit Stock">
                       <Package class="w-3.5 h-3.5" />
                     </button>
-                    <button @click="openProductModal(product)" class="text-[#1a5c4c] hover:text-[#4ecdc4] p-1" title="Edit Product">
+                    <button @click="openProductModal(product)" class="text-[#1b3b5f] hover:text-[#4ecdc4] p-1" title="Edit Product">
                       <Edit2 class="w-4 h-4" />
                     </button>
                   </div>
@@ -303,7 +303,7 @@
                   <div v-if="canEditProducts" @click.stop class="flex items-center gap-0.5">
                     <button 
                       @click="openProductModal(product)" 
-                      class="text-[#1a5c4c] hover:bg-[#1a5c4c]/10 p-1.5 rounded-lg transition-colors" 
+                      class="text-[#1b3b5f] hover:bg-[#1b3b5f]/10 p-1.5 rounded-lg transition-colors" 
                       title="Edit Product"
                     >
                       <Edit2 class="w-3.5 h-3.5" />
@@ -370,7 +370,7 @@
         <!-- Header -->
         <div class="px-6 py-4 bg-gray-50/80 border-b border-gray-100 flex items-center justify-between">
           <div class="flex items-center gap-2 text-sm font-semibold text-gray-700">
-            <Package class="w-4 h-4 text-[#1a5c4c]" />
+            <Package class="w-4 h-4 text-[#1b3b5f]" />
             Product Details
           </div>
           <button 
@@ -490,7 +490,7 @@
             <button 
               v-if="canEditProducts"
               @click="editProductFromDetail()"
-              class="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-[#1a5c4c] bg-[#1a5c4c]/10 hover:bg-[#1a5c4c]/20 rounded-lg transition-colors"
+              class="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-[#1b3b5f] bg-[#1b3b5f]/10 hover:bg-[#1b3b5f]/20 rounded-lg transition-colors"
             >
               <Edit2 class="w-3.5 h-3.5" />
               Edit Product
@@ -597,7 +597,7 @@
               
               <div class="space-y-1 flex items-center pt-2">
                 <label class="flex items-center gap-2 cursor-pointer">
-                  <input v-model="productForm.isActive" type="checkbox" class="w-4 h-4 text-[#1a5c4c] border-gray-300 rounded focus:ring-[#4ecdc4]" />
+                  <input v-model="productForm.isActive" type="checkbox" class="w-4 h-4 text-[#1b3b5f] border-gray-300 rounded focus:ring-[#4ecdc4]" />
                   <span class="text-sm text-gray-700">Active Product</span>
                 </label>
               </div>
@@ -617,7 +617,7 @@
               type="submit"
               form="productForm"
               :disabled="isSavingProduct"
-              class="flex-1 sm:flex-initial text-center justify-center px-5 py-2 bg-[#1a5c4c] text-white rounded-lg text-sm font-medium hover:bg-[#14483b] transition-colors flex items-center gap-2 shadow-sm disabled:opacity-50 cursor-pointer"
+              class="flex-1 sm:flex-initial text-center justify-center px-5 py-2 bg-[#1b3b5f] text-white rounded-lg text-sm font-medium hover:bg-[#132c49] transition-colors flex items-center gap-2 shadow-sm disabled:opacity-50 cursor-pointer"
             >
               <Loader2 v-if="isSavingProduct" class="w-4 h-4 animate-spin" />
               <span>{{ isSavingProduct ? 'Saving...' : (editingProduct ? 'Save Changes' : 'Create Product') }}</span>
@@ -671,7 +671,7 @@
               type="submit"
               form="categoryForm"
               :disabled="isSavingCategory"
-              class="flex-1 sm:flex-initial text-center justify-center px-5 py-2 bg-[#1a5c4c] text-white rounded-lg text-sm font-medium hover:bg-[#14483b] transition-colors flex items-center gap-2 shadow-sm disabled:opacity-50 cursor-pointer"
+              class="flex-1 sm:flex-initial text-center justify-center px-5 py-2 bg-[#1b3b5f] text-white rounded-lg text-sm font-medium hover:bg-[#132c49] transition-colors flex items-center gap-2 shadow-sm disabled:opacity-50 cursor-pointer"
             >
               <Loader2 v-if="isSavingCategory" class="w-4 h-4 animate-spin" />
               <span>{{ isSavingCategory ? 'Saving...' : 'Create Category' }}</span>

@@ -91,7 +91,7 @@ export function getStatusColor(status: string): string {
     COMPLETED: 'bg-emerald-50 text-emerald-700 border-emerald-200',
     DELIVERED: 'bg-emerald-50 text-emerald-700 border-emerald-200',
     PAID: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    READY: 'bg-[#e6f4f1] text-[#1a5c4c] border-[#1a5c4c]/30',
+    READY: 'bg-[#e8eff7] text-[#1b3b5f] border-[#1b3b5f]/30',
 
     // 🔵 ACTIVE / IN PROGRESS
     IN_PROGRESS: 'bg-blue-50 text-blue-700 border-blue-200',
@@ -159,7 +159,7 @@ export function getOverallColor(order: any): string {
   if (billing === 'ERROR' || packing === 'SHORTAGE') return 'bg-red-100 text-red-700 border-red-200'
   
   // Ready: Use the brand's mint/teal to indicate a 'Greenlight' for the delivery driver
-  if (billing === 'GENERATED' && packing === 'PACKED') return 'bg-[#e6f4f1] text-[#1a5c4c] border-[#1a5c4c]/30'
+  if (billing === 'GENERATED' && packing === 'PACKED') return 'bg-[#e8eff7] text-[#1b3b5f] border-[#1b3b5f]/30'
   
   // Awaiting one department: Warning/Amber indicating a bottleneck
   if (billing === 'GENERATED' && packing !== 'PACKED') return 'bg-amber-100 text-amber-700 border-amber-200'

@@ -4,7 +4,7 @@
     <button
       type="button"
       @click="isOpen = !isOpen"
-      class="inline-flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-2xs sm:shadow-xs hover:bg-gray-50 hover:border-gray-300 transition-all focus:outline-none focus:ring-1 focus:ring-[#1a5c4c] shrink-0 whitespace-nowrap"
+      class="inline-flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-2xs sm:shadow-xs hover:bg-gray-50 hover:border-gray-300 transition-all focus:outline-none focus:ring-1 focus:ring-[#1b3b5f] shrink-0 whitespace-nowrap"
     >
       <span>{{ currentLabel }}</span>
       <ChevronDown class="w-3.5 h-3.5 text-gray-400 transition-transform duration-150 shrink-0" :class="{ 'rotate-180': isOpen }" />
@@ -32,10 +32,10 @@
           type="button"
           @click="select(opt.value)"
           class="w-full text-left px-2.5 py-1.5 text-xs rounded-lg flex items-center justify-between transition-colors"
-          :class="modelValue === opt.value ? 'bg-[#1a5c4c]/10 text-[#1a5c4c] font-bold' : 'text-gray-700 hover:bg-gray-100 font-medium'"
+          :class="modelValue === opt.value ? 'bg-[#1b3b5f]/10 text-[#1b3b5f] font-bold' : 'text-gray-700 hover:bg-gray-100 font-medium'"
         >
           <span>{{ opt.label }}</span>
-          <Check v-if="modelValue === opt.value" class="w-3.5 h-3.5 text-[#1a5c4c] shrink-0 ml-1.5" />
+          <Check v-if="modelValue === opt.value" class="w-3.5 h-3.5 text-[#1b3b5f] shrink-0 ml-1.5" />
         </button>
       </div>
     </transition>

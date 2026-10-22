@@ -9,7 +9,7 @@
       <div class="flex items-center justify-between p-4 sm:p-5 border-b border-gray-100 bg-gray-50">
         <div>
           <h2 class="text-base sm:text-lg font-bold text-gray-900 flex items-center gap-2">
-            <FileText class="w-5 h-5 text-[#1a5c4c]" />
+            <FileText class="w-5 h-5 text-[#1b3b5f]" />
             <span>Generate & Reconcile Invoice</span>
           </h2>
           <p class="text-xs sm:text-sm text-gray-500 mt-0.5 sm:mt-1">Order: {{ order?.orderNumber || 'Loading...' }}</p>
@@ -22,7 +22,7 @@
       <!-- Content -->
       <div class="flex-1 overflow-y-auto p-4 sm:p-6">
         <div v-if="pending" class="flex justify-center py-12">
-          <Loader2 class="w-8 h-8 animate-spin text-[#1a5c4c]" />
+          <Loader2 class="w-8 h-8 animate-spin text-[#1b3b5f]" />
         </div>
         
         <div v-else-if="order" class="space-y-6">
@@ -46,7 +46,7 @@
                     type="text" 
                     v-model="invoiceNumber" 
                     placeholder="e.g. INV-2026-001 or Busy No." 
-                    class="w-full text-xs font-mono font-bold border border-gray-300 rounded-lg p-2 bg-white focus:ring-[#1a5c4c] focus:border-[#1a5c4c]" 
+                    class="w-full text-xs font-mono font-bold border border-gray-300 rounded-lg p-2 bg-white focus:ring-[#1b3b5f] focus:border-[#1b3b5f]" 
                   />
                 </div>
                 <div>
@@ -54,7 +54,7 @@
                   <input 
                     type="date" 
                     v-model="invoiceDate" 
-                    class="w-full text-xs font-medium border border-gray-300 rounded-lg p-2 bg-white focus:ring-[#1a5c4c] focus:border-[#1a5c4c]" 
+                    class="w-full text-xs font-medium border border-gray-300 rounded-lg p-2 bg-white focus:ring-[#1b3b5f] focus:border-[#1b3b5f]" 
                   />
                 </div>
               </div>
@@ -64,7 +64,7 @@
                   type="text" 
                   v-model="invoicePdfUrl" 
                   placeholder="https://... or invoice document reference" 
-                  class="w-full text-xs border border-gray-300 rounded-lg p-2 bg-white focus:ring-[#1a5c4c] focus:border-[#1a5c4c]" 
+                  class="w-full text-xs border border-gray-300 rounded-lg p-2 bg-white focus:ring-[#1b3b5f] focus:border-[#1b3b5f]" 
                 />
               </div>
             </div>
@@ -83,7 +83,7 @@
                 <button 
                   type="button" 
                   @click="emit('openSplit', order.id); closeModal()"
-                  class="text-xs font-bold text-[#1a5c4c] hover:underline flex items-center gap-1 cursor-pointer"
+                  class="text-xs font-bold text-[#1b3b5f] hover:underline flex items-center gap-1 cursor-pointer"
                   title="Split unbilled or shortage quantities into a separate order"
                 >
                   <GitFork class="w-3.5 h-3.5" />
@@ -163,14 +163,14 @@
                         type="number" 
                         min="0"
                         v-model.number="item.billedQuantity" 
-                        class="w-16 text-center font-bold text-xs border border-gray-300 rounded p-1.5 focus:ring-[#1a5c4c] bg-white"
+                        class="w-16 text-center font-bold text-xs border border-gray-300 rounded p-1.5 focus:ring-[#1b3b5f] bg-white"
                       />
                     </td>
                     <td class="px-3 py-2.5 text-right">
                       <input 
                         type="number" 
                         v-model.number="item.unitPrice" 
-                        class="w-24 text-right text-xs border border-gray-300 rounded p-1.5 focus:ring-[#1a5c4c] bg-white font-medium"
+                        class="w-24 text-right text-xs border border-gray-300 rounded p-1.5 focus:ring-[#1b3b5f] bg-white font-medium"
                       />
                       <div v-if="item.isTaxInclusive" class="text-[9px] font-semibold text-blue-600 mt-0.5">
                         (Tax Incl.)
@@ -181,7 +181,7 @@
                         type="number" 
                         v-model.number="item.discount" 
                         min="0" max="100"
-                        class="w-16 text-right text-xs border border-gray-300 rounded p-1.5 focus:ring-[#1a5c4c] bg-white"
+                        class="w-16 text-right text-xs border border-gray-300 rounded p-1.5 focus:ring-[#1b3b5f] bg-white"
                       />
                     </td>
                     <td class="px-3 py-2.5 text-right">
@@ -189,7 +189,7 @@
                         type="number" 
                         v-model.number="item.taxRate" 
                         min="0" max="100"
-                        class="w-16 text-right text-xs border border-gray-300 rounded p-1.5 focus:ring-[#1a5c4c] bg-white"
+                        class="w-16 text-right text-xs border border-gray-300 rounded p-1.5 focus:ring-[#1b3b5f] bg-white"
                       />
                     </td>
                     <td class="px-3 py-2.5 text-right font-medium text-gray-600">₹{{ calculateTax(item).toFixed(2) }}</td>
@@ -217,7 +217,7 @@
               </div>
               <div class="pt-3 border-t border-gray-200 flex justify-between items-center">
                 <span class="text-xs font-bold text-gray-900 uppercase tracking-widest">Final Bill Amount</span>
-                <span class="text-xl font-black text-[#1a5c4c]">₹{{ grandTotal.toFixed(2) }}</span>
+                <span class="text-xl font-black text-[#1b3b5f]">₹{{ grandTotal.toFixed(2) }}</span>
               </div>
             </div>
           </div>
@@ -233,7 +233,7 @@
         <button 
           @click="confirmGenerate" 
           :disabled="isGenerating || !invoiceNumber.trim()"
-          class="w-full sm:w-auto justify-center flex items-center gap-2 px-6 py-2 bg-[#1a5c4c] text-white text-xs font-bold rounded-lg hover:bg-[#134336] transition-colors disabled:opacity-50 shadow-sm cursor-pointer"
+          class="w-full sm:w-auto justify-center flex items-center gap-2 px-6 py-2 bg-[#1b3b5f] text-white text-xs font-bold rounded-lg hover:bg-[#132c49] transition-colors disabled:opacity-50 shadow-sm cursor-pointer"
         >
           <Loader2 v-if="isGenerating" class="w-4 h-4 animate-spin" />
           <Check v-else class="w-4 h-4" />

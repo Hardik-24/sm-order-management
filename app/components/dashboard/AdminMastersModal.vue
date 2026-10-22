@@ -10,7 +10,7 @@
         <!-- Modal Header -->
         <div class="px-4 sm:px-6 py-3.5 sm:py-4 border-b border-gray-200 flex items-center justify-between bg-white shrink-0">
           <div class="flex items-center gap-2.5 sm:gap-3 min-w-0">
-            <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#1a5c4c]/10 text-[#1a5c4c] flex items-center justify-center border border-[#1a5c4c]/20 shrink-0">
+            <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#1b3b5f]/10 text-[#1b3b5f] flex items-center justify-center border border-[#1b3b5f]/20 shrink-0">
               <Database class="w-5 h-5" />
             </div>
             <div class="min-w-0">
@@ -36,14 +36,14 @@
               @click="activeTab = tab.id"
               class="py-3 px-1 border-b-2 font-medium text-xs sm:text-sm transition-all flex items-center gap-1.5 sm:gap-2 whitespace-nowrap"
               :class="activeTab === tab.id 
-                ? 'border-[#1a5c4c] text-[#1a5c4c] font-bold' 
+                ? 'border-[#1b3b5f] text-[#1b3b5f] font-bold' 
                 : 'border-transparent text-gray-500 hover:text-gray-900 hover:border-gray-300'"
             >
               <component :is="tab.icon" class="w-4 h-4" />
               <span>{{ tab.label }}</span>
               <span 
                 class="text-[10px] font-bold px-1.5 py-0.2 rounded-full"
-                :class="activeTab === tab.id ? 'bg-[#1a5c4c]/15 text-[#1a5c4c]' : 'bg-gray-200 text-gray-600'"
+                :class="activeTab === tab.id ? 'bg-[#1b3b5f]/15 text-[#1b3b5f]' : 'bg-gray-200 text-gray-600'"
               >
                 {{ tab.count }}
               </span>
@@ -66,13 +66,13 @@
                   v-model="searchQuery" 
                   type="text" 
                   placeholder="Search payment terms..." 
-                  class="w-full pl-9 pr-3 py-1.5 text-xs bg-white border border-gray-200 rounded-lg focus:border-[#1a5c4c] focus:ring-1 focus:ring-[#1a5c4c] outline-none"
+                  class="w-full pl-9 pr-3 py-1.5 text-xs bg-white border border-gray-200 rounded-lg focus:border-[#1b3b5f] focus:ring-1 focus:ring-[#1b3b5f] outline-none"
                 />
               </div>
 
               <button
                 @click="openOptionModal('PAYMENT_TERMS')"
-                class="flex items-center gap-1.5 bg-[#1a5c4c] text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-[#134336] transition-colors shrink-0 shadow-xs"
+                class="flex items-center gap-1.5 bg-[#1b3b5f] text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-[#132c49] transition-colors shrink-0 shadow-xs"
               >
                 <Plus class="w-3.5 h-3.5" />
                 <span>Add Payment Term</span>
@@ -109,7 +109,7 @@
                         type="button" 
                         class="text-[10px] font-bold px-2 py-0.5 rounded-full border transition-all cursor-pointer"
                         :class="item.isDefault 
-                          ? 'bg-emerald-50 text-[#1a5c4c] border-emerald-300 shadow-2xs font-bold' 
+                          ? 'bg-emerald-50 text-[#1b3b5f] border-emerald-300 shadow-2xs font-bold' 
                           : 'bg-gray-50 text-gray-400 border-gray-200 hover:text-gray-600 hover:border-gray-300'"
                         :title="item.isDefault ? 'Default selection for new orders' : 'Click to set as default'"
                       >
@@ -132,7 +132,7 @@
                       <div class="flex items-center justify-end gap-1">
                         <button 
                           @click="openOptionModal('PAYMENT_TERMS', item)" 
-                          class="p-1 text-gray-400 hover:text-[#1a5c4c] rounded hover:bg-gray-100 transition-colors"
+                          class="p-1 text-gray-400 hover:text-[#1b3b5f] rounded hover:bg-gray-100 transition-colors"
                           title="Edit"
                         >
                           <Edit2 class="w-3.5 h-3.5" />
@@ -164,13 +164,13 @@
                   v-model="searchQuery" 
                   type="text" 
                   placeholder="Search units (e.g. SHEET, PIECE)..." 
-                  class="w-full pl-9 pr-3 py-1.5 text-xs bg-white border border-gray-200 rounded-lg focus:border-[#1a5c4c] focus:ring-1 focus:ring-[#1a5c4c] outline-none"
+                  class="w-full pl-9 pr-3 py-1.5 text-xs bg-white border border-gray-200 rounded-lg focus:border-[#1b3b5f] focus:ring-1 focus:ring-[#1b3b5f] outline-none"
                 />
               </div>
 
               <button
                 @click="openOptionModal('PRODUCT_UOM')"
-                class="flex items-center gap-1.5 bg-[#1a5c4c] text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-[#134336] transition-colors shrink-0 shadow-xs"
+                class="flex items-center gap-1.5 bg-[#1b3b5f] text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-[#132c49] transition-colors shrink-0 shadow-xs"
               >
                 <Plus class="w-3.5 h-3.5" />
                 <span>Add Unit of Measure</span>
@@ -207,7 +207,7 @@
                         type="button" 
                         class="text-[10px] font-bold px-2 py-0.5 rounded-full border transition-all cursor-pointer"
                         :class="item.isDefault 
-                          ? 'bg-emerald-50 text-[#1a5c4c] border-emerald-300 shadow-2xs font-bold' 
+                          ? 'bg-emerald-50 text-[#1b3b5f] border-emerald-300 shadow-2xs font-bold' 
                           : 'bg-gray-50 text-gray-400 border-gray-200 hover:text-gray-600 hover:border-gray-300'"
                       >
                         {{ item.isDefault ? '★ Default' : 'Set Default' }}
@@ -229,7 +229,7 @@
                       <div class="flex items-center justify-end gap-1">
                         <button 
                           @click="openOptionModal('PRODUCT_UOM', item)" 
-                          class="p-1 text-gray-400 hover:text-[#1a5c4c] rounded hover:bg-gray-100 transition-colors"
+                          class="p-1 text-gray-400 hover:text-[#1b3b5f] rounded hover:bg-gray-100 transition-colors"
                           title="Edit"
                         >
                           <Edit2 class="w-3.5 h-3.5" />
@@ -261,7 +261,7 @@
                   v-model="searchQuery" 
                   type="text" 
                   placeholder="Search among 132 categories (e.g. Hafele, MDF, Blum)..." 
-                  class="w-full pl-9 pr-3 py-1.5 text-xs bg-white border border-gray-200 rounded-lg focus:border-[#1a5c4c] focus:ring-1 focus:ring-[#1a5c4c] outline-none"
+                  class="w-full pl-9 pr-3 py-1.5 text-xs bg-white border border-gray-200 rounded-lg focus:border-[#1b3b5f] focus:ring-1 focus:ring-[#1b3b5f] outline-none"
                 />
               </div>
 
@@ -271,7 +271,7 @@
                 </span>
                 <button
                   @click="openCategoryModal()"
-                  class="flex items-center gap-1.5 bg-[#1a5c4c] text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-[#134336] transition-colors shrink-0 shadow-xs"
+                  class="flex items-center gap-1.5 bg-[#1b3b5f] text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-[#132c49] transition-colors shrink-0 shadow-xs"
                 >
                   <Plus class="w-3.5 h-3.5" />
                   <span>Add Product Group</span>
@@ -298,7 +298,7 @@
                   <tr v-for="cat in filteredCategories" :key="cat.id" class="hover:bg-gray-50/60 transition-colors">
                     <td class="px-4 py-3 font-semibold text-gray-900">
                       <div class="flex items-center gap-2">
-                        <Folder class="w-3.5 h-3.5 text-[#1a5c4c] shrink-0" />
+                        <Folder class="w-3.5 h-3.5 text-[#1b3b5f] shrink-0" />
                         <span class="truncate">{{ cat.name }}</span>
                       </div>
                     </td>
@@ -329,7 +329,7 @@
                       <div class="flex items-center justify-end gap-1">
                         <button 
                           @click="openCategoryModal(cat)" 
-                          class="p-1 text-gray-400 hover:text-[#1a5c4c] rounded hover:bg-gray-100 transition-colors"
+                          class="p-1 text-gray-400 hover:text-[#1b3b5f] rounded hover:bg-gray-100 transition-colors"
                           title="Edit Category Name"
                         >
                           <Edit2 class="w-3.5 h-3.5" />
@@ -385,7 +385,7 @@
               type="text" 
               required
               :placeholder="optionGroup === 'PAYMENT_TERMS' ? 'e.g. 90 Days' : 'e.g. BUNDLE'" 
-              class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#1a5c4c] focus:ring-1 focus:ring-[#1a5c4c] outline-none"
+              class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#1b3b5f] focus:ring-1 focus:ring-[#1b3b5f] outline-none"
             />
           </div>
 
@@ -396,7 +396,7 @@
               type="text" 
               required
               :placeholder="optionGroup === 'PAYMENT_TERMS' ? 'e.g. 90 Days' : 'e.g. BUNDLE'" 
-              class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#1a5c4c] focus:ring-1 focus:ring-[#1a5c4c] outline-none font-mono"
+              class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#1b3b5f] focus:ring-1 focus:ring-[#1b3b5f] outline-none font-mono"
             />
           </div>
 
@@ -406,7 +406,7 @@
               v-model="optionForm.description" 
               type="text" 
               placeholder="e.g. Special credit terms for project contractors" 
-              class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#1a5c4c] focus:ring-1 focus:ring-[#1a5c4c] outline-none"
+              class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#1b3b5f] focus:ring-1 focus:ring-[#1b3b5f] outline-none"
             />
           </div>
 
@@ -415,7 +415,7 @@
               id="optDefault" 
               v-model="optionForm.isDefault" 
               type="checkbox" 
-              class="rounded border-gray-300 text-[#1a5c4c] focus:ring-[#1a5c4c]"
+              class="rounded border-gray-300 text-[#1b3b5f] focus:ring-[#1b3b5f]"
             />
             <label for="optDefault" class="text-xs font-medium text-gray-700 cursor-pointer select-none">
               Make this the default preselected option
@@ -428,7 +428,7 @@
           <button 
             @click="saveOption" 
             :disabled="isSubmittingOption || !optionForm.label || !optionForm.value" 
-            class="px-4 py-1.5 text-xs bg-[#1a5c4c] text-white rounded-lg font-medium hover:bg-[#134336] disabled:opacity-50 flex items-center gap-1.5"
+            class="px-4 py-1.5 text-xs bg-[#1b3b5f] text-white rounded-lg font-medium hover:bg-[#132c49] disabled:opacity-50 flex items-center gap-1.5"
           >
             <Loader2 v-if="isSubmittingOption" class="w-3.5 h-3.5 animate-spin" />
             <span>{{ isSubmittingOption ? 'Saving...' : 'Save Option' }}</span>
@@ -460,7 +460,7 @@
               type="text" 
               required
               placeholder="e.g. VENEER BOARDS or HAFELE SLIDING" 
-              class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#1a5c4c] focus:ring-1 focus:ring-[#1a5c4c] outline-none"
+              class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#1b3b5f] focus:ring-1 focus:ring-[#1b3b5f] outline-none"
             />
           </div>
 
@@ -470,7 +470,7 @@
               v-model="categoryForm.description" 
               rows="2"
               placeholder="Brief details about products in this category..." 
-              class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#1a5c4c] focus:ring-1 focus:ring-[#1a5c4c] outline-none"
+              class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#1b3b5f] focus:ring-1 focus:ring-[#1b3b5f] outline-none"
             ></textarea>
           </div>
         </div>
@@ -480,7 +480,7 @@
           <button 
             @click="saveCategory" 
             :disabled="isSubmittingCategory || !categoryForm.name" 
-            class="px-4 py-1.5 text-xs bg-[#1a5c4c] text-white rounded-lg font-medium hover:bg-[#134336] disabled:opacity-50 flex items-center gap-1.5"
+            class="px-4 py-1.5 text-xs bg-[#1b3b5f] text-white rounded-lg font-medium hover:bg-[#132c49] disabled:opacity-50 flex items-center gap-1.5"
           >
             <Loader2 v-if="isSubmittingCategory" class="w-3.5 h-3.5 animate-spin" />
             <span>{{ isSubmittingCategory ? 'Saving...' : 'Save Category' }}</span>

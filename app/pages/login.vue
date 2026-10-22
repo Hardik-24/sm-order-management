@@ -121,17 +121,17 @@ const handleLogin = async () => {
           <!-- Options -->
           <div class="flex items-center justify-between text-xs mt-2">
             <label class="flex items-center gap-2 cursor-pointer">
-              <input v-model="rememberMe" type="checkbox" class="rounded border-gray-300 text-[#1a5c4c] focus:ring-[#4ecdc4]" />
+              <input v-model="rememberMe" type="checkbox" class="rounded border-gray-300 text-[#1b3b5f] focus:ring-[#4ecdc4]" />
               <span class="text-gray-600">Remember me</span>
             </label>
-            <a href="#" class="text-[#1a5c4c] hover:underline font-medium">Forgot password?</a>
+            <a href="#" class="text-[#1b3b5f] hover:underline font-medium">Forgot password?</a>
           </div>
 
           <!-- Submit -->
           <button 
             type="submit"
             :disabled="isLoading"
-            class="w-full flex items-center justify-center gap-2 bg-[#1a5c4c] text-white uppercase tracking-[0.1em] text-xs py-3 rounded-lg hover:bg-[#1a5c4c]/90 transition-colors disabled:opacity-70 font-medium mt-6"
+            class="w-full flex items-center justify-center gap-2 bg-[#1b3b5f] text-white uppercase tracking-[0.1em] text-xs py-3 rounded-lg hover:bg-[#1b3b5f]/90 transition-colors disabled:opacity-70 font-medium mt-6"
           >
             <template v-if="isLoading">
               <Loader2 class="w-4 h-4 animate-spin" />

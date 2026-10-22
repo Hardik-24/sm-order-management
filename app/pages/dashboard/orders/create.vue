@@ -226,7 +226,7 @@ const getPrivilegeColor = (tier: string) => {
 
               <!-- Customer Manager Pill -->
               <div v-if="selectedCustomer.customerManager" class="flex items-center gap-1.5 text-gray-600 bg-white px-2.5 py-1 rounded border border-gray-200">
-                <UserCheck class="w-3.5 h-3.5 text-[#1a5c4c]" />
+                <UserCheck class="w-3.5 h-3.5 text-[#1b3b5f]" />
                 <span>Account Manager: <strong class="text-gray-900">{{ selectedCustomer.customerManager.name }}</strong></span>
               </div>
             </div>
@@ -254,7 +254,7 @@ const getPrivilegeColor = (tier: string) => {
           <div class="md:col-span-2">
             <label class="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-2 flex items-center justify-between">
               <span>Transport & Delivery Vehicle *</span>
-              <span class="text-[11px] font-semibold" :class="form.vehicleMode === 'OUR_FLEET' ? 'text-[#1a5c4c]' : 'text-amber-700'">
+              <span class="text-[11px] font-semibold" :class="form.vehicleMode === 'OUR_FLEET' ? 'text-[#1b3b5f]' : 'text-amber-700'">
                 {{ form.vehicleMode === 'OUR_FLEET' ? '✓ Company Fleet Dispatch' : '🚗 Party Transport (Direct Handover)' }}
               </span>
             </label>
@@ -265,19 +265,19 @@ const getPrivilegeColor = (tier: string) => {
                 @click="form.vehicleMode = 'OUR_FLEET'"
                 class="p-4 rounded-xl border-2 cursor-pointer transition-all flex items-start gap-3 select-none"
                 :class="form.vehicleMode === 'OUR_FLEET'
-                  ? 'border-[#1a5c4c] bg-emerald-50/50 shadow-xs ring-1 ring-[#1a5c4c]/20'
+                  ? 'border-[#1b3b5f] bg-emerald-50/50 shadow-xs ring-1 ring-[#1b3b5f]/20'
                   : 'border-gray-200 bg-white hover:border-gray-300 text-gray-600'"
               >
                 <div
                   class="p-2.5 rounded-lg shrink-0 mt-0.5 transition-colors"
-                  :class="form.vehicleMode === 'OUR_FLEET' ? 'bg-[#1a5c4c] text-white shadow-xs' : 'bg-gray-100 text-gray-500'"
+                  :class="form.vehicleMode === 'OUR_FLEET' ? 'bg-[#1b3b5f] text-white shadow-xs' : 'bg-gray-100 text-gray-500'"
                 >
                   <Truck class="w-4 h-4" />
                 </div>
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center justify-between">
                     <span class="text-xs font-bold text-gray-900">Our Vehicle (Company Fleet)</span>
-                    <span v-if="form.vehicleMode === 'OUR_FLEET'" class="w-2 h-2 rounded-full bg-[#1a5c4c]"></span>
+                    <span v-if="form.vehicleMode === 'OUR_FLEET'" class="w-2 h-2 rounded-full bg-[#1b3b5f]"></span>
                   </div>
                   <p class="text-[11px] text-gray-500 mt-1 leading-relaxed">
                     Bundled into fleet trips. Drivers assigned via OMS, tracked via GPS mobile app with multi-stop routes.
@@ -340,13 +340,13 @@ const getPrivilegeColor = (tier: string) => {
           <!-- Delivery Address Textarea -->
           <div class="md:col-span-2">
             <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Delivery Address (Site / Destination) *</label>
-            <textarea v-model="form.deliveryAddress" rows="2" class="w-full text-sm border border-gray-300 rounded-lg p-3 focus:ring-[#1a5c4c] focus:border-[#1a5c4c] resize-none" required placeholder="Enter delivery address, godown name, or landmark..."></textarea>
+            <textarea v-model="form.deliveryAddress" rows="2" class="w-full text-sm border border-gray-300 rounded-lg p-3 focus:ring-[#1b3b5f] focus:border-[#1b3b5f] resize-none" required placeholder="Enter delivery address, godown name, or landmark..."></textarea>
           </div>
 
           <!-- Internal Order Notes -->
           <div class="md:col-span-2">
             <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Internal Order Instructions / Dispatch Notes</label>
-            <textarea v-model="form.notes" rows="2" class="w-full text-sm border border-gray-300 rounded-lg p-3 focus:ring-[#1a5c4c] focus:border-[#1a5c4c] resize-none" placeholder="e.g. Call client 30 mins before arrival, deliver only between 10am-2pm, verify site unloading clearance..."></textarea>
+            <textarea v-model="form.notes" rows="2" class="w-full text-sm border border-gray-300 rounded-lg p-3 focus:ring-[#1b3b5f] focus:border-[#1b3b5f] resize-none" placeholder="e.g. Call client 30 mins before arrival, deliver only between 10am-2pm, verify site unloading clearance..."></textarea>
           </div>
         </div>
       </div>
@@ -355,7 +355,7 @@ const getPrivilegeColor = (tier: string) => {
       <div class="bg-white p-4 sm:p-6 rounded-xl border border-gray-200 shadow-sm space-y-4">
         <div class="flex items-center justify-between border-b border-gray-100 pb-2 mb-4">
           <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider">Order Items</h3>
-          <button type="button" @click="addItem" class="text-xs font-bold text-[#1a5c4c] flex items-center gap-1 hover:underline cursor-pointer">
+          <button type="button" @click="addItem" class="text-xs font-bold text-[#1b3b5f] flex items-center gap-1 hover:underline cursor-pointer">
             <Plus class="w-3.5 h-3.5" /> Add Product
           </button>
         </div>
@@ -382,7 +382,7 @@ const getPrivilegeColor = (tier: string) => {
                 <!-- Qty -->
                 <div class="col-span-3 md:w-24">
                   <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1.5">Qty *</label>
-                  <input type="number" v-model.number="item.quantity" min="1" required class="w-full border border-gray-300 rounded-lg shadow-xs p-2 bg-white text-sm font-bold focus:ring-[#1a5c4c] focus:border-[#1a5c4c]" />
+                  <input type="number" v-model.number="item.quantity" min="1" required class="w-full border border-gray-300 rounded-lg shadow-xs p-2 bg-white text-sm font-bold focus:ring-[#1b3b5f] focus:border-[#1b3b5f]" />
                 </div>
 
                 <!-- Unit Price -->
@@ -393,7 +393,7 @@ const getPrivilegeColor = (tier: string) => {
                   </label>
                   <div class="relative flex items-center">
                     <IndianRupee class="absolute left-2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
-                    <input type="number" v-model.number="item.unitPrice" min="0" step="0.01" required class="w-full pl-6 border border-gray-300 rounded-lg shadow-xs p-2 bg-white text-sm font-bold focus:ring-[#1a5c4c] focus:border-[#1a5c4c]" />
+                    <input type="number" v-model.number="item.unitPrice" min="0" step="0.01" required class="w-full pl-6 border border-gray-300 rounded-lg shadow-xs p-2 bg-white text-sm font-bold focus:ring-[#1b3b5f] focus:border-[#1b3b5f]" />
                   </div>
                 </div>
 
@@ -418,13 +418,13 @@ const getPrivilegeColor = (tier: string) => {
             <div class="flex flex-wrap items-center gap-4 pt-2 border-t border-gray-200/60 text-xs">
               <!-- Tax Inclusive Toggle -->
               <label class="flex items-center gap-2 cursor-pointer select-none">
-                <input type="checkbox" v-model="item.isTaxInclusive" class="w-3.5 h-3.5 rounded text-[#1a5c4c] focus:ring-[#1a5c4c]" />
+                <input type="checkbox" v-model="item.isTaxInclusive" class="w-3.5 h-3.5 rounded text-[#1b3b5f] focus:ring-[#1b3b5f]" />
                 <span class="text-gray-700 font-medium">Tax Inclusive Rate</span>
               </label>
 
               <!-- Apply Last Price Checkbox -->
               <label class="flex items-center gap-2 cursor-pointer select-none">
-                <input type="checkbox" v-model="item.applyLastPrice" class="w-3.5 h-3.5 rounded text-[#1a5c4c] focus:ring-[#1a5c4c]" />
+                <input type="checkbox" v-model="item.applyLastPrice" class="w-3.5 h-3.5 rounded text-[#1b3b5f] focus:ring-[#1b3b5f]" />
                 <span class="text-gray-700 font-medium">Apply Last Price</span>
               </label>
 
@@ -434,7 +434,7 @@ const getPrivilegeColor = (tier: string) => {
                   type="text" 
                   v-model="item.itemNotes" 
                   placeholder="Optional item note: e.g. 10% rate agreed, custom edge-banding..."
-                  class="w-full px-2.5 py-1 text-xs border border-gray-300 rounded-lg bg-white focus:ring-1 focus:ring-[#1a5c4c]"
+                  class="w-full px-2.5 py-1 text-xs border border-gray-300 rounded-lg bg-white focus:ring-1 focus:ring-[#1b3b5f]"
                 />
               </div>
             </div>
@@ -448,7 +448,7 @@ const getPrivilegeColor = (tier: string) => {
         <div class="flex justify-end pt-4 border-t border-gray-100 mt-6">
           <div class="text-right">
             <span class="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1 block">Total Amount</span>
-            <p class="text-3xl font-bold text-[#1a5c4c]">{{ formatCurrency(totalAmount) }}</p>
+            <p class="text-3xl font-bold text-[#1b3b5f]">{{ formatCurrency(totalAmount) }}</p>
           </div>
         </div>
       </div>
@@ -458,7 +458,7 @@ const getPrivilegeColor = (tier: string) => {
         <NuxtLink to="/dashboard/orders" class="px-6 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors">
           Cancel
         </NuxtLink>
-        <button type="submit" :disabled="!form.items.length" class="px-6 py-2.5 bg-[#1a5c4c] text-white text-sm font-bold rounded-lg hover:bg-[#1a5c4c]/90 disabled:opacity-50 transition-colors shadow-sm">
+        <button type="submit" :disabled="!form.items.length" class="px-6 py-2.5 bg-[#1b3b5f] text-white text-sm font-bold rounded-lg hover:bg-[#1b3b5f]/90 disabled:opacity-50 transition-colors shadow-sm">
           Submit Order
         </button>
       </div>

@@ -261,7 +261,7 @@ const getItemsTotalQuantity = (order: Order) => {
               @input="e => { emit('update:search', (e.target as HTMLInputElement).value); emit('update:page', 1) }"
               type="text" 
               placeholder="Search orders, customers..."
-              class="block w-full pl-10 pr-9 py-2 border border-gray-300 rounded-lg text-sm bg-white placeholder:text-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1a5c4c]/20 focus:border-[#1a5c4c] transition-all shadow-sm"
+              class="block w-full pl-10 pr-9 py-2 border border-gray-300 rounded-lg text-sm bg-white placeholder:text-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f] transition-all shadow-sm"
             />
             <button 
               v-if="search"
@@ -275,7 +275,7 @@ const getItemsTotalQuantity = (order: Order) => {
           <NuxtLink 
             v-if="hasRole('ADMIN', 'SALES')" 
             to="/dashboard/orders/create"
-            class="px-4 py-2 bg-[#1a5c4c] text-white text-sm font-medium rounded-lg hover:bg-[#1a5c4c]/90 transition-colors shadow-sm whitespace-nowrap text-center"
+            class="px-4 py-2 bg-[#1b3b5f] text-white text-sm font-medium rounded-lg hover:bg-[#1b3b5f]/90 transition-colors shadow-sm whitespace-nowrap text-center"
           >
             + Create New Order
           </NuxtLink>
@@ -335,7 +335,7 @@ const getItemsTotalQuantity = (order: Order) => {
               <!-- 1. ORDER -->
               <td class="px-5 py-3.5 whitespace-nowrap">
                 <div class="flex items-center gap-1.5 flex-wrap">
-                  <span class="text-xs font-bold text-gray-900 group-hover:text-[#1a5c4c] transition-colors">
+                  <span class="text-xs font-bold text-gray-900 group-hover:text-[#1b3b5f] transition-colors">
                     {{ order.orderNumber }}
                   </span>
                   <span v-if="order.vehicleMode === 'PARTY_VEHICLE' && order.overallStatus !== 'CANCELLED'" class="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-50 text-amber-800 border border-amber-200" title="Customer Pickup / Party Vehicle">
@@ -448,7 +448,7 @@ const getItemsTotalQuantity = (order: Order) => {
                 <button 
                   type="button"
                   @click.stop="emit('select', order.id)"
-                  class="inline-flex items-center gap-1 text-xs font-semibold text-[#1a5c4c] bg-[#1a5c4c]/5 hover:bg-[#1a5c4c]/15 px-2.5 py-1.5 rounded-lg border border-[#1a5c4c]/20 group-hover:border-[#1a5c4c]/40 transition-all shadow-xs"
+                  class="inline-flex items-center gap-1 text-xs font-semibold text-[#1b3b5f] bg-[#1b3b5f]/5 hover:bg-[#1b3b5f]/15 px-2.5 py-1.5 rounded-lg border border-[#1b3b5f]/20 group-hover:border-[#1b3b5f]/40 transition-all shadow-xs"
                 >
                   <span>View</span>
                   <ArrowRight class="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />

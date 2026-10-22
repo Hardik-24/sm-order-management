@@ -110,7 +110,7 @@ const getTotalNos = (order: any) => {
           @input="e => emit('update:search', (e.target as HTMLInputElement).value)"
           type="text" 
           placeholder="Search order #, customer, invoice..." 
-          class="w-full pl-9 pr-8 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#1a5c4c]/20 focus:border-[#1a5c4c] transition-all"
+          class="w-full pl-9 pr-8 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f] transition-all"
         />
         <button 
           v-if="search" 
@@ -214,7 +214,7 @@ const getTotalNos = (order: any) => {
               <!-- 1. Order ID -->
               <td class="px-5 py-3.5 whitespace-nowrap">
                 <div class="flex items-center gap-1.5 flex-wrap">
-                  <span class="text-xs font-bold text-gray-900 group-hover:text-[#1a5c4c] transition-colors">
+                  <span class="text-xs font-bold text-gray-900 group-hover:text-[#1b3b5f] transition-colors">
                     {{ order.orderNumber }}
                   </span>
                   <span v-if="order.overallStatus === 'CANCELLED'" class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-bold bg-gray-200 !text-gray-600 border border-rose-500">
@@ -301,14 +301,14 @@ const getTotalNos = (order: any) => {
                     title="Split this order into multiple orders"
                     class="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-gray-700 bg-white hover:bg-gray-100 border border-gray-200 shadow-2xs transition-colors flex items-center justify-center gap-1 cursor-pointer whitespace-nowrap"
                   >
-                    <GitFork class="w-3.5 h-3.5 text-[#1a5c4c]" />
+                    <GitFork class="w-3.5 h-3.5 text-[#1b3b5f]" />
                     <span>Split</span>
                   </button>
 
                   <button 
                     v-if="order.billingStatus?.status === 'PENDING' && order.overallStatus !== 'CANCELLED'"
                     @click.stop="emit('generate-invoice', order.id)"
-                    class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#1a5c4c] text-white hover:bg-[#14473b] shadow-2xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap"
+                    class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#1b3b5f] text-white hover:bg-[#132c49] shadow-2xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap"
                   >
                     <IndianRupee class="w-3.5 h-3.5" />
                     <span>Generate Bill</span>
@@ -384,7 +384,7 @@ const getTotalNos = (order: any) => {
                 class="px-2 py-0.5 border border-gray-200 bg-white text-gray-700 text-[10px] font-semibold rounded hover:bg-gray-100 transition-colors flex items-center gap-1 cursor-pointer"
                 title="Split Order"
               >
-                <GitFork class="w-2.5 h-2.5 text-[#1a5c4c]" />
+                <GitFork class="w-2.5 h-2.5 text-[#1b3b5f]" />
                 <span>Split</span>
               </button>
 
@@ -422,7 +422,7 @@ const getTotalNos = (order: any) => {
               <button 
                 v-if="order.billingStatus?.status === 'PENDING' && order.overallStatus !== 'CANCELLED'"
                 @click.stop="emit('generate-invoice', order.id)"
-                class="px-2.5 py-1 bg-[#1a5c4c] text-white text-[11px] font-semibold rounded-md hover:bg-[#154a3d] active:scale-95 transition-all shadow-2xs flex items-center gap-1 cursor-pointer"
+                class="px-2.5 py-1 bg-[#1b3b5f] text-white text-[11px] font-semibold rounded-md hover:bg-[#132c49] active:scale-95 transition-all shadow-2xs flex items-center gap-1 cursor-pointer"
               >
                 <IndianRupee class="w-3 h-3" />
                 <span>Generate</span>

@@ -69,7 +69,7 @@
           <!-- Sharing Action Bar -->
           <div class="bg-white rounded-2xl border border-gray-200 p-4 sm:p-5 shadow-2xs space-y-3">
             <h4 class="text-xs font-bold uppercase tracking-wider text-gray-500 flex items-center gap-1.5">
-              <Share2 class="w-3.5 h-3.5 text-[#1a5c4c]" />
+              <Share2 class="w-3.5 h-3.5 text-[#1b3b5f]" />
               <span>Share & Export Options</span>
             </h4>
 
@@ -207,7 +207,7 @@
                   class="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-800 transition cursor-pointer disabled:opacity-30 border border-gray-300 flex items-center justify-center shadow-2xs"
                   title="Print Quotation"
                 >
-                  <Loader2 v-if="isExporting && exportAction === 'print'" class="w-4 h-4 animate-spin text-[#1a5c4c]" />
+                  <Loader2 v-if="isExporting && exportAction === 'print'" class="w-4 h-4 animate-spin text-[#1b3b5f]" />
                   <Printer v-else class="w-4 h-4 text-[#1b3b5f]" />
                 </button>
               </div>
@@ -240,7 +240,7 @@
                     <!-- Inner document padding -->
                     <div class="p-6 sm:p-8 space-y-6 text-gray-900">
                       <!-- Branded Quotation Card Header -->
-                      <div class="h-1.5 w-full bg-gradient-to-r from-[#1b3b5f] via-[#d92546] to-[#1a5c4c] rounded-full"></div>
+                      <div class="h-1.5 w-full bg-gradient-to-r from-[#1b3b5f] via-[#d92546] to-[#1b3b5f] rounded-full"></div>
                       <div class="flex items-center justify-between border-b border-gray-200 pb-5">
                         <img
                           :src="logoDataUri || '/images/logo-original.png'"
@@ -256,7 +256,7 @@
                             <span class="text-gray-400 font-medium">Date:</span>
                             <strong class="font-bold text-gray-800 ml-1">{{ formatDisplayDate(new Date()) }}</strong>
                           </div>
-                          <div class="inline-block text-[11px] text-[#1a5c4c] bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md font-bold mt-1">
+                          <div class="inline-block text-[11px] text-[#1b3b5f] bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md font-bold mt-1">
                             Valid for {{ validityDays || 7 }} days
                           </div>
                         </div>
@@ -324,7 +324,7 @@
                               </td>
                               <td class="py-2 px-2.5 text-right font-mono font-bold text-gray-700">₹{{ it.mrp.toLocaleString('en-IN') }}</td>
                               <td class="py-2 px-2 text-center font-bold text-gray-700">{{ it.uom }}</td>
-                              <td class="py-2 px-2.5 text-right font-mono font-black text-[#1a5c4c]">₹{{ calculateUnitRate(it).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</td>
+                              <td class="py-2 px-2.5 text-right font-mono font-black text-[#1b3b5f]">₹{{ calculateUnitRate(it).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</td>
                               <td class="py-2 px-2.5 text-right font-mono font-black text-gray-950 text-xs">₹{{ Math.round(calculateLineTotal(it)).toLocaleString('en-IN') }}</td>
                             </tr>
                           </tbody>
@@ -361,7 +361,7 @@
                             <span class="font-bold text-gray-700">Total MRP:</span>
                             <span class="font-mono font-bold text-gray-800">₹{{ totalMrp.toLocaleString('en-IN') }}</span>
                           </div>
-                          <div v-if="totalDiscountSaved > 0" class="flex justify-between text-[#1a5c4c] font-black bg-emerald-50 px-2 py-0.5 rounded">
+                          <div v-if="totalDiscountSaved > 0" class="flex justify-between text-[#1b3b5f] font-black bg-emerald-50 px-2 py-0.5 rounded">
                             <span>Total Discount:</span>
                             <span class="font-mono font-black">-₹{{ totalDiscountSaved.toLocaleString('en-IN') }}</span>
                           </div>
@@ -485,7 +485,7 @@
           <div class="bg-white rounded-2xl border border-gray-200 shadow-2xs p-4 sm:p-5 space-y-4">
             <div class="flex items-center justify-between border-b border-gray-100 pb-2.5">
               <h3 class="text-xs font-bold uppercase tracking-wider text-gray-600 flex items-center gap-2">
-                <User class="w-4 h-4 text-[#1a5c4c]" />
+                <User class="w-4 h-4 text-[#1b3b5f]" />
                 <span>1. Customer & Quotation Details</span>
               </h3>
               <span class="text-[11px] font-mono text-gray-400 font-bold">Quote ID: {{ quoteNumber }}</span>
@@ -499,7 +499,7 @@
                   v-model="customerName"
                   type="text"
                   placeholder="e.g. Rajesh Patel / Royal Interiors"
-                  class="w-full px-3 py-2 bg-gray-50/60 focus:bg-white border border-gray-200 rounded-xl text-xs font-semibold text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#1a5c4c]/20 focus:border-[#1a5c4c] transition"
+                  class="w-full px-3 py-2 bg-gray-50/60 focus:bg-white border border-gray-200 rounded-xl text-xs font-semibold text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f] transition"
                 />
               </div>
 
@@ -510,7 +510,7 @@
                   v-model="customerPlace"
                   type="text"
                   placeholder="e.g. Mysuru / Bangalore"
-                  class="w-full px-3 py-2 bg-gray-50/60 focus:bg-white border border-gray-200 rounded-xl text-xs font-semibold text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#1a5c4c]/20 focus:border-[#1a5c4c] transition"
+                  class="w-full px-3 py-2 bg-gray-50/60 focus:bg-white border border-gray-200 rounded-xl text-xs font-semibold text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f] transition"
                 />
               </div>
 
@@ -523,7 +523,7 @@
                     v-model="customerPhone"
                     type="tel"
                     placeholder="9876543210"
-                    class="w-full pl-9 pr-2 py-2 bg-gray-50/60 focus:bg-white border border-gray-200 rounded-xl text-xs font-semibold text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#1a5c4c]/20 focus:border-[#1a5c4c] transition"
+                    class="w-full pl-9 pr-2 py-2 bg-gray-50/60 focus:bg-white border border-gray-200 rounded-xl text-xs font-semibold text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f] transition"
                   />
                 </div>
               </div>
@@ -538,7 +538,7 @@
                     min="1"
                     max="365"
                     placeholder="7"
-                    class="w-full px-3 py-2 pr-10 bg-gray-50/60 focus:bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#1a5c4c]/20 focus:border-[#1a5c4c] transition"
+                    class="w-full px-3 py-2 pr-10 bg-gray-50/60 focus:bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f] transition"
                   />
                   <span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs font-semibold select-none">
                     days
@@ -552,11 +552,11 @@
           <div class="relative z-30">
             <div class="bg-white rounded-2xl border-2 border-emerald-600/30 shadow-sm p-3 sm:p-3.5 transition-all focus-within:border-emerald-600 focus-within:ring-4 focus-within:ring-emerald-600/10">
               <div class="flex items-center gap-3">
-                <div class="w-9 h-9 rounded-xl bg-[#1a5c4c] text-white flex items-center justify-center shrink-0 shadow-xs">
+                <div class="w-9 h-9 rounded-xl bg-[#1b3b5f] text-white flex items-center justify-center shrink-0 shadow-xs">
                   <Search class="w-4 h-4" />
                 </div>
                 <div class="flex-1 min-w-0">
-                  <label class="block text-[10px] font-bold uppercase tracking-widest text-[#1a5c4c] mb-0.5">
+                  <label class="block text-[10px] font-bold uppercase tracking-widest text-[#1b3b5f] mb-0.5">
                     Quick Item Finder (Search Google Sheet Hardware Catalog)
                   </label>
                   <input
@@ -603,7 +603,7 @@
                 @click="addItemToQuote(item)"
                 @mouseenter="highlightedIndex = idx"
                 class="p-3 sm:p-3.5 flex items-center justify-between gap-3 cursor-pointer transition-colors"
-                :class="highlightedIndex === idx ? 'bg-emerald-50/70 border-l-4 border-l-[#1a5c4c]' : 'hover:bg-gray-50/80'"
+                :class="highlightedIndex === idx ? 'bg-emerald-50/70 border-l-4 border-l-[#1b3b5f]' : 'hover:bg-gray-50/80'"
               >
                 <div class="flex items-center gap-2.5 min-w-0">
                   <span class="w-6 h-6 rounded-md bg-gray-100 text-gray-700 font-mono text-[11px] font-bold flex items-center justify-center shrink-0">
@@ -630,7 +630,7 @@
                 <div class="text-right shrink-0">
                   <div class="flex items-baseline gap-1.5 justify-end">
                     <span class="text-xs text-gray-400 line-through">₹{{ item.mrp.toLocaleString('en-IN') }}</span>
-                    <span class="text-xs sm:text-sm font-black text-[#1a5c4c]">
+                    <span class="text-xs sm:text-sm font-black text-[#1b3b5f]">
                       ₹{{ Math.round(item.mrp * (1 - item.defaultDiscount / 100)).toLocaleString('en-IN') }}
                     </span>
                   </div>
@@ -647,7 +647,7 @@
           <div class="bg-white rounded-2xl border border-gray-200 shadow-2xs overflow-hidden">
             <div class="px-4 sm:px-5 py-3 border-b border-gray-200 bg-gray-50/80 flex items-center justify-between">
               <div class="flex items-center gap-2">
-                <span class="w-6 h-6 rounded-md bg-[#1a5c4c]/10 text-[#1a5c4c] flex items-center justify-center font-bold text-xs">
+                <span class="w-6 h-6 rounded-md bg-[#1b3b5f]/10 text-[#1b3b5f] flex items-center justify-center font-bold text-xs">
                   {{ quoteItems.length }}
                 </span>
                 <h4 class="text-xs font-bold text-gray-900">Line Items in Quotation</h4>
@@ -659,7 +659,7 @@
                   @click="addCustomItem"
                   class="px-2.5 py-1 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg text-xs font-bold transition flex items-center gap-1 shadow-2xs cursor-pointer"
                 >
-                  <Plus class="w-3 h-3 text-[#1a5c4c]" />
+                  <Plus class="w-3 h-3 text-[#1b3b5f]" />
                   <span>Custom Item</span>
                 </button>
                 <button
@@ -881,7 +881,7 @@
           <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-start">
             <div class="md:col-span-7 bg-white rounded-2xl border border-gray-200 p-4 space-y-3.5">
               <h4 class="text-xs font-bold uppercase tracking-wider text-gray-500 flex items-center gap-1.5">
-                <Settings class="w-3.5 h-3.5 text-[#1a5c4c]" />
+                <Settings class="w-3.5 h-3.5 text-[#1b3b5f]" />
                 <span>GST Mode & Commercial Notes</span>
               </h4>
 
@@ -891,7 +891,7 @@
                 <div class="grid grid-cols-3 gap-2">
                   <label
                     class="p-2.5 rounded-xl border cursor-pointer select-none transition text-center text-xs font-bold"
-                    :class="taxMode === 'EXTRA' ? 'bg-[#1a5c4c]/10 border-[#1a5c4c] text-[#1a5c4c]' : 'border-gray-200 text-gray-600 hover:bg-gray-50'"
+                    :class="taxMode === 'EXTRA' ? 'bg-[#1b3b5f]/10 border-[#1b3b5f] text-[#1b3b5f]' : 'border-gray-200 text-gray-600 hover:bg-gray-50'"
                   >
                     <input type="radio" v-model="taxMode" value="EXTRA" class="hidden" />
                     <span>+18% GST Extra</span>
@@ -899,7 +899,7 @@
 
                   <label
                     class="p-2.5 rounded-xl border cursor-pointer select-none transition text-center text-xs font-bold"
-                    :class="taxMode === 'INCLUSIVE' ? 'bg-[#1a5c4c]/10 border-[#1a5c4c] text-[#1a5c4c]' : 'border-gray-200 text-gray-600 hover:bg-gray-50'"
+                    :class="taxMode === 'INCLUSIVE' ? 'bg-[#1b3b5f]/10 border-[#1b3b5f] text-[#1b3b5f]' : 'border-gray-200 text-gray-600 hover:bg-gray-50'"
                   >
                     <input type="radio" v-model="taxMode" value="INCLUSIVE" class="hidden" />
                     <span>GST Inclusive</span>
@@ -907,7 +907,7 @@
 
                   <label
                     class="p-2.5 rounded-xl border cursor-pointer select-none transition text-center text-xs font-bold"
-                    :class="taxMode === 'NONE' ? 'bg-[#1a5c4c]/10 border-[#1a5c4c] text-[#1a5c4c]' : 'border-gray-200 text-gray-600 hover:bg-gray-50'"
+                    :class="taxMode === 'NONE' ? 'bg-[#1b3b5f]/10 border-[#1b3b5f] text-[#1b3b5f]' : 'border-gray-200 text-gray-600 hover:bg-gray-50'"
                   >
                     <input type="radio" v-model="taxMode" value="NONE" class="hidden" />
                     <span>No Tax (Net)</span>
@@ -922,7 +922,7 @@
                   v-model="quoteNotes"
                   rows="2"
                   placeholder="e.g. Subject to full carton delivery."
-                  class="w-full text-xs border border-gray-200 rounded-xl p-2.5 bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-[#1a5c4c]/20 outline-none"
+                  class="w-full text-xs border border-gray-200 rounded-xl p-2.5 bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-[#1b3b5f]/20 outline-none"
                 ></textarea>
               </div>
 
@@ -965,7 +965,7 @@
                     @click="openSignatureModal(false)"
                     class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer border border-gray-300/80 shadow-2xs"
                   >
-                    <PenTool class="w-3.5 h-3.5 text-[#1a5c4c]" />
+                    <PenTool class="w-3.5 h-3.5 text-[#1b3b5f]" />
                     <span>Add Signature</span>
                   </button>
                 </div>
@@ -992,7 +992,7 @@
               </div>
               <div class="pt-2 border-t-2 border-gray-100 flex justify-between items-baseline font-black">
                 <span class="text-xs uppercase text-[#1b3b5f]">Grand Total:</span>
-                <span class="text-2xl font-mono text-[#1a5c4c]">₹{{ Math.round(grandTotal).toLocaleString('en-IN') }}</span>
+                <span class="text-2xl font-mono text-[#1b3b5f]">₹{{ Math.round(grandTotal).toLocaleString('en-IN') }}</span>
               </div>
             </div>
           </div>
@@ -1019,7 +1019,7 @@
               title="Add or edit your digital signature on this estimate"
             >
               <CheckCircle2 v-if="signatureDataUrl" class="w-4 h-4 text-emerald-600" />
-              <PenTool v-else class="w-4 h-4 text-[#1a5c4c]" />
+              <PenTool v-else class="w-4 h-4 text-[#1b3b5f]" />
               <span>{{ signatureDataUrl ? 'Signed' : 'Add Signature' }}</span>
             </button>
 
@@ -1029,7 +1029,7 @@
               type="button"
               @click="saveAndGenerateQuote"
               :disabled="quoteItems.length === 0 || !customerName.trim() || isSaving"
-              class="px-6 py-2.5 bg-[#1a5c4c] hover:bg-[#14483b] text-white rounded-xl text-xs sm:text-sm font-bold shadow-md transition-all flex items-center gap-2 active:scale-98 disabled:opacity-50 cursor-pointer"
+              class="px-6 py-2.5 bg-[#1b3b5f] hover:bg-[#132c49] text-white rounded-xl text-xs sm:text-sm font-bold shadow-md transition-all flex items-center gap-2 active:scale-98 disabled:opacity-50 cursor-pointer"
             >
               <Loader2 v-if="isSaving" class="w-4 h-4 animate-spin" />
               <CheckCircle2 v-else class="w-4 h-4" />
@@ -1049,7 +1049,7 @@
       >
         <div class="space-y-6">
           <!-- Top Ribbon -->
-          <div class="h-1.5 w-full bg-gradient-to-r from-[#1b3b5f] via-[#d92546] to-[#1a5c4c] rounded-full"></div>
+          <div class="h-1.5 w-full bg-gradient-to-r from-[#1b3b5f] via-[#d92546] to-[#1b3b5f] rounded-full"></div>
 
         <!-- Header -->
         <div class="flex items-center justify-between border-b border-gray-200 pb-6 mb-6">
@@ -1068,7 +1068,7 @@
               <span class="text-gray-400 font-medium">Date:</span>
               <strong class="font-bold text-gray-800 ml-1">{{ formatDisplayDate(new Date()) }}</strong>
             </div>
-            <div class="inline-block text-[11px] text-[#1a5c4c] bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md font-bold mt-1">
+            <div class="inline-block text-[11px] text-[#1b3b5f] bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md font-bold mt-1">
               Valid for {{ validityDays || 7 }} days
             </div>
           </div>
@@ -1135,7 +1135,7 @@
               </td>
               <td class="py-2.5 px-3 text-right font-mono font-bold text-gray-700 text-[11px]">₹{{ item.mrp.toLocaleString('en-IN') }}</td>
               <td class="py-2.5 px-2 text-center font-bold text-gray-700 text-[10px]">{{ item.uom }}</td>
-              <td class="py-2.5 px-3 text-right font-mono font-black text-[#1a5c4c] text-[11px]">
+              <td class="py-2.5 px-3 text-right font-mono font-black text-[#1b3b5f] text-[11px]">
                 ₹{{ calculateUnitRate(item).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
               </td>
               <td class="py-2.5 px-3 text-right font-mono font-black text-gray-950 text-[11.5px]">
@@ -1175,7 +1175,7 @@
               <span class="font-bold text-gray-700">Total MRP:</span>
               <span class="font-mono font-bold text-gray-800">₹{{ totalMrp.toLocaleString('en-IN') }}</span>
             </div>
-            <div v-if="totalDiscountSaved > 0" class="flex justify-between text-[#1a5c4c] font-black bg-emerald-50/80 px-2 py-1 rounded border border-emerald-100">
+            <div v-if="totalDiscountSaved > 0" class="flex justify-between text-[#1b3b5f] font-black bg-emerald-50/80 px-2 py-1 rounded border border-emerald-100">
               <span>Total Discount:</span>
               <span class="font-mono font-black">-₹{{ totalDiscountSaved.toLocaleString('en-IN') }}</span>
             </div>
@@ -1236,7 +1236,7 @@
           <!-- Page Body -->
           <div class="space-y-4">
             <!-- Top Ribbon -->
-            <div class="h-1.5 w-full bg-gradient-to-r from-[#1b3b5f] via-[#d92546] to-[#1a5c4c] rounded-full"></div>
+            <div class="h-1.5 w-full bg-gradient-to-r from-[#1b3b5f] via-[#d92546] to-[#1b3b5f] rounded-full"></div>
 
             <!-- Page 1 Header (Full) -->
             <div v-if="pg.isFirst">
@@ -1256,7 +1256,7 @@
                     <span class="text-gray-400 font-medium">Date:</span>
                     <strong class="font-bold text-gray-800 ml-1">{{ formatDisplayDate(new Date()) }}</strong>
                   </div>
-                  <div class="inline-block text-[11px] text-[#1a5c4c] bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md font-bold mt-1">
+                  <div class="inline-block text-[11px] text-[#1b3b5f] bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md font-bold mt-1">
                     Valid for {{ validityDays || 7 }} days
                   </div>
                 </div>
@@ -1369,7 +1369,7 @@
                   </td>
                   <td class="py-2 px-3 text-right font-mono font-bold text-gray-700 text-[11px]">₹{{ item.mrp.toLocaleString('en-IN') }}</td>
                   <td class="py-2 px-2 text-center font-bold text-gray-700 text-[10px]">{{ item.uom }}</td>
-                  <td class="py-2 px-3 text-right font-mono font-black text-[#1a5c4c] text-[11px]">
+                  <td class="py-2 px-3 text-right font-mono font-black text-[#1b3b5f] text-[11px]">
                     ₹{{ calculateUnitRate(item).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
                   </td>
                   <td class="py-2 px-3 text-right font-mono font-black text-gray-950 text-[11.5px]">
@@ -1411,7 +1411,7 @@
                     <span class="font-bold text-gray-700">Total MRP:</span>
                     <span class="font-mono font-bold text-gray-800">₹{{ totalMrp.toLocaleString('en-IN') }}</span>
                   </div>
-                  <div v-if="totalDiscountSaved > 0" class="flex justify-between text-[#1a5c4c] font-black bg-emerald-50/80 px-2 py-0.5 rounded border border-emerald-100">
+                  <div v-if="totalDiscountSaved > 0" class="flex justify-between text-[#1b3b5f] font-black bg-emerald-50/80 px-2 py-0.5 rounded border border-emerald-100">
                     <span>Total Discount:</span>
                     <span class="font-mono font-black">-₹{{ totalDiscountSaved.toLocaleString('en-IN') }}</span>
                   </div>
@@ -1542,7 +1542,7 @@
             type="button"
             @click="confirmStockOverride"
             class="px-4 py-2 rounded-xl text-xs font-bold text-white transition cursor-pointer shadow-xs flex items-center gap-1.5"
-            :class="desiredStockState ? 'bg-[#1a5c4c] hover:bg-[#14473b]' : 'bg-amber-600 hover:bg-amber-700'"
+            :class="desiredStockState ? 'bg-[#1b3b5f] hover:bg-[#132c49]' : 'bg-amber-600 hover:bg-amber-700'"
           >
             <span>Set to {{ desiredStockState ? 'In Stock (Green)' : 'Against Order (Orange)' }}</span>
           </button>
@@ -1685,7 +1685,7 @@
                 type="button"
                 @click="confirmSignatureAndProceed(true)"
                 :disabled="!hasDrawnSignature"
-                class="px-4 py-2 bg-[#1a5c4c] hover:bg-[#14483b] text-white rounded-xl text-xs font-bold shadow-md transition flex items-center gap-1.5 cursor-pointer disabled:opacity-40"
+                class="px-4 py-2 bg-[#1b3b5f] hover:bg-[#132c49] text-white rounded-xl text-xs font-bold shadow-md transition flex items-center gap-1.5 cursor-pointer disabled:opacity-40"
               >
                 <CheckCircle2 class="w-4 h-4" />
                 <span>Apply & Save</span>
@@ -1698,7 +1698,7 @@
               type="button"
               @click="confirmSignatureAndProceed(true)"
               :disabled="!hasDrawnSignature"
-              class="px-5 py-2 bg-[#1a5c4c] hover:bg-[#14483b] text-white rounded-xl text-xs font-bold shadow-md transition flex items-center gap-1.5 cursor-pointer disabled:opacity-40"
+              class="px-5 py-2 bg-[#1b3b5f] hover:bg-[#132c49] text-white rounded-xl text-xs font-bold shadow-md transition flex items-center gap-1.5 cursor-pointer disabled:opacity-40"
             >
               <CheckCircle2 class="w-4 h-4" />
               <span>{{ isSuccessView ? 'Apply Signature' : 'Save & Generate Quote' }}</span>

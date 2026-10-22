@@ -363,10 +363,10 @@ const getTotalNos = (order: any) => {
       <div class="bg-white rounded-xl border border-[#e5e2dc] p-3.5 sm:p-5 shadow-sm">
         <div class="flex gap-2.5 sm:gap-4">
           <div class="flex flex-col justify-between">
-            <div class="bg-[#1a5c4c]/10 p-2 sm:p-2.5 rounded-lg text-[#1a5c4c] border border-[#1a5c4c]/20">
+            <div class="bg-[#1b3b5f]/10 p-2 sm:p-2.5 rounded-lg text-[#1b3b5f] border border-[#1b3b5f]/20">
               <CheckCircle2 class="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <div class="w-6 sm:w-8 h-1 bg-[#1a5c4c] rounded-full mt-4 sm:mt-6"></div>
+            <div class="w-6 sm:w-8 h-1 bg-[#1b3b5f] rounded-full mt-4 sm:mt-6"></div>
           </div>
           <div class="flex flex-col justify-center min-w-0">
             <p class="text-[9px] sm:text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">Approved</p>
@@ -401,7 +401,7 @@ const getTotalNos = (order: any) => {
           v-for="tab in (['PENDING', 'URGENT', 'APPROVED', 'ALL'] as const)" :key="tab"
           @click="activeTab = tab; page = 1"
           class="whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm transition-colors flex items-center gap-2 cursor-pointer"
-          :class="activeTab === tab ? 'border-[#1a5c4c] text-[#1a5c4c]' : 'border-transparent text-gray-500 hover:text-gray-900 hover:border-gray-300'"
+          :class="activeTab === tab ? 'border-[#1b3b5f] text-[#1b3b5f]' : 'border-transparent text-gray-500 hover:text-gray-900 hover:border-gray-300'"
         >
           <span v-if="tab === 'URGENT'">⚡</span>
           <span>
@@ -411,7 +411,7 @@ const getTotalNos = (order: any) => {
             class="px-2 py-0.5 rounded-full text-[10px] font-bold transition-colors"
             :class="[
               activeTab === tab
-                ? (tab === 'URGENT' ? 'bg-rose-100 text-rose-700' : 'bg-[#1a5c4c]/10 text-[#1a5c4c]')
+                ? (tab === 'URGENT' ? 'bg-rose-100 text-rose-700' : 'bg-[#1b3b5f]/10 text-[#1b3b5f]')
                 : 'bg-gray-100 text-gray-600'
             ]"
           >
@@ -431,7 +431,7 @@ const getTotalNos = (order: any) => {
             v-model="search"
             type="text"
             placeholder="Search order #, customer..." 
-            class="w-full pl-9 pr-8 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#1a5c4c]/20 focus:border-[#1a5c4c] transition-all"
+            class="w-full pl-9 pr-8 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f] transition-all"
           />
           <button 
             v-if="search" 
@@ -517,7 +517,7 @@ const getTotalNos = (order: any) => {
               <!-- 1. ORDER: Order ID (not clickable link), urgent/cancelled badge, then created at -->
               <td class="px-5 py-3.5 whitespace-nowrap">
                 <div class="flex items-center gap-1.5 flex-wrap">
-                  <span class="text-xs font-bold text-gray-900 group-hover:text-[#1a5c4c] transition-colors">
+                  <span class="text-xs font-bold text-gray-900 group-hover:text-[#1b3b5f] transition-colors">
                     {{ order.orderNumber }}
                   </span>
                   <span v-if="order.overallStatus === 'CANCELLED'" class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-bold bg-gray-200 !text-gray-600 border border-rose-500">
@@ -582,7 +582,7 @@ const getTotalNos = (order: any) => {
                   <button 
                     v-if="!order.isApproved && order.overallStatus !== 'CANCELLED'"
                     @click.stop="openReview(order)"
-                    class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#1a5c4c] text-white hover:bg-[#14473b] shadow-2xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap"
+                    class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#1b3b5f] text-white hover:bg-[#132c49] shadow-2xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap"
                   >
                     <CheckCheck class="w-3.5 h-3.5" />
                     <span>Review & Approve</span>
@@ -705,7 +705,7 @@ const getTotalNos = (order: any) => {
             <button 
               v-if="!order.isApproved && order.overallStatus !== 'CANCELLED'"
               @click.stop="openReview(order)"
-              class="flex-1 py-2 rounded-lg text-xs font-semibold bg-[#1a5c4c] text-white hover:bg-[#14473b] shadow-2xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer active:scale-[0.99]"
+              class="flex-1 py-2 rounded-lg text-xs font-semibold bg-[#1b3b5f] text-white hover:bg-[#132c49] shadow-2xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer active:scale-[0.99]"
             >
               <CheckCheck class="w-3.5 h-3.5" />
               <span>Review & Approve</span>
@@ -774,7 +774,7 @@ const getTotalNos = (order: any) => {
           <!-- Client & Delivery Card -->
           <div class="bg-gray-50/80 rounded-xl p-4 border border-gray-200/80 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center text-xs">
             <div class="flex items-center gap-3">
-              <div class="w-10 h-10 rounded-xl bg-[#1a5c4c] text-white font-bold flex items-center justify-center text-sm shadow-xs shrink-0">
+              <div class="w-10 h-10 rounded-xl bg-[#1b3b5f] text-white font-bold flex items-center justify-center text-sm shadow-xs shrink-0">
                 {{ (selectedOrder?.customer?.company || selectedOrder?.customer?.name || 'C')[0]?.toUpperCase() }}
               </div>
               <div>
@@ -866,7 +866,7 @@ const getTotalNos = (order: any) => {
                         v-model.number="item.approvedQuantity" 
                         type="number" 
                         min="0"
-                        class="w-20 px-2.5 py-1.5 border border-gray-300 rounded-lg font-bold text-gray-900 text-xs focus:ring-2 focus:ring-[#1a5c4c]/20 focus:border-[#1a5c4c] outline-none transition-all"
+                        class="w-20 px-2.5 py-1.5 border border-gray-300 rounded-lg font-bold text-gray-900 text-xs focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f] outline-none transition-all"
                       />
                     </td>
                     <td class="py-3 px-3">
@@ -877,7 +877,7 @@ const getTotalNos = (order: any) => {
                           type="number" 
                           step="0.01" 
                           min="0"
-                          class="w-full pl-7 pr-2.5 py-1.5 border border-gray-300 rounded-lg font-bold text-gray-900 text-xs focus:ring-2 focus:ring-[#1a5c4c]/20 focus:border-[#1a5c4c] outline-none transition-all"
+                          class="w-full pl-7 pr-2.5 py-1.5 border border-gray-300 rounded-lg font-bold text-gray-900 text-xs focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f] outline-none transition-all"
                         />
                       </div>
                     </td>
@@ -902,7 +902,7 @@ const getTotalNos = (order: any) => {
               v-model="approvalNotes" 
               rows="2"
               placeholder="e.g. Special rate approved for volume discount, priority truck dispatch authorized..."
-              class="w-full p-3 border border-gray-300 rounded-xl text-xs focus:ring-2 focus:ring-[#1a5c4c]/20 focus:border-[#1a5c4c] outline-none transition-all resize-none"
+              class="w-full p-3 border border-gray-300 rounded-xl text-xs focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f] outline-none transition-all resize-none"
             ></textarea>
           </div>
         </div>
@@ -911,7 +911,7 @@ const getTotalNos = (order: any) => {
         <div class="px-6 py-4 border-t border-gray-100 flex justify-between items-center bg-gray-50/90 rounded-b-2xl shrink-0">
           <div>
             <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider block">Total Approved Order Value</span>
-            <span class="text-2xl font-extrabold text-[#1a5c4c]">{{ formatCurrency(computedOrderTotal) }}</span>
+            <span class="text-2xl font-extrabold text-[#1b3b5f]">{{ formatCurrency(computedOrderTotal) }}</span>
           </div>
           <div class="flex items-center gap-3">
             <button 
@@ -923,7 +923,7 @@ const getTotalNos = (order: any) => {
             <button 
               @click="submitApproval" 
               :disabled="isSubmittingApproval"
-              class="px-6 py-2.5 text-xs font-bold text-white bg-[#1a5c4c] hover:bg-[#14473b] rounded-xl shadow-sm hover:shadow transition-all flex items-center gap-2 disabled:opacity-50 cursor-pointer"
+              class="px-6 py-2.5 text-xs font-bold text-white bg-[#1b3b5f] hover:bg-[#132c49] rounded-xl shadow-sm hover:shadow transition-all flex items-center gap-2 disabled:opacity-50 cursor-pointer"
             >
               <Loader2 v-if="isSubmittingApproval" class="w-4 h-4 animate-spin" />
               <CheckCheck v-else class="w-4 h-4" />

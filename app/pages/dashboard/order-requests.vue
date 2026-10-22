@@ -348,10 +348,10 @@ watch(() => data.value?.counts, () => {
       >
         <div class="flex gap-2.5 sm:gap-4">
           <div class="flex flex-col justify-between shrink-0">
-            <div class="bg-[#1a5c4c]/10 p-2 sm:p-2.5 rounded-lg text-[#1a5c4c] border border-[#1a5c4c]/20">
+            <div class="bg-[#1b3b5f]/10 p-2 sm:p-2.5 rounded-lg text-[#1b3b5f] border border-[#1b3b5f]/20">
               <CheckCircle2 class="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <div class="w-6 sm:w-8 h-1 bg-[#1a5c4c] rounded-full mt-4 sm:mt-6"></div>
+            <div class="w-6 sm:w-8 h-1 bg-[#1b3b5f] rounded-full mt-4 sm:mt-6"></div>
           </div>
           <div class="flex flex-col justify-center min-w-0">
             <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">Converted Orders</p>
@@ -409,7 +409,7 @@ watch(() => data.value?.counts, () => {
           v-for="tab in (['ALL', 'PENDING', 'CONFIRMED', 'DECLINED'] as const)" :key="tab"
           @click="activeTab = tab; page = 1"
           class="whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm transition-colors shrink-0"
-          :class="activeTab === tab ? 'border-[#1a5c4c] text-[#1a5c4c]' : 'border-transparent text-gray-500 hover:text-gray-900 hover:border-gray-300'"
+          :class="activeTab === tab ? 'border-[#1b3b5f] text-[#1b3b5f]' : 'border-transparent text-gray-500 hover:text-gray-900 hover:border-gray-300'"
         >
           {{ tab === 'ALL' ? 'All Requests' : tab === 'PENDING' ? 'Pending Review' : tab === 'CONFIRMED' ? 'Converted' : 'Declined' }}
         </button>
@@ -428,7 +428,7 @@ watch(() => data.value?.counts, () => {
             type="text"
             v-model="search"
             placeholder="Search by Request #, Customer..."
-            class="w-full pl-9 pr-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#1a5c4c] focus:border-[#1a5c4c]"
+            class="w-full pl-9 pr-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#1b3b5f] focus:border-[#1b3b5f]"
           />
         </div>
 
@@ -469,7 +469,7 @@ watch(() => data.value?.counts, () => {
                 @click="openDetail(req.id)"
                 class="hover:bg-gray-50 cursor-pointer transition-colors group"
               >
-                <td class="px-2.5 py-3 whitespace-nowrap text-xs font-semibold text-gray-900 group-hover:text-[#1a5c4c]">
+                <td class="px-2.5 py-3 whitespace-nowrap text-xs font-semibold text-gray-900 group-hover:text-[#1b3b5f]">
                   {{ req.requestNumber }}
                 </td>
                 <td class="px-2.5 py-3 whitespace-nowrap text-xs text-gray-500">
@@ -757,7 +757,7 @@ watch(() => data.value?.counts, () => {
                 <p class="text-xs text-gray-500 mt-1">Received {{ selectedRequest?.createdAt ? formatDateTime(selectedRequest.createdAt) : '' }}</p>
               </div>
               <div class="text-right">
-                <p class="text-lg font-semibold text-[#1a5c4c]">{{ formatCurrency(selectedRequest?.totalEstimated || 0) }}</p>
+                <p class="text-lg font-semibold text-[#1b3b5f]">{{ formatCurrency(selectedRequest?.totalEstimated || 0) }}</p>
                 <p class="text-[11px] text-gray-500 font-medium mt-0.5">{{ selectedRequest?.items?.length || 0 }} items</p>
               </div>
             </div>
@@ -799,7 +799,7 @@ watch(() => data.value?.counts, () => {
                 </div>
                 <div>
                   <span class="block text-[10px] uppercase font-bold text-gray-500 mb-1">Phone Number</span>
-                  <a :href="`tel:${selectedRequest?.phone}`" class="font-mono font-semibold text-[#1a5c4c] flex items-center gap-1 hover:underline">
+                  <a :href="`tel:${selectedRequest?.phone}`" class="font-mono font-semibold text-[#1b3b5f] flex items-center gap-1 hover:underline">
                     <Phone class="w-3 h-3" /> {{ selectedRequest?.phone }}
                   </a>
                 </div>
@@ -891,7 +891,7 @@ watch(() => data.value?.counts, () => {
                       <td colspan="4" class="py-3 px-3 text-right font-bold text-gray-700 text-xs uppercase tracking-wider">
                         Total Estimated Value:
                       </td>
-                      <td class="py-3 px-3 text-right font-mono font-black text-sm text-[#1a5c4c]">
+                      <td class="py-3 px-3 text-right font-mono font-black text-sm text-[#1b3b5f]">
                         {{ formatCurrency(selectedRequest?.totalEstimated || 0) }}
                       </td>
                     </tr>
@@ -964,7 +964,7 @@ watch(() => data.value?.counts, () => {
             <button 
               v-if="selectedRequest?.status === 'PENDING'"
               @click="openConfirmModal"
-              class="flex items-center gap-2 px-5 py-2.5 bg-[#1a5c4c] hover:bg-[#14473b] text-white rounded-lg text-xs font-bold shadow-md transition"
+              class="flex items-center gap-2 px-5 py-2.5 bg-[#1b3b5f] hover:bg-[#132c49] text-white rounded-lg text-xs font-bold shadow-md transition"
             >
               <CheckCircle2 class="w-4 h-4" />
               <span>Review & Confirm Order</span>
@@ -1011,7 +1011,7 @@ watch(() => data.value?.counts, () => {
                 v-model="declineReason"
                 rows="2"
                 placeholder="e.g., Out of stock, customer requested cancellation..."
-                class="w-full text-xs border border-gray-300 rounded-lg p-2.5 bg-white text-gray-900 focus:ring-[#1a5c4c] focus:border-[#1a5c4c] resize-none"
+                class="w-full text-xs border border-gray-300 rounded-lg p-2.5 bg-white text-gray-900 focus:ring-[#1b3b5f] focus:border-[#1b3b5f] resize-none"
               ></textarea>
             </div>
           </div>

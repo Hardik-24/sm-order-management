@@ -21,7 +21,7 @@
     <div v-if="distanceKm !== undefined || durationMin !== undefined" class="absolute bottom-3.5 left-3.5 z-10 flex items-center gap-3 bg-white/95 backdrop-blur-sm px-3.5 py-2 rounded-xl shadow-md border border-gray-200 text-xs">
       <div v-if="distanceKm !== undefined" class="flex flex-col">
         <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Distance</span>
-        <span class="font-bold text-[#1a5c4c] text-sm">{{ distanceKm }} km</span>
+        <span class="font-bold text-[#1b3b5f] text-sm">{{ distanceKm }} km</span>
       </div>
       <div v-if="durationMin !== undefined" class="flex flex-col pl-3 border-l border-gray-200">
         <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Duration</span>
@@ -134,7 +134,7 @@ async function initLeaflet() {
 
   const truckIcon = L.divIcon({
     className: 'custom-truck-icon',
-    html: `<div style="background:#1a5c4c;color:white;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 8px rgba(0,0,0,0.3);border:2px solid white;font-size:16px;">🚚</div>`,
+    html: `<div style="background:#1b3b5f;color:white;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 8px rgba(0,0,0,0.3);border:2px solid white;font-size:16px;">🚚</div>`,
     iconSize: [34, 34],
     iconAnchor: [17, 17],
   })
@@ -196,7 +196,7 @@ function updateLeafletRoute(L?: any) {
     leafletPolyline.setLatLngs(coords)
   } else if (coords.length > 0) {
     leafletPolyline = leaflet.polyline(coords, {
-      color: '#1a5c4c',
+      color: '#1b3b5f',
       weight: 5,
       opacity: 0.9,
       dashArray: props.isLive ? '6, 6' : undefined,
@@ -219,7 +219,7 @@ async function initGoogleMaps(apiKey: string) {
 
   const truckSvg = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
     <svg xmlns="http://www.w3.org/2000/svg" width="38" height="38" viewBox="0 0 38 38">
-      <circle cx="19" cy="19" r="17" fill="#1a5c4c" stroke="#ffffff" stroke-width="2.5" />
+      <circle cx="19" cy="19" r="17" fill="#1b3b5f" stroke="#ffffff" stroke-width="2.5" />
       <text x="19" y="24" font-size="16" text-anchor="middle" fill="#ffffff">🚚</text>
     </svg>
   `)}`
@@ -354,7 +354,7 @@ function updateGoogleRoute(googleMaps?: any) {
     googlePolyline = new maps.Polyline({
       path: props.routeCoordinates,
       geodesic: true,
-      strokeColor: '#1a5c4c',
+      strokeColor: '#1b3b5f',
       strokeOpacity: 0.9,
       strokeWeight: 5,
       map: googleMap,

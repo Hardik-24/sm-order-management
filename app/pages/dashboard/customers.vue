@@ -9,7 +9,7 @@
       <button 
         v-if="user?.role === 'ADMIN'"
         @click="openModal()"
-        class="flex items-center gap-2 bg-[#1a5c4c] text-white px-4 py-2 rounded-lg hover:bg-[#134336] transition-colors shadow-sm"
+        class="flex items-center gap-2 bg-[#1b3b5f] text-white px-4 py-2 rounded-lg hover:bg-[#132c49] transition-colors shadow-sm"
       >
         <Plus class="w-4 h-4" />
         Add Customer
@@ -26,7 +26,7 @@
           v-model="searchQuery"
           type="text"
           placeholder="Search by code, company, contact, alias, phone, city, GST..."
-          class="block w-full pl-10 pr-9 py-2 border border-gray-300 rounded-lg text-sm bg-white placeholder:text-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1a5c4c]/20 focus:border-[#1a5c4c] transition-all shadow-sm"
+          class="block w-full pl-10 pr-9 py-2 border border-gray-300 rounded-lg text-sm bg-white placeholder:text-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f] transition-all shadow-sm"
         />
         <button 
           v-if="searchQuery"
@@ -96,7 +96,7 @@
                 class="hover:bg-teal-50/40 cursor-pointer transition-colors group"
               >
                 <!-- Customer & Code -->
-                <td class="pl-5 pr-4 py-3.5 md:py-4 font-medium text-[#1a1a1a] group-hover:text-[#1a5c4c] transition-colors overflow-hidden">
+                <td class="pl-5 pr-4 py-3.5 md:py-4 font-medium text-[#1a1a1a] group-hover:text-[#1b3b5f] transition-colors overflow-hidden">
                   <div class="flex items-center gap-1.5 mb-1 flex-wrap">
                     <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-gray-100 text-gray-700 font-bold border border-gray-200 shrink-0">
                       {{ customer.customerCode || 'NO CODE' }}
@@ -121,7 +121,7 @@
                       {{ customer.privilegeTier || 'BRONZE' }}
                     </span>
                     <div v-if="customer.customerManager" class="flex items-center gap-1 text-[11px] text-gray-600 font-medium min-w-0">
-                      <UserCheck class="w-3 h-3 text-[#1a5c4c] shrink-0" />
+                      <UserCheck class="w-3 h-3 text-[#1b3b5f] shrink-0" />
                       <span class="truncate" :title="customer.customerManager.name">{{ customer.customerManager.name }}</span>
                     </div>
                   </div>
@@ -165,7 +165,7 @@
                         <span v-if="addr.city" class="text-[9px] text-gray-500 font-medium truncate max-w-[55px]">
                           ({{ addr.city }})
                         </span>
-                        <span v-if="addr.isDefault" class="text-[7px] font-black uppercase tracking-wider text-[#1a5c4c] bg-[#1a5c4c]/10 px-1 py-0.2 rounded border border-[#1a5c4c]/20 shrink-0">
+                        <span v-if="addr.isDefault" class="text-[7px] font-black uppercase tracking-wider text-[#1b3b5f] bg-[#1b3b5f]/10 px-1 py-0.2 rounded border border-[#1b3b5f]/20 shrink-0">
                           DEF
                         </span>
                       </div>
@@ -176,13 +176,13 @@
                         @click.stop="openAddressPinModal(customer, addr, aIdx)"
                         class="p-0.5 rounded transition-all flex items-center justify-center shrink-0"
                         :class="addr.latitude && addr.longitude 
-                          ? 'text-[#1a5c4c] bg-emerald-100 hover:bg-emerald-200 ring-1 ring-emerald-300' 
-                          : 'text-gray-400 hover:text-[#1a5c4c] hover:bg-gray-200/70'"
+                          ? 'text-[#1b3b5f] bg-emerald-100 hover:bg-emerald-200 ring-1 ring-emerald-300' 
+                          : 'text-gray-400 hover:text-[#1b3b5f] hover:bg-gray-200/70'"
                         :title="addr.latitude && addr.longitude 
                           ? `📍 Saved Pin: ${Number(addr.latitude).toFixed(4)}, ${Number(addr.longitude).toFixed(4)}${addr.landmark ? ' (' + addr.landmark + ')' : ''} - Click to edit pin` 
                           : `Set Delivery GPS Pin for ${addr.label || 'Address ' + (aIdx + 1)}`"
                       >
-                        <MapPin class="w-3 h-3" :class="{ 'fill-[#1a5c4c] text-[#1a5c4c]': addr.latitude && addr.longitude }" />
+                        <MapPin class="w-3 h-3" :class="{ 'fill-[#1b3b5f] text-[#1b3b5f]': addr.latitude && addr.longitude }" />
                       </button>
                     </div>
                   </div>
@@ -210,7 +210,7 @@
                   <div class="flex items-center justify-end">
                     <button 
                       @click="openModal(customer)"
-                      class="text-gray-400 hover:text-[#1a5c4c] hover:bg-[#1a5c4c]/10 transition-colors p-1.5 rounded-lg inline-flex items-center justify-center"
+                      class="text-gray-400 hover:text-[#1b3b5f] hover:bg-[#1b3b5f]/10 transition-colors p-1.5 rounded-lg inline-flex items-center justify-center"
                       title="Edit Customer Details"
                     >
                       <Edit2 class="w-3.5 h-3.5" />
@@ -300,7 +300,7 @@
                 v-if="getMainPhone(customer.phone) !== 'NA'"
                 :href="'tel:' + getMainPhone(customer.phone)"
                 @click.stop
-                class="font-mono text-xs text-[#1a5c4c] font-semibold hover:underline shrink-0 flex items-center gap-1 bg-[#1a5c4c]/5 px-2 py-0.5 rounded"
+                class="font-mono text-xs text-[#1b3b5f] font-semibold hover:underline shrink-0 flex items-center gap-1 bg-[#1b3b5f]/5 px-2 py-0.5 rounded"
               >
                 <Phone class="w-3 h-3" />
                 {{ getMainPhone(customer.phone) }}
@@ -316,7 +316,7 @@
                 </span>
 
                 <span v-if="customer.customerManager" class="inline-flex items-center gap-1 text-[11px] text-gray-500">
-                  <UserCheck class="w-3 h-3 text-[#1a5c4c] shrink-0" />
+                  <UserCheck class="w-3 h-3 text-[#1b3b5f] shrink-0" />
                   <span class="truncate">{{ customer.customerManager.name }}</span>
                 </span>
 
@@ -329,7 +329,7 @@
                 <button 
                   v-if="canEditCustomers"
                   @click.stop="openModal(customer)"
-                  class="text-gray-400 hover:text-[#1a5c4c] hover:bg-[#1a5c4c]/10 p-1.5 rounded-lg transition-colors inline-flex items-center"
+                  class="text-gray-400 hover:text-[#1b3b5f] hover:bg-[#1b3b5f]/10 p-1.5 rounded-lg transition-colors inline-flex items-center"
                   title="Edit Customer"
                 >
                   <Edit2 class="w-3.5 h-3.5" />
@@ -392,7 +392,7 @@
         <!-- Header -->
         <div class="px-6 py-4 bg-gray-50/80 border-b border-gray-100 flex items-center justify-between">
           <div class="flex items-center gap-2 text-sm font-semibold text-gray-700">
-            <Building2 class="w-4 h-4 text-[#1a5c4c]" />
+            <Building2 class="w-4 h-4 text-[#1b3b5f]" />
             Customer Profile: {{ selectedCustomer.customerCode || 'CUST-XXXX' }}
           </div>
           <button 
@@ -455,7 +455,7 @@
             <!-- Customer Manager -->
             <div class="p-3.5 bg-gray-50 rounded-xl border border-gray-100">
               <div class="flex items-center gap-1.5 text-xs text-gray-400 font-medium mb-1">
-                <UserCheck class="w-3.5 h-3.5 text-[#1a5c4c]" />
+                <UserCheck class="w-3.5 h-3.5 text-[#1b3b5f]" />
                 Customer Account Manager
               </div>
               <div class="text-sm font-semibold text-gray-900">
@@ -469,7 +469,7 @@
                 <Phone class="w-3.5 h-3.5" />
                 Phone & Alternate Contact
               </div>
-              <div class="text-sm font-mono font-semibold text-[#1a5c4c]">
+              <div class="text-sm font-mono font-semibold text-[#1b3b5f]">
                 <a :href="`tel:${selectedCustomer.phone}`" class="hover:underline">{{ selectedCustomer.phone }}</a>
                 <span v-if="selectedCustomer.alternatePhone" class="text-gray-500 font-normal ml-2">/ {{ selectedCustomer.alternatePhone }}</span>
               </div>
@@ -512,7 +512,7 @@
                 <div>
                   <div class="flex items-center gap-2 mb-1">
                     <span class="font-bold text-gray-900">{{ addr.label || `Address ${idx + 1}` }}</span>
-                    <span v-if="addr.isDefault" class="text-[9px] px-1.5 py-0.2 rounded font-bold bg-[#1a5c4c]/10 text-[#1a5c4c] border border-[#1a5c4c]/20">
+                    <span v-if="addr.isDefault" class="text-[9px] px-1.5 py-0.2 rounded font-bold bg-[#1b3b5f]/10 text-[#1b3b5f] border border-[#1b3b5f]/20">
                       DEFAULT
                     </span>
                   </div>
@@ -528,7 +528,7 @@
           <button 
             v-if="canEditCustomers"
             @click="editCustomerFromDetail()"
-            class="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-[#1a5c4c] bg-[#1a5c4c]/10 hover:bg-[#1a5c4c]/20 rounded-lg transition-colors"
+            class="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-[#1b3b5f] bg-[#1b3b5f]/10 hover:bg-[#1b3b5f]/20 rounded-lg transition-colors"
           >
             <Edit2 class="w-3.5 h-3.5" />
             Edit Customer
@@ -560,7 +560,7 @@
           <!-- Modern Dark Header -->
           <div class="px-5 sm:px-6 py-4 border-b border-gray-800 flex items-center justify-between shrink-0 bg-[#171717] text-white">
             <div class="flex items-center gap-3">
-              <div class="w-10 h-10 rounded-xl bg-[#1a5c4c]/40 border border-[#4ecdc4]/20 flex items-center justify-center text-[#4ecdc4]">
+              <div class="w-10 h-10 rounded-xl bg-[#1b3b5f]/40 border border-[#4ecdc4]/20 flex items-center justify-center text-[#4ecdc4]">
                 <Building2 class="w-5 h-5" />
               </div>
               <div>
@@ -589,7 +589,7 @@
               <div class="bg-white p-4 sm:p-5 rounded-xl border border-gray-200/90 shadow-2xs space-y-4">
                 <div class="flex items-center justify-between pb-2 border-b border-gray-100">
                   <div class="flex items-center gap-2 font-bold text-gray-800 text-xs uppercase tracking-wider">
-                    <ShieldCheck class="w-4 h-4 text-[#1a5c4c]" />
+                    <ShieldCheck class="w-4 h-4 text-[#1b3b5f]" />
                     <span>Identification & Classification</span>
                   </div>
                 </div>
@@ -608,7 +608,7 @@
                       :disabled="user?.role !== 'ADMIN'"
                       type="text" 
                       placeholder="Auto-assigned (e.g. CUST-1276)"
-                      class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none font-mono text-sm uppercase bg-white disabled:bg-gray-100 disabled:text-gray-500 focus:ring-2 focus:ring-[#1a5c4c]/20 focus:border-[#1a5c4c] transition-all" 
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none font-mono text-sm uppercase bg-white disabled:bg-gray-100 disabled:text-gray-500 focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f] transition-all" 
                     />
                   </div>
 
@@ -632,7 +632,7 @@
                       required 
                       type="text" 
                       placeholder="e.g. Royal Interiors & Furnishings"
-                      class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none text-sm bg-white focus:ring-2 focus:ring-[#1a5c4c]/20 focus:border-[#1a5c4c] transition-all" 
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none text-sm bg-white focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f] transition-all" 
                     />
                   </div>
 
@@ -644,7 +644,7 @@
                       required 
                       type="text" 
                       placeholder="e.g. Ramesh Patel"
-                      class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none text-sm bg-white focus:ring-2 focus:ring-[#1a5c4c]/20 focus:border-[#1a5c4c] transition-all" 
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none text-sm bg-white focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f] transition-all" 
                     />
                   </div>
 
@@ -655,7 +655,7 @@
                       v-model="form.alias" 
                       type="text" 
                       placeholder="e.g. Sharma Hardware" 
-                      class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none text-sm bg-white focus:ring-2 focus:ring-[#1a5c4c]/20 focus:border-[#1a5c4c] transition-all" 
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none text-sm bg-white focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f] transition-all" 
                     />
                   </div>
 
@@ -679,7 +679,7 @@
               <div class="bg-white p-4 sm:p-5 rounded-xl border border-gray-200/90 shadow-2xs space-y-4">
                 <div class="flex items-center justify-between pb-2 border-b border-gray-100">
                   <div class="flex items-center gap-2 font-bold text-gray-800 text-xs uppercase tracking-wider">
-                    <Phone class="w-4 h-4 text-[#1a5c4c]" />
+                    <Phone class="w-4 h-4 text-[#1b3b5f]" />
                     <span>Contact & Commercial Terms</span>
                   </div>
                 </div>
@@ -693,7 +693,7 @@
                       required 
                       type="tel" 
                       placeholder="+91 98765 43210"
-                      class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none text-sm font-mono bg-white focus:ring-2 focus:ring-[#1a5c4c]/20 focus:border-[#1a5c4c] transition-all" 
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none text-sm font-mono bg-white focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f] transition-all" 
                     />
                   </div>
 
@@ -704,7 +704,7 @@
                       v-model="form.alternatePhone" 
                       type="tel" 
                       placeholder="e.g. +91 98765 00000" 
-                      class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none text-sm font-mono bg-white focus:ring-2 focus:ring-[#1a5c4c]/20 focus:border-[#1a5c4c] transition-all" 
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none text-sm font-mono bg-white focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f] transition-all" 
                     />
                   </div>
 
@@ -715,7 +715,7 @@
                       v-model="form.email" 
                       type="email" 
                       placeholder="customer@domain.com"
-                      class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none text-sm bg-white focus:ring-2 focus:ring-[#1a5c4c]/20 focus:border-[#1a5c4c] transition-all" 
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none text-sm bg-white focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f] transition-all" 
                     />
                   </div>
 
@@ -730,7 +730,7 @@
                       type="text" 
                       maxlength="15"
                       placeholder="29AAAAA0000A1Z5"
-                      class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none text-sm uppercase font-mono bg-white focus:ring-2 focus:ring-[#1a5c4c]/20 focus:border-[#1a5c4c] transition-all" 
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none text-sm uppercase font-mono bg-white focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f] transition-all" 
                     />
                   </div>
 
@@ -762,16 +762,16 @@
                   <div 
                     @click="form.isActive = !form.isActive"
                     class="p-3.5 rounded-xl border cursor-pointer select-none transition-all flex items-center justify-between gap-3"
-                    :class="form.isActive ? 'bg-[#1a5c4c]/5 border-[#1a5c4c]/40 shadow-2xs' : 'bg-gray-50/70 border-gray-200 hover:border-gray-300'"
+                    :class="form.isActive ? 'bg-[#1b3b5f]/5 border-[#1b3b5f]/40 shadow-2xs' : 'bg-gray-50/70 border-gray-200 hover:border-gray-300'"
                   >
                     <div class="min-w-0">
                       <div class="flex items-center gap-2">
-                        <span class="font-bold text-xs" :class="form.isActive ? 'text-[#1a5c4c]' : 'text-gray-700'">
+                        <span class="font-bold text-xs" :class="form.isActive ? 'text-[#1b3b5f]' : 'text-gray-700'">
                           Active Customer Account
                         </span>
                         <span 
                           class="text-[9px] font-black uppercase px-1.5 py-0.2 rounded"
-                          :class="form.isActive ? 'bg-[#1a5c4c] text-white' : 'bg-gray-200 text-gray-600'"
+                          :class="form.isActive ? 'bg-[#1b3b5f] text-white' : 'bg-gray-200 text-gray-600'"
                         >
                           {{ form.isActive ? 'ACTIVE' : 'INACTIVE' }}
                         </span>
@@ -783,7 +783,7 @@
                     <!-- Toggle Switch UI -->
                     <div 
                       class="w-11 h-6 rounded-full transition-colors relative shrink-0 p-0.5"
-                      :class="form.isActive ? 'bg-[#1a5c4c]' : 'bg-gray-300'"
+                      :class="form.isActive ? 'bg-[#1b3b5f]' : 'bg-gray-300'"
                     >
                       <div 
                         class="w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-200 ease-in-out"
@@ -833,7 +833,7 @@
                 <div class="flex items-center justify-between pb-2 border-b border-gray-100">
                   <div>
                     <div class="flex items-center gap-2 font-bold text-gray-800 text-xs uppercase tracking-wider">
-                      <MapPin class="w-4 h-4 text-[#1a5c4c]" />
+                      <MapPin class="w-4 h-4 text-[#1b3b5f]" />
                       <span>Registered Delivery Locations ({{ form.addresses.length }})</span>
                     </div>
                     <p class="text-[11px] text-gray-500 mt-0.5">Select a default delivery location and manage site addresses</p>
@@ -841,7 +841,7 @@
                   <button 
                     type="button" 
                     @click="addAddressRow" 
-                    class="text-xs font-bold text-[#1a5c4c] bg-[#1a5c4c]/10 hover:bg-[#1a5c4c]/20 px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors"
+                    class="text-xs font-bold text-[#1b3b5f] bg-[#1b3b5f]/10 hover:bg-[#1b3b5f]/20 px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors"
                   >
                     <Plus class="w-3.5 h-3.5" />
                     <span>Add Location</span>
@@ -861,7 +861,7 @@
                           v-model="addr.label" 
                           type="text" 
                           placeholder="Location Label: e.g. Main Showroom, Hebbal Godown..." 
-                          class="w-full font-bold text-xs px-3 py-1.5 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-[#1a5c4c]/20 focus:border-[#1a5c4c] outline-none" 
+                          class="w-full font-bold text-xs px-3 py-1.5 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f] outline-none" 
                         />
                       </div>
 
@@ -872,7 +872,7 @@
                           @click="setDefaultAddress(idx)"
                           class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all select-none"
                           :class="addr.isDefault 
-                            ? 'bg-[#1a5c4c] text-white shadow-xs' 
+                            ? 'bg-[#1b3b5f] text-white shadow-xs' 
                             : 'bg-white text-gray-600 hover:text-gray-900 border border-gray-200 hover:bg-gray-100'"
                         >
                           <CheckCircle2 v-if="addr.isDefault" class="w-3.5 h-3.5 text-white" />
@@ -913,7 +913,7 @@
                           v-model="addr.addressLine" 
                           type="text" 
                           placeholder="Street Address / Building / Area" 
-                          class="w-full text-xs px-3 py-1.5 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-[#1a5c4c]/20 focus:border-[#1a5c4c] outline-none" 
+                          class="w-full text-xs px-3 py-1.5 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f] outline-none" 
                         />
                       </div>
                       <div>
@@ -921,7 +921,7 @@
                           v-model="addr.city" 
                           type="text" 
                           placeholder="City (e.g. Mysuru)" 
-                          class="w-full text-xs px-3 py-1.5 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-[#1a5c4c]/20 focus:border-[#1a5c4c] outline-none" 
+                          class="w-full text-xs px-3 py-1.5 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f] outline-none" 
                         />
                       </div>
                       <div>
@@ -929,7 +929,7 @@
                           v-model="addr.pincode" 
                           type="text" 
                           placeholder="Pincode (optional)" 
-                          class="w-full text-xs px-3 py-1.5 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-[#1a5c4c]/20 focus:border-[#1a5c4c] outline-none" 
+                          class="w-full text-xs px-3 py-1.5 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f] outline-none" 
                         />
                       </div>
                     </div>
@@ -956,7 +956,7 @@
                 type="submit"
                 form="customerForm"
                 :disabled="isSaving"
-                class="flex-1 sm:flex-initial text-center justify-center px-5 py-2 bg-[#1a5c4c] text-white rounded-xl text-xs font-bold hover:bg-[#14483b] transition-colors flex items-center gap-2 shadow-sm disabled:opacity-50 cursor-pointer"
+                class="flex-1 sm:flex-initial text-center justify-center px-5 py-2 bg-[#1b3b5f] text-white rounded-xl text-xs font-bold hover:bg-[#132c49] transition-colors flex items-center gap-2 shadow-sm disabled:opacity-50 cursor-pointer"
               >
                 <Loader2 v-if="isSaving" class="w-4 h-4 animate-spin" />
                 <span>{{ isSaving ? 'Saving...' : (editingCustomer ? 'Save Changes' : 'Create Customer') }}</span>

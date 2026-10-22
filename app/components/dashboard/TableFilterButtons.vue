@@ -333,11 +333,11 @@ const deliveryStatusOptions = [
         type="button"
         @click="toggleDatePicker"
         class="w-full sm:w-auto flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 border border-gray-300 rounded-lg text-xs sm:text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors shadow-2xs sm:shadow-sm cursor-pointer whitespace-nowrap"
-        :class="{ 'border-[#1a5c4c] ring-1 ring-[#1a5c4c] text-[#1a5c4c]': startDate || endDate }"
+        :class="{ 'border-[#1b3b5f] ring-1 ring-[#1b3b5f] text-[#1b3b5f]': startDate || endDate }"
       >
-        <Calendar class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-500 shrink-0" :class="{ 'text-[#1a5c4c]': startDate || endDate }" />
+        <Calendar class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-500 shrink-0" :class="{ 'text-[#1b3b5f]': startDate || endDate }" />
         <span class="truncate max-w-[85px] sm:max-w-none">{{ dateButtonText }}</span>
-        <span v-if="startDate || endDate" class="w-1.5 h-1.5 rounded-full bg-[#1a5c4c] shrink-0" />
+        <span v-if="startDate || endDate" class="w-1.5 h-1.5 rounded-full bg-[#1b3b5f] shrink-0" />
       </button>
 
       <!-- Date Popover Content -->
@@ -354,7 +354,7 @@ const deliveryStatusOptions = [
         <div class="p-4 pb-3 flex items-center justify-between border-b border-gray-100 flex-shrink-0">
           <div class="flex items-center gap-2 truncate">
             <h4 class="text-xs font-bold text-gray-900 uppercase tracking-wider">Date Range</h4>
-            <span v-if="startDate || endDate" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#1a5c4c]/10 text-[#1a5c4c] truncate max-w-[130px]">
+            <span v-if="startDate || endDate" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#1b3b5f]/10 text-[#1b3b5f] truncate max-w-[130px]">
               {{ dateButtonText }}
             </span>
           </div>
@@ -373,7 +373,7 @@ const deliveryStatusOptions = [
                 v-if="startDate || endDate" 
                 type="button"
                 @click.stop="resetDates"
-                class="text-[10px] font-semibold text-[#1a5c4c] hover:underline cursor-pointer"
+                class="text-[10px] font-semibold text-[#1b3b5f] hover:underline cursor-pointer"
               >
                 Reset
               </button>
@@ -384,52 +384,52 @@ const deliveryStatusOptions = [
                 type="button"
                 @click="setDatePreset('today')"
                 class="px-3 py-2 text-xs rounded-xl border text-left transition-all duration-150 flex items-center justify-between cursor-pointer"
-                :class="isPresetActive('today') ? 'border-[#1a5c4c] bg-[#1a5c4c]/5 text-[#1a5c4c] font-semibold ring-1 ring-[#1a5c4c]/20' : 'border-gray-200 bg-white hover:border-gray-300 text-gray-700 hover:bg-gray-50/50'"
+                :class="isPresetActive('today') ? 'border-[#1b3b5f] bg-[#1b3b5f]/5 text-[#1b3b5f] font-semibold ring-1 ring-[#1b3b5f]/20' : 'border-gray-200 bg-white hover:border-gray-300 text-gray-700 hover:bg-gray-50/50'"
               >
                 <div class="flex items-center gap-2 truncate">
-                  <span class="w-2 h-2 rounded-full shrink-0" :class="isPresetActive('today') ? 'bg-[#1a5c4c]' : 'bg-gray-300'" />
+                  <span class="w-2 h-2 rounded-full shrink-0" :class="isPresetActive('today') ? 'bg-[#1b3b5f]' : 'bg-gray-300'" />
                   <span class="truncate">Today</span>
                 </div>
-                <Check v-if="isPresetActive('today')" class="w-3.5 h-3.5 text-[#1a5c4c] shrink-0 ml-1" />
+                <Check v-if="isPresetActive('today')" class="w-3.5 h-3.5 text-[#1b3b5f] shrink-0 ml-1" />
               </button>
 
               <button 
                 type="button"
                 @click="setDatePreset('yesterday')"
                 class="px-3 py-2 text-xs rounded-xl border text-left transition-all duration-150 flex items-center justify-between cursor-pointer"
-                :class="isPresetActive('yesterday') ? 'border-[#1a5c4c] bg-[#1a5c4c]/5 text-[#1a5c4c] font-semibold ring-1 ring-[#1a5c4c]/20' : 'border-gray-200 bg-white hover:border-gray-300 text-gray-700 hover:bg-gray-50/50'"
+                :class="isPresetActive('yesterday') ? 'border-[#1b3b5f] bg-[#1b3b5f]/5 text-[#1b3b5f] font-semibold ring-1 ring-[#1b3b5f]/20' : 'border-gray-200 bg-white hover:border-gray-300 text-gray-700 hover:bg-gray-50/50'"
               >
                 <div class="flex items-center gap-2 truncate">
-                  <span class="w-2 h-2 rounded-full shrink-0" :class="isPresetActive('yesterday') ? 'bg-[#1a5c4c]' : 'bg-gray-300'" />
+                  <span class="w-2 h-2 rounded-full shrink-0" :class="isPresetActive('yesterday') ? 'bg-[#1b3b5f]' : 'bg-gray-300'" />
                   <span class="truncate">Yesterday</span>
                 </div>
-                <Check v-if="isPresetActive('yesterday')" class="w-3.5 h-3.5 text-[#1a5c4c] shrink-0 ml-1" />
+                <Check v-if="isPresetActive('yesterday')" class="w-3.5 h-3.5 text-[#1b3b5f] shrink-0 ml-1" />
               </button>
 
               <button 
                 type="button"
                 @click="setDatePreset('last7')"
                 class="px-3 py-2 text-xs rounded-xl border text-left transition-all duration-150 flex items-center justify-between cursor-pointer"
-                :class="isPresetActive('last7') ? 'border-[#1a5c4c] bg-[#1a5c4c]/5 text-[#1a5c4c] font-semibold ring-1 ring-[#1a5c4c]/20' : 'border-gray-200 bg-white hover:border-gray-300 text-gray-700 hover:bg-gray-50/50'"
+                :class="isPresetActive('last7') ? 'border-[#1b3b5f] bg-[#1b3b5f]/5 text-[#1b3b5f] font-semibold ring-1 ring-[#1b3b5f]/20' : 'border-gray-200 bg-white hover:border-gray-300 text-gray-700 hover:bg-gray-50/50'"
               >
                 <div class="flex items-center gap-2 truncate">
-                  <span class="w-2 h-2 rounded-full shrink-0" :class="isPresetActive('last7') ? 'bg-[#1a5c4c]' : 'bg-gray-300'" />
+                  <span class="w-2 h-2 rounded-full shrink-0" :class="isPresetActive('last7') ? 'bg-[#1b3b5f]' : 'bg-gray-300'" />
                   <span class="truncate">Last 7 Days</span>
                 </div>
-                <Check v-if="isPresetActive('last7')" class="w-3.5 h-3.5 text-[#1a5c4c] shrink-0 ml-1" />
+                <Check v-if="isPresetActive('last7')" class="w-3.5 h-3.5 text-[#1b3b5f] shrink-0 ml-1" />
               </button>
 
               <button 
                 type="button"
                 @click="setDatePreset('thisMonth')"
                 class="px-3 py-2 text-xs rounded-xl border text-left transition-all duration-150 flex items-center justify-between cursor-pointer"
-                :class="isPresetActive('thisMonth') ? 'border-[#1a5c4c] bg-[#1a5c4c]/5 text-[#1a5c4c] font-semibold ring-1 ring-[#1a5c4c]/20' : 'border-gray-200 bg-white hover:border-gray-300 text-gray-700 hover:bg-gray-50/50'"
+                :class="isPresetActive('thisMonth') ? 'border-[#1b3b5f] bg-[#1b3b5f]/5 text-[#1b3b5f] font-semibold ring-1 ring-[#1b3b5f]/20' : 'border-gray-200 bg-white hover:border-gray-300 text-gray-700 hover:bg-gray-50/50'"
               >
                 <div class="flex items-center gap-2 truncate">
-                  <span class="w-2 h-2 rounded-full shrink-0" :class="isPresetActive('thisMonth') ? 'bg-[#1a5c4c]' : 'bg-gray-300'" />
+                  <span class="w-2 h-2 rounded-full shrink-0" :class="isPresetActive('thisMonth') ? 'bg-[#1b3b5f]' : 'bg-gray-300'" />
                   <span class="truncate">This Month</span>
                 </div>
-                <Check v-if="isPresetActive('thisMonth')" class="w-3.5 h-3.5 text-[#1a5c4c] shrink-0 ml-1" />
+                <Check v-if="isPresetActive('thisMonth')" class="w-3.5 h-3.5 text-[#1b3b5f] shrink-0 ml-1" />
               </button>
             </div>
           </div>
@@ -442,7 +442,7 @@ const deliveryStatusOptions = [
                 v-if="startDate || endDate" 
                 type="button"
                 @click.stop="resetDates"
-                class="text-[10px] font-semibold text-[#1a5c4c] hover:underline cursor-pointer"
+                class="text-[10px] font-semibold text-[#1b3b5f] hover:underline cursor-pointer"
               >
                 Reset
               </button>
@@ -457,7 +457,7 @@ const deliveryStatusOptions = [
                     @input="e => emit('update:startDate', (e.target as HTMLInputElement).value)"
                     type="date" 
                     class="w-full px-3.5 py-2.5 rounded-xl border text-xs sm:text-sm font-medium transition-all text-gray-800 bg-white focus:outline-none cursor-pointer"
-                    :class="startDate ? 'border-[#1a5c4c] bg-[#1a5c4c]/5 ring-1 ring-[#1a5c4c]/20 font-medium' : 'border-gray-200 hover:border-gray-300 focus:border-gray-400'"
+                    :class="startDate ? 'border-[#1b3b5f] bg-[#1b3b5f]/5 ring-1 ring-[#1b3b5f]/20 font-medium' : 'border-gray-200 hover:border-gray-300 focus:border-gray-400'"
                   />
                 </div>
               </div>
@@ -470,7 +470,7 @@ const deliveryStatusOptions = [
                     @input="e => emit('update:endDate', (e.target as HTMLInputElement).value)"
                     type="date" 
                     class="w-full px-3.5 py-2.5 rounded-xl border text-xs sm:text-sm font-medium transition-all text-gray-800 bg-white focus:outline-none cursor-pointer"
-                    :class="endDate ? 'border-[#1a5c4c] bg-[#1a5c4c]/5 ring-1 ring-[#1a5c4c]/20 font-medium' : 'border-gray-200 hover:border-gray-300 focus:border-gray-400'"
+                    :class="endDate ? 'border-[#1b3b5f] bg-[#1b3b5f]/5 ring-1 ring-[#1b3b5f]/20 font-medium' : 'border-gray-200 hover:border-gray-300 focus:border-gray-400'"
                   />
                 </div>
               </div>
@@ -490,7 +490,7 @@ const deliveryStatusOptions = [
           <button 
             type="button"
             @click="isDatePickerOpen = false" 
-            class="px-4 py-2 bg-[#1a5c4c] text-white text-xs font-semibold rounded-xl hover:bg-[#1a5c4c]/90 transition-all shadow-sm cursor-pointer"
+            class="px-4 py-2 bg-[#1b3b5f] text-white text-xs font-semibold rounded-xl hover:bg-[#1b3b5f]/90 transition-all shadow-sm cursor-pointer"
           >
             Show Results
           </button>
@@ -505,11 +505,11 @@ const deliveryStatusOptions = [
         type="button"
         @click="toggleFilters"
         class="w-full sm:w-auto flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 border border-gray-300 rounded-lg text-xs sm:text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors shadow-2xs sm:shadow-sm cursor-pointer whitespace-nowrap"
-        :class="{ 'border-[#1a5c4c] ring-1 ring-[#1a5c4c] text-[#1a5c4c]': activeFilterCount > 0 }"
+        :class="{ 'border-[#1b3b5f] ring-1 ring-[#1b3b5f] text-[#1b3b5f]': activeFilterCount > 0 }"
       >
-        <Filter class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-500 shrink-0" :class="{ 'text-[#1a5c4c]': activeFilterCount > 0 }" />
+        <Filter class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-500 shrink-0" :class="{ 'text-[#1b3b5f]': activeFilterCount > 0 }" />
         <span>Filters</span>
-        <span v-if="activeFilterCount > 0" class="flex items-center justify-center w-4 h-4 sm:w-5 sm:h-5 ml-0.5 sm:ml-1 bg-[#1a5c4c] text-white text-[9px] sm:text-[10px] font-bold rounded-full shrink-0">
+        <span v-if="activeFilterCount > 0" class="flex items-center justify-center w-4 h-4 sm:w-5 sm:h-5 ml-0.5 sm:ml-1 bg-[#1b3b5f] text-white text-[9px] sm:text-[10px] font-bold rounded-full shrink-0">
           {{ activeFilterCount }}
         </span>
       </button>
@@ -528,7 +528,7 @@ const deliveryStatusOptions = [
         <div class="p-4 pb-3 flex items-center justify-between border-b border-gray-100 flex-shrink-0" @click="activeDropdown = null">
           <div class="flex items-center gap-2">
             <h4 class="text-xs font-bold text-gray-900 uppercase tracking-wider">Filters</h4>
-            <span v-if="activeFilterCount > 0" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#1a5c4c]/10 text-[#1a5c4c]">
+            <span v-if="activeFilterCount > 0" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#1b3b5f]/10 text-[#1b3b5f]">
               {{ activeFilterCount }} active
             </span>
           </div>
@@ -554,7 +554,7 @@ const deliveryStatusOptions = [
                 v-if="status" 
                 type="button"
                 @click.stop="emit('update:status', '')"
-                class="text-[10px] font-semibold text-[#1a5c4c] hover:underline cursor-pointer"
+                class="text-[10px] font-semibold text-[#1b3b5f] hover:underline cursor-pointer"
               >
                 Reset
               </button>
@@ -565,13 +565,13 @@ const deliveryStatusOptions = [
                 type="button"
                 @click.stop="toggleDropdown('status')"
                 class="w-full px-3.5 py-2.5 rounded-xl border text-sm flex items-center justify-between transition-all duration-150 text-left cursor-pointer"
-                :class="status ? 'border-[#1a5c4c] bg-[#1a5c4c]/5 text-gray-900 ring-1 ring-[#1a5c4c]/20 font-medium' : 'border-gray-200 bg-white hover:border-gray-300 text-gray-700 hover:bg-gray-50/50'"
+                :class="status ? 'border-[#1b3b5f] bg-[#1b3b5f]/5 text-gray-900 ring-1 ring-[#1b3b5f]/20 font-medium' : 'border-gray-200 bg-white hover:border-gray-300 text-gray-700 hover:bg-gray-50/50'"
               >
                 <div class="flex items-center gap-2.5 truncate">
                   <span class="w-2 h-2 rounded-full shrink-0" :class="getStatusDot(status, overallStatusOptions)" />
                   <span class="truncate font-medium text-xs sm:text-sm">{{ getOptionLabel(status, overallStatusOptions) }}</span>
                 </div>
-                <ChevronDown class="w-4 h-4 text-gray-400 shrink-0 transition-transform duration-200" :class="{ 'rotate-180 text-[#1a5c4c]': activeDropdown === 'status' }" />
+                <ChevronDown class="w-4 h-4 text-gray-400 shrink-0 transition-transform duration-200" :class="{ 'rotate-180 text-[#1b3b5f]': activeDropdown === 'status' }" />
               </button>
 
               <!-- Dropdown Menu -->
@@ -593,13 +593,13 @@ const deliveryStatusOptions = [
                     type="button"
                     @click.stop="selectOption('status', opt.value)"
                     class="w-full px-3.5 py-2 text-xs flex items-center justify-between text-left transition-colors cursor-pointer"
-                    :class="status === opt.value ? 'bg-[#1a5c4c]/10 text-[#1a5c4c] font-semibold' : 'text-gray-700 hover:bg-gray-50'"
+                    :class="status === opt.value ? 'bg-[#1b3b5f]/10 text-[#1b3b5f] font-semibold' : 'text-gray-700 hover:bg-gray-50'"
                   >
                     <div class="flex items-center gap-2.5 truncate">
                       <span class="w-2 h-2 rounded-full shrink-0" :class="opt.dot" />
                       <span class="truncate">{{ opt.label }}</span>
                     </div>
-                    <Check v-if="status === opt.value" class="w-3.5 h-3.5 text-[#1a5c4c] shrink-0 ml-1.5" />
+                    <Check v-if="status === opt.value" class="w-3.5 h-3.5 text-[#1b3b5f] shrink-0 ml-1.5" />
                   </button>
                 </div>
               </Transition>
@@ -614,7 +614,7 @@ const deliveryStatusOptions = [
                 v-if="isApproved !== undefined && isApproved !== ''" 
                 type="button"
                 @click.stop="emit('update:isApproved', '')"
-                class="text-[10px] font-semibold text-[#1a5c4c] hover:underline cursor-pointer"
+                class="text-[10px] font-semibold text-[#1b3b5f] hover:underline cursor-pointer"
               >
                 Reset
               </button>
@@ -625,13 +625,13 @@ const deliveryStatusOptions = [
                 type="button"
                 @click.stop="toggleDropdown('isApproved')"
                 class="w-full px-3.5 py-2.5 rounded-xl border text-sm flex items-center justify-between transition-all duration-150 text-left cursor-pointer"
-                :class="(isApproved !== undefined && isApproved !== '') ? 'border-[#1a5c4c] bg-[#1a5c4c]/5 text-gray-900 ring-1 ring-[#1a5c4c]/20 font-medium' : 'border-gray-200 bg-white hover:border-gray-300 text-gray-700 hover:bg-gray-50/50'"
+                :class="(isApproved !== undefined && isApproved !== '') ? 'border-[#1b3b5f] bg-[#1b3b5f]/5 text-gray-900 ring-1 ring-[#1b3b5f]/20 font-medium' : 'border-gray-200 bg-white hover:border-gray-300 text-gray-700 hover:bg-gray-50/50'"
               >
                 <div class="flex items-center gap-2.5 truncate">
                   <span class="w-2 h-2 rounded-full shrink-0" :class="getStatusDot(isApproved, approvalStatusOptions)" />
                   <span class="truncate font-medium text-xs sm:text-sm">{{ getOptionLabel(isApproved, approvalStatusOptions) }}</span>
                 </div>
-                <ChevronDown class="w-4 h-4 text-gray-400 shrink-0 transition-transform duration-200" :class="{ 'rotate-180 text-[#1a5c4c]': activeDropdown === 'isApproved' }" />
+                <ChevronDown class="w-4 h-4 text-gray-400 shrink-0 transition-transform duration-200" :class="{ 'rotate-180 text-[#1b3b5f]': activeDropdown === 'isApproved' }" />
               </button>
 
               <!-- Dropdown Menu -->
@@ -653,13 +653,13 @@ const deliveryStatusOptions = [
                     type="button"
                     @click.stop="selectOption('isApproved', opt.value)"
                     class="w-full px-3.5 py-2 text-xs flex items-center justify-between text-left transition-colors cursor-pointer"
-                    :class="isApproved === opt.value ? 'bg-[#1a5c4c]/10 text-[#1a5c4c] font-semibold' : 'text-gray-700 hover:bg-gray-50'"
+                    :class="isApproved === opt.value ? 'bg-[#1b3b5f]/10 text-[#1b3b5f] font-semibold' : 'text-gray-700 hover:bg-gray-50'"
                   >
                     <div class="flex items-center gap-2.5 truncate">
                       <span class="w-2 h-2 rounded-full shrink-0" :class="opt.dot" />
                       <span class="truncate">{{ opt.label }}</span>
                     </div>
-                    <Check v-if="isApproved === opt.value" class="w-3.5 h-3.5 text-[#1a5c4c] shrink-0 ml-1.5" />
+                    <Check v-if="isApproved === opt.value" class="w-3.5 h-3.5 text-[#1b3b5f] shrink-0 ml-1.5" />
                   </button>
                 </div>
               </Transition>
@@ -674,7 +674,7 @@ const deliveryStatusOptions = [
                 v-if="packingStatus" 
                 type="button"
                 @click.stop="emit('update:packingStatus', '')"
-                class="text-[10px] font-semibold text-[#1a5c4c] hover:underline cursor-pointer"
+                class="text-[10px] font-semibold text-[#1b3b5f] hover:underline cursor-pointer"
               >
                 Reset
               </button>
@@ -685,13 +685,13 @@ const deliveryStatusOptions = [
                 type="button"
                 @click.stop="toggleDropdown('packingStatus')"
                 class="w-full px-3.5 py-2.5 rounded-xl border text-sm flex items-center justify-between transition-all duration-150 text-left cursor-pointer"
-                :class="packingStatus ? 'border-[#1a5c4c] bg-[#1a5c4c]/5 text-gray-900 ring-1 ring-[#1a5c4c]/20 font-medium' : 'border-gray-200 bg-white hover:border-gray-300 text-gray-700 hover:bg-gray-50/50'"
+                :class="packingStatus ? 'border-[#1b3b5f] bg-[#1b3b5f]/5 text-gray-900 ring-1 ring-[#1b3b5f]/20 font-medium' : 'border-gray-200 bg-white hover:border-gray-300 text-gray-700 hover:bg-gray-50/50'"
               >
                 <div class="flex items-center gap-2.5 truncate">
                   <span class="w-2 h-2 rounded-full shrink-0" :class="getStatusDot(packingStatus, packingStatusOptions)" />
                   <span class="truncate font-medium text-xs sm:text-sm">{{ getOptionLabel(packingStatus, packingStatusOptions) }}</span>
                 </div>
-                <ChevronDown class="w-4 h-4 text-gray-400 shrink-0 transition-transform duration-200" :class="{ 'rotate-180 text-[#1a5c4c]': activeDropdown === 'packingStatus' }" />
+                <ChevronDown class="w-4 h-4 text-gray-400 shrink-0 transition-transform duration-200" :class="{ 'rotate-180 text-[#1b3b5f]': activeDropdown === 'packingStatus' }" />
               </button>
 
               <!-- Dropdown Menu -->
@@ -713,13 +713,13 @@ const deliveryStatusOptions = [
                     type="button"
                     @click.stop="selectOption('packingStatus', opt.value)"
                     class="w-full px-3.5 py-2 text-xs flex items-center justify-between text-left transition-colors cursor-pointer"
-                    :class="packingStatus === opt.value ? 'bg-[#1a5c4c]/10 text-[#1a5c4c] font-semibold' : 'text-gray-700 hover:bg-gray-50'"
+                    :class="packingStatus === opt.value ? 'bg-[#1b3b5f]/10 text-[#1b3b5f] font-semibold' : 'text-gray-700 hover:bg-gray-50'"
                   >
                     <div class="flex items-center gap-2.5 truncate">
                       <span class="w-2 h-2 rounded-full shrink-0" :class="opt.dot" />
                       <span class="truncate">{{ opt.label }}</span>
                     </div>
-                    <Check v-if="packingStatus === opt.value" class="w-3.5 h-3.5 text-[#1a5c4c] shrink-0 ml-1.5" />
+                    <Check v-if="packingStatus === opt.value" class="w-3.5 h-3.5 text-[#1b3b5f] shrink-0 ml-1.5" />
                   </button>
                 </div>
               </Transition>
@@ -734,7 +734,7 @@ const deliveryStatusOptions = [
                 v-if="billingStatus" 
                 type="button"
                 @click.stop="emit('update:billingStatus', '')"
-                class="text-[10px] font-semibold text-[#1a5c4c] hover:underline cursor-pointer"
+                class="text-[10px] font-semibold text-[#1b3b5f] hover:underline cursor-pointer"
               >
                 Reset
               </button>
@@ -745,13 +745,13 @@ const deliveryStatusOptions = [
                 type="button"
                 @click.stop="toggleDropdown('billingStatus')"
                 class="w-full px-3.5 py-2.5 rounded-xl border text-sm flex items-center justify-between transition-all duration-150 text-left cursor-pointer"
-                :class="billingStatus ? 'border-[#1a5c4c] bg-[#1a5c4c]/5 text-gray-900 ring-1 ring-[#1a5c4c]/20 font-medium' : 'border-gray-200 bg-white hover:border-gray-300 text-gray-700 hover:bg-gray-50/50'"
+                :class="billingStatus ? 'border-[#1b3b5f] bg-[#1b3b5f]/5 text-gray-900 ring-1 ring-[#1b3b5f]/20 font-medium' : 'border-gray-200 bg-white hover:border-gray-300 text-gray-700 hover:bg-gray-50/50'"
               >
                 <div class="flex items-center gap-2.5 truncate">
                   <span class="w-2 h-2 rounded-full shrink-0" :class="getStatusDot(billingStatus, billingStatusOptions)" />
                   <span class="truncate font-medium text-xs sm:text-sm">{{ getOptionLabel(billingStatus, billingStatusOptions) }}</span>
                 </div>
-                <ChevronDown class="w-4 h-4 text-gray-400 shrink-0 transition-transform duration-200" :class="{ 'rotate-180 text-[#1a5c4c]': activeDropdown === 'billingStatus' }" />
+                <ChevronDown class="w-4 h-4 text-gray-400 shrink-0 transition-transform duration-200" :class="{ 'rotate-180 text-[#1b3b5f]': activeDropdown === 'billingStatus' }" />
               </button>
 
               <!-- Dropdown Menu -->
@@ -773,13 +773,13 @@ const deliveryStatusOptions = [
                     type="button"
                     @click.stop="selectOption('billingStatus', opt.value)"
                     class="w-full px-3.5 py-2 text-xs flex items-center justify-between text-left transition-colors cursor-pointer"
-                    :class="billingStatus === opt.value ? 'bg-[#1a5c4c]/10 text-[#1a5c4c] font-semibold' : 'text-gray-700 hover:bg-gray-50'"
+                    :class="billingStatus === opt.value ? 'bg-[#1b3b5f]/10 text-[#1b3b5f] font-semibold' : 'text-gray-700 hover:bg-gray-50'"
                   >
                     <div class="flex items-center gap-2.5 truncate">
                       <span class="w-2 h-2 rounded-full shrink-0" :class="opt.dot" />
                       <span class="truncate">{{ opt.label }}</span>
                     </div>
-                    <Check v-if="billingStatus === opt.value" class="w-3.5 h-3.5 text-[#1a5c4c] shrink-0 ml-1.5" />
+                    <Check v-if="billingStatus === opt.value" class="w-3.5 h-3.5 text-[#1b3b5f] shrink-0 ml-1.5" />
                   </button>
                 </div>
               </Transition>
@@ -794,7 +794,7 @@ const deliveryStatusOptions = [
                 v-if="deliveryStatus" 
                 type="button"
                 @click.stop="emit('update:deliveryStatus', '')"
-                class="text-[10px] font-semibold text-[#1a5c4c] hover:underline cursor-pointer"
+                class="text-[10px] font-semibold text-[#1b3b5f] hover:underline cursor-pointer"
               >
                 Reset
               </button>
@@ -805,13 +805,13 @@ const deliveryStatusOptions = [
                 type="button"
                 @click.stop="toggleDropdown('deliveryStatus')"
                 class="w-full px-3.5 py-2.5 rounded-xl border text-sm flex items-center justify-between transition-all duration-150 text-left cursor-pointer"
-                :class="deliveryStatus ? 'border-[#1a5c4c] bg-[#1a5c4c]/5 text-gray-900 ring-1 ring-[#1a5c4c]/20 font-medium' : 'border-gray-200 bg-white hover:border-gray-300 text-gray-700 hover:bg-gray-50/50'"
+                :class="deliveryStatus ? 'border-[#1b3b5f] bg-[#1b3b5f]/5 text-gray-900 ring-1 ring-[#1b3b5f]/20 font-medium' : 'border-gray-200 bg-white hover:border-gray-300 text-gray-700 hover:bg-gray-50/50'"
               >
                 <div class="flex items-center gap-2.5 truncate">
                   <span class="w-2 h-2 rounded-full shrink-0" :class="getStatusDot(deliveryStatus, deliveryStatusOptions)" />
                   <span class="truncate font-medium text-xs sm:text-sm">{{ getOptionLabel(deliveryStatus, deliveryStatusOptions) }}</span>
                 </div>
-                <ChevronDown class="w-4 h-4 text-gray-400 shrink-0 transition-transform duration-200" :class="{ 'rotate-180 text-[#1a5c4c]': activeDropdown === 'deliveryStatus' }" />
+                <ChevronDown class="w-4 h-4 text-gray-400 shrink-0 transition-transform duration-200" :class="{ 'rotate-180 text-[#1b3b5f]': activeDropdown === 'deliveryStatus' }" />
               </button>
 
               <!-- Dropdown Menu -->
@@ -833,13 +833,13 @@ const deliveryStatusOptions = [
                     type="button"
                     @click.stop="selectOption('deliveryStatus', opt.value)"
                     class="w-full px-3.5 py-2 text-xs flex items-center justify-between text-left transition-colors cursor-pointer"
-                    :class="deliveryStatus === opt.value ? 'bg-[#1a5c4c]/10 text-[#1a5c4c] font-semibold' : 'text-gray-700 hover:bg-gray-50'"
+                    :class="deliveryStatus === opt.value ? 'bg-[#1b3b5f]/10 text-[#1b3b5f] font-semibold' : 'text-gray-700 hover:bg-gray-50'"
                   >
                     <div class="flex items-center gap-2.5 truncate">
                       <span class="w-2 h-2 rounded-full shrink-0" :class="opt.dot" />
                       <span class="truncate">{{ opt.label }}</span>
                     </div>
-                    <Check v-if="deliveryStatus === opt.value" class="w-3.5 h-3.5 text-[#1a5c4c] shrink-0 ml-1.5" />
+                    <Check v-if="deliveryStatus === opt.value" class="w-3.5 h-3.5 text-[#1b3b5f] shrink-0 ml-1.5" />
                   </button>
                 </div>
               </Transition>
@@ -859,7 +859,7 @@ const deliveryStatusOptions = [
           <button 
             type="button"
             @click="isFiltersOpen = false" 
-            class="px-4 py-2 bg-[#1a5c4c] text-white text-xs font-semibold rounded-xl hover:bg-[#1a5c4c]/90 transition-all shadow-sm cursor-pointer"
+            class="px-4 py-2 bg-[#1b3b5f] text-white text-xs font-semibold rounded-xl hover:bg-[#1b3b5f]/90 transition-all shadow-sm cursor-pointer"
           >
             Show Results
           </button>

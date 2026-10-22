@@ -3,7 +3,7 @@
     <!-- Header (WhatsApp style) -->
     <header class="bg-[#f0f2f5] border-b border-gray-200 px-4 py-3 flex items-center justify-between shrink-0 z-20">
       <div class="flex items-center gap-4">
-        <div class="w-10 h-10 rounded-full bg-[#1a5c4c] flex items-center justify-center text-white shrink-0 shadow-sm">
+        <div class="w-10 h-10 rounded-full bg-[#1b3b5f] flex items-center justify-center text-white shrink-0 shadow-sm">
           <MessageSquare class="w-5 h-5" />
         </div>
         <div>
@@ -105,7 +105,7 @@
             <!-- Avatar (Only for others) -->
             <div v-if="msg.userId !== user?.id" class="mr-2 mt-1 shrink-0">
               <img 
-                :src="msg.user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(msg.user.name)}&background=e8e0d4&color=1a5c4c`" 
+                :src="msg.user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(msg.user.name)}&background=e8e0d4&color=1b3b5f`" 
                 alt="Avatar" 
                 class="w-8 h-8 rounded-full shadow-sm border border-gray-200"
               />

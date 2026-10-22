@@ -16,15 +16,15 @@
       <div class="flex items-center gap-2.5">
         <button 
           @click="isMastersModalOpen = true"
-          class="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 hover:text-[#1a5c4c] hover:border-emerald-300 px-3.5 py-2 rounded-lg hover:bg-emerald-50/50 transition-all shadow-xs text-sm font-medium cursor-pointer"
+          class="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 hover:text-[#1b3b5f] hover:border-emerald-300 px-3.5 py-2 rounded-lg hover:bg-emerald-50/50 transition-all shadow-xs text-sm font-medium cursor-pointer"
         >
-          <Database class="w-4 h-4 text-[#1a5c4c]" />
+          <Database class="w-4 h-4 text-[#1b3b5f]" />
           <span>Dropdown Masters</span>
         </button>
 
         <button 
           @click="openModal()"
-          class="flex items-center gap-2 bg-[#1a5c4c] text-white px-4 py-2 rounded-lg hover:bg-[#134336] transition-colors shadow-sm text-sm font-medium cursor-pointer"
+          class="flex items-center gap-2 bg-[#1b3b5f] text-white px-4 py-2 rounded-lg hover:bg-[#132c49] transition-colors shadow-sm text-sm font-medium cursor-pointer"
         >
           <Plus class="w-4 h-4" />
           <span>Add User</span>
@@ -123,7 +123,7 @@
                       <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold" :class="getRoleColorClass(role)">
                         {{ role }}
                       </span>
-                      <Check v-if="u.role === role" class="w-3.5 h-3.5 text-[#1a5c4c]" />
+                      <Check v-if="u.role === role" class="w-3.5 h-3.5 text-[#1b3b5f]" />
                     </button>
                   </div>
                 </div>
@@ -144,10 +144,10 @@
                   <button
                     type="button"
                     @click="openModal(u)"
-                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-gray-50 hover:bg-emerald-50 text-gray-700 hover:text-[#1a5c4c] border border-gray-200 hover:border-emerald-300 transition-all cursor-pointer group shadow-2xs w-fit"
+                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-gray-50 hover:bg-emerald-50 text-gray-700 hover:text-[#1b3b5f] border border-gray-200 hover:border-emerald-300 transition-all cursor-pointer group shadow-2xs w-fit"
                     title="Click to view and edit page permissions"
                   >
-                    <KeyRound class="w-3.5 h-3.5 text-gray-400 group-hover:text-[#1a5c4c] transition-colors" />
+                    <KeyRound class="w-3.5 h-3.5 text-gray-400 group-hover:text-[#1b3b5f] transition-colors" />
                     <span>{{ getEffectiveAllowedPages(u).length }} of {{ APP_PAGES.length - 1 }} pages</span>
                   </button>
                   
@@ -212,8 +212,8 @@
                   @click.stop="toggleUserStatus(u)"
                   class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-150 ease-in-out focus:outline-none p-0.5"
                   :class="[
-                    u.id === user?.id ? 'opacity-80 cursor-not-allowed bg-[#1a5c4c]' : (loadingStatusUsers[u.id] ? 'opacity-75 cursor-wait' : 'cursor-pointer'),
-                    u.isActive !== false ? 'bg-[#1a5c4c]' : 'bg-gray-300'
+                    u.id === user?.id ? 'opacity-80 cursor-not-allowed bg-[#1b3b5f]' : (loadingStatusUsers[u.id] ? 'opacity-75 cursor-wait' : 'cursor-pointer'),
+                    u.isActive !== false ? 'bg-[#1b3b5f]' : 'bg-gray-300'
                   ]"
                   :title="u.id === user?.id ? 'You cannot deactivate your own account' : (u.isActive !== false ? 'Click to Deactivate' : 'Click to Activate')"
                 >
@@ -221,7 +221,7 @@
                     class="flex items-center justify-center h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform duration-150 ease-in-out"
                     :class="u.isActive !== false ? 'translate-x-5' : 'translate-x-0'"
                   >
-                    <Loader2 v-if="loadingStatusUsers[u.id]" class="w-3 h-3 animate-spin text-[#1a5c4c]" />
+                    <Loader2 v-if="loadingStatusUsers[u.id]" class="w-3 h-3 animate-spin text-[#1b3b5f]" />
                     <Lock v-else-if="u.id === user?.id" class="w-2.5 h-2.5 text-gray-500" />
                   </span>
                 </button>
@@ -231,7 +231,7 @@
               <td class="px-6 py-4 text-right">
                 <button 
                   @click="openModal(u)"
-                  class="inline-flex items-center gap-1.5 text-[#1a5c4c] hover:text-[#134336] bg-gray-50 hover:bg-emerald-50 px-2.5 py-1 rounded-md border border-gray-200 hover:border-emerald-300 transition-all text-xs font-medium"
+                  class="inline-flex items-center gap-1.5 text-[#1b3b5f] hover:text-[#132c49] bg-gray-50 hover:bg-emerald-50 px-2.5 py-1 rounded-md border border-gray-200 hover:border-emerald-300 transition-all text-xs font-medium"
                   title="Edit User & Permissions"
                 >
                   <Edit2 class="w-3.5 h-3.5" />
@@ -300,8 +300,8 @@
                   @click.stop="toggleUserStatus(u)"
                   class="relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-150 ease-in-out focus:outline-none p-0.5 shrink-0"
                   :class="[
-                    u.id === user?.id ? 'opacity-80 cursor-not-allowed bg-[#1a5c4c]' : (loadingStatusUsers[u.id] ? 'opacity-75 cursor-wait' : 'cursor-pointer'),
-                    u.isActive !== false ? 'bg-[#1a5c4c]' : 'bg-gray-300'
+                    u.id === user?.id ? 'opacity-80 cursor-not-allowed bg-[#1b3b5f]' : (loadingStatusUsers[u.id] ? 'opacity-75 cursor-wait' : 'cursor-pointer'),
+                    u.isActive !== false ? 'bg-[#1b3b5f]' : 'bg-gray-300'
                   ]"
                 >
                   <span 
@@ -373,7 +373,7 @@
             <div class="flex items-center justify-end gap-2 pt-1.5 border-t border-gray-100">
               <button 
                 @click="openModal(u)"
-                class="px-3 py-1.5 text-xs font-semibold text-[#1a5c4c] bg-[#1a5c4c]/10 hover:bg-[#1a5c4c]/20 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer"
+                class="px-3 py-1.5 text-xs font-semibold text-[#1b3b5f] bg-[#1b3b5f]/10 hover:bg-[#1b3b5f]/20 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer"
               >
                 <Edit2 class="w-3 h-3" />
                 <span>Edit User & Permissions</span>
@@ -396,7 +396,7 @@
           <div class="px-4 sm:px-6 py-3.5 sm:py-4 border-b border-gray-200 flex items-center justify-between bg-white shrink-0">
             <div class="min-w-0">
               <h3 class="text-base sm:text-lg font-bold text-[#1a1a1a] flex items-center gap-2 truncate">
-                <ShieldCheck class="w-5 h-5 text-[#1a5c4c] shrink-0" />
+                <ShieldCheck class="w-5 h-5 text-[#1b3b5f] shrink-0" />
                 <span>{{ editingUser?.id === user?.id ? 'Edit My Account & Profile' : (editingUser ? 'Edit User & Permissions' : 'Add New User') }}</span>
               </h3>
               <p class="text-xs text-gray-500 mt-0.5 truncate max-w-xs sm:max-w-md">
@@ -420,7 +420,7 @@
                     required 
                     type="text" 
                     placeholder="e.g. Rahul Sharma"
-                    class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#1a5c4c] focus:ring-1 focus:ring-[#1a5c4c] outline-none text-sm transition-colors" 
+                    class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#1b3b5f] focus:ring-1 focus:ring-[#1b3b5f] outline-none text-sm transition-colors" 
                   />
                 </div>
                 
@@ -431,7 +431,7 @@
                     required 
                     type="email" 
                     placeholder="e.g. rahul@sm.com"
-                    class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#1a5c4c] focus:ring-1 focus:ring-[#1a5c4c] outline-none text-sm transition-colors" 
+                    class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#1b3b5f] focus:ring-1 focus:ring-[#1b3b5f] outline-none text-sm transition-colors" 
                     :disabled="!!editingUser" 
                     :class="editingUser ? 'bg-gray-50 text-gray-500 cursor-not-allowed' : ''" 
                   />
@@ -448,7 +448,7 @@
                     :required="!editingUser" 
                     type="password" 
                     placeholder="••••••••"
-                    class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#1a5c4c] focus:ring-1 focus:ring-[#1a5c4c] outline-none text-sm transition-colors" 
+                    class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#1b3b5f] focus:ring-1 focus:ring-[#1b3b5f] outline-none text-sm transition-colors" 
                   />
                 </div>
 
@@ -494,7 +494,7 @@
                     <h4 class="text-xs font-bold text-gray-800 uppercase tracking-wider">Action & Operation Permissions</h4>
                     <span 
                       class="text-xs font-semibold px-2.5 py-0.5 rounded-full"
-                      :class="form.role === 'ADMIN' ? 'bg-purple-100 text-purple-800 border border-purple-200' : 'bg-emerald-50 text-[#1a5c4c] border border-emerald-200'"
+                      :class="form.role === 'ADMIN' ? 'bg-purple-100 text-purple-800 border border-purple-200' : 'bg-emerald-50 text-[#1b3b5f] border border-emerald-200'"
                     >
                       {{ form.role === 'ADMIN' ? 'All 6 Operations Granted' : `${activeActionCount} of 6 Actions Permitted` }}
                     </span>
@@ -514,14 +514,14 @@
                   :class="[
                     form.role === 'ADMIN' ? 'cursor-not-allowed bg-purple-50/30 border-purple-200' : 'cursor-pointer',
                     form.actionPermissions.canEditOrders 
-                      ? 'border-[#1a5c4c] bg-emerald-50/25 text-[#1a1a1a] shadow-2xs' 
+                      ? 'border-[#1b3b5f] bg-emerald-50/25 text-[#1a1a1a] shadow-2xs' 
                       : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50/60'
                   ]"
                 >
                   <div class="mt-0.5 shrink-0">
                     <div 
                       class="w-4 h-4 rounded border flex items-center justify-center transition-colors"
-                      :class="form.actionPermissions.canEditOrders ? 'bg-[#1a5c4c] border-[#1a5c4c] text-white' : 'border-gray-300 bg-white'"
+                      :class="form.actionPermissions.canEditOrders ? 'bg-[#1b3b5f] border-[#1b3b5f] text-white' : 'border-gray-300 bg-white'"
                     >
                       <Check v-if="form.actionPermissions.canEditOrders" class="w-3 h-3 stroke-[3]" />
                     </div>
@@ -619,14 +619,14 @@
                   :class="[
                     form.role === 'ADMIN' ? 'cursor-not-allowed bg-purple-50/30 border-purple-200' : 'cursor-pointer',
                     form.actionPermissions.canEditCustomers 
-                      ? 'border-[#1a5c4c] bg-emerald-50/25 text-[#1a1a1a] shadow-2xs' 
+                      ? 'border-[#1b3b5f] bg-emerald-50/25 text-[#1a1a1a] shadow-2xs' 
                       : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50/60'
                   ]"
                 >
                   <div class="mt-0.5 shrink-0">
                     <div 
                       class="w-4 h-4 rounded border flex items-center justify-center transition-colors"
-                      :class="form.actionPermissions.canEditCustomers ? 'bg-[#1a5c4c] border-[#1a5c4c] text-white' : 'border-gray-300 bg-white'"
+                      :class="form.actionPermissions.canEditCustomers ? 'bg-[#1b3b5f] border-[#1b3b5f] text-white' : 'border-gray-300 bg-white'"
                     >
                       <Check v-if="form.actionPermissions.canEditCustomers" class="w-3 h-3 stroke-[3]" />
                     </div>
@@ -654,14 +654,14 @@
                   :class="[
                     form.role === 'ADMIN' ? 'cursor-not-allowed bg-purple-50/30 border-purple-200' : 'cursor-pointer',
                     form.actionPermissions.canEditProducts 
-                      ? 'border-[#1a5c4c] bg-emerald-50/25 text-[#1a1a1a] shadow-2xs' 
+                      ? 'border-[#1b3b5f] bg-emerald-50/25 text-[#1a1a1a] shadow-2xs' 
                       : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50/60'
                   ]"
                 >
                   <div class="mt-0.5 shrink-0">
                     <div 
                       class="w-4 h-4 rounded border flex items-center justify-center transition-colors"
-                      :class="form.actionPermissions.canEditProducts ? 'bg-[#1a5c4c] border-[#1a5c4c] text-white' : 'border-gray-300 bg-white'"
+                      :class="form.actionPermissions.canEditProducts ? 'bg-[#1b3b5f] border-[#1b3b5f] text-white' : 'border-gray-300 bg-white'"
                     >
                       <Check v-if="form.actionPermissions.canEditProducts" class="w-3 h-3 stroke-[3]" />
                     </div>
@@ -727,7 +727,7 @@
                     <h4 class="text-xs font-bold text-gray-800 uppercase tracking-wider">Page Access Permissions</h4>
                     <span 
                       class="text-xs font-semibold px-2.5 py-0.5 rounded-full"
-                      :class="form.role === 'ADMIN' ? 'bg-purple-100 text-purple-800 border border-purple-200' : 'bg-emerald-50 text-[#1a5c4c] border border-emerald-200'"
+                      :class="form.role === 'ADMIN' ? 'bg-purple-100 text-purple-800 border border-purple-200' : 'bg-emerald-50 text-[#1b3b5f] border border-emerald-200'"
                     >
                       {{ form.role === 'ADMIN' ? 'All 13 Modules Granted' : `${form.allowedPages.length} of ${availablePagesCount} Selected` }}
                     </span>
@@ -756,7 +756,7 @@
                   <button 
                     type="button" 
                     @click="applyRoleDefaults" 
-                    class="px-2.5 py-1 text-xs font-medium text-[#1a5c4c] hover:bg-emerald-50 bg-emerald-50/50 border border-emerald-200 rounded-md transition-colors"
+                    class="px-2.5 py-1 text-xs font-medium text-[#1b3b5f] hover:bg-emerald-50 bg-emerald-50/50 border border-emerald-200 rounded-md transition-colors"
                     title="Reset to default pages for this role"
                   >
                     Role Defaults
@@ -803,7 +803,7 @@
                 <div v-for="cat in pageCategories" :key="cat" class="space-y-2">
                   <div class="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-gray-500 px-1">
                     <span class="flex items-center gap-1.5">
-                      <span class="w-1.5 h-1.5 rounded-full bg-[#1a5c4c]"></span>
+                      <span class="w-1.5 h-1.5 rounded-full bg-[#1b3b5f]"></span>
                       {{ cat }}
                     </span>
                     <span class="text-[10px] font-normal text-gray-400">
@@ -820,14 +820,14 @@
                       :class="[
                         isPageDisabled(p.key) ? 'opacity-50 cursor-not-allowed bg-gray-50 border-gray-200' : 'cursor-pointer',
                         form.allowedPages.includes(p.key) 
-                          ? 'border-[#1a5c4c] bg-emerald-50/25 text-[#1a1a1a] shadow-2xs' 
+                          ? 'border-[#1b3b5f] bg-emerald-50/25 text-[#1a1a1a] shadow-2xs' 
                           : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50/60'
                       ]"
                     >
                       <div class="mt-0.5 shrink-0">
                         <div 
                           class="w-4 h-4 rounded border flex items-center justify-center transition-colors"
-                          :class="form.allowedPages.includes(p.key) ? 'bg-[#1a5c4c] border-[#1a5c4c] text-white' : 'border-gray-300 bg-white'"
+                          :class="form.allowedPages.includes(p.key) ? 'bg-[#1b3b5f] border-[#1b3b5f] text-white' : 'border-gray-300 bg-white'"
                         >
                           <Check v-if="form.allowedPages.includes(p.key)" class="w-3 h-3 stroke-[3]" />
                         </div>
@@ -862,7 +862,7 @@
               <button 
                 @click="saveUser" 
                 :disabled="isSaving" 
-                class="flex-1 sm:flex-initial text-center justify-center px-5 py-2 text-sm font-medium text-white bg-[#1a5c4c] rounded-lg hover:bg-[#134336] transition-colors disabled:opacity-50 flex items-center gap-2 shadow-xs cursor-pointer"
+                class="flex-1 sm:flex-initial text-center justify-center px-5 py-2 text-sm font-medium text-white bg-[#1b3b5f] rounded-lg hover:bg-[#132c49] transition-colors disabled:opacity-50 flex items-center gap-2 shadow-xs cursor-pointer"
               >
                 <Loader2 v-if="isSaving" class="w-4 h-4 animate-spin" />
                 <span>{{ isSaving ? 'Saving...' : (editingUser ? 'Save Permissions' : 'Create User') }}</span>

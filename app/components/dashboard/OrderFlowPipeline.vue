@@ -14,7 +14,7 @@ const { animateStagger, animateProgressBar, initContext } = useGsapAnimation()
 const containerRef = ref<HTMLElement | null>(null)
 
 const stages = [
-  { name: 'Sales Placed', icon: ShoppingBag, key: 'sales', color: 'text-[#1a5c4c]', bg: 'bg-[#e6f4f1]', border: 'border-emerald-200' },
+  { name: 'Sales Placed', icon: ShoppingBag, key: 'sales', color: 'text-[#1b3b5f]', bg: 'bg-[#e8eff7]', border: 'border-[#1b3b5f]/20' },
   { name: 'Pending Approval', icon: CheckCheck, key: 'approval', color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200' },
   { name: 'In Packing', icon: Box, key: 'packing', color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200' },
   { name: 'Awaiting Billing', icon: IndianRupee, key: 'billing', color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-200' },
@@ -53,7 +53,7 @@ onMounted(() => {
           <div class="w-full flex items-center justify-center flex-col gap-1 border-t border-gray-100 pt-3">
             <span class="text-[11px] font-medium text-gray-500">{{ getPercentage(stage.key) }}%</span>
             <div class="w-full h-1 bg-gray-100 rounded-full overflow-hidden mt-1 max-w-[40px]">
-              <div class="h-full bg-[#1a5c4c] rounded-full transition-all duration-500 ease-out" :style="{ width: `${getPercentage(stage.key)}%` }"></div>
+              <div class="h-full bg-[#1b3b5f] rounded-full transition-all duration-500 ease-out" :style="{ width: `${getPercentage(stage.key)}%` }"></div>
             </div>
           </div>
         </div>

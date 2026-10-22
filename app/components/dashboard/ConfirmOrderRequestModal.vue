@@ -286,8 +286,8 @@ const submitConversion = async () => {
         <!-- Header -->
         <div class="flex items-center justify-between p-4 sm:p-5 border-b border-gray-100 bg-gray-50/90 shrink-0">
           <div class="flex items-center gap-2.5 sm:gap-3 min-w-0">
-            <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#1a5c4c]/10 text-[#1a5c4c] flex items-center justify-center shrink-0">
-              <CheckCircle2 class="w-5 h-5 text-[#1a5c4c]" />
+            <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#1b3b5f]/10 text-[#1b3b5f] flex items-center justify-center shrink-0">
+              <CheckCircle2 class="w-5 h-5 text-[#1b3b5f]" />
             </div>
             <div class="min-w-0">
               <div class="flex items-center gap-2 flex-wrap">
@@ -370,7 +370,7 @@ const submitConversion = async () => {
                 <textarea 
                   v-model="form.deliveryAddress" 
                   rows="2" 
-                  class="w-full text-xs border border-gray-300 rounded-lg p-2.5 bg-white text-gray-900 focus:ring-[#1a5c4c] focus:border-[#1a5c4c] resize-none"
+                  class="w-full text-xs border border-gray-300 rounded-lg p-2.5 bg-white text-gray-900 focus:ring-[#1b3b5f] focus:border-[#1b3b5f] resize-none"
                   placeholder="Enter full delivery destination..."
                 ></textarea>
               </div>
@@ -383,7 +383,7 @@ const submitConversion = async () => {
                 <textarea 
                   v-model="form.notes" 
                   rows="2" 
-                  class="w-full text-xs border border-gray-300 rounded-lg p-2.5 bg-white text-gray-900 focus:ring-[#1a5c4c] focus:border-[#1a5c4c] resize-none"
+                  class="w-full text-xs border border-gray-300 rounded-lg p-2.5 bg-white text-gray-900 focus:ring-[#1b3b5f] focus:border-[#1b3b5f] resize-none"
                   placeholder="Add special packing instructions, coupons, or notes..."
                 ></textarea>
               </div>
@@ -400,7 +400,7 @@ const submitConversion = async () => {
               <button 
                 type="button" 
                 @click="addItem" 
-                class="px-2.5 py-1 text-xs font-bold text-[#1a5c4c] bg-[#1a5c4c]/10 hover:bg-[#1a5c4c]/20 rounded-lg transition flex items-center gap-1"
+                class="px-2.5 py-1 text-xs font-bold text-[#1b3b5f] bg-[#1b3b5f]/10 hover:bg-[#1b3b5f]/20 rounded-lg transition flex items-center gap-1"
               >
                 <Plus class="w-3.5 h-3.5" />
                 <span>Add Item</span>
@@ -442,7 +442,7 @@ const submitConversion = async () => {
                       v-model.number="item.quantity" 
                       min="1" 
                       required 
-                      class="w-full p-2 bg-white border border-gray-300 rounded-lg text-xs font-bold text-gray-900 focus:ring-[#1a5c4c] focus:border-[#1a5c4c]" 
+                      class="w-full p-2 bg-white border border-gray-300 rounded-lg text-xs font-bold text-gray-900 focus:ring-[#1b3b5f] focus:border-[#1b3b5f]" 
                     />
                   </div>
 
@@ -460,7 +460,7 @@ const submitConversion = async () => {
                         min="0" 
                         step="any"
                         required 
-                        class="w-full pl-7 pr-2 py-2 bg-white border border-gray-300 rounded-lg text-xs font-bold text-gray-900 focus:ring-[#1a5c4c] focus:border-[#1a5c4c]" 
+                        class="w-full pl-7 pr-2 py-2 bg-white border border-gray-300 rounded-lg text-xs font-bold text-gray-900 focus:ring-[#1b3b5f] focus:border-[#1b3b5f]" 
                       />
                     </div>
                   </div>
@@ -522,7 +522,7 @@ const submitConversion = async () => {
                 <span class="text-[11px] text-gray-400">{{ form.items.length }} items selected</span>
               </div>
               <div class="text-right">
-                <span class="font-mono text-xl font-bold text-[#1a5c4c]">
+                <span class="font-mono text-xl font-bold text-[#1b3b5f]">
                   {{ formatCurrency(totalAmount) }}
                 </span>
               </div>
@@ -545,7 +545,7 @@ const submitConversion = async () => {
             type="button" 
             @click="submitConversion" 
             :disabled="isSubmitting || !form.items.length"
-            class="w-full sm:w-auto justify-center px-5 py-2.5 bg-[#1a5c4c] hover:bg-[#14473b] text-white rounded-xl text-xs font-bold shadow-md transition disabled:opacity-50 flex items-center gap-2 cursor-pointer"
+            class="w-full sm:w-auto justify-center px-5 py-2.5 bg-[#1b3b5f] hover:bg-[#132c49] text-white rounded-xl text-xs font-bold shadow-md transition disabled:opacity-50 flex items-center gap-2 cursor-pointer"
           >
             <Loader2 v-if="isSubmitting" class="w-4 h-4 animate-spin" />
             <CheckCircle2 v-else class="w-4 h-4" />

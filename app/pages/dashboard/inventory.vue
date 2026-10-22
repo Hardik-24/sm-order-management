@@ -206,12 +206,12 @@ onUnmounted(() => {
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-2">
       <div>
         <h1 class="text-2xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
-          <Package class="w-6 h-6 text-[#1a5c4c]" />
+          <Package class="w-6 h-6 text-[#1b3b5f]" />
           Stock Status
         </h1>
         <p class="text-sm text-gray-500 mt-1">
           Live inventory levels synced with Busy Accounting.
-          <span v-if="lastSyncedData?.lastSynced" class="ml-1 text-[#1a5c4c] font-medium">
+          <span v-if="lastSyncedData?.lastSynced" class="ml-1 text-[#1b3b5f] font-medium">
             Last synced: {{ formatDateTime(lastSyncedData.lastSynced) }}
           </span>
         </p>
@@ -220,7 +220,7 @@ onUnmounted(() => {
       <button 
         @click="(isSyncing || syncStatusData?.syncRequested) ? cancelSync() : requestSync()" 
         class="flex items-center gap-2 px-4 py-2 text-white text-sm font-medium rounded-lg transition-colors shadow-sm whitespace-nowrap"
-        :class="(isSyncing || syncStatusData?.syncRequested) ? 'bg-red-600 hover:bg-red-700' : 'bg-[#1a5c4c] hover:bg-[#1a5c4c]/90'"
+        :class="(isSyncing || syncStatusData?.syncRequested) ? 'bg-red-600 hover:bg-red-700' : 'bg-[#1b3b5f] hover:bg-[#1b3b5f]/90'"
       >
         <RefreshCw v-if="!(isSyncing || syncStatusData?.syncRequested)" class="w-4 h-4" />
         <XCircle v-else class="w-4 h-4" />
@@ -239,7 +239,7 @@ onUnmounted(() => {
 
         <!-- Centered Modal Card -->
         <div class="relative bg-white rounded-2xl shadow-2xl p-6 sm:p-8 max-w-md w-full border border-gray-100 flex flex-col items-center text-center animate-in zoom-in-95 duration-200">
-          <div class="w-14 h-14 rounded-2xl bg-[#1a5c4c]/10 text-[#1a5c4c] flex items-center justify-center mb-4 shadow-sm">
+          <div class="w-14 h-14 rounded-2xl bg-[#1b3b5f]/10 text-[#1b3b5f] flex items-center justify-center mb-4 shadow-sm">
             <RefreshCw class="w-7 h-7 animate-spin" />
           </div>
           
@@ -251,7 +251,7 @@ onUnmounted(() => {
           <div class="flex items-center gap-2 mt-2 mb-5">
             <span 
               v-if="syncStatusData?.progress?.step && syncStatusData?.progress?.totalSteps" 
-              class="px-3 py-1 rounded-full text-xs font-semibold bg-[#1a5c4c]/10 text-[#1a5c4c] border border-[#1a5c4c]/20"
+              class="px-3 py-1 rounded-full text-xs font-semibold bg-[#1b3b5f]/10 text-[#1b3b5f] border border-[#1b3b5f]/20"
             >
               Step {{ syncStatusData.progress.step }} of {{ syncStatusData.progress.totalSteps }}
               <span class="text-gray-400 font-normal">({{ Math.max(0, syncStatusData.progress.totalSteps - syncStatusData.progress.step) }} steps remaining)</span>
@@ -263,14 +263,14 @@ onUnmounted(() => {
           <div class="w-full bg-gray-100 rounded-full h-3 overflow-hidden mb-2 shadow-inner">
             <div 
               ref="progressBarRef"
-              class="bg-gradient-to-r from-[#1a5c4c] to-[#4ecdc4] h-3 rounded-full transition-all duration-300 ease-out" 
+              class="bg-gradient-to-r from-[#1b3b5f] to-[#4ecdc4] h-3 rounded-full transition-all duration-300 ease-out" 
               :style="{ width: `${syncStatusData?.progress?.progress || 10}%` }"
             ></div>
           </div>
 
           <div class="w-full flex justify-between text-xs text-gray-400 font-mono mb-6">
             <span>Overall Progress</span>
-            <span class="font-bold text-[#1a5c4c]">{{ syncStatusData?.progress?.progress || 10 }}%</span>
+            <span class="font-bold text-[#1b3b5f]">{{ syncStatusData?.progress?.progress || 10 }}%</span>
           </div>
 
           <!-- Abort Button -->
@@ -333,8 +333,8 @@ onUnmounted(() => {
             v-if="productsLoading" 
             class="absolute inset-0 z-20 bg-white/75 backdrop-blur-sm flex flex-col items-center justify-center gap-3"
           >
-            <div class="w-12 h-12 rounded-2xl bg-[#1a5c4c]/10 flex items-center justify-center text-[#1a5c4c] shadow-sm animate-pulse">
-              <RefreshCw class="w-6 h-6 animate-spin text-[#1a5c4c]" />
+            <div class="w-12 h-12 rounded-2xl bg-[#1b3b5f]/10 flex items-center justify-center text-[#1b3b5f] shadow-sm animate-pulse">
+              <RefreshCw class="w-6 h-6 animate-spin text-[#1b3b5f]" />
             </div>
             <div class="flex flex-col items-center gap-0.5">
               <span class="text-sm font-semibold text-gray-800 tracking-tight">Loading Inventory...</span>
@@ -362,7 +362,7 @@ onUnmounted(() => {
               class="hover:bg-teal-50/40 cursor-pointer transition-colors group"
             >
               <!-- SKU / Code: Fixed width, wraps to max 2 lines -->
-              <td class="px-5 py-3 w-44 min-w-[150px] max-w-[180px] text-xs font-mono font-medium text-gray-900 group-hover:text-[#1a5c4c]">
+              <td class="px-5 py-3 w-44 min-w-[150px] max-w-[180px] text-xs font-mono font-medium text-gray-900 group-hover:text-[#1b3b5f]">
                 <span class="break-words line-clamp-2" :title="product.sku">
                   {{ product.sku }}
                 </span>
@@ -370,7 +370,7 @@ onUnmounted(() => {
 
               <!-- Item Name -->
               <td class="px-5 py-3 min-w-[220px] text-sm text-gray-800 font-medium">
-                <span class="break-words line-clamp-2 group-hover:text-[#1a5c4c] transition-colors" :title="product.name">
+                <span class="break-words line-clamp-2 group-hover:text-[#1b3b5f] transition-colors" :title="product.name">
                   {{ product.name }}
                 </span>
               </td>
@@ -436,8 +436,8 @@ onUnmounted(() => {
             v-if="productsLoading" 
             class="absolute inset-0 z-20 bg-white/75 backdrop-blur-sm flex flex-col items-center justify-center gap-3 py-16"
           >
-            <div class="w-10 h-10 rounded-xl bg-[#1a5c4c]/10 flex items-center justify-center text-[#1a5c4c] shadow-sm animate-pulse">
-              <RefreshCw class="w-5 h-5 animate-spin text-[#1a5c4c]" />
+            <div class="w-10 h-10 rounded-xl bg-[#1b3b5f]/10 flex items-center justify-center text-[#1b3b5f] shadow-sm animate-pulse">
+              <RefreshCw class="w-5 h-5 animate-spin text-[#1b3b5f]" />
             </div>
             <span class="text-xs font-semibold text-gray-700">Loading Inventory...</span>
           </div>
@@ -567,7 +567,7 @@ onUnmounted(() => {
         <!-- Header -->
         <div class="px-6 py-4 bg-gray-50/80 border-b border-gray-100 flex items-center justify-between">
           <div class="flex items-center gap-2 text-sm font-semibold text-gray-700">
-            <Package class="w-4 h-4 text-[#1a5c4c]" />
+            <Package class="w-4 h-4 text-[#1b3b5f]" />
             Item Details
           </div>
           <button 

@@ -129,7 +129,7 @@ const getPackingProgress = (order: any) => {
           @input="e => emit('update:search', (e.target as HTMLInputElement).value)"
           type="text" 
           placeholder="Search order #, customer..." 
-          class="w-full pl-9 pr-8 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#1a5c4c]/20 focus:border-[#1a5c4c] transition-all"
+          class="w-full pl-9 pr-8 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f] transition-all"
         />
         <button 
           v-if="search" 
@@ -234,7 +234,7 @@ const getPackingProgress = (order: any) => {
               <!-- 1. Order ID -->
               <td class="px-5 py-3.5 whitespace-nowrap">
                 <div class="flex items-center gap-1.5 flex-wrap">
-                  <span class="text-xs font-bold text-gray-900 group-hover:text-[#1a5c4c] transition-colors">
+                  <span class="text-xs font-bold text-gray-900 group-hover:text-[#1b3b5f] transition-colors">
                     {{ order.orderNumber }}
                   </span>
                   <span v-if="order.overallStatus === 'CANCELLED'" class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-bold bg-gray-200 !text-gray-600 border border-rose-500">
@@ -334,7 +334,7 @@ const getPackingProgress = (order: any) => {
                 <button
                   v-if="order.overallStatus !== 'CANCELLED' && order.packingStatus?.status === 'PENDING'"
                   @click.stop="emit('select', order.id)"
-                  class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-[#1a5c4c] text-white rounded-lg hover:bg-[#154a3d] active:scale-95 transition-all shadow-2xs cursor-pointer"
+                  class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-[#1b3b5f] text-white rounded-lg hover:bg-[#132c49] active:scale-95 transition-all shadow-2xs cursor-pointer"
                 >
                   <Box class="w-3.5 h-3.5" />
                   <span>Start Packing</span>
@@ -452,7 +452,7 @@ const getPackingProgress = (order: any) => {
               <button 
                 v-if="order.overallStatus !== 'CANCELLED' && order.packingStatus?.status === 'PENDING'"
                 @click.stop="emit('select', order.id)"
-                class="px-2.5 py-1 bg-[#1a5c4c] text-white text-[11px] font-semibold rounded-md hover:bg-[#154a3d] active:scale-95 transition-all shadow-2xs flex items-center gap-1 cursor-pointer"
+                class="px-2.5 py-1 bg-[#1b3b5f] text-white text-[11px] font-semibold rounded-md hover:bg-[#132c49] active:scale-95 transition-all shadow-2xs flex items-center gap-1 cursor-pointer"
               >
                 <Box class="w-3 h-3" />
                 <span>Pack</span>

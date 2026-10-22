@@ -2,7 +2,7 @@
   <transition name="slide-up">
     <div v-if="isVisible" class="fixed bottom-6 left-4 right-4 z-50 p-4 rounded-xl shadow-2xl flex items-center gap-3"
          :class="{
-           'bg-[#1a5c4c] text-white': snackbarType === 'success',
+           'bg-[#1b3b5f] text-white': snackbarType === 'success',
            'bg-blue-600 text-white': snackbarType === 'loading',
            'bg-red-500 text-white': snackbarType === 'error'
          }">

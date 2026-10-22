@@ -43,7 +43,7 @@ const getTextColorClass = (statusType: string | undefined) => {
   <div class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm h-full flex flex-col">
     <div class="flex items-center justify-between mb-6 flex-shrink-0">
       <h2 class="text-lg font-medium text-gray-900">Needs Attention</h2>
-      <button @click="isModalOpen = true" class="text-sm text-[#1a5c4c] font-bold hover:text-[#1a5c4c]/80 transition-colors">
+      <button @click="isModalOpen = true" class="text-sm text-[#1b3b5f] font-bold hover:text-[#1b3b5f]/80 transition-colors">
         View all ({{ items?.length || 0 }})
       </button>
     </div>

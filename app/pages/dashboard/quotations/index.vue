@@ -6,7 +6,7 @@
         <div class="flex items-center gap-2 mb-1">
           <span class="text-xs font-bold text-gray-500 uppercase tracking-widest">Dashboard</span>
           <span class="text-gray-300">&bull;</span>
-          <span class="text-xs font-bold text-[#1a5c4c] uppercase tracking-widest">Pricing Estimates</span>
+          <span class="text-xs font-bold text-[#1b3b5f] uppercase tracking-widest">Pricing Estimates</span>
         </div>
         <h1 class="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight flex items-center gap-3">
           <div class="w-9 h-9 rounded-xl bg-[#1b3b5f]/10 text-[#1b3b5f] flex items-center justify-center">
@@ -24,7 +24,7 @@
         <button
           type="button"
           @click="openNewQuoteModal"
-          class="inline-flex items-center gap-2 px-4 py-2.5 bg-[#1a5c4c] hover:bg-[#14483b] text-white rounded-xl text-xs sm:text-sm font-bold transition-all shadow-md active:scale-98 cursor-pointer"
+          class="inline-flex items-center gap-2 px-4 py-2.5 bg-[#1b3b5f] hover:bg-[#132c49] text-white rounded-xl text-xs sm:text-sm font-bold transition-all shadow-md active:scale-98 cursor-pointer"
         >
           <Plus class="w-4 h-4" />
           <span>Create New Quotation</span>
@@ -82,7 +82,7 @@
           v-model="searchQuery"
           type="text"
           placeholder="Search by Quote No, Customer, Place, or Staff..."
-          class="w-full pl-9 pr-3 py-2 bg-gray-50/70 focus:bg-white border border-gray-200 rounded-xl text-xs font-medium text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1a5c4c]/20 focus:border-[#1a5c4c] transition"
+          class="w-full pl-9 pr-3 py-2 bg-gray-50/70 focus:bg-white border border-gray-200 rounded-xl text-xs font-medium text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f] transition"
         />
         <button
           v-if="searchQuery"
@@ -111,7 +111,7 @@
     <div class="bg-white rounded-2xl border border-gray-200 shadow-2xs overflow-hidden">
       <!-- Loading State -->
       <div v-if="isLoading" class="p-12 text-center text-gray-400">
-        <Loader2 class="w-8 h-8 animate-spin mx-auto mb-2 text-[#1a5c4c]" />
+        <Loader2 class="w-8 h-8 animate-spin mx-auto mb-2 text-[#1b3b5f]" />
         <p class="text-xs font-semibold text-gray-600">Loading quotations...</p>
       </div>
 
@@ -129,7 +129,7 @@
         <button
           type="button"
           @click="openNewQuoteModal"
-          class="inline-flex items-center gap-2 px-4 py-2 bg-[#1a5c4c] text-white rounded-xl text-xs font-bold shadow-sm hover:bg-[#14483b] transition cursor-pointer"
+          class="inline-flex items-center gap-2 px-4 py-2 bg-[#1b3b5f] text-white rounded-xl text-xs font-bold shadow-sm hover:bg-[#132c49] transition cursor-pointer"
         >
           <Plus class="w-4 h-4" />
           <span>Create First Quotation</span>
@@ -212,7 +212,7 @@
                   <button
                     type="button"
                     @click="viewQuoteDetails(quote)"
-                    class="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-[#1a5c4c] rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer"
+                    class="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-[#1b3b5f] rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer"
                     title="View & Share Quotation Slip"
                   >
                     <Share2 class="w-3.5 h-3.5" />

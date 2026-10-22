@@ -27,17 +27,17 @@
         <div v-if="accessiblePages.length > 0" class="w-full bg-[#faf8f5] rounded-xl p-4 border border-[#e5e2dc] mb-6 text-left">
           <div class="flex items-center justify-between mb-3 pb-2 border-b border-[#e5e2dc]">
             <span class="text-[11px] font-bold uppercase tracking-wider text-gray-500">Pages You Can Access</span>
-            <span class="text-xs font-semibold text-[#1a5c4c]">{{ accessiblePages.length }} available</span>
+            <span class="text-xs font-semibold text-[#1b3b5f]">{{ accessiblePages.length }} available</span>
           </div>
           <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
             <NuxtLink
               v-for="page in accessiblePages"
               :key="page.key"
               :to="page.path"
-              class="px-3 py-2 text-xs font-medium text-gray-700 bg-white rounded-lg border border-gray-200 hover:border-[#1a5c4c] hover:text-[#1a5c4c] hover:bg-emerald-50/50 transition-all flex items-center justify-between group shadow-2xs"
+              class="px-3 py-2 text-xs font-medium text-gray-700 bg-white rounded-lg border border-gray-200 hover:border-[#1b3b5f] hover:text-[#1b3b5f] hover:bg-emerald-50/50 transition-all flex items-center justify-between group shadow-2xs"
             >
               <span class="truncate">{{ page.label }}</span>
-              <ArrowRight class="w-3 h-3 text-gray-400 group-hover:text-[#1a5c4c] group-hover:translate-x-0.5 transition-transform shrink-0 ml-1" />
+              <ArrowRight class="w-3 h-3 text-gray-400 group-hover:text-[#1b3b5f] group-hover:translate-x-0.5 transition-transform shrink-0 ml-1" />
             </NuxtLink>
           </div>
         </div>
@@ -62,7 +62,7 @@
           <NuxtLink 
             v-if="accessiblePages.length > 0"
             :to="primaryAccessiblePath" 
-            class="px-5 py-2.5 text-sm font-medium text-white bg-[#1a5c4c] hover:bg-[#134336] rounded-lg transition-colors flex items-center gap-2 shadow-xs"
+            class="px-5 py-2.5 text-sm font-medium text-white bg-[#1b3b5f] hover:bg-[#132c49] rounded-lg transition-colors flex items-center gap-2 shadow-xs"
           >
             <Home class="w-4 h-4" />
             Open {{ primaryAccessibleLabel }}
