@@ -248,20 +248,20 @@
               @click="openProductDetail(product)"
               class="p-3.5 space-y-2 hover:bg-gray-50 active:bg-gray-100 transition-colors cursor-pointer"
             >
-              <!-- Line 1: SKU, Category & Status -->
+              <!-- Line 1: SKU on left, Category, and Status cleanly aligned on right -->
               <div class="flex items-center justify-between gap-2">
-                <div class="flex items-center gap-1.5 flex-wrap min-w-0">
+                <div class="flex items-center gap-1.5 min-w-0 flex-1">
                   <span class="text-xs font-mono font-bold text-gray-900 bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200 shrink-0">
                     {{ product.sku }}
                   </span>
-                  <span class="text-[10px] font-semibold text-gray-600 bg-gray-50 px-1.5 py-0.5 rounded border border-gray-200/80 shrink-0">
+                  <span v-if="product.categoryId" class="text-[10px] font-semibold text-gray-600 bg-gray-50 px-1.5 py-0.5 rounded border border-gray-200/80 truncate max-w-[120px]">
                     {{ getCategoryName(product.categoryId) }}
                   </span>
                 </div>
 
                 <span 
                   class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold shrink-0"
-                  :class="product.isActive !== false ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'"
+                  :class="product.isActive !== false ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-gray-100 text-gray-600 border border-gray-200'"
                 >
                   {{ product.isActive !== false ? 'Active' : 'Inactive' }}
                 </span>

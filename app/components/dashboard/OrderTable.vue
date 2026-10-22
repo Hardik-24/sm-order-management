@@ -480,7 +480,7 @@ const getItemsTotalQuantity = (order: Order) => {
         >
           <!-- LINE 1: Identity & Overall Status -->
           <div class="flex items-center justify-between gap-2 min-w-0">
-            <div class="flex items-center gap-1.5 min-w-0 flex-wrap">
+            <div class="flex items-center gap-1.5 min-w-0 flex-1 truncate">
               <span class="text-sm font-semibold text-gray-900 shrink-0">
                 {{ order.orderNumber }}
               </span>
@@ -505,7 +505,7 @@ const getItemsTotalQuantity = (order: Order) => {
               :status="order.overallStatus" 
               :display="getDisplayStatus(order)"
               :class="getOverallColor(order)"
-              class="!text-[10px] !py-0.5 !px-2.5 shrink-0 max-w-[125px] truncate"
+              class="!text-[10px] !py-0.5 !px-2.5 shrink-0 whitespace-nowrap leading-tight"
             />
           </div>
 

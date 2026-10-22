@@ -1,6 +1,6 @@
 <template>
   <Teleport to="body">
-    <div v-if="isOpen" class="fixed inset-x-0 bottom-0 top-14 md:inset-0 z-[60] flex items-center justify-center p-2 sm:p-4 md:p-6 overflow-y-auto">
+    <div v-if="isOpen" class="fixed inset-x-0 bottom-0 top-14 md:inset-0 z-[220] flex items-center justify-center p-2 sm:p-4 md:p-6 overflow-y-auto">
       <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="closeModal"></div>
       
       <div class="relative bg-white rounded-xl shadow-2xl w-full max-w-5xl flex flex-col max-h-[calc(100vh-4.5rem)] md:max-h-[90vh] overflow-hidden">
