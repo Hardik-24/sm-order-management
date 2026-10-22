@@ -1045,7 +1045,7 @@
       <div
         ref="quotationCardRef"
         class="w-[794px] min-h-[1123px] bg-white text-gray-900 p-8 rounded-none border border-gray-200 font-sans shadow-none flex flex-col justify-between antialiased"
-        style="-webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: geometricPrecision;"
+        style="-webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: geometricPrecision; image-rendering: -webkit-optimize-contrast;"
       >
         <div class="space-y-6">
           <!-- Top Ribbon -->
@@ -2607,9 +2607,9 @@ const exportQuote = async (action: 'whatsapp' | 'download' | 'pdf' | 'print') =>
       await document.fonts.ready
     }
 
-    // Ultra HD 300 DPI export settings (2382px x 3369px for download, 1985px x 2800px for WhatsApp)
+    // Ultra HD 300 DPI export settings (2382px x 3369px for pixel-perfect clarity)
     const exportOptions = {
-      pixelRatio: action === 'download' ? 3 : 2.5,
+      pixelRatio: 3,
       quality: 1,
       backgroundColor: '#ffffff',
       cacheBust: true
@@ -2618,13 +2618,21 @@ const exportQuote = async (action: 'whatsapp' | 'download' | 'pdf' | 'print') =>
     if (action === 'whatsapp') {
       const fileName = `${quoteNumber.value}-${(customerName.value || 'customer').replace(/\s+/g, '_')}.png`
       const clientName = customerName.value?.trim() || ''
-      const greeting = clientName ? `Hello ${clientName},` : 'Hello,'
+      const greeting = clientName ? `Hello *${clientName}*,` : 'Hello,'
+      const totalPayableFormatted = `₹${Math.round(grandTotal.value).toLocaleString('en-IN')}`
+      const itemCount = quoteItems.value.length
+
       const politeMessageText = 
         `${greeting}\n\n` +
-        `Please find the requested quotation (*${quoteNumber.value}*) attached with this message.\n\n` +
+        `Please find the price estimate quotation (*${quoteNumber.value}*) attached with this message.\n\n` +
+        `📄 *Quotation Summary:*\n` +
+        `• Estimate No: *${quoteNumber.value}*\n` +
+        `• Total Items: *${itemCount}*\n` +
+        `• Payable Amount: *${totalPayableFormatted}*\n` +
+        `• Validity: *${validityDays.value || 7} Days*\n\n` +
         `Please feel free to reach out to us if you need any clarification or assistance. We look forward to fulfilling your requirements!\n\n` +
         `Warm regards,\n` +
-        `Silicon Marketing`
+        `*Silicon Marketing*`
 
       const cleanPhone = (customerPhone.value || '').replace(/[^0-9]/g, '')
 
@@ -2684,9 +2692,10 @@ const exportQuote = async (action: 'whatsapp' | 'download' | 'pdf' | 'print') =>
         URL.revokeObjectURL(url)
 
         const cleanPhone = (customerPhone.value || '').replace(/[^0-9]/g, '')
+        const formattedPhone = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone
         const textMsg = encodeURIComponent(politeMessageText)
-        const waUrl = cleanPhone 
-          ? `https://api.whatsapp.com/send?phone=91${cleanPhone}&text=${textMsg}`
+        const waUrl = formattedPhone 
+          ? `https://api.whatsapp.com/send?phone=${formattedPhone}&text=${textMsg}`
           : `https://api.whatsapp.com/send?text=${textMsg}`
         
         window.open(waUrl, '_blank')
