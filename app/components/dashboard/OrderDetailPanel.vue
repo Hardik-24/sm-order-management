@@ -1650,7 +1650,7 @@ watch(editForm, () => {
 
                 <!-- Action Area: Billing -->
                 <div v-if="context === 'billing'" class="p-4 bg-gray-50 border-t border-gray-200 rounded-b-lg relative">
-                  <div class="flex items-center justify-between mb-4">
+                  <div class="flex items-center justify-between">
                     <div>
                       <p class="text-sm font-medium text-gray-900">Billing Action</p>
                       <p class="text-xs text-gray-500 mt-1" v-if="order.billingStatus?.invoiceNumber">
@@ -1658,7 +1658,7 @@ watch(editForm, () => {
                       </p>
                     </div>
                     
-                    <div class="flex flex-col gap-2 items-end" v-if="hasRole('ADMIN', 'BILLING')">
+                    <div class="flex items-center gap-2" v-if="hasRole('ADMIN', 'BILLING')">
                       <button 
                         v-if="order.billingStatus?.status !== 'GENERATED'"
                         @click="markBillGenerated" 
@@ -1666,46 +1666,13 @@ watch(editForm, () => {
                       >
                         <IndianRupee class="w-3.5 h-3.5" /> Mark as Generated
                       </button>
-                      <button 
-                        v-if="!showBillingForm" 
-                        @click="showBillingForm = true" 
-                        class="text-[10px] font-medium text-gray-500 hover:text-gray-700 hover:underline cursor-pointer"
-                      >
-                        Advanced Options...
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <!-- Advanced Billing Form -->
-                  <div v-if="showBillingForm && hasRole('ADMIN', 'BILLING')" class="mt-4 pt-4 border-t border-gray-200">
-                    <div class="mb-3">
-                      <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1">Status</label>
-                      <CustomSelect 
-                        :modelValue="billingForm.status"
-                        @update:modelValue="val => billingForm.status = val"
-                        :options="billingStatusOptions"
-                        placeholder="Select Status"
-                        class="w-full"
-                      />
-                    </div>
-                    <div v-if="billingForm.status === 'GENERATED'" class="mb-3">
-                      <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1">Invoice Number</label>
-                      <input type="text" v-model="billingForm.invoiceNumber" class="w-full text-sm border-gray-300 rounded p-1.5 focus:ring-[#1a5c4c] bg-white" placeholder="e.g. INV-2026-001" />
-                    </div>
-                    <div v-if="billingForm.status === 'ON_HOLD'" class="mb-3">
-                      <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1">Hold Reason</label>
-                      <textarea v-model="billingForm.holdReason" rows="2" class="w-full text-sm border-gray-300 rounded p-1.5 focus:ring-[#1a5c4c] bg-white resize-none" placeholder="Reason..."></textarea>
-                    </div>
-                    <div class="flex justify-end gap-2">
-                      <button @click="showBillingForm = false" class="px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-200 rounded">Cancel</button>
-                      <button @click="updateBilling" class="px-3 py-1.5 text-xs bg-[#1a5c4c] text-white rounded hover:bg-[#1a5c4c]/90">Save</button>
                     </div>
                   </div>
                 </div>
 
                 <!-- Action Area: Packing -->
                 <div v-if="context === 'packing' && hasRole('ADMIN', 'PACKING')" class="p-4 bg-gray-50 border-t border-gray-200 rounded-b-lg relative">
-                  <div class="flex items-center justify-between mb-4">
+                  <div class="flex items-center justify-between">
                     <div>
                       <p class="text-sm font-bold text-gray-900">Packing Progress</p>
                       <p class="text-xs text-gray-500 mt-1">
@@ -1713,7 +1680,7 @@ watch(editForm, () => {
                       </p>
                     </div>
                     
-                    <div class="flex flex-col gap-2 items-end">
+                    <div class="flex items-center gap-2">
                       <button 
                         @click="markAsPacked" 
                         :disabled="packingForm.status === 'PACKED'"
@@ -1721,35 +1688,6 @@ watch(editForm, () => {
                       >
                         {{ packingForm.status === 'PACKED' ? '✓ All Items Packed' : 'Pack All Items' }}
                       </button>
-                      <button 
-                        v-if="!showPackingForm" 
-                        @click="showPackingForm = true" 
-                        class="text-[10px] font-medium text-gray-500 hover:text-gray-700 hover:underline cursor-pointer"
-                      >
-                        Advanced Options...
-                      </button>
-                    </div>
-                  </div>
-
-                  <!-- Advanced Packing Form -->
-                  <div v-if="showPackingForm" class="mt-4 pt-4 border-t border-gray-200">
-                    <div class="mb-3">
-                      <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1">Status</label>
-                      <CustomSelect 
-                        :modelValue="packingForm.status"
-                        @update:modelValue="val => packingForm.status = val"
-                        :options="packingStatusOptions"
-                        placeholder="Select Status"
-                        class="w-full"
-                      />
-                    </div>
-                    <div v-if="packingForm.status === 'ON_HOLD'" class="mb-3">
-                      <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1">Hold Reason</label>
-                      <textarea v-model="packingForm.holdReason" rows="2" class="w-full text-sm border-gray-300 rounded p-1.5 focus:ring-[#1a5c4c] bg-white resize-none" placeholder="Reason..."></textarea>
-                    </div>
-                    <div class="flex justify-end gap-2">
-                      <button @click="showPackingForm = false" class="px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-200 rounded">Cancel</button>
-                      <button @click="updatePacking" class="px-3 py-1.5 text-xs bg-[#1a5c4c] text-white rounded hover:bg-[#1a5c4c]/90">Save</button>
                     </div>
                   </div>
                 </div>
