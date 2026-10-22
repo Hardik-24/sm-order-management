@@ -5,10 +5,16 @@ const config: CapacitorConfig = {
   appName: 'Silicon OMS',
   webDir: 'dist',
   server: {
-    // Local offline error handler (prevents Chromium Dino page)
+    url: 'https://sm-order-management.vercel.app',
     errorPath: 'offline.html',
     cleartext: true,
-    androidScheme: 'https'
+    androidScheme: 'https',
+    allowNavigation: [
+      'sm-order-management.vercel.app',
+      '*.vercel.app',
+      '*.supabase.co',
+      '*'
+    ]
   },
   plugins: {
     SplashScreen: {

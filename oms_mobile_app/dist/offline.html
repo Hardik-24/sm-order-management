@@ -292,7 +292,7 @@
       <p style="font-size: 11px; color: #888; margin-bottom: 12px;">Specify the remote server URL or local dev IP.</p>
       
       <label style="font-size: 10px; font-weight: 700; color: #aaa; text-transform: uppercase;">Server Endpoint</label>
-      <input type="text" id="serverUrlInput" class="input-field" placeholder="http://192.168.1.100:3001" />
+      <input type="text" id="serverUrlInput" class="input-field" placeholder="https://sm-order-management.vercel.app" />
 
       <div class="modal-actions">
         <button class="btn-secondary" onclick="closeSettings()">Cancel</button>
@@ -302,7 +302,7 @@
   </div>
 
   <script>
-    const DEFAULT_SERVER_URL = localStorage.getItem('sm_oms_server_url') || 'http://192.168.1.100:3001';
+    const DEFAULT_SERVER_URL = localStorage.getItem('sm_oms_server_url') || 'https://sm-order-management.vercel.app';
     let countdownSec = 5;
     let timer = null;
     let isRetrying = false;

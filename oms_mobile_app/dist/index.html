@@ -85,7 +85,7 @@
   <div id="status" class="status-text">Connecting to workspace...</div>
 
   <script>
-    const DEFAULT_SERVER_URL = localStorage.getItem('sm_oms_server_url') || 'http://192.168.1.100:3001';
+    const DEFAULT_SERVER_URL = localStorage.getItem('sm_oms_server_url') || 'https://sm-order-management.vercel.app';
 
     function getServerUrl() {
       return localStorage.getItem('sm_oms_server_url') || DEFAULT_SERVER_URL;
