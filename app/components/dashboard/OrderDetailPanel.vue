@@ -1850,33 +1850,33 @@ watch(editForm, () => {
 
         </div>
 
-        <!-- 5. Sticky Bottom Action Footer -->
+        <!-- 5. Sticky Bottom Action Footer (Responsive Multi-Line on Mobile, Never Crops Buttons) -->
         <div 
           v-if="order"
-          class="px-5 sm:px-6 py-3.5 bg-white border-t border-gray-200 flex items-center justify-between gap-3 shrink-0 shadow-lg z-20"
+          class="px-4 sm:px-6 py-2.5 sm:py-3.5 bg-white border-t border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 shrink-0 shadow-lg z-20"
         >
-          <div>
+          <div class="flex items-center justify-between sm:block">
             <template v-if="context !== 'delivery'">
               <span class="text-[10px] sm:text-[11px] uppercase font-bold text-gray-400 tracking-wider block">Grand Total</span>
-              <span class="text-lg sm:text-xl font-black text-[#1a5c4c] tracking-tight tabular-nums">
+              <span class="text-base sm:text-xl font-black text-[#1a5c4c] tracking-tight tabular-nums">
                 {{ formatCurrency(order.totalAmount || 0) }}
               </span>
             </template>
             <template v-else>
               <span class="text-[10px] sm:text-[11px] uppercase font-bold text-gray-400 tracking-wider block">Total Quantity</span>
-              <span class="text-lg sm:text-xl font-black text-[#1a5c4c] tracking-tight tabular-nums">
+              <span class="text-base sm:text-xl font-black text-[#1a5c4c] tracking-tight tabular-nums">
                 {{ order.items?.reduce((sum, i) => sum + (Number(i.approvedQuantity ?? i.quantity) || 0), 0) }} nos.
               </span>
             </template>
           </div>
 
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap justify-end">
             <!-- Edit Status across departments -->
             <button 
               v-if="canEditOrderStatus"
               @click="openAdminStatusModal"
               title="Edit status across all departments"
-              class="px-3.5 py-2 text-xs font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs whitespace-nowrap"
+              class="px-2.5 sm:px-3.5 py-1.5 sm:py-2 text-[11px] sm:text-xs font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs whitespace-nowrap"
             >
               <SlidersHorizontal class="w-3.5 h-3.5" />
               <span>Edit Status</span>
@@ -1886,7 +1886,7 @@ watch(editForm, () => {
             <button 
               v-if="context === 'billing' && hasRole('ADMIN', 'BILLING') && order.billingStatus?.status !== 'GENERATED' && order.overallStatus !== 'CANCELLED' && order.deliveryStatus?.status !== 'DISPATCHED' && order.deliveryStatus?.status !== 'DELIVERED'"
               @click="emit('split-order', order.id)"
-              class="px-3.5 py-2 text-xs font-semibold text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs whitespace-nowrap"
+              class="px-2.5 sm:px-3.5 py-1.5 sm:py-2 text-[11px] sm:text-xs font-semibold text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs whitespace-nowrap"
             >
               <GitFork class="w-3.5 h-3.5 text-[#1a5c4c]" />
               <span>Split Order</span>
@@ -1896,23 +1896,23 @@ watch(editForm, () => {
             <button 
               v-if="context === 'billing' && canGenerateBill"
               @click="markBillGenerated"
-              class="px-3.5 py-2 text-xs font-bold text-white bg-[#1a5c4c] hover:bg-[#14473b] rounded-lg shadow-sm hover:shadow transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+              class="px-2.5 sm:px-3.5 py-1.5 sm:py-2 text-[11px] sm:text-xs font-bold text-white bg-[#1a5c4c] hover:bg-[#14473b] rounded-lg shadow-sm hover:shadow transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
             >
               <IndianRupee class="w-3.5 h-3.5" />
               <span>Generate Bill</span>
             </button>
             <div 
               v-else-if="context === 'billing' && order.billingStatus?.status === 'GENERATED'"
-              class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 whitespace-nowrap"
+              class="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[11px] sm:text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 whitespace-nowrap"
             >
-              <CheckCircle2 class="w-4 h-4 text-emerald-600" />
+              <CheckCircle2 class="w-3.5 sm:w-4 h-3.5 sm:h-4 text-emerald-600" />
               <span>Bill Generated</span>
             </div>
 
             <button 
               v-if="canCancelOrder"
               @click="openCancelModal"
-              class="px-3.5 py-2 text-xs font-semibold text-rose-600 bg-white border border-rose-200 hover:bg-rose-50 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs whitespace-nowrap"
+              class="px-2.5 sm:px-3.5 py-1.5 sm:py-2 text-[11px] sm:text-xs font-semibold text-rose-600 bg-white border border-rose-200 hover:bg-rose-50 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs whitespace-nowrap"
             >
               <Ban class="w-3.5 h-3.5" />
               <span>Cancel Order</span>
@@ -1923,17 +1923,17 @@ watch(editForm, () => {
               <button 
                 v-if="!order.isApproved && order.overallStatus !== 'CANCELLED'"
                 @click="emit('reviewApprove', order)"
-                class="px-4 py-2 text-xs font-bold text-white bg-[#1a5c4c] hover:bg-[#14473b] rounded-lg shadow-sm hover:shadow transition-all flex items-center gap-1.5 cursor-pointer"
+                class="px-3 sm:px-4 py-1.5 sm:py-2 text-[11px] sm:text-xs font-bold text-white bg-[#1a5c4c] hover:bg-[#14473b] rounded-lg shadow-sm hover:shadow transition-all flex items-center gap-1.5 cursor-pointer"
               >
-                <CheckCheck class="w-4 h-4" />
+                <CheckCheck class="w-3.5 sm:w-4 h-3.5 sm:h-4" />
                 <span>Review & Approve</span>
               </button>
 
               <div 
                 v-else-if="order.isApproved" 
-                class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200"
+                class="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[11px] sm:text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200"
               >
-                <CheckCircle2 class="w-4 h-4 text-emerald-600" />
+                <CheckCircle2 class="w-3.5 sm:w-4 h-3.5 sm:h-4 text-emerald-600" />
                 <span>Approved</span>
               </div>
             </template>
