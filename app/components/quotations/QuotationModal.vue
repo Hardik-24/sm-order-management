@@ -2607,21 +2607,16 @@ const exportQuote = async (action: 'whatsapp' | 'download' | 'pdf' | 'print') =>
       await document.fonts.ready
     }
 
-    // Optimized Retina 2× export settings (1588px x 2246px crisp HD resolution, ~1MB instead of 20MB)
+    // Ultra HD 300 DPI export settings (2382px x 3369px for download, 1985px x 2800px for WhatsApp)
     const exportOptions = {
-      pixelRatio: 2,
-      quality: 0.95,
+      pixelRatio: action === 'download' ? 3 : 2.5,
+      quality: 1,
       backgroundColor: '#ffffff',
       cacheBust: true
     }
 
     if (action === 'whatsapp') {
-      const blob = await toBlob(el, exportOptions)
-      if (!blob) throw new Error('Could not generate quotation image')
-
       const fileName = `${quoteNumber.value}-${(customerName.value || 'customer').replace(/\s+/g, '_')}.png`
-      const file = new File([blob], fileName, { type: 'image/png' })
-
       const clientName = customerName.value?.trim() || ''
       const greeting = clientName ? `Hello ${clientName},` : 'Hello,'
       const politeMessageText = 
@@ -2630,6 +2625,20 @@ const exportQuote = async (action: 'whatsapp' | 'download' | 'pdf' | 'print') =>
         `Please feel free to reach out to us if you need any clarification or assistance. We look forward to fulfilling your requirements!\n\n` +
         `Warm regards,\n` +
         `Silicon Marketing`
+
+      // 1. Android Capacitor Native Share Bridge (Sends real high-res PNG image + pre-filled caption)
+      if (typeof window !== 'undefined' && (window as any).AndroidBridge?.shareImage) {
+        const dataUrl = await toPng(el, exportOptions)
+        ;(window as any).AndroidBridge.shareImage(dataUrl, fileName, politeMessageText, 'whatsapp')
+        showSaved('Opening WhatsApp with quotation slip image...')
+        return
+      }
+
+      // 2. Standard Web Browser (Chrome/Safari Web Share Level 2 with files)
+      const blob = await toBlob(el, exportOptions)
+      if (!blob) throw new Error('Could not generate quotation image')
+
+      const file = new File([blob], fileName, { type: 'image/png' })
 
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({
@@ -2661,7 +2670,7 @@ const exportQuote = async (action: 'whatsapp' | 'download' | 'pdf' | 'print') =>
       a.href = dataUrl
       a.download = `${quoteNumber.value}-${(customerName.value || 'customer').replace(/\s+/g, '_')}.png`
       a.click()
-      showSaved('Ultra HD quotation image saved to your downloads!')
+      showSaved('Ultra HD 300 DPI quotation image saved to your downloads!')
     } else if (action === 'pdf' || action === 'print') {
       // ── Dedicated Multi-Page PDF & Print Generation ─────────────────────────
       // 1. Measure real row heights from the mounted off-screen quotationCardRef
