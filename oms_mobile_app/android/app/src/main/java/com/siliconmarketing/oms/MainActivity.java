@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.webkit.DownloadListener;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
@@ -35,6 +36,20 @@ public class MainActivity extends BridgeActivity {
                     settings.setUserAgentString(defaultUa + " SiliconOMSApp");
                 }
                 webView.addJavascriptInterface(new AndroidShareBridge(this), "AndroidBridge");
+
+                // Catch any standard downloads triggered in WebView
+                webView.setDownloadListener(new DownloadListener() {
+                    @Override
+                    public void onDownloadStart(String url, String userAgent, String contentDisposition, String mimetype, long contentLength) {
+                        try {
+                            Intent intent = new Intent(Intent.ACTION_VIEW);
+                            intent.setData(Uri.parse(url));
+                            startActivity(intent);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                });
             }
 
             this.bridge.setWebViewClient(new BridgeWebViewClient(bridgeInstance) {
@@ -105,6 +120,20 @@ public class MainActivity extends BridgeActivity {
         public void shareImage(String base64Data, String fileName, String message, String targetApp, String phoneNumber) {
             try {
                 ShareHelper.shareImage(context, base64Data, fileName, message, targetApp, phoneNumber);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        @JavascriptInterface
+        public void saveFile(String base64Data, String fileName, String mimeType) {
+            saveFile(base64Data, fileName, mimeType, true);
+        }
+
+        @JavascriptInterface
+        public void saveFile(String base64Data, String fileName, String mimeType, boolean openAfterSave) {
+            try {
+                ShareHelper.saveFile(context, base64Data, fileName, mimeType, openAfterSave);
             } catch (Exception e) {
                 e.printStackTrace();
             }

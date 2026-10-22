@@ -23,4 +23,19 @@ public class OMSBridgePlugin extends Plugin {
             call.reject("Share failed: " + e.getMessage(), e);
         }
     }
+
+    @PluginMethod
+    public void saveFile(PluginCall call) {
+        String base64Data = call.getString("base64Data");
+        String fileName = call.getString("fileName");
+        String mimeType = call.getString("mimeType");
+        Boolean openAfterSave = call.getBoolean("openAfterSave", true);
+
+        try {
+            ShareHelper.saveFile(getContext(), base64Data, fileName, mimeType, openAfterSave != null ? openAfterSave : true);
+            call.resolve();
+        } catch (Exception e) {
+            call.reject("Save failed: " + e.getMessage(), e);
+        }
+    }
 }

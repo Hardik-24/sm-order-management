@@ -2706,11 +2706,29 @@ const exportQuote = async (action: 'whatsapp' | 'download' | 'pdf' | 'print') =>
       }
     } else if (action === 'download') {
       const dataUrl = await toPng(el, exportOptions)
+      const fileName = `${quoteNumber.value}-${(customerName.value || 'customer').replace(/\s+/g, '_')}.png`
+
+      // Android App Native File Save (Saves directly into phone's Downloads directory)
+      if (typeof window !== 'undefined' && ((window as any).Capacitor?.Plugins?.OMSBridge?.saveFile || (window as any).AndroidBridge?.saveFile)) {
+        if ((window as any).Capacitor?.Plugins?.OMSBridge?.saveFile) {
+          await (window as any).Capacitor.Plugins.OMSBridge.saveFile({
+            base64Data: dataUrl,
+            fileName,
+            mimeType: 'image/png',
+            openAfterSave: true
+          })
+        } else {
+          ;(window as any).AndroidBridge.saveFile(dataUrl, fileName, 'image/png', true)
+        }
+        showSaved('Quotation image saved to your Downloads folder!')
+        return
+      }
+
       const a = document.createElement('a')
       a.href = dataUrl
-      a.download = `${quoteNumber.value}-${(customerName.value || 'customer').replace(/\s+/g, '_')}.png`
+      a.download = fileName
       a.click()
-      showSaved('Ultra HD 300 DPI quotation image saved to your downloads!')
+      showSaved('Quotation image saved to your downloads!')
     } else if (action === 'pdf' || action === 'print') {
       // ── Dedicated Multi-Page PDF & Print Generation ─────────────────────────
       // 1. Measure real row heights from the mounted off-screen quotationCardRef
@@ -2772,7 +2790,27 @@ const exportQuote = async (action: 'whatsapp' | 'download' | 'pdf' | 'print') =>
           pdf.addImage(pageDataUrls[i], 'JPEG', 0, 0, pdfW, pdfH, undefined, 'FAST')
         }
 
-        pdf.save(`${quoteNumber.value}.pdf`)
+        const pdfFileName = `${quoteNumber.value}.pdf`
+
+        // Android App Native File Save (Saves directly into phone's Downloads directory and opens viewer)
+        if (typeof window !== 'undefined' && ((window as any).Capacitor?.Plugins?.OMSBridge?.saveFile || (window as any).AndroidBridge?.saveFile)) {
+          const pdfDataUri = pdf.output('datauristring')
+          if ((window as any).Capacitor?.Plugins?.OMSBridge?.saveFile) {
+            await (window as any).Capacitor.Plugins.OMSBridge.saveFile({
+              base64Data: pdfDataUri,
+              fileName: pdfFileName,
+              mimeType: 'application/pdf',
+              openAfterSave: true
+            })
+          } else {
+            ;(window as any).AndroidBridge.saveFile(pdfDataUri, pdfFileName, 'application/pdf', true)
+          }
+          pdfPages.value = []
+          showSaved('Quotation PDF saved to your Downloads folder!')
+          return
+        }
+
+        pdf.save(pdfFileName)
         pdfPages.value = []
         showSaved('Quotation PDF generated & downloaded!')
       } else if (action === 'print') {

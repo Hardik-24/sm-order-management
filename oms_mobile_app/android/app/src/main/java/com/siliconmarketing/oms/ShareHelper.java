@@ -1,15 +1,24 @@
 package com.siliconmarketing.oms;
 
 import android.content.ClipData;
+import android.content.ContentResolver;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.net.Uri;
+import android.os.Build;
+import android.os.Environment;
+import android.os.Handler;
+import android.os.Looper;
+import android.provider.MediaStore;
 import android.util.Base64;
+import android.widget.Toast;
 import androidx.core.content.FileProvider;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.OutputStream;
 import java.util.List;
 
 public class ShareHelper {
@@ -134,5 +143,88 @@ public class ShareHelper {
         chooser.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
         chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         context.startActivity(chooser);
+    }
+
+    public static boolean saveFile(Context context, String base64Data, String fileName, String mimeType, boolean openAfterSave) throws Exception {
+        if (base64Data == null || base64Data.trim().isEmpty()) {
+            throw new IllegalArgumentException("File data is empty");
+        }
+
+        String cleanBase64 = base64Data.trim();
+        int commaIndex = cleanBase64.indexOf(",");
+        if (commaIndex != -1) {
+            cleanBase64 = cleanBase64.substring(commaIndex + 1);
+        }
+        cleanBase64 = cleanBase64.replaceAll("\\s+", "");
+
+        byte[] fileBytes = Base64.decode(cleanBase64, Base64.DEFAULT);
+        String safeName = (fileName != null && !fileName.trim().isEmpty()) ? fileName.trim() : "quotation_file";
+        String effectiveMime = (mimeType != null && !mimeType.trim().isEmpty()) ? mimeType.trim() : "application/octet-stream";
+
+        if (effectiveMime.contains("pdf") && !safeName.toLowerCase().endsWith(".pdf")) {
+            safeName += ".pdf";
+        } else if (effectiveMime.contains("png") && !safeName.toLowerCase().endsWith(".png")) {
+            safeName += ".png";
+        }
+
+        Uri savedUri = null;
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            ContentResolver resolver = context.getContentResolver();
+            ContentValues values = new ContentValues();
+            values.put(MediaStore.MediaColumns.DISPLAY_NAME, safeName);
+            values.put(MediaStore.MediaColumns.MIME_TYPE, effectiveMime);
+            values.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS);
+            values.put(MediaStore.MediaColumns.IS_PENDING, 1);
+
+            Uri collection = MediaStore.Downloads.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY);
+            savedUri = resolver.insert(collection, values);
+
+            if (savedUri != null) {
+                try (OutputStream os = resolver.openOutputStream(savedUri)) {
+                    if (os != null) {
+                        os.write(fileBytes);
+                        os.flush();
+                    }
+                    values.clear();
+                    values.put(MediaStore.MediaColumns.IS_PENDING, 0);
+                    resolver.update(savedUri, values, null, null);
+                } catch (Exception e) {
+                    resolver.delete(savedUri, null, null);
+                    throw e;
+                }
+            }
+        } else {
+            File downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+            if (!downloadsDir.exists()) {
+                downloadsDir.mkdirs();
+            }
+            File targetFile = new File(downloadsDir, safeName);
+            try (FileOutputStream fos = new FileOutputStream(targetFile)) {
+                fos.write(fileBytes);
+                fos.flush();
+            }
+            savedUri = FileProvider.getUriForFile(context, context.getPackageName() + ".fileprovider", targetFile);
+        }
+
+        final String finalFileName = safeName;
+        new Handler(Looper.getMainLooper()).post(() -> {
+            Toast.makeText(context, "Saved to Downloads: " + finalFileName, Toast.LENGTH_LONG).show();
+        });
+
+        if (openAfterSave && savedUri != null) {
+            try {
+                Intent viewIntent = new Intent(Intent.ACTION_VIEW);
+                viewIntent.setDataAndType(savedUri, effectiveMime);
+                viewIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                viewIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                context.startActivity(viewIntent);
+            } catch (Exception e) {
+                // Ignore if no suitable viewer installed; file is already safely in Downloads
+                e.printStackTrace();
+            }
+        }
+
+        return true;
     }
 }
