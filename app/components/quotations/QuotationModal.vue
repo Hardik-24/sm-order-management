@@ -2607,9 +2607,9 @@ const exportQuote = async (action: 'whatsapp' | 'download' | 'pdf' | 'print') =>
       await document.fonts.ready
     }
 
-    // Crisp Retina HD export settings (1746px x 2470px for WhatsApp, 2382px x 3369px for download)
+    // Optimized Retina HD settings: 1588px width for WhatsApp stays natively within WhatsApp's 1600px ceiling, avoiding aggressive JPEG recompression
     const exportOptions = {
-      pixelRatio: action === 'download' ? 3 : 2.2,
+      pixelRatio: action === 'download' ? 3 : 2,
       quality: 1,
       backgroundColor: '#ffffff',
       cacheBust: true
