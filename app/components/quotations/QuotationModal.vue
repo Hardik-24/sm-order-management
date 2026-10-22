@@ -2626,12 +2626,40 @@ const exportQuote = async (action: 'whatsapp' | 'download' | 'pdf' | 'print') =>
         `Warm regards,\n` +
         `Silicon Marketing`
 
+      const cleanPhone = (customerPhone.value || '').replace(/[^0-9]/g, '')
+
       // 1. Android Capacitor Native Share Bridge (Sends real high-res PNG image + pre-filled caption)
-      if (typeof window !== 'undefined' && (window as any).AndroidBridge?.shareImage) {
+      const isAndroidApp = 
+        typeof window !== 'undefined' && (
+          (window as any).isSiliconOMSApp === true ||
+          !!(window as any).AndroidBridge ||
+          !!(window as any).Capacitor?.Plugins?.OMSBridge ||
+          navigator.userAgent.includes('SiliconOMSApp')
+        )
+
+      if (isAndroidApp) {
+        showSaved('Rendering quotation slip...')
         const dataUrl = await toPng(el, exportOptions)
-        ;(window as any).AndroidBridge.shareImage(dataUrl, fileName, politeMessageText, 'whatsapp')
-        showSaved('Opening WhatsApp with quotation slip image...')
-        return
+
+        // 1A. Capacitor OMSBridge Plugin
+        if ((window as any).Capacitor?.Plugins?.OMSBridge?.shareImage) {
+          await (window as any).Capacitor.Plugins.OMSBridge.shareImage({
+            base64Data: dataUrl,
+            fileName,
+            message: politeMessageText,
+            targetApp: 'whatsapp',
+            phoneNumber: cleanPhone
+          })
+          showSaved('Opening WhatsApp with quotation slip image...')
+          return
+        }
+
+        // 1B. Android Javascript Bridge
+        if ((window as any).AndroidBridge?.shareImage) {
+          ;(window as any).AndroidBridge.shareImage(dataUrl, fileName, politeMessageText, 'whatsapp', cleanPhone)
+          showSaved('Opening WhatsApp with quotation slip image...')
+          return
+        }
       }
 
       // 2. Standard Web Browser (Chrome/Safari Web Share Level 2 with files)
