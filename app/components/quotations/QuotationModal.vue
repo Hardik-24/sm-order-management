@@ -2607,9 +2607,9 @@ const exportQuote = async (action: 'whatsapp' | 'download' | 'pdf' | 'print') =>
       await document.fonts.ready
     }
 
-    // Ultra HD 300 DPI export settings (2382px x 3369px for pixel-perfect clarity)
+    // Crisp Retina HD export settings (1746px x 2470px for WhatsApp, 2382px x 3369px for download)
     const exportOptions = {
-      pixelRatio: 3,
+      pixelRatio: action === 'download' ? 3 : 2.2,
       quality: 1,
       backgroundColor: '#ffffff',
       cacheBust: true
@@ -2624,13 +2624,9 @@ const exportQuote = async (action: 'whatsapp' | 'download' | 'pdf' | 'print') =>
 
       const politeMessageText = 
         `${greeting}\n\n` +
-        `Please find the price estimate quotation (*${quoteNumber.value}*) attached with this message.\n\n` +
-        `📄 *Quotation Summary:*\n` +
-        `• Estimate No: *${quoteNumber.value}*\n` +
-        `• Total Items: *${itemCount}*\n` +
-        `• Payable Amount: *${totalPayableFormatted}*\n` +
-        `• Validity: *${validityDays.value || 7} Days*\n\n` +
-        `Please feel free to reach out to us if you need any clarification or assistance. We look forward to fulfilling your requirements!\n\n` +
+        `Please find attached the quotation (*${quoteNumber.value}*) for *${totalPayableFormatted}* (${itemCount} item${itemCount === 1 ? '' : 's'}).\n\n` +
+        `• Validity: *${validityDays.value || 7} Days*\n` +
+        `• Please feel free to reach out to us for any assistance.\n\n` +
         `Warm regards,\n` +
         `*Silicon Marketing*`
 
@@ -2670,20 +2666,35 @@ const exportQuote = async (action: 'whatsapp' | 'download' | 'pdf' | 'print') =>
         }
       }
 
-      // 2. Standard Web Browser (Chrome/Safari Web Share Level 2 with files)
-      const blob = await toBlob(el, exportOptions)
+      // 2. Standard Web Browser (Full-fidelity lossless PNG conversion)
+      showSaved('Generating high-resolution quotation slip...')
+      const dataUrl = await toPng(el, exportOptions)
+      const blobRes = await fetch(dataUrl)
+      const blob = await blobRes.blob()
       if (!blob) throw new Error('Could not generate quotation image')
 
       const file = new File([blob], fileName, { type: 'image/png' })
 
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        // Do NOT pass `title`: Omitting title prevents Chrome from adding EXTRA_SUBJECT,
+        // allowing WhatsApp to bind `text` directly as the image caption instead of a separate message!
         await navigator.share({
           files: [file],
-          title: `Quotation ${quoteNumber.value} - Silicon Marketing`,
           text: politeMessageText
         })
         showSaved('Quotation shared successfully!')
       } else {
+        // Clipboard copy for Desktop Web users (Allows instant Ctrl+V into WhatsApp Web with caption)
+        if (typeof navigator !== 'undefined' && navigator.clipboard && typeof ClipboardItem !== 'undefined') {
+          try {
+            await navigator.clipboard.write([
+              new ClipboardItem({ 'image/png': blob })
+            ])
+          } catch (clipErr) {
+            // Non-critical if clipboard permission denied
+          }
+        }
+
         const url = URL.createObjectURL(blob)
         const a = document.createElement('a')
         a.href = url
@@ -2691,7 +2702,6 @@ const exportQuote = async (action: 'whatsapp' | 'download' | 'pdf' | 'print') =>
         a.click()
         URL.revokeObjectURL(url)
 
-        const cleanPhone = (customerPhone.value || '').replace(/[^0-9]/g, '')
         const formattedPhone = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone
         const textMsg = encodeURIComponent(politeMessageText)
         const waUrl = formattedPhone 
@@ -2699,7 +2709,7 @@ const exportQuote = async (action: 'whatsapp' | 'download' | 'pdf' | 'print') =>
           : `https://api.whatsapp.com/send?text=${textMsg}`
         
         window.open(waUrl, '_blank')
-        showSaved('Quotation slip downloaded! Opening WhatsApp...')
+        showSaved('Quotation slip downloaded & copied! Opening WhatsApp...')
       }
     } else if (action === 'download') {
       const dataUrl = await toPng(el, exportOptions)
