@@ -4,10 +4,10 @@
     <button
       type="button"
       @click="isOpen = !isOpen"
-      class="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded-lg shadow-xs hover:bg-gray-50 hover:border-gray-300 transition-all focus:outline-none focus:ring-1 focus:ring-[#1a5c4c]"
+      class="inline-flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-2xs sm:shadow-xs hover:bg-gray-50 hover:border-gray-300 transition-all focus:outline-none focus:ring-1 focus:ring-[#1a5c4c] shrink-0 whitespace-nowrap"
     >
       <span>{{ currentLabel }}</span>
-      <ChevronDown class="w-3.5 h-3.5 text-gray-400 transition-transform duration-150" :class="{ 'rotate-180': isOpen }" />
+      <ChevronDown class="w-3.5 h-3.5 text-gray-400 transition-transform duration-150 shrink-0" :class="{ 'rotate-180': isOpen }" />
     </button>
 
     <!-- Overlay Backdrop -->

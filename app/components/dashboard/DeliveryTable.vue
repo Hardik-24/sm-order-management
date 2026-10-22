@@ -376,7 +376,7 @@ const saveDriverAssignment = async () => {
       </div>
 
       <!-- Actions -->
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-1.5 sm:gap-2.5 w-full sm:w-auto justify-between sm:justify-end flex-nowrap">
         <TableFilterButtons
           :startDate="startDate"
           :endDate="endDate"

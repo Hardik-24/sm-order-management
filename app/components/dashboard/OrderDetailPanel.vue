@@ -68,6 +68,26 @@ const canGenerateBill = computed(() => {
   return hasRole('ADMIN', 'BILLING')
 })
 
+const customerPhones = computed(() => {
+  if (!order.value?.customer) return []
+  const list: { display: string; number: string }[] = []
+  const rawPhones = [order.value.customer.phone, (order.value.customer as any).alternatePhone].filter(Boolean)
+  
+  for (const raw of rawPhones) {
+    const parts = String(raw).split(/[,;/|\n]+/).map(p => p.trim()).filter(Boolean)
+    for (const p of parts) {
+      const cleanDigits = p.replace(/[^\d+]/g, '')
+      if (cleanDigits.length >= 5 && !list.some(item => item.number === cleanDigits)) {
+        list.push({
+          display: p,
+          number: cleanDigits
+        })
+      }
+    }
+  }
+  return list
+})
+
 const copiedOrderNumber = ref(false)
 const copyOrderNumber = () => {
   if (!order.value?.orderNumber) return
@@ -1033,22 +1053,29 @@ watch(editForm, () => {
         </div>
 
         <!-- 2. Sub-header Quick Snapshot -->
-        <div class="px-5 sm:px-6 py-3 bg-gradient-to-b from-gray-50/90 to-gray-50/40 border-b border-gray-200/80 flex-shrink-0">
-          <div class="flex items-center justify-between gap-4">
-            <div class="min-w-0">
+        <div class="px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-b from-gray-50/90 to-gray-50/40 border-b border-gray-200/80 flex-shrink-0">
+          <div class="flex items-center justify-between gap-3 sm:gap-4">
+            <div class="min-w-0 flex-1">
               <div class="flex items-center gap-1.5">
                 <Building2 class="w-3.5 h-3.5 text-gray-400 shrink-0" />
                 <h3 class="text-sm font-bold text-gray-900 truncate">
                   {{ order.customer?.company || order.customer?.name || 'Customer' }}
                 </h3>
               </div>
-              <p class="text-xs text-gray-500 mt-0.5 flex items-center gap-2">
-                <span v-if="order.customer?.company && order.customer?.name">{{ order.customer.name }} &bull;</span>
-                <span>Placed {{ formatDate(order.createdAt) }}</span>
-              </p>
+              <div class="flex items-center gap-1.5 min-w-0 text-xs text-gray-500 mt-0.5">
+                <span v-if="order.customer?.company && order.customer?.name" class="font-medium text-gray-700 truncate max-w-[120px] sm:max-w-none">
+                  {{ order.customer.name }}
+                </span>
+                <span 
+                  v-if="order.customer?.company && order.customer?.name" 
+                  class="w-1 h-1 rounded-full bg-gray-400 shrink-0 self-center" 
+                  aria-hidden="true" 
+                />
+                <span class="whitespace-nowrap shrink-0">Placed on {{ formatDate(order.createdAt) }}</span>
+              </div>
             </div>
             <div class="text-right shrink-0">
-              <div v-if="context !== 'delivery'" class="text-base sm:text-lg font-black text-[#1a5c4c] tracking-tight tabular-nums">
+              <div v-if="context !== 'delivery'" class="text-sm sm:text-lg font-black text-[#1a5c4c] tracking-tight tabular-nums">
                 {{ formatCurrency(order.totalAmount || 0) }}
               </div>
               <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-200/70 text-gray-700 mt-0.5">
@@ -1175,35 +1202,42 @@ watch(editForm, () => {
                   </div>
                 </div>
 
-                <div>
-                  <span class="block text-[10px] sm:text-[11px] uppercase font-bold text-gray-400 tracking-wider mb-0.5">Contact Phone</span>
-                  <a 
-                    v-if="order.customer?.phone" 
-                    :href="`tel:${order.customer.phone}`" 
-                    class="font-medium text-gray-900 hover:text-[#1a5c4c] flex items-center gap-1 transition-colors"
-                  >
-                    <Phone class="w-3 h-3 text-gray-400" />
-                    <span>{{ order.customer.phone }}</span>
-                  </a>
+                <!-- Contact Phone (Full width on mobile so multiple numbers never collide) -->
+                <div class="col-span-2 sm:col-span-1">
+                  <span class="block text-[10px] sm:text-[11px] uppercase font-bold text-gray-400 tracking-wider mb-1">Contact Phone</span>
+                  <div v-if="customerPhones.length > 0" class="flex flex-wrap items-center gap-1.5">
+                    <a 
+                      v-for="ph in customerPhones" 
+                      :key="ph.number"
+                      :href="`tel:${ph.number}`" 
+                      class="inline-flex items-center gap-1 font-medium text-gray-900 hover:text-[#1a5c4c] bg-gray-50 hover:bg-[#1a5c4c]/5 px-2 py-0.5 rounded border border-gray-200/80 transition-colors text-xs"
+                      :title="`Call ${ph.display}`"
+                    >
+                      <Phone class="w-3 h-3 text-gray-400 shrink-0" />
+                      <span class="font-mono">{{ ph.display }}</span>
+                    </a>
+                  </div>
                   <span v-else class="text-gray-400">—</span>
                 </div>
 
-                <div>
-                  <span class="block text-[10px] sm:text-[11px] uppercase font-bold text-gray-400 tracking-wider mb-0.5">Payment Terms</span>
+                <!-- Payment Terms -->
+                <div class="col-span-1">
+                  <span class="block text-[10px] sm:text-[11px] uppercase font-bold text-gray-400 tracking-wider mb-1">Payment Terms</span>
                   <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-gray-100 text-gray-800 border border-gray-200">
                     {{ order.paymentTerms || order.customer?.paymentTerms || '—' }}
                   </span>
                 </div>
 
-                <div>
-                  <span class="block text-[10px] sm:text-[11px] uppercase font-bold text-gray-400 tracking-wider mb-0.5">Transport Mode</span>
+                <!-- Transport Mode -->
+                <div class="col-span-1">
+                  <span class="block text-[10px] sm:text-[11px] uppercase font-bold text-gray-400 tracking-wider mb-1">Transport Mode</span>
                   <span 
                     class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold border"
                     :class="order.vehicleMode === 'PARTY_VEHICLE' ? 'bg-amber-50 text-amber-800 border-amber-200' : 'bg-[#1a5c4c]/10 text-[#1a5c4c] border-[#1a5c4c]/20'"
                   >
-                    <Car v-if="order.vehicleMode === 'PARTY_VEHICLE'" class="w-3 h-3 text-amber-600" />
-                    <Truck v-else class="w-3 h-3 text-[#1a5c4c]" />
-                    <span>{{ order.vehicleMode === 'PARTY_VEHICLE' ? 'Party Vehicle / Pickup' : 'Our Delivery Fleet' }}</span>
+                    <Car v-if="order.vehicleMode === 'PARTY_VEHICLE'" class="w-3 h-3 text-amber-600 shrink-0" />
+                    <Truck v-else class="w-3 h-3 text-[#1a5c4c] shrink-0" />
+                    <span class="truncate">{{ order.vehicleMode === 'PARTY_VEHICLE' ? 'Party Vehicle / Pickup' : 'Our Delivery Fleet' }}</span>
                   </span>
                 </div>
 

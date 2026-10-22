@@ -316,7 +316,7 @@ const deliveryStatusOptions = [
 </script>
 
 <template>
-  <div class="flex items-center justify-end gap-2 w-full sm:w-auto ml-auto">
+  <div class="flex items-center gap-1.5 sm:gap-2 flex-1 sm:flex-initial">
     <!-- Backdrop for mobile viewport safety -->
     <Transition name="fade">
       <div 
@@ -327,16 +327,16 @@ const deliveryStatusOptions = [
     </Transition>
 
     <!-- Date Range Filter -->
-    <div class="relative" ref="dateContainerRef">
+    <div class="relative flex-1 sm:flex-initial" ref="dateContainerRef">
       <button 
         ref="dateButtonRef"
         type="button"
         @click="toggleDatePicker"
-        class="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors shadow-sm cursor-pointer"
+        class="w-full sm:w-auto flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 border border-gray-300 rounded-lg text-xs sm:text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors shadow-2xs sm:shadow-sm cursor-pointer whitespace-nowrap"
         :class="{ 'border-[#1a5c4c] ring-1 ring-[#1a5c4c] text-[#1a5c4c]': startDate || endDate }"
       >
-        <Calendar class="w-4 h-4 text-gray-500" :class="{ 'text-[#1a5c4c]': startDate || endDate }" />
-        <span class="whitespace-nowrap">{{ dateButtonText }}</span>
+        <Calendar class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-500 shrink-0" :class="{ 'text-[#1a5c4c]': startDate || endDate }" />
+        <span class="truncate max-w-[85px] sm:max-w-none">{{ dateButtonText }}</span>
         <span v-if="startDate || endDate" class="w-1.5 h-1.5 rounded-full bg-[#1a5c4c] shrink-0" />
       </button>
 
@@ -499,17 +499,17 @@ const deliveryStatusOptions = [
     </div>
 
     <!-- Filters Popover -->
-    <div class="relative" ref="filtersContainerRef">
+    <div class="relative flex-1 sm:flex-initial" ref="filtersContainerRef">
       <button 
         ref="filtersButtonRef"
         type="button"
         @click="toggleFilters"
-        class="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors shadow-sm cursor-pointer"
+        class="w-full sm:w-auto flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 border border-gray-300 rounded-lg text-xs sm:text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors shadow-2xs sm:shadow-sm cursor-pointer whitespace-nowrap"
         :class="{ 'border-[#1a5c4c] ring-1 ring-[#1a5c4c] text-[#1a5c4c]': activeFilterCount > 0 }"
       >
-        <Filter class="w-4 h-4 text-gray-500" :class="{ 'text-[#1a5c4c]': activeFilterCount > 0 }" />
+        <Filter class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-500 shrink-0" :class="{ 'text-[#1a5c4c]': activeFilterCount > 0 }" />
         <span>Filters</span>
-        <span v-if="activeFilterCount > 0" class="flex items-center justify-center w-5 h-5 ml-1 bg-[#1a5c4c] text-white text-[10px] font-bold rounded-full">
+        <span v-if="activeFilterCount > 0" class="flex items-center justify-center w-4 h-4 sm:w-5 sm:h-5 ml-0.5 sm:ml-1 bg-[#1a5c4c] text-white text-[9px] sm:text-[10px] font-bold rounded-full shrink-0">
           {{ activeFilterCount }}
         </span>
       </button>
