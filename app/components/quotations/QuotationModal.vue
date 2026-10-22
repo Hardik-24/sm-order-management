@@ -2607,10 +2607,10 @@ const exportQuote = async (action: 'whatsapp' | 'download' | 'pdf' | 'print') =>
       await document.fonts.ready
     }
 
-    // Optimized Retina HD settings: 1588px width for WhatsApp stays natively within WhatsApp's 1600px ceiling, avoiding aggressive JPEG recompression
+    // Original export settings (Retina 2x: 1588px x 2246px crisp resolution, lightweight ~1MB)
     const exportOptions = {
-      pixelRatio: action === 'download' ? 3 : 2,
-      quality: 1,
+      pixelRatio: 2,
+      quality: 0.95,
       backgroundColor: '#ffffff',
       cacheBust: true
     }
@@ -2618,17 +2618,13 @@ const exportQuote = async (action: 'whatsapp' | 'download' | 'pdf' | 'print') =>
     if (action === 'whatsapp') {
       const fileName = `${quoteNumber.value}-${(customerName.value || 'customer').replace(/\s+/g, '_')}.png`
       const clientName = customerName.value?.trim() || ''
-      const greeting = clientName ? `Hello *${clientName}*,` : 'Hello,'
-      const totalPayableFormatted = `₹${Math.round(grandTotal.value).toLocaleString('en-IN')}`
-      const itemCount = quoteItems.value.length
-
+      const greeting = clientName ? `Hello ${clientName},` : 'Hello,'
       const politeMessageText = 
         `${greeting}\n\n` +
-        `Please find attached the quotation (*${quoteNumber.value}*) for *${totalPayableFormatted}* (${itemCount} item${itemCount === 1 ? '' : 's'}).\n\n` +
-        `• Validity: *${validityDays.value || 7} Days*\n` +
-        `• Please feel free to reach out to us for any assistance.\n\n` +
+        `Please find the requested quotation (*${quoteNumber.value}*) attached with this message.\n\n` +
+        `Please feel free to reach out to us if you need any clarification or assistance. We look forward to fulfilling your requirements!\n\n` +
         `Warm regards,\n` +
-        `*Silicon Marketing*`
+        `Silicon Marketing`
 
       const cleanPhone = (customerPhone.value || '').replace(/[^0-9]/g, '')
 
@@ -2666,18 +2662,15 @@ const exportQuote = async (action: 'whatsapp' | 'download' | 'pdf' | 'print') =>
         }
       }
 
-      // 2. Standard Web Browser (Full-fidelity lossless PNG conversion)
-      showSaved('Generating high-resolution quotation slip...')
-      const dataUrl = await toPng(el, exportOptions)
-      const blobRes = await fetch(dataUrl)
-      const blob = await blobRes.blob()
+      // 2. Standard Web Browser (Original Web Share flow)
+      const blob = await toBlob(el, exportOptions)
       if (!blob) throw new Error('Could not generate quotation image')
 
       const file = new File([blob], fileName, { type: 'image/png' })
 
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        // Do NOT pass `title`: Omitting title prevents Chrome from adding EXTRA_SUBJECT,
-        // allowing WhatsApp to bind `text` directly as the image caption instead of a separate message!
+        // Omitting title prevents Chrome from adding EXTRA_SUBJECT,
+        // allowing WhatsApp to bind text directly as the image caption instead of a separate message!
         await navigator.share({
           files: [file],
           text: politeMessageText
