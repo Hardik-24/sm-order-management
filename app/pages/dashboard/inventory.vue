@@ -455,30 +455,32 @@ onUnmounted(() => {
           @click="openProductDetail(product)"
           class="p-3.5 space-y-2 hover:bg-gray-50 active:bg-gray-100 transition-colors cursor-pointer"
         >
-          <!-- Line 1: SKU, Group & Stock Status -->
-          <div class="flex items-center justify-between gap-2">
-            <div class="flex items-center gap-1.5 flex-wrap min-w-0">
-              <span class="text-xs font-mono font-bold text-gray-900 bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200 shrink-0">
-                {{ product.sku }}
-              </span>
-              <span v-if="product.category?.name" class="text-[10px] font-semibold text-gray-600 bg-gray-50 px-1.5 py-0.5 rounded border border-gray-200/80 shrink-0">
-                {{ product.category.name }}
-              </span>
-            </div>
+          <!-- Line 1: SKU Tag -->
+          <div class="flex items-center">
+            <span class="text-xs font-mono font-bold text-gray-900 bg-gray-100 px-2 py-0.5 rounded border border-gray-200">
+              {{ product.sku }}
+            </span>
+          </div>
+
+          <!-- Line 2: Category Tag and in same line In Stock / Out of Stock badge -->
+          <div class="flex items-center gap-2">
+            <span v-if="product.category?.name" class="text-[10px] font-semibold text-gray-600 bg-gray-50 px-2 py-0.5 rounded border border-gray-200/80">
+              {{ product.category.name }}
+            </span>
 
             <span 
               v-if="product.stock > 0" 
-              class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 text-green-800 border border-green-200 shrink-0"
+              class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 text-green-800 border border-green-200"
             >
               <CheckCircle2 class="w-3 h-3 text-green-600" />
-              In Stock
+              <span>In Stock</span>
             </span>
             <span 
               v-else 
-              class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-100 text-red-800 border border-red-200 shrink-0"
+              class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-100 text-red-800 border border-red-200"
             >
               <XCircle class="w-3 h-3 text-red-600" />
-              Out of Stock
+              <span>Out of Stock</span>
             </span>
           </div>
 
