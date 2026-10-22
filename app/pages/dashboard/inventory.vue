@@ -232,7 +232,7 @@ onUnmounted(() => {
     <Teleport to="body">
       <div 
         v-if="isSyncing || syncStatusData?.syncRequested" 
-        class="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200"
+        class="fixed inset-x-0 bottom-0 top-14 md:inset-0 z-[150] flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200 overflow-y-auto"
       >
         <!-- Dark Backdrop -->
         <div class="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity"></div>
@@ -548,7 +548,7 @@ onUnmounted(() => {
     <Teleport to="body">
       <div 
         v-if="isDetailModalOpen && selectedProduct" 
-        class="fixed inset-0 z-50 flex items-center justify-center p-4"
+        class="fixed inset-x-0 bottom-0 top-14 md:inset-0 z-[150] flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
       >
       <!-- Backdrop -->
       <div 
@@ -560,7 +560,7 @@ onUnmounted(() => {
       <!-- Modal Card -->
       <div 
         ref="modalRef"
-        class="relative bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-hidden flex flex-col border border-gray-100"
+        class="relative bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[calc(100dvh-4.5rem)] md:max-h-[90vh] overflow-hidden flex flex-col border border-gray-100"
       >
         <!-- Header -->
         <div class="px-6 py-4 bg-gray-50/80 border-b border-gray-100 flex items-center justify-between">

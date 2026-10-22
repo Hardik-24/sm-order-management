@@ -7,7 +7,8 @@ export default defineEventHandler(async (event) => {
   const query = getQuery(event)
   
   const where: any = {
-    overallStatus: { not: 'CANCELLED' }
+    overallStatus: { not: 'CANCELLED' },
+    isApproved: true
   }
   
   if (query.startDate || query.endDate) {

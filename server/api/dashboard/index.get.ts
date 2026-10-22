@@ -35,20 +35,23 @@ export default defineEventHandler(async (event) => {
     }),
     prisma.order.count({ 
       where: { 
+        isApproved: true,
         billingStatus: { status: 'PENDING' },
         overallStatus: { not: 'DELIVERED' }
       } 
     }),
     prisma.order.count({ 
       where: { 
+        isApproved: true,
         packingStatus: { status: { in: ['PENDING', 'IN_PROGRESS'] } },
         overallStatus: { not: 'DELIVERED' }
       } 
     }),
     prisma.order.count({
       where: { 
-        deliveryStatus: { status: 'WAITING' }, 
-        billingStatus: { status: 'GENERATED' }, 
+        isApproved: true,
+        deliveryStatus: { status: 'WAITING' },
+        billingStatus: { status: 'GENERATED' },
         packingStatus: { status: 'PACKED' }
       }
     }),
@@ -65,12 +68,12 @@ export default defineEventHandler(async (event) => {
       take: 5
     }),
     prisma.order.findMany({
-      where: { billingStatus: { status: 'PENDING' }, createdAt: { lt: oneHourAgo } },
+      where: { isApproved: true, billingStatus: { status: 'PENDING' }, createdAt: { lt: oneHourAgo } },
       include: { customer: true },
       take: 5
     }),
     prisma.order.findMany({
-      where: { deliveryStatus: { status: 'WAITING' }, billingStatus: { status: 'GENERATED' }, packingStatus: { status: 'PACKED' } },
+      where: { isApproved: true, deliveryStatus: { status: 'WAITING' }, billingStatus: { status: 'GENERATED' }, packingStatus: { status: 'PACKED' } },
       include: { customer: true },
       take: 5
     })

@@ -104,7 +104,11 @@ const isPanelOpen = ref(false)
 const activeTab = ref<'ALL' | 'WAITING' | 'DISPATCHED' | 'DELIVERED' | 'ON_HOLD'>('WAITING')
 
 const queryObj = computed(() => {
-  const q: any = { page: page.value, limit: limit.value }
+  const q: any = { 
+    page: page.value, 
+    limit: limit.value,
+    isApproved: 'true'
+  }
   
   if (deliveryStatus.value) {
     q.deliveryStatus = deliveryStatus.value

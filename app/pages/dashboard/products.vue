@@ -351,7 +351,7 @@
     <Teleport to="body">
       <div 
         v-if="isDetailModalOpen && selectedProduct" 
-        class="fixed inset-0 z-[110] flex items-center justify-center p-2 sm:p-4"
+        class="fixed inset-x-0 bottom-0 top-14 md:inset-0 z-[150] flex items-center justify-center p-2 sm:p-4 overflow-y-auto"
       >
       <div 
         ref="detailBackdropRef"
@@ -363,7 +363,7 @@
 
       <div 
         ref="detailModalRef"
-        class="relative bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[92vh] overflow-hidden flex flex-col border border-gray-100 overscroll-contain"
+        class="relative bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[calc(100dvh-4.5rem)] md:max-h-[92vh] overflow-hidden flex flex-col border border-gray-100 overscroll-contain"
       >
         <!-- Header -->
         <div class="px-6 py-4 bg-gray-50/80 border-b border-gray-100 flex items-center justify-between">
@@ -507,7 +507,7 @@
 
     <!-- Product Form Modal (Edit / Add) -->
     <Teleport to="body">
-      <div v-if="isProductModalOpen" class="fixed inset-0 z-[110] flex items-center justify-center p-2 sm:p-4">
+      <div v-if="isProductModalOpen" class="fixed inset-x-0 bottom-0 top-14 md:inset-0 z-[150] flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
         <div 
           ref="formBackdropRef"
           class="absolute inset-0 bg-black/50 backdrop-blur-sm" 
@@ -518,7 +518,7 @@
         
         <div 
           ref="formModalRef"
-          class="relative bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[92vh] overflow-hidden flex flex-col overscroll-contain border border-gray-100"
+          class="relative bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[calc(100dvh-4.5rem)] md:max-h-[92vh] overflow-hidden flex flex-col overscroll-contain border border-gray-100"
         >
           <div class="px-4 sm:px-6 py-4 border-b border-gray-200 flex items-center justify-between shrink-0">
             <h3 class="text-base sm:text-lg font-semibold text-[#1a1a1a]">
@@ -627,7 +627,7 @@
 
     <!-- Category Modal -->
     <Teleport to="body">
-      <div v-if="isCategoryModalOpen" class="fixed inset-0 z-[110] flex items-center justify-center p-2 sm:p-4">
+      <div v-if="isCategoryModalOpen" class="fixed inset-x-0 bottom-0 top-14 md:inset-0 z-[150] flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
         <div 
           class="absolute inset-0 bg-black/50 backdrop-blur-sm" 
           @click="closeCategoryModal"
@@ -635,7 +635,7 @@
           @touchmove.prevent.stop
         ></div>
         
-        <div class="relative bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden flex flex-col overscroll-contain border border-gray-100">
+        <div class="relative bg-white rounded-xl shadow-2xl w-full max-w-sm max-h-[calc(100dvh-4.5rem)] md:max-h-[92vh] overflow-hidden flex flex-col overscroll-contain border border-gray-100">
           <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between shrink-0">
             <h3 class="text-base sm:text-lg font-semibold text-[#1a1a1a]">Add Category</h3>
             <button @click="closeCategoryModal" class="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100 transition-colors">

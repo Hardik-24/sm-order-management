@@ -459,7 +459,8 @@ const loadInitialData = async () => {
       $fetch<any>('/api/orders', {
         query: {
           limit: 100,
-          deliveryStatus: 'WAITING'
+          deliveryStatus: 'WAITING',
+          isApproved: 'true'
         }
       }).catch(() => ({ orders: [] }))
     ])

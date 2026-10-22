@@ -23,7 +23,11 @@ const isPanelOpen = ref(false)
 const activeTab = ref<'PENDING' | 'URGENT' | 'IN_PROGRESS' | 'PACKED' | 'ALL'>('PENDING')
 
 const queryObj = computed(() => {
-  const q: any = { page: page.value, limit: limit.value }
+  const q: any = { 
+    page: page.value, 
+    limit: limit.value,
+    isApproved: 'true'
+  }
   
   if (packingStatus.value) {
     q.packingStatus = packingStatus.value

@@ -377,7 +377,7 @@
     <Teleport to="body">
       <div 
         v-if="isDetailModalOpen && selectedCustomer" 
-        class="fixed inset-0 z-[110] flex items-center justify-center p-2 sm:p-4"
+        class="fixed inset-x-0 bottom-0 top-14 md:inset-0 z-[150] flex items-center justify-center p-2 sm:p-4 overflow-y-auto"
       >
       <div 
         ref="detailBackdropRef"
@@ -387,7 +387,7 @@
 
       <div 
         ref="detailModalRef"
-        class="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[92vh] overflow-hidden flex flex-col border border-gray-100 overscroll-contain"
+        class="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[calc(100dvh-4.5rem)] md:max-h-[92vh] overflow-hidden flex flex-col border border-gray-100 overscroll-contain"
       >
         <!-- Header -->
         <div class="px-6 py-4 bg-gray-50/80 border-b border-gray-100 flex items-center justify-between">
@@ -546,7 +546,7 @@
 
     <!-- Edit / Add Modal Form -->
     <Teleport to="body">
-      <div v-if="isModalOpen" class="fixed inset-0 z-[110] flex items-center justify-center p-2 sm:p-4">
+      <div v-if="isModalOpen" class="fixed inset-x-0 bottom-0 top-14 md:inset-0 z-[150] flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
         <div 
           ref="formBackdropRef"
           class="absolute inset-0 bg-black/60 backdrop-blur-sm" 
@@ -555,7 +555,7 @@
         
         <div 
           ref="formModalRef"
-          class="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[92vh] overflow-hidden flex flex-col overscroll-contain border border-gray-100"
+          class="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[calc(100dvh-4.5rem)] md:max-h-[92vh] overflow-hidden flex flex-col overscroll-contain border border-gray-100"
         >
           <!-- Modern Dark Header -->
           <div class="px-5 sm:px-6 py-4 border-b border-gray-800 flex items-center justify-between shrink-0 bg-[#171717] text-white">
