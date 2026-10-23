@@ -48,7 +48,7 @@ onMounted(async () => {
     // Keep status bar solid with dark style and brand background; do NOT overlay so webview respects status bar
     await StatusBar.setStyle({ style: Style.Dark })
     await StatusBar.setOverlaysWebView({ overlay: false })
-    await StatusBar.setBackgroundColor({ color: '#123e33' })
+    await StatusBar.setBackgroundColor({ color: '#0f2744' })
   } catch (e) {
     // Ignore on web
   }

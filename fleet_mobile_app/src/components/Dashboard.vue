@@ -3,15 +3,18 @@
     <!-- Top Header with Silicon Marketing Branding -->
     <header class="bg-[#1b3b5f] text-white shadow-md sticky top-0 z-30 safe-area-pt">
       <!-- Silicon Marketing Brand Ribbon -->
-      <div class="px-4 py-2 bg-[#123e33] border-b border-emerald-800/60 flex items-center justify-between text-xs">
+      <div class="px-4 py-2 bg-[#0f2744] border-b border-white/10 flex items-center justify-between text-xs">
         <div class="flex items-center gap-2">
-          <div class="w-5 h-5 rounded bg-white/10 border border-white/20 flex items-center justify-center font-black text-[9px] text-emerald-200 tracking-tighter shadow-xs">
-            SM
+          <img src="/icon.png" alt="SM Fleet" class="w-5 h-5 rounded-md object-contain shadow-xs" />
+          <div class="flex items-baseline gap-1.5 tracking-widest uppercase text-[11px]">
+            <span class="font-extrabold text-white">SM FLEET</span>
+            <span class="text-white/30">•</span>
+            <span class="font-light text-sky-200/90 text-[10px]">SILICON MARKETING</span>
           </div>
-          <div class="flex items-baseline gap-1 tracking-widest uppercase text-[11px]">
-            <span class="font-light text-emerald-200/90">SILICON</span>
-            <span class="font-extrabold text-white">MARKETING</span>
-          </div>
+        </div>
+        <div class="flex items-center gap-1.5 text-[10px] font-semibold text-white/80">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span>Online</span>
         </div>
       </div>
 
@@ -20,7 +23,7 @@
         <div class="flex items-center gap-3">
           <!-- Profile Avatar with Account Initials -->
           <div class="relative">
-            <div class="w-10 h-10 rounded-full bg-emerald-800 border-2 border-emerald-400/80 flex items-center justify-center font-black text-sm text-emerald-100 shadow-inner tracking-wider">
+            <div class="w-10 h-10 rounded-full bg-[#0f2744] border-2 border-sky-400/50 flex items-center justify-center font-black text-sm text-sky-100 shadow-inner tracking-wider">
               {{ userInitials }}
             </div>
             <span 
@@ -37,7 +40,7 @@
                 type="button"
                 @click="showSettingsModal = true"
                 class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold tracking-wide uppercase transition active:scale-95 border"
-                :class="enableTurnByTurn ? 'bg-amber-400 text-gray-900 border-amber-300 shadow-xs' : 'bg-emerald-800/90 text-emerald-100 border-emerald-600/60'"
+                :class="enableTurnByTurn ? 'bg-amber-400 text-gray-900 border-amber-300 shadow-xs' : 'bg-[#0f2744] text-sky-100 border-sky-400/40 hover:bg-[#143255]'"
                 title="Tap to switch between Headless and Turn-by-Turn modes"
               >
                 <span>{{ enableTurnByTurn ? '🧭 Turn-by-Turn' : '📍 Headless (Silent)' }}</span>
@@ -670,7 +673,7 @@
         <div 
           @click="setNavigationMode(false)"
           class="p-3.5 rounded-xl border-2 cursor-pointer transition active:scale-[0.99] space-y-2"
-          :class="!enableTurnByTurn ? 'border-[#1b3b5f] bg-emerald-50/50 shadow-xs' : 'border-gray-200 bg-white hover:border-gray-300'"
+          :class="!enableTurnByTurn ? 'border-[#1b3b5f] bg-[#1b3b5f]/5 shadow-xs' : 'border-gray-200 bg-white hover:border-gray-300'"
         >
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2">
