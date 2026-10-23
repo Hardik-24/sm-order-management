@@ -629,15 +629,27 @@ const getItemTotal = (item: any) => {
   if (item.total) return Number(item.total)
   const price = Number(item.unitPrice || 0)
   const approvedQty = Number(item.approvedQuantity ?? item.quantity ?? 0)
+  const taxRate = Number(item.taxRate || 0)
+  const isInc = Boolean(item.isTaxInclusive)
+
+  let qty = approvedQty
   if (props.context === 'billing') {
     if (item.billedQuantity !== undefined && item.billedQuantity !== null) {
-      return price * Number(item.billedQuantity)
-    }
-    if (order.value?.packingStatus?.status === 'PACKED' && item.packedQuantity !== undefined && item.packedQuantity !== null) {
-      return price * Number(item.packedQuantity)
+      qty = Number(item.billedQuantity)
+    } else if (order.value?.packingStatus?.status === 'PACKED' && item.packedQuantity !== undefined && item.packedQuantity !== null) {
+      qty = Number(item.packedQuantity)
     }
   }
-  return price * approvedQty
+
+  if (item.totalPrice && Number(item.totalPrice) > 0 && qty === approvedQty) {
+    return Number(item.totalPrice)
+  }
+
+  if (isInc) {
+    return qty * price
+  } else {
+    return qty * price * (1 + (taxRate / 100))
+  }
 }
 
 const getStepStatus = (step: string) => {
@@ -712,6 +724,7 @@ const openEditModal = async () => {
       productId: i.productId,
       quantity: i.quantity,
       unitPrice: Number(i.unitPrice),
+      taxRate: i.taxRate !== undefined && i.taxRate !== null ? Number(i.taxRate) : Number(i.product?.taxRate || 18),
       productSku: i.product?.sku,
       isTaxInclusive: Boolean(i.isTaxInclusive),
       applyLastPrice: Boolean(i.applyLastPrice),
@@ -729,6 +742,7 @@ const addEditItem = () => {
     productId: '', 
     quantity: 1, 
     unitPrice: 0,
+    taxRate: 18,
     isTaxInclusive: false,
     applyLastPrice: false,
     itemNotes: ''
@@ -754,11 +768,25 @@ const onEditProductChange = (idx: number) => {
   if (product) {
     item.unitPrice = Number(product.price)
     item.productSku = product.sku
+    item.taxRate = product.taxRate !== null && product.taxRate !== undefined && !isNaN(Number(product.taxRate))
+      ? Number(product.taxRate)
+      : 18
+  }
+}
+
+const calculateEditItemTotal = (item: any) => {
+  const qty = Number(item.quantity || 0)
+  const price = Number(item.unitPrice || 0)
+  const tax = Number(item.taxRate || 0)
+  if (item.isTaxInclusive) {
+    return qty * price
+  } else {
+    return qty * price * (1 + tax / 100)
   }
 }
 
 const editOrderTotal = computed(() => {
-  return editForm.value.items.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0)
+  return editForm.value.items.reduce((sum, item) => sum + calculateEditItemTotal(item), 0)
 })
 
 const saveEdit = async () => {
@@ -2123,7 +2151,7 @@ watch(editForm, () => {
                     </div>
 
                     <!-- Qty -->
-                    <div class="w-full md:w-24 shrink-0">
+                    <div class="w-full md:w-20 shrink-0">
                       <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1.5">Qty *</label>
                       <input type="number" v-model.number="item.quantity" min="1" required class="w-full border border-gray-300 rounded-lg shadow-xs p-2 bg-white text-sm font-bold focus:ring-[#1b3b5f] focus:border-[#1b3b5f]" />
                     </div>
@@ -2140,11 +2168,24 @@ watch(editForm, () => {
                       </div>
                     </div>
 
+                    <!-- Tax % -->
+                    <div class="w-full md:w-20 shrink-0">
+                      <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1.5">Tax %</label>
+                      <div class="relative flex items-center">
+                        <input type="number" v-model.number="item.taxRate" min="0" max="100" step="0.1" class="w-full pr-5 border border-gray-300 rounded-lg shadow-xs p-2 bg-white text-sm font-bold focus:ring-[#1b3b5f] focus:border-[#1b3b5f] text-right" />
+                        <span class="absolute right-1.5 text-xs font-semibold text-gray-400 pointer-events-none">%</span>
+                      </div>
+                    </div>
+
                     <!-- Line Total -->
                     <div class="w-full md:w-28 shrink-0">
-                      <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1.5">Subtotal</label>
-                      <div class="p-2 bg-white text-gray-900 rounded-lg font-bold text-sm border border-gray-200">
-                        {{ formatCurrency(item.quantity * item.unitPrice) }}
+                      <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1.5 flex items-center justify-between">
+                        <span>Total</span>
+                        <span v-if="item.isTaxInclusive" class="text-[8px] font-bold text-blue-700 bg-blue-50 px-1 py-0.2 rounded border border-blue-200">INCL</span>
+                        <span v-else class="text-[8px] font-bold text-gray-600 bg-gray-100 px-1 py-0.2 rounded border border-gray-200">+TAX</span>
+                      </label>
+                      <div class="p-2 bg-white text-gray-900 rounded-lg font-bold text-sm border border-gray-200 text-right">
+                        {{ formatCurrency(calculateEditItemTotal(item)) }}
                       </div>
                     </div>
 

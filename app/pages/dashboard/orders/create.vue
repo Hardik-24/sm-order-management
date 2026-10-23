@@ -27,6 +27,7 @@ const form = ref({
     productSku?: string
     quantity: number
     unitPrice: number
+    taxRate: number
     isTaxInclusive: boolean
     applyLastPrice: boolean
     itemNotes: string
@@ -132,6 +133,7 @@ const addItem = () => {
     productId: '', 
     quantity: 1, 
     unitPrice: 0,
+    taxRate: 18,
     isTaxInclusive: false,
     applyLastPrice: false,
     itemNotes: ''
@@ -148,11 +150,68 @@ const onProductChange = (index: number) => {
   if (p) {
     item.unitPrice = Number(p.price) || 0
     item.productSku = p.sku || ''
+    // Pre-fill taxRate from the product in DB (if available); default to 18%
+    const dbTaxRate = p.taxRate !== null && p.taxRate !== undefined && !isNaN(Number(p.taxRate))
+      ? Number(p.taxRate)
+      : 18
+    item.taxRate = dbTaxRate
   }
 }
 
+const calculateItemTotals = (item: { quantity: number; unitPrice: number; taxRate?: number; isTaxInclusive?: boolean }) => {
+  const qty = Number(item.quantity || 0)
+  const rate = Number(item.unitPrice || 0)
+  const taxPct = Number(item.taxRate ?? 0)
+  const isInc = Boolean(item.isTaxInclusive)
+
+  if (isInc) {
+    // When rate includes tax: Total = qty * rate
+    // Taxable base = Total / (1 + taxPct / 100)
+    // Tax amount = Total - Taxable base
+    const total = qty * rate
+    const taxable = taxPct > 0 ? (total / (1 + (taxPct / 100))) : total
+    const taxAmount = total - taxable
+    return {
+      taxable: Number(taxable.toFixed(2)),
+      taxAmount: Number(taxAmount.toFixed(2)),
+      total: Number(total.toFixed(2))
+    }
+  } else {
+    // When rate is exclusive of tax: Taxable base = qty * rate
+    // Tax amount = Taxable base * (taxPct / 100)
+    // Total = Taxable base + Tax amount
+    const taxable = qty * rate
+    const taxAmount = taxable * (taxPct / 100)
+    const total = taxable + taxAmount
+    return {
+      taxable: Number(taxable.toFixed(2)),
+      taxAmount: Number(taxAmount.toFixed(2)),
+      total: Number(total.toFixed(2))
+    }
+  }
+}
+
+const orderSummary = computed(() => {
+  let subtotal = 0
+  let totalTax = 0
+  let grandTotal = 0
+
+  for (const item of form.value.items) {
+    const res = calculateItemTotals(item)
+    subtotal += res.taxable
+    totalTax += res.taxAmount
+    grandTotal += res.total
+  }
+
+  return {
+    subtotal: Number(subtotal.toFixed(2)),
+    totalTax: Number(totalTax.toFixed(2)),
+    grandTotal: Number(grandTotal.toFixed(2))
+  }
+})
+
 const totalAmount = computed(() => {
-  return form.value.items.reduce((acc, item) => acc + (Number(item.quantity || 0) * Number(item.unitPrice || 0)), 0)
+  return orderSummary.value.grandTotal
 })
 
 const submitOrder = async () => {
@@ -460,16 +519,16 @@ const getPrivilegeColor = (tier: string) => {
                 </div>
               </div>
 
-              <!-- Quantity, Rate, Subtotal & Remove in a responsive flex layout -->
+              <!-- Quantity, Rate, Tax %, Total & Remove in a responsive flex layout -->
               <div class="grid grid-cols-12 gap-2 items-end w-full md:w-auto">
                 <!-- Qty -->
-                <div class="col-span-3 md:w-24">
+                <div class="col-span-3 sm:col-span-2 md:w-20">
                   <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1.5">Qty *</label>
                   <input type="number" v-model.number="item.quantity" min="1" required class="w-full border border-gray-300 rounded-lg shadow-xs p-2 bg-white text-sm font-bold focus:ring-[#1b3b5f] focus:border-[#1b3b5f]" />
                 </div>
 
-                <!-- Unit Price -->
-                <div class="col-span-4 md:w-28">
+                <!-- Unit Price (Rate) -->
+                <div class="col-span-3 sm:col-span-3 md:w-28">
                   <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1.5 flex items-center gap-1 truncate">
                     <IndianRupee class="w-3 h-3 text-gray-400 shrink-0" />
                     <span>Rate *</span>
@@ -480,16 +539,39 @@ const getPrivilegeColor = (tier: string) => {
                   </div>
                 </div>
 
+                <!-- Tax Rate % -->
+                <div class="col-span-2 sm:col-span-2 md:w-20">
+                  <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1.5 truncate">
+                    <span>Tax %</span>
+                  </label>
+                  <div class="relative flex items-center">
+                    <input 
+                      type="number" 
+                      v-model.number="item.taxRate" 
+                      min="0" 
+                      max="100" 
+                      step="0.1" 
+                      placeholder="18"
+                      class="w-full pr-5 border border-gray-300 rounded-lg shadow-xs p-2 bg-white text-sm font-bold focus:ring-[#1b3b5f] focus:border-[#1b3b5f] text-right" 
+                    />
+                    <span class="absolute right-1.5 text-xs font-semibold text-gray-400 pointer-events-none">%</span>
+                  </div>
+                </div>
+
                 <!-- Line Total -->
-                <div class="col-span-4 md:w-28">
-                  <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1.5">Subtotal</label>
-                  <div class="p-2 bg-white text-gray-900 rounded-lg font-bold text-xs sm:text-sm border border-gray-200 truncate">
-                    {{ formatCurrency(item.quantity * item.unitPrice) }}
+                <div class="col-span-3 sm:col-span-4 md:w-28">
+                  <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1.5 flex items-center justify-between">
+                    <span>Total</span>
+                    <span v-if="item.isTaxInclusive" class="text-[8px] font-bold text-blue-700 bg-blue-50 px-1 py-0.2 rounded border border-blue-200">INCL</span>
+                    <span v-else class="text-[8px] font-bold text-gray-600 bg-gray-100 px-1 py-0.2 rounded border border-gray-200">+TAX</span>
+                  </label>
+                  <div class="p-2 bg-gray-50 text-gray-900 rounded-lg font-bold text-xs sm:text-sm border border-gray-200 truncate text-right">
+                    {{ formatCurrency(calculateItemTotals(item).total) }}
                   </div>
                 </div>
 
                 <!-- Remove -->
-                <div class="col-span-1 md:w-auto flex justify-center pb-0.5">
+                <div class="col-span-1 sm:col-span-1 md:w-auto flex justify-center pb-0.5">
                   <button type="button" @click="removeItem(idx)" class="p-2 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg shrink-0 transition-colors cursor-pointer" title="Remove Item">
                     <Trash2 class="w-4 h-4" />
                   </button>
@@ -503,6 +585,8 @@ const getPrivilegeColor = (tier: string) => {
               <label class="flex items-center gap-2 cursor-pointer select-none">
                 <input type="checkbox" v-model="item.isTaxInclusive" class="w-3.5 h-3.5 rounded text-[#1b3b5f] focus:ring-[#1b3b5f]" />
                 <span class="text-gray-700 font-medium">Tax Inclusive Rate</span>
+                <span v-if="item.isTaxInclusive" class="text-[10px] text-blue-600 font-semibold">(Tax incl.)</span>
+                <span v-else class="text-[10px] text-gray-500">(+{{ item.taxRate ?? 0 }}% Tax)</span>
               </label>
 
               <!-- Apply Last Price Checkbox -->
@@ -512,13 +596,20 @@ const getPrivilegeColor = (tier: string) => {
               </label>
 
               <!-- Item Notes Input -->
-              <div class="flex-1 min-w-[200px]">
+              <div class="flex-1 min-w-[180px]">
                 <input 
                   type="text" 
                   v-model="item.itemNotes" 
-                  placeholder="Optional item note: e.g. 10% rate agreed, custom edge-banding..."
+                  placeholder="Optional item note: e.g. custom edge-banding..."
                   class="w-full px-2.5 py-1 text-xs border border-gray-300 rounded-lg bg-white focus:ring-1 focus:ring-[#1b3b5f]"
                 />
+              </div>
+
+              <!-- Item Breakdown Mini-Pill -->
+              <div class="text-[11px] text-gray-500 font-medium ml-auto flex items-center gap-2">
+                <span>Taxable: <strong class="text-gray-700">{{ formatCurrency(calculateItemTotals(item).taxable) }}</strong></span>
+                <span>•</span>
+                <span>Tax: <strong class="text-gray-700">{{ formatCurrency(calculateItemTotals(item).taxAmount) }}</strong></span>
               </div>
             </div>
           </div>
@@ -528,10 +619,32 @@ const getPrivilegeColor = (tier: string) => {
           </div>
         </div>
 
-        <div class="flex justify-end pt-4 border-t border-gray-100 mt-6">
-          <div class="text-right">
-            <span class="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1 block">Total Amount</span>
-            <p class="text-3xl font-bold text-[#1b3b5f]">{{ formatCurrency(totalAmount) }}</p>
+        <!-- Order Totals & Tax Summary -->
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end pt-5 border-t border-gray-200 mt-6 gap-4">
+          <div class="text-xs text-gray-500 space-y-1">
+            <p class="flex items-center gap-1.5 font-medium">
+              <span class="w-2 h-2 rounded-full bg-blue-500 shrink-0"></span>
+              <span><strong>Tax Inclusive:</strong> Rate includes GST. Taxable base is calculated automatically.</span>
+            </p>
+            <p class="flex items-center gap-1.5 font-medium">
+              <span class="w-2 h-2 rounded-full bg-gray-400 shrink-0"></span>
+              <span><strong>Tax Exclusive:</strong> GST is added to the subtotal of the line item.</span>
+            </p>
+          </div>
+
+          <div class="w-full sm:w-80 bg-gray-50/80 rounded-xl p-4 border border-gray-200 space-y-2 text-xs self-end">
+            <div class="flex justify-between items-center text-gray-600">
+              <span>Taxable Subtotal</span>
+              <span class="font-semibold text-gray-900">{{ formatCurrency(orderSummary.subtotal) }}</span>
+            </div>
+            <div class="flex justify-between items-center text-gray-600">
+              <span>Total GST / Tax</span>
+              <span class="font-semibold text-gray-900">{{ formatCurrency(orderSummary.totalTax) }}</span>
+            </div>
+            <div class="pt-2.5 border-t border-gray-200 flex justify-between items-center">
+              <span class="text-xs font-bold text-gray-900 uppercase tracking-wider">Total Amount</span>
+              <span class="text-2xl font-black text-[#1b3b5f]">{{ formatCurrency(orderSummary.grandTotal) }}</span>
+            </div>
           </div>
         </div>
       </div>

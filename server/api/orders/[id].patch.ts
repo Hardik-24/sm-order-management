@@ -24,8 +24,28 @@ export default defineEventHandler(async (event) => {
         ? Number(item.unitPrice)
         : Number(product.price)
       const qty = Number(item.quantity) || 1
-      const amount = unitPrice * qty
-      totalAmount += amount
+
+      const taxRate = item.taxRate !== undefined && item.taxRate !== null && !isNaN(Number(item.taxRate))
+        ? Number(item.taxRate)
+        : (product.taxRate !== null && product.taxRate !== undefined ? Number(product.taxRate) : 18)
+
+      const isTaxInclusive = Boolean(item.isTaxInclusive)
+
+      let taxableAmount = 0
+      let taxAmount = 0
+      let lineTotal = 0
+
+      if (isTaxInclusive) {
+        lineTotal = Number((qty * unitPrice).toFixed(2))
+        taxableAmount = taxRate > 0 ? Number((lineTotal / (1 + (taxRate / 100))).toFixed(2)) : lineTotal
+        taxAmount = Number((lineTotal - taxableAmount).toFixed(2))
+      } else {
+        taxableAmount = Number((qty * unitPrice).toFixed(2))
+        taxAmount = Number((taxableAmount * (taxRate / 100)).toFixed(2))
+        lineTotal = Number((taxableAmount + taxAmount).toFixed(2))
+      }
+
+      totalAmount += lineTotal
 
       if (item.id) {
         itemsToUpdate.push({
@@ -36,7 +56,10 @@ export default defineEventHandler(async (event) => {
             productName: product.name,
             quantity: qty,
             unitPrice: unitPrice,
-            isTaxInclusive: Boolean(item.isTaxInclusive),
+            taxRate: taxRate,
+            taxAmount: taxAmount,
+            totalPrice: lineTotal,
+            isTaxInclusive: isTaxInclusive,
             applyLastPrice: Boolean(item.applyLastPrice),
             itemNotes: item.itemNotes ? String(item.itemNotes) : null
           }
@@ -48,14 +71,18 @@ export default defineEventHandler(async (event) => {
           productName: product.name,
           quantity: qty,
           unitPrice: unitPrice,
+          taxRate: taxRate,
+          taxAmount: taxAmount,
+          totalPrice: lineTotal,
           packedQuantity: 0,
           approvedQuantity: qty,
-          isTaxInclusive: Boolean(item.isTaxInclusive),
+          isTaxInclusive: isTaxInclusive,
           applyLastPrice: Boolean(item.applyLastPrice),
           itemNotes: item.itemNotes ? String(item.itemNotes) : null
         })
       }
     }
+    totalAmount = Number(totalAmount.toFixed(2))
   }
 
   // Get items to delete
