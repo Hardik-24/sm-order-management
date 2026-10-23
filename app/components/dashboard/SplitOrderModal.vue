@@ -55,9 +55,36 @@ watch(() => [props.isOpen, props.orderId], async ([open, id]) => {
       const data = await $fetch<any>(`/api/orders/${id}`)
       order.value = data
 
-      // Auto-generate candidate split number
+      // Auto-generate candidate split number by checking existing related splits
       const baseNum = data.orderNumber.replace(/-[A-Z]$/, '')
-      newOrderNumber.value = `${baseNum}-B`
+      try {
+        const relatedRes = await $fetch<any>('/api/orders', {
+          query: { search: baseNum, limit: 50 }
+        })
+        const existingNumbers = new Set<string>(
+          (relatedRes?.orders || []).map((o: any) => String(o.orderNumber).toUpperCase())
+        )
+        existingNumbers.add(data.orderNumber.toUpperCase())
+
+        const alphabet = 'BCDEFGHIJKLMNOPQRSTUVWXYZ'
+        let nextSuffix = 'B'
+        for (let i = 0; i < alphabet.length; i++) {
+          const candidate = `${baseNum}-${alphabet[i]}`
+          if (!existingNumbers.has(candidate.toUpperCase())) {
+            nextSuffix = alphabet[i]
+            break
+          }
+        }
+        newOrderNumber.value = `${baseNum}-${nextSuffix}`
+      } catch {
+        const match = data.orderNumber.match(/-([A-Z])$/)
+        if (match) {
+          const nextChar = String.fromCharCode(match[1].charCodeAt(0) + 1)
+          newOrderNumber.value = `${baseNum}-${nextChar}`
+        } else {
+          newOrderNumber.value = `${baseNum}-B`
+        }
+      }
       splitNotes.value = ''
       selectedAddressId.value = data.deliveryAddressId || ''
       customAddressText.value = data.deliveryAddress || ''
