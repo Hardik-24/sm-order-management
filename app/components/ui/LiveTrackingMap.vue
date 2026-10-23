@@ -1,7 +1,7 @@
 <template>
-  <div class="relative w-full h-full min-h-[200px] rounded-xl overflow-hidden bg-gray-100 border border-gray-200">
+  <div class="relative w-full h-full min-h-[200px] rounded-xl overflow-hidden bg-gray-100 border border-gray-200 touch-pan-y">
     <!-- Map Canvas Container -->
-    <div ref="mapContainerRef" class="w-full h-full min-h-[200px]"></div>
+    <div ref="mapContainerRef" class="w-full h-full min-h-[200px] touch-pan-y"></div>
 
     <!-- Status / Mode Badge Overlay -->
     <div class="absolute top-3 left-3 z-10 flex items-center gap-2 bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-lg shadow-sm border border-gray-200 text-xs font-medium">
@@ -125,7 +125,12 @@ async function initLeaflet() {
   const L = await loadLeaflet()
 
   const startPt = props.driverLocation || (props.routeCoordinates.length > 0 ? props.routeCoordinates[0] : props.defaultCenter)
-  leafletMap = L.map(mapContainerRef.value).setView([startPt.lat, startPt.lng], 13)
+  leafletMap = L.map(mapContainerRef.value, {
+    scrollWheelZoom: false,
+    dragging: !L.Browser.mobile,
+    tap: !L.Browser.mobile,
+    touchZoom: false,
+  }).setView([startPt.lat, startPt.lng], 13)
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap contributors',
@@ -215,6 +220,8 @@ async function initGoogleMaps(apiKey: string) {
     mapTypeControl: false,
     streetViewControl: false,
     fullscreenControl: false,
+    gestureHandling: 'cooperative',
+    scrollwheel: false,
   })
 
   const truckSvg = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
@@ -544,5 +551,12 @@ onBeforeUnmount(() => {
 .custom-truck-icon, .custom-dest-icon {
   background: transparent !important;
   border: none !important;
+}
+
+/* Allow native vertical scrolling with mouse wheel and finger swipe */
+.leaflet-container,
+.gm-style,
+.gm-style > div:first-child {
+  touch-action: pan-y !important;
 }
 </style>

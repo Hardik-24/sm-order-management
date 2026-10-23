@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-gray-50 flex flex-col font-sans">
+  <div class="min-h-screen bg-gray-50 flex flex-col font-sans touch-pan-y">
     <!-- Branded Header -->
     <header class="bg-[#1a1a1a] text-white px-4 py-3.5 shadow-md sticky top-0 z-30">
       <div class="max-w-2xl mx-auto flex items-center justify-between">
@@ -65,7 +65,7 @@
             <div v-if="trackingData.deliveryStatus === 'DISPATCHED'" class="space-y-4">
               <!-- Live Map Card -->
               <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-                <div class="h-[380px] sm:h-[440px] w-full relative overflow-hidden">
+                <div class="h-[380px] sm:h-[440px] w-full relative overflow-hidden touch-pan-y">
                   <LiveTrackingMap
                     :driverLocation="trackingData.trip?.currentLocation || null"
                     :startLocation="trackingData.trip?.startLocation || null"
@@ -132,7 +132,7 @@
                   <span class="font-bold text-gray-700">Delivered Route Map</span>
                   <span class="text-gray-500">{{ trackingData.trip.totalDistanceKm || 0 }} km driven</span>
                 </div>
-                <div class="h-[340px] sm:h-[380px] w-full overflow-hidden">
+                <div class="h-[340px] sm:h-[380px] w-full overflow-hidden touch-pan-y">
                   <LiveTrackingMap
                     :driverLocation="trackingData.trip?.route[trackingData.trip.route.length - 1]"
                     :startLocation="trackingData.trip?.startLocation || null"
@@ -443,6 +443,13 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+:global(html),
+:global(body) {
+  overflow-y: auto !important;
+  overscroll-behavior-y: auto !important;
+  touch-action: pan-y !important;
+}
+
 .state-fade-enter-active,
 .state-fade-leave-active {
   transition: opacity 0.25s ease, transform 0.25s ease;
