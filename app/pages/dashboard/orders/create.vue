@@ -74,10 +74,24 @@ const productOptions = computed(() => {
   }))
 })
 
+const isFirstOrderForCustomer = computed(() => {
+  if (!selectedCustomer.value) return false
+  const count = selectedCustomer.value.orderCount ?? selectedCustomer.value._count?.orders ?? 0
+  return count === 0
+})
+
 const onCustomerChange = () => {
   const c = selectedCustomer.value
   if (c) {
-    form.value.paymentTerms = c.paymentTerms || 'Net 30'
+    const isFirst = (c.orderCount ?? c._count?.orders ?? 0) === 0
+    if (isFirst) {
+      // First order for this customer:
+      // If customer has a specific custom term set, use it; otherwise leave blank so salesperson selects the party's terms
+      form.value.paymentTerms = c.paymentTerms && c.paymentTerms !== '30 Days' ? c.paymentTerms : ''
+    } else {
+      // Subsequent order: load established master payment terms
+      form.value.paymentTerms = c.paymentTerms || '30 Days'
+    }
     
     // Auto-select default address if available
     if (c.addresses && c.addresses.length > 0) {
@@ -131,6 +145,10 @@ const totalAmount = computed(() => {
 const submitOrder = async () => {
   if (!form.value.customerId) {
     alert('Please select a customer')
+    return
+  }
+  if (!form.value.paymentTerms) {
+    alert('Please select payment terms for this order')
     return
   }
   if (!form.value.items.length) {
@@ -240,7 +258,15 @@ const getPrivilegeColor = (tier: string) => {
           
           <!-- Payment Terms -->
           <div>
-            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Payment Terms</label>
+            <div class="flex items-center justify-between mb-2">
+              <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider">Payment Terms *</label>
+              <span v-if="isFirstOrderForCustomer" class="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                ★ 1st Order (Saves as Customer Default)
+              </span>
+              <span v-else-if="selectedCustomer && selectedCustomer.paymentTerms" class="text-[10px] text-gray-400">
+                Profile Default: <strong class="text-gray-700">{{ selectedCustomer.paymentTerms }}</strong>
+              </span>
+            </div>
             <CustomSelect 
               :modelValue="form.paymentTerms"
               @update:modelValue="val => form.paymentTerms = val"
@@ -248,6 +274,12 @@ const getPrivilegeColor = (tier: string) => {
               placeholder="Select Terms"
               class="w-full"
             />
+            <p v-if="isFirstOrderForCustomer" class="text-[11px] text-amber-700 mt-1.5 flex items-center gap-1 font-medium">
+              💡 First order for this customer: the chosen terms will be saved to their master profile.
+            </p>
+            <p v-else-if="selectedCustomer && form.paymentTerms && form.paymentTerms !== selectedCustomer.paymentTerms" class="text-[11px] text-sky-700 mt-1.5 flex items-center gap-1 font-medium">
+              ℹ Tweak for this order only — customer profile default remains "{{ selectedCustomer.paymentTerms }}".
+            </p>
           </div>
 
           <!-- Transport / Vehicle Selection Mode -->

@@ -31,6 +31,9 @@ export default defineEventHandler(async (event) => {
       },
       addresses: {
         orderBy: { createdAt: 'asc' }
+      },
+      _count: {
+        select: { orders: true }
       }
     },
     orderBy: { name: 'asc' }
@@ -72,6 +75,7 @@ export default defineEventHandler(async (event) => {
       longitude: lng,
       landmark: landmark,
       addresses: mappedAddresses,
+      orderCount: (c as any)._count?.orders ?? 0,
     }
   })
 })

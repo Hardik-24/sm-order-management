@@ -120,23 +120,25 @@ export default defineEventHandler(async (event) => {
   let orderNumber = ''
   let attempts = 0
 
-  while (!orderNumber && attempts < 5) {
-    attempts++
-    const latestOrder = await prisma.order.findFirst({
-      where: { orderNumber: { startsWith: `SO-${year}-` } },
-      orderBy: { orderNumber: 'desc' },
-      select: { orderNumber: true }
-    })
+  const existingOrdersThisYear = await prisma.order.findMany({
+    where: { orderNumber: { startsWith: `SO-${year}-` } },
+    select: { orderNumber: true }
+  })
 
-    let nextSeq = 1
-    if (latestOrder?.orderNumber) {
-      const parts = latestOrder.orderNumber.split('-')
-      if (parts.length === 3) {
-        nextSeq = parseInt(parts[2], 10) + 1
+  let maxSeq = 0
+  for (const o of existingOrdersThisYear) {
+    const match = o.orderNumber.match(/^SO-\d{4}-(\d+)/)
+    if (match) {
+      const seq = parseInt(match[1], 10)
+      if (!isNaN(seq) && seq > maxSeq) {
+        maxSeq = seq
       }
     }
+  }
 
-    const candidate = `SO-${year}-${String(nextSeq).padStart(4, '0')}`
+  while (!orderNumber && attempts < 10) {
+    attempts++
+    const candidate = `SO-${year}-${String(maxSeq + attempts).padStart(4, '0')}`
     const existing = await prisma.order.findUnique({
       where: { orderNumber: candidate },
       select: { id: true }
@@ -154,6 +156,11 @@ export default defineEventHandler(async (event) => {
   const deliveryAddress = body.deliveryAddress || orderRequest.deliveryAddress || 'Address on file'
   const paymentTerms = body.paymentTerms || '30 Days'
   const notes = body.notes || orderRequest.notes
+
+  // Check if this is the customer's very first order
+  const priorOrdersCount = await prisma.order.count({
+    where: { customerId }
+  })
 
   // 4. Create Order in Database
   const order = await prisma.order.create({
@@ -204,6 +211,18 @@ export default defineEventHandler(async (event) => {
       confirmedById: user.id
     }
   })
+
+  // 6. If this was customer's very first order, establish master payment terms
+  if (priorOrdersCount === 0 && paymentTerms && String(paymentTerms).trim()) {
+    try {
+      await prisma.customer.update({
+        where: { id: customerId },
+        data: { paymentTerms: String(paymentTerms).trim() }
+      })
+    } catch (custErr) {
+      console.warn('[ConvertOrderRequest] Failed to update customer master payment terms on first order:', custErr)
+    }
+  }
 
   return {
     success: true,

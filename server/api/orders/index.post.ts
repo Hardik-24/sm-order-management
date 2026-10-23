@@ -57,6 +57,11 @@ export default defineEventHandler(async (event) => {
   let order = null
   let attempts = 0
 
+  // 0. Check if this is the customer's very first order
+  const priorOrdersCount = await prisma.order.count({
+    where: { customerId }
+  })
+
   // 1. Find all existing orders for this year to determine true maximum sequence number
   const existingOrdersThisYear = await prisma.order.findMany({
     where: { orderNumber: { startsWith: `SO-${year}-` } },
@@ -122,6 +127,18 @@ export default defineEventHandler(async (event) => {
         continue
       }
       throw err
+    }
+  }
+
+  // If this was the customer's very first order, establish their master default payment terms
+  if (priorOrdersCount === 0 && paymentTerms && String(paymentTerms).trim()) {
+    try {
+      await prisma.customer.update({
+        where: { id: customerId },
+        data: { paymentTerms: String(paymentTerms).trim() }
+      })
+    } catch (custErr) {
+      console.warn('[CreateOrder] Failed to update customer master payment terms on first order:', custErr)
     }
   }
 
