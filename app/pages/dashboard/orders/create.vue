@@ -66,9 +66,22 @@ const addressOptions = computed(() => {
   }))
 })
 
+const productMap = computed(() => {
+  const map: Record<string, any> = {}
+  for (const p of (products.value as any[] || [])) {
+    map[p.id] = p
+  }
+  return map
+})
+
+const getSelectedProduct = (productId: string) => {
+  if (!productId) return null
+  return productMap.value[productId] || null
+}
+
 const productOptions = computed(() => {
   return (products.value as any[] || []).map(p => ({
-    label: `${p.sku} - ${p.name} (Stock: ${p.stock})`,
+    label: p.sku === p.name ? p.name : `${p.sku} - ${p.name}`,
     value: p.id,
     subtitle: p.hsnCode ? `HSN: ${p.hsnCode}` : ''
   }))
@@ -394,7 +407,7 @@ const getPrivilegeColor = (tier: string) => {
 
         <div class="space-y-4">
           <div v-for="(item, idx) in form.items" :key="idx" class="bg-gray-50/80 p-3.5 sm:p-4 rounded-xl border border-gray-200 space-y-3">
-            <div class="flex flex-col md:flex-row md:items-end gap-3 md:gap-4">
+            <div class="flex flex-col md:flex-row md:items-start gap-3 md:gap-4">
               <!-- Product Select -->
               <div class="flex-1 w-full min-w-0">
                 <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1.5">Product *</label>
@@ -407,6 +420,44 @@ const getPrivilegeColor = (tier: string) => {
                   placeholder="Select Product"
                   class="w-full"
                 />
+
+                <!-- Live Stock Badge right below the product name -->
+                <div v-if="getSelectedProduct(item.productId)" class="mt-2 flex flex-wrap items-center gap-2">
+                  <span 
+                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold border shadow-2xs transition-colors"
+                    :class="[
+                      Number(getSelectedProduct(item.productId)?.stock ?? 0) <= 0 
+                        ? 'bg-rose-50 text-rose-700 border-rose-200' 
+                        : Number(getSelectedProduct(item.productId)?.stock ?? 0) < 10 
+                          ? 'bg-amber-50 text-amber-700 border-amber-200' 
+                          : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                    ]"
+                  >
+                    <span 
+                      class="w-2 h-2 rounded-full"
+                      :class="[
+                        Number(getSelectedProduct(item.productId)?.stock ?? 0) <= 0 
+                          ? 'bg-rose-500' 
+                          : Number(getSelectedProduct(item.productId)?.stock ?? 0) < 10 
+                            ? 'bg-amber-500' 
+                            : 'bg-emerald-500'
+                      ]"
+                    ></span>
+                    <span>
+                      Stock: <strong class="font-bold">{{ getSelectedProduct(item.productId)?.stock ?? 0 }}</strong> {{ getSelectedProduct(item.productId)?.unit || 'units' }}
+                    </span>
+                    <span v-if="Number(getSelectedProduct(item.productId)?.stock ?? 0) <= 0" class="text-[10px] font-bold text-rose-600 uppercase tracking-wide">
+                      (Out of Stock)
+                    </span>
+                    <span v-else-if="Number(getSelectedProduct(item.productId)?.stock ?? 0) < 10" class="text-[10px] font-bold text-amber-600 uppercase tracking-wide">
+                      (Low Stock)
+                    </span>
+                  </span>
+
+                  <span v-if="getSelectedProduct(item.productId)?.category?.name" class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-gray-100 text-gray-600 border border-gray-200">
+                    {{ getSelectedProduct(item.productId)?.category?.name }}
+                  </span>
+                </div>
               </div>
 
               <!-- Quantity, Rate, Subtotal & Remove in a responsive flex layout -->
