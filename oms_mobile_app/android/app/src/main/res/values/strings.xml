@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Silicon OMS</string>
-    <string name="title_activity_main">Silicon OMS</string>
+    <string name="app_name">SM Flow</string>
+    <string name="title_activity_main">SM Flow</string>
     <string name="package_name">com.siliconmarketing.oms</string>
     <string name="custom_url_scheme">com.siliconmarketing.oms</string>
 </resources>

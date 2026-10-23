@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.siliconmarketing.oms',
-  appName: 'Silicon OMS',
+  appName: 'SM Flow',
   webDir: 'dist',
   server: {
     url: 'https://sm-order-management.vercel.app',

@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "version": "1.0.0",
-  "description": "Silicon Marketing Order Management System Mobile App",
+  "description": "SM Flow - Silicon Marketing Mobile App",
   "scripts": {
     "cap:sync": "cap sync",
     "cap:open": "cap open android",

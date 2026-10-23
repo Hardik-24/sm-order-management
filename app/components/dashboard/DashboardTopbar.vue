@@ -6,7 +6,7 @@
 
       <div class="flex flex-col">
         <h1 class="text-xl font-semibold text-[#1a1a1a] capitalize">{{ pageTitle }}</h1>
-        <span class="text-[11px] font-medium text-gray-500 uppercase tracking-wide">Silicon Marketing / Workspace</span>
+        <span class="text-[11px] font-medium text-gray-500 uppercase tracking-wide">SM Flow / Workspace</span>
       </div>
     </div>
 

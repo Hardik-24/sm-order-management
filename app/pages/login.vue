@@ -50,8 +50,8 @@ const handleLogin = async () => {
       
       <div class="relative z-20 flex flex-col items-center text-center px-8">
         <img src="/images/logo-icon.png" alt="SMI Logo" class="w-[200px] mb-8" />
-        <h1 class="text-[#e8e0d4] text-lg uppercase tracking-[0.15em] font-medium">
-          Order Management System
+        <h1 class="text-[#e8e0d4] text-xl uppercase tracking-[0.2em] font-semibold">
+          SM Flow
         </h1>
       </div>
     </div>
