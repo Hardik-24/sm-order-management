@@ -115,6 +115,7 @@ const handleOrderSelect = (orderId: string) => {
     <OrderDetailPanel 
       :order-id="selectedOrderId"
       :is-open="isPanelOpen"
+      context="overview"
       @close="isPanelOpen = false"
       @updated="() => { refreshOrders(); refreshDashboard(); }"
     />

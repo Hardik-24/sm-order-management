@@ -1304,6 +1304,7 @@ watch(editForm, () => {
                 </div>
 
                 <button
+                  v-if="context === 'delivery'"
                   type="button"
                   @click="isHandoverModalOpen = true"
                   class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-lg shadow-sm transition flex items-center gap-1.5 shrink-0 cursor-pointer"
@@ -1311,6 +1312,12 @@ watch(editForm, () => {
                   <PackageCheck class="w-4 h-4" />
                   <span>Hand Over</span>
                 </button>
+                <span
+                  v-else
+                  class="text-[11px] font-semibold text-amber-800 bg-amber-100/80 px-2.5 py-1 rounded-md border border-amber-200/60 shrink-0 self-start sm:self-center"
+                >
+                  Pending Pickup
+                </span>
               </div>
             </div>
 
