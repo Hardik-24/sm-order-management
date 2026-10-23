@@ -64,7 +64,7 @@ const selectedTripOrderIds = ref<string[]>([])
 
 const handleToggleTripOrder = (orderId: string) => {
   const ord = data.value?.orders?.find((o: any) => o.id === orderId)
-  if (ord && ord.vehicleMode === 'PARTY_VEHICLE') {
+  if (ord && (ord.vehicleMode === 'PARTY_VEHICLE' || ord.vehicleMode === 'THIRD_PARTY')) {
     return
   }
   const idx = selectedTripOrderIds.value.indexOf(orderId)

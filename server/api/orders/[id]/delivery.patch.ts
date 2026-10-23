@@ -56,6 +56,9 @@ export default defineEventHandler(async (event) => {
   if (status === 'DELIVERED' && (order as any).vehicleMode === 'PARTY_VEHICLE') {
     action = 'Handed Over to Party Vehicle'
     desc = driverName ? `Goods handed over: ${driverName}` : 'Goods handed over to customer party vehicle'
+  } else if (status === 'DELIVERED' && (order as any).vehicleMode === 'THIRD_PARTY') {
+    action = 'Handed Over to Third Party'
+    desc = driverName ? `Goods handed over: ${driverName}` : 'Goods handed over to third party transport (Porter/Rapido)'
   } else if (status === 'ON_HOLD') {
     deliveryData.holdReason = holdReason
     if (holdReason) desc += ` Reason: ${holdReason}`

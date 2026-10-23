@@ -98,7 +98,7 @@ export default defineEventHandler(async (event) => {
     ...(customerId && { customerId }),
     ...(paymentTerms && { paymentTerms }),
     ...(isUrgent !== undefined && { isUrgent: Boolean(isUrgent) }),
-    ...(vehicleMode && { vehicleMode: vehicleMode === 'PARTY_VEHICLE' ? 'PARTY_VEHICLE' : 'OUR_FLEET' })
+    ...(vehicleMode && { vehicleMode: (vehicleMode === 'PARTY_VEHICLE' || vehicleMode === 'THIRD_PARTY') ? vehicleMode : 'OUR_FLEET' })
   }
 
   if (items && Array.isArray(items)) {

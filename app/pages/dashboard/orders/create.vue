@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { X, Plus, Trash2, Zap, MapPin, UserCheck, ShieldAlert, Award, FileText, IndianRupee, Truck, Car, AlertCircle } from 'lucide-vue-next'
+import { X, Plus, Trash2, Zap, MapPin, UserCheck, ShieldAlert, Award, FileText, IndianRupee, Truck, Car, AlertCircle, Package } from 'lucide-vue-next'
 import { formatCurrency } from '~/lib/utils'
 import CustomSelect from '~/components/ui/CustomSelect.vue'
 import { useSnackbar } from '~/composables/useSnackbar'
@@ -358,12 +358,12 @@ const getPrivilegeColor = (tier: string) => {
           <div class="md:col-span-2">
             <label class="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-2 flex items-center justify-between">
               <span>Transport & Delivery Vehicle *</span>
-              <span class="text-[11px] font-semibold" :class="form.vehicleMode === 'OUR_FLEET' ? 'text-[#1b3b5f]' : 'text-amber-700'">
-                {{ form.vehicleMode === 'OUR_FLEET' ? '✓ Company Fleet Dispatch' : '🚗 Party Transport (Direct Handover)' }}
+              <span class="text-[11px] font-semibold" :class="form.vehicleMode === 'OUR_FLEET' ? 'text-[#1b3b5f]' : (form.vehicleMode === 'THIRD_PARTY' ? 'text-indigo-700' : 'text-amber-700')">
+                {{ form.vehicleMode === 'OUR_FLEET' ? '✓ Company Fleet Dispatch' : (form.vehicleMode === 'THIRD_PARTY' ? '📦 Third Party (Porter/Rapido Handover)' : '🚗 Party Transport (Direct Handover)') }}
               </span>
             </label>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
               <!-- Option 1: Our Fleet -->
               <div
                 @click="form.vehicleMode = 'OUR_FLEET'"
@@ -380,11 +380,11 @@ const getPrivilegeColor = (tier: string) => {
                 </div>
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center justify-between">
-                    <span class="text-xs font-bold text-gray-900">Our Vehicle (Company Fleet)</span>
+                    <span class="text-xs font-bold text-gray-900">Our Vehicle (Fleet)</span>
                     <span v-if="form.vehicleMode === 'OUR_FLEET'" class="w-2 h-2 rounded-full bg-[#1b3b5f]"></span>
                   </div>
                   <p class="text-[11px] text-gray-500 mt-1 leading-relaxed">
-                    Bundled into fleet trips. Drivers assigned via OMS, tracked via GPS mobile app with multi-stop routes.
+                    Bundled into fleet trips. Drivers assigned via OMS with GPS tracking.
                   </p>
                 </div>
               </div>
@@ -405,11 +405,36 @@ const getPrivilegeColor = (tier: string) => {
                 </div>
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center justify-between">
-                    <span class="text-xs font-bold text-gray-900">Party Vehicle (Customer Arranged)</span>
+                    <span class="text-xs font-bold text-gray-900">Party Vehicle</span>
                     <span v-if="form.vehicleMode === 'PARTY_VEHICLE'" class="w-2 h-2 rounded-full bg-amber-600"></span>
                   </div>
                   <p class="text-[11px] text-gray-500 mt-1 leading-relaxed">
-                    Customer sends own vehicle / driver. Ineligible for trips; warehouse staff marks as Handed Over directly.
+                    Customer sends own vehicle. Staff marks as Handed Over directly.
+                  </p>
+                </div>
+              </div>
+
+              <!-- Option 3: Third Party (Porter / Rapido) -->
+              <div
+                @click="form.vehicleMode = 'THIRD_PARTY'"
+                class="p-4 rounded-xl border-2 cursor-pointer transition-all flex items-start gap-3 select-none"
+                :class="form.vehicleMode === 'THIRD_PARTY'
+                  ? 'border-indigo-600 bg-indigo-50/60 shadow-xs ring-1 ring-indigo-500/20'
+                  : 'border-gray-200 bg-white hover:border-gray-300 text-gray-600'"
+              >
+                <div
+                  class="p-2.5 rounded-lg shrink-0 mt-0.5 transition-colors"
+                  :class="form.vehicleMode === 'THIRD_PARTY' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-gray-100 text-gray-500'"
+                >
+                  <Package class="w-4 h-4" />
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-gray-900">Third Party (Porter/Rapido)</span>
+                    <span v-if="form.vehicleMode === 'THIRD_PARTY'" class="w-2 h-2 rounded-full bg-indigo-600"></span>
+                  </div>
+                  <p class="text-[11px] text-gray-500 mt-1 leading-relaxed">
+                    Porter, Rapido or hired transport. Staff marks as Handed Over directly.
                   </p>
                 </div>
               </div>
@@ -423,6 +448,17 @@ const getPrivilegeColor = (tier: string) => {
               <AlertCircle class="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
               <div class="leading-relaxed">
                 <strong>Party Vehicle Pickup:</strong> This order will not appear in Trip Creation. Once billing and packing are done, warehouse staff will see a <strong>"Hand Over"</strong> button to complete delivery.
+              </div>
+            </div>
+
+            <!-- Third Party Informational Notice -->
+            <div
+              v-else-if="form.vehicleMode === 'THIRD_PARTY'"
+              class="mt-2.5 p-3 bg-indigo-50/80 border border-indigo-200/90 rounded-lg flex items-start gap-2 text-xs text-indigo-900"
+            >
+              <Package class="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
+              <div class="leading-relaxed">
+                <strong>Third Party Delivery (Porter / Rapido):</strong> This order is excluded from multi-stop fleet trips. Warehouse staff will record the handover and driver details using the <strong>"Hand Over"</strong> button upon pickup.
               </div>
             </div>
           </div>

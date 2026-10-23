@@ -28,7 +28,7 @@ const newOrderNumber = ref('')
 const splitNotes = ref('')
 const selectedAddressId = ref<string>('')
 const customAddressText = ref<string>('')
-const selectedVehicleMode = ref<'OUR_FLEET' | 'PARTY_VEHICLE'>('OUR_FLEET')
+const selectedVehicleMode = ref<'OUR_FLEET' | 'PARTY_VEHICLE' | 'THIRD_PARTY'>('OUR_FLEET')
 
 interface SplitRow {
   id: string
@@ -88,7 +88,7 @@ watch(() => [props.isOpen, props.orderId], async ([open, id]) => {
       splitNotes.value = ''
       selectedAddressId.value = data.deliveryAddressId || ''
       customAddressText.value = data.deliveryAddress || ''
-      selectedVehicleMode.value = data.vehicleMode === 'PARTY_VEHICLE' ? 'PARTY_VEHICLE' : 'OUR_FLEET'
+      selectedVehicleMode.value = (data.vehicleMode === 'PARTY_VEHICLE' || data.vehicleMode === 'THIRD_PARTY') ? data.vehicleMode : 'OUR_FLEET'
 
       splitRows.value = (data.items || []).map((item: any) => {
         const total = item.approvedQuantity ?? item.quantity
@@ -617,11 +617,11 @@ const confirmSplit = async () => {
                   <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">
                     Transport Mode for New Order *
                   </label>
-                  <div class="grid grid-cols-2 gap-2">
+                  <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
                     <button
                       type="button"
                       @click="selectedVehicleMode = 'OUR_FLEET'"
-                      class="px-3 py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 border transition cursor-pointer"
+                      class="px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 border transition cursor-pointer"
                       :class="selectedVehicleMode === 'OUR_FLEET' ? 'bg-[#1b3b5f] text-white border-[#1b3b5f] shadow-xs' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'"
                     >
                       <span>🚚 Our Fleet</span>
@@ -629,10 +629,18 @@ const confirmSplit = async () => {
                     <button
                       type="button"
                       @click="selectedVehicleMode = 'PARTY_VEHICLE'"
-                      class="px-3 py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 border transition cursor-pointer"
+                      class="px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 border transition cursor-pointer"
                       :class="selectedVehicleMode === 'PARTY_VEHICLE' ? 'bg-amber-600 text-white border-amber-600 shadow-xs' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'"
                     >
                       <span>🚗 Party Vehicle</span>
+                    </button>
+                    <button
+                      type="button"
+                      @click="selectedVehicleMode = 'THIRD_PARTY'"
+                      class="px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 border transition cursor-pointer"
+                      :class="selectedVehicleMode === 'THIRD_PARTY' ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'"
+                    >
+                      <span>📦 3rd Party (Porter/Rapido)</span>
                     </button>
                   </div>
                 </div>

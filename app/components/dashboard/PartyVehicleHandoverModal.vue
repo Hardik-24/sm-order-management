@@ -5,16 +5,26 @@
       
       <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col max-h-[calc(100vh-4.5rem)] md:max-h-[92vh] overflow-hidden border border-[#e5e2dc]">
         <!-- Header -->
-        <div class="flex items-center justify-between p-4 sm:p-5 border-b border-gray-100 bg-amber-50/70 shrink-0">
+        <div 
+          class="flex items-center justify-between p-4 sm:p-5 border-b border-gray-100 shrink-0"
+          :class="order?.vehicleMode === 'THIRD_PARTY' ? 'bg-indigo-50/70' : 'bg-amber-50/70'"
+        >
           <div class="flex items-center gap-2.5 sm:gap-3 min-w-0">
-            <div class="p-2 sm:p-2.5 bg-amber-500 text-white rounded-xl shadow-xs shrink-0">
-              <Car class="w-4 h-4 sm:w-5 sm:h-5" />
+            <div 
+              class="p-2 sm:p-2.5 text-white rounded-xl shadow-xs shrink-0"
+              :class="order?.vehicleMode === 'THIRD_PARTY' ? 'bg-indigo-600' : 'bg-amber-500'"
+            >
+              <Package v-if="order?.vehicleMode === 'THIRD_PARTY'" class="w-4 h-4 sm:w-5 sm:h-5" />
+              <Car v-else class="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div class="min-w-0">
               <h2 class="text-sm sm:text-base font-bold text-gray-900 flex items-center gap-2 truncate">
-                Hand Over to Party Vehicle
+                {{ order?.vehicleMode === 'THIRD_PARTY' ? 'Hand Over to Third Party (Porter/Rapido)' : 'Hand Over to Party Vehicle' }}
               </h2>
-              <p class="text-xs text-amber-900/80 font-medium mt-0.5 truncate">
+              <p 
+                class="text-xs font-medium mt-0.5 truncate"
+                :class="order?.vehicleMode === 'THIRD_PARTY' ? 'text-indigo-900/80' : 'text-amber-900/80'"
+              >
                 {{ order?.orderNumber }} • {{ order?.customer?.name }}
               </p>
             </div>
@@ -60,7 +70,7 @@
           <div class="p-3 bg-blue-50 border border-blue-200 rounded-xl flex items-start gap-2.5 text-xs text-blue-900">
             <PackageCheck class="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
             <div class="leading-relaxed">
-              Confirming this handover will mark the order's delivery status as <strong>DELIVERED</strong> directly, recording the party vehicle pickup in the order timeline.
+              Confirming this handover will mark the order's delivery status as <strong>DELIVERED</strong> directly, recording the {{ order?.vehicleMode === 'THIRD_PARTY' ? 'third-party handover (Porter / Rapido)' : 'party vehicle pickup' }} in the order timeline.
             </div>
           </div>
 
@@ -73,12 +83,12 @@
             <!-- Vehicle Number -->
             <div>
               <label class="block text-xs font-bold text-gray-700 mb-1.5">
-                Party Vehicle / Registration Number
+                {{ order?.vehicleMode === 'THIRD_PARTY' ? 'Service / Vehicle Reg Number (e.g. Porter Bike, Rapido Auto, KA-09-EA-5678)' : 'Party Vehicle / Registration Number' }}
               </label>
               <input
                 v-model="form.vehicleNumber"
                 type="text"
-                placeholder="e.g. KA-09-EA-5678, Auto, Commercial Pickup..."
+                :placeholder="order?.vehicleMode === 'THIRD_PARTY' ? 'e.g. Porter 3-Wheeler, Rapido Bike, KA-09-EA-5678...' : 'e.g. KA-09-EA-5678, Auto, Commercial Pickup...'"
                 class="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-xs font-semibold text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600"
               />
             </div>
@@ -87,12 +97,12 @@
               <!-- Driver / Collector Name -->
               <div>
                 <label class="block text-xs font-bold text-gray-700 mb-1.5">
-                  Driver / Receiver Name
+                  Driver / Partner Name
                 </label>
                 <input
                   v-model="form.driverName"
                   type="text"
-                  placeholder="e.g. Ramesh (Driver), Client"
+                  :placeholder="order?.vehicleMode === 'THIRD_PARTY' ? 'e.g. Suresh (Porter Driver)' : 'e.g. Ramesh (Driver), Client'"
                   class="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600"
                 />
               </div>
@@ -141,7 +151,8 @@
             type="button"
             @click="confirmHandover"
             :disabled="isSubmitting"
-            class="w-full sm:w-auto justify-center px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg text-xs shadow-sm transition flex items-center gap-2 cursor-pointer disabled:opacity-50"
+            class="w-full sm:w-auto justify-center px-5 py-2.5 text-white font-bold rounded-lg text-xs shadow-sm transition flex items-center gap-2 cursor-pointer disabled:opacity-50"
+            :class="order?.vehicleMode === 'THIRD_PARTY' ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-amber-600 hover:bg-amber-700'"
           >
             <Loader2 v-if="isSubmitting" class="w-4 h-4 animate-spin" />
             <PackageCheck v-else class="w-4 h-4" />
@@ -155,7 +166,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { Car, X, PackageCheck, Loader2 } from 'lucide-vue-next'
+import { Car, X, PackageCheck, Loader2, Package } from 'lucide-vue-next'
 import { formatCurrency } from '~/lib/utils'
 import { useSnackbar } from '~/composables/useSnackbar'
 import { useRealtimeSync } from '~/composables/useRealtimeSync'
@@ -215,7 +226,9 @@ const confirmHandover = async () => {
       form.value.driverPhone ? `Ph: ${form.value.driverPhone.trim()}` : ''
     ].filter(Boolean).join(' • ')
 
-    const driverName = details ? `Party Vehicle (${details})` : 'Party Vehicle'
+    const isThirdParty = props.order?.vehicleMode === 'THIRD_PARTY'
+    const defaultLabel = isThirdParty ? 'Third Party (Porter/Rapido)' : 'Party Vehicle'
+    const driverName = details ? `${defaultLabel} (${details})` : defaultLabel
 
     await $fetch(`/api/orders/${props.order.id}/delivery`, {
       method: 'PATCH',
@@ -228,7 +241,7 @@ const confirmHandover = async () => {
     })
 
     notifyChange({ orderId: props.order.id, action: 'ORDER_UPDATED' })
-    showSaved('Order marked as handed over to party vehicle')
+    showSaved(isThirdParty ? 'Order marked as handed over to Porter/Rapido' : 'Order marked as handed over to party vehicle')
     emit('handedOver')
     emit('close')
   } catch (err: any) {

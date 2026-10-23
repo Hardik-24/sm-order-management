@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, nextTick, watch, onMounted } from 'vue'
 import { onClickOutside } from '@vueuse/core'
-import { Filter, Search, MoreHorizontal, Calendar, X, MapPin, Share2, Loader2, UserPlus, Truck, Check, CheckCircle2, ChevronRight, Zap, Plus, Car, PackageCheck } from 'lucide-vue-next'
+import { Filter, Search, MoreHorizontal, Calendar, X, MapPin, Share2, Loader2, UserPlus, Truck, Check, CheckCircle2, ChevronRight, Zap, Plus, Car, PackageCheck, Package } from 'lucide-vue-next'
 import { formatDate } from '~~/app/lib/utils'
 import CustomSelect from '~/components/ui/CustomSelect.vue'
 import TableFilterButtons from '~/components/dashboard/TableFilterButtons.vue'
@@ -511,6 +511,15 @@ const saveDriverAssignment = async () => {
                   <Car class="w-3.5 h-3.5 text-amber-600 shrink-0" />
                   <span class="truncate max-w-[120px]">{{ order.deliveryStatus?.driverName || 'Party Vehicle' }}</span>
                 </div>
+                <!-- Third Party Badge -->
+                <div 
+                  v-else-if="order.vehicleMode === 'THIRD_PARTY'"
+                  class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-indigo-50 border border-indigo-200 rounded-lg text-xs font-semibold text-indigo-900 shadow-2xs"
+                  :title="order.deliveryStatus?.driverName || 'Third Party (Porter / Rapido)'"
+                >
+                  <Package class="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                  <span class="truncate max-w-[120px]">{{ order.deliveryStatus?.driverName || 'Porter / Rapido' }}</span>
+                </div>
                 <!-- Fleet Driver Badge -->
                 <div 
                   v-else-if="order.deliveryDriver || order.deliveryStatus?.driverName"
@@ -534,13 +543,13 @@ const saveDriverAssignment = async () => {
               <!-- 7. Action -->
               <td class="px-5 py-3.5 whitespace-nowrap text-right pr-6">
                 <div class="flex items-center justify-end gap-1.5">
-                  <!-- A. Party Vehicle Actions -->
-                  <template v-if="order.vehicleMode === 'PARTY_VEHICLE'">
+                  <!-- A. Direct Handover Actions (Party Vehicle / Third Party) -->
+                  <template v-if="order.vehicleMode === 'PARTY_VEHICLE' || order.vehicleMode === 'THIRD_PARTY'">
                     <!-- Handed Over Badge -->
                     <span 
                       v-if="order.deliveryStatus?.status === 'DELIVERED'"
                       class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-emerald-800 bg-emerald-50 rounded-lg border border-emerald-200 shadow-2xs"
-                      title="Handed over to party vehicle"
+                      :title="order.vehicleMode === 'THIRD_PARTY' ? 'Handed over to Porter/Rapido' : 'Handed over to party vehicle'"
                     >
                       <CheckCircle2 class="w-3.5 h-3.5 text-emerald-600" />
                       <span>Handed Over</span>
@@ -551,8 +560,9 @@ const saveDriverAssignment = async () => {
                       v-else-if="order.overallStatus !== 'CANCELLED'"
                       type="button"
                       @click.stop="openHandoverModal(order)"
-                      class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white rounded-lg shadow-sm hover:shadow transition-all cursor-pointer"
-                      title="Hand over order to party vehicle"
+                      class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white rounded-lg shadow-sm hover:shadow transition-all cursor-pointer"
+                      :class="order.vehicleMode === 'THIRD_PARTY' ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-amber-600 hover:bg-amber-700'"
+                      :title="order.vehicleMode === 'THIRD_PARTY' ? 'Hand over order to Porter / Rapido' : 'Hand over order to party vehicle'"
                     >
                       <PackageCheck class="w-3.5 h-3.5" />
                       <span>Hand Over</span>
@@ -719,6 +729,14 @@ const saveDriverAssignment = async () => {
                 <Car class="w-3.5 h-3.5 text-amber-600 shrink-0" />
                 <span class="truncate">{{ order.deliveryStatus?.driverName || 'Party Vehicle' }}</span>
               </span>
+              <!-- Third Party Badge (Mobile) -->
+              <span 
+                v-else-if="order.vehicleMode === 'THIRD_PARTY'"
+                class="text-xs font-semibold text-indigo-900 flex items-center gap-1 truncate"
+              >
+                <Package class="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                <span class="truncate">{{ order.deliveryStatus?.driverName || 'Porter / Rapido' }}</span>
+              </span>
               <span 
                 v-else-if="order.deliveryDriver || order.deliveryStatus?.driverName" 
                 class="text-xs font-medium text-gray-800 flex items-center gap-1 truncate"
@@ -766,8 +784,8 @@ const saveDriverAssignment = async () => {
 
             <!-- Direct 1-Tap Action Button -->
             <div class="flex items-center gap-1.5 shrink-0">
-              <!-- A. Party Vehicle Actions (Mobile) -->
-              <template v-if="order.vehicleMode === 'PARTY_VEHICLE'">
+              <!-- A. Direct Handover Actions (Party Vehicle / Third Party Mobile) -->
+              <template v-if="order.vehicleMode === 'PARTY_VEHICLE' || order.vehicleMode === 'THIRD_PARTY'">
                 <span 
                   v-if="order.deliveryStatus?.status === 'DELIVERED'"
                   class="px-2 py-0.5 border border-emerald-200 bg-emerald-50 text-emerald-800 text-[10px] font-bold rounded-md flex items-center gap-1"
@@ -779,7 +797,8 @@ const saveDriverAssignment = async () => {
                   v-else-if="order.overallStatus !== 'CANCELLED'"
                   type="button"
                   @click.stop="openHandoverModal(order)"
-                  class="px-2.5 py-1 bg-amber-600 text-white text-[11px] font-bold rounded-md hover:bg-amber-700 active:scale-95 transition-all shadow-xs flex items-center gap-1 cursor-pointer"
+                  class="px-2.5 py-1 text-white text-[11px] font-bold rounded-md active:scale-95 transition-all shadow-xs flex items-center gap-1 cursor-pointer"
+                  :class="order.vehicleMode === 'THIRD_PARTY' ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-amber-600 hover:bg-amber-700'"
                 >
                   <PackageCheck class="w-3 h-3" />
                   <span>Hand Over</span>

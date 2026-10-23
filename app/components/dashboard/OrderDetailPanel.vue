@@ -1261,11 +1261,16 @@ watch(editForm, () => {
                   <span class="block text-[10px] sm:text-[11px] uppercase font-bold text-gray-400 tracking-wider mb-1">Transport Mode</span>
                   <span 
                     class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold border"
-                    :class="order.vehicleMode === 'PARTY_VEHICLE' ? 'bg-amber-50 text-amber-800 border-amber-200' : 'bg-[#1b3b5f]/10 text-[#1b3b5f] border-[#1b3b5f]/20'"
+                    :class="order.vehicleMode === 'PARTY_VEHICLE' 
+                      ? 'bg-amber-50 text-amber-800 border-amber-200' 
+                      : (order.vehicleMode === 'THIRD_PARTY' 
+                        ? 'bg-indigo-50 text-indigo-800 border-indigo-200' 
+                        : 'bg-[#1b3b5f]/10 text-[#1b3b5f] border-[#1b3b5f]/20')"
                   >
                     <Car v-if="order.vehicleMode === 'PARTY_VEHICLE'" class="w-3 h-3 text-amber-600 shrink-0" />
+                    <Package v-else-if="order.vehicleMode === 'THIRD_PARTY'" class="w-3 h-3 text-indigo-600 shrink-0" />
                     <Truck v-else class="w-3 h-3 text-[#1b3b5f] shrink-0" />
-                    <span class="truncate">{{ order.vehicleMode === 'PARTY_VEHICLE' ? 'Party Vehicle / Pickup' : 'Our Delivery Fleet' }}</span>
+                    <span class="truncate">{{ order.vehicleMode === 'PARTY_VEHICLE' ? 'Party Vehicle / Pickup' : (order.vehicleMode === 'THIRD_PARTY' ? 'Third Party (Porter/Rapido)' : 'Our Delivery Fleet') }}</span>
                   </span>
                 </div>
 
@@ -1279,20 +1284,21 @@ watch(editForm, () => {
               </div>
             </div>
 
-            <!-- C1. Party Vehicle Transport Mode -->
-            <div v-if="order.vehicleMode === 'PARTY_VEHICLE'" class="bg-white rounded-xl border border-gray-200/80 p-4 shadow-2xs space-y-3">
+            <!-- C1. Party Vehicle or Third Party Transport Mode -->
+            <div v-if="order.vehicleMode === 'PARTY_VEHICLE' || order.vehicleMode === 'THIRD_PARTY'" class="bg-white rounded-xl border border-gray-200/80 p-4 shadow-2xs space-y-3">
               <div class="flex justify-between items-center pb-2.5 border-b border-gray-100">
                 <h3 class="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-1.5">
-                  <Car class="w-3.5 h-3.5 text-amber-600" />
-                  Party Vehicle Transport
+                  <Package v-if="order.vehicleMode === 'THIRD_PARTY'" class="w-3.5 h-3.5 text-indigo-600" />
+                  <Car v-else class="w-3.5 h-3.5 text-amber-600" />
+                  {{ order.vehicleMode === 'THIRD_PARTY' ? 'Third Party Transport (Porter/Rapido)' : 'Party Vehicle Transport' }}
                 </h3>
                 <span 
                   class="font-mono text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded border"
                   :class="order.deliveryStatus?.status === 'DELIVERED'
                     ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                    : 'bg-amber-50 text-amber-800 border-amber-200'"
+                    : (order.vehicleMode === 'THIRD_PARTY' ? 'bg-indigo-50 text-indigo-800 border-indigo-200' : 'bg-amber-50 text-amber-800 border-amber-200')"
                 >
-                  {{ order.deliveryStatus?.status === 'DELIVERED' ? 'HANDED OVER' : 'CUSTOMER PICKUP' }}
+                  {{ order.deliveryStatus?.status === 'DELIVERED' ? 'HANDED OVER' : (order.vehicleMode === 'THIRD_PARTY' ? 'PORTER / RAPIDO' : 'CUSTOMER PICKUP') }}
                 </span>
               </div>
 
@@ -1302,8 +1308,9 @@ watch(editForm, () => {
                   <div>
                     <span class="block text-[10px] sm:text-[11px] uppercase font-bold text-gray-400 tracking-wider mb-0.5">Handover Info</span>
                     <div class="flex items-center gap-1.5 font-bold text-gray-900">
-                      <Car class="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                      <span>{{ order.deliveryStatus?.driverName || 'Party Vehicle' }}</span>
+                      <Package v-if="order.vehicleMode === 'THIRD_PARTY'" class="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                      <Car v-else class="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                      <span>{{ order.deliveryStatus?.driverName || (order.vehicleMode === 'THIRD_PARTY' ? 'Porter / Rapido' : 'Party Vehicle') }}</span>
                     </div>
                   </div>
 
@@ -1320,14 +1327,27 @@ watch(editForm, () => {
               </div>
 
               <!-- Pending Handover State -->
-              <div v-else class="text-xs text-gray-600 bg-amber-50/60 rounded-xl p-3.5 border border-amber-200/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div 
+                v-else 
+                class="text-xs text-gray-600 rounded-xl p-3.5 border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
+                :class="order.vehicleMode === 'THIRD_PARTY' ? 'bg-indigo-50/60 border-indigo-200/80' : 'bg-amber-50/60 border-amber-200/80'"
+              >
                 <div class="space-y-0.5">
-                  <div class="font-bold text-amber-950 flex items-center gap-1.5">
-                    <AlertCircle class="w-4 h-4 text-amber-600 shrink-0" />
-                    <span>Customer-Arranged Pickup</span>
+                  <div 
+                    class="font-bold flex items-center gap-1.5"
+                    :class="order.vehicleMode === 'THIRD_PARTY' ? 'text-indigo-950' : 'text-amber-950'"
+                  >
+                    <Package v-if="order.vehicleMode === 'THIRD_PARTY'" class="w-4 h-4 text-indigo-600 shrink-0" />
+                    <AlertCircle v-else class="w-4 h-4 text-amber-600 shrink-0" />
+                    <span>{{ order.vehicleMode === 'THIRD_PARTY' ? 'Third Party Partner Handover' : 'Customer-Arranged Pickup' }}</span>
                   </div>
-                  <p class="text-amber-900/80 text-[11px] leading-relaxed">
-                    This order is picked up via the customer's vehicle. It is not bundled into fleet trips.
+                  <p 
+                    class="text-[11px] leading-relaxed"
+                    :class="order.vehicleMode === 'THIRD_PARTY' ? 'text-indigo-900/80' : 'text-amber-900/80'"
+                  >
+                    {{ order.vehicleMode === 'THIRD_PARTY' 
+                      ? 'This order is dispatched via Porter, Rapido, or other courier. It is not bundled into fleet trips.'
+                      : 'This order is picked up via the customer\'s vehicle. It is not bundled into fleet trips.' }}
                   </p>
                 </div>
 
@@ -1335,14 +1355,16 @@ watch(editForm, () => {
                   v-if="context === 'delivery'"
                   type="button"
                   @click="isHandoverModalOpen = true"
-                  class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-lg shadow-sm transition flex items-center gap-1.5 shrink-0 cursor-pointer"
+                  class="px-4 py-2 text-white font-bold text-xs rounded-lg shadow-sm transition flex items-center gap-1.5 shrink-0 cursor-pointer"
+                  :class="order.vehicleMode === 'THIRD_PARTY' ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-amber-600 hover:bg-amber-700'"
                 >
                   <PackageCheck class="w-4 h-4" />
                   <span>Hand Over</span>
                 </button>
                 <span
                   v-else
-                  class="text-[11px] font-semibold text-amber-800 bg-amber-100/80 px-2.5 py-1 rounded-md border border-amber-200/60 shrink-0 self-start sm:self-center"
+                  class="text-[11px] font-semibold px-2.5 py-1 rounded-md border shrink-0 self-start sm:self-center"
+                  :class="order.vehicleMode === 'THIRD_PARTY' ? 'text-indigo-800 bg-indigo-100/80 border-indigo-200/60' : 'text-amber-800 bg-amber-100/80 border-amber-200/60'"
                 >
                   Pending Pickup
                 </span>
@@ -1729,22 +1751,23 @@ watch(editForm, () => {
 
                 <!-- Action Area: Delivery (Read-Only Pin & Tracking) -->
                 <div v-if="context === 'delivery'" class="p-4 bg-gray-50 border-t border-gray-200 rounded-b-lg relative flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-                  <!-- Party Vehicle Handover Actions -->
-                  <template v-if="order.vehicleMode === 'PARTY_VEHICLE'">
+                  <!-- Party Vehicle & Third Party Handover Actions -->
+                  <template v-if="order.vehicleMode === 'PARTY_VEHICLE' || order.vehicleMode === 'THIRD_PARTY'">
                     <span 
                       v-if="order.deliveryStatus?.status === 'DELIVERED'"
                       class="px-3.5 py-2 text-xs font-bold text-emerald-800 bg-emerald-50 rounded-lg border border-emerald-200 flex items-center gap-1.5"
                     >
                       <CheckCircle2 class="w-3.5 h-3.5 text-emerald-600" />
-                      <span>Handed Over to Party Vehicle</span>
+                      <span>{{ order.vehicleMode === 'THIRD_PARTY' ? 'Handed Over to Porter/Rapido' : 'Handed Over to Party Vehicle' }}</span>
                     </span>
                     <button 
                       v-else-if="order.overallStatus !== 'CANCELLED'"
                       @click="isHandoverModalOpen = true"
-                      class="px-4 py-2 text-xs font-bold bg-amber-600 text-white rounded-lg hover:bg-amber-700 shadow-sm flex items-center justify-center gap-1.5 transition cursor-pointer"
+                      class="px-4 py-2 text-xs font-bold text-white rounded-lg shadow-sm flex items-center justify-center gap-1.5 transition cursor-pointer"
+                      :class="order.vehicleMode === 'THIRD_PARTY' ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-amber-600 hover:bg-amber-700'"
                     >
                       <PackageCheck class="w-3.5 h-3.5 text-white" />
-                      <span>Hand Over to Party Vehicle</span>
+                      <span>{{ order.vehicleMode === 'THIRD_PARTY' ? 'Hand Over to Porter/Rapido' : 'Hand Over to Party Vehicle' }}</span>
                     </button>
                   </template>
 
@@ -2107,7 +2130,8 @@ watch(editForm, () => {
                     @update:modelValue="val => editForm.vehicleMode = val"
                     :options="[
                       { label: '🚚 Our Delivery Fleet', value: 'OUR_FLEET' },
-                      { label: '🚗 Party Vehicle / Customer Pickup', value: 'PARTY_VEHICLE' }
+                      { label: '🚗 Party Vehicle / Customer Pickup', value: 'PARTY_VEHICLE' },
+                      { label: '📦 Third Party (Porter / Rapido)', value: 'THIRD_PARTY' }
                     ]"
                     placeholder="Select Transport Mode"
                     class="w-full"

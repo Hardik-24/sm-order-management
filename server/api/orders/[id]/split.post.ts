@@ -221,8 +221,8 @@ export default defineEventHandler(async (event) => {
         orderDate: new Date(),
         deliveryAddress: finalDeliveryAddress,
         deliveryAddressId: finalDeliveryAddressId,
-        vehicleMode: requestedVehicleMode === 'PARTY_VEHICLE' 
-          ? 'PARTY_VEHICLE' 
+        vehicleMode: (requestedVehicleMode === 'PARTY_VEHICLE' || requestedVehicleMode === 'THIRD_PARTY')
+          ? requestedVehicleMode 
           : (requestedVehicleMode === 'OUR_FLEET' ? 'OUR_FLEET' : parentOrder.vehicleMode),
         isUrgent: parentOrder.isUrgent,
         isApproved: parentOrder.isApproved,

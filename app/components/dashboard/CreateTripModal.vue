@@ -477,10 +477,10 @@ const loadInitialData = async () => {
       form.value.driverPhone = availableDrivers.value[0].phone || ''
     }
 
-    // Set available orders (excluding Party Vehicle orders)
+    // Set available orders (excluding Party Vehicle and Third Party orders)
     const ords = Array.isArray(ordersRes.orders) ? ordersRes.orders : []
     unassignedOrders.value = ords.filter((o: any) =>
-      o.vehicleMode !== 'PARTY_VEHICLE' && (
+      o.vehicleMode !== 'PARTY_VEHICLE' && o.vehicleMode !== 'THIRD_PARTY' && (
         o.deliveryStatus?.status === 'WAITING' ||
         o.deliveryStatus?.status === 'ASSIGNED' ||
         (o.billingStatus?.status === 'GENERATED' && o.packingStatus?.status === 'PACKED' && o.deliveryStatus?.status !== 'DELIVERED')
@@ -494,10 +494,10 @@ const loadInitialData = async () => {
         if (!found) {
           try {
             found = await $fetch<any>(`/api/orders/${oid}`)
-            if (found && found.vehicleMode !== 'PARTY_VEHICLE') unassignedOrders.value.push(found)
+            if (found && found.vehicleMode !== 'PARTY_VEHICLE' && found.vehicleMode !== 'THIRD_PARTY') unassignedOrders.value.push(found)
           } catch (e) {}
         }
-        if (found && found.vehicleMode !== 'PARTY_VEHICLE') addOrderToTrip(found)
+        if (found && found.vehicleMode !== 'PARTY_VEHICLE' && found.vehicleMode !== 'THIRD_PARTY') addOrderToTrip(found)
       }
     }
   } catch (e) {

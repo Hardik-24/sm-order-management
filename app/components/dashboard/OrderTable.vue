@@ -341,6 +341,9 @@ const getItemsTotalQuantity = (order: Order) => {
                   <span v-if="order.vehicleMode === 'PARTY_VEHICLE' && order.overallStatus !== 'CANCELLED'" class="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-50 text-amber-800 border border-amber-200" title="Customer Pickup / Party Vehicle">
                     🚗 Party
                   </span>
+                  <span v-else-if="order.vehicleMode === 'THIRD_PARTY' && order.overallStatus !== 'CANCELLED'" class="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[9px] font-bold bg-indigo-50 text-indigo-800 border border-indigo-200" title="Third Party (Porter / Rapido)">
+                    📦 3rd Party
+                  </span>
                   <span v-if="order.overallStatus === 'CANCELLED'" class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-bold bg-gray-200 !text-gray-600 border border-rose-500">
                     🚫 CANCELLED
                   </span>
@@ -486,6 +489,9 @@ const getItemsTotalQuantity = (order: Order) => {
               </span>
               <span v-if="order.vehicleMode === 'PARTY_VEHICLE' && order.overallStatus !== 'CANCELLED'" class="text-[9px] font-bold text-amber-800 bg-amber-50 px-1 py-0.2 rounded border border-amber-200">
                 🚗 Party
+              </span>
+              <span v-else-if="order.vehicleMode === 'THIRD_PARTY' && order.overallStatus !== 'CANCELLED'" class="text-[9px] font-bold text-indigo-800 bg-indigo-50 px-1 py-0.2 rounded border border-indigo-200">
+                📦 3rd Party
               </span>
               <span v-if="order.overallStatus === 'CANCELLED'" class="text-[9px] font-bold text-gray-600 bg-gray-200 px-1 py-0.2 rounded border border-rose-500">
                 🚫 CANCELLED
