@@ -57,24 +57,28 @@ export default defineEventHandler(async (event) => {
   let order = null
   let attempts = 0
 
-  while (!order && attempts < 5) {
-    attempts++
+  // 1. Find all existing orders for this year to determine true maximum sequence number
+  const existingOrdersThisYear = await prisma.order.findMany({
+    where: { orderNumber: { startsWith: `SO-${year}-` } },
+    select: { orderNumber: true }
+  })
 
-    const latestOrder = await prisma.order.findFirst({
-      where: { orderNumber: { startsWith: `SO-${year}-` } },
-      orderBy: { orderNumber: 'desc' },
-      select: { orderNumber: true }
-    })
-
-    let nextSeq = 1
-    if (latestOrder) {
-      const parts = latestOrder.orderNumber.split('-')
-      if (parts.length === 3) {
-        nextSeq = parseInt(parts[2], 10) + 1
+  let maxSeq = 0
+  for (const o of existingOrdersThisYear) {
+    // Regex matches SO-YYYY-XXXX (where XXXX is any number of digits), ignoring any split suffix like -B or -C
+    const match = o.orderNumber.match(/^SO-\d{4}-(\d+)/)
+    if (match) {
+      const seq = parseInt(match[1], 10)
+      if (!isNaN(seq) && seq > maxSeq) {
+        maxSeq = seq
       }
     }
+  }
 
-    const orderNumber = `SO-${year}-${String(nextSeq).padStart(4, '0')}`
+  while (!order && attempts < 10) {
+    attempts++
+    const candidateSeq = maxSeq + attempts
+    const orderNumber = `SO-${year}-${String(candidateSeq).padStart(4, '0')}`
 
     try {
       order = await prisma.order.create({
@@ -113,8 +117,8 @@ export default defineEventHandler(async (event) => {
         }
       })
     } catch (err: any) {
-      if (err.code === 'P2002' && attempts < 5) {
-        // Unique constraint failed on orderNumber, retry
+      if (err.code === 'P2002' && attempts < 10) {
+        // Unique constraint collision on orderNumber, retry with next increment
         continue
       }
       throw err
