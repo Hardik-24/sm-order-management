@@ -13,6 +13,8 @@ jobs:
   build-android:
     name: Build Android Debug APK
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout Source Code
@@ -52,3 +54,16 @@ jobs:
         with:
           name: sm-fleet-app-debug
           path: fleet_mobile_app/android/app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Prepare APK for Direct Release
+        run: cp fleet_mobile_app/android/app/build/outputs/apk/debug/app-debug.apk SM-Fleet.apk
+
+      - name: Publish Direct APK to GitHub Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest-apk
+          name: "Latest Android APKs (SM Flow & SM Fleet)"
+          body: "Direct download links for the latest Android builds without zip files or Azure egress limits."
+          files: SM-Fleet.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
