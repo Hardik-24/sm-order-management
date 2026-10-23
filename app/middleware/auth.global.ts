@@ -15,6 +15,17 @@ export default defineNuxtRouteMiddleware(async (to) => {
     return navigateTo('/dashboard')
   }
 
+  // Root path '/' handling: bypass old landing page, go directly to dashboard if logged in or login screen
+  if (to.path === '/') {
+    if (user.value) {
+      if (user.value.role === 'DELIVERY') {
+        return navigateTo('/driver', { replace: true })
+      }
+      return navigateTo('/dashboard', { replace: true })
+    }
+    return navigateTo('/login', { replace: true })
+  }
+
   // Only protect dashboard and driver routes
   if (!to.path.startsWith('/dashboard') && !to.path.startsWith('/driver')) return
 
