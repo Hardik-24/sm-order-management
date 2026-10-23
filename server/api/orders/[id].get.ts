@@ -41,6 +41,7 @@ export default defineEventHandler(async (event) => {
   const activeTripStop = order.tripStops?.[0]
   const assignedTrip = activeTripStop?.trip ? {
     id: activeTripStop.trip.id,
+    stopId: activeTripStop.id,
     tripNumber: activeTripStop.trip.tripNumber,
     driverId: activeTripStop.trip.driverId,
     driverName: activeTripStop.trip.driverName,

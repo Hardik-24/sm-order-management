@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
-import { X, MoreHorizontal, Lock, Edit, Package, PackageCheck, Truck, Check, Box, Plus, Trash2, MapPin, AlertCircle, AlertTriangle, Ban, CheckCheck, CheckCircle2, Zap, User, IndianRupee, Clock, Building2, Phone, FileText, Calendar, Copy, ChevronRight, Car, GitFork, SlidersHorizontal } from 'lucide-vue-next'
+import { X, MoreHorizontal, Lock, Edit, Package, PackageCheck, Truck, Check, Box, Plus, Trash2, MapPin, AlertCircle, AlertTriangle, Ban, CheckCheck, CheckCircle2, Zap, User, IndianRupee, Clock, Building2, Phone, FileText, Calendar, Copy, ChevronRight, Car, GitFork, SlidersHorizontal, Loader2 } from 'lucide-vue-next'
 import StatusBadge from '~/components/ui/StatusBadge.vue'
 import GenerateBillModal from '~/components/dashboard/GenerateBillModal.vue'
 import SetDeliveryPinModal from '~/components/dashboard/SetDeliveryPinModal.vue'
@@ -812,6 +812,36 @@ const saveEdit = async () => {
   }
 }
 
+const isRemovingFromTrip = ref(false)
+const handleRemoveFromAssignedTrip = async () => {
+  const trip = (order.value as any)?.assignedTrip
+  if (!trip?.id || !trip?.stopId) return
+
+  const confirmed = confirm(
+    `Remove order ${order.value?.orderNumber} from Trip ${trip.tripNumber}? The order will be unassigned and returned to "Waiting for Delivery".`
+  )
+  if (!confirmed) return
+
+  isRemovingFromTrip.value = true
+  showSaving('Removing order from trip...')
+  try {
+    const res = await $fetch<any>(`/api/trips/${trip.id}/stops/${trip.stopId}`, {
+      method: 'DELETE'
+    })
+    showSaved(res.message || 'Order removed from trip')
+    notifyChange({ orderId: order.value?.id, action: 'ORDER_UPDATED' })
+    if (order.value?.id) {
+      await fetchOrder(order.value.id)
+    }
+    emit('updated', order.value)
+  } catch (err: any) {
+    console.error('Failed to remove order from trip', err)
+    alert(err.data?.message || 'Failed to remove order from trip')
+  } finally {
+    isRemovingFromTrip.value = false
+  }
+}
+
 watch(editForm, () => { 
   if (isEditModalOpen.value) {
     if (JSON.stringify(editForm.value) !== initialFormState.value) {
@@ -1447,15 +1477,30 @@ watch(editForm, () => {
                       </span>
                     </div>
 
-                    <a
-                      v-if="order.deliveryStatus?.status === 'DISPATCHED' || (order as any).assignedTrip.status === 'IN_TRANSIT'"
-                      :href="`/track/${order.orderNumber}`"
-                      target="_blank"
-                      class="text-xs font-bold text-[#1b3b5f] hover:underline flex items-center gap-1"
-                    >
-                      <MapPin class="w-3.5 h-3.5" />
-                      <span>Live Track ↗</span>
-                    </a>
+                    <div class="flex items-center gap-2.5">
+                      <a
+                        v-if="order.deliveryStatus?.status === 'DISPATCHED' || (order as any).assignedTrip.status === 'IN_TRANSIT'"
+                        :href="`/track/${order.orderNumber}`"
+                        target="_blank"
+                        class="text-xs font-bold text-[#1b3b5f] hover:underline flex items-center gap-1"
+                      >
+                        <MapPin class="w-3.5 h-3.5" />
+                        <span>Live Track ↗</span>
+                      </a>
+
+                      <button
+                        v-if="order.deliveryStatus?.status !== 'DELIVERED'"
+                        type="button"
+                        @click="handleRemoveFromAssignedTrip"
+                        :disabled="isRemovingFromTrip"
+                        class="text-xs font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50 px-2 py-1 rounded border border-rose-200 transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                        title="Remove order from trip (returns to Waiting)"
+                      >
+                        <Loader2 v-if="isRemovingFromTrip" class="w-3 h-3 animate-spin text-rose-500" />
+                        <Trash2 v-else class="w-3 h-3 text-rose-500" />
+                        <span>Remove from Trip</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>

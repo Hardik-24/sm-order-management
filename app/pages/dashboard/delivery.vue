@@ -5,10 +5,12 @@ import OrderDetailPanel from '~/components/dashboard/OrderDetailPanel.vue'
 import CreateTripModal from '~/components/dashboard/CreateTripModal.vue'
 import {
   Truck, Clock, MapPin, PackageCheck, CheckCircle2, RefreshCw,
-  Plus, ArrowUp, ArrowDown, ChevronRight, User, ExternalLink, Calendar, AlertTriangle
+  Plus, ArrowUp, ArrowDown, ChevronRight, User, ExternalLink, Calendar, AlertTriangle,
+  Trash2, X, Loader2
 } from 'lucide-vue-next'
 import { useGsapAnimation } from '~/composables/useGsapAnimation'
 import { useRealtimeSync } from '~/composables/useRealtimeSync'
+import { useSnackbar } from '~/composables/useSnackbar'
 
 definePageMeta({ layout: 'dashboard' })
 
@@ -57,6 +59,62 @@ const handleReorderStop = async (trip: any, stopIndex: number, direction: number
     alert(e.data?.message || 'Failed to reorder stop sequence')
   } finally {
     isReorderingStop.value = false
+  }
+}
+
+const { showSaving, showSaved } = useSnackbar()
+const isDeletingTrip = ref<string | null>(null)
+const isRemovingStop = ref<string | null>(null)
+
+const handleDeleteTrip = async (trip: any) => {
+  const stopCount = trip.stops?.length || 0
+  const confirmed = confirm(
+    `Are you sure you want to delete Trip ${trip.tripNumber}? All ${stopCount} order(s) will be unassigned and returned to "Waiting for Delivery".`
+  )
+  if (!confirmed) return
+
+  isDeletingTrip.value = trip.id
+  showSaving('Deleting trip...')
+  try {
+    const res = await $fetch<any>(`/api/trips/${trip.id}`, {
+      method: 'DELETE'
+    })
+    showSaved(res.message || 'Trip deleted successfully')
+    try {
+      notifyChange({ type: 'TRIP_DELETED', action: 'TRIP_DELETED', tripId: trip.id })
+    } catch (e) {}
+    await Promise.all([refreshTrips(), refresh(), refreshStats()])
+  } catch (err: any) {
+    console.error('Failed to delete trip', err)
+    alert(err.data?.message || 'Failed to delete trip')
+  } finally {
+    isDeletingTrip.value = null
+  }
+}
+
+const handleRemoveStop = async (trip: any, stop: any) => {
+  const orderLabel = stop.order?.orderNumber || stop.customerName || 'this order'
+  const confirmed = confirm(
+    `Remove ${orderLabel} from Trip ${trip.tripNumber}? The order will be unassigned and returned to "Waiting for Delivery".`
+  )
+  if (!confirmed) return
+
+  isRemovingStop.value = stop.id
+  showSaving('Removing order from trip...')
+  try {
+    const res = await $fetch<any>(`/api/trips/${trip.id}/stops/${stop.id}`, {
+      method: 'DELETE'
+    })
+    showSaved(res.message || 'Order removed from trip')
+    try {
+      notifyChange({ type: 'TRIP_CHANGE', action: 'REMOVE_STOP', tripId: trip.id, stopId: stop.id })
+    } catch (e) {}
+    await Promise.all([refreshTrips(), refresh(), refreshStats()])
+  } catch (err: any) {
+    console.error('Failed to remove stop', err)
+    alert(err.data?.message || 'Failed to remove order from trip')
+  } finally {
+    isRemovingStop.value = null
   }
 }
 
@@ -526,8 +584,8 @@ watch(counts, (newVal) => {
               </div>
             </div>
 
-            <!-- Progress Bar & Summary -->
-            <div class="flex items-center gap-3 shrink-0">
+            <!-- Progress Bar, Summary & Delete Action -->
+            <div class="flex items-center gap-3 shrink-0 self-end sm:self-center">
               <div class="text-right">
                 <span class="text-[11px] font-bold text-gray-600 block">
                   {{ trip.stops?.filter((s: any) => s.status === 'DELIVERED').length || 0 }} of {{ trip.stops?.length || 0 }} Delivered
@@ -539,6 +597,19 @@ watch(counts, (newVal) => {
                   ></div>
                 </div>
               </div>
+
+              <!-- Delete Entire Trip Button -->
+              <button
+                type="button"
+                @click.stop="handleDeleteTrip(trip)"
+                :disabled="isDeletingTrip === trip.id"
+                class="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-rose-600 hover:text-rose-700 bg-white hover:bg-rose-50 border border-gray-200 hover:border-rose-300 rounded-lg shadow-2xs transition-all cursor-pointer disabled:opacity-50"
+                title="Delete this entire trip (orders return to Waiting)"
+              >
+                <Loader2 v-if="isDeletingTrip === trip.id" class="w-3.5 h-3.5 animate-spin text-rose-500" />
+                <Trash2 v-else class="w-3.5 h-3.5 text-rose-500" />
+                <span class="hidden sm:inline">Delete Trip</span>
+              </button>
             </div>
           </div>
 
@@ -628,6 +699,18 @@ watch(counts, (newVal) => {
                   >
                     <ExternalLink class="w-3.5 h-3.5" />
                   </a>
+
+                  <!-- Remove Stop from Trip Button -->
+                  <button
+                    type="button"
+                    @click.stop="handleRemoveStop(trip, stop)"
+                    :disabled="isRemovingStop === stop.id || stop.status === 'DELIVERED'"
+                    class="p-1.5 rounded-lg border border-gray-200 hover:border-rose-300 hover:bg-rose-50 text-gray-400 hover:text-rose-600 transition cursor-pointer disabled:opacity-20 disabled:cursor-not-allowed"
+                    title="Remove this order from trip (returns to Waiting)"
+                  >
+                    <Loader2 v-if="isRemovingStop === stop.id" class="w-3.5 h-3.5 animate-spin text-rose-500" />
+                    <X v-else class="w-3.5 h-3.5" />
+                  </button>
                 </div>
               </div>
             </div>
