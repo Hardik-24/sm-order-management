@@ -1,6 +1,6 @@
 import { defineEventHandler, getQuery } from 'h3'
 import { GoogleSpreadsheet } from 'google-spreadsheet'
-import { createGoogleAuth, getGoogleSheetId } from '~~/server/utils/googleAuth'
+import { createGoogleAuth, getGoogleSheetId, setSheetLastSyncedAt } from '~~/server/utils/googleAuth'
 import fallbackProducts from '~~/server/data/sheet-products-fallback.json'
 
 export interface SheetProductItem {
@@ -60,6 +60,7 @@ export default defineEventHandler(async (event) => {
       if (fallbackProducts && fallbackProducts.length > 0) {
         cachedProducts = fallbackProducts as SheetProductItem[]
         lastSyncedAt = Date.now()
+        setSheetLastSyncedAt(lastSyncedAt)
         lastSyncSource = 'fallback'
         return {
           success: true,
@@ -135,6 +136,7 @@ export default defineEventHandler(async (event) => {
 
     cachedProducts = parsed
     lastSyncedAt = Date.now()
+    setSheetLastSyncedAt(lastSyncedAt)
     lastSyncSource = authWrapper.credentials.source
 
     return {

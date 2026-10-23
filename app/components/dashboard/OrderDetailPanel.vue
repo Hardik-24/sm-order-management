@@ -1719,7 +1719,7 @@ watch(editForm, () => {
                       <button 
                         v-if="(order as any)?.hasDestinationPin || (order as any)?.destinationCoords"
                         @click="isPinModalOpen = true"
-                        class="px-3.5 py-2 text-xs font-semibold border border-emerald-300 text-[#1b3b5f] bg-emerald-50 hover:bg-emerald-100 rounded-lg shadow-sm flex items-center justify-center gap-1.5 transition cursor-pointer"
+                        class="px-3.5 py-2 text-xs font-semibold border border-[#1b3b5f]/30 text-[#1b3b5f] bg-[#1b3b5f]/5 hover:bg-[#1b3b5f]/10 rounded-lg shadow-sm flex items-center justify-center gap-1.5 transition cursor-pointer"
                       >
                         <MapPin class="w-3.5 h-3.5 text-[#1b3b5f]" /> Change Destination Pin
                       </button>

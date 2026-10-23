@@ -426,7 +426,7 @@ const saveDriverAssignment = async () => {
               class="cursor-pointer transition-colors duration-150 group"
               :class="[
                 selectedTripOrderIds?.includes(order.id)
-                  ? 'bg-emerald-50/70 hover:bg-emerald-100/60 ring-1 ring-emerald-500/40 border-l-4 border-l-[#1b3b5f]'
+                  ? 'bg-[#1b3b5f]/10 hover:bg-[#1b3b5f]/15 ring-1 ring-[#1b3b5f]/30 border-l-4 border-l-[#1b3b5f]'
                   : (order.overallStatus === 'CANCELLED' 
                     ? 'bg-gray-100/60 hover:bg-gray-100/80 text-gray-400 opacity-60 border-l-4 border-l-gray-400' 
                     : (order.isUrgent ? 'bg-rose-50/25 hover:bg-rose-50/40 border-l-4 border-l-rose-500' : 'hover:bg-gray-50/80'))
@@ -603,10 +603,10 @@ const saveDriverAssignment = async () => {
                         v-else-if="(selectedTripOrderIds?.length || 0) > 0"
                         type="button"
                         @click.stop="emit('toggleTripOrder', order.id)"
-                        class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100 rounded-lg shadow-2xs transition-all cursor-pointer"
+                        class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-[#1b3b5f]/10 text-[#1b3b5f] hover:bg-[#1b3b5f] hover:text-white border border-[#1b3b5f]/30 rounded-lg shadow-2xs transition-all cursor-pointer"
                         title="Add this order to the trip draft"
                       >
-                        <Plus class="w-3.5 h-3.5 text-emerald-700" />
+                        <Plus class="w-3.5 h-3.5" />
                         <span>Add to Trip</span>
                       </button>
 

@@ -8,7 +8,7 @@
     <div class="flex items-center w-full shrink-0" :class="isSidebarCollapsed ? 'justify-center pt-6' : 'justify-between px-6 pt-6'">
       <div v-if="!isSidebarCollapsed" class="flex items-center cursor-pointer group" @mouseenter="onLogoHover">
         <span ref="logoTextRef" class="text-sm tracking-widest uppercase flex items-center gap-1.5 select-none py-0.5">
-          <span class="brand-silicon font-light text-gray-400 transition-colors group-hover:text-emerald-300">SILICON</span> 
+          <span class="brand-silicon font-light text-gray-400 transition-colors group-hover:text-sky-300">SILICON</span> 
           <span class="brand-marketing font-bold text-gray-100 transition-colors group-hover:text-white">MARKETING</span>
         </span>
       </div>
@@ -95,7 +95,7 @@
             <Boxes class="shrink-0 w-4 h-4 transition-colors" :class="isLinkActive('/dashboard/inventory') ? 'text-sky-400' : 'text-gray-400'" />
             <span v-if="!isSidebarCollapsed" class="font-medium whitespace-nowrap">Inventory</span>
           </NuxtLink>
-          <NuxtLink v-if="canAccessDriverApp" to="/driver" target="_blank" title="Driver Portal" class="flex items-center gap-3 rounded-md py-2 text-sm transition-colors text-sky-400 hover:bg-gray-800/50 hover:text-emerald-300" :class="[isSidebarCollapsed ? 'justify-center px-0' : 'px-3']">
+          <NuxtLink v-if="canAccessDriverApp" to="/driver" target="_blank" title="Driver Portal" class="flex items-center gap-3 rounded-md py-2 text-sm transition-colors text-sky-400 hover:bg-gray-800/50 hover:text-sky-300" :class="[isSidebarCollapsed ? 'justify-center px-0' : 'px-3']">
             <Navigation class="shrink-0 w-4 h-4" />
             <span v-if="!isSidebarCollapsed" class="font-medium whitespace-nowrap text-xs">Driver App ↗</span>
           </NuxtLink>

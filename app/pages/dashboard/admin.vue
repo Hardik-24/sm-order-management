@@ -16,7 +16,7 @@
       <div class="flex items-center gap-2.5">
         <button 
           @click="isMastersModalOpen = true"
-          class="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 hover:text-[#1b3b5f] hover:border-emerald-300 px-3.5 py-2 rounded-lg hover:bg-emerald-50/50 transition-all shadow-xs text-sm font-medium cursor-pointer"
+          class="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 hover:text-[#1b3b5f] hover:border-[#1b3b5f]/40 px-3.5 py-2 rounded-lg hover:bg-[#1b3b5f]/5 transition-all shadow-xs text-sm font-medium cursor-pointer"
         >
           <Database class="w-4 h-4 text-[#1b3b5f]" />
           <span>Dropdown Masters</span>
@@ -144,7 +144,7 @@
                   <button
                     type="button"
                     @click="openModal(u)"
-                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-gray-50 hover:bg-emerald-50 text-gray-700 hover:text-[#1b3b5f] border border-gray-200 hover:border-emerald-300 transition-all cursor-pointer group shadow-2xs w-fit"
+                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-gray-50 hover:bg-[#1b3b5f]/5 text-gray-700 hover:text-[#1b3b5f] border border-gray-200 hover:border-[#1b3b5f]/30 transition-all cursor-pointer group shadow-2xs w-fit"
                     title="Click to view and edit page permissions"
                   >
                     <KeyRound class="w-3.5 h-3.5 text-gray-400 group-hover:text-[#1b3b5f] transition-colors" />
@@ -231,7 +231,7 @@
               <td class="px-6 py-4 text-right">
                 <button 
                   @click="openModal(u)"
-                  class="inline-flex items-center gap-1.5 text-[#1b3b5f] hover:text-[#132c49] bg-gray-50 hover:bg-emerald-50 px-2.5 py-1 rounded-md border border-gray-200 hover:border-emerald-300 transition-all text-xs font-medium"
+                  class="inline-flex items-center gap-1.5 text-[#1b3b5f] hover:text-[#132c49] bg-gray-50 hover:bg-[#1b3b5f]/5 px-2.5 py-1 rounded-md border border-gray-200 hover:border-[#1b3b5f]/30 transition-all text-xs font-medium"
                   title="Edit User & Permissions"
                 >
                   <Edit2 class="w-3.5 h-3.5" />
@@ -756,7 +756,7 @@
                   <button 
                     type="button" 
                     @click="applyRoleDefaults" 
-                    class="px-2.5 py-1 text-xs font-medium text-[#1b3b5f] hover:bg-emerald-50 bg-emerald-50/50 border border-emerald-200 rounded-md transition-colors"
+                    class="px-2.5 py-1 text-xs font-medium text-[#1b3b5f] hover:bg-[#1b3b5f]/10 bg-[#1b3b5f]/5 border border-[#1b3b5f]/20 rounded-md transition-colors"
                     title="Reset to default pages for this role"
                   >
                     Role Defaults

@@ -109,6 +109,16 @@ export function getGoogleCredentials(): GoogleCredentials | null {
   return null
 }
 
+let _sheetLastSyncedAt: number = 0
+
+export function getSheetLastSyncedAt(): number {
+  return _sheetLastSyncedAt
+}
+
+export function setSheetLastSyncedAt(timestamp: number) {
+  _sheetLastSyncedAt = timestamp
+}
+
 export function createGoogleAuth(): { auth: JWT; credentials: GoogleCredentials } | null {
   const creds = getGoogleCredentials()
   if (!creds) return null

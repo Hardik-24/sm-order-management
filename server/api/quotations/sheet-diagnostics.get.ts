@@ -1,13 +1,15 @@
 import { defineEventHandler } from 'h3'
 import { GoogleSpreadsheet } from 'google-spreadsheet'
-import { createGoogleAuth, getGoogleSheetId, getGoogleCredentials } from '~~/server/utils/googleAuth'
+import { createGoogleAuth, getGoogleSheetId, getGoogleCredentials, getSheetLastSyncedAt } from '~~/server/utils/googleAuth'
 
 export default defineEventHandler(async (event) => {
   const sheetId = getGoogleSheetId()
   const creds = getGoogleCredentials()
+  const lastSynced = getSheetLastSyncedAt()
 
   const result: Record<string, any> = {
     timestamp: new Date().toISOString(),
+    lastSyncedAt: lastSynced ? new Date(lastSynced).toISOString() : null,
     configured: !!creds,
     credentialSource: creds ? creds.source : 'None found',
     clientEmail: creds ? creds.email : null,

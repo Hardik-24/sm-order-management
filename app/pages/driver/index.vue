@@ -292,7 +292,7 @@
                 class="p-3.5 rounded-xl border transition-all duration-300 space-y-3"
                 :class="stop.status === 'DELIVERED' 
                   ? 'bg-gray-50/70 border-gray-200 opacity-70' 
-                  : (activeTripOrderId === stop.orderId ? 'bg-emerald-50/50 border-emerald-500 ring-2 ring-emerald-500/30 shadow-md' : 'bg-white border-gray-200 hover:border-emerald-300 shadow-xs')"
+                  : (activeTripOrderId === stop.orderId ? 'bg-emerald-50/50 border-emerald-500 ring-2 ring-emerald-500/30 shadow-md' : 'bg-white border-gray-200 hover:border-[#1b3b5f]/40 shadow-xs')"
               >
                 <!-- Stop Top: Sequence Badge, Reorder, Order #, Status -->
                 <div class="flex items-start justify-between gap-2">

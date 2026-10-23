@@ -526,7 +526,7 @@ const confirmSplit = async () => {
                           <button 
                             type="button" 
                             @click="keepAll(row)"
-                            class="px-2 py-0.5 text-[10px] font-semibold bg-gray-100 hover:bg-emerald-600 hover:text-white rounded text-gray-700 transition"
+                            class="px-2 py-0.5 text-[10px] font-semibold bg-gray-100 hover:bg-[#1b3b5f] hover:text-white rounded text-gray-700 transition"
                             title="Keep all units in current order"
                           >
                             Keep All

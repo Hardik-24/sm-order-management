@@ -1698,7 +1698,7 @@
                 type="button"
                 @click="confirmSignatureAndProceed(false)"
                 :disabled="!hasDrawnSignature"
-                class="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold shadow-md transition flex items-center gap-1.5 cursor-pointer disabled:opacity-40"
+                class="px-4 py-2 bg-white border border-[#1b3b5f] text-[#1b3b5f] hover:bg-[#1b3b5f]/5 rounded-xl text-xs font-bold shadow-xs transition flex items-center gap-1.5 cursor-pointer disabled:opacity-40"
               >
                 <CheckCircle2 class="w-4 h-4" />
                 <span>Apply to Draft</span>

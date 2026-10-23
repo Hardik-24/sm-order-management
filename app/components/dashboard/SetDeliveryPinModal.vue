@@ -110,9 +110,9 @@
               :key="idx"
               type="button"
               @click="selectSearchResult(res)"
-              class="w-full text-left px-3 py-2.5 text-xs hover:bg-emerald-50 rounded-lg flex items-start gap-2.5 transition-colors group cursor-pointer"
+              class="w-full text-left px-3 py-2.5 text-xs hover:bg-[#1b3b5f]/5 rounded-lg flex items-start gap-2.5 transition-colors group cursor-pointer"
             >
-              <div class="w-6 h-6 rounded-full bg-emerald-100 text-[#1b3b5f] flex items-center justify-center shrink-0 mt-0.5 group-hover:bg-[#1b3b5f] group-hover:text-white transition-colors">
+              <div class="w-6 h-6 rounded-full bg-[#1b3b5f]/10 text-[#1b3b5f] flex items-center justify-center shrink-0 mt-0.5 group-hover:bg-[#1b3b5f] group-hover:text-white transition-colors">
                 <MapPin class="w-3.5 h-3.5" />
               </div>
               <div class="min-w-0 flex-1">

@@ -34,7 +34,7 @@
               v-for="page in accessiblePages"
               :key="page.key"
               :to="page.path"
-              class="px-3 py-2 text-xs font-medium text-gray-700 bg-white rounded-lg border border-gray-200 hover:border-[#1b3b5f] hover:text-[#1b3b5f] hover:bg-emerald-50/50 transition-all flex items-center justify-between group shadow-2xs"
+              class="px-3 py-2 text-xs font-medium text-gray-700 bg-white rounded-lg border border-gray-200 hover:border-[#1b3b5f] hover:text-[#1b3b5f] hover:bg-[#1b3b5f]/5 transition-all flex items-center justify-between group shadow-2xs"
             >
               <span class="truncate">{{ page.label }}</span>
               <ArrowRight class="w-3 h-3 text-gray-400 group-hover:text-[#1b3b5f] group-hover:translate-x-0.5 transition-transform shrink-0 ml-1" />

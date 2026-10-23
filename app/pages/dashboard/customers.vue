@@ -93,7 +93,7 @@
                 v-for="customer in paginatedCustomers" 
                 :key="customer.id" 
                 @click="openCustomerDetail(customer)"
-                class="hover:bg-teal-50/40 cursor-pointer transition-colors group"
+                class="hover:bg-[#1b3b5f]/5 cursor-pointer transition-colors group"
               >
                 <!-- Customer & Code -->
                 <td class="pl-5 pr-4 py-3.5 md:py-4 font-medium text-[#1a1a1a] group-hover:text-[#1b3b5f] transition-colors overflow-hidden">
@@ -176,7 +176,7 @@
                         @click.stop="openAddressPinModal(customer, addr, aIdx)"
                         class="p-0.5 rounded transition-all flex items-center justify-center shrink-0"
                         :class="addr.latitude && addr.longitude 
-                          ? 'text-[#1b3b5f] bg-emerald-100 hover:bg-emerald-200 ring-1 ring-emerald-300' 
+                          ? 'text-[#1b3b5f] bg-[#1b3b5f]/10 hover:bg-[#1b3b5f]/20 ring-1 ring-[#1b3b5f]/30' 
                           : 'text-gray-400 hover:text-[#1b3b5f] hover:bg-gray-200/70'"
                         :title="addr.latitude && addr.longitude 
                           ? `📍 Saved Pin: ${Number(addr.latitude).toFixed(4)}, ${Number(addr.longitude).toFixed(4)}${addr.landmark ? ' (' + addr.landmark + ')' : ''} - Click to edit pin` 

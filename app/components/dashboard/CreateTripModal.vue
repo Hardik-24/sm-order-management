@@ -89,7 +89,7 @@
               <button
                 type="button"
                 @click="showOrderPicker = !showOrderPicker"
-                class="text-xs font-bold text-[#1b3b5f] hover:text-[#132c49] flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition border border-emerald-200/60 cursor-pointer"
+                class="text-xs font-bold text-[#1b3b5f] hover:text-[#132c49] flex items-center gap-1.5 px-3 py-1.5 bg-[#1b3b5f]/10 hover:bg-[#1b3b5f]/15 rounded-lg transition border border-[#1b3b5f]/20 cursor-pointer"
               >
                 <Minus v-if="showOrderPicker" class="w-3.5 h-3.5" />
                 <Plus v-else class="w-3.5 h-3.5" />
@@ -147,7 +147,7 @@
                 <div
                   v-for="order in filteredPickerOrders"
                   :key="order.id"
-                  class="p-2.5 bg-white rounded-lg border border-gray-200 flex items-center justify-between hover:border-emerald-300 transition"
+                  class="p-2.5 bg-white rounded-lg border border-gray-200 flex items-center justify-between hover:border-[#1b3b5f]/40 transition"
                 >
                   <div class="min-w-0 pr-3">
                     <div class="flex items-center gap-2 flex-wrap">

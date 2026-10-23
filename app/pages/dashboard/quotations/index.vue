@@ -97,6 +97,14 @@
             {{ sheetDiagnostics?.rowCount ? `${((sheetDiagnostics.rowCount || 1) - 1).toLocaleString()} live products` : 'Synced with live stock' }}
           </div>
         </div>
+
+        <!-- Last Synced Detail -->
+        <div class="mt-2.5 pt-2 border-t border-gray-100 flex items-center justify-between text-[10px]">
+          <span class="text-gray-400 font-medium">Last Synced:</span>
+          <span class="font-bold text-gray-700 font-mono">
+            {{ formatLastSynced(sheetDiagnostics?.lastSyncedAt) }}
+          </span>
+        </div>
       </div>
     </div>
 
@@ -238,7 +246,7 @@
                   <button
                     type="button"
                     @click="viewQuoteDetails(quote)"
-                    class="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-[#1b3b5f] rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer"
+                    class="px-2.5 py-1 bg-[#1b3b5f]/10 hover:bg-[#1b3b5f]/20 text-[#1b3b5f] rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer"
                     title="View & Share Quotation Slip"
                   >
                     <Share2 class="w-3.5 h-3.5" />
@@ -388,7 +396,10 @@ const checkSheetStatus = async (forceSync = false) => {
   isCheckingSheet.value = true
   try {
     if (forceSync) {
-      await $fetch('/api/quotations/sheet-products?force=true')
+      const syncRes = await $fetch<any>('/api/quotations/sheet-products?force=true')
+      if (syncRes?.lastSyncedAt && sheetDiagnostics.value) {
+        sheetDiagnostics.value.lastSyncedAt = syncRes.lastSyncedAt
+      }
     }
     const diag = await $fetch<any>('/api/quotations/sheet-diagnostics')
     sheetDiagnostics.value = diag
@@ -400,6 +411,25 @@ const checkSheetStatus = async (forceSync = false) => {
   } finally {
     isCheckingSheet.value = false
   }
+}
+
+const formatLastSynced = (iso?: string | null) => {
+  if (!iso) return 'Not synced yet'
+  const date = new Date(iso)
+  if (isNaN(date.getTime())) return 'Recently'
+
+  const diffMs = Date.now() - date.getTime()
+  const diffMins = Math.floor(diffMs / 60000)
+
+  if (diffMins < 1) return 'Just now'
+  if (diffMins < 60) return `${diffMins}m ago`
+
+  const diffHours = Math.floor(diffMins / 60)
+  if (diffHours < 24) {
+    return date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })
+  }
+
+  return date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true })
 }
 
 // Modal State

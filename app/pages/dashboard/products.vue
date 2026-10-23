@@ -160,7 +160,7 @@
                     v-for="product in paginatedProducts" 
                     :key="product.id" 
                     @click="openProductDetail(product)"
-                    class="hover:bg-teal-50/40 cursor-pointer transition-colors group"
+                    class="hover:bg-[#1b3b5f]/5 cursor-pointer transition-colors group"
                   >
                 <td class="px-5 py-3 font-mono text-xs text-gray-600 w-36 min-w-[130px] max-w-[160px] group-hover:text-[#1b3b5f]">
                   <span class="break-words line-clamp-2" :title="product.sku">{{ product.sku }}</span>
