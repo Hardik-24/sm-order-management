@@ -71,8 +71,16 @@ export default defineEventHandler(async (event) => {
       billingUpdate.generatedById = order.billingStatus?.generatedById || user.id
       billingUpdate.generatedAt = order.billingStatus?.generatedAt || new Date()
       if (invoiceNumber) billingUpdate.invoiceNumber = invoiceNumber
+      billingUpdate.holdReason = null
+    } else if (billingStatus === 'PENDING') {
+      billingUpdate.invoiceNumber = null
+      billingUpdate.generatedById = null
+      billingUpdate.generatedAt = null
+      billingUpdate.holdReason = null
     } else if (billingStatus === 'ON_HOLD') {
       billingUpdate.holdReason = billingHoldReason || 'Administrative hold'
+    } else if (billingStatus === 'ERROR') {
+      billingUpdate.holdReason = billingHoldReason || 'Billing calculation error flagged'
     } else {
       billingUpdate.holdReason = null
     }
@@ -84,12 +92,22 @@ export default defineEventHandler(async (event) => {
   const targetPacking = (packingStatus as PackingState) || order.packingStatus?.status || 'PENDING'
   const packingUpdate: any = {}
   let shouldMarkItemsPacked = false
+  let shouldResetItemsPacked = false
   if (packingStatus && packingStatus !== order.packingStatus?.status) {
     changes.push(`Packing: ${order.packingStatus?.status || 'PENDING'} → ${packingStatus}`)
     packingUpdate.status = packingStatus
     if (packingStatus === 'PACKED') {
       packingUpdate.packedAt = order.packingStatus?.packedAt || new Date()
+      packingUpdate.holdReason = null
       shouldMarkItemsPacked = true
+    } else if (packingStatus === 'PENDING') {
+      packingUpdate.packedAt = null
+      packingUpdate.assignedToId = null
+      packingUpdate.holdReason = null
+      shouldResetItemsPacked = true
+    } else if (packingStatus === 'IN_PROGRESS') {
+      packingUpdate.packedAt = null
+      packingUpdate.holdReason = null
     } else if (packingStatus === 'ON_HOLD') {
       packingUpdate.holdReason = packingHoldReason || 'Administrative hold'
     } else {
@@ -103,12 +121,25 @@ export default defineEventHandler(async (event) => {
   if (deliveryStatus && deliveryStatus !== order.deliveryStatus?.status) {
     changes.push(`Delivery: ${order.deliveryStatus?.status || 'WAITING'} → ${deliveryStatus}`)
     deliveryUpdate.status = deliveryStatus
-    if (deliveryStatus === 'DISPATCHED') {
+    if (deliveryStatus === 'WAITING') {
+      deliveryUpdate.driverName = null
+      deliveryUpdate.dispatchDate = null
+      deliveryUpdate.eta = null
+      deliveryUpdate.deliveredAt = null
+      deliveryUpdate.holdReason = null
+    } else if (deliveryStatus === 'ASSIGNED') {
+      if (driverName !== undefined) deliveryUpdate.driverName = driverName || null
+      deliveryUpdate.deliveredAt = null
+      deliveryUpdate.holdReason = null
+    } else if (deliveryStatus === 'DISPATCHED') {
       deliveryUpdate.dispatchDate = order.deliveryStatus?.dispatchDate || new Date()
-      if (driverName) deliveryUpdate.driverName = driverName
+      if (driverName !== undefined) deliveryUpdate.driverName = driverName || null
+      deliveryUpdate.deliveredAt = null
+      deliveryUpdate.holdReason = null
     } else if (deliveryStatus === 'DELIVERED') {
       deliveryUpdate.deliveredAt = order.deliveryStatus?.deliveredAt || new Date()
-      if (driverName) deliveryUpdate.driverName = driverName
+      if (driverName !== undefined) deliveryUpdate.driverName = driverName || null
+      deliveryUpdate.holdReason = null
     } else if (deliveryStatus === 'ON_HOLD') {
       deliveryUpdate.holdReason = deliveryHoldReason || 'Administrative hold'
     } else {
@@ -178,6 +209,16 @@ export default defineEventHandler(async (event) => {
           data: {
             packedQuantity: fullQty,
             isPacked: true
+          }
+        })
+      }
+    } else if (shouldResetItemsPacked && order.items.length > 0) {
+      for (const itm of order.items) {
+        await tx.orderItem.update({
+          where: { id: itm.id },
+          data: {
+            packedQuantity: 0,
+            isPacked: false
           }
         })
       }

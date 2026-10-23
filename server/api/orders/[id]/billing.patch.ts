@@ -60,7 +60,9 @@ export default defineEventHandler(async (event) => {
     billingData.holdReason = null
   }
 
-  const overallStatus = calculateOverallStatus(status, order.packingStatus?.status || 'PENDING', order.deliveryStatus?.status || 'WAITING')
+  const overallStatus = order.overallStatus === 'CANCELLED'
+    ? 'CANCELLED'
+    : calculateOverallStatus(status, order.packingStatus?.status || 'PENDING', order.deliveryStatus?.status || 'WAITING')
 
   const updatedOrder = await prisma.order.update({
     where: { id },

@@ -83,7 +83,9 @@ const packingOptions = [
 
 const deliveryOptions = [
   { value: 'WAITING', label: 'Waiting (Reset)', desc: 'Ready for Trip Planning', badgeClass: 'bg-gray-100 text-gray-700 border-gray-200' },
-  { value: 'DELIVERED', label: 'Delivered', desc: 'Manual / Pickup Handover', badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  { value: 'ASSIGNED', label: 'Assigned', desc: 'Driver Assigned to Trip', badgeClass: 'bg-blue-50 text-blue-700 border-blue-200' },
+  { value: 'DISPATCHED', label: 'Dispatched', desc: 'In Transit / On Road', badgeClass: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
+  { value: 'DELIVERED', label: 'Delivered', desc: 'Manual / Handover Done', badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
   { value: 'ON_HOLD', label: 'On Hold', desc: 'Logistics Hold', badgeClass: 'bg-orange-50 text-orange-700 border-orange-200' }
 ]
 
@@ -99,6 +101,7 @@ const overallOptions = [
 // Projected auto overall status
 const projectedOverallStatus = computed(() => {
   if (deliveryStatus.value === 'DELIVERED') return 'DELIVERED'
+  if (deliveryStatus.value === 'DISPATCHED' || deliveryStatus.value === 'ASSIGNED') return 'DISPATCHED'
   if (billingStatus.value === 'GENERATED' && packingStatus.value === 'PACKED') return 'READY'
   if (billingStatus.value !== 'PENDING' || packingStatus.value !== 'PENDING') return 'PROCESSING'
   return 'CONFIRMED'
@@ -140,7 +143,7 @@ const submitStatusUpdate = async () => {
       packingHoldReason: packingStatus.value === 'ON_HOLD' ? packingHoldReason.value.trim() : undefined,
       deliveryStatus: deliveryStatus.value,
       deliveryHoldReason: deliveryStatus.value === 'ON_HOLD' ? deliveryHoldReason.value.trim() : undefined,
-      driverName: deliveryStatus.value === 'DELIVERED' ? driverName.value.trim() : undefined,
+      driverName: ['DELIVERED', 'DISPATCHED', 'ASSIGNED'].includes(deliveryStatus.value) ? driverName.value.trim() : undefined,
       autoCalculateOverall: autoCalculateOverall.value,
       overallStatus: autoCalculateOverall.value ? projectedOverallStatus.value : overallStatus.value,
       notes: notes.value.trim() || undefined
@@ -393,7 +396,7 @@ const submitStatusUpdate = async () => {
               <span>To dispatch via Our Fleet with driver GPS tracking, use the Trip Planner on the Delivery page. Setting status here is for manual/offline record corrections.</span>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 pt-1">
               <button
                 v-for="opt in deliveryOptions"
                 :key="opt.value"
@@ -407,15 +410,15 @@ const submitStatusUpdate = async () => {
               </button>
             </div>
 
-            <!-- Receiver / Handover details if Delivered -->
-            <div v-if="deliveryStatus === 'DELIVERED'" class="pt-2 border-t border-gray-200/60">
+            <!-- Receiver / Driver / Vehicle details -->
+            <div v-if="['DELIVERED', 'DISPATCHED', 'ASSIGNED'].includes(deliveryStatus)" class="pt-2 border-t border-gray-200/60">
               <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
-                Handover / Receiver / Vehicle Details (Optional)
+                {{ deliveryStatus === 'DELIVERED' ? 'Handover / Receiver / Vehicle Details (Optional)' : 'Assigned Driver / Vehicle Details (Optional)' }}
               </label>
               <input 
                 type="text" 
                 v-model="driverName" 
-                placeholder="e.g. Handed over to Mr. Rajesh (Customer Tempo KA-09-EA-1234)" 
+                :placeholder="deliveryStatus === 'DELIVERED' ? 'e.g. Handed over to Mr. Rajesh (Customer Tempo KA-09-EA-1234)' : 'e.g. Driver Ramesh (KA-09-A-1234)'" 
                 class="w-full text-xs border border-gray-300 rounded-lg p-2 bg-white focus:ring-[#1b3b5f] focus:border-[#1b3b5f]" 
               />
             </div>

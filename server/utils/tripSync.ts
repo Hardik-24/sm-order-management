@@ -17,11 +17,13 @@ export async function syncOrderTripState(
     userId?: string
   }
 ) {
-  // 1. Clean up legacy TripRoute table if reverting to WAITING or CANCELLED
+  // 1. Clean up legacy TripRoute records if reverting to WAITING or CANCELLED
   if (newDeliveryStatus === 'WAITING' || newDeliveryStatus === 'CANCELLED') {
     try {
       await tx.tripRoute.deleteMany({ where: { orderId } })
-    } catch {}
+    } catch {
+      // Legacy table may not exist or not have records; safely ignore
+    }
   }
 
   // 2. Find any active TripStop records linking this order to a Trip
@@ -42,31 +44,29 @@ export async function syncOrderTripState(
     return
   }
 
-  // 3. Handle TripStop synchronization for each associated trip
-  for (const stop of existingStops) {
-    const trip = stop.trip
-    if (!trip) continue
+  // ── CASE A: Order reset to WAITING or CANCELLED: REMOVE from Trip ──
+  if (newDeliveryStatus === 'WAITING' || newDeliveryStatus === 'CANCELLED') {
+    const tripIds = Array.from(new Set(existingStops.map(s => s.tripId).filter(Boolean)))
 
-    // ── CASE A: Order reset to WAITING or CANCELLED: REMOVE from Trip ──
-    if (newDeliveryStatus === 'WAITING' || newDeliveryStatus === 'CANCELLED') {
-      // Delete this stop from the trip manifest
-      await tx.tripStop.delete({
-        where: { id: stop.id }
-      })
+    // Delete all stops for this order in one atomic step
+    await tx.tripStop.deleteMany({
+      where: { orderId }
+    })
 
-      // Fetch remaining stops on this trip
+    // Inspect affected trips and re-sequence or clean up empty ones
+    for (const tripId of tripIds) {
       const remainingStops = await tx.tripStop.findMany({
-        where: { tripId: trip.id },
+        where: { tripId },
         orderBy: { stopSequence: 'asc' }
       })
 
       if (remainingStops.length === 0) {
-        // If no stops remain on the trip, delete the empty trip
-        await tx.trip.delete({
-          where: { id: trip.id }
+        // If no stops remain on the trip, remove the empty trip
+        await tx.trip.deleteMany({
+          where: { id: tripId }
         })
       } else {
-        // Re-sequence the remaining stops: 1, 2, 3...
+        // Re-sequence remaining stops: 1, 2, 3...
         for (let i = 0; i < remainingStops.length; i++) {
           const expectedSeq = i + 1
           if (remainingStops[i].stopSequence !== expectedSeq) {
@@ -79,57 +79,85 @@ export async function syncOrderTripState(
 
         // Check if all remaining stops are already DELIVERED
         const remainingPending = remainingStops.filter(s => s.status !== 'DELIVERED').length
-        if (remainingPending === 0 && trip.status === 'IN_TRANSIT') {
-          await tx.trip.update({
-            where: { id: trip.id },
-            data: {
-              status: 'COMPLETED',
-              endTime: new Date()
-            }
-          })
-        }
-      }
-    }
-
-    // ── CASE B: Order marked DELIVERED (e.g. manual admin/customer pickup) ──
-    else if (newDeliveryStatus === 'DELIVERED') {
-      if (stop.status !== 'DELIVERED') {
-        await tx.tripStop.update({
-          where: { id: stop.id },
-          data: {
-            status: 'DELIVERED',
-            deliveredAt: new Date(),
-            notes: options?.notes ? `Admin handover: ${options.notes}` : 'Marked delivered via manual admin/dispatch handover'
+        if (remainingPending === 0) {
+          const trip = await tx.trip.findUnique({ where: { id: tripId } })
+          if (trip && trip.status === 'IN_TRANSIT') {
+            await tx.trip.update({
+              where: { id: tripId },
+              data: {
+                status: 'COMPLETED',
+                endTime: new Date()
+              }
+            })
           }
-        })
-
-        // Check if all stops on this trip are now delivered
-        const allStops = await tx.tripStop.findMany({
-          where: { tripId: trip.id }
-        })
-        const hasUndelivered = allStops.some(s => s.id !== stop.id && s.status !== 'DELIVERED')
-        if (!hasUndelivered && (trip.status === 'IN_TRANSIT' || trip.status === 'PLANNED')) {
-          await tx.trip.update({
-            where: { id: trip.id },
-            data: {
-              status: 'COMPLETED',
-              endTime: new Date()
-            }
-          })
         }
       }
     }
+    return
+  }
 
-    // ── CASE C: Order put ON_HOLD ──
-    else if (newDeliveryStatus === 'ON_HOLD') {
-      if (stop.status === 'PENDING' || stop.status === 'IN_TRANSIT') {
-        await tx.tripStop.update({
-          where: { id: stop.id },
+  // ── CASE B: Order marked DELIVERED (e.g. manual admin handover or customer pickup) ──
+  if (newDeliveryStatus === 'DELIVERED') {
+    await tx.tripStop.updateMany({
+      where: { orderId, status: { not: 'DELIVERED' } },
+      data: {
+        status: 'DELIVERED',
+        deliveredAt: new Date(),
+        notes: options?.notes ? `Admin handover: ${options.notes}` : 'Marked delivered via manual admin/dispatch handover'
+      }
+    })
+
+    // Check if any associated trips now have all stops delivered
+    for (const stop of existingStops) {
+      const trip = stop.trip
+      if (!trip) continue
+
+      const pendingCount = await tx.tripStop.count({
+        where: { tripId: trip.id, status: { not: 'DELIVERED' } }
+      })
+
+      if (pendingCount === 0 && (trip.status === 'IN_TRANSIT' || trip.status === 'PLANNED')) {
+        await tx.trip.update({
+          where: { id: trip.id },
           data: {
-            notes: options?.notes ? `[ON HOLD] ${options.notes}` : '[ON HOLD] Delivery held by admin'
+            status: 'COMPLETED',
+            endTime: new Date()
           }
         })
       }
     }
+    return
+  }
+
+  // ── CASE C: Order marked DISPATCHED manually ──
+  if (newDeliveryStatus === 'DISPATCHED') {
+    await tx.tripStop.updateMany({
+      where: { orderId, status: 'PENDING' },
+      data: { status: 'IN_TRANSIT' }
+    })
+
+    for (const stop of existingStops) {
+      const trip = stop.trip
+      if (trip && trip.status === 'PLANNED') {
+        await tx.trip.update({
+          where: { id: trip.id },
+          data: {
+            status: 'IN_TRANSIT',
+            startTime: trip.startTime || new Date()
+          }
+        })
+      }
+    }
+    return
+  }
+
+  // ── CASE D: Order put ON_HOLD ──
+  if (newDeliveryStatus === 'ON_HOLD') {
+    await tx.tripStop.updateMany({
+      where: { orderId, status: { in: ['PENDING', 'IN_TRANSIT'] } },
+      data: {
+        notes: options?.notes ? `[ON HOLD] ${options.notes}` : '[ON HOLD] Delivery held by admin'
+      }
+    })
   }
 }
