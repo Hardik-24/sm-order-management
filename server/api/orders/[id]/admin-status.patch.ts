@@ -40,7 +40,6 @@ export default defineEventHandler(async (event) => {
       billingStatus: true,
       packingStatus: true,
       deliveryStatus: true,
-      paymentStatus: true,
       items: true
     }
   })
@@ -270,7 +269,6 @@ export default defineEventHandler(async (event) => {
         billingStatus: { include: { generatedBy: { select: { id: true, name: true } } } },
         packingStatus: { include: { assignedTo: { select: { id: true, name: true } } } },
         deliveryStatus: true,
-        paymentStatus: true,
         timeline: {
           include: { performedBy: { select: { id: true, name: true } } },
           orderBy: { timestamp: 'desc' }
