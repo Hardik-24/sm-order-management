@@ -31,9 +31,32 @@
 
           <div class="flex items-center gap-2 shrink-0">
             <!-- Sheet sync indicator in drafting mode -->
-            <div v-if="!isSuccessView" class="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200/80 text-[10px] text-emerald-800 font-bold">
-              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span>{{ products.length }} Sheet Items</span>
+            <div
+              v-if="!isSuccessView"
+              class="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border transition-colors"
+              :class="sheetSyncStatus?.isFallback
+                ? 'bg-amber-50 border-amber-200 text-amber-800'
+                : 'bg-emerald-50 border-emerald-200/80 text-emerald-800'"
+              :title="sheetSyncStatus?.isFallback
+                ? 'Using offline catalog cache. Add GOOGLE_SERVICE_ACCOUNT_KEY in Vercel to sync live from Google Sheet.'
+                : 'Synced live with Google Sheet hardware catalog'"
+            >
+              <span
+                class="w-2 h-2 rounded-full"
+                :class="isSyncingSheet
+                  ? 'bg-amber-400 animate-spin'
+                  : (sheetSyncStatus?.isFallback ? 'bg-amber-500' : 'bg-emerald-500 animate-pulse')"
+              ></span>
+              <span>{{ products.length }} Sheet Items{{ sheetSyncStatus?.isFallback ? ' (Cached)' : '' }}</span>
+              <button
+                type="button"
+                @click.stop="loadSheetCatalog(true)"
+                :disabled="isSyncingSheet"
+                title="Re-sync from Google Sheet now"
+                class="p-0.5 rounded hover:bg-black/5 text-current transition cursor-pointer disabled:opacity-40 ml-0.5"
+              >
+                <RefreshCw class="w-3 h-3" :class="isSyncingSheet ? 'animate-spin' : ''" />
+              </button>
             </div>
 
             <!-- Close button -->
@@ -1992,15 +2015,28 @@ interface SheetProduct {
   flag: string
 }
 const products = ref<SheetProduct[]>([])
+const isSyncingSheet = ref(false)
+const sheetSyncError = ref<string | null>(null)
+const sheetSyncStatus = ref<{ isFallback?: boolean; lastSyncedAt?: string } | null>(null)
 
-const loadSheetCatalog = async () => {
+const loadSheetCatalog = async (force = false) => {
+  isSyncingSheet.value = true
+  sheetSyncError.value = null
   try {
-    const res = await $fetch<any>('/api/quotations/sheet-products')
+    const url = force ? '/api/quotations/sheet-products?force=true' : '/api/quotations/sheet-products'
+    const res = await $fetch<any>(url)
     if (res?.products) {
       products.value = res.products
+      sheetSyncStatus.value = {
+        isFallback: res.isFallback,
+        lastSyncedAt: res.lastSyncedAt
+      }
     }
-  } catch (err) {
+  } catch (err: any) {
     console.warn('Could not load sheet products:', err)
+    sheetSyncError.value = err?.data?.statusMessage || err?.message || 'Sync failed'
+  } finally {
+    isSyncingSheet.value = false
   }
 }
 

@@ -26,6 +26,10 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     authSecret: process.env.NUXT_AUTH_SECRET || 'dev-secret-change-in-production',
+    googleSheetId: process.env.GOOGLE_SHEET_ID || '124p_ZVSTqLTkIs9o04-7BsJjDH6SLFFabArHW9UQ7FI',
+    googleServiceAccountKey: process.env.GOOGLE_SERVICE_ACCOUNT_KEY || process.env.GOOGLE_SERVICE_ACCOUNT_JSON || process.env.GOOGLE_CREDENTIALS || '',
+    googleClientEmail: process.env.GOOGLE_CLIENT_EMAIL || process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || '',
+    googlePrivateKey: process.env.GOOGLE_PRIVATE_KEY || '',
     public: {
       appUrl: process.env.NUXT_PUBLIC_APP_URL || 'http://localhost:3000',
       googleMapsApiKey: process.env.NUXT_PUBLIC_GOOGLE_MAPS_KEY || process.env.NUXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',

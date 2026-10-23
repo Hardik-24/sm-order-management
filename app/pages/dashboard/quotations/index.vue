@@ -59,18 +59,44 @@
       </div>
 
       <!-- Active Catalog Feed -->
-      <div class="bg-white p-4 sm:p-5 rounded-2xl border border-gray-200/90 shadow-2xs">
+      <div class="bg-white p-4 sm:p-5 rounded-2xl border border-gray-200/90 shadow-2xs flex flex-col justify-between">
         <div class="flex items-center justify-between mb-2">
           <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Catalog Feed</span>
-          <div class="w-7 h-7 rounded-lg bg-teal-50 text-teal-700 flex items-center justify-center">
-            <CheckCircle2 class="w-4 h-4" />
+          <div class="flex items-center gap-1.5">
+            <button
+              type="button"
+              @click="checkSheetStatus(true)"
+              :disabled="isCheckingSheet"
+              title="Force re-sync now from Google Sheet"
+              class="p-1 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition cursor-pointer disabled:opacity-40"
+            >
+              <RefreshCw class="w-3.5 h-3.5" :class="isCheckingSheet ? 'animate-spin' : ''" />
+            </button>
+            <div
+              class="w-7 h-7 rounded-lg flex items-center justify-center"
+              :class="sheetDiagnostics?.canConnect
+                ? 'bg-teal-50 text-teal-700'
+                : (sheetDiagnostics?.configured === false ? 'bg-amber-50 text-amber-700' : 'bg-gray-100 text-gray-600')"
+            >
+              <CheckCircle2 v-if="sheetDiagnostics?.canConnect" class="w-4 h-4" />
+              <AlertCircle v-else class="w-4 h-4" />
+            </div>
           </div>
         </div>
-        <div class="text-xs sm:text-sm font-bold text-gray-900 flex items-center gap-1.5 mt-1">
-          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          <span>Google Sheet Live</span>
+        <div>
+          <div class="text-xs sm:text-sm font-bold text-gray-900 flex items-center gap-1.5 mt-1">
+            <span
+              class="w-2 h-2 rounded-full"
+              :class="sheetDiagnostics?.canConnect
+                ? 'bg-emerald-500 animate-pulse'
+                : (sheetDiagnostics?.configured === false ? 'bg-amber-500' : 'bg-emerald-500 animate-pulse')"
+            ></span>
+            <span>{{ sheetDiagnostics?.canConnect ? 'Google Sheet Live' : (sheetDiagnostics?.configured === false ? 'Offline Fallback' : 'Google Sheet Ready') }}</span>
+          </div>
+          <div class="text-[11px] text-gray-500 mt-0.5">
+            {{ sheetDiagnostics?.rowCount ? `${((sheetDiagnostics.rowCount || 1) - 1).toLocaleString()} live products` : 'Synced with live stock' }}
+          </div>
         </div>
-        <div class="text-[11px] text-gray-500 mt-0.5">Synced with live stock</div>
       </div>
     </div>
 
@@ -329,7 +355,8 @@ import {
   Loader2,
   Phone,
   MapPin,
-  ChevronRight
+  ChevronRight,
+  AlertCircle
 } from 'lucide-vue-next'
 import { useSnackbar } from '~/composables/useSnackbar'
 import { useAuth } from '~/composables/useAuth'
@@ -354,6 +381,26 @@ const canDeleteQuotations = computed(() => {
 const quotations = ref<any[]>([])
 const isLoading = ref(false)
 const searchQuery = ref('')
+const sheetDiagnostics = ref<any>(null)
+const isCheckingSheet = ref(false)
+
+const checkSheetStatus = async (forceSync = false) => {
+  isCheckingSheet.value = true
+  try {
+    if (forceSync) {
+      await $fetch('/api/quotations/sheet-products?force=true')
+    }
+    const diag = await $fetch<any>('/api/quotations/sheet-diagnostics')
+    sheetDiagnostics.value = diag
+    if (forceSync && diag?.canConnect) {
+      showSaved(`Google Sheet synced! ${((diag.rowCount || 1) - 1).toLocaleString()} products ready`)
+    }
+  } catch (e: any) {
+    console.warn('Could not check Google Sheet diagnostics:', e)
+  } finally {
+    isCheckingSheet.value = false
+  }
+}
 
 // Modal State
 const isModalOpen = ref(false)
@@ -444,5 +491,6 @@ const deleteQuote = async (quote: any) => {
 
 onMounted(() => {
   fetchQuotations()
+  checkSheetStatus()
 })
 </script>

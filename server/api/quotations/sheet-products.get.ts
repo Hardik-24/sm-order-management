@@ -1,8 +1,7 @@
 import { defineEventHandler, getQuery } from 'h3'
-import { JWT } from 'google-auth-library'
 import { GoogleSpreadsheet } from 'google-spreadsheet'
-import fs from 'fs'
-import path from 'path'
+import { createGoogleAuth, getGoogleSheetId } from '~~/server/utils/googleAuth'
+import fallbackProducts from '~~/server/data/sheet-products-fallback.json'
 
 export interface SheetProductItem {
   articleNumber: string
@@ -20,6 +19,7 @@ export interface SheetProductItem {
 // In-memory server cache
 let cachedProducts: SheetProductItem[] | null = null
 let lastSyncedAt: number = 0
+let lastSyncSource: string = 'none'
 let isFetching = false
 const CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes cache
 
@@ -32,6 +32,7 @@ export default defineEventHandler(async (event) => {
     return {
       success: true,
       fromCache: true,
+      isFallback: lastSyncSource === 'fallback',
       lastSyncedAt: new Date(lastSyncedAt).toISOString(),
       count: cachedProducts.length,
       products: cachedProducts
@@ -43,6 +44,7 @@ export default defineEventHandler(async (event) => {
     return {
       success: true,
       fromCache: true,
+      isFallback: lastSyncSource === 'fallback',
       lastSyncedAt: new Date(lastSyncedAt).toISOString(),
       count: cachedProducts.length,
       products: cachedProducts
@@ -51,23 +53,36 @@ export default defineEventHandler(async (event) => {
 
   isFetching = true
   try {
-    const credsPath = path.resolve(process.cwd(), 'google-service-account.json')
-    if (!fs.existsSync(credsPath)) {
-      throw new Error('google-service-account.json credentials file not found in project root')
+    const authWrapper = createGoogleAuth()
+
+    if (!authWrapper) {
+      console.warn('[Google Sheets] No credentials found in environment or local file.')
+      if (fallbackProducts && fallbackProducts.length > 0) {
+        cachedProducts = fallbackProducts as SheetProductItem[]
+        lastSyncedAt = Date.now()
+        lastSyncSource = 'fallback'
+        return {
+          success: true,
+          fromCache: true,
+          isFallback: true,
+          fallbackNotice: 'Using bundled catalog fallback. Set GOOGLE_SERVICE_ACCOUNT_KEY in Vercel to sync live from Google Sheet.',
+          lastSyncedAt: new Date(lastSyncedAt).toISOString(),
+          count: cachedProducts.length,
+          products: cachedProducts
+        }
+      }
+      throw new Error('Google Service Account credentials missing. Please set GOOGLE_SERVICE_ACCOUNT_KEY in Vercel project environment variables.')
     }
 
-    const creds = JSON.parse(fs.readFileSync(credsPath, 'utf8'))
-    const auth = new JWT({
-      email: creds.client_email,
-      key: creds.private_key,
-      scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly']
-    })
-
-    const sheetId = process.env.GOOGLE_SHEET_ID || '124p_ZVSTqLTkIs9o04-7BsJjDH6SLFFabArHW9UQ7FI'
-    const doc = new GoogleSpreadsheet(sheetId, auth)
+    const sheetId = getGoogleSheetId()
+    const doc = new GoogleSpreadsheet(sheetId, authWrapper.auth)
 
     await doc.loadInfo()
     const sheet = doc.sheetsByIndex[0]
+    if (!sheet) {
+      throw new Error(`No sheets found in Google Spreadsheet ID: ${sheetId}`)
+    }
+
     await sheet.loadHeaderRow()
     const rows = await sheet.getRows()
 
@@ -120,26 +135,47 @@ export default defineEventHandler(async (event) => {
 
     cachedProducts = parsed
     lastSyncedAt = Date.now()
+    lastSyncSource = authWrapper.credentials.source
 
     return {
       success: true,
       fromCache: false,
+      isFallback: false,
+      syncSource: lastSyncSource,
       lastSyncedAt: new Date(lastSyncedAt).toISOString(),
       count: parsed.length,
       products: parsed
     }
   } catch (err: any) {
     console.error('Failed to fetch products from Google Sheet:', err)
-    if (cachedProducts) {
+
+    if (cachedProducts && cachedProducts.length > 0) {
       return {
         success: true,
         fromCache: true,
-        fallbackNotice: 'Used fallback cached data due to fetch error',
+        isFallback: lastSyncSource === 'fallback',
+        fallbackNotice: `Using cached data due to fetch error: ${err.message}`,
         lastSyncedAt: new Date(lastSyncedAt).toISOString(),
         count: cachedProducts.length,
         products: cachedProducts
       }
     }
+
+    if (fallbackProducts && fallbackProducts.length > 0) {
+      cachedProducts = fallbackProducts as SheetProductItem[]
+      lastSyncedAt = Date.now()
+      lastSyncSource = 'fallback'
+      return {
+        success: true,
+        fromCache: true,
+        isFallback: true,
+        fallbackNotice: `Using bundled catalog fallback due to fetch error: ${err.message}`,
+        lastSyncedAt: new Date(lastSyncedAt).toISOString(),
+        count: cachedProducts.length,
+        products: cachedProducts
+      }
+    }
+
     throw createError({
       statusCode: 500,
       statusMessage: `Failed to load Google Sheet catalog: ${err.message}`
