@@ -2,8 +2,9 @@
   <div class="min-h-screen bg-[#1b3b5f] flex flex-col justify-center items-center p-6 text-white font-sans">
     <div class="w-full max-w-sm bg-white text-[#1a1a1a] rounded-2xl shadow-2xl p-8">
       <div class="text-center mb-8">
+        <img src="/icon.png" alt="SM Fleet" class="w-16 h-16 mx-auto mb-3 rounded-2xl shadow-md" />
         <h1 class="text-2xl font-bold text-[#1b3b5f] tracking-widest">SM FLEET</h1>
-        <p class="text-sm text-gray-500 mt-2">Driver Authentication</p>
+        <p class="text-sm text-gray-500 mt-1">Driver Authentication</p>
       </div>
 
       <form @submit.prevent="handleLogin" class="space-y-5">
