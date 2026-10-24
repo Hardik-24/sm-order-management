@@ -1,6 +1,7 @@
 import { requireActionPermission, getUserFromEvent } from '~~/server/utils/auth'
 import { prisma } from '~~/server/utils/prisma'
 import { syncOrderTripState } from '~~/server/utils/tripSync'
+import { syncOrderHistoricalPrices } from '~~/server/utils/historicalPrice'
 import type { OrderStatus, BillingState, PackingState, DeliveryState } from '@prisma/client'
 
 function calculateOverallStatus(billing: string, packing: string, delivery: string): OrderStatus {
@@ -244,6 +245,11 @@ export default defineEventHandler(async (event) => {
         notes: notes || 'Cancelled by admin',
         userId: user.id
       })
+    }
+
+    // 4c. Synchronize Historical Prices if Invoice Generated
+    if (billingStatus === 'GENERATED' || targetBilling === 'GENERATED') {
+      await syncOrderHistoricalPrices(tx, id, invoiceNumber || billingUpdate.invoiceNumber || order.billingStatus?.invoiceNumber)
     }
 
     // 5. Timeline entry

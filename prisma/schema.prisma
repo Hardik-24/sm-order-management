@@ -184,6 +184,7 @@ model Product {
   category          Category           @relation(fields: [categoryId], references: [id])
   orderItems        OrderItem[]
   orderRequestItems OrderRequestItem[]
+  historicalPrices  HistoricalPrice[]
 
   @@index([categoryId, name])
   @@map("products")
@@ -218,6 +219,7 @@ model Customer {
   customerManager   User?             @relation("CustomerManager", fields: [customerManagerId], references: [id])
   addresses         CustomerAddress[]
   orders            Order[]
+  historicalPrices  HistoricalPrice[]
 
   @@index([phone])
   @@index([gstNumber])
@@ -572,4 +574,30 @@ model Quotation {
   @@index([customerName])
   @@index([createdAt])
   @@map("quotations")
+}
+
+model HistoricalPrice {
+  id             String    @id @default(uuid())
+  customerId     String
+  productId      String
+  unitPrice      Decimal   @db.Decimal(10, 2)
+  basePrice      Decimal?  @db.Decimal(10, 2)
+  taxRate        Decimal?  @db.Decimal(5, 2)
+  isTaxInclusive Boolean   @default(true)
+  voucherNo      String
+  voucherDate    DateTime
+  quantity       Float     @default(1)
+  unit           String?
+  source         String    @default("BUSY")
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  customer       Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  product        Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([customerId, productId])
+  @@index([customerId])
+  @@index([productId])
+  @@index([voucherDate])
+  @@map("historical_prices")
 }

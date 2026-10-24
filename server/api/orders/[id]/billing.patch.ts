@@ -1,5 +1,6 @@
 import { requireRole, getUserFromEvent } from '~~/server/utils/auth'
 import { prisma } from '~~/server/utils/prisma'
+import { syncOrderHistoricalPrices } from '~~/server/utils/historicalPrice'
 
 function calculateOverallStatus(billing: string, packing: string, delivery: string) {
   if (delivery === 'DELIVERED') return 'DELIVERED';
@@ -79,6 +80,10 @@ export default defineEventHandler(async (event) => {
     },
     include: { billingStatus: true }
   })
+
+  if (status === 'GENERATED') {
+    await syncOrderHistoricalPrices(prisma, id, invoiceNumber)
+  }
 
   return updatedOrder
 })

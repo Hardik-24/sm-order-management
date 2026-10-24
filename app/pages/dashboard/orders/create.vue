@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { X, Plus, Trash2, Zap, MapPin, UserCheck, ShieldAlert, Award, FileText, IndianRupee, Truck, Car, AlertCircle, Package } from 'lucide-vue-next'
+import { X, Plus, Trash2, Zap, MapPin, UserCheck, ShieldAlert, Award, FileText, IndianRupee, Truck, Car, AlertCircle, Package, Loader2, Clock } from 'lucide-vue-next'
 import { formatCurrency } from '~/lib/utils'
 import CustomSelect from '~/components/ui/CustomSelect.vue'
 import { useSnackbar } from '~/composables/useSnackbar'
@@ -144,8 +144,69 @@ const removeItem = (index: number) => {
   form.value.items.splice(index, 1)
 }
 
+// Historical Prices Lookup
+const historicalPricesMap = ref<Record<string, any>>({})
+const loadingPrices = ref<Record<string, boolean>>({})
+
+const fetchHistoricalPrice = async (customerId: string, productId: string) => {
+  if (!customerId || !productId) return
+  loadingPrices.value[productId] = true
+  try {
+    const res = await $fetch<any>(`/api/customers/${customerId}/last-prices`, {
+      method: 'POST',
+      body: { productIds: [productId] }
+    })
+    if (res.prices && res.prices[productId]) {
+      historicalPricesMap.value[productId] = res.prices[productId]
+    } else {
+      historicalPricesMap.value[productId] = null
+    }
+  } catch (err) {
+    console.error('Failed to fetch historical price:', err)
+  } finally {
+    loadingPrices.value[productId] = false
+  }
+}
+
+const fetchHistoricalPricesForList = async (customerId: string, productIds: string[]) => {
+  const missing = productIds.filter(pId => pId && historicalPricesMap.value[pId] === undefined)
+  if (!customerId || missing.length === 0) return
+  for (const id of missing) {
+    loadingPrices.value[id] = true
+  }
+  try {
+    const res = await $fetch<any>(`/api/customers/${customerId}/last-prices`, {
+      method: 'POST',
+      body: { productIds: missing }
+    })
+    if (res.prices) {
+      for (const pId of missing) {
+        historicalPricesMap.value[pId] = res.prices[pId] || null
+      }
+    }
+  } catch (err) {
+    console.error('Failed to fetch historical prices list:', err)
+  } finally {
+    for (const id of missing) {
+      loadingPrices.value[id] = false
+    }
+  }
+}
+
+// Watch customer selection to load price history for all current items
+watch(() => form.value.customerId, (newCustId) => {
+  historicalPricesMap.value = {}
+  if (newCustId) {
+    const pIds = form.value.items.map(it => it.productId).filter(Boolean)
+    if (pIds.length > 0) {
+      fetchHistoricalPricesForList(newCustId, pIds)
+    }
+  }
+})
+
 const onProductChange = (index: number) => {
   const item = form.value.items[index]
+  item.applyLastPrice = false
   const p = (products.value as any[])?.find((p: any) => p.id === item.productId)
   if (p) {
     item.unitPrice = Number(p.price) || 0
@@ -155,6 +216,37 @@ const onProductChange = (index: number) => {
       ? Number(p.taxRate)
       : 18
     item.taxRate = dbTaxRate
+
+    // Fetch historical price if customer is selected
+    if (form.value.customerId && item.productId) {
+      fetchHistoricalPrice(form.value.customerId, item.productId)
+    }
+  }
+}
+
+const applyHistoricalPrice = (item: any, hp: any) => {
+  if (!hp) return
+  // If the user's row is currently tax inclusive: apply unitPrice (which includes tax)
+  // If user row is tax exclusive: apply basePrice (which excludes tax)
+  if (item.isTaxInclusive) {
+    item.unitPrice = Number(hp.unitPrice)
+  } else {
+    item.unitPrice = Number(hp.basePrice)
+  }
+  if (hp.taxRate !== undefined && hp.taxRate !== null) {
+    item.taxRate = Number(hp.taxRate)
+  }
+  item.applyLastPrice = true
+}
+
+const onTaxInclusiveToggle = (item: any) => {
+  const hp = historicalPricesMap.value[item.productId]
+  if (item.applyLastPrice && hp) {
+    if (item.isTaxInclusive) {
+      item.unitPrice = Number(hp.unitPrice)
+    } else {
+      item.unitPrice = Number(hp.basePrice)
+    }
   }
 }
 
@@ -619,17 +711,62 @@ const getPrivilegeColor = (tier: string) => {
             <div class="flex flex-wrap items-center gap-4 pt-2 border-t border-gray-200/60 text-xs">
               <!-- Tax Inclusive Toggle -->
               <label class="flex items-center gap-2 cursor-pointer select-none">
-                <input type="checkbox" v-model="item.isTaxInclusive" class="w-3.5 h-3.5 rounded text-[#1b3b5f] focus:ring-[#1b3b5f]" />
+                <input 
+                  type="checkbox" 
+                  v-model="item.isTaxInclusive" 
+                  @change="onTaxInclusiveToggle(item)"
+                  class="w-3.5 h-3.5 rounded text-[#1b3b5f] focus:ring-[#1b3b5f]" 
+                />
                 <span class="text-gray-700 font-medium">Tax Inclusive Rate</span>
                 <span v-if="item.isTaxInclusive" class="text-[10px] text-blue-600 font-semibold">(Tax incl.)</span>
                 <span v-else class="text-[10px] text-gray-500">(+{{ item.taxRate ?? 0 }}% Tax)</span>
               </label>
 
-              <!-- Apply Last Price Checkbox -->
-              <label class="flex items-center gap-2 cursor-pointer select-none">
-                <input type="checkbox" v-model="item.applyLastPrice" class="w-3.5 h-3.5 rounded text-[#1b3b5f] focus:ring-[#1b3b5f]" />
-                <span class="text-gray-700 font-medium">Apply Last Price</span>
-              </label>
+              <!-- Last Billed Price Interactive Pill -->
+              <div v-if="form.customerId && item.productId" class="flex items-center">
+                <!-- If Price History Exists -->
+                <div 
+                  v-if="historicalPricesMap[item.productId]" 
+                  class="inline-flex items-center gap-2 px-2.5 py-1 rounded-lg text-xs transition border"
+                  :class="item.applyLastPrice 
+                    ? 'bg-emerald-50 text-emerald-900 border-emerald-300 shadow-xs ring-1 ring-emerald-400/30' 
+                    : 'bg-amber-50/90 text-amber-900 border-amber-200 hover:bg-amber-100/80'"
+                >
+                  <span class="w-1.5 h-1.5 rounded-full shrink-0" :class="item.applyLastPrice ? 'bg-emerald-600' : 'bg-amber-500'"></span>
+                  <span>
+                    Last Billed: 
+                    <strong class="font-bold text-gray-900">
+                      {{ formatCurrency(item.isTaxInclusive ? historicalPricesMap[item.productId].unitPrice : historicalPricesMap[item.productId].basePrice) }}
+                    </strong>
+                    <span class="text-[10px] text-gray-500 ml-1">
+                      ({{ item.isTaxInclusive ? 'Incl. Tax' : '+Tax' }} • {{ historicalPricesMap[item.productId].daysAgo }}d ago)
+                    </span>
+                  </span>
+
+                  <button
+                    type="button"
+                    @click="applyHistoricalPrice(item, historicalPricesMap[item.productId])"
+                    class="ml-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase transition cursor-pointer select-none"
+                    :class="item.applyLastPrice 
+                      ? 'bg-emerald-600 text-white shadow-xs' 
+                      : 'bg-amber-200 text-amber-900 hover:bg-amber-300'"
+                    :title="`Voucher ${historicalPricesMap[item.productId].voucherNo} on ${new Date(historicalPricesMap[item.productId].voucherDate).toLocaleDateString('en-IN')}`"
+                  >
+                    {{ item.applyLastPrice ? '✓ Applied' : 'Apply' }}
+                  </button>
+                </div>
+
+                <!-- If Loading -->
+                <div v-else-if="loadingPrices[item.productId]" class="text-[11px] text-gray-400 flex items-center gap-1.5 italic">
+                  <Loader2 class="w-3 h-3 animate-spin text-gray-400" />
+                  <span>Checking price history...</span>
+                </div>
+
+                <!-- If First Time Item -->
+                <div v-else-if="historicalPricesMap[item.productId] === null" class="text-[11px] text-gray-400 italic">
+                  First time ordering this item
+                </div>
+              </div>
 
               <!-- Item Notes Input -->
               <div class="flex-1 min-w-[180px]">

@@ -521,6 +521,51 @@
               </div>
             </div>
           </div>
+
+          <!-- Price History (BUSY & OMS) -->
+          <div class="mt-4 pt-4 border-t border-gray-100">
+            <h4 class="text-xs font-bold text-gray-700 uppercase tracking-wider mb-2.5 flex items-center justify-between">
+              <span>Billed Price History ({{ customerPriceHistory.length }})</span>
+              <span v-if="isLoadingPriceHistory" class="text-[10px] text-gray-400 flex items-center gap-1 font-normal lowercase">
+                <Loader2 class="w-3 h-3 animate-spin text-gray-400" />
+                loading...
+              </span>
+            </h4>
+
+            <div v-if="customerPriceHistory.length" class="max-h-60 overflow-y-auto space-y-2 pr-1">
+              <div 
+                v-for="hp in customerPriceHistory" 
+                :key="hp.id"
+                class="p-2.5 bg-gray-50/80 hover:bg-gray-100/80 rounded-xl border border-gray-200 text-xs flex items-center justify-between transition-colors"
+              >
+                <div class="min-w-0 pr-2">
+                  <p class="font-bold text-gray-900 truncate">{{ hp.product?.name }}</p>
+                  <p class="text-[10px] text-gray-500 flex items-center gap-1.5 mt-0.5">
+                    <span>Voucher: <strong class="text-gray-700">{{ hp.voucherNo }}</strong></span>
+                    <span>•</span>
+                    <span>{{ new Date(hp.voucherDate).toLocaleDateString('en-IN') }}</span>
+                    <span>•</span>
+                    <span>Qty: {{ hp.quantity }} {{ hp.unit }}</span>
+                  </p>
+                </div>
+                <div class="text-right shrink-0">
+                  <p class="font-bold text-sm text-[#1b3b5f]">
+                    {{ formatCurrency(hp.unitPrice) }}
+                  </p>
+                  <span 
+                    class="text-[9px] px-1.5 py-0.2 rounded font-bold uppercase tracking-wider inline-block mt-0.5"
+                    :class="hp.isTaxInclusive ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-gray-100 text-gray-600 border border-gray-200'"
+                  >
+                    {{ hp.isTaxInclusive ? 'Tax Incl.' : '+Tax' }}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div v-else-if="!isLoadingPriceHistory" class="p-4 bg-gray-50 rounded-xl border border-dashed border-gray-200 text-center text-xs text-gray-400">
+              No historical billed transactions on record for this party.
+            </div>
+          </div>
         </div>
 
         <!-- Footer -->
@@ -1122,6 +1167,8 @@ const selectedCustomer = ref<any | null>(null)
 const isDetailModalOpen = ref(false)
 const detailModalRef = ref<HTMLElement | null>(null)
 const detailBackdropRef = ref<HTMLElement | null>(null)
+const customerPriceHistory = ref<any[]>([])
+const isLoadingPriceHistory = ref(false)
 
 // Form modal state
 const formModalRef = ref<HTMLElement | null>(null)
@@ -1275,6 +1322,20 @@ const setDefaultAddress = (idx: number) => {
 const openCustomerDetail = (customer: any) => {
   selectedCustomer.value = customer
   isDetailModalOpen.value = true
+  customerPriceHistory.value = []
+  if (customer && customer.id) {
+    isLoadingPriceHistory.value = true
+    $fetch<any>(`/api/customers/${customer.id}/last-prices?limit=50`)
+      .then(res => {
+        customerPriceHistory.value = res.historicalPrices || []
+      })
+      .catch(err => {
+        console.error('Failed to load customer price history:', err)
+      })
+      .finally(() => {
+        isLoadingPriceHistory.value = false
+      })
+  }
   nextTick(() => {
     animateModalOpen(detailModalRef.value, detailBackdropRef.value, { duration: 0.26 })
   })
@@ -1283,6 +1344,7 @@ const openCustomerDetail = (customer: any) => {
 const closeCustomerDetail = () => {
   isDetailModalOpen.value = false
   selectedCustomer.value = null
+  customerPriceHistory.value = []
 }
 
 const editCustomerFromDetail = () => {
