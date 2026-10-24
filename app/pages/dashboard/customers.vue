@@ -543,7 +543,7 @@
                   <p class="text-[10px] text-gray-500 flex items-center gap-1.5 mt-0.5">
                     <span>Voucher: <strong class="text-gray-700">{{ hp.voucherNo }}</strong></span>
                     <span>•</span>
-                    <span>{{ new Date(hp.voucherDate).toLocaleDateString('en-IN') }}</span>
+                    <span>{{ hp.voucherDate ? formatDate(hp.voucherDate) : '—' }}</span>
                     <span>•</span>
                     <span>Qty: {{ hp.quantity }} {{ hp.unit }}</span>
                   </p>
@@ -1037,6 +1037,7 @@ import {
   MapPin, CreditCard, ShieldCheck, CheckCircle2, XCircle, ChevronLeft, ChevronRight,
   UserCheck, Award, Zap
 } from 'lucide-vue-next'
+import { formatCurrency, formatDate } from '~/lib/utils'
 import { useSnackbar } from '~/composables/useSnackbar'
 import { useGsapAnimation } from '~/composables/useGsapAnimation'
 import { useRealtimeSync } from '~/composables/useRealtimeSync'

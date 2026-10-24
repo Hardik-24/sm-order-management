@@ -2,7 +2,7 @@
 import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { X, Plus, Trash2, Zap, MapPin, UserCheck, ShieldAlert, Award, FileText, IndianRupee, Truck, Car, AlertCircle, Package, Loader2, Clock } from 'lucide-vue-next'
-import { formatCurrency } from '~/lib/utils'
+import { formatCurrency, formatDate } from '~/lib/utils'
 import CustomSelect from '~/components/ui/CustomSelect.vue'
 import { useSnackbar } from '~/composables/useSnackbar'
 import { useRealtimeSync } from '~/composables/useRealtimeSync'
@@ -750,7 +750,7 @@ const getPrivilegeColor = (tier: string) => {
                     :class="item.applyLastPrice 
                       ? 'bg-emerald-600 text-white shadow-xs' 
                       : 'bg-amber-200 text-amber-900 hover:bg-amber-300'"
-                    :title="`Voucher ${historicalPricesMap[item.productId].voucherNo} on ${new Date(historicalPricesMap[item.productId].voucherDate).toLocaleDateString('en-IN')}`"
+                    :title="`Voucher ${historicalPricesMap[item.productId].voucherNo} on ${formatDate(historicalPricesMap[item.productId].voucherDate)}`"
                   >
                     {{ item.applyLastPrice ? '✓ Applied' : 'Apply' }}
                   </button>
