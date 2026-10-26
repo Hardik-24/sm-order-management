@@ -315,6 +315,13 @@ async function runSync() {
     select: { name: true, sku: true, stock: true, price: true }
   });
 
+  // Update last_synced system setting for Inventory UI
+  await prisma.systemSetting.upsert({
+    where: { key: 'last_synced' },
+    update: { value: new Date().toISOString() },
+    create: { key: 'last_synced', value: new Date().toISOString() }
+  });
+
   const durationSec = ((Date.now() - startTime) / 1000).toFixed(2);
   console.log("\n==================================================================");
   console.log(`   SYNC FINISHED IN ${durationSec} SECONDS!`);
