@@ -332,10 +332,16 @@ async function runSync() {
       const prod = prodBySku.get(pp.sku.toLowerCase().trim()) || prodByName.get(pp.name.toLowerCase().trim());
       if (!prod) continue;
 
-      const rate = Number(hp.rate) || 0;
+      const rawRate = Number(hp.rate) || 0;
       const taxRate = prod.taxRate ? Number(prod.taxRate) : 18;
-      const basePrice = rate;
-      const unitPrice = Number((basePrice * (1 + taxRate / 100)).toFixed(2));
+      let unitPrice, basePrice;
+      if (hp.isTaxInclusive) {
+        unitPrice = rawRate;
+        basePrice = Number((rawRate / (1 + taxRate / 100)).toFixed(2));
+      } else {
+        basePrice = rawRate;
+        unitPrice = Number((rawRate * (1 + taxRate / 100)).toFixed(2));
+      }
 
       pricesToUpsert.push({
         customerId: custId,
@@ -343,7 +349,7 @@ async function runSync() {
         unitPrice,
         basePrice,
         taxRate,
-        isTaxInclusive: true,
+        isTaxInclusive: Boolean(hp.isTaxInclusive),
         voucherNo: hp.voucherNo,
         voucherDate: hp.voucherDate,
         quantity: hp.quantity,

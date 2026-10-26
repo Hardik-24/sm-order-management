@@ -11,11 +11,12 @@ if (-not $dbFile) {
 }
 
 $srcDb = $dbFile.FullName
-$tmpDb = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), "sm_extract_clone_$PID.bds")
+$tmpDb = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), "sm_extract_$([Guid]::NewGuid().ToString('N')).bds")
 Copy-Item -Path $srcDb -Destination $tmpDb -Force
 
 $conn = New-Object -ComObject ADODB.Connection
-$conn.Open("Provider=Microsoft.ACE.OLEDB.12.0;Data Source=$tmpDb;Jet OLEDB:Database Password=ILoveMyINDIA;Mode=Read;")
+try {
+    $conn.Open("Provider=Microsoft.ACE.OLEDB.12.0;Data Source=$tmpDb;Jet OLEDB:Database Password=ILoveMyINDIA;Mode=Read;")
 
 # 1. Categories (Item Groups)
 Write-Host "Extracting Categories..."
@@ -92,7 +93,7 @@ SELECT m.Code, m.Name, m.Alias, m.PrintName,
        a.Address1, a.Address2, a.Address3, a.Mobile, a.TelNo, a.WhatsAppNo, a.Email, a.GSTNo, a.PINCode, a.Station
 FROM Master1 m
 LEFT JOIN MasterAddressInfo a ON m.Code = a.MasterCode
-WHERE m.MasterType = 2 AND (m.ParentGrp IN (116, 4101, 7406) OR m.Code IN (SELECT DISTINCT MasterCode1 FROM Tran1 WHERE VchType = 2))
+WHERE m.MasterType = 2 AND (m.ParentGrp IN (116, 4101, 7406) OR m.Code IN (SELECT DISTINCT MasterCode1 FROM Tran1 WHERE VchType IN (2, 9)))
 "@
 
 $rsC = $conn.Execute($sqlCust)
@@ -163,12 +164,12 @@ while (-not $rsFlow.EOF) {
 }
 Write-Host "  Extracted $($monthlyFlow.Count) monthly flow periods."
 
-# 5. Top Billed B2B Customers (Tran1)
+# 5. Top Billed B2B Customers (Tran1 - Retail & Wholesale SMG Vouchers)
 Write-Host "Extracting Top B2B Billed Customers..."
 $sqlTopCust = @"
 SELECT TOP 15 m.Code, m.Name, COUNT(*) AS BillCount, SUM(t.VchAmtBaseCur) AS TotalBilled
 FROM Tran1 t INNER JOIN Master1 m ON t.MasterCode1 = m.Code
-WHERE t.VchType = 2 AND t.Cancelled = False
+WHERE t.VchType IN (2, 9) AND t.Cancelled = False
 GROUP BY m.Code, m.Name
 ORDER BY SUM(t.VchAmtBaseCur) DESC
 "@
@@ -189,14 +190,14 @@ while (-not $rsTopCust.EOF) {
 }
 Write-Host "  Extracted $($topBilledCustomers.Count) top billed customers."
 
-# 6. Latest Billed Sales Prices per (Customer, Product)
+# 6. Latest Billed Sales Prices per (Customer, Product - Retail & Wholesale SMG Vouchers)
 Write-Host "Extracting Latest Billed Sales Prices..."
 $sqlHist = @"
-SELECT t1.VchNo, t1.Date, t1.MasterCode1 AS CustCode, t2.MasterCode1 AS ProdCode, 
-       t2.Value1 AS Qty, t2.Value2 AS Rate
+SELECT t1.VchType, t1.VchNo, t1.Date, t1.MasterCode1 AS CustCode, t2.MasterCode1 AS ProdCode, 
+       t2.Value1 AS Qty, t2.Value2 AS Rate, t2.Value3 AS Amount, t2.D2 AS PriceInc
 FROM (Tran1 t1 INNER JOIN Tran2 t2 ON t1.VchCode = t2.VchCode)
 INNER JOIN Master1 m ON t2.MasterCode1 = m.Code
-WHERE t1.VchType = 2 AND t1.Cancelled = False AND m.MasterType = 6 AND t2.Value1 > 0 AND t2.Value2 > 0
+WHERE t1.VchType IN (2, 9) AND t1.Cancelled = False AND m.MasterType = 6 AND t2.Value1 <> 0
 ORDER BY t1.Date DESC, t1.VchCode DESC
 "@
 $rsHist = $conn.Execute($sqlHist)
@@ -208,26 +209,37 @@ while (-not $rsHist.EOF) {
     if (-not $historicalMap.ContainsKey($key)) {
         $vNo = if ($rsHist.Fields.Item("VchNo").Value -ne $null) { $rsHist.Fields.Item("VchNo").Value.ToString().Trim() } else { "BILL" }
         $vDt = [datetime]$rsHist.Fields.Item("Date").Value
-        $q = [double]$rsHist.Fields.Item("Qty").Value
-        $r = [double]$rsHist.Fields.Item("Rate").Value
+        $q = [Math]::Abs([double]$rsHist.Fields.Item("Qty").Value)
+        $amt = [Math]::Abs([double]$rsHist.Fields.Item("Amount").Value)
+        $pInc = if ($rsHist.Fields.Item("PriceInc").Value -ne $null) { [double]$rsHist.Fields.Item("PriceInc").Value } else { 0 }
+        
+        $billedRate = if ($pInc -gt 0) { $pInc } elseif ($q -gt 0) { [Math]::Round($amt / $q, 2) } else { [double]$rsHist.Fields.Item("Rate").Value }
         $sku = if ($prodCodeToSku.ContainsKey($p)) { $prodCodeToSku[$p] } else { "" }
-        $historicalMap[$key] = [PSCustomObject]@{
-            custCode = "CUST-$c"
-            prodBusyCode = $p
-            prodSku = $sku
-            voucherNo = $vNo
-            voucherDate = $vDt.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
-            quantity = $q
-            rate = $r
+
+        if ($sku -ne "" -and $billedRate -gt 0 -and $q -gt 0) {
+            $historicalMap[$key] = [PSCustomObject]@{
+                custCode = "CUST-$c"
+                prodBusyCode = $p
+                prodSku = $sku
+                voucherNo = $vNo
+                voucherDate = $vDt.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
+                quantity = $q
+                rate = $billedRate
+                isTaxInclusive = ($pInc -gt 0)
+            }
         }
     }
     $rsHist.MoveNext()
 }
 $historicalPrices = @($historicalMap.Values)
 Write-Host "  Extracted $($historicalPrices.Count) unique customer-product price records."
-
-$conn.Close()
-Remove-Item -Path $tmpDb -Force -ErrorAction SilentlyContinue
+} finally {
+    if ($conn -ne $null) {
+        $conn.Close()
+        [System.Runtime.InteropServices.Marshal]::ReleaseComObject($conn) | Out-Null
+    }
+    Remove-Item -Path $tmpDb -Force -ErrorAction SilentlyContinue
+}
 
 # Save to payload JSON
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
