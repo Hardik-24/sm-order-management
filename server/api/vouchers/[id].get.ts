@@ -30,9 +30,19 @@ export default defineEventHandler(async (event) => {
       })
     }
 
+    let items = (voucher as any).items
+    if (!Array.isArray(items)) {
+      items = items && typeof items === 'object' ? [items] : []
+    }
+    const normalizedVoucher = {
+      ...voucher,
+      items,
+      itemCount: items.length
+    }
+
     return {
       success: true,
-      voucher
+      voucher: normalizedVoucher
     }
   } catch (err: any) {
     if (err.statusCode) throw err

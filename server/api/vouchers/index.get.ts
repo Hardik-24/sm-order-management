@@ -125,9 +125,21 @@ export default defineEventHandler(async (event) => {
       }
     }
 
+    const normalizedVouchers = vouchers.map((v: any) => {
+      let items = v.items
+      if (!Array.isArray(items)) {
+        items = items && typeof items === 'object' ? [items] : []
+      }
+      return {
+        ...v,
+        items,
+        itemCount: items.length
+      }
+    })
+
     return {
       success: true,
-      vouchers,
+      vouchers: normalizedVouchers,
       pagination: {
         page,
         limit,

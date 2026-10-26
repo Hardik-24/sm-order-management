@@ -400,14 +400,20 @@ async function runSync() {
     for (let i = 0; i < data.vouchers.length; i += vchChunkSize) {
       const chunk = data.vouchers.slice(i, i + vchChunkSize);
       const valuesList = chunk.map(v => {
-        const iCount = Number(v.itemCount || (v.items ? v.items.length : 0)) || 0;
+        let itemsArr = [];
+        if (Array.isArray(v.items)) {
+          itemsArr = v.items;
+        } else if (v.items && typeof v.items === 'object') {
+          itemsArr = [v.items];
+        }
+        const iCount = itemsArr.length;
         const tot = Number(v.totalAmount) || 0;
         const taxable = Number(v.taxableAmount) || 0;
         const taxAmt = Number(v.taxAmount) || 0;
         const cgst = Number(v.cgstAmount) || 0;
         const sgst = Number(v.sgstAmount) || 0;
         const igst = Number(v.igstAmount) || 0;
-        const itemsJson = JSON.stringify(v.items || []);
+        const itemsJson = JSON.stringify(itemsArr);
         return `(gen_random_uuid(), ${esc(v.voucherNo)}, ${v.voucherType || 2}, ${esc(v.series || 'RETAIL')}, '${v.voucherDate}'::timestamp, ${esc(v.customerCode)}, ${esc(v.customerName)}, ${tot}, ${taxable}, ${taxAmt}, ${cgst}, ${sgst}, ${igst}, ${iCount}, ${esc(itemsJson)}::jsonb, NOW(), NOW())`;
       }).join(',');
 

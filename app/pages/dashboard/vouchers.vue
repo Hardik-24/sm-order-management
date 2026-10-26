@@ -814,8 +814,10 @@ const formattedLastSynced = computed(() => {
 
 // Computed items sum in drawer
 const computedItemsSum = computed(() => {
-  if (!selectedVoucher.value?.items) return 0
-  return selectedVoucher.value.items.reduce((acc: number, item: any) => acc + (Number(item.amount) || 0), 0)
+  const items = selectedVoucher.value?.items
+  if (!items) return 0
+  const arr = Array.isArray(items) ? items : (typeof items === 'object' ? [items] : [])
+  return arr.reduce((acc: number, item: any) => acc + (Number(item.amount) || 0), 0)
 })
 
 // Debounce search input
@@ -934,7 +936,15 @@ async function fetchVouchers(includeStats = false) {
 
 // Drawer handlers
 function openVoucherDrawer(voucher: any) {
-  selectedVoucher.value = voucher
+  let items = voucher.items
+  if (!Array.isArray(items)) {
+    items = items && typeof items === 'object' ? [items] : []
+  }
+  selectedVoucher.value = {
+    ...voucher,
+    items,
+    itemCount: items.length
+  }
   isDrawerOpen.value = true
 }
 
