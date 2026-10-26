@@ -1,30 +1,30 @@
 <template>
-  <div class="space-y-6 max-w-[1600px] mx-auto pb-12">
-    <!-- Header with Title, Live Badge, Sync Info & Quick Actions -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+  <div class="space-y-5 sm:space-y-6 md:space-y-8 max-w-7xl mx-auto pb-12">
+    <!-- Header with Title, Live Badge, Sync Info & Quick Actions (Matching billing.vue:195-213) -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
         <div class="flex items-center gap-2 flex-wrap">
-          <h1 class="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight text-gray-900">BUSY Voucher Explorer</h1>
-          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            Live BUSY Mirror
+          <h1 class="text-2xl font-bold text-gray-900 tracking-tight">BUSY Voucher Explorer</h1>
+          <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            Live Mirror
           </span>
-          <span v-if="formattedLastSynced" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 border border-gray-200" :title="'Server sync time: ' + (lastSynced || '')">
+          <span v-if="formattedLastSynced" class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium bg-gray-100 text-gray-600 border border-gray-200" :title="'Server sync time: ' + (lastSynced || '')">
             <Clock class="w-3.5 h-3.5 text-gray-400" />
-            Last Synced: {{ formattedLastSynced }}
+            <span>Synced: {{ formattedLastSynced }}</span>
           </span>
         </div>
-        <p class="text-xs sm:text-sm text-gray-500 mt-1.5">
-          Search and inspect sales vouchers from BUSY ERP (Wholesale SMG & Retail Direct)
+        <p class="text-xs sm:text-sm text-gray-500 mt-1">
+          Review BUSY ERP sales vouchers, search customer history, and inspect GST breakdowns.
         </p>
       </div>
 
-      <!-- Action Button -->
-      <div class="flex items-center gap-2 self-start sm:self-center">
+      <!-- Action Button (Matching billing.vue Refresh Button) -->
+      <div class="flex items-center gap-3">
         <button
           @click="fetchVouchers(true)"
           :disabled="isLoading"
-          class="flex items-center gap-2 px-4 py-2.5 text-xs sm:text-sm font-semibold text-white bg-[#1b3b5f] rounded-xl hover:bg-[#132c49] active:bg-[#0f233a] transition shadow-xs disabled:opacity-50 cursor-pointer"
+          class="inline-flex items-center gap-2 px-3 py-2 text-xs sm:text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 shadow-sm transition-colors cursor-pointer disabled:opacity-50"
           title="Refresh voucher records"
         >
           <RefreshCw class="w-4 h-4" :class="{ 'animate-spin': isLoading }" />
@@ -33,104 +33,98 @@
       </div>
     </div>
 
-    <!-- Summary KPI Cards (Count-Only for Employees) -->
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-      <!-- Total Vouchers -->
-      <div class="bg-white p-4 sm:p-5 rounded-2xl border border-gray-200/80 shadow-xs flex items-center justify-between">
-        <div class="space-y-1">
-          <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Total Sales Invoices</p>
-          <div class="flex items-baseline gap-2">
-            <span class="text-2xl sm:text-3xl font-extrabold text-gray-900">{{ (stats?.totalCount || pagination.total || 0).toLocaleString() }}</span>
-            <span class="text-xs sm:text-sm text-gray-500 font-medium">vouchers</span>
+    <!-- Quick Stats Cards (Matching billing.vue:216-284 exact structure & typography) -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-4">
+      <!-- 1. Total Vouchers -->
+      <div class="bg-white rounded-xl border border-[#e5e2dc] p-3.5 sm:p-5 shadow-sm">
+        <div class="flex gap-2.5 sm:gap-4">
+          <div class="flex flex-col justify-between shrink-0">
+            <div class="bg-[#1b3b5f]/10 p-2 sm:p-2.5 rounded-lg text-[#1b3b5f] border border-[#1b3b5f]/20">
+              <Receipt class="w-4 h-4 sm:w-5 sm:h-5" />
+            </div>
+            <div class="w-6 sm:w-8 h-1 bg-[#1b3b5f] rounded-full mt-4 sm:mt-6"></div>
           </div>
-          <p class="text-xs sm:text-sm text-gray-500">
-            Synced from BUSY ERP
-          </p>
-        </div>
-        <div class="w-12 h-12 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-[#1b3b5f] shrink-0">
-          <Receipt class="w-6 h-6" />
-        </div>
-      </div>
-
-      <!-- Wholesale (SMG) -->
-      <div class="bg-white p-4 sm:p-5 rounded-2xl border border-gray-200/80 shadow-xs flex items-center justify-between">
-        <div class="space-y-1">
-          <div class="flex items-center gap-2">
-            <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Wholesale (SMG)</p>
-            <span class="px-2 py-0.5 rounded text-xs font-bold bg-sky-100 text-sky-700">B2B</span>
+          <div class="flex flex-col justify-center min-w-0">
+            <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">Total Sales Invoices</p>
+            <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">{{ (stats?.totalCount || pagination.total || 0).toLocaleString() }}</h3>
+            <p class="text-[11px] sm:text-xs text-gray-500 font-medium truncate">Synced vouchers</p>
           </div>
-          <div class="flex items-baseline gap-2">
-            <span class="text-2xl sm:text-3xl font-extrabold text-sky-950">{{ (stats?.smgCount || 0).toLocaleString() }}</span>
-            <span class="text-xs sm:text-sm text-gray-500 font-medium">vouchers</span>
-          </div>
-          <p class="text-xs sm:text-sm text-gray-500">
-            B2B Trade & Dealer invoices
-          </p>
-        </div>
-        <div class="w-12 h-12 rounded-xl bg-sky-50 border border-sky-100 flex items-center justify-center text-sky-600 shrink-0">
-          <Building2 class="w-6 h-6" />
         </div>
       </div>
 
-      <!-- Retail Direct -->
-      <div class="bg-white p-4 sm:p-5 rounded-2xl border border-gray-200/80 shadow-xs flex items-center justify-between">
-        <div class="space-y-1">
-          <div class="flex items-center gap-2">
-            <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Retail Direct</p>
-            <span class="px-2 py-0.5 rounded text-xs font-bold bg-emerald-100 text-emerald-700">Counter</span>
+      <!-- 2. Wholesale (SMG) -->
+      <div class="bg-white rounded-xl border border-[#e5e2dc] p-3.5 sm:p-5 shadow-sm">
+        <div class="flex gap-2.5 sm:gap-4">
+          <div class="flex flex-col justify-between shrink-0">
+            <div class="bg-sky-50 p-2 sm:p-2.5 rounded-lg text-sky-600 border border-sky-100/50">
+              <Building2 class="w-4 h-4 sm:w-5 sm:h-5" />
+            </div>
+            <div class="w-6 sm:w-8 h-1 bg-sky-500 rounded-full mt-4 sm:mt-6"></div>
           </div>
-          <div class="flex items-baseline gap-2">
-            <span class="text-2xl sm:text-3xl font-extrabold text-emerald-950">{{ (stats?.retailCount || 0).toLocaleString() }}</span>
-            <span class="text-xs sm:text-sm text-gray-500 font-medium">vouchers</span>
+          <div class="flex flex-col justify-center min-w-0">
+            <p class="text-[10px] font-bold text-sky-600 uppercase tracking-widest mb-0.5 truncate">Wholesale (SMG)</p>
+            <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">{{ (stats?.smgCount || 0).toLocaleString() }}</h3>
+            <p class="text-[11px] sm:text-xs text-sky-600 font-medium truncate">B2B Trade & Dealer</p>
           </div>
-          <p class="text-xs sm:text-sm text-gray-500">
-            Direct & Counter billing
-          </p>
         </div>
-        <div class="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
-          <ShoppingBag class="w-6 h-6" />
+      </div>
+
+      <!-- 3. Retail Direct -->
+      <div class="bg-white rounded-xl border border-[#e5e2dc] p-3.5 sm:p-5 shadow-sm">
+        <div class="flex gap-2.5 sm:gap-4">
+          <div class="flex flex-col justify-between shrink-0">
+            <div class="bg-emerald-50 p-2 sm:p-2.5 rounded-lg text-emerald-600 border border-emerald-100/50">
+              <ShoppingBag class="w-4 h-4 sm:w-5 sm:h-5" />
+            </div>
+            <div class="w-6 sm:w-8 h-1 bg-emerald-500 rounded-full mt-4 sm:mt-6"></div>
+          </div>
+          <div class="flex flex-col justify-center min-w-0">
+            <p class="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-0.5 truncate">Retail Direct</p>
+            <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">{{ (stats?.retailCount || 0).toLocaleString() }}</h3>
+            <p class="text-[11px] sm:text-xs text-emerald-600 font-medium truncate">Counter sales</p>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Search & Filter Controls Toolbar -->
-    <div class="bg-white p-4 sm:p-5 rounded-2xl border border-gray-200/80 shadow-xs space-y-4">
-      <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3.5">
-        <!-- Search Input -->
-        <div class="relative flex-1 max-w-lg">
-          <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-            <Search class="h-4.5 w-4.5 text-gray-400" />
-          </div>
+    <!-- Search & Filter Controls Toolbar (Matching BillingTable.vue:104-145) -->
+    <div class="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
+      <div class="p-4 flex flex-col sm:flex-row justify-between items-center gap-3.5 bg-gray-50/50">
+        <!-- Search Input matching BillingTable.vue:106-122 -->
+        <div class="relative w-full sm:w-80">
+          <Search class="w-4 h-4 absolute left-3 top-2.5 text-gray-400" />
           <input
             v-model="searchInput"
             @input="onSearchInput"
             type="text"
-            placeholder="Search by Voucher No (e.g. SMG2227, 737) or Customer name..."
-            class="block w-full pl-10.5 pr-9 py-2.5 sm:py-3 text-sm bg-gray-50/70 border border-gray-200 rounded-xl text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f] focus:bg-white transition"
+            placeholder="Search order #, customer, invoice..."
+            class="w-full pl-9 pr-8 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f] transition-all"
           />
           <button
             v-if="searchInput"
             @click="clearSearch"
-            class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-gray-600 transition cursor-pointer"
+            class="absolute right-2.5 top-2.5 text-gray-400 hover:text-gray-600 cursor-pointer"
           >
-            <X class="h-4.5 w-4.5" />
+            <X class="w-3.5 h-3.5" />
           </button>
         </div>
 
-        <!-- Series Selector Pills -->
-        <div class="flex items-center gap-1.5 bg-gray-100/90 p-1.5 rounded-xl self-start lg:self-auto overflow-x-auto max-w-full">
+        <!-- Series Selector Pills (Matching tab pills in billing.vue) -->
+        <div class="flex items-center gap-1.5 w-full sm:w-auto overflow-x-auto no-scrollbar">
           <button
             v-for="s in seriesOptions"
             :key="s.value"
             @click="selectSeries(s.value)"
-            class="px-3.5 py-2 text-xs sm:text-sm font-semibold rounded-lg transition whitespace-nowrap flex items-center gap-2 cursor-pointer"
-            :class="selectedSeries === s.value ? 'bg-white text-gray-900 shadow-xs' : 'text-gray-500 hover:text-gray-900'"
+            class="px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors whitespace-nowrap flex items-center gap-1.5 cursor-pointer"
+            :class="selectedSeries === s.value
+              ? 'bg-[#1b3b5f] text-white border-[#1b3b5f]'
+              : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'"
           >
             <span>{{ s.label }}</span>
             <span
               v-if="s.count !== undefined"
-              class="px-2 py-0.5 rounded-full text-xs font-bold"
-              :class="selectedSeries === s.value ? 'bg-gray-100 text-gray-800' : 'bg-gray-200 text-gray-600'"
+              class="px-1.5 py-0.2 rounded-full text-[10px] font-bold"
+              :class="selectedSeries === s.value ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'"
             >
               {{ s.count }}
             </span>
@@ -138,51 +132,49 @@
         </div>
       </div>
 
-      <!-- Date Filter Bar & Quick Shortcuts -->
-      <div class="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-gray-100">
-        <!-- Date Presets -->
-        <div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
-          <span class="text-xs sm:text-sm font-medium text-gray-400 mr-1 flex items-center gap-1.5">
-            <Calendar class="w-4 h-4" /> Date:
+      <!-- Date Presets & Filter Row -->
+      <div class="px-4 py-2.5 border-t border-gray-200 bg-white flex flex-wrap items-center justify-between gap-2.5 text-xs">
+        <div class="flex flex-wrap items-center gap-1.5">
+          <span class="text-xs font-medium text-gray-400 mr-1 flex items-center gap-1">
+            <Calendar class="w-3.5 h-3.5" /> Date:
           </span>
           <button
             v-for="preset in datePresets"
             :key="preset.id"
             @click="selectDatePreset(preset.id)"
-            class="px-3 py-1.5 text-xs sm:text-sm rounded-lg transition font-medium cursor-pointer"
-            :class="selectedDatePreset === preset.id ? 'bg-[#1b3b5f] text-white shadow-2xs font-semibold' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-900'"
+            class="px-2.5 py-1 text-xs font-medium rounded-lg transition-colors cursor-pointer"
+            :class="selectedDatePreset === preset.id ? 'bg-[#1b3b5f] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
           >
             {{ preset.label }}
           </button>
 
-          <!-- Custom Date Range Button -->
           <button
             @click="selectedDatePreset = 'custom'"
-            class="px-3 py-1.5 text-xs sm:text-sm rounded-lg transition font-medium flex items-center gap-1 cursor-pointer"
-            :class="selectedDatePreset === 'custom' ? 'bg-[#1b3b5f] text-white shadow-2xs font-semibold' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-900'"
+            class="px-2.5 py-1 text-xs font-medium rounded-lg transition-colors cursor-pointer"
+            :class="selectedDatePreset === 'custom' ? 'bg-[#1b3b5f] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
           >
-            <span>Custom Range</span>
+            Custom Range
           </button>
         </div>
 
-        <!-- Custom Date Range Pickers (Visible when custom selected) -->
+        <!-- Custom Date Range Inputs -->
         <div v-if="selectedDatePreset === 'custom'" class="flex items-center gap-2 flex-wrap">
-          <div class="flex items-center gap-1.5 text-xs sm:text-sm text-gray-600">
+          <div class="flex items-center gap-1 text-xs text-gray-500">
             <span>From:</span>
             <input
               v-model="customDateFrom"
               @change="fetchVouchers(false)"
               type="date"
-              class="px-3 py-1.5 text-xs sm:text-sm bg-white border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:ring-1 focus:ring-[#1b3b5f]"
+              class="px-2 py-1 text-xs bg-white border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:ring-1 focus:ring-[#1b3b5f]"
             />
           </div>
-          <div class="flex items-center gap-1.5 text-xs sm:text-sm text-gray-600">
+          <div class="flex items-center gap-1 text-xs text-gray-500">
             <span>To:</span>
             <input
               v-model="customDateTo"
               @change="fetchVouchers(false)"
               type="date"
-              class="px-3 py-1.5 text-xs sm:text-sm bg-white border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:ring-1 focus:ring-[#1b3b5f]"
+              class="px-2 py-1 text-xs bg-white border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:ring-1 focus:ring-[#1b3b5f]"
             />
           </div>
         </div>
@@ -191,7 +183,7 @@
         <button
           v-if="hasActiveFilters"
           @click="resetAllFilters"
-          class="text-xs sm:text-sm text-rose-600 hover:text-rose-700 font-semibold flex items-center gap-1.5 transition cursor-pointer"
+          class="text-xs text-rose-600 hover:text-rose-700 font-medium flex items-center gap-1 transition cursor-pointer"
         >
           <RotateCcw class="w-3.5 h-3.5" />
           <span>Reset Filters</span>
@@ -199,10 +191,10 @@
       </div>
     </div>
 
-    <!-- Main Vouchers Table Container -->
-    <div class="bg-white rounded-2xl border border-gray-200/80 shadow-xs overflow-hidden flex flex-col">
+    <!-- Main Vouchers Table Container (Matching BillingTable.vue) -->
+    <div class="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden flex flex-col">
       <!-- Toolbar Header -->
-      <div class="px-5 py-3.5 border-b border-gray-100 bg-gray-50/50 flex flex-wrap items-center justify-between gap-3 text-xs sm:text-sm text-gray-500">
+      <div class="px-5 py-3 border-b border-gray-200 bg-gray-50/50 flex flex-wrap items-center justify-between gap-3 text-xs text-gray-500">
         <div>
           Showing <span class="font-bold text-gray-900">{{ vouchers.length }}</span> of
           <span class="font-bold text-gray-900">{{ pagination.total.toLocaleString() }}</span> vouchers
@@ -221,24 +213,22 @@
       </div>
 
       <!-- Loading State -->
-      <div v-if="isLoading" class="p-16 flex flex-col items-center justify-center text-gray-400 gap-3">
-        <Loader2 class="w-8 h-8 animate-spin text-[#1b3b5f]" />
-        <p class="text-sm font-medium text-gray-500">Loading BUSY sales invoices...</p>
+      <div v-if="isLoading" class="p-14 flex flex-col items-center justify-center text-gray-400 gap-2">
+        <Loader2 class="w-7 h-7 animate-spin text-[#1b3b5f]" />
+        <p class="text-xs font-medium text-gray-500">Loading BUSY sales invoices...</p>
       </div>
 
-      <!-- Empty State -->
-      <div v-else-if="vouchers.length === 0" class="p-16 flex flex-col items-center justify-center text-center gap-3">
-        <div class="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center text-gray-400">
-          <Receipt class="w-7 h-7" />
-        </div>
-        <h3 class="text-base sm:text-lg font-bold text-gray-900">No vouchers found</h3>
-        <p class="text-xs sm:text-sm text-gray-500 max-w-sm">
-          No BUSY sales invoices matched your search and filter criteria. Try adjusting your search term or date range.
+      <!-- Empty State (Matching BillingTable.vue:195-201) -->
+      <div v-else-if="vouchers.length === 0" class="py-14 text-center text-gray-400">
+        <Receipt class="w-8 h-8 mx-auto text-gray-300 mb-2" />
+        <p class="text-sm font-semibold text-gray-700">No vouchers found</p>
+        <p class="text-xs text-gray-400 mt-0.5 max-w-sm mx-auto">
+          No BUSY sales invoices matching your criteria were found.
         </p>
         <button
           v-if="hasActiveFilters"
           @click="resetAllFilters"
-          class="mt-2 px-4 py-2 text-xs sm:text-sm font-semibold text-[#1b3b5f] bg-sky-50 hover:bg-sky-100 rounded-xl transition cursor-pointer"
+          class="mt-3 px-3 py-1.5 text-xs font-semibold text-[#1b3b5f] bg-sky-50 hover:bg-sky-100 rounded-lg transition cursor-pointer"
         >
           Reset All Filters
         </button>
@@ -246,184 +236,164 @@
 
       <!-- Content Views (Desktop Table + Mobile Cards) -->
       <div v-else>
-        <!-- DESKTOP TABLE VIEW (hidden md:block) -->
-        <div class="hidden md:block w-full overflow-x-auto no-scrollbar">
-          <table class="w-full text-left border-collapse table-auto md:min-w-[980px]">
+        <!-- DESKTOP TABLE VIEW (Matching BillingTable.vue:152-328 exact classes) -->
+        <div class="hidden md:block overflow-x-auto no-scrollbar">
+          <table class="w-full text-left border-collapse min-w-full text-sm text-gray-600">
             <thead>
-              <tr class="bg-gray-50/90 border-b border-gray-200/80 text-xs font-bold text-gray-500 uppercase tracking-wider">
-                <th class="pl-5 pr-4 py-4">Voucher No</th>
-                <th class="px-4 py-4">Date</th>
-                <th class="px-4 py-4">Customer / Party</th>
-                <th class="px-4 py-4 text-center">Series</th>
-                <th class="px-4 py-4 text-center">Items</th>
-                <th class="px-4 py-4 text-right">Invoice Amount</th>
-                <th class="pr-5 pl-4 py-4 text-center">Action</th>
+              <tr class="bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                <th class="px-5 py-3.5 whitespace-nowrap">Voucher No</th>
+                <th class="px-5 py-3.5 whitespace-nowrap">Date</th>
+                <th class="px-5 py-3.5">Customer & Series</th>
+                <th class="px-5 py-3.5 whitespace-nowrap text-center">Items</th>
+                <th class="px-5 py-3.5 whitespace-nowrap text-right">Invoice Amount</th>
+                <th class="px-5 py-3.5 whitespace-nowrap text-right pr-5">Actions</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-gray-100">
+            <tbody class="divide-y divide-gray-100 bg-white">
               <tr
                 v-for="v in vouchers"
                 :key="'desk-' + v.id"
                 @click="openVoucherDrawer(v)"
-                class="hover:bg-gray-50/80 transition-colors cursor-pointer group"
+                class="cursor-pointer hover:bg-gray-50/80 transition-colors duration-150 group"
               >
-                <!-- Voucher No -->
-                <td class="pl-5 pr-4 py-4 whitespace-nowrap">
-                  <div class="flex items-center gap-2">
-                    <span
-                      class="font-mono text-sm font-bold px-2.5 py-1 rounded-lg border transition"
-                      :class="v.series === 'SMG'
-                        ? 'bg-sky-50 text-sky-800 border-sky-200 group-hover:bg-sky-100'
-                        : 'bg-emerald-50 text-emerald-800 border-emerald-200 group-hover:bg-emerald-100'"
-                    >
+                <!-- 1. Voucher No (Matching BillingTable.vue Order ID) -->
+                <td class="px-5 py-3.5 whitespace-nowrap">
+                  <div class="flex items-center gap-1.5 flex-wrap">
+                    <span class="text-xs font-bold text-gray-900 group-hover:text-[#1b3b5f] transition-colors">
                       {{ v.voucherNo }}
                     </span>
-                  </div>
-                </td>
-
-                <!-- Date -->
-                <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
-                  <div class="flex items-center gap-2">
-                    <Calendar class="w-4 h-4 text-gray-400" />
-                    <span>{{ formatDate(v.voucherDate) }}</span>
-                  </div>
-                </td>
-
-                <!-- Customer -->
-                <td class="px-4 py-4 max-w-xs">
-                  <div class="flex flex-col">
-                    <span class="font-semibold text-sm text-gray-900 truncate" :title="v.customerName">
-                      {{ v.customerName }}
-                    </span>
-                    <span v-if="v.customerCode" class="text-xs font-mono text-gray-400 mt-0.5">
-                      {{ v.customerCode }}
+                    <span
+                      class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-bold"
+                      :class="v.series === 'SMG' ? 'bg-sky-100 text-sky-800' : 'bg-emerald-100 text-emerald-800'"
+                    >
+                      {{ v.series === 'SMG' ? 'SMG' : 'RETAIL' }}
                     </span>
                   </div>
+                  <p class="text-[11px] text-gray-400 mt-0.5 tabular-nums">
+                    BUSY {{ v.voucherType || 'Sales' }}
+                  </p>
                 </td>
 
-                <!-- Series -->
-                <td class="px-4 py-4 whitespace-nowrap text-center">
-                  <span
-                    class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold"
-                    :class="v.series === 'SMG'
-                      ? 'bg-sky-100 text-sky-800'
-                      : 'bg-emerald-100 text-emerald-800'"
-                  >
-                    {{ v.series === 'SMG' ? 'Wholesale (SMG)' : 'Retail Direct' }}
+                <!-- 2. Date -->
+                <td class="px-5 py-3.5 whitespace-nowrap">
+                  <span class="text-xs text-gray-700">
+                    {{ formatDate(v.voucherDate) }}
                   </span>
                 </td>
 
-                <!-- Items Count -->
-                <td class="px-4 py-4 whitespace-nowrap text-center">
-                  <span class="inline-flex items-center gap-1.5 text-xs sm:text-sm text-gray-700 bg-gray-100 px-2.5 py-1 rounded-md font-semibold">
-                    <Package class="w-3.5 h-3.5 text-gray-400" />
-                    {{ v.itemCount || (v.items ? v.items.length : 0) }}
-                  </span>
+                <!-- 3. Customer (Matching BillingTable.vue Customer & Tier) -->
+                <td class="px-5 py-3.5 min-w-0">
+                  <div class="text-xs font-semibold text-gray-900 truncate" :title="v.customerName">
+                    {{ v.customerName }}
+                  </div>
+                  <p v-if="v.customerCode" class="text-[11px] text-gray-500 truncate mt-0.5 font-mono">
+                    {{ v.customerCode }}
+                  </p>
                 </td>
 
-                <!-- Total Amount & Tax -->
-                <td class="px-4 py-4 whitespace-nowrap text-right">
-                  <div class="flex flex-col items-end">
-                    <span class="font-mono text-sm sm:text-base font-bold text-gray-900">
-                      {{ formatCurrency(v.totalAmount) }}
-                    </span>
-                    <div class="text-xs text-gray-500 font-mono flex items-center gap-1 mt-0.5">
-                      <span>Tax: {{ formatCurrency(v.taxAmount) }}</span>
-                    </div>
+                <!-- 4. Items (Matching BillingTable.vue Items) -->
+                <td class="px-5 py-3.5 whitespace-nowrap text-center">
+                  <div class="text-xs font-bold text-gray-800">
+                    {{ v.itemCount || (v.items ? v.items.length : 0) }} {{ (v.itemCount === 1 || (v.items && v.items.length === 1)) ? 'item' : 'items' }}
                   </div>
                 </td>
 
-                <!-- Action -->
-                <td class="pr-5 pl-4 py-4 whitespace-nowrap text-center" @click.stop>
-                  <button
-                    @click="openVoucherDrawer(v)"
-                    class="p-2 rounded-lg text-gray-400 hover:text-[#1b3b5f] hover:bg-sky-50 transition cursor-pointer"
-                    title="View itemized line items"
-                  >
-                    <Eye class="w-4.5 h-4.5" />
-                  </button>
+                <!-- 5. Amount (Matching BillingTable.vue Amount) -->
+                <td class="px-5 py-3.5 whitespace-nowrap text-right">
+                  <span class="text-xs font-bold text-gray-900 tabular-nums">
+                    {{ formatCurrency(v.totalAmount) }}
+                  </span>
+                  <p v-if="v.taxAmount" class="text-[11px] text-gray-400 mt-0.5 tabular-nums">
+                    Tax: {{ formatCurrency(v.taxAmount) }}
+                  </p>
+                </td>
+
+                <!-- 6. Action Button (Matching BillingTable.vue View Bill button) -->
+                <td class="px-5 py-3.5 text-right whitespace-nowrap pr-5">
+                  <div class="flex items-center justify-end">
+                    <button
+                      @click.stop="openVoucherDrawer(v)"
+                      class="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 border border-gray-200 shadow-2xs transition-colors flex items-center justify-center gap-1 cursor-pointer whitespace-nowrap"
+                    >
+                      <span>View Bill</span>
+                      <ChevronRight class="w-3.5 h-3.5 text-gray-400" />
+                    </button>
+                  </div>
                 </td>
               </tr>
             </tbody>
           </table>
         </div>
 
-        <!-- MOBILE HIGH-DENSITY CARD VIEW (md:hidden) -->
-        <div class="md:hidden divide-y divide-gray-100 bg-white">
+        <!-- MOBILE VIEW (Matching BillingTable.vue:351-420 exact 2-line cards) -->
+        <div class="block md:hidden divide-y divide-gray-100 bg-white">
           <div
             v-for="v in vouchers"
             :key="'mob-' + v.id"
             @click="openVoucherDrawer(v)"
-            class="p-4 sm:p-5 space-y-3 hover:bg-gray-50 active:bg-gray-100 transition-colors cursor-pointer"
+            class="px-3.5 py-3 cursor-pointer transition-colors flex flex-col gap-1.5 hover:bg-gray-50 active:bg-gray-100"
           >
-            <!-- Line 1: Voucher No Badge, Series Pill, Date -->
-            <div class="flex items-center justify-between gap-2">
-              <div class="flex items-center gap-2 flex-wrap min-w-0">
-                <span
-                  class="font-mono text-xs sm:text-sm font-bold px-2.5 py-1 rounded-lg border shrink-0"
-                  :class="v.series === 'SMG'
-                    ? 'bg-sky-50 text-sky-800 border-sky-200'
-                    : 'bg-emerald-50 text-emerald-800 border-emerald-200'"
-                >
+            <!-- LINE 1: Voucher No, Series, Customer & Date -->
+            <div class="flex items-center justify-between gap-2 min-w-0">
+              <div class="flex items-center gap-1.5 min-w-0 flex-1">
+                <span class="text-xs font-bold text-gray-900 shrink-0">
                   {{ v.voucherNo }}
                 </span>
                 <span
-                  class="px-2.5 py-0.5 rounded-full text-xs font-bold shrink-0"
+                  class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-bold shrink-0"
                   :class="v.series === 'SMG' ? 'bg-sky-100 text-sky-800' : 'bg-emerald-100 text-emerald-800'"
                 >
-                  {{ v.series === 'SMG' ? 'Wholesale' : 'Retail' }}
+                  {{ v.series === 'SMG' ? 'SMG' : 'RETAIL' }}
+                </span>
+                <span class="text-gray-300 text-xs shrink-0">&bull;</span>
+                <span class="text-xs font-semibold text-gray-700 truncate" :title="v.customerName">
+                  {{ v.customerName }}
                 </span>
               </div>
-              <span class="text-xs text-gray-500 flex items-center gap-1.5 shrink-0 font-medium">
-                <Calendar class="w-4 h-4 text-gray-400" />
+              <span class="text-[11px] text-gray-400 tabular-nums shrink-0">
                 {{ formatDate(v.voucherDate) }}
               </span>
             </div>
 
-            <!-- Line 2: Customer Name & Code -->
-            <div class="min-w-0">
-              <h3 class="text-sm sm:text-base font-bold text-gray-900 leading-snug truncate" :title="v.customerName">
-                {{ v.customerName }}
-              </h3>
-              <span v-if="v.customerCode" class="text-xs font-mono text-gray-400 mt-0.5 block">
-                {{ v.customerCode }}
-              </span>
-            </div>
-
-            <!-- Line 3: Items Count & Total Amount with Tax Split -->
-            <div class="flex items-center justify-between gap-2 pt-1.5 border-t border-gray-100 text-xs sm:text-sm">
-              <span class="inline-flex items-center gap-1.5 text-xs text-gray-600 bg-gray-100 px-2.5 py-1 rounded-md font-medium">
-                <Package class="w-3.5 h-3.5 text-gray-400" />
-                {{ v.itemCount || (v.items ? v.items.length : 0) }} items
-              </span>
-              <div class="text-right">
-                <span class="font-mono text-sm sm:text-base font-bold text-gray-900">
+            <!-- LINE 2: Amount, Items, Tax & View -->
+            <div class="flex items-center justify-between gap-2 min-w-0 pt-0.5">
+              <div class="flex items-baseline gap-1.5 min-w-0">
+                <span class="text-xs font-bold text-gray-900 tabular-nums shrink-0">
                   {{ formatCurrency(v.totalAmount) }}
                 </span>
-                <span v-if="v.taxAmount" class="block text-xs font-mono text-gray-500">
+                <span class="text-[11px] text-gray-400 font-normal shrink-0">
+                  ({{ v.itemCount || (v.items ? v.items.length : 0) }} items)
+                </span>
+                <span v-if="v.taxAmount" class="text-gray-300 text-[10px] shrink-0">&bull;</span>
+                <span v-if="v.taxAmount" class="text-[11px] text-gray-400 tabular-nums truncate">
                   Tax: {{ formatCurrency(v.taxAmount) }}
                 </span>
               </div>
+
+              <span class="text-xs font-semibold text-[#1b3b5f] flex items-center gap-0.5 shrink-0">
+                <span>View</span>
+                <ChevronRight class="w-3 h-3 text-gray-400" />
+              </span>
             </div>
           </div>
         </div>
       </div>
 
       <!-- Pagination Footer -->
-      <div v-if="pagination.totalPages > 1" class="px-4 py-3 sm:px-5 sm:py-4 border-t border-gray-100 bg-gray-50/50 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs sm:text-sm text-gray-600">
+      <div v-if="pagination.totalPages > 1" class="px-5 py-3 border-t border-gray-200 bg-gray-50/50 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-600">
         <div class="order-2 sm:order-1 text-center sm:text-left">
           Page <span class="font-bold text-gray-900">{{ pagination.page }}</span> of
           <span class="font-bold text-gray-900">{{ pagination.totalPages }}</span>
           <span class="text-gray-400 ml-1">({{ pagination.total.toLocaleString() }} total)</span>
         </div>
 
-        <div class="order-1 sm:order-2 flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+        <div class="order-1 sm:order-2 flex items-center gap-1.5 w-full sm:w-auto justify-between sm:justify-end">
           <button
             @click="goToPage(pagination.page - 1)"
             :disabled="pagination.page <= 1 || isLoading"
-            class="flex-1 sm:flex-none px-4 py-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition font-semibold flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer text-xs sm:text-sm"
+            class="px-3 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition font-medium flex items-center justify-center gap-1 shadow-2xs cursor-pointer text-xs"
           >
-            <ChevronLeft class="w-4 h-4" /> Prev
+            <ChevronLeft class="w-3.5 h-3.5" /> Prev
           </button>
           <span class="sm:hidden font-mono text-xs font-semibold px-2">
             {{ pagination.page }} / {{ pagination.totalPages }}
@@ -431,15 +401,15 @@
           <button
             @click="goToPage(pagination.page + 1)"
             :disabled="pagination.page >= pagination.totalPages || isLoading"
-            class="flex-1 sm:flex-none px-4 py-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition font-semibold flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer text-xs sm:text-sm"
+            class="px-3 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition font-medium flex items-center justify-center gap-1 shadow-2xs cursor-pointer text-xs"
           >
-            Next <ChevronRight class="w-4 h-4" />
+            Next <ChevronRight class="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
     </div>
 
-    <!-- Line Items Slide-Over Drawer / Modal (Expanded Sizing) -->
+    <!-- Line Items Slide-Over Drawer / Modal (Matching OrderDetailPanel.vue:1034-1644 exact width & font sizes) -->
     <Teleport to="body">
       <div
         v-if="isDrawerOpen"
@@ -449,260 +419,199 @@
         <!-- Backdrop -->
         <div
           @click="closeVoucherDrawer"
-          class="absolute inset-0 bg-black/60 backdrop-blur-xs transition-opacity duration-300"
+          class="absolute inset-0 bg-black/40 backdrop-blur-[2px] transition-opacity duration-300"
         ></div>
 
-        <!-- Slide-over Panel (Enlarged width: sm:w-[780px] md:w-[860px] lg:w-[920px]) -->
-        <div class="fixed inset-y-0 right-0 max-w-full flex w-full">
-          <div class="w-full sm:w-[780px] md:w-[860px] lg:w-[920px] bg-white shadow-2xl border-l border-gray-200 flex flex-col h-full max-h-screen">
-            <!-- Drawer Header (Sticky Top) -->
-            <div class="p-5 sm:p-6 border-b border-gray-200 bg-gray-50/90 shrink-0 flex items-start justify-between gap-3">
-              <div class="space-y-1.5 min-w-0">
-                <div class="flex items-center gap-2.5 flex-wrap">
-                  <span
-                    class="font-mono text-lg sm:text-xl font-bold px-3 py-1 rounded-xl border"
-                    :class="selectedVoucher?.series === 'SMG'
-                      ? 'bg-sky-50 text-sky-800 border-sky-300'
-                      : 'bg-emerald-50 text-emerald-800 border-emerald-300'"
-                  >
+        <!-- Slide-over Panel (Matching OrderDetailPanel.vue:1036 standard width: sm:max-w-[500px] md:max-w-[540px]) -->
+        <div class="fixed inset-y-0 right-0 max-w-full flex w-full justify-end">
+          <div class="w-full sm:max-w-[500px] md:max-w-[540px] bg-white shadow-2xl border-l border-gray-200/80 flex flex-col h-full overflow-hidden">
+            <!-- 1. Drawer Header (Matching OrderDetailPanel.vue:1043-1110) -->
+            <div class="px-5 sm:px-6 py-3.5 border-b border-gray-200/80 flex items-center justify-between bg-white flex-shrink-0 z-10">
+              <div class="flex items-center gap-2 flex-wrap min-w-0">
+                <div class="flex items-center gap-1.5">
+                  <h2 class="text-base sm:text-lg font-bold font-mono tracking-tight text-gray-950">
                     {{ selectedVoucher?.voucherNo }}
-                  </span>
-                  <span
-                    class="px-2.5 py-1 rounded-full text-xs sm:text-sm font-bold"
-                    :class="selectedVoucher?.series === 'SMG' ? 'bg-sky-100 text-sky-800' : 'bg-emerald-100 text-emerald-800'"
+                  </h2>
+                  <button
+                    @click="copyVoucherNumber"
+                    class="p-1 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded transition cursor-pointer"
+                    :title="copiedVoucherNo ? 'Copied to clipboard!' : 'Copy Voucher Number'"
                   >
-                    {{ selectedVoucher?.series === 'SMG' ? 'Wholesale (SMG)' : 'Retail Direct' }}
-                  </span>
+                    <Check v-if="copiedVoucherNo" class="w-3.5 h-3.5 text-emerald-600" />
+                    <Copy v-else class="w-3.5 h-3.5" />
+                  </button>
                 </div>
-                <div class="flex items-center gap-2.5 text-xs sm:text-sm text-gray-500 pt-0.5 flex-wrap">
-                  <span class="flex items-center gap-1.5">
-                    <Calendar class="w-4 h-4 text-gray-400" />
-                    {{ formatDate(selectedVoucher?.voucherDate) }}
-                  </span>
-                  <span>•</span>
-                  <span>BUSY VchType: <strong class="text-gray-700 font-medium">{{ selectedVoucher?.voucherType }}</strong></span>
-                </div>
+                <span
+                  class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold"
+                  :class="selectedVoucher?.series === 'SMG' ? 'bg-sky-50 text-sky-800 border border-sky-200' : 'bg-emerald-50 text-emerald-800 border border-emerald-200'"
+                >
+                  {{ selectedVoucher?.series === 'SMG' ? 'Wholesale (SMG)' : 'Retail Direct' }}
+                </span>
               </div>
 
-              <!-- Close & Copy -->
-              <div class="flex items-center gap-2 shrink-0">
-                <button
-                  @click="copyVoucherNumber"
-                  class="px-3 py-2 text-xs sm:text-sm font-semibold text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 active:bg-gray-100 transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
-                  title="Copy Voucher Number"
-                >
-                  <Check v-if="copiedVoucherNo" class="w-4 h-4 text-emerald-600" />
-                  <Copy v-else class="w-4 h-4 text-gray-400" />
-                  <span class="hidden sm:inline">{{ copiedVoucherNo ? 'Copied' : 'Copy' }}</span>
-                </button>
-                <button
-                  @click="closeVoucherDrawer"
-                  class="p-2 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition cursor-pointer"
-                  title="Close"
-                >
-                  <X class="w-5.5 h-5.5" />
-                </button>
+              <button
+                @click="closeVoucherDrawer"
+                class="p-1.5 text-gray-400 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                title="Close Panel"
+              >
+                <X class="w-5 h-5" />
+              </button>
+            </div>
+
+            <!-- 2. Sub-header Quick Snapshot (Matching OrderDetailPanel.vue:1114-1144) -->
+            <div class="px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-b from-gray-50/90 to-gray-50/40 border-b border-gray-200/80 flex-shrink-0">
+              <div class="flex items-center justify-between gap-3 sm:gap-4">
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-center gap-1.5">
+                    <Building2 class="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                    <h3 class="text-sm font-bold text-gray-900 truncate">
+                      {{ selectedVoucher?.customerName || 'Customer' }}
+                    </h3>
+                  </div>
+                  <div class="flex items-center gap-1.5 min-w-0 text-xs text-gray-500 mt-0.5">
+                    <span v-if="selectedVoucher?.customerCode" class="font-mono text-gray-700">{{ selectedVoucher.customerCode }}</span>
+                    <span v-if="selectedVoucher?.customerCode" class="w-1 h-1 rounded-full bg-gray-400 shrink-0 self-center" />
+                    <span class="whitespace-nowrap shrink-0">Billed on {{ formatDate(selectedVoucher?.voucherDate) }}</span>
+                  </div>
+                </div>
+                <div class="text-right shrink-0">
+                  <div class="text-sm sm:text-lg font-black text-[#1b3b5f] tracking-tight tabular-nums">
+                    {{ formatCurrency(selectedVoucher?.totalAmount || 0) }}
+                  </div>
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-200/70 text-gray-700 mt-0.5">
+                    {{ selectedVoucher?.items?.length || 0 }} {{ selectedVoucher?.items?.length === 1 ? 'item' : 'items' }}
+                  </span>
+                </div>
               </div>
             </div>
 
-            <!-- Customer & Tax Summary Banner -->
-            <div class="p-5 sm:p-6 bg-white border-b border-gray-100 shrink-0 flex flex-col gap-4">
-              <div class="min-w-0">
-                <p class="text-xs font-bold uppercase tracking-wider text-gray-400">Customer / Billed Party</p>
-                <p class="font-bold text-base sm:text-lg text-gray-900 mt-1 leading-snug">{{ selectedVoucher?.customerName }}</p>
-                <div class="flex items-center gap-2.5 mt-1.5">
-                  <span v-if="selectedVoucher?.customerCode" class="text-xs sm:text-sm font-mono text-gray-600 bg-gray-100 px-2 py-0.5 rounded font-medium">
-                    {{ selectedVoucher?.customerCode }}
-                  </span>
-                  <NuxtLink
-                    v-if="selectedVoucher?.customerCode"
-                    :to="`/dashboard/customers?search=${encodeURIComponent(selectedVoucher.customerCode)}`"
-                    class="text-xs sm:text-sm text-sky-600 hover:text-sky-800 font-semibold inline-flex items-center gap-1"
-                  >
-                    <span>View Customer</span>
-                    <ExternalLink class="w-3.5 h-3.5" />
-                  </NuxtLink>
-                </div>
-              </div>
-
-              <!-- 3 KPI Badges -->
-              <div class="grid grid-cols-3 gap-2.5 sm:gap-3">
-                <div class="px-3.5 sm:px-4 py-2.5 sm:py-3 bg-gray-50 rounded-xl border border-gray-200 text-center sm:text-right">
-                  <p class="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-gray-400">Taxable</p>
-                  <p class="font-mono text-sm sm:text-base font-bold text-gray-800 truncate mt-0.5">
+            <!-- 3. Drawer Body (Scrollable) -->
+            <div class="flex-grow overflow-y-auto bg-white p-4 sm:p-6 space-y-4">
+              <!-- Quick 3 KPI Cards -->
+              <div class="grid grid-cols-3 gap-2">
+                <div class="px-2.5 py-1.5 bg-gray-50 rounded-lg border border-gray-200 text-center">
+                  <p class="text-[9px] font-bold uppercase tracking-wider text-gray-400">Taxable</p>
+                  <p class="font-mono text-xs font-bold text-gray-700 truncate mt-0.5">
                     {{ formatCurrency(selectedVoucher?.taxableAmount) }}
                   </p>
                 </div>
-                <div class="px-3.5 sm:px-4 py-2.5 sm:py-3 bg-emerald-50/70 rounded-xl border border-emerald-200 text-center sm:text-right">
-                  <p class="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-emerald-700">Total Tax</p>
-                  <p class="font-mono text-sm sm:text-base font-bold text-emerald-800 truncate mt-0.5">
+                <div class="px-2.5 py-1.5 bg-emerald-50/70 rounded-lg border border-emerald-200 text-center">
+                  <p class="text-[9px] font-bold uppercase tracking-wider text-emerald-700">Total Tax</p>
+                  <p class="font-mono text-xs font-bold text-emerald-800 truncate mt-0.5">
                     {{ formatCurrency(selectedVoucher?.taxAmount) }}
                   </p>
                 </div>
-                <div class="px-3.5 sm:px-4 py-2.5 sm:py-3 bg-[#1b3b5f]/10 rounded-xl border border-[#1b3b5f]/30 text-center sm:text-right">
-                  <p class="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-[#1b3b5f]">Grand Total</p>
-                  <p class="font-mono text-base sm:text-lg font-extrabold text-[#1b3b5f] truncate mt-0.5">
+                <div class="px-2.5 py-1.5 bg-[#1b3b5f]/10 rounded-lg border border-[#1b3b5f]/30 text-center">
+                  <p class="text-[9px] font-bold uppercase tracking-wider text-[#1b3b5f]">Grand Total</p>
+                  <p class="font-mono text-xs font-extrabold text-[#1b3b5f] truncate mt-0.5">
                     {{ formatCurrency(selectedVoucher?.totalAmount) }}
                   </p>
                 </div>
               </div>
-            </div>
 
-            <!-- Itemized Line Items Container (Scrollable) -->
-            <div class="flex-1 overflow-y-auto p-5 sm:p-6 space-y-5 no-scrollbar">
-              <div class="flex items-center justify-between">
-                <h4 class="text-xs sm:text-sm font-bold text-gray-800 uppercase tracking-wider flex items-center gap-2">
-                  <Package class="w-4.5 h-4.5 text-gray-500" />
-                  <span>Itemized Line Items</span>
-                </h4>
-                <span class="text-xs sm:text-sm text-gray-600 font-semibold">
-                  Total Lines: <strong>{{ selectedVoucher?.items?.length || 0 }}</strong>
-                </span>
-              </div>
+              <!-- Itemized Line Items Table (Matching OrderDetailPanel.vue:1551-1644 exact typography & spacing) -->
+              <div class="space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="text-[11px] font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
+                    <Package class="w-3.5 h-3.5 text-gray-400" />
+                    Itemized Line Items
+                  </span>
+                  <NuxtLink
+                    v-if="selectedVoucher?.customerCode"
+                    :to="`/dashboard/customers?search=${encodeURIComponent(selectedVoucher.customerCode)}`"
+                    class="text-[11px] text-sky-600 hover:text-sky-800 font-semibold inline-flex items-center gap-1"
+                  >
+                    <span>View Customer</span>
+                    <ExternalLink class="w-3 h-3" />
+                  </NuxtLink>
+                </div>
 
-              <div v-if="!selectedVoucher?.items || selectedVoucher.items.length === 0" class="p-8 text-center text-xs sm:text-sm text-gray-400 border border-dashed border-gray-200 rounded-xl">
-                No individual item lines recorded on this invoice.
-              </div>
+                <div v-if="!selectedVoucher?.items || selectedVoucher.items.length === 0" class="p-6 text-center text-xs text-gray-400 border border-dashed border-gray-200 rounded-xl">
+                  No individual item lines recorded on this invoice.
+                </div>
 
-              <!-- Desktop table inside drawer (hidden on very small screens, visible on sm+) -->
-              <div v-else class="hidden sm:block border border-gray-200 rounded-xl overflow-hidden shadow-2xs">
-                <table class="w-full text-left border-collapse table-auto text-xs sm:text-sm">
-                  <thead>
-                    <tr class="bg-gray-50/90 border-b border-gray-200 text-xs font-bold text-gray-600 uppercase tracking-wider">
-                      <th class="py-3 px-3.5 w-10 text-center">#</th>
-                      <th class="py-3 px-3.5">Item & HSN</th>
-                      <th class="py-3 px-3.5 text-center">Qty</th>
-                      <th class="py-3 px-3.5 text-right">Billed Rate</th>
-                      <th class="py-3 px-3.5 text-right">Taxable</th>
-                      <th class="py-3 px-3.5 text-right">GST % & Tax</th>
-                      <th class="py-3 px-3.5 text-right">Line Total</th>
-                    </tr>
-                  </thead>
-                  <tbody class="divide-y divide-gray-100">
-                    <tr
-                      v-for="(item, idx) in selectedVoucher.items"
-                      :key="'desk-item-' + idx"
-                      class="hover:bg-gray-50/60 transition"
-                    >
-                      <td class="py-3.5 px-3.5 text-center text-gray-400 font-mono text-xs sm:text-sm">{{ idx + 1 }}</td>
-                      <td class="py-3.5 px-3.5 max-w-[240px] md:max-w-[320px]">
-                        <div class="flex flex-col">
-                          <span class="font-bold text-xs sm:text-sm text-gray-900 leading-snug break-words" :title="item.name">{{ item.name }}</span>
-                          <div class="flex items-center gap-2 mt-1 flex-wrap">
-                            <span v-if="item.sku" class="text-xs font-mono text-gray-500">SKU: {{ item.sku }}</span>
-                            <span v-if="item.hsn" class="text-xs font-mono font-medium text-gray-700 bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200">
-                              HSN: {{ item.hsn }}
-                            </span>
+                <div v-else class="overflow-x-auto border border-gray-200/80 rounded-xl shadow-2xs">
+                  <table class="w-full text-left text-xs sm:text-sm">
+                    <thead class="bg-gray-50/80 text-[11px] font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-200/70">
+                      <tr>
+                        <th class="px-3.5 py-2.5 font-semibold">Product</th>
+                        <th class="px-3 py-2.5 font-semibold text-right">Rate</th>
+                        <th class="px-3 py-2.5 font-semibold text-right">Qty</th>
+                        <th class="px-3.5 py-2.5 font-semibold text-right">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100 bg-white">
+                      <tr
+                        v-for="(item, idx) in selectedVoucher.items"
+                        :key="'item-' + idx"
+                        class="bg-white hover:bg-gray-50/60 transition-colors"
+                      >
+                        <!-- Product (Matching OrderDetailPanel.vue:1578-1606) -->
+                        <td class="px-3.5 py-2.5">
+                          <div class="font-mono font-bold text-xs text-gray-900 truncate max-w-[160px] sm:max-w-[200px]" :title="item.name">
+                            {{ item.name }}
                           </div>
-                        </div>
-                      </td>
-                      <td class="py-3.5 px-3.5 text-center font-mono font-bold text-gray-900">{{ item.qty }}</td>
-                      <td class="py-3.5 px-3.5 text-right whitespace-nowrap">
-                        <div class="flex flex-col items-end">
-                          <span class="font-mono text-gray-900 font-medium">{{ formatCurrency(item.rate) }}</span>
-                          <span v-if="item.isTaxInclusive" class="text-[10px] text-sky-700 bg-sky-50 px-1.5 py-0.5 rounded font-semibold border border-sky-200 mt-0.5">
-                            Tax Incl.
-                          </span>
-                        </div>
-                      </td>
-                      <td class="py-3.5 px-3.5 text-right font-mono text-gray-800 font-semibold whitespace-nowrap">
-                        {{ formatCurrency(item.taxableAmount) }}
-                      </td>
-                      <td class="py-3.5 px-3.5 text-right whitespace-nowrap">
-                        <div class="flex flex-col items-end">
-                          <span class="font-mono font-bold text-emerald-800">{{ formatCurrency(item.taxAmount) }}</span>
-                          <span class="text-xs text-gray-500 font-mono mt-0.5">
-                            {{ item.taxRate ? item.taxRate + '%' : '0%' }}
-                            <span v-if="item.cgstRate && item.sgstRate">({{ item.cgstRate }}+{{ item.sgstRate }})</span>
-                            <span v-else-if="item.igstRate">(IGST)</span>
-                          </span>
-                        </div>
-                      </td>
-                      <td class="py-3.5 px-3.5 text-right font-mono font-extrabold text-gray-950 whitespace-nowrap">
-                        {{ formatCurrency(item.amount) }}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
+                          <div class="flex items-center gap-1.5 text-[11px] text-gray-500 mt-0.5 flex-wrap">
+                            <span v-if="item.sku" class="font-mono">SKU: {{ item.sku }}</span>
+                            <span v-if="item.hsn" class="font-mono bg-gray-100 px-1 py-0.2 rounded text-[10px] text-gray-700">HSN: {{ item.hsn }}</span>
+                            <span v-if="item.taxRate" class="font-mono text-emerald-700 text-[10px]">GST {{ item.taxRate }}%</span>
+                          </div>
+                        </td>
 
-              <!-- Mobile line item cards inside drawer (sm:hidden) -->
-              <div v-if="selectedVoucher?.items?.length" class="sm:hidden space-y-3">
-                <div
-                  v-for="(item, idx) in selectedVoucher.items"
-                  :key="'mob-item-' + idx"
-                  class="p-3.5 bg-gray-50/80 rounded-xl border border-gray-200 text-xs sm:text-sm space-y-2"
-                >
-                  <div class="flex items-start justify-between gap-2">
-                    <div class="min-w-0">
-                      <span class="text-xs text-gray-400 font-mono mr-1">#{{ idx + 1 }}</span>
-                      <span class="font-bold text-sm text-gray-900">{{ item.name }}</span>
-                    </div>
-                    <span class="font-mono font-extrabold text-sm sm:text-base text-gray-900 text-right shrink-0">
-                      {{ formatCurrency(item.amount) }}
-                    </span>
-                  </div>
+                        <!-- Rate (Matching OrderDetailPanel.vue:1610-1612) -->
+                        <td class="px-3 py-2.5 text-right font-medium text-gray-600 tabular-nums whitespace-nowrap text-xs">
+                          {{ formatCurrency(item.rate) }}
+                        </td>
 
-                  <div class="flex items-center gap-2 flex-wrap text-xs text-gray-500">
-                    <span v-if="item.sku" class="font-mono bg-white px-1.5 py-0.5 rounded border border-gray-200">SKU: {{ item.sku }}</span>
-                    <span v-if="item.hsn" class="font-mono bg-gray-200/80 px-1.5 py-0.5 rounded text-gray-700">HSN: {{ item.hsn }}</span>
-                    <span>•</span>
-                    <span class="font-mono font-bold text-gray-800">Qty: {{ item.qty }}</span>
-                    <span>@</span>
-                    <span class="font-mono font-semibold">{{ formatCurrency(item.rate) }}</span>
-                    <span v-if="item.isTaxInclusive" class="text-[10px] text-sky-700 bg-sky-50 px-1.5 py-0.2 rounded border border-sky-200">Tax Incl.</span>
-                  </div>
+                        <!-- Qty (Matching OrderDetailPanel.vue:1615-1638) -->
+                        <td class="px-3 py-2.5 font-bold tabular-nums whitespace-nowrap text-right text-gray-900 text-xs">
+                          {{ item.qty }}
+                        </td>
 
-                  <div class="flex items-center justify-between text-xs pt-1.5 border-t border-gray-200/80 font-mono text-gray-600">
-                    <span>Taxable: <strong class="text-gray-900">{{ formatCurrency(item.taxableAmount) }}</strong></span>
-                    <span>GST ({{ item.taxRate }}%): <strong class="text-emerald-700">{{ formatCurrency(item.taxAmount) }}</strong></span>
-                  </div>
+                        <!-- Total (Matching OrderDetailPanel.vue:1641-1643) -->
+                        <td class="px-3.5 py-2.5 text-right font-bold text-[#1b3b5f] tabular-nums whitespace-nowrap text-xs">
+                          {{ formatCurrency(item.amount) }}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
               </div>
 
-              <!-- Comprehensive Tax Invoice Summary Card -->
-              <div class="p-5 sm:p-6 bg-gray-50/90 rounded-2xl border border-gray-200 space-y-3 text-xs sm:text-sm">
+              <!-- Comprehensive Tax Invoice Summary Card (Matching OrderDetailPanel.vue design) -->
+              <div class="p-3.5 sm:p-4 bg-gray-50/80 rounded-xl border border-gray-200/70 space-y-1.5 text-xs">
                 <div class="flex items-center justify-between text-gray-600">
-                  <span class="font-medium">Taxable Subtotal:</span>
-                  <span class="font-mono font-bold text-gray-800">{{ formatCurrency(selectedVoucher?.taxableAmount) }}</span>
+                  <span>Taxable Subtotal:</span>
+                  <span class="font-mono font-semibold text-gray-800">{{ formatCurrency(selectedVoucher?.taxableAmount) }}</span>
                 </div>
                 <div v-if="Number(selectedVoucher?.cgstAmount) > 0" class="flex items-center justify-between text-gray-600">
-                  <span class="flex items-center gap-1.5 font-medium">
-                    <span class="w-2 h-2 rounded-full bg-blue-500"></span>
-                    CGST (Central Tax):
-                  </span>
-                  <span class="font-mono font-bold text-gray-800">{{ formatCurrency(selectedVoucher?.cgstAmount) }}</span>
+                  <span>CGST (Central Tax):</span>
+                  <span class="font-mono font-semibold text-gray-800">{{ formatCurrency(selectedVoucher?.cgstAmount) }}</span>
                 </div>
                 <div v-if="Number(selectedVoucher?.sgstAmount) > 0" class="flex items-center justify-between text-gray-600">
-                  <span class="flex items-center gap-1.5 font-medium">
-                    <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
-                    SGST (State Tax):
-                  </span>
-                  <span class="font-mono font-bold text-gray-800">{{ formatCurrency(selectedVoucher?.sgstAmount) }}</span>
+                  <span>SGST (State Tax):</span>
+                  <span class="font-mono font-semibold text-gray-800">{{ formatCurrency(selectedVoucher?.sgstAmount) }}</span>
                 </div>
                 <div v-if="Number(selectedVoucher?.igstAmount) > 0" class="flex items-center justify-between text-gray-600">
-                  <span class="flex items-center gap-1.5 font-medium">
-                    <span class="w-2 h-2 rounded-full bg-purple-500"></span>
-                    IGST (Integrated Tax):
-                  </span>
-                  <span class="font-mono font-bold text-gray-800">{{ formatCurrency(selectedVoucher?.igstAmount) }}</span>
+                  <span>IGST (Integrated Tax):</span>
+                  <span class="font-mono font-semibold text-gray-800">{{ formatCurrency(selectedVoucher?.igstAmount) }}</span>
                 </div>
-                <div class="flex items-center justify-between text-emerald-800 pt-2 border-t border-gray-200/80 font-semibold text-sm">
+                <div class="flex items-center justify-between text-emerald-800 pt-1 border-t border-gray-200/70 font-semibold">
                   <span>Total Tax Amount:</span>
-                  <span class="font-mono font-bold text-base">{{ formatCurrency(selectedVoucher?.taxAmount) }}</span>
+                  <span class="font-mono font-bold">{{ formatCurrency(selectedVoucher?.taxAmount) }}</span>
                 </div>
-                <div class="flex items-center justify-between text-gray-900 pt-2.5 border-t border-gray-300 font-bold text-sm sm:text-base">
+                <div class="flex items-center justify-between text-gray-900 pt-1.5 border-t border-gray-200 font-bold text-sm">
                   <span>Invoice Grand Total:</span>
-                  <span class="font-mono text-[#1b3b5f] text-lg sm:text-xl font-black">{{ formatCurrency(selectedVoucher?.totalAmount) }}</span>
+                  <span class="font-mono text-[#1b3b5f] font-black text-base">{{ formatCurrency(selectedVoucher?.totalAmount) }}</span>
                 </div>
               </div>
             </div>
 
-            <!-- Drawer Footer (Sticky Bottom) -->
-            <div class="p-4 sm:p-5 border-t border-gray-200 bg-gray-50 shrink-0 flex items-center justify-end gap-3">
+            <!-- Drawer Footer (Matching OrderDetailPanel.vue footer) -->
+            <div class="px-5 py-3 border-t border-gray-200/80 bg-gray-50 flex items-center justify-end">
               <button
                 @click="closeVoucherDrawer"
-                class="w-full sm:w-auto px-6 py-2.5 text-xs sm:text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-100 transition shadow-2xs cursor-pointer"
+                class="px-4 py-2 text-xs font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 transition shadow-2xs cursor-pointer"
               >
                 Close
               </button>
