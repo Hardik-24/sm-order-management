@@ -390,6 +390,45 @@ async function runSync() {
   }
 
   // -----------------------------------------------------------------------------
+  // STEP 5: BUSY Vouchers Sync (Voucher Explorer)
+  // -----------------------------------------------------------------------------
+  if (data.vouchers && data.vouchers.length > 0) {
+    console.log("\n[5/5] Syncing Full Sales Vouchers (Voucher Explorer)...");
+    const vchChunkSize = 100;
+    let vchSyncedCount = 0;
+
+    for (let i = 0; i < data.vouchers.length; i += vchChunkSize) {
+      const chunk = data.vouchers.slice(i, i + vchChunkSize);
+      const valuesList = chunk.map(v => {
+        const iCount = Number(v.itemCount || (v.items ? v.items.length : 0)) || 0;
+        const tot = Number(v.totalAmount) || 0;
+        const itemsJson = JSON.stringify(v.items || []);
+        return `(gen_random_uuid(), ${esc(v.voucherNo)}, ${v.voucherType || 2}, ${esc(v.series || 'RETAIL')}, '${v.voucherDate}'::timestamp, ${esc(v.customerCode)}, ${esc(v.customerName)}, ${tot}, ${iCount}, ${esc(itemsJson)}::jsonb, NOW(), NOW())`;
+      }).join(',');
+
+      await prisma.$executeRawUnsafe(`
+        INSERT INTO busy_vouchers (
+          id, "voucherNo", "voucherType", series, "voucherDate", "customerCode", "customerName",
+          "totalAmount", "itemCount", items, "createdAt", "updatedAt"
+        )
+        VALUES ${valuesList}
+        ON CONFLICT ("voucherNo") DO UPDATE SET
+          "voucherType" = EXCLUDED."voucherType",
+          series = EXCLUDED.series,
+          "voucherDate" = EXCLUDED."voucherDate",
+          "customerCode" = EXCLUDED."customerCode",
+          "customerName" = EXCLUDED."customerName",
+          "totalAmount" = EXCLUDED."totalAmount",
+          "itemCount" = EXCLUDED."itemCount",
+          items = EXCLUDED.items,
+          "updatedAt" = NOW();
+      `);
+      vchSyncedCount += chunk.length;
+    }
+    console.log(`  -> Synced ${vchSyncedCount} full vouchers with items into database.`);
+  }
+
+  // -----------------------------------------------------------------------------
   // VERIFICATION
   // -----------------------------------------------------------------------------
   const totalProducts = await prisma.product.count();

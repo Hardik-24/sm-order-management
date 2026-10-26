@@ -107,7 +107,7 @@
       </div>
 
       <!-- DATA -->
-      <div v-if="canAccessRoute('/dashboard/customers') || canAccessRoute('/dashboard/products')">
+      <div v-if="canAccessRoute('/dashboard/customers') || canAccessRoute('/dashboard/products') || canAccessRoute('/dashboard/vouchers')">
         <h3 v-if="!isSidebarCollapsed" class="mb-3 px-3 text-[10px] font-bold uppercase tracking-widest text-gray-500 whitespace-nowrap">DATA</h3>
         <div v-else class="mb-3 h-3 flex justify-center border-b border-gray-800 mx-2"></div>
         <nav class="flex flex-col gap-1">
@@ -118,6 +118,10 @@
           <NuxtLink v-if="canAccessRoute('/dashboard/products')" to="/dashboard/products" title="Products" class="flex items-center gap-3 rounded-md py-2.5 text-sm transition-colors" :class="[isLinkActive('/dashboard/products') ? 'bg-[#182d47] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50 hover:text-gray-200', isSidebarCollapsed ? 'justify-center px-0' : 'px-3']">
             <Box class="shrink-0 w-4 h-4 transition-colors" :class="isLinkActive('/dashboard/products') ? 'text-sky-400' : 'text-gray-400'" />
             <span v-if="!isSidebarCollapsed" class="font-medium whitespace-nowrap">Products</span>
+          </NuxtLink>
+          <NuxtLink v-if="canAccessRoute('/dashboard/vouchers')" to="/dashboard/vouchers" title="BUSY Vouchers" class="flex items-center gap-3 rounded-md py-2.5 text-sm transition-colors" :class="[isLinkActive('/dashboard/vouchers') ? 'bg-[#182d47] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50 hover:text-gray-200', isSidebarCollapsed ? 'justify-center px-0' : 'px-3']">
+            <Receipt class="shrink-0 w-4 h-4 transition-colors" :class="isLinkActive('/dashboard/vouchers') ? 'text-sky-400' : 'text-gray-400'" />
+            <span v-if="!isSidebarCollapsed" class="font-medium whitespace-nowrap">BUSY Vouchers</span>
           </NuxtLink>
         </nav>
       </div>
@@ -179,6 +183,7 @@
         <NuxtLink v-if="canAccessRoute('/dashboard/chat')" to="/dashboard/chat" :class="[isLinkActive('/dashboard/chat') ? 'text-sky-400' : 'text-gray-400']"><MessageSquare class="w-5 h-5" /></NuxtLink>
         <NuxtLink v-if="canAccessRoute('/dashboard/customers')" to="/dashboard/customers" :class="[isLinkActive('/dashboard/customers') ? 'text-sky-400' : 'text-gray-400']"><User class="w-5 h-5" /></NuxtLink>
         <NuxtLink v-if="canAccessRoute('/dashboard/products')" to="/dashboard/products" :class="[isLinkActive('/dashboard/products') ? 'text-sky-400' : 'text-gray-400']"><Box class="w-5 h-5" /></NuxtLink>
+        <NuxtLink v-if="canAccessRoute('/dashboard/vouchers')" to="/dashboard/vouchers" :class="[isLinkActive('/dashboard/vouchers') ? 'text-sky-400' : 'text-gray-400']"><Receipt class="w-5 h-5" /></NuxtLink>
         <NuxtLink v-if="user?.role === 'ADMIN' && canAccessRoute('/dashboard/admin')" to="/dashboard/admin" :class="[isLinkActive('/dashboard/admin') ? 'text-sky-400' : 'text-gray-400']"><Settings class="w-5 h-5" /></NuxtLink>
       </div>
 
@@ -278,13 +283,16 @@
       </div>
 
       <!-- DATA -->
-      <div v-if="canAccessRoute('/dashboard/customers') || canAccessRoute('/dashboard/products')" class="flex flex-col gap-1 mb-6">
+      <div v-if="canAccessRoute('/dashboard/customers') || canAccessRoute('/dashboard/products') || canAccessRoute('/dashboard/vouchers')" class="flex flex-col gap-1 mb-6">
         <h3 class="block mb-3 px-3 text-[10px] font-bold uppercase tracking-widest text-gray-500">DATA</h3>
         <NuxtLink v-if="canAccessRoute('/dashboard/customers')" to="/dashboard/customers" class="flex items-center gap-3 rounded-md py-2.5 px-3 text-sm transition-colors" :class="[isLinkActive('/dashboard/customers') ? 'bg-[#182d47] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50']">
           <User class="w-4 h-4 transition-colors" :class="isLinkActive('/dashboard/customers') ? 'text-sky-400' : 'text-gray-400'" /> <span class="font-medium">Customers</span>
         </NuxtLink>
         <NuxtLink v-if="canAccessRoute('/dashboard/products')" to="/dashboard/products" class="flex items-center gap-3 rounded-md py-2.5 px-3 text-sm transition-colors" :class="[isLinkActive('/dashboard/products') ? 'bg-[#182d47] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50']">
           <Box class="w-4 h-4 transition-colors" :class="isLinkActive('/dashboard/products') ? 'text-sky-400' : 'text-gray-400'" /> <span class="font-medium">Products</span>
+        </NuxtLink>
+        <NuxtLink v-if="canAccessRoute('/dashboard/vouchers')" to="/dashboard/vouchers" class="flex items-center gap-3 rounded-md py-2.5 px-3 text-sm transition-colors" :class="[isLinkActive('/dashboard/vouchers') ? 'bg-[#182d47] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50']">
+          <Receipt class="w-4 h-4 transition-colors" :class="isLinkActive('/dashboard/vouchers') ? 'text-sky-400' : 'text-gray-400'" /> <span class="font-medium">BUSY Vouchers</span>
         </NuxtLink>
       </div>
       
@@ -329,7 +337,8 @@ import {
   MessageSquare,
   Inbox,
   CheckCheck,
-  Calculator
+  Calculator,
+  Receipt
 } from 'lucide-vue-next'
 import { useRoute } from 'vue-router'
 import { watch, ref, computed, onMounted, onUnmounted, nextTick } from 'vue'

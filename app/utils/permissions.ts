@@ -28,6 +28,7 @@ export const APP_PAGES: AppPageDef[] = [
   // Data
   { key: 'CUSTOMERS', path: '/dashboard/customers', label: 'Customers', category: 'Data', description: 'Customer accounts and details' },
   { key: 'PRODUCTS', path: '/dashboard/products', label: 'Products', category: 'Data', description: 'Product catalog, pricing, and SKUs' },
+  { key: 'VOUCHERS', path: '/dashboard/vouchers', label: 'BUSY Vouchers', category: 'Data', description: 'Search and inspect all historical and live BUSY sales invoices' },
 
   // Administration
   { key: 'ADMIN', path: '/dashboard/admin', label: 'Administration', category: 'Administration', description: 'Manage users, roles, and permissions' },
@@ -37,14 +38,14 @@ export const DEFAULT_ROLE_PAGES: Record<UserRole, string[]> = {
   ADMIN: [
     'OVERVIEW', 'ANALYTICS', 'ORDERS', 'CREATE_ORDER', 'ORDER_REQUESTS', 'CHAT',
     'QUOTATIONS', 'APPROVE_ORDERS', 'PACKING', 'BILLING', 'DELIVERY', 'INVENTORY',
-    'CUSTOMERS', 'PRODUCTS', 'ADMIN'
+    'CUSTOMERS', 'PRODUCTS', 'VOUCHERS', 'ADMIN'
   ],
   SALES: [
     'OVERVIEW', 'ANALYTICS', 'ORDERS', 'CREATE_ORDER', 'ORDER_REQUESTS', 'CHAT',
-    'QUOTATIONS', 'APPROVE_ORDERS', 'CUSTOMERS', 'PRODUCTS', 'INVENTORY'
+    'QUOTATIONS', 'APPROVE_ORDERS', 'CUSTOMERS', 'PRODUCTS', 'VOUCHERS', 'INVENTORY'
   ],
   BILLING: [
-    'OVERVIEW', 'ORDERS', 'QUOTATIONS', 'BILLING', 'CUSTOMERS', 'PRODUCTS', 'CHAT'
+    'OVERVIEW', 'ORDERS', 'QUOTATIONS', 'BILLING', 'CUSTOMERS', 'PRODUCTS', 'VOUCHERS', 'CHAT'
   ],
   PACKING: [
     'OVERVIEW', 'ORDERS', 'PACKING', 'INVENTORY', 'CHAT'
@@ -73,6 +74,7 @@ export function getPageKeyFromPath(path: string): string | null {
   if (cleanPath.startsWith('/dashboard/inventory')) return 'INVENTORY'
   if (cleanPath.startsWith('/dashboard/customers')) return 'CUSTOMERS'
   if (cleanPath.startsWith('/dashboard/products')) return 'PRODUCTS'
+  if (cleanPath.startsWith('/dashboard/vouchers')) return 'VOUCHERS'
   if (cleanPath.startsWith('/dashboard/chat')) return 'CHAT'
   if (cleanPath.startsWith('/dashboard/admin')) return 'ADMIN'
 

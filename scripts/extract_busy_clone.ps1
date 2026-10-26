@@ -233,6 +233,71 @@ while (-not $rsHist.EOF) {
 }
 $historicalPrices = @($historicalMap.Values)
 Write-Host "  Extracted $($historicalPrices.Count) unique customer-product price records."
+
+# 7. Extract Full Sales Vouchers with Line Items (Voucher Explorer)
+Write-Host "Extracting Full Sales Vouchers & Line Items..."
+$sqlItems = @"
+SELECT t2.VchCode, m.Name AS ItemName, m.Alias AS ItemSku, t2.Value1 AS Qty, t2.Value2 AS Rate, t2.Value3 AS Amount, t2.D2 AS PriceInc
+FROM Tran2 t2 INNER JOIN Master1 m ON t2.MasterCode1 = m.Code
+WHERE m.MasterType = 6 AND t2.Value1 <> 0
+"@
+$rsItems = $conn.Execute($sqlItems)
+$vchItemsMap = @{}
+while (-not $rsItems.EOF) {
+    $vCode = $rsItems.Fields.Item("VchCode").Value
+    if (-not $vchItemsMap.ContainsKey($vCode)) {
+        $vchItemsMap[$vCode] = [System.Collections.Generic.List[PSCustomObject]]::new()
+    }
+    $q = [Math]::Abs([double]$rsItems.Fields.Item("Qty").Value)
+    $amt = [Math]::Abs([double]$rsItems.Fields.Item("Amount").Value)
+    $pInc = if ($rsItems.Fields.Item("PriceInc").Value -ne $null) { [double]$rsItems.Fields.Item("PriceInc").Value } else { 0 }
+    $rate = if ($pInc -gt 0) { $pInc } elseif ($q -gt 0) { [Math]::Round($amt / $q, 2) } else { [double]$rsItems.Fields.Item("Rate").Value }
+    
+    $vchItemsMap[$vCode].Add([PSCustomObject]@{
+        name = $rsItems.Fields.Item("ItemName").Value.ToString().Trim()
+        sku = if ($rsItems.Fields.Item("ItemSku").Value -ne $null) { $rsItems.Fields.Item("ItemSku").Value.ToString().Trim() } else { "" }
+        qty = $q
+        rate = $rate
+        amount = if ($pInc -gt 0) { [Math]::Round($pInc * $q, 2) } else { $amt }
+        isTaxInclusive = ($pInc -gt 0)
+    })
+    $rsItems.MoveNext()
+}
+
+$sqlVchHeaders = @"
+SELECT t1.VchCode, t1.VchType, t1.VchNo, t1.Date, m1.Name AS CustName, m1.Code AS CustCode, t1.VchAmtBaseCur AS TotalAmt
+FROM Tran1 t1 INNER JOIN Master1 m1 ON t1.MasterCode1 = m1.Code
+WHERE t1.VchType IN (2, 9) AND t1.Cancelled = False
+ORDER BY t1.Date DESC, t1.VchCode DESC
+"@
+$rsVch = $conn.Execute($sqlVchHeaders)
+$vouchers = [System.Collections.Generic.List[PSCustomObject]]::new()
+while (-not $rsVch.EOF) {
+    $vCode = $rsVch.Fields.Item("VchCode").Value
+    $vType = [int]$rsVch.Fields.Item("VchType").Value
+    $vNo = if ($rsVch.Fields.Item("VchNo").Value -ne $null) { $rsVch.Fields.Item("VchNo").Value.ToString().Trim() } else { "BILL" }
+    $vDate = [datetime]$rsVch.Fields.Item("Date").Value
+    $cName = $rsVch.Fields.Item("CustName").Value.ToString().Trim()
+    $cCode = "CUST-$($rsVch.Fields.Item('CustCode').Value)"
+    $totAmt = [Math]::Round([double]$rsVch.Fields.Item("TotalAmt").Value, 2)
+    $series = if ($vType -eq 9) { "SMG" } else { "RETAIL" }
+
+    $items = if ($vchItemsMap.ContainsKey($vCode)) { $vchItemsMap[$vCode] } else { @() }
+
+    $vouchers.Add([PSCustomObject]@{
+        voucherNo = $vNo
+        voucherType = $vType
+        series = $series
+        voucherDate = $vDate.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
+        customerCode = $cCode
+        customerName = $cName
+        totalAmount = $totAmt
+        itemCount = $items.Count
+        items = $items
+    })
+    $rsVch.MoveNext()
+}
+Write-Host "  Extracted $($vouchers.Count) full vouchers with line items."
 } finally {
     if ($conn -ne $null) {
         $conn.Close()
@@ -254,6 +319,7 @@ $payload = [PSCustomObject]@{
     monthlyFlow = $monthlyFlow
     topBilledCustomers = $topBilledCustomers
     historicalPrices = $historicalPrices
+    vouchers = $vouchers
 }
 
 Write-Host "Saving payload to $payloadPath..."

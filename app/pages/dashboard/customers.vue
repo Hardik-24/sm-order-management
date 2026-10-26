@@ -524,13 +524,24 @@
 
           <!-- Price History (BUSY & OMS) -->
           <div class="mt-4 pt-4 border-t border-gray-100">
-            <h4 class="text-xs font-bold text-gray-700 uppercase tracking-wider mb-2.5 flex items-center justify-between">
-              <span>Billed Price History ({{ customerPriceHistory.length }})</span>
-              <span v-if="isLoadingPriceHistory" class="text-[10px] text-gray-400 flex items-center gap-1 font-normal lowercase">
-                <Loader2 class="w-3 h-3 animate-spin text-gray-400" />
-                loading...
-              </span>
-            </h4>
+            <div class="flex items-center justify-between mb-2.5">
+              <h4 class="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-2">
+                <span>Billed Price History ({{ customerPriceHistory.length }})</span>
+                <span v-if="isLoadingPriceHistory" class="text-[10px] text-gray-400 flex items-center gap-1 font-normal lowercase">
+                  <Loader2 class="w-3 h-3 animate-spin text-gray-400" />
+                  loading...
+                </span>
+              </h4>
+              <NuxtLink
+                v-if="selectedCustomer?.name"
+                :to="`/dashboard/vouchers?search=${encodeURIComponent(selectedCustomer.name)}`"
+                target="_blank"
+                class="text-[11px] text-sky-600 hover:text-sky-800 font-semibold inline-flex items-center gap-0.5"
+                title="Search all invoices for this party in BUSY Voucher Explorer"
+              >
+                <span>View Invoices &rarr;</span>
+              </NuxtLink>
+            </div>
 
             <div v-if="customerPriceHistory.length" class="max-h-60 overflow-y-auto space-y-2 pr-1">
               <div 
@@ -541,7 +552,18 @@
                 <div class="min-w-0 pr-2">
                   <p class="font-bold text-gray-900 truncate">{{ hp.product?.name }}</p>
                   <p class="text-[10px] text-gray-500 flex items-center gap-1.5 mt-0.5">
-                    <span>Voucher: <strong class="text-gray-700">{{ hp.voucherNo }}</strong></span>
+                    <span>Voucher: 
+                      <NuxtLink
+                        v-if="hp.voucherNo"
+                        :to="`/dashboard/vouchers?search=${encodeURIComponent(hp.voucherNo)}`"
+                        target="_blank"
+                        class="font-bold text-sky-700 hover:text-sky-900 font-mono underline hover:no-underline"
+                        title="View invoice details"
+                      >
+                        {{ hp.voucherNo }}
+                      </NuxtLink>
+                      <strong v-else class="text-gray-700">-</strong>
+                    </span>
                     <span>•</span>
                     <span>{{ hp.voucherDate ? formatDate(hp.voucherDate) : '—' }}</span>
                     <span>•</span>

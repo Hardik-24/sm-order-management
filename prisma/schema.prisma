@@ -602,3 +602,24 @@ model HistoricalPrice {
   @@index([voucherDate])
   @@map("historical_prices")
 }
+
+model BusyVoucher {
+  id           String   @id @default(uuid())
+  voucherNo    String   @unique
+  voucherType  Int      // 2 for Retail, 9 for Wholesale SMG
+  series       String   // "SMG" or "RETAIL"
+  voucherDate  DateTime
+  customerCode String?
+  customerName String
+  totalAmount  Decimal  @db.Decimal(12, 2)
+  itemCount    Int      @default(0)
+  items        Json     // [{ name, sku, qty, rate, amount, isTaxInclusive }]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([voucherNo])
+  @@index([customerName])
+  @@index([voucherDate])
+  @@index([series])
+  @@map("busy_vouchers")
+}
