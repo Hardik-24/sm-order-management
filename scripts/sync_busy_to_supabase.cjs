@@ -297,6 +297,93 @@ async function runSync() {
   console.log(`  -> Customers sync complete! Updated: ${custUpdatedCount}, Inserted: ${custInsertedCount}.`);
 
   // -----------------------------------------------------------------------------
+  // STEP 4: Historical Prices Sync (Last Billed Rates from BUSY Invoices)
+  // -----------------------------------------------------------------------------
+  if (data.historicalPrices && data.historicalPrices.length > 0) {
+    console.log("\n[4/4] Syncing Latest Billed Prices (Last Price)...");
+    
+    const allDbCustomers = await prisma.customer.findMany({
+      select: { id: true, customerCode: true }
+    });
+    const custMap = new Map();
+    allDbCustomers.forEach(c => {
+      if (c.customerCode) custMap.set(c.customerCode, c.id);
+    });
+
+    const allDbProducts = await prisma.product.findMany({
+      select: { id: true, sku: true, name: true, taxRate: true }
+    });
+    const prodBySku = new Map();
+    const prodByName = new Map();
+    allDbProducts.forEach(p => {
+      if (p.sku) prodBySku.set(p.sku.toLowerCase().trim(), p);
+      if (p.name) prodByName.set(p.name.toLowerCase().trim(), p);
+    });
+
+    const payloadProdMap = new Map();
+    data.products.forEach(p => payloadProdMap.set(p.busyCode, p));
+
+    const pricesToUpsert = [];
+    for (const hp of data.historicalPrices) {
+      const custId = custMap.get(hp.custCode);
+      const pp = payloadProdMap.get(hp.prodBusyCode);
+      if (!custId || !pp) continue;
+
+      const prod = prodBySku.get(pp.sku.toLowerCase().trim()) || prodByName.get(pp.name.toLowerCase().trim());
+      if (!prod) continue;
+
+      const rate = Number(hp.rate) || 0;
+      const taxRate = prod.taxRate ? Number(prod.taxRate) : 18;
+      const basePrice = rate;
+      const unitPrice = Number((basePrice * (1 + taxRate / 100)).toFixed(2));
+
+      pricesToUpsert.push({
+        customerId: custId,
+        productId: prod.id,
+        unitPrice,
+        basePrice,
+        taxRate,
+        isTaxInclusive: true,
+        voucherNo: hp.voucherNo,
+        voucherDate: hp.voucherDate,
+        quantity: hp.quantity,
+        unit: 'PIECE',
+        source: 'BUSY'
+      });
+    }
+
+    console.log(`  -> Matched ${pricesToUpsert.length} / ${data.historicalPrices.length} historical price pairs.`);
+
+    const hpChunkSize = 100;
+    let hpSyncedCount = 0;
+    for (let i = 0; i < pricesToUpsert.length; i += hpChunkSize) {
+      const chunk = pricesToUpsert.slice(i, i + hpChunkSize);
+      const valuesList = chunk.map(h => 
+        `(gen_random_uuid(), '${h.customerId}'::text, '${h.productId}'::text, ${h.unitPrice}, ${h.basePrice}, ${h.taxRate}, true, ${esc(h.voucherNo)}, '${h.voucherDate}'::timestamp, ${h.quantity}, 'PIECE', 'BUSY', NOW(), NOW())`
+      ).join(',');
+
+      await prisma.$executeRawUnsafe(`
+        INSERT INTO historical_prices (
+          id, "customerId", "productId", "unitPrice", "basePrice", "taxRate", "isTaxInclusive", 
+          "voucherNo", "voucherDate", quantity, unit, source, "createdAt", "updatedAt"
+        )
+        VALUES ${valuesList}
+        ON CONFLICT ("customerId", "productId") DO UPDATE SET
+          "unitPrice" = EXCLUDED."unitPrice",
+          "basePrice" = EXCLUDED."basePrice",
+          "taxRate" = EXCLUDED."taxRate",
+          "voucherNo" = EXCLUDED."voucherNo",
+          "voucherDate" = EXCLUDED."voucherDate",
+          quantity = EXCLUDED.quantity,
+          "updatedAt" = NOW()
+        WHERE EXCLUDED."voucherDate" >= historical_prices."voucherDate";
+      `);
+      hpSyncedCount += chunk.length;
+    }
+    console.log(`  -> Synced ${hpSyncedCount} latest billed prices to database.`);
+  }
+
+  // -----------------------------------------------------------------------------
   // VERIFICATION
   // -----------------------------------------------------------------------------
   const totalProducts = await prisma.product.count();

@@ -30,3 +30,5 @@ logs
 
 google-service-account.json
 *service-account*.json
+
+busy_sync_payload.json
