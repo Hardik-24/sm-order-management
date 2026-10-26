@@ -1,10 +1,10 @@
 <template>
   <div class="space-y-6 max-w-[1600px] mx-auto pb-12">
     <!-- Header with Title, Live Badge, Sync Info & Quick Actions -->
-    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
       <div>
         <div class="flex items-center gap-2 flex-wrap">
-          <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900">BUSY Voucher Explorer</h1>
+          <h1 class="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight text-gray-900">BUSY Voucher Explorer</h1>
           <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
             <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
             Live BUSY Mirror
@@ -14,23 +14,13 @@
             Last Synced: {{ formattedLastSynced }}
           </span>
         </div>
-        <p class="text-sm text-gray-500 mt-1">
-          Search, trace, and inspect all historical and live sales invoices from BUSY ERP (Wholesale SMG & Retail Direct)
+        <p class="text-xs sm:text-sm text-gray-500 mt-1">
+          Search and inspect sales vouchers from BUSY ERP (Wholesale SMG & Retail Direct)
         </p>
       </div>
 
-      <!-- Action Buttons -->
-      <div class="flex items-center gap-2.5 self-start lg:self-center">
-        <button
-          @click="exportToCSV"
-          :disabled="isLoading || vouchers.length === 0"
-          class="flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 active:bg-gray-100 transition shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
-          title="Export current view to CSV"
-        >
-          <Download class="w-4 h-4 text-gray-500" />
-          <span>Export CSV</span>
-        </button>
-
+      <!-- Action Button -->
+      <div class="flex items-center gap-2 self-start sm:self-center">
         <button
           @click="fetchVouchers(true)"
           :disabled="isLoading"
@@ -43,86 +33,62 @@
       </div>
     </div>
 
-    <!-- Summary KPI Cards -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <!-- Summary KPI Cards (Count-Only for Employees) -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
       <!-- Total Vouchers -->
-      <div class="bg-white p-5 rounded-2xl border border-gray-200/80 shadow-xs flex items-center justify-between">
+      <div class="bg-white p-4 sm:p-5 rounded-2xl border border-gray-200/80 shadow-xs flex items-center justify-between">
         <div class="space-y-1">
-          <p class="text-xs font-medium text-gray-500 uppercase tracking-wider">Total Synced Invoices</p>
-          <div class="flex items-baseline gap-2">
+          <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Total Sales Invoices</p>
+          <div class="flex items-baseline gap-1.5">
             <span class="text-2xl font-bold text-gray-900">{{ (stats?.totalCount || pagination.total || 0).toLocaleString() }}</span>
-            <span class="text-xs text-gray-500">vouchers</span>
+            <span class="text-xs text-gray-500 font-medium">vouchers</span>
           </div>
           <p class="text-xs text-gray-500">
-            Total: <span class="font-bold text-gray-800">{{ formatCompactCurrency(stats?.totalAmount || summary.totalAmount || 0) }}</span>
-            <span class="text-gray-400 mx-1">•</span>
-            Tax: <span class="font-semibold text-emerald-700">{{ formatCompactCurrency(stats?.totalTax || summary.taxAmount || 0) }}</span>
+            Synced from BUSY ERP
           </p>
         </div>
-        <div class="w-12 h-12 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-[#1b3b5f] shrink-0">
-          <Receipt class="w-6 h-6" />
+        <div class="w-11 h-11 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-[#1b3b5f] shrink-0">
+          <Receipt class="w-5 h-5" />
         </div>
       </div>
 
       <!-- Wholesale (SMG) -->
-      <div class="bg-white p-5 rounded-2xl border border-gray-200/80 shadow-xs flex items-center justify-between">
+      <div class="bg-white p-4 sm:p-5 rounded-2xl border border-gray-200/80 shadow-xs flex items-center justify-between">
         <div class="space-y-1">
           <div class="flex items-center gap-1.5">
-            <p class="text-xs font-medium text-gray-500 uppercase tracking-wider">Wholesale (SMG)</p>
+            <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Wholesale (SMG)</p>
             <span class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-sky-100 text-sky-700">B2B</span>
           </div>
-          <div class="flex items-baseline gap-2">
+          <div class="flex items-baseline gap-1.5">
             <span class="text-2xl font-bold text-sky-950">{{ (stats?.smgCount || 0).toLocaleString() }}</span>
-            <span class="text-xs text-gray-500">vouchers</span>
+            <span class="text-xs text-gray-500 font-medium">vouchers</span>
           </div>
           <p class="text-xs text-gray-500">
-            Volume: <span class="font-bold text-sky-900">{{ formatCompactCurrency(stats?.smgAmount || 0) }}</span>
-            <span class="text-gray-400 mx-1">•</span>
-            Tax: <span class="font-semibold text-sky-700">{{ formatCompactCurrency(stats?.smgTax || 0) }}</span>
+            B2B Trade & Dealer invoices
           </p>
         </div>
-        <div class="w-12 h-12 rounded-xl bg-sky-50 border border-sky-100 flex items-center justify-center text-sky-600 shrink-0">
-          <Building2 class="w-6 h-6" />
+        <div class="w-11 h-11 rounded-xl bg-sky-50 border border-sky-100 flex items-center justify-center text-sky-600 shrink-0">
+          <Building2 class="w-5 h-5" />
         </div>
       </div>
 
       <!-- Retail Direct -->
-      <div class="bg-white p-5 rounded-2xl border border-gray-200/80 shadow-xs flex items-center justify-between">
+      <div class="bg-white p-4 sm:p-5 rounded-2xl border border-gray-200/80 shadow-xs flex items-center justify-between">
         <div class="space-y-1">
           <div class="flex items-center gap-1.5">
-            <p class="text-xs font-medium text-gray-500 uppercase tracking-wider">Retail Direct</p>
+            <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Retail Direct</p>
             <span class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-emerald-100 text-emerald-700">Counter</span>
           </div>
-          <div class="flex items-baseline gap-2">
+          <div class="flex items-baseline gap-1.5">
             <span class="text-2xl font-bold text-emerald-950">{{ (stats?.retailCount || 0).toLocaleString() }}</span>
-            <span class="text-xs text-gray-500">vouchers</span>
+            <span class="text-xs text-gray-500 font-medium">vouchers</span>
           </div>
           <p class="text-xs text-gray-500">
-            Volume: <span class="font-bold text-emerald-900">{{ formatCompactCurrency(stats?.retailAmount || 0) }}</span>
-            <span class="text-gray-400 mx-1">•</span>
-            Tax: <span class="font-semibold text-emerald-700">{{ formatCompactCurrency(stats?.retailTax || 0) }}</span>
+            Direct & Counter billing
           </p>
         </div>
-        <div class="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
-          <ShoppingBag class="w-6 h-6" />
-        </div>
-      </div>
-
-      <!-- Filtered Volume Status -->
-      <div class="bg-gradient-to-br from-[#1b3b5f] to-[#122b49] p-5 rounded-2xl border border-[#1b3b5f] shadow-xs text-white flex items-center justify-between">
-        <div class="space-y-1">
-          <p class="text-xs font-medium text-sky-200 uppercase tracking-wider">Current Filtered Value</p>
-          <div class="flex items-baseline gap-1">
-            <span class="text-2xl font-bold tracking-tight">{{ formatCurrency(summary.totalAmount) }}</span>
-          </div>
-          <p class="text-xs text-sky-200/90">
-            Taxable: <span class="font-semibold text-white">{{ formatCompactCurrency(summary.taxableAmount) }}</span>
-            <span class="text-sky-300 mx-1">•</span>
-            Tax: <span class="font-semibold text-emerald-300">{{ formatCompactCurrency(summary.taxAmount) }}</span>
-          </p>
-        </div>
-        <div class="w-12 h-12 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center text-white shrink-0">
-          <Filter class="w-6 h-6" />
+        <div class="w-11 h-11 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
+          <ShoppingBag class="w-5 h-5" />
         </div>
       </div>
     </div>
@@ -278,145 +244,196 @@
         </button>
       </div>
 
-      <!-- Table View -->
-      <div v-else class="w-full overflow-x-auto no-scrollbar">
-        <table class="w-full text-left border-collapse table-auto md:min-w-[980px]">
-          <thead>
-            <tr class="bg-gray-50 border-b border-gray-200/80 text-[10px] font-bold text-gray-500 uppercase tracking-widest">
-              <th class="pl-5 pr-4 py-3.5">Voucher No</th>
-              <th class="px-4 py-3.5">Date</th>
-              <th class="px-4 py-3.5">Customer / Party</th>
-              <th class="px-4 py-3.5 text-center">Series</th>
-              <th class="px-4 py-3.5 text-center">Items</th>
-              <th class="px-4 py-3.5 text-right">Invoice Amount</th>
-              <th class="pr-5 pl-4 py-3.5 text-center">Action</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-100">
-            <tr
-              v-for="v in vouchers"
-              :key="v.id"
-              @click="openVoucherDrawer(v)"
-              class="hover:bg-gray-50/80 transition-colors cursor-pointer group"
-            >
-              <!-- Voucher No -->
-              <td class="pl-5 pr-4 py-3.5 whitespace-nowrap">
-                <div class="flex items-center gap-2">
-                  <span
-                    class="font-mono text-xs font-bold px-2 py-1 rounded-lg border transition"
-                    :class="v.series === 'SMG'
-                      ? 'bg-sky-50 text-sky-800 border-sky-200 group-hover:bg-sky-100'
-                      : 'bg-emerald-50 text-emerald-800 border-emerald-200 group-hover:bg-emerald-100'"
-                  >
-                    {{ v.voucherNo }}
-                  </span>
-                </div>
-              </td>
-
-              <!-- Date -->
-              <td class="px-4 py-3.5 whitespace-nowrap text-xs text-gray-600">
-                <div class="flex items-center gap-1.5">
-                  <Calendar class="w-3.5 h-3.5 text-gray-400" />
-                  <span>{{ formatDate(v.voucherDate) }}</span>
-                </div>
-              </td>
-
-              <!-- Customer -->
-              <td class="px-4 py-3.5 max-w-xs">
-                <div class="flex flex-col">
-                  <span class="font-semibold text-xs text-gray-900 truncate" :title="v.customerName">
-                    {{ v.customerName }}
-                  </span>
-                  <span v-if="v.customerCode" class="text-[10px] font-mono text-gray-400">
-                    {{ v.customerCode }}
-                  </span>
-                </div>
-              </td>
-
-              <!-- Series -->
-              <td class="px-4 py-3.5 whitespace-nowrap text-center">
-                <span
-                  class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold"
-                  :class="v.series === 'SMG'
-                    ? 'bg-sky-100 text-sky-800'
-                    : 'bg-emerald-100 text-emerald-800'"
-                >
-                  {{ v.series === 'SMG' ? 'Wholesale (SMG)' : 'Retail Direct' }}
-                </span>
-              </td>
-
-              <!-- Items Count -->
-              <td class="px-4 py-3.5 whitespace-nowrap text-center">
-                <span class="inline-flex items-center gap-1 text-xs text-gray-600 bg-gray-100 px-2 py-0.5 rounded-md font-medium">
-                  <Package class="w-3 h-3 text-gray-400" />
-                  {{ v.itemCount || (v.items ? v.items.length : 0) }}
-                </span>
-              </td>
-
-              <!-- Total Amount & Tax -->
-              <td class="px-4 py-3.5 whitespace-nowrap text-right">
-                <div class="flex flex-col items-end">
-                  <span class="font-mono text-xs font-bold text-gray-900">
-                    {{ formatCurrency(v.totalAmount) }}
-                  </span>
-                  <div class="text-[10px] text-gray-500 font-mono flex items-center gap-1">
-                    <span>Tax: {{ formatCurrency(v.taxAmount) }}</span>
+      <!-- Content Views (Desktop Table + Mobile Cards) -->
+      <div v-else>
+        <!-- DESKTOP TABLE VIEW (hidden md:block) -->
+        <div class="hidden md:block w-full overflow-x-auto no-scrollbar">
+          <table class="w-full text-left border-collapse table-auto md:min-w-[980px]">
+            <thead>
+              <tr class="bg-gray-50 border-b border-gray-200/80 text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+                <th class="pl-5 pr-4 py-3.5">Voucher No</th>
+                <th class="px-4 py-3.5">Date</th>
+                <th class="px-4 py-3.5">Customer / Party</th>
+                <th class="px-4 py-3.5 text-center">Series</th>
+                <th class="px-4 py-3.5 text-center">Items</th>
+                <th class="px-4 py-3.5 text-right">Invoice Amount</th>
+                <th class="pr-5 pl-4 py-3.5 text-center">Action</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+              <tr
+                v-for="v in vouchers"
+                :key="'desk-' + v.id"
+                @click="openVoucherDrawer(v)"
+                class="hover:bg-gray-50/80 transition-colors cursor-pointer group"
+              >
+                <!-- Voucher No -->
+                <td class="pl-5 pr-4 py-3.5 whitespace-nowrap">
+                  <div class="flex items-center gap-2">
+                    <span
+                      class="font-mono text-xs font-bold px-2 py-1 rounded-lg border transition"
+                      :class="v.series === 'SMG'
+                        ? 'bg-sky-50 text-sky-800 border-sky-200 group-hover:bg-sky-100'
+                        : 'bg-emerald-50 text-emerald-800 border-emerald-200 group-hover:bg-emerald-100'"
+                    >
+                      {{ v.voucherNo }}
+                    </span>
                   </div>
-                </div>
-              </td>
+                </td>
 
-              <!-- Action -->
-              <td class="pr-5 pl-4 py-3.5 whitespace-nowrap text-center" @click.stop>
-                <button
-                  @click="openVoucherDrawer(v)"
-                  class="p-1.5 rounded-lg text-gray-400 hover:text-[#1b3b5f] hover:bg-sky-50 transition"
-                  title="View itemized line items"
+                <!-- Date -->
+                <td class="px-4 py-3.5 whitespace-nowrap text-xs text-gray-600">
+                  <div class="flex items-center gap-1.5">
+                    <Calendar class="w-3.5 h-3.5 text-gray-400" />
+                    <span>{{ formatDate(v.voucherDate) }}</span>
+                  </div>
+                </td>
+
+                <!-- Customer -->
+                <td class="px-4 py-3.5 max-w-xs">
+                  <div class="flex flex-col">
+                    <span class="font-semibold text-xs text-gray-900 truncate" :title="v.customerName">
+                      {{ v.customerName }}
+                    </span>
+                    <span v-if="v.customerCode" class="text-[10px] font-mono text-gray-400">
+                      {{ v.customerCode }}
+                    </span>
+                  </div>
+                </td>
+
+                <!-- Series -->
+                <td class="px-4 py-3.5 whitespace-nowrap text-center">
+                  <span
+                    class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold"
+                    :class="v.series === 'SMG'
+                      ? 'bg-sky-100 text-sky-800'
+                      : 'bg-emerald-100 text-emerald-800'"
+                  >
+                    {{ v.series === 'SMG' ? 'Wholesale (SMG)' : 'Retail Direct' }}
+                  </span>
+                </td>
+
+                <!-- Items Count -->
+                <td class="px-4 py-3.5 whitespace-nowrap text-center">
+                  <span class="inline-flex items-center gap-1 text-xs text-gray-600 bg-gray-100 px-2 py-0.5 rounded-md font-medium">
+                    <Package class="w-3 h-3 text-gray-400" />
+                    {{ v.itemCount || (v.items ? v.items.length : 0) }}
+                  </span>
+                </td>
+
+                <!-- Total Amount & Tax -->
+                <td class="px-4 py-3.5 whitespace-nowrap text-right">
+                  <div class="flex flex-col items-end">
+                    <span class="font-mono text-xs font-bold text-gray-900">
+                      {{ formatCurrency(v.totalAmount) }}
+                    </span>
+                    <div class="text-[10px] text-gray-500 font-mono flex items-center gap-1">
+                      <span>Tax: {{ formatCurrency(v.taxAmount) }}</span>
+                    </div>
+                  </div>
+                </td>
+
+                <!-- Action -->
+                <td class="pr-5 pl-4 py-3.5 whitespace-nowrap text-center" @click.stop>
+                  <button
+                    @click="openVoucherDrawer(v)"
+                    class="p-1.5 rounded-lg text-gray-400 hover:text-[#1b3b5f] hover:bg-sky-50 transition"
+                    title="View itemized line items"
+                  >
+                    <Eye class="w-4 h-4" />
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- MOBILE HIGH-DENSITY CARD VIEW (md:hidden) -->
+        <div class="md:hidden divide-y divide-gray-100 bg-white">
+          <div
+            v-for="v in vouchers"
+            :key="'mob-' + v.id"
+            @click="openVoucherDrawer(v)"
+            class="p-4 space-y-2.5 hover:bg-gray-50 active:bg-gray-100 transition-colors cursor-pointer"
+          >
+            <!-- Line 1: Voucher No Badge, Series Pill, Date -->
+            <div class="flex items-center justify-between gap-2">
+              <div class="flex items-center gap-1.5 flex-wrap min-w-0">
+                <span
+                  class="font-mono text-xs font-bold px-2 py-0.5 rounded-lg border shrink-0"
+                  :class="v.series === 'SMG'
+                    ? 'bg-sky-50 text-sky-800 border-sky-200'
+                    : 'bg-emerald-50 text-emerald-800 border-emerald-200'"
                 >
-                  <Eye class="w-4 h-4" />
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+                  {{ v.voucherNo }}
+                </span>
+                <span
+                  class="px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0"
+                  :class="v.series === 'SMG' ? 'bg-sky-100 text-sky-800' : 'bg-emerald-100 text-emerald-800'"
+                >
+                  {{ v.series === 'SMG' ? 'Wholesale' : 'Retail' }}
+                </span>
+              </div>
+              <span class="text-[11px] text-gray-500 flex items-center gap-1 shrink-0 font-medium">
+                <Calendar class="w-3.5 h-3.5 text-gray-400" />
+                {{ formatDate(v.voucherDate) }}
+              </span>
+            </div>
+
+            <!-- Line 2: Customer Name & Code -->
+            <div class="min-w-0">
+              <h3 class="text-sm font-semibold text-gray-900 leading-snug truncate" :title="v.customerName">
+                {{ v.customerName }}
+              </h3>
+              <span v-if="v.customerCode" class="text-[10px] font-mono text-gray-400">
+                {{ v.customerCode }}
+              </span>
+            </div>
+
+            <!-- Line 3: Items Count & Total Amount with Tax Split -->
+            <div class="flex items-center justify-between gap-2 pt-1 border-t border-gray-100 text-xs">
+              <span class="inline-flex items-center gap-1 text-[11px] text-gray-600 bg-gray-100 px-2 py-0.5 rounded-md font-medium">
+                <Package class="w-3 h-3 text-gray-400" />
+                {{ v.itemCount || (v.items ? v.items.length : 0) }} items
+              </span>
+              <div class="text-right">
+                <span class="font-mono text-xs font-bold text-gray-900">
+                  {{ formatCurrency(v.totalAmount) }}
+                </span>
+                <span v-if="v.taxAmount" class="block text-[10px] font-mono text-gray-500">
+                  Tax: {{ formatCurrency(v.taxAmount) }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Pagination Footer -->
-      <div v-if="pagination.totalPages > 1" class="px-5 py-3.5 border-t border-gray-100 bg-gray-50/50 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-600">
-        <div>
+      <div v-if="pagination.totalPages > 1" class="px-4 py-3 sm:px-5 sm:py-3.5 border-t border-gray-100 bg-gray-50/50 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-600">
+        <div class="order-2 sm:order-1 text-center sm:text-left">
           Page <span class="font-bold text-gray-900">{{ pagination.page }}</span> of
           <span class="font-bold text-gray-900">{{ pagination.totalPages }}</span>
+          <span class="text-gray-400 ml-1">({{ pagination.total.toLocaleString() }} total)</span>
         </div>
 
-        <div class="flex items-center gap-1.5">
-          <button
-            @click="goToPage(1)"
-            :disabled="pagination.page <= 1 || isLoading"
-            class="px-2.5 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition font-medium"
-            title="First Page"
-          >
-            « First
-          </button>
+        <div class="order-1 sm:order-2 flex items-center gap-1.5 w-full sm:w-auto justify-between sm:justify-end">
           <button
             @click="goToPage(pagination.page - 1)"
             :disabled="pagination.page <= 1 || isLoading"
-            class="px-3 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition font-medium flex items-center gap-1"
+            class="flex-1 sm:flex-none px-3 py-2 sm:py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition font-medium flex items-center justify-center gap-1 shadow-2xs"
           >
             <ChevronLeft class="w-3.5 h-3.5" /> Prev
           </button>
+          <span class="sm:hidden font-mono text-xs font-semibold px-2">
+            {{ pagination.page }} / {{ pagination.totalPages }}
+          </span>
           <button
             @click="goToPage(pagination.page + 1)"
             :disabled="pagination.page >= pagination.totalPages || isLoading"
-            class="px-3 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition font-medium flex items-center gap-1"
+            class="flex-1 sm:flex-none px-3 py-2 sm:py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition font-medium flex items-center justify-center gap-1 shadow-2xs"
           >
             Next <ChevronRight class="w-3.5 h-3.5" />
-          </button>
-          <button
-            @click="goToPage(pagination.totalPages)"
-            :disabled="pagination.page >= pagination.totalPages || isLoading"
-            class="px-2.5 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition font-medium"
-            title="Last Page"
-          >
-            Last »
           </button>
         </div>
       </div>
@@ -426,24 +443,24 @@
     <Teleport to="body">
       <div
         v-if="isDrawerOpen"
-        class="fixed inset-0 z-50 overflow-hidden"
+        class="fixed inset-0 z-[150] overflow-hidden"
         @keydown.escape="closeVoucherDrawer"
       >
         <!-- Backdrop -->
         <div
           @click="closeVoucherDrawer"
-          class="absolute inset-0 bg-black/50 backdrop-blur-xs transition-opacity duration-300"
+          class="absolute inset-0 bg-black/60 backdrop-blur-xs transition-opacity duration-300"
         ></div>
 
         <!-- Slide-over Panel -->
-        <div class="fixed inset-y-0 right-0 max-w-full flex pl-10">
-          <div class="w-screen max-w-2xl bg-white shadow-2xl border-l border-gray-200 flex flex-col">
-            <!-- Drawer Header -->
-            <div class="p-6 border-b border-gray-200 bg-gray-50/70 flex items-start justify-between gap-4">
-              <div class="space-y-1">
+        <div class="fixed inset-y-0 right-0 max-w-full flex w-full sm:w-auto">
+          <div class="w-full sm:w-[680px] bg-white shadow-2xl border-l border-gray-200 flex flex-col h-full max-h-screen">
+            <!-- Drawer Header (Sticky Top) -->
+            <div class="p-4 sm:p-5 border-b border-gray-200 bg-gray-50/90 shrink-0 flex items-start justify-between gap-3">
+              <div class="space-y-1 min-w-0">
                 <div class="flex items-center gap-2 flex-wrap">
                   <span
-                    class="font-mono text-base font-bold px-2.5 py-1 rounded-lg border"
+                    class="font-mono text-base font-bold px-2.5 py-0.5 rounded-lg border"
                     :class="selectedVoucher?.series === 'SMG'
                       ? 'bg-sky-50 text-sky-800 border-sky-300'
                       : 'bg-emerald-50 text-emerald-800 border-emerald-300'"
@@ -457,7 +474,7 @@
                     {{ selectedVoucher?.series === 'SMG' ? 'Wholesale (SMG)' : 'Retail Direct' }}
                   </span>
                 </div>
-                <div class="flex items-center gap-3 text-xs text-gray-500 pt-1">
+                <div class="flex items-center gap-2 text-xs text-gray-500 pt-0.5 flex-wrap">
                   <span class="flex items-center gap-1">
                     <Calendar class="w-3.5 h-3.5 text-gray-400" />
                     {{ formatDate(selectedVoucher?.voucherDate) }}
@@ -468,15 +485,15 @@
               </div>
 
               <!-- Close & Copy -->
-              <div class="flex items-center gap-2">
+              <div class="flex items-center gap-1.5 shrink-0">
                 <button
                   @click="copyVoucherNumber"
-                  class="px-2.5 py-1.5 text-xs font-semibold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition flex items-center gap-1 shadow-2xs"
+                  class="px-2.5 py-1.5 text-xs font-semibold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 active:bg-gray-100 transition flex items-center gap-1 shadow-2xs"
                   title="Copy Voucher Number"
                 >
                   <Check v-if="copiedVoucherNo" class="w-3.5 h-3.5 text-emerald-600" />
                   <Copy v-else class="w-3.5 h-3.5 text-gray-400" />
-                  <span>{{ copiedVoucherNo ? 'Copied' : 'Copy' }}</span>
+                  <span class="hidden sm:inline">{{ copiedVoucherNo ? 'Copied' : 'Copy' }}</span>
                 </button>
                 <button
                   @click="closeVoucherDrawer"
@@ -489,10 +506,10 @@
             </div>
 
             <!-- Customer & Tax Summary Banner -->
-            <div class="px-6 py-4 bg-white border-b border-gray-100 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-              <div>
+            <div class="p-4 sm:p-5 bg-white border-b border-gray-100 shrink-0 flex flex-col gap-3">
+              <div class="min-w-0">
                 <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Customer / Billed Party</p>
-                <p class="font-bold text-sm text-gray-900 mt-0.5">{{ selectedVoucher?.customerName }}</p>
+                <p class="font-bold text-sm text-gray-900 mt-0.5 leading-snug">{{ selectedVoucher?.customerName }}</p>
                 <div class="flex items-center gap-2 mt-1">
                   <span v-if="selectedVoucher?.customerCode" class="text-xs font-mono text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
                     {{ selectedVoucher?.customerCode }}
@@ -509,36 +526,36 @@
               </div>
 
               <!-- 3 KPI Badges -->
-              <div class="flex items-center gap-2 flex-wrap">
-                <div class="px-3 py-1.5 bg-gray-50 rounded-xl border border-gray-200 text-right">
+              <div class="grid grid-cols-3 gap-2">
+                <div class="px-2.5 py-1.5 bg-gray-50 rounded-xl border border-gray-200 text-center sm:text-right">
                   <p class="text-[9px] font-bold uppercase tracking-wider text-gray-400">Taxable</p>
-                  <p class="font-mono text-xs font-bold text-gray-700">
+                  <p class="font-mono text-xs font-bold text-gray-700 truncate">
                     {{ formatCurrency(selectedVoucher?.taxableAmount) }}
                   </p>
                 </div>
-                <div class="px-3 py-1.5 bg-emerald-50/70 rounded-xl border border-emerald-200 text-right">
+                <div class="px-2.5 py-1.5 bg-emerald-50/70 rounded-xl border border-emerald-200 text-center sm:text-right">
                   <p class="text-[9px] font-bold uppercase tracking-wider text-emerald-700">Total Tax</p>
-                  <p class="font-mono text-xs font-bold text-emerald-800">
+                  <p class="font-mono text-xs font-bold text-emerald-800 truncate">
                     {{ formatCurrency(selectedVoucher?.taxAmount) }}
                   </p>
                 </div>
-                <div class="px-3 py-1.5 bg-[#1b3b5f]/10 rounded-xl border border-[#1b3b5f]/30 text-right">
+                <div class="px-2.5 py-1.5 bg-[#1b3b5f]/10 rounded-xl border border-[#1b3b5f]/30 text-center sm:text-right">
                   <p class="text-[9px] font-bold uppercase tracking-wider text-[#1b3b5f]">Grand Total</p>
-                  <p class="font-mono text-sm font-extrabold text-[#1b3b5f]">
+                  <p class="font-mono text-xs sm:text-sm font-extrabold text-[#1b3b5f] truncate">
                     {{ formatCurrency(selectedVoucher?.totalAmount) }}
                   </p>
                 </div>
               </div>
             </div>
 
-            <!-- Itemized Line Items Table -->
-            <div class="flex-1 overflow-y-auto p-6 space-y-4">
+            <!-- Itemized Line Items Container (Scrollable) -->
+            <div class="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 no-scrollbar">
               <div class="flex items-center justify-between">
                 <h4 class="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1.5">
                   <Package class="w-4 h-4 text-gray-500" />
                   <span>Itemized Line Items</span>
                 </h4>
-                <span class="text-xs text-gray-500">
+                <span class="text-xs text-gray-500 font-medium">
                   Total Lines: <strong>{{ selectedVoucher?.items?.length || 0 }}</strong>
                 </span>
               </div>
@@ -547,7 +564,8 @@
                 No individual item lines recorded on this invoice.
               </div>
 
-              <div v-else class="border border-gray-200 rounded-xl overflow-hidden shadow-2xs">
+              <!-- Desktop table inside drawer (hidden on very small screens, visible on sm+) -->
+              <div v-else class="hidden sm:block border border-gray-200 rounded-xl overflow-hidden shadow-2xs">
                 <table class="w-full text-left border-collapse table-auto text-xs">
                   <thead>
                     <tr class="bg-gray-50 border-b border-gray-200 text-[10px] font-bold text-gray-500 uppercase tracking-wider">
@@ -563,13 +581,11 @@
                   <tbody class="divide-y divide-gray-100">
                     <tr
                       v-for="(item, idx) in selectedVoucher.items"
-                      :key="idx"
+                      :key="'desk-item-' + idx"
                       class="hover:bg-gray-50/60 transition"
                     >
-                      <td class="py-2.5 px-3 text-center text-gray-400 font-mono">
-                        {{ idx + 1 }}
-                      </td>
-                      <td class="py-2.5 px-3 max-w-[200px]">
+                      <td class="py-2.5 px-3 text-center text-gray-400 font-mono">{{ idx + 1 }}</td>
+                      <td class="py-2.5 px-3 max-w-[180px]">
                         <div class="flex flex-col">
                           <span class="font-semibold text-gray-900 truncate" :title="item.name">{{ item.name }}</span>
                           <div class="flex items-center gap-1.5 mt-0.5 flex-wrap">
@@ -580,9 +596,7 @@
                           </div>
                         </div>
                       </td>
-                      <td class="py-2.5 px-3 text-center font-mono font-medium text-gray-800">
-                        {{ item.qty }}
-                      </td>
+                      <td class="py-2.5 px-3 text-center font-mono font-medium text-gray-800">{{ item.qty }}</td>
                       <td class="py-2.5 px-3 text-right whitespace-nowrap">
                         <div class="flex flex-col items-end">
                           <span class="font-mono text-gray-900">{{ formatCurrency(item.rate) }}</span>
@@ -610,6 +624,40 @@
                     </tr>
                   </tbody>
                 </table>
+              </div>
+
+              <!-- Mobile line item cards inside drawer (sm:hidden) -->
+              <div v-if="selectedVoucher?.items?.length" class="sm:hidden space-y-2.5">
+                <div
+                  v-for="(item, idx) in selectedVoucher.items"
+                  :key="'mob-item-' + idx"
+                  class="p-3 bg-gray-50/80 rounded-xl border border-gray-200 text-xs space-y-1.5"
+                >
+                  <div class="flex items-start justify-between gap-2">
+                    <div class="min-w-0">
+                      <span class="text-[10px] text-gray-400 font-mono mr-1">#{{ idx + 1 }}</span>
+                      <span class="font-semibold text-gray-900">{{ item.name }}</span>
+                    </div>
+                    <span class="font-mono font-bold text-gray-900 text-right shrink-0">
+                      {{ formatCurrency(item.amount) }}
+                    </span>
+                  </div>
+
+                  <div class="flex items-center gap-1.5 flex-wrap text-[10px] text-gray-500">
+                    <span v-if="item.sku" class="font-mono bg-white px-1 rounded border border-gray-200">SKU: {{ item.sku }}</span>
+                    <span v-if="item.hsn" class="font-mono bg-gray-200/80 px-1 rounded text-gray-700">HSN: {{ item.hsn }}</span>
+                    <span>•</span>
+                    <span class="font-mono font-semibold text-gray-700">Qty: {{ item.qty }}</span>
+                    <span>@</span>
+                    <span class="font-mono">{{ formatCurrency(item.rate) }}</span>
+                    <span v-if="item.isTaxInclusive" class="text-[9px] text-sky-700 bg-sky-50 px-1 rounded">Tax Incl.</span>
+                  </div>
+
+                  <div class="flex items-center justify-between text-[11px] pt-1 border-t border-gray-200/60 font-mono text-gray-600">
+                    <span>Taxable: <strong class="text-gray-800">{{ formatCurrency(item.taxableAmount) }}</strong></span>
+                    <span>GST ({{ item.taxRate }}%): <strong class="text-emerald-700">{{ formatCurrency(item.taxAmount) }}</strong></span>
+                  </div>
+                </div>
               </div>
 
               <!-- Comprehensive Tax Invoice Summary Card -->
@@ -650,11 +698,11 @@
               </div>
             </div>
 
-            <!-- Drawer Footer -->
-            <div class="p-4 border-t border-gray-200 bg-gray-50 flex items-center justify-end gap-3">
+            <!-- Drawer Footer (Sticky Bottom) -->
+            <div class="p-3 sm:p-4 border-t border-gray-200 bg-gray-50 shrink-0 flex items-center justify-end gap-3">
               <button
                 @click="closeVoucherDrawer"
-                class="px-4 py-2 text-xs font-semibold text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-100 transition shadow-2xs"
+                class="w-full sm:w-auto px-5 py-2 text-xs font-semibold text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-100 transition shadow-2xs"
               >
                 Close
               </button>
@@ -675,7 +723,6 @@ import {
   X,
   Calendar,
   Clock,
-  Download,
   RefreshCw,
   Building2,
   ShoppingBag,
@@ -935,36 +982,6 @@ function formatDate(dateVal: any) {
     month: 'short',
     year: 'numeric'
   })
-}
-
-// Export CSV handler
-function exportToCSV() {
-  if (!vouchers.value || vouchers.value.length === 0) return
-
-  const headers = ['Voucher No', 'Series', 'Voucher Date', 'Customer Code', 'Customer Name', 'Items Count', 'Taxable Amount', 'CGST Amount', 'SGST Amount', 'IGST Amount', 'Total Tax Amount', 'Grand Total Amount']
-  const rows = vouchers.value.map(v => [
-    `"${v.voucherNo || ''}"`,
-    `"${v.series || ''}"`,
-    `"${formatDate(v.voucherDate)}"`,
-    `"${v.customerCode || ''}"`,
-    `"${(v.customerName || '').replace(/"/g, '""')}"`,
-    v.itemCount || (v.items ? v.items.length : 0),
-    Number(v.taxableAmount) || 0,
-    Number(v.cgstAmount) || 0,
-    Number(v.sgstAmount) || 0,
-    Number(v.igstAmount) || 0,
-    Number(v.taxAmount) || 0,
-    Number(v.totalAmount) || 0
-  ])
-
-  const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n')
-  const encodedUri = encodeURI(csvContent)
-  const link = document.createElement('a')
-  link.setAttribute('href', encodedUri)
-  link.setAttribute('download', `busy_vouchers_${selectedSeries.value}_${new Date().toISOString().split('T')[0]}.csv`)
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
 }
 
 onMounted(() => {
