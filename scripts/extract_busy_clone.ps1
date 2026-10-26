@@ -234,10 +234,66 @@ while (-not $rsHist.EOF) {
 $historicalPrices = @($historicalMap.Values)
 Write-Host "  Extracted $($historicalPrices.Count) unique customer-product price records."
 
-# 7. Extract Full Sales Vouchers with Line Items (Voucher Explorer)
+# 7. Extract Full Sales Vouchers with Line Items and GST Tax Information
+Write-Host "Extracting GST & Tax Breakdown from VchGSTSumItemWise..."
+$sqlGst = @"
+SELECT VchCode, ItemCode, HSNCode, TaxableAmt, TaxAmt, TaxRate, TaxAmt1, TaxRate1
+FROM VchGSTSumItemWise
+"@
+$rsGst = $conn.Execute($sqlGst)
+$vchGstSummary = @{}
+$itemGstMap = @{}
+
+while (-not $rsGst.EOF) {
+    $vCode = $rsGst.Fields.Item("VchCode").Value
+    $iCode = $rsGst.Fields.Item("ItemCode").Value
+    $hsn = if ($rsGst.Fields.Item("HSNCode").Value -ne $null) { $rsGst.Fields.Item("HSNCode").Value.ToString().Trim() } else { "" }
+    $taxable = if ($rsGst.Fields.Item("TaxableAmt").Value -ne $null) { [double]$rsGst.Fields.Item("TaxableAmt").Value } else { 0 }
+    $tAmt = if ($rsGst.Fields.Item("TaxAmt").Value -ne $null) { [double]$rsGst.Fields.Item("TaxAmt").Value } else { 0 }
+    $tRate = if ($rsGst.Fields.Item("TaxRate").Value -ne $null) { [double]$rsGst.Fields.Item("TaxRate").Value } else { 0 }
+    $tAmt1 = if ($rsGst.Fields.Item("TaxAmt1").Value -ne $null) { [double]$rsGst.Fields.Item("TaxAmt1").Value } else { 0 }
+    $tRate1 = if ($rsGst.Fields.Item("TaxRate1").Value -ne $null) { [double]$rsGst.Fields.Item("TaxRate1").Value } else { 0 }
+
+    if (-not $vchGstSummary.ContainsKey($vCode)) {
+        $vchGstSummary[$vCode] = @{
+            taxableAmount = 0.0
+            cgstAmount = 0.0
+            sgstAmount = 0.0
+            igstAmount = 0.0
+            taxAmount = 0.0
+        }
+    }
+    $vchGstSummary[$vCode].taxableAmount += $taxable
+    if ($tRate1 -gt 0) {
+        $vchGstSummary[$vCode].cgstAmount += $tAmt
+        $vchGstSummary[$vCode].sgstAmount += $tAmt1
+        $vchGstSummary[$vCode].taxAmount += ($tAmt + $tAmt1)
+    } else {
+        $vchGstSummary[$vCode].igstAmount += $tAmt
+        $vchGstSummary[$vCode].taxAmount += $tAmt
+    }
+
+    $key = "$vCode-$iCode"
+    $itemGstMap[$key] = @{
+        hsn = $hsn
+        taxableAmount = [Math]::Round($taxable, 2)
+        taxRate = [Math]::Round($tRate + $tRate1, 2)
+        taxAmount = [Math]::Round($tAmt + $tAmt1, 2)
+        cgstRate = if ($tRate1 -gt 0) { $tRate } else { 0 }
+        cgstAmount = if ($tRate1 -gt 0) { [Math]::Round($tAmt, 2) } else { 0 }
+        sgstRate = if ($tRate1 -gt 0) { $tRate1 } else { 0 }
+        sgstAmount = if ($tRate1 -gt 0) { [Math]::Round($tAmt1, 2) } else { 0 }
+        igstRate = if ($tRate1 -eq 0 -and $tRate -gt 0) { $tRate } else { 0 }
+        igstAmount = if ($tRate1 -eq 0 -and $tRate -gt 0) { [Math]::Round($tAmt, 2) } else { 0 }
+    }
+
+    $rsGst.MoveNext()
+}
+Write-Host "  Processed GST tax breakdown for $($vchGstSummary.Count) vouchers."
+
 Write-Host "Extracting Full Sales Vouchers & Line Items..."
 $sqlItems = @"
-SELECT t2.VchCode, m.Name AS ItemName, m.Alias AS ItemSku, t2.Value1 AS Qty, t2.Value2 AS Rate, t2.Value3 AS Amount, t2.D2 AS PriceInc
+SELECT t2.VchCode, t2.MasterCode1 AS ItemCode, m.Name AS ItemName, m.Alias AS ItemSku, t2.Value1 AS Qty, t2.Value2 AS Rate, t2.Value3 AS Amount, t2.D2 AS PriceInc
 FROM Tran2 t2 INNER JOIN Master1 m ON t2.MasterCode1 = m.Code
 WHERE m.MasterType = 6 AND t2.Value1 <> 0
 "@
@@ -245,6 +301,7 @@ $rsItems = $conn.Execute($sqlItems)
 $vchItemsMap = @{}
 while (-not $rsItems.EOF) {
     $vCode = $rsItems.Fields.Item("VchCode").Value
+    $iCode = $rsItems.Fields.Item("ItemCode").Value
     if (-not $vchItemsMap.ContainsKey($vCode)) {
         $vchItemsMap[$vCode] = [System.Collections.Generic.List[PSCustomObject]]::new()
     }
@@ -253,13 +310,37 @@ while (-not $rsItems.EOF) {
     $pInc = if ($rsItems.Fields.Item("PriceInc").Value -ne $null) { [double]$rsItems.Fields.Item("PriceInc").Value } else { 0 }
     $rate = if ($pInc -gt 0) { $pInc } elseif ($q -gt 0) { [Math]::Round($amt / $q, 2) } else { [double]$rsItems.Fields.Item("Rate").Value }
     
+    $gstItem = if ($itemGstMap.ContainsKey("$vCode-$iCode")) { $itemGstMap["$vCode-$iCode"] } else { $null }
+    $finalAmt = if ($pInc -gt 0) { [Math]::Round($pInc * $q, 2) } else { $amt }
+    
+    $itemTaxable = if ($gstItem) { $gstItem.taxableAmount } elseif ($pInc -gt 0) { [Math]::Round($finalAmt / 1.18, 2) } else { $finalAmt }
+    $itemTaxRate = if ($gstItem) { $gstItem.taxRate } elseif ($pInc -gt 0) { 18 } else { 0 }
+    $itemTaxAmt = if ($gstItem) { $gstItem.taxAmount } elseif ($pInc -gt 0) { [Math]::Round($finalAmt - $itemTaxable, 2) } else { 0 }
+    $itemHsn = if ($gstItem) { $gstItem.hsn } else { "" }
+    $cgstRate = if ($gstItem) { $gstItem.cgstRate } elseif ($itemTaxRate -gt 0) { 9 } else { 0 }
+    $cgstAmt = if ($gstItem) { $gstItem.cgstAmount } elseif ($itemTaxAmt -gt 0) { [Math]::Round($itemTaxAmt / 2, 2) } else { 0 }
+    $sgstRate = if ($gstItem) { $gstItem.sgstRate } elseif ($itemTaxRate -gt 0) { 9 } else { 0 }
+    $sgstAmt = if ($gstItem) { $gstItem.sgstAmount } elseif ($itemTaxAmt -gt 0) { [Math]::Round($itemTaxAmt / 2, 2) } else { 0 }
+    $igstRate = if ($gstItem) { $gstItem.igstRate } else { 0 }
+    $igstAmt = if ($gstItem) { $gstItem.igstAmount } else { 0 }
+
     $vchItemsMap[$vCode].Add([PSCustomObject]@{
         name = $rsItems.Fields.Item("ItemName").Value.ToString().Trim()
         sku = if ($rsItems.Fields.Item("ItemSku").Value -ne $null) { $rsItems.Fields.Item("ItemSku").Value.ToString().Trim() } else { "" }
         qty = $q
         rate = $rate
-        amount = if ($pInc -gt 0) { [Math]::Round($pInc * $q, 2) } else { $amt }
+        amount = $finalAmt
         isTaxInclusive = ($pInc -gt 0)
+        hsn = $itemHsn
+        taxableAmount = $itemTaxable
+        taxRate = $itemTaxRate
+        taxAmount = $itemTaxAmt
+        cgstRate = $cgstRate
+        cgstAmount = $cgstAmt
+        sgstRate = $sgstRate
+        sgstAmount = $sgstAmt
+        igstRate = $igstRate
+        igstAmount = $igstAmt
     })
     $rsItems.MoveNext()
 }
@@ -284,6 +365,13 @@ while (-not $rsVch.EOF) {
 
     $items = if ($vchItemsMap.ContainsKey($vCode)) { $vchItemsMap[$vCode] } else { @() }
 
+    $gst = if ($vchGstSummary.ContainsKey($vCode)) { $vchGstSummary[$vCode] } else { $null }
+    $taxableAmt = if ($gst -and $gst.taxableAmount -gt 0) { [Math]::Round($gst.taxableAmount, 2) } else { [Math]::Round($totAmt / 1.18, 2) }
+    $cgstAmt = if ($gst) { [Math]::Round($gst.cgstAmount, 2) } else { [Math]::Round(($totAmt - $taxableAmt) / 2, 2) }
+    $sgstAmt = if ($gst) { [Math]::Round($gst.sgstAmount, 2) } else { [Math]::Round(($totAmt - $taxableAmt) / 2, 2) }
+    $igstAmt = if ($gst) { [Math]::Round($gst.igstAmount, 2) } else { 0 }
+    $taxAmt = if ($gst -and $gst.taxAmount -gt 0) { [Math]::Round($gst.taxAmount, 2) } else { [Math]::Round($totAmt - $taxableAmt, 2) }
+
     $vouchers.Add([PSCustomObject]@{
         voucherNo = $vNo
         voucherType = $vType
@@ -292,6 +380,11 @@ while (-not $rsVch.EOF) {
         customerCode = $cCode
         customerName = $cName
         totalAmount = $totAmt
+        taxableAmount = $taxableAmt
+        taxAmount = $taxAmt
+        cgstAmount = $cgstAmt
+        sgstAmount = $sgstAmt
+        igstAmount = $igstAmt
         itemCount = $items.Count
         items = $items
     })

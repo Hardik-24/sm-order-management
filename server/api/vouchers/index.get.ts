@@ -67,7 +67,14 @@ export default defineEventHandler(async (event) => {
       prisma.busyVoucher.count({ where }),
       prisma.busyVoucher.aggregate({
         where,
-        _sum: { totalAmount: true }
+        _sum: {
+          totalAmount: true,
+          taxableAmount: true,
+          taxAmount: true,
+          cgstAmount: true,
+          sgstAmount: true,
+          igstAmount: true
+        }
       }),
       prisma.systemSetting.findUnique({
         where: { key: 'last_synced' }
@@ -77,9 +84,15 @@ export default defineEventHandler(async (event) => {
     if (shouldComputeStats) {
       tasks.push(
         prisma.busyVoucher.count({ where: { series: 'SMG' } }),
-        prisma.busyVoucher.aggregate({ where: { series: 'SMG' }, _sum: { totalAmount: true } }),
+        prisma.busyVoucher.aggregate({
+          where: { series: 'SMG' },
+          _sum: { totalAmount: true, taxableAmount: true, taxAmount: true }
+        }),
         prisma.busyVoucher.count({ where: { series: 'RETAIL' } }),
-        prisma.busyVoucher.aggregate({ where: { series: 'RETAIL' }, _sum: { totalAmount: true } })
+        prisma.busyVoucher.aggregate({
+          where: { series: 'RETAIL' },
+          _sum: { totalAmount: true, taxableAmount: true, taxAmount: true }
+        })
       )
     }
 
@@ -99,10 +112,16 @@ export default defineEventHandler(async (event) => {
       stats = {
         totalCount: isUnfilteredFirstPage ? total : (smgCount + retailCount),
         totalAmount: Number(summary._sum.totalAmount || 0),
+        totalTaxable: Number(summary._sum.taxableAmount || 0),
+        totalTax: Number(summary._sum.taxAmount || 0),
         smgCount,
         smgAmount: Number(smgSum._sum.totalAmount || 0),
+        smgTaxable: Number(smgSum._sum.taxableAmount || 0),
+        smgTax: Number(smgSum._sum.taxAmount || 0),
         retailCount,
-        retailAmount: Number(retailSum._sum.totalAmount || 0)
+        retailAmount: Number(retailSum._sum.totalAmount || 0),
+        retailTaxable: Number(retailSum._sum.taxableAmount || 0),
+        retailTax: Number(retailSum._sum.taxAmount || 0)
       }
     }
 
@@ -117,6 +136,11 @@ export default defineEventHandler(async (event) => {
       },
       summary: {
         totalAmount: Number(summary._sum.totalAmount || 0),
+        taxableAmount: Number(summary._sum.taxableAmount || 0),
+        taxAmount: Number(summary._sum.taxAmount || 0),
+        cgstAmount: Number(summary._sum.cgstAmount || 0),
+        sgstAmount: Number(summary._sum.sgstAmount || 0),
+        igstAmount: Number(summary._sum.igstAmount || 0),
         totalCount: total
       },
       stats,

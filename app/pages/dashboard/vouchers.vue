@@ -54,7 +54,9 @@
             <span class="text-xs text-gray-500">vouchers</span>
           </div>
           <p class="text-xs text-gray-500">
-            Total Billed: <span class="font-bold text-gray-800">{{ formatCompactCurrency(stats?.totalAmount || summary.totalAmount || 0) }}</span>
+            Total: <span class="font-bold text-gray-800">{{ formatCompactCurrency(stats?.totalAmount || summary.totalAmount || 0) }}</span>
+            <span class="text-gray-400 mx-1">•</span>
+            Tax: <span class="font-semibold text-emerald-700">{{ formatCompactCurrency(stats?.totalTax || summary.taxAmount || 0) }}</span>
           </p>
         </div>
         <div class="w-12 h-12 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-[#1b3b5f] shrink-0">
@@ -75,6 +77,8 @@
           </div>
           <p class="text-xs text-gray-500">
             Volume: <span class="font-bold text-sky-900">{{ formatCompactCurrency(stats?.smgAmount || 0) }}</span>
+            <span class="text-gray-400 mx-1">•</span>
+            Tax: <span class="font-semibold text-sky-700">{{ formatCompactCurrency(stats?.smgTax || 0) }}</span>
           </p>
         </div>
         <div class="w-12 h-12 rounded-xl bg-sky-50 border border-sky-100 flex items-center justify-center text-sky-600 shrink-0">
@@ -95,6 +99,8 @@
           </div>
           <p class="text-xs text-gray-500">
             Volume: <span class="font-bold text-emerald-900">{{ formatCompactCurrency(stats?.retailAmount || 0) }}</span>
+            <span class="text-gray-400 mx-1">•</span>
+            Tax: <span class="font-semibold text-emerald-700">{{ formatCompactCurrency(stats?.retailTax || 0) }}</span>
           </p>
         </div>
         <div class="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
@@ -109,8 +115,10 @@
           <div class="flex items-baseline gap-1">
             <span class="text-2xl font-bold tracking-tight">{{ formatCurrency(summary.totalAmount) }}</span>
           </div>
-          <p class="text-xs text-sky-200/80">
-            Across <span class="font-semibold text-white">{{ pagination.total.toLocaleString() }}</span> matching vouchers
+          <p class="text-xs text-sky-200/90">
+            Taxable: <span class="font-semibold text-white">{{ formatCompactCurrency(summary.taxableAmount) }}</span>
+            <span class="text-sky-300 mx-1">•</span>
+            Tax: <span class="font-semibold text-emerald-300">{{ formatCompactCurrency(summary.taxAmount) }}</span>
           </p>
         </div>
         <div class="w-12 h-12 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center text-white shrink-0">
@@ -345,11 +353,16 @@
                 </span>
               </td>
 
-              <!-- Total Amount -->
+              <!-- Total Amount & Tax -->
               <td class="px-4 py-3.5 whitespace-nowrap text-right">
-                <span class="font-mono text-xs font-bold text-gray-900">
-                  {{ formatCurrency(v.totalAmount) }}
-                </span>
+                <div class="flex flex-col items-end">
+                  <span class="font-mono text-xs font-bold text-gray-900">
+                    {{ formatCurrency(v.totalAmount) }}
+                  </span>
+                  <div class="text-[10px] text-gray-500 font-mono flex items-center gap-1">
+                    <span>Tax: {{ formatCurrency(v.taxAmount) }}</span>
+                  </div>
+                </div>
               </td>
 
               <!-- Action -->
@@ -475,8 +488,8 @@
               </div>
             </div>
 
-            <!-- Customer & Total Info Banner -->
-            <div class="px-6 py-4 bg-white border-b border-gray-100 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- Customer & Tax Summary Banner -->
+            <div class="px-6 py-4 bg-white border-b border-gray-100 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
               <div>
                 <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Customer / Billed Party</p>
                 <p class="font-bold text-sm text-gray-900 mt-0.5">{{ selectedVoucher?.customerName }}</p>
@@ -495,14 +508,26 @@
                 </div>
               </div>
 
-              <div class="sm:text-right">
-                <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Total Invoice Amount</p>
-                <p class="font-mono text-xl font-extrabold text-gray-900 mt-0.5">
-                  {{ formatCurrency(selectedVoucher?.totalAmount) }}
-                </p>
-                <p class="text-xs text-gray-500 mt-1">
-                  {{ (selectedVoucher?.items?.length || 0) }} line items recorded
-                </p>
+              <!-- 3 KPI Badges -->
+              <div class="flex items-center gap-2 flex-wrap">
+                <div class="px-3 py-1.5 bg-gray-50 rounded-xl border border-gray-200 text-right">
+                  <p class="text-[9px] font-bold uppercase tracking-wider text-gray-400">Taxable</p>
+                  <p class="font-mono text-xs font-bold text-gray-700">
+                    {{ formatCurrency(selectedVoucher?.taxableAmount) }}
+                  </p>
+                </div>
+                <div class="px-3 py-1.5 bg-emerald-50/70 rounded-xl border border-emerald-200 text-right">
+                  <p class="text-[9px] font-bold uppercase tracking-wider text-emerald-700">Total Tax</p>
+                  <p class="font-mono text-xs font-bold text-emerald-800">
+                    {{ formatCurrency(selectedVoucher?.taxAmount) }}
+                  </p>
+                </div>
+                <div class="px-3 py-1.5 bg-[#1b3b5f]/10 rounded-xl border border-[#1b3b5f]/30 text-right">
+                  <p class="text-[9px] font-bold uppercase tracking-wider text-[#1b3b5f]">Grand Total</p>
+                  <p class="font-mono text-sm font-extrabold text-[#1b3b5f]">
+                    {{ formatCurrency(selectedVoucher?.totalAmount) }}
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -526,10 +551,12 @@
                 <table class="w-full text-left border-collapse table-auto text-xs">
                   <thead>
                     <tr class="bg-gray-50 border-b border-gray-200 text-[10px] font-bold text-gray-500 uppercase tracking-wider">
-                      <th class="py-2.5 px-3 w-10 text-center">#</th>
-                      <th class="py-2.5 px-3">Item Description</th>
+                      <th class="py-2.5 px-3 w-8 text-center">#</th>
+                      <th class="py-2.5 px-3">Item & HSN</th>
                       <th class="py-2.5 px-3 text-center">Qty</th>
                       <th class="py-2.5 px-3 text-right">Billed Rate</th>
+                      <th class="py-2.5 px-3 text-right">Taxable</th>
+                      <th class="py-2.5 px-3 text-right">GST % & Tax</th>
                       <th class="py-2.5 px-3 text-right">Line Total</th>
                     </tr>
                   </thead>
@@ -542,10 +569,15 @@
                       <td class="py-2.5 px-3 text-center text-gray-400 font-mono">
                         {{ idx + 1 }}
                       </td>
-                      <td class="py-2.5 px-3">
+                      <td class="py-2.5 px-3 max-w-[200px]">
                         <div class="flex flex-col">
-                          <span class="font-semibold text-gray-900">{{ item.name }}</span>
-                          <span v-if="item.sku" class="text-[10px] font-mono text-gray-400">SKU: {{ item.sku }}</span>
+                          <span class="font-semibold text-gray-900 truncate" :title="item.name">{{ item.name }}</span>
+                          <div class="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                            <span v-if="item.sku" class="text-[10px] font-mono text-gray-400">SKU: {{ item.sku }}</span>
+                            <span v-if="item.hsn" class="text-[9px] font-mono font-medium text-gray-600 bg-gray-100 px-1 rounded">
+                              HSN: {{ item.hsn }}
+                            </span>
+                          </div>
                         </div>
                       </td>
                       <td class="py-2.5 px-3 text-center font-mono font-medium text-gray-800">
@@ -559,6 +591,19 @@
                           </span>
                         </div>
                       </td>
+                      <td class="py-2.5 px-3 text-right font-mono text-gray-700 whitespace-nowrap">
+                        {{ formatCurrency(item.taxableAmount) }}
+                      </td>
+                      <td class="py-2.5 px-3 text-right whitespace-nowrap">
+                        <div class="flex flex-col items-end">
+                          <span class="font-mono font-semibold text-emerald-800">{{ formatCurrency(item.taxAmount) }}</span>
+                          <span class="text-[9px] text-gray-500 font-mono">
+                            {{ item.taxRate ? item.taxRate + '%' : '0%' }}
+                            <span v-if="item.cgstRate && item.sgstRate">({{ item.cgstRate }}+{{ item.sgstRate }})</span>
+                            <span v-else-if="item.igstRate">(IGST)</span>
+                          </span>
+                        </div>
+                      </td>
                       <td class="py-2.5 px-3 text-right font-mono font-bold text-gray-900 whitespace-nowrap">
                         {{ formatCurrency(item.amount) }}
                       </td>
@@ -567,15 +612,40 @@
                 </table>
               </div>
 
-              <!-- Line Items Summary Card -->
-              <div class="p-4 bg-gray-50 rounded-xl border border-gray-200/80 space-y-2 text-xs">
+              <!-- Comprehensive Tax Invoice Summary Card -->
+              <div class="p-4 bg-gray-50/90 rounded-2xl border border-gray-200 space-y-2 text-xs">
                 <div class="flex items-center justify-between text-gray-600">
-                  <span>Computed Lines Sum:</span>
-                  <span class="font-mono font-semibold">{{ formatCurrency(computedItemsSum) }}</span>
+                  <span>Taxable Subtotal:</span>
+                  <span class="font-mono font-semibold text-gray-800">{{ formatCurrency(selectedVoucher?.taxableAmount) }}</span>
                 </div>
-                <div class="flex items-center justify-between text-gray-900 pt-2 border-t border-gray-200 font-bold">
-                  <span>Voucher Grand Total:</span>
-                  <span class="font-mono text-sm text-[#1b3b5f]">{{ formatCurrency(selectedVoucher?.totalAmount) }}</span>
+                <div v-if="Number(selectedVoucher?.cgstAmount) > 0" class="flex items-center justify-between text-gray-600">
+                  <span class="flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                    CGST (Central Tax):
+                  </span>
+                  <span class="font-mono text-gray-800">{{ formatCurrency(selectedVoucher?.cgstAmount) }}</span>
+                </div>
+                <div v-if="Number(selectedVoucher?.sgstAmount) > 0" class="flex items-center justify-between text-gray-600">
+                  <span class="flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+                    SGST (State Tax):
+                  </span>
+                  <span class="font-mono text-gray-800">{{ formatCurrency(selectedVoucher?.sgstAmount) }}</span>
+                </div>
+                <div v-if="Number(selectedVoucher?.igstAmount) > 0" class="flex items-center justify-between text-gray-600">
+                  <span class="flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
+                    IGST (Integrated Tax):
+                  </span>
+                  <span class="font-mono text-gray-800">{{ formatCurrency(selectedVoucher?.igstAmount) }}</span>
+                </div>
+                <div class="flex items-center justify-between text-emerald-800 pt-1 border-t border-gray-200/80 font-medium">
+                  <span>Total Tax Amount:</span>
+                  <span class="font-mono font-bold">{{ formatCurrency(selectedVoucher?.taxAmount) }}</span>
+                </div>
+                <div class="flex items-center justify-between text-gray-900 pt-2 border-t border-gray-300/80 font-bold text-sm">
+                  <span>Invoice Grand Total:</span>
+                  <span class="font-mono text-[#1b3b5f] text-base">{{ formatCurrency(selectedVoucher?.totalAmount) }}</span>
                 </div>
               </div>
             </div>
@@ -871,7 +941,7 @@ function formatDate(dateVal: any) {
 function exportToCSV() {
   if (!vouchers.value || vouchers.value.length === 0) return
 
-  const headers = ['Voucher No', 'Series', 'Voucher Date', 'Customer Code', 'Customer Name', 'Items Count', 'Total Amount']
+  const headers = ['Voucher No', 'Series', 'Voucher Date', 'Customer Code', 'Customer Name', 'Items Count', 'Taxable Amount', 'CGST Amount', 'SGST Amount', 'IGST Amount', 'Total Tax Amount', 'Grand Total Amount']
   const rows = vouchers.value.map(v => [
     `"${v.voucherNo || ''}"`,
     `"${v.series || ''}"`,
@@ -879,6 +949,11 @@ function exportToCSV() {
     `"${v.customerCode || ''}"`,
     `"${(v.customerName || '').replace(/"/g, '""')}"`,
     v.itemCount || (v.items ? v.items.length : 0),
+    Number(v.taxableAmount) || 0,
+    Number(v.cgstAmount) || 0,
+    Number(v.sgstAmount) || 0,
+    Number(v.igstAmount) || 0,
+    Number(v.taxAmount) || 0,
     Number(v.totalAmount) || 0
   ])
 

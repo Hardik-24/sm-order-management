@@ -402,14 +402,19 @@ async function runSync() {
       const valuesList = chunk.map(v => {
         const iCount = Number(v.itemCount || (v.items ? v.items.length : 0)) || 0;
         const tot = Number(v.totalAmount) || 0;
+        const taxable = Number(v.taxableAmount) || 0;
+        const taxAmt = Number(v.taxAmount) || 0;
+        const cgst = Number(v.cgstAmount) || 0;
+        const sgst = Number(v.sgstAmount) || 0;
+        const igst = Number(v.igstAmount) || 0;
         const itemsJson = JSON.stringify(v.items || []);
-        return `(gen_random_uuid(), ${esc(v.voucherNo)}, ${v.voucherType || 2}, ${esc(v.series || 'RETAIL')}, '${v.voucherDate}'::timestamp, ${esc(v.customerCode)}, ${esc(v.customerName)}, ${tot}, ${iCount}, ${esc(itemsJson)}::jsonb, NOW(), NOW())`;
+        return `(gen_random_uuid(), ${esc(v.voucherNo)}, ${v.voucherType || 2}, ${esc(v.series || 'RETAIL')}, '${v.voucherDate}'::timestamp, ${esc(v.customerCode)}, ${esc(v.customerName)}, ${tot}, ${taxable}, ${taxAmt}, ${cgst}, ${sgst}, ${igst}, ${iCount}, ${esc(itemsJson)}::jsonb, NOW(), NOW())`;
       }).join(',');
 
       await prisma.$executeRawUnsafe(`
         INSERT INTO busy_vouchers (
           id, "voucherNo", "voucherType", series, "voucherDate", "customerCode", "customerName",
-          "totalAmount", "itemCount", items, "createdAt", "updatedAt"
+          "totalAmount", "taxableAmount", "taxAmount", "cgstAmount", "sgstAmount", "igstAmount", "itemCount", items, "createdAt", "updatedAt"
         )
         VALUES ${valuesList}
         ON CONFLICT ("voucherNo") DO UPDATE SET
@@ -419,6 +424,11 @@ async function runSync() {
           "customerCode" = EXCLUDED."customerCode",
           "customerName" = EXCLUDED."customerName",
           "totalAmount" = EXCLUDED."totalAmount",
+          "taxableAmount" = EXCLUDED."taxableAmount",
+          "taxAmount" = EXCLUDED."taxAmount",
+          "cgstAmount" = EXCLUDED."cgstAmount",
+          "sgstAmount" = EXCLUDED."sgstAmount",
+          "igstAmount" = EXCLUDED."igstAmount",
           "itemCount" = EXCLUDED."itemCount",
           items = EXCLUDED.items,
           "updatedAt" = NOW();
