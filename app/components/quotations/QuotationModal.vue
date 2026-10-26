@@ -4,26 +4,26 @@
       v-if="modelValue"
       class="fixed inset-x-0 bottom-0 top-14 md:inset-0 z-[60] overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-0 sm:p-4 lg:p-6 animate-in fade-in duration-200"
     >
-      <!-- Modal Box: Responsive Full-screen on mobile, rounded card on sm+ -->
+      <!-- Modal Box: Responsive Full-screen on mobile, rounded card on sm+ (Matching GenerateBillModal.vue:6) -->
       <div
-        class="bg-[#faf8f5] w-full max-w-6xl h-full sm:h-auto sm:max-h-[92vh] sm:rounded-3xl shadow-2xl border border-gray-200/80 flex flex-col overflow-hidden text-gray-900"
+        class="bg-white w-full max-w-5xl h-full sm:h-auto sm:max-h-[90vh] sm:rounded-xl shadow-2xl border border-gray-200 flex flex-col overflow-hidden text-gray-900"
       >
-        <!-- Modal Top Header -->
-        <div class="px-4 sm:px-6 py-3.5 sm:py-4 bg-white border-b border-gray-200 flex items-center justify-between shrink-0">
-          <div class="flex items-center gap-3 min-w-0">
-            <div class="w-9 h-9 rounded-xl bg-[#1b3b5f]/10 text-[#1b3b5f] flex items-center justify-center shrink-0">
-              <Calculator class="w-5 h-5 text-[#1b3b5f]" />
+        <!-- Modal Top Header (Matching GenerateBillModal.vue:9-20) -->
+        <div class="px-4 sm:px-5 py-3.5 border-b border-gray-100 bg-gray-50 flex items-center justify-between shrink-0">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <div class="w-8 h-8 rounded-lg bg-[#1b3b5f]/10 text-[#1b3b5f] flex items-center justify-center shrink-0">
+              <Calculator class="w-4 h-4 text-[#1b3b5f]" />
             </div>
             <div class="min-w-0">
               <div class="flex items-center gap-2">
-                <h2 class="text-sm sm:text-base font-black text-gray-900 truncate">
+                <h2 class="text-base sm:text-lg font-bold text-gray-900 truncate">
                   {{ isSuccessView ? 'Quotation Ready to Share' : (isEditingExisting ? 'View Quotation' : 'New Quotation') }}
                 </h2>
-                <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-gray-100 text-gray-600 shrink-0">
+                <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-gray-200/80 text-gray-700 shrink-0">
                   {{ quoteNumber }}
                 </span>
               </div>
-              <p class="text-[11px] text-gray-500 truncate">
+              <p class="text-xs text-gray-500 truncate mt-0.5">
                 {{ isSuccessView ? 'Share official quotation via WhatsApp, image or PDF.' : 'Search Google Sheet catalog, review DB inventory, and save quote.' }}
               </p>
             </div>
@@ -47,7 +47,7 @@
                   ? 'bg-amber-400 animate-spin'
                   : (sheetSyncStatus?.isFallback ? 'bg-amber-500' : 'bg-emerald-500 animate-pulse')"
               ></span>
-              <span>{{ products.length }} Sheet Items{{ sheetSyncStatus?.isFallback ? ' (Cached)' : '' }}</span>
+              <span>{{ products.length }} Items{{ sheetSyncStatus?.isFallback ? ' (Cached)' : '' }}</span>
               <button
                 type="button"
                 @click.stop="loadSheetCatalog(true)"
@@ -59,11 +59,11 @@
               </button>
             </div>
 
-            <!-- Close button -->
+            <!-- Close button matching GenerateBillModal.vue:17 -->
             <button
               type="button"
               @click="closeModal"
-              class="p-2 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition cursor-pointer"
+              class="p-1.5 text-gray-400 hover:text-gray-700 rounded-lg hover:bg-gray-200 transition cursor-pointer"
               title="Close Modal"
               data-modal-close="true"
             >
@@ -504,17 +504,17 @@
         <!-- VIEW 2: DRAFTING / BUILDER VIEW (Customer details, search, table) -->
         <!-- ══════════════════════════════════════════════════════════════════ -->
         <div v-else class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
-          <!-- Step 1: Customer & Quotation Meta Details -->
-          <div class="bg-white rounded-2xl border border-gray-200 shadow-2xs p-4 sm:p-5 space-y-4">
-            <div class="flex items-center justify-between border-b border-gray-100 pb-2.5">
-              <h3 class="text-xs font-bold uppercase tracking-wider text-gray-600 flex items-center gap-2">
+          <!-- Step 1: Customer & Quotation Meta Details (Matching GenerateBillModal.vue:29-71) -->
+          <div class="bg-gray-50/80 rounded-xl border border-gray-200 p-4 sm:p-5 space-y-3.5">
+            <div class="flex items-center justify-between border-b border-gray-200/70 pb-2.5">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-gray-700 flex items-center gap-2">
                 <User class="w-4 h-4 text-[#1b3b5f]" />
                 <span>1. Customer & Quotation Details</span>
               </h3>
-              <span class="text-[11px] font-mono text-gray-400 font-bold">Quote ID: {{ quoteNumber }}</span>
+              <span class="text-[11px] font-mono text-gray-500 font-bold">Quote ID: {{ quoteNumber }}</span>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-12 gap-3.5">
+            <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 sm:gap-3.5">
               <!-- Customer / Company Name -->
               <div class="sm:col-span-5">
                 <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Customer / Company Name *</label>
@@ -522,7 +522,7 @@
                   v-model="customerName"
                   type="text"
                   placeholder="e.g. Rajesh Patel / Royal Interiors"
-                  class="w-full px-3 py-2 bg-gray-50/60 focus:bg-white border border-gray-200 rounded-xl text-xs font-semibold text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f] transition"
+                  class="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-xs font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f] transition"
                 />
               </div>
 
@@ -533,7 +533,7 @@
                   v-model="customerPlace"
                   type="text"
                   placeholder="e.g. Mysuru / Bangalore"
-                  class="w-full px-3 py-2 bg-gray-50/60 focus:bg-white border border-gray-200 rounded-xl text-xs font-semibold text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f] transition"
+                  class="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-xs font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f] transition"
                 />
               </div>
 
@@ -546,7 +546,7 @@
                     v-model="customerPhone"
                     type="tel"
                     placeholder="9876543210"
-                    class="w-full pl-9 pr-2 py-2 bg-gray-50/60 focus:bg-white border border-gray-200 rounded-xl text-xs font-semibold text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f] transition"
+                    class="w-full pl-9 pr-2 py-2 bg-white border border-gray-300 rounded-lg text-xs font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f] transition"
                   />
                 </div>
               </div>
@@ -561,7 +561,7 @@
                     min="1"
                     max="365"
                     placeholder="7"
-                    class="w-full px-3 py-2 pr-10 bg-gray-50/60 focus:bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f] transition"
+                    class="w-full px-3 py-2 pr-10 bg-white border border-gray-300 rounded-lg text-xs font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f] transition"
                   />
                   <span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs font-semibold select-none">
                     days

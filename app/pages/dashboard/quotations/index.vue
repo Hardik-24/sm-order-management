@@ -1,30 +1,20 @@
 <template>
-  <div class="space-y-6 sm:space-y-8 max-w-7xl mx-auto pb-16">
-    <!-- Top Header -->
+  <div class="space-y-5 sm:space-y-6 md:space-y-8 max-w-7xl mx-auto pb-16">
+    <!-- Top Header (Matching billing.vue:195-213) -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
-        <div class="flex items-center gap-2 mb-1">
-          <span class="text-xs font-bold text-gray-500 uppercase tracking-widest">Dashboard</span>
-          <span class="text-gray-300">&bull;</span>
-          <span class="text-xs font-bold text-[#1b3b5f] uppercase tracking-widest">Pricing Estimates</span>
-        </div>
-        <h1 class="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight flex items-center gap-3">
-          <div class="w-9 h-9 rounded-xl bg-[#1b3b5f]/10 text-[#1b3b5f] flex items-center justify-center">
-            <Calculator class="w-5 h-5" />
-          </div>
-          <span>Quotations</span>
-        </h1>
+        <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Quotations & Pricing Estimates</h1>
         <p class="text-xs sm:text-sm text-gray-500 mt-1">
           Manage hardware price estimates, check stock availability, and share branded quotation slips.
         </p>
       </div>
 
-      <!-- Action Button -->
+      <!-- Action Button (Matching billing.vue action buttons) -->
       <div class="flex items-center gap-3 shrink-0">
         <button
           type="button"
           @click="openNewQuoteModal"
-          class="inline-flex items-center gap-2 px-4 py-2.5 bg-[#1b3b5f] hover:bg-[#132c49] text-white rounded-xl text-xs sm:text-sm font-bold transition-all shadow-md active:scale-98 cursor-pointer"
+          class="inline-flex items-center gap-2 px-3 py-2 text-xs sm:text-sm font-semibold text-white bg-[#1b3b5f] hover:bg-[#132c49] rounded-lg shadow-sm transition-colors cursor-pointer"
         >
           <Plus class="w-4 h-4" />
           <span>Create New Quotation</span>
@@ -32,306 +22,324 @@
       </div>
     </div>
 
-    <!-- Quick Stats Cards -->
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5 sm:gap-4">
-      <!-- Total Quotations -->
-      <div class="bg-white p-4 sm:p-5 rounded-2xl border border-gray-200/90 shadow-2xs">
-        <div class="flex items-center justify-between mb-2">
-          <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Total Quotes</span>
-          <div class="w-7 h-7 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center">
-            <FileText class="w-4 h-4" />
-          </div>
-        </div>
-        <div class="text-xl sm:text-2xl font-black text-gray-900 font-mono">{{ quotations.length }}</div>
-        <div class="text-[11px] text-gray-500 mt-0.5">Recorded in system</div>
-      </div>
-
-      <!-- Created This Month -->
-      <div class="bg-white p-4 sm:p-5 rounded-2xl border border-gray-200/90 shadow-2xs">
-        <div class="flex items-center justify-between mb-2">
-          <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">This Month</span>
-          <div class="w-7 h-7 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center">
-            <Calendar class="w-4 h-4" />
-          </div>
-        </div>
-        <div class="text-xl sm:text-2xl font-black text-gray-900 font-mono">{{ quotesThisMonth }}</div>
-        <div class="text-[11px] text-gray-500 mt-0.5">Issued in {{ currentMonthName }}</div>
-      </div>
-
-      <!-- Active Catalog Feed -->
-      <div class="bg-white p-4 sm:p-5 rounded-2xl border border-gray-200/90 shadow-2xs flex flex-col justify-between">
-        <div class="flex items-center justify-between mb-2">
-          <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Catalog Feed</span>
-          <div class="flex items-center gap-1.5">
-            <button
-              type="button"
-              @click="checkSheetStatus(true)"
-              :disabled="isCheckingSheet"
-              title="Force re-sync now from Google Sheet"
-              class="p-1 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition cursor-pointer disabled:opacity-40"
-            >
-              <RefreshCw class="w-3.5 h-3.5" :class="isCheckingSheet ? 'animate-spin' : ''" />
-            </button>
-            <div
-              class="w-7 h-7 rounded-lg flex items-center justify-center"
-              :class="sheetDiagnostics?.canConnect
-                ? 'bg-teal-50 text-teal-700'
-                : (sheetDiagnostics?.configured === false ? 'bg-amber-50 text-amber-700' : 'bg-gray-100 text-gray-600')"
-            >
-              <CheckCircle2 v-if="sheetDiagnostics?.canConnect" class="w-4 h-4" />
-              <AlertCircle v-else class="w-4 h-4" />
+    <!-- Quick Stats Cards (Matching billing.vue:216-284 exact structure & typography) -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-4">
+      <!-- 1. Total Quotes -->
+      <div class="bg-white rounded-xl border border-[#e5e2dc] p-3.5 sm:p-5 shadow-sm">
+        <div class="flex gap-2.5 sm:gap-4">
+          <div class="flex flex-col justify-between shrink-0">
+            <div class="bg-blue-50 p-2 sm:p-2.5 rounded-lg text-[#1b3b5f] border border-blue-100/50">
+              <FileText class="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
+            <div class="w-6 sm:w-8 h-1 bg-[#1b3b5f] rounded-full mt-4 sm:mt-6"></div>
+          </div>
+          <div class="flex flex-col justify-center min-w-0">
+            <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">Total Quotes</p>
+            <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">{{ quotations.length }}</h3>
+            <p class="text-[11px] sm:text-xs text-gray-500 font-medium truncate">Recorded in system</p>
           </div>
         </div>
-        <div>
-          <div class="text-xs sm:text-sm font-bold text-gray-900 flex items-center gap-1.5 mt-1">
-            <span
-              class="w-2 h-2 rounded-full"
+      </div>
+
+      <!-- 2. This Month -->
+      <div class="bg-white rounded-xl border border-[#e5e2dc] p-3.5 sm:p-5 shadow-sm">
+        <div class="flex gap-2.5 sm:gap-4">
+          <div class="flex flex-col justify-between shrink-0">
+            <div class="bg-amber-50 p-2 sm:p-2.5 rounded-lg text-amber-600 border border-amber-100/50">
+              <Calendar class="w-4 h-4 sm:w-5 sm:h-5" />
+            </div>
+            <div class="w-6 sm:w-8 h-1 bg-amber-500 rounded-full mt-4 sm:mt-6"></div>
+          </div>
+          <div class="flex flex-col justify-center min-w-0">
+            <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">This Month</p>
+            <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">{{ quotesThisMonth }}</h3>
+            <p class="text-[11px] sm:text-xs text-amber-600 font-medium truncate">Issued in {{ currentMonthName }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Catalog Feed -->
+      <div class="bg-white rounded-xl border border-[#e5e2dc] p-3.5 sm:p-5 shadow-sm">
+        <div class="flex gap-2.5 sm:gap-4">
+          <div class="flex flex-col justify-between shrink-0">
+            <div
+              class="p-2 sm:p-2.5 rounded-lg border"
               :class="sheetDiagnostics?.canConnect
-                ? 'bg-emerald-500 animate-pulse'
-                : (sheetDiagnostics?.configured === false ? 'bg-amber-500' : 'bg-emerald-500 animate-pulse')"
-            ></span>
-            <span>{{ sheetDiagnostics?.canConnect ? 'Google Sheet Live' : (sheetDiagnostics?.configured === false ? 'Offline Fallback' : 'Google Sheet Ready') }}</span>
+                ? 'bg-teal-50 text-teal-600 border-teal-100/50'
+                : (sheetDiagnostics?.configured === false ? 'bg-amber-50 text-amber-600 border-amber-100/50' : 'bg-gray-100 text-gray-600 border-gray-200')"
+            >
+              <CheckCircle2 v-if="sheetDiagnostics?.canConnect" class="w-4 h-4 sm:w-5 sm:h-5" />
+              <AlertCircle v-else class="w-4 h-4 sm:w-5 sm:h-5" />
+            </div>
+            <div class="w-6 sm:w-8 h-1 bg-teal-500 rounded-full mt-4 sm:mt-6"></div>
           </div>
-          <div class="text-[11px] text-gray-500 mt-0.5">
-            {{ sheetDiagnostics?.rowCount ? `${((sheetDiagnostics.rowCount || 1) - 1).toLocaleString()} live products` : 'Synced with live stock' }}
+          <div class="flex flex-col justify-center min-w-0 flex-1">
+            <div class="flex items-center justify-between gap-1">
+              <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">Catalog Feed</p>
+              <button
+                type="button"
+                @click="checkSheetStatus(true)"
+                :disabled="isCheckingSheet"
+                title="Re-sync from Google Sheet"
+                class="p-1 rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition cursor-pointer disabled:opacity-40"
+              >
+                <RefreshCw class="w-3 h-3" :class="isCheckingSheet ? 'animate-spin' : ''" />
+              </button>
+            </div>
+            <h3 class="text-sm sm:text-base font-bold text-gray-900 mb-0.5 flex items-center gap-1.5 truncate">
+              <span
+                class="w-2 h-2 rounded-full shrink-0"
+                :class="sheetDiagnostics?.canConnect
+                  ? 'bg-emerald-500 animate-pulse'
+                  : (sheetDiagnostics?.configured === false ? 'bg-amber-500' : 'bg-emerald-500 animate-pulse')"
+              ></span>
+              <span class="truncate">{{ sheetDiagnostics?.canConnect ? 'Google Sheet Live' : (sheetDiagnostics?.configured === false ? 'Offline Fallback' : 'Google Sheet Ready') }}</span>
+            </h3>
+            <p class="text-[11px] sm:text-xs text-teal-600 font-medium truncate">
+              {{ sheetDiagnostics?.rowCount ? `${((sheetDiagnostics.rowCount || 1) - 1).toLocaleString()} live products` : 'Synced with stock' }}
+            </p>
           </div>
-        </div>
-
-        <!-- Last Synced Detail -->
-        <div class="mt-2.5 pt-2 border-t border-gray-100 flex items-center justify-between text-[10px]">
-          <span class="text-gray-400 font-medium">Last Synced:</span>
-          <span class="font-bold text-gray-700 font-mono">
-            {{ formatLastSynced(sheetDiagnostics?.lastSyncedAt) }}
-          </span>
         </div>
       </div>
     </div>
 
-    <!-- Search & Filter Toolbar -->
-    <div class="bg-white rounded-2xl border border-gray-200 shadow-2xs p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-      <div class="relative flex-1 max-w-md">
-        <Search class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-        <input
-          v-model="searchQuery"
-          type="text"
-          placeholder="Search by Quote No, Customer, Place, or Staff..."
-          class="w-full pl-9 pr-3 py-2 bg-gray-50/70 focus:bg-white border border-gray-200 rounded-xl text-xs font-medium text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f] transition"
-        />
-        <button
-          v-if="searchQuery"
-          @click="searchQuery = ''"
-          class="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-0.5"
-        >
-          <X class="w-3.5 h-3.5" />
-        </button>
-      </div>
+    <!-- Search & Filter Controls Toolbar (Matching BillingTable.vue:104-145) -->
+    <div class="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
+      <div class="p-4 flex flex-col sm:flex-row justify-between items-center gap-3.5 bg-gray-50/50">
+        <!-- Search Input matching BillingTable.vue:106-122 -->
+        <div class="relative w-full sm:w-80">
+          <Search class="w-4 h-4 absolute left-3 top-2.5 text-gray-400" />
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="Search quote #, customer, place..."
+            class="w-full pl-9 pr-8 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f] transition-all"
+          />
+          <button
+            v-if="searchQuery"
+            @click="searchQuery = ''"
+            class="absolute right-2.5 top-2.5 text-gray-400 hover:text-gray-600 cursor-pointer"
+          >
+            <X class="w-3.5 h-3.5" />
+          </button>
+        </div>
 
-      <div class="flex items-center gap-2">
-        <button
-          type="button"
-          @click="fetchQuotations"
-          :disabled="isLoading"
-          class="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-xl text-xs font-bold text-gray-700 transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-          title="Refresh Quotations"
-        >
-          <RefreshCw class="w-3.5 h-3.5" :class="{ 'animate-spin': isLoading }" />
-          <span class="hidden sm:inline">Refresh</span>
-        </button>
+        <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+          <button
+            type="button"
+            @click="fetchQuotations"
+            :disabled="isLoading"
+            class="inline-flex items-center gap-2 px-3 py-2 text-xs sm:text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 shadow-sm transition-colors cursor-pointer disabled:opacity-50"
+            title="Refresh Quotations"
+          >
+            <RefreshCw class="w-4 h-4" :class="{ 'animate-spin': isLoading }" />
+            <span>Refresh</span>
+          </button>
+        </div>
       </div>
     </div>
 
-    <!-- Quotations Table Card -->
-    <div class="bg-white rounded-2xl border border-gray-200 shadow-2xs overflow-hidden">
+    <!-- Quotations Table Card (Matching BillingTable.vue) -->
+    <div class="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden flex flex-col">
+      <!-- Toolbar Header -->
+      <div class="px-5 py-3 border-b border-gray-200 bg-gray-50/50 flex flex-wrap items-center justify-between gap-3 text-xs text-gray-500">
+        <div>
+          Showing <span class="font-bold text-gray-900">{{ filteredQuotations.length }}</span> of
+          <span class="font-bold text-gray-900">{{ quotations.length }}</span> quotations
+          <span v-if="searchQuery" class="text-sky-600 ml-1 font-semibold">(filtered)</span>
+        </div>
+      </div>
+
       <!-- Loading State -->
-      <div v-if="isLoading" class="p-12 text-center text-gray-400">
-        <Loader2 class="w-8 h-8 animate-spin mx-auto mb-2 text-[#1b3b5f]" />
-        <p class="text-xs font-semibold text-gray-600">Loading quotations...</p>
+      <div v-if="isLoading" class="p-14 flex flex-col items-center justify-center text-gray-400 gap-2">
+        <Loader2 class="w-7 h-7 animate-spin text-[#1b3b5f]" />
+        <p class="text-xs font-medium text-gray-500">Loading quotations...</p>
       </div>
 
-      <!-- Empty State -->
-      <div v-else-if="filteredQuotations.length === 0" class="py-16 px-4 text-center">
-        <div class="w-16 h-16 rounded-2xl bg-gray-100 text-gray-400 flex items-center justify-center mx-auto mb-3">
-          <Calculator class="w-8 h-8" />
-        </div>
-        <h3 class="text-sm font-bold text-gray-800">
+      <!-- Empty State matching BillingTable.vue:195-201 -->
+      <div v-else-if="filteredQuotations.length === 0" class="py-14 text-center text-gray-400">
+        <Calculator class="w-8 h-8 mx-auto text-gray-300 mb-2" />
+        <p class="text-sm font-semibold text-gray-700">
           {{ searchQuery ? 'No quotations match your search' : 'No quotations created yet' }}
-        </h3>
-        <p class="text-xs text-gray-400 max-w-sm mx-auto mt-1 mb-5">
+        </p>
+        <p class="text-xs text-gray-400 mt-0.5 max-w-sm mx-auto">
           {{ searchQuery ? 'Try searching by a different customer name, place, or quote number.' : 'Click below to create your first official quotation slip with live Google Sheet hardware pricing.' }}
         </p>
         <button
           type="button"
           @click="openNewQuoteModal"
-          class="inline-flex items-center gap-2 px-4 py-2 bg-[#1b3b5f] text-white rounded-xl text-xs font-bold shadow-sm hover:bg-[#132c49] transition cursor-pointer"
+          class="mt-3 px-3 py-1.5 text-xs font-semibold text-[#1b3b5f] bg-sky-50 hover:bg-sky-100 rounded-lg transition cursor-pointer"
         >
-          <Plus class="w-4 h-4" />
-          <span>Create First Quotation</span>
+          Create First Quotation
         </button>
       </div>
 
-      <!-- Desktop Table View -->
-      <div v-else class="hidden md:block overflow-x-auto">
-        <table class="w-full text-left border-collapse text-xs">
-          <thead>
-            <tr class="bg-gray-50/90 border-b border-gray-200 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-              <th class="py-3 px-4 w-36">Quote No.</th>
-              <th class="py-3 px-4">Customer & Destination</th>
-              <th class="py-3 px-3 text-center w-24">Items</th>
-              <th class="py-3 px-4 w-44">Created By</th>
-              <th class="py-3 px-4 w-28 text-center">Date</th>
-              <th class="py-3 px-4 w-28 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-100">
-            <tr
-              v-for="quote in filteredQuotations"
-              :key="quote.id"
-              class="hover:bg-gray-50/70 transition-colors group cursor-pointer"
-              @click="viewQuoteDetails(quote)"
-            >
-              <!-- 1. Quote Number -->
-              <td class="py-3.5 px-4">
-                <div class="font-mono font-bold text-xs text-[#1b3b5f] flex items-center gap-1.5">
-                  <span>{{ quote.quoteNumber }}</span>
-                </div>
-                <div class="text-[10px] text-gray-400 mt-0.5">
-                  Valid for {{ quote.validityDays || 7 }} days
-                </div>
-              </td>
+      <!-- Content Views -->
+      <div v-else>
+        <!-- Desktop Table matching BillingTable.vue:152-328 -->
+        <div class="hidden md:block overflow-x-auto no-scrollbar">
+          <table class="w-full text-left border-collapse min-w-full text-sm text-gray-600">
+            <thead>
+              <tr class="bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                <th class="px-5 py-3.5 whitespace-nowrap">Quote No.</th>
+                <th class="px-5 py-3.5">Customer & Destination</th>
+                <th class="px-5 py-3.5 whitespace-nowrap text-center">Items</th>
+                <th class="px-5 py-3.5 whitespace-nowrap">Created By</th>
+                <th class="px-5 py-3.5 whitespace-nowrap text-center">Date</th>
+                <th class="px-5 py-3.5 whitespace-nowrap text-right pr-5">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 bg-white">
+              <tr
+                v-for="quote in filteredQuotations"
+                :key="quote.id"
+                @click="viewQuoteDetails(quote)"
+                class="cursor-pointer hover:bg-gray-50/80 transition-colors duration-150 group"
+              >
+                <!-- 1. Quote No -->
+                <td class="px-5 py-3.5 whitespace-nowrap">
+                  <div class="flex items-center gap-1.5 flex-wrap">
+                    <span class="text-xs font-bold text-gray-900 group-hover:text-[#1b3b5f] transition-colors font-mono">
+                      {{ quote.quoteNumber }}
+                    </span>
+                  </div>
+                  <p class="text-[11px] text-gray-400 mt-0.5 tabular-nums">
+                    Valid for {{ quote.validityDays || 7 }} days
+                  </p>
+                </td>
 
-              <!-- 2. Customer & Place -->
-              <td class="py-3.5 px-4">
-                <div class="font-bold text-gray-900 flex items-center gap-1.5 flex-wrap">
-                  <span>{{ quote.customerName }}</span>
-                  <span
-                    v-if="quote.customerPlace"
-                    class="inline-flex items-center gap-1 text-[10px] font-semibold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200"
-                  >
-                    <MapPin class="w-2.5 h-2.5 text-[#1b3b5f]" />
-                    <span>{{ quote.customerPlace }}</span>
+                <!-- 2. Customer & Destination -->
+                <td class="px-5 py-3.5 min-w-0">
+                  <div class="text-xs font-semibold text-gray-900 truncate flex items-center gap-1.5" :title="quote.customerName">
+                    <span class="truncate">{{ quote.customerName }}</span>
+                    <span
+                      v-if="quote.customerPlace"
+                      class="inline-flex items-center gap-1 text-[10px] font-semibold text-slate-600 bg-slate-100 px-1.5 py-0.2 rounded border border-slate-200"
+                    >
+                      <MapPin class="w-2.5 h-2.5 text-[#1b3b5f]" />
+                      <span>{{ quote.customerPlace }}</span>
+                    </span>
+                  </div>
+                  <p v-if="quote.customerPhone" class="text-[11px] text-gray-500 truncate mt-0.5 font-mono">
+                    +91 {{ quote.customerPhone }}
+                  </p>
+                </td>
+
+                <!-- 3. Items Count -->
+                <td class="px-5 py-3.5 whitespace-nowrap text-center">
+                  <div class="text-xs font-bold text-gray-800">
+                    {{ Array.isArray(quote.items) ? quote.items.length : (quote.totalItems || 0) }} items
+                  </div>
+                </td>
+
+                <!-- 4. Created By -->
+                <td class="px-5 py-3.5 whitespace-nowrap">
+                  <div class="text-xs font-semibold text-gray-800 truncate">
+                    {{ quote.createdByName || 'Sales Staff' }}
+                  </div>
+                  <p class="text-[11px] text-gray-400 uppercase font-medium tracking-wider">
+                    {{ quote.createdByRole || 'STAFF' }}
+                  </p>
+                </td>
+
+                <!-- 5. Date -->
+                <td class="px-5 py-3.5 whitespace-nowrap text-center">
+                  <span class="text-xs text-gray-700">
+                    {{ formatDisplayDate(new Date(quote.createdAt)) }}
                   </span>
-                </div>
-                <div v-if="quote.customerPhone" class="inline-flex items-center gap-1 text-[11px] text-gray-500 font-mono mt-0.5">
-                  <Phone class="w-2.5 h-2.5 text-[#1b3b5f]" />
-                  <span>+91 {{ quote.customerPhone }}</span>
-                </div>
-              </td>
+                </td>
 
-              <!-- 3. Items Count -->
-              <td class="py-3.5 px-3 text-center">
-                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-800 border border-blue-200">
+                <!-- 6. Actions (Matching BillingTable.vue button style) -->
+                <td class="px-5 py-3.5 text-right whitespace-nowrap pr-5" @click.stop>
+                  <div class="flex items-center justify-end gap-1.5">
+                    <button
+                      type="button"
+                      @click="viewQuoteDetails(quote)"
+                      class="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 border border-gray-200 shadow-2xs transition-colors flex items-center justify-center gap-1 cursor-pointer whitespace-nowrap"
+                      title="View & Share Quotation Slip"
+                    >
+                      <span>View Slip</span>
+                      <ChevronRight class="w-3.5 h-3.5 text-gray-400" />
+                    </button>
+
+                    <button
+                      v-if="canDeleteQuotations"
+                      type="button"
+                      @click="deleteQuote(quote)"
+                      class="p-1.5 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+                      title="Delete Quotation"
+                    >
+                      <Trash2 class="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Mobile View (Matching BillingTable.vue:351-420 exact 2-line layout) -->
+        <div class="block md:hidden divide-y divide-gray-100 bg-white">
+          <div
+            v-for="quote in filteredQuotations"
+            :key="'mob-' + quote.id"
+            @click="viewQuoteDetails(quote)"
+            class="px-3.5 py-3 cursor-pointer transition-colors flex flex-col gap-1.5 hover:bg-gray-50 active:bg-gray-100"
+          >
+            <!-- LINE 1: Quote #, Destination, Customer & Date -->
+            <div class="flex items-center justify-between gap-2 min-w-0">
+              <div class="flex items-center gap-1.5 min-w-0 flex-1">
+                <span class="text-xs font-bold text-gray-900 shrink-0 font-mono">
+                  {{ quote.quoteNumber }}
+                </span>
+                <span
+                  v-if="quote.customerPlace"
+                  class="inline-flex items-center gap-0.5 text-[10px] font-semibold text-slate-600 bg-slate-100 px-1.5 py-0.2 rounded border border-slate-200 truncate max-w-[120px]"
+                >
+                  <MapPin class="w-2.5 h-2.5 text-[#1b3b5f] shrink-0" />
+                  <span class="truncate">{{ quote.customerPlace }}</span>
+                </span>
+                <span class="text-gray-300 text-xs shrink-0">&bull;</span>
+                <span class="text-xs font-semibold text-gray-700 truncate" :title="quote.customerName">
+                  {{ quote.customerName }}
+                </span>
+              </div>
+
+              <span class="text-[11px] text-gray-400 tabular-nums shrink-0">
+                {{ formatDisplayDate(new Date(quote.createdAt)) }}
+              </span>
+            </div>
+
+            <!-- LINE 2: Items, Phone, Staff & View Action -->
+            <div class="flex items-center justify-between gap-2 min-w-0 pt-0.5">
+              <div class="flex items-baseline gap-1.5 min-w-0">
+                <span class="text-[11px] font-semibold text-blue-700 bg-blue-50 px-1.5 py-0.2 rounded border border-blue-100 shrink-0">
                   {{ Array.isArray(quote.items) ? quote.items.length : (quote.totalItems || 0) }} items
                 </span>
-              </td>
+                <span v-if="quote.customerPhone" class="text-[11px] text-gray-400 font-mono truncate">
+                  +91 {{ quote.customerPhone }}
+                </span>
+                <span class="text-gray-300 text-[10px] shrink-0">&bull;</span>
+                <span class="text-[11px] text-gray-400 truncate">
+                  {{ quote.createdByName || 'Staff' }}
+                </span>
+              </div>
 
-              <!-- 4. Created By -->
-              <td class="py-3.5 px-4">
-                <div class="font-bold text-gray-800 text-xs truncate">
-                  {{ quote.createdByName || 'Sales Staff' }}
-                </div>
-                <div class="text-[10px] text-gray-400 uppercase font-medium tracking-wider">
-                  {{ quote.createdByRole || 'STAFF' }}
-                </div>
-              </td>
-
-              <!-- 6. Date -->
-              <td class="py-3.5 px-4 text-center text-gray-500 text-[11px] whitespace-nowrap">
-                {{ formatDisplayDate(new Date(quote.createdAt)) }}
-              </td>
-
-              <!-- 7. Actions -->
-              <td class="py-3.5 px-4 text-right" @click.stop>
-                <div class="flex items-center justify-end gap-1.5">
-                  <button
-                    type="button"
-                    @click="viewQuoteDetails(quote)"
-                    class="px-2.5 py-1 bg-[#1b3b5f]/10 hover:bg-[#1b3b5f]/20 text-[#1b3b5f] rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer"
-                    title="View & Share Quotation Slip"
-                  >
-                    <Share2 class="w-3.5 h-3.5" />
-                    <span>Share</span>
-                  </button>
-
-                  <button
-                    v-if="canDeleteQuotations"
-                    type="button"
-                    @click="deleteQuote(quote)"
-                    class="p-1 rounded-lg text-gray-300 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
-                    title="Delete Quotation"
-                  >
-                    <Trash2 class="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Mobile High-Density Row View -->
-      <div class="md:hidden divide-y divide-gray-100 bg-white">
-        <div
-          v-for="quote in filteredQuotations"
-          :key="quote.id"
-          class="px-3.5 py-2.5 hover:bg-gray-50 active:bg-gray-100/80 transition-colors cursor-pointer flex flex-col gap-1.5"
-          @click="viewQuoteDetails(quote)"
-        >
-          <!-- LINE 1: Quote # + Destination City pill & Chevron -->
-          <div class="flex items-center justify-between gap-2">
-            <div class="flex items-center gap-1.5 min-w-0">
-              <span class="font-mono font-bold text-xs text-[#1b3b5f] shrink-0">
-                {{ quote.quoteNumber }}
-              </span>
-              <span
-                v-if="quote.customerPlace"
-                class="inline-flex items-center gap-0.5 text-[9px] font-semibold text-slate-600 bg-slate-100 px-1.5 py-0.2 rounded border border-slate-200 truncate max-w-[130px]"
-              >
-                <MapPin class="w-2.5 h-2.5 text-[#1b3b5f] shrink-0" />
-                <span class="truncate">{{ quote.customerPlace }}</span>
-              </span>
-            </div>
-
-            <!-- Chevron -->
-            <div class="flex items-center shrink-0 text-gray-400">
-              <ChevronRight class="w-4 h-4" />
-            </div>
-          </div>
-
-          <!-- LINE 2: Customer Name & Phone -->
-          <div class="flex items-baseline justify-between gap-2 min-w-0">
-            <span class="font-bold text-gray-900 text-xs truncate">
-              {{ quote.customerName }}
-            </span>
-            <span v-if="quote.customerPhone" class="text-[10px] font-mono text-gray-500 shrink-0 flex items-center gap-1">
-              <Phone class="w-2.5 h-2.5 text-gray-400" />
-              <span>+91 {{ quote.customerPhone }}</span>
-            </span>
-          </div>
-
-          <!-- LINE 3: Items, Date, Created By & Admin Action -->
-          <div class="flex items-center justify-between gap-2 text-[10px] text-gray-400 pt-0.5 border-t border-gray-50">
-            <div class="flex items-center gap-1.5 shrink-0">
-              <span class="font-semibold text-blue-700 bg-blue-50 px-1.5 py-0.2 rounded border border-blue-100">
-                {{ Array.isArray(quote.items) ? quote.items.length : (quote.totalItems || 0) }} items
-              </span>
-              <span>&bull;</span>
-              <span>{{ formatDisplayDate(new Date(quote.createdAt)) }}</span>
-            </div>
-
-            <div class="flex items-center gap-2 shrink-0">
-              <span class="text-gray-600 font-medium">
-                {{ quote.createdByName || 'Staff' }}
-              </span>
-              <button
-                v-if="canDeleteQuotations"
-                type="button"
-                @click.stop="deleteQuote(quote)"
-                class="p-1 rounded text-gray-300 hover:text-rose-600 active:bg-rose-50 transition"
-                title="Delete Quotation"
-              >
-                <Trash2 class="w-3 h-3" />
-              </button>
+              <div class="flex items-center gap-2 shrink-0">
+                <span class="text-xs font-semibold text-[#1b3b5f] flex items-center gap-0.5">
+                  <span>View</span>
+                  <ChevronRight class="w-3 h-3 text-gray-400" />
+                </span>
+                <button
+                  v-if="canDeleteQuotations"
+                  type="button"
+                  @click.stop="deleteQuote(quote)"
+                  class="p-1 rounded text-gray-300 hover:text-rose-600 active:bg-rose-50 transition"
+                  title="Delete Quotation"
+                >
+                  <Trash2 class="w-3 h-3" />
+                </button>
+              </div>
             </div>
           </div>
         </div>
