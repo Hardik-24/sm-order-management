@@ -43,6 +43,10 @@
             <LayoutDashboard class="shrink-0 w-4 h-4 transition-colors" :class="isLinkActive('/dashboard') ? 'text-sky-400' : 'text-gray-400'" />
             <span v-if="!isSidebarCollapsed" class="font-medium whitespace-nowrap">Overview</span>
           </NuxtLink>
+          <NuxtLink v-if="canAccessRoute('/dashboard/analytics')" to="/dashboard/analytics" title="Analytics" class="flex items-center gap-3 rounded-md py-2.5 text-sm transition-colors" :class="[isLinkActive('/dashboard/analytics') ? 'bg-[#182d47] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50 hover:text-gray-200', isSidebarCollapsed ? 'justify-center px-0' : 'px-3']">
+            <BarChart3 class="shrink-0 w-4 h-4 transition-colors" :class="isLinkActive('/dashboard/analytics') ? 'text-sky-400' : 'text-gray-400'" />
+            <span v-if="!isSidebarCollapsed" class="font-medium whitespace-nowrap">Analytics</span>
+          </NuxtLink>
           <NuxtLink v-if="canAccessRoute('/dashboard/orders')" to="/dashboard/orders" title="Orders" class="flex items-center gap-3 rounded-md py-2.5 text-sm transition-colors" :class="[isLinkActive('/dashboard/orders') ? 'bg-[#182d47] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50 hover:text-gray-200', isSidebarCollapsed ? 'justify-center px-0' : 'px-3']">
             <ClipboardList class="shrink-0 w-4 h-4 transition-colors" :class="isLinkActive('/dashboard/orders') ? 'text-sky-400' : 'text-gray-400'" />
             <span v-if="!isSidebarCollapsed" class="font-medium whitespace-nowrap">Orders</span>
@@ -224,6 +228,9 @@
         <NuxtLink v-if="canAccessRoute('/dashboard')" to="/dashboard" class="flex items-center gap-3 rounded-md py-2.5 px-3 text-sm transition-colors" :class="[isLinkActive('/dashboard') ? 'bg-[#182d47] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50']">
           <LayoutDashboard class="w-4 h-4 transition-colors" :class="isLinkActive('/dashboard') ? 'text-sky-400' : 'text-gray-400'" /> <span class="font-medium">Overview</span>
         </NuxtLink>
+        <NuxtLink v-if="canAccessRoute('/dashboard/analytics')" to="/dashboard/analytics" class="flex items-center gap-3 rounded-md py-2.5 px-3 text-sm transition-colors" :class="[isLinkActive('/dashboard/analytics') ? 'bg-[#182d47] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50']">
+          <BarChart3 class="w-4 h-4 transition-colors" :class="isLinkActive('/dashboard/analytics') ? 'text-sky-400' : 'text-gray-400'" /> <span class="font-medium">Analytics</span>
+        </NuxtLink>
         <NuxtLink v-if="canAccessRoute('/dashboard/orders')" to="/dashboard/orders" class="flex items-center gap-3 rounded-md py-2.5 px-3 text-sm transition-colors" :class="[isLinkActive('/dashboard/orders') ? 'bg-[#182d47] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50']">
           <ClipboardList class="w-4 h-4 transition-colors" :class="isLinkActive('/dashboard/orders') ? 'text-sky-400' : 'text-gray-400'" /> <span class="font-medium">Orders</span>
         </NuxtLink>
@@ -301,6 +308,7 @@
 <script setup lang="ts">
 import { 
   LayoutDashboard, 
+  BarChart3,
   ClipboardList, 
   PenTool, 
   IndianRupee, 

@@ -11,6 +11,7 @@ export interface AppPageDef {
 export const APP_PAGES: AppPageDef[] = [
   // Dashboard
   { key: 'OVERVIEW', path: '/dashboard', label: 'Overview', category: 'Dashboard', description: 'Main metrics, KPIs, and daily business pulse' },
+  { key: 'ANALYTICS', path: '/dashboard/analytics', label: 'Analytics', category: 'Dashboard', description: 'Business intelligence, stock valuation, and operational statistics' },
   { key: 'ORDERS', path: '/dashboard/orders', label: 'Orders List', category: 'Dashboard', description: 'View, filter, and track all sales orders' },
   { key: 'CREATE_ORDER', path: '/dashboard/orders/create', label: 'Create Order', category: 'Dashboard', description: 'Create and submit new orders' },
   { key: 'ORDER_REQUESTS', path: '/dashboard/order-requests', label: 'Order Requests', category: 'Dashboard', description: 'Incoming customer orders and inquiries' },
@@ -34,12 +35,12 @@ export const APP_PAGES: AppPageDef[] = [
 
 export const DEFAULT_ROLE_PAGES: Record<UserRole, string[]> = {
   ADMIN: [
-    'OVERVIEW', 'ORDERS', 'CREATE_ORDER', 'ORDER_REQUESTS', 'CHAT',
+    'OVERVIEW', 'ANALYTICS', 'ORDERS', 'CREATE_ORDER', 'ORDER_REQUESTS', 'CHAT',
     'QUOTATIONS', 'APPROVE_ORDERS', 'PACKING', 'BILLING', 'DELIVERY', 'INVENTORY',
     'CUSTOMERS', 'PRODUCTS', 'ADMIN'
   ],
   SALES: [
-    'OVERVIEW', 'ORDERS', 'CREATE_ORDER', 'ORDER_REQUESTS', 'CHAT',
+    'OVERVIEW', 'ANALYTICS', 'ORDERS', 'CREATE_ORDER', 'ORDER_REQUESTS', 'CHAT',
     'QUOTATIONS', 'APPROVE_ORDERS', 'CUSTOMERS', 'PRODUCTS', 'INVENTORY'
   ],
   BILLING: [
@@ -60,6 +61,7 @@ export function getPageKeyFromPath(path: string): string | null {
   const cleanPath = (path || '').split('?')[0].replace(/\/+$/, '') || '/dashboard'
 
   if (cleanPath === '/dashboard') return 'OVERVIEW'
+  if (cleanPath.startsWith('/dashboard/analytics')) return 'ANALYTICS'
   if (cleanPath === '/dashboard/orders/create') return 'CREATE_ORDER'
   if (cleanPath.startsWith('/dashboard/orders')) return 'ORDERS'
   if (cleanPath.startsWith('/dashboard/order-requests')) return 'ORDER_REQUESTS'
