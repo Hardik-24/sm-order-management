@@ -60,7 +60,17 @@
     </div>
 
     <!-- User Section -->
-    <div class="flex items-center gap-5">
+    <div class="flex items-center gap-4">
+      <!-- BUSY Live Sync Indicator -->
+      <div 
+        v-if="syncStatusText" 
+        class="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200"
+        :title="'BUSY ERP Server: ' + (fullSyncTime || 'Live')"
+      >
+        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+        <span class="text-[11px] font-semibold text-emerald-800 tracking-tight">BUSY: {{ syncStatusText }}</span>
+      </div>
+
       <!-- Notifications -->
       <div class="relative" ref="notificationContainer">
         <button 
@@ -261,8 +271,34 @@ const unsubscribeSync = onOrderSync((event) => {
   fetchNotifications(true)
 })
 
+const syncStatusText = ref('')
+const fullSyncTime = ref('')
+
+const fetchSyncStatus = async () => {
+  try {
+    const res = await $fetch<any>('/api/system/sync-status')
+    if (res?.lastSynced) {
+      const d = new Date(res.lastSynced)
+      if (!isNaN(d.getTime())) {
+        fullSyncTime.value = d.toLocaleString('en-IN')
+        const diffMin = Math.round((Date.now() - d.getTime()) / 60000)
+        if (diffMin < 2) {
+          syncStatusText.value = 'Synced just now'
+        } else if (diffMin < 60) {
+          syncStatusText.value = `Synced ${diffMin}m ago`
+        } else {
+          syncStatusText.value = d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' })
+        }
+      }
+    }
+  } catch (e) {
+    // silently fail
+  }
+}
+
 onMounted(() => {
   fetchNotifications()
+  fetchSyncStatus()
 })
 
 onUnmounted(() => {

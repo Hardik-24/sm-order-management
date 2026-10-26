@@ -9,6 +9,10 @@
             <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
             Live BUSY Data
           </span>
+          <span v-if="formattedLastSynced" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 border border-gray-200" :title="'Server sync time: ' + (data?.lastSynced || '')">
+            <Clock class="w-3.5 h-3.5 text-gray-400" />
+            Last Synced: {{ formattedLastSynced }}
+          </span>
         </div>
         <p class="text-sm text-gray-500 mt-1">
           Landed cost inventory valuation, monthly stock movement velocity, and B2B client performance
@@ -529,7 +533,8 @@ import {
   TrendingUp,
   ShieldCheck,
   Tag,
-  Crown
+  Crown,
+  Clock
 } from 'lucide-vue-next'
 import { formatCurrency } from '~/lib/utils'
 
@@ -555,6 +560,7 @@ interface TopBilledCustomer {
 
 interface AnalyticsPayload {
   period: string
+  lastSynced?: string | null
   inventory: {
     totalProducts: number
     inStockCount: number
@@ -662,6 +668,13 @@ const fetchAnalytics = async () => {
 
 onMounted(() => {
   fetchAnalytics()
+})
+
+const formattedLastSynced = computed(() => {
+  if (!data.value?.lastSynced) return null
+  const d = new Date(data.value.lastSynced)
+  if (isNaN(d.getTime())) return null
+  return d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }) + ', ' + d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })
 })
 
 // Current active valuation based on mode

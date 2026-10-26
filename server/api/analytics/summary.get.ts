@@ -8,6 +8,10 @@ export default defineEventHandler(async (event) => {
   const period = (query.period as string) || 'all' // 'all', 'fy', 'month', '30d'
 
   try {
+    const lastSyncedSetting = await prisma.systemSetting.findUnique({
+      where: { key: 'last_synced' }
+    })
+
     // 1. Inventory KPIs & Health Status (Both Cost and Sale Valuation)
     const [invKpi]: any = await prisma.$queryRawUnsafe(`
       SELECT 
@@ -136,6 +140,7 @@ export default defineEventHandler(async (event) => {
     return {
       success: true,
       timestamp: new Date().toISOString(),
+      lastSynced: lastSyncedSetting?.value || null,
       period,
       inventory: {
         totalProducts: Number(invKpi.total_products || 0),
