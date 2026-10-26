@@ -87,6 +87,7 @@ async function runSync() {
     const name = p.name.trim();
     const catId = categoryMap.get(p.categoryName) || defaultCatId;
     const price = typeof p.salePrice === 'number' ? p.salePrice : 0;
+    const costPrice = typeof p.purPrice === 'number' && p.purPrice > 0 ? p.purPrice : null;
     const stock = typeof p.stock === 'number' ? p.stock : 0;
     const hsn = p.hsnCode && p.hsnCode.trim() ? p.hsnCode.trim() : null;
     const isActive = p.isActive !== false;
@@ -101,6 +102,7 @@ async function runSync() {
         name,
         categoryId: catId,
         price,
+        costPrice,
         stock,
         hsnCode: hsn,
         isActive
@@ -111,6 +113,7 @@ async function runSync() {
         name,
         categoryId: catId,
         price,
+        costPrice,
         stock,
         hsnCode: hsn,
         isActive
@@ -126,7 +129,7 @@ async function runSync() {
     
     // Construct single batch UPDATE using VALUES table
     const valuesList = chunk.map(p => 
-      `('${p.id}'::text, ${esc(p.sku)}, ${esc(p.name)}, '${p.categoryId}'::text, ${p.price}::numeric, ${p.stock}::integer, ${esc(p.hsnCode)}, ${p.isActive}::boolean)`
+      `('${p.id}'::text, ${esc(p.sku)}, ${esc(p.name)}, '${p.categoryId}'::text, ${p.price}::numeric, ${p.costPrice !== null ? p.costPrice : 'NULL'}::numeric, ${p.stock}::integer, ${esc(p.hsnCode)}, ${p.isActive}::boolean)`
     ).join(',');
 
     await prisma.$executeRawUnsafe(`
@@ -136,11 +139,12 @@ async function runSync() {
         name = v.name,
         "categoryId" = v.categoryId,
         price = CASE WHEN v.price > 0 THEN v.price ELSE p.price END,
+        "costPrice" = COALESCE(v.costPrice, p."costPrice"),
         stock = v.stock,
         "hsnCode" = COALESCE(v.hsnCode, p."hsnCode"),
         "isActive" = v.isActive,
         "updatedAt" = NOW()
-      FROM (VALUES ${valuesList}) AS v(id, sku, name, categoryId, price, stock, hsnCode, isActive)
+      FROM (VALUES ${valuesList}) AS v(id, sku, name, categoryId, price, costPrice, stock, hsnCode, isActive)
       WHERE p.id = v.id;
     `);
     updatedCount += chunk.length;
@@ -153,16 +157,17 @@ async function runSync() {
     for (let i = 0; i < toInsert.length; i += insertChunkSize) {
       const chunk = toInsert.slice(i, i + insertChunkSize);
       const valuesList = chunk.map(p => 
-        `(gen_random_uuid(), ${esc(p.sku)}, ${esc(p.name)}, '${p.categoryId}'::text, 'PIECE', ${p.price}, ${p.stock}, ${esc(p.hsnCode)}, NULL, false, ${p.isActive}, NOW(), NOW())`
+        `(gen_random_uuid(), ${esc(p.sku)}, ${esc(p.name)}, '${p.categoryId}'::text, 'PIECE', ${p.price}, ${p.costPrice !== null ? p.costPrice : 'NULL'}, ${p.stock}, ${esc(p.hsnCode)}, NULL, false, ${p.isActive}, NOW(), NOW())`
       ).join(',');
 
       await prisma.$executeRawUnsafe(`
-        INSERT INTO products (id, sku, name, "categoryId", unit, price, stock, "hsnCode", "taxRate", "hasVariants", "isActive", "createdAt", "updatedAt")
+        INSERT INTO products (id, sku, name, "categoryId", unit, price, "costPrice", stock, "hsnCode", "taxRate", "hasVariants", "isActive", "createdAt", "updatedAt")
         VALUES ${valuesList}
         ON CONFLICT (sku) DO UPDATE SET
           name = EXCLUDED.name,
           "categoryId" = EXCLUDED."categoryId",
           price = CASE WHEN EXCLUDED.price > 0 THEN EXCLUDED.price ELSE products.price END,
+          "costPrice" = COALESCE(EXCLUDED."costPrice", products."costPrice"),
           stock = EXCLUDED.stock,
           "hsnCode" = COALESCE(EXCLUDED."hsnCode", products."hsnCode"),
           "isActive" = EXCLUDED."isActive",
@@ -315,12 +320,28 @@ async function runSync() {
     select: { name: true, sku: true, stock: true, price: true }
   });
 
-  // Update last_synced system setting for Inventory UI
+  // Update last_synced and analytics datasets in system settings
   await prisma.systemSetting.upsert({
     where: { key: 'last_synced' },
     update: { value: new Date().toISOString() },
     create: { key: 'last_synced', value: new Date().toISOString() }
   });
+
+  if (data.monthlyFlow && data.monthlyFlow.length > 0) {
+    await prisma.systemSetting.upsert({
+      where: { key: 'busy_monthly_flow' },
+      update: { value: JSON.stringify(data.monthlyFlow) },
+      create: { key: 'busy_monthly_flow', value: JSON.stringify(data.monthlyFlow) }
+    });
+  }
+
+  if (data.topBilledCustomers && data.topBilledCustomers.length > 0) {
+    await prisma.systemSetting.upsert({
+      where: { key: 'busy_top_billed_customers' },
+      update: { value: JSON.stringify(data.topBilledCustomers) },
+      create: { key: 'busy_top_billed_customers', value: JSON.stringify(data.topBilledCustomers) }
+    });
+  }
 
   const durationSec = ((Date.now() - startTime) / 1000).toFixed(2);
   console.log("\n==================================================================");

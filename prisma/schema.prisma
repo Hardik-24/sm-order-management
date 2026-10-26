@@ -170,6 +170,7 @@ model Product {
   categoryId     String
   unit           String             @default("PIECE")
   price          Decimal            @db.Decimal(10, 2)
+  costPrice      Decimal?           @db.Decimal(10, 2)
   stock          Int                @default(0)
   hsnCode        String?
   taxRate        Decimal?           @db.Decimal(5, 2)
