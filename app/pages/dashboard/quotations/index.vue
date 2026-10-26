@@ -196,10 +196,10 @@
                 @click="viewQuoteDetails(quote)"
                 class="cursor-pointer hover:bg-gray-50/80 transition-colors duration-150 group"
               >
-                <!-- 1. Quote No -->
+                <!-- 1. Quote No (Regular font matching BillingTable.vue Order No) -->
                 <td class="px-5 py-3.5 whitespace-nowrap">
                   <div class="flex items-center gap-1.5 flex-wrap">
-                    <span class="text-xs font-bold text-gray-900 group-hover:text-[#1b3b5f] transition-colors font-mono">
+                    <span class="text-xs font-bold text-gray-900 group-hover:text-[#1b3b5f] transition-colors">
                       {{ quote.quoteNumber }}
                     </span>
                   </div>
@@ -220,7 +220,7 @@
                       <span>{{ quote.customerPlace }}</span>
                     </span>
                   </div>
-                  <p v-if="quote.customerPhone" class="text-[11px] text-gray-500 truncate mt-0.5 font-mono">
+                  <p v-if="quote.customerPhone" class="text-[11px] text-gray-500 truncate mt-0.5 tabular-nums">
                     +91 {{ quote.customerPhone }}
                   </p>
                 </td>
@@ -289,7 +289,7 @@
             <!-- LINE 1: Quote #, Destination, Customer & Date -->
             <div class="flex items-center justify-between gap-2 min-w-0">
               <div class="flex items-center gap-1.5 min-w-0 flex-1">
-                <span class="text-xs font-bold text-gray-900 shrink-0 font-mono">
+                <span class="text-xs font-bold text-gray-900 shrink-0">
                   {{ quote.quoteNumber }}
                 </span>
                 <span
@@ -316,7 +316,7 @@
                 <span class="text-[11px] font-semibold text-blue-700 bg-blue-50 px-1.5 py-0.2 rounded border border-blue-100 shrink-0">
                   {{ Array.isArray(quote.items) ? quote.items.length : (quote.totalItems || 0) }} items
                 </span>
-                <span v-if="quote.customerPhone" class="text-[11px] text-gray-400 font-mono truncate">
+                <span v-if="quote.customerPhone" class="text-[11px] text-gray-400 truncate tabular-nums">
                   +91 {{ quote.customerPhone }}
                 </span>
                 <span class="text-gray-300 text-[10px] shrink-0">&bull;</span>

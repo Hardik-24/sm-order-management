@@ -286,7 +286,7 @@
                   <div class="text-xs font-semibold text-gray-900 truncate" :title="v.customerName">
                     {{ v.customerName }}
                   </div>
-                  <p v-if="v.customerCode" class="text-[11px] text-gray-500 truncate mt-0.5 font-mono">
+                  <p v-if="v.customerCode" class="text-[11px] text-gray-500 truncate mt-0.5 tabular-nums">
                     {{ v.customerCode }}
                   </p>
                 </td>
@@ -395,7 +395,7 @@
           >
             <ChevronLeft class="w-3.5 h-3.5" /> Prev
           </button>
-          <span class="sm:hidden font-mono text-xs font-semibold px-2">
+          <span class="sm:hidden text-xs font-semibold px-2 tabular-nums">
             {{ pagination.page }} / {{ pagination.totalPages }}
           </span>
           <button

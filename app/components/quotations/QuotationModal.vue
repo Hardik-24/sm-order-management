@@ -19,7 +19,7 @@
                 <h2 class="text-base sm:text-lg font-bold text-gray-900 truncate">
                   {{ isSuccessView ? 'Quotation Ready to Share' : (isEditingExisting ? 'View Quotation' : 'New Quotation') }}
                 </h2>
-                <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-gray-200/80 text-gray-700 shrink-0">
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-gray-200/80 text-gray-700 shrink-0">
                   {{ quoteNumber }}
                 </span>
               </div>
@@ -511,7 +511,7 @@
                 <User class="w-4 h-4 text-[#1b3b5f]" />
                 <span>1. Customer & Quotation Details</span>
               </h3>
-              <span class="text-[11px] font-mono text-gray-500 font-bold">Quote ID: {{ quoteNumber }}</span>
+              <span class="text-[11px] text-gray-500 font-bold">Quote ID: {{ quoteNumber }}</span>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 sm:gap-3.5">
@@ -1623,7 +1623,7 @@
         <!-- Signer Info Badge -->
         <div class="bg-slate-50 border border-slate-200/80 rounded-xl px-3.5 py-2 flex items-center justify-between text-xs">
           <span class="text-gray-500">Signing as: <strong class="text-[#1b3b5f] font-bold">{{ displayCreatorName }}</strong></span>
-          <span class="font-mono text-[11px] text-gray-400">{{ quoteNumber }}</span>
+          <span class="text-[11px] font-bold text-gray-500 tabular-nums">{{ quoteNumber }}</span>
         </div>
 
         <!-- Signature Canvas Card -->
