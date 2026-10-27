@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { Calendar, Building2, User as UserIcon, Filter, ChevronDown } from 'lucide-vue-next'
+import { Calendar, Building2, User as UserIcon, Filter, ChevronDown, Check, Search, X, Users } from 'lucide-vue-next'
 import { formatDate } from '~/lib/utils'
 
 import StatCards from '~/components/dashboard/StatCards.vue'
@@ -23,6 +23,8 @@ const salesScope = ref<'mine' | 'all'>('mine')
 
 // 2. Admin dropdown: defaults to 'all' (company-wide view)
 const adminSelectedSalesPerson = ref<string>('all')
+const isScopeDropdownOpen = ref(false)
+const scopeSearchQuery = ref('')
 
 // Fetch active team members for Admin dropdown
 const { data: allUsers } = useFetch<any[]>('/api/users')
@@ -30,6 +32,27 @@ const salesTeam = computed(() => {
   if (!allUsers.value) return []
   return allUsers.value.filter(u => u.role === 'SALES' || u.role === 'ADMIN')
 })
+
+const selectedRep = computed(() => {
+  if (adminSelectedSalesPerson.value === 'all') return null
+  return salesTeam.value.find(r => r.id === adminSelectedSalesPerson.value) || null
+})
+
+const filteredSalesTeam = computed(() => {
+  if (!scopeSearchQuery.value.trim()) return salesTeam.value
+  const q = scopeSearchQuery.value.toLowerCase().trim()
+  return salesTeam.value.filter(r => 
+    r.name?.toLowerCase().includes(q) || 
+    r.role?.toLowerCase().includes(q)
+  )
+})
+
+function getInitials(name: string) {
+  if (!name) return '?'
+  const parts = name.trim().split(/\s+/)
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+}
 
 // Resolve active filter for dashboard & orders
 const effectiveSalesPersonId = computed(() => {
@@ -140,24 +163,151 @@ const handleOrderSelect = (orderId: string) => {
           </button>
         </div>
 
-        <!-- 2. ADMIN ROLE DROPDOWN: All Company or Specific Sales Rep -->
-        <div v-else-if="isAdmin" class="flex items-center gap-2">
-          <span class="text-xs text-gray-500 font-medium hidden sm:inline">Scope:</span>
-          <div class="relative">
-            <select
-              v-model="adminSelectedSalesPerson"
-              class="appearance-none bg-white border border-gray-200 text-gray-800 text-xs font-semibold rounded-xl pl-8 pr-8 py-1.5 shadow-2xs hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f] transition cursor-pointer"
+        <!-- 2. ADMIN ROLE SCOPE DROPDOWN: Executive Filter (All Company vs Specific Sales Rep) -->
+        <div v-else-if="isAdmin" class="relative w-full sm:w-auto">
+          <!-- Trigger Button -->
+          <button
+            type="button"
+            @click="isScopeDropdownOpen = !isScopeDropdownOpen"
+            class="w-full sm:w-auto inline-flex items-center justify-between gap-3 px-3.5 py-2 bg-white hover:bg-gray-50/90 border rounded-xl text-xs font-semibold shadow-2xs transition-all duration-200 cursor-pointer select-none active:scale-[0.99]"
+            :class="adminSelectedSalesPerson !== 'all' 
+              ? 'border-[#1b3b5f] bg-[#1b3b5f]/5 text-[#1b3b5f] ring-2 ring-[#1b3b5f]/15' 
+              : 'border-gray-200 text-gray-800 hover:border-gray-300'"
+          >
+            <div class="flex items-center gap-2.5 min-w-0">
+              <!-- Icon / Avatar -->
+              <div 
+                v-if="adminSelectedSalesPerson === 'all'" 
+                class="w-7 h-7 rounded-lg bg-[#1b3b5f]/10 text-[#1b3b5f] flex items-center justify-center shrink-0 border border-[#1b3b5f]/15"
+              >
+                <Building2 class="w-3.5 h-3.5" />
+              </div>
+              <div 
+                v-else 
+                class="w-7 h-7 rounded-lg bg-[#1b3b5f] text-white flex items-center justify-center font-bold text-[10.5px] shrink-0 shadow-xs"
+              >
+                {{ getInitials(selectedRep?.name || '') }}
+              </div>
+
+              <div class="flex flex-col text-left min-w-0">
+                <span class="text-[9.5px] uppercase font-bold tracking-wider leading-none mb-0.5" :class="adminSelectedSalesPerson !== 'all' ? 'text-[#1b3b5f]' : 'text-gray-400'">
+                  {{ adminSelectedSalesPerson === 'all' ? 'Company Scope' : 'Filtering By Rep' }}
+                </span>
+                <span class="font-bold text-gray-900 truncate text-xs">
+                  {{ adminSelectedSalesPerson === 'all' ? 'All Company (Team)' : selectedRep?.name }}
+                </span>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-1.5 shrink-0 ml-1">
+              <span v-if="adminSelectedSalesPerson !== 'all'" class="px-1.5 py-0.5 rounded text-[9.5px] font-extrabold bg-[#1b3b5f] text-white">
+                {{ selectedRep?.role || 'REP' }}
+              </span>
+              <ChevronDown class="w-4 h-4 text-gray-400 transition-transform duration-200" :class="{ 'rotate-180': isScopeDropdownOpen }" />
+            </div>
+          </button>
+
+          <!-- Backdrop click to close -->
+          <div v-if="isScopeDropdownOpen" @click="isScopeDropdownOpen = false" class="fixed inset-0 z-40"></div>
+
+          <!-- Dropdown Menu -->
+          <transition
+            enter-active-class="transition duration-150 ease-out"
+            enter-from-class="transform opacity-0 scale-95 -translate-y-1"
+            enter-to-class="transform opacity-100 scale-100 translate-y-0"
+            leave-active-class="transition duration-100 ease-in"
+            leave-from-class="transform opacity-100 scale-100 translate-y-0"
+            leave-to-class="transform opacity-0 scale-95 -translate-y-1"
+          >
+            <div
+              v-if="isScopeDropdownOpen"
+              class="absolute left-0 sm:right-0 sm:left-auto top-full mt-2 w-full sm:w-80 bg-white rounded-2xl shadow-xl border border-gray-200/90 py-2 z-50 overflow-hidden"
             >
-              <option value="all">🏢 All Company (Entire Team)</option>
-              <optgroup label="Filter by Sales Rep">
-                <option v-for="rep in salesTeam" :key="rep.id" :value="rep.id">
-                  👤 {{ rep.name }} ({{ rep.role }})
-                </option>
-              </optgroup>
-            </select>
-            <Filter class="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-            <ChevronDown class="w-3.5 h-3.5 text-gray-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-          </div>
+              <div class="px-3.5 py-2 border-b border-gray-100 flex items-center justify-between">
+                <div>
+                  <p class="text-xs font-bold text-gray-900">Dashboard View Scope</p>
+                  <p class="text-[11px] text-gray-500">Filter KPIs & pipeline by salesperson</p>
+                </div>
+                <button 
+                  v-if="adminSelectedSalesPerson !== 'all'"
+                  @click="adminSelectedSalesPerson = 'all'; isScopeDropdownOpen = false"
+                  class="text-[11px] font-bold text-[#1b3b5f] hover:underline cursor-pointer"
+                >
+                  Reset to All
+                </button>
+              </div>
+
+              <!-- Quick Search if team has members -->
+              <div v-if="salesTeam.length > 3" class="p-2 border-b border-gray-100">
+                <div class="relative">
+                  <Search class="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    v-model="scopeSearchQuery"
+                    type="text"
+                    placeholder="Search rep name or role..."
+                    class="w-full pl-8 pr-3 py-1.5 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f]"
+                  />
+                </div>
+              </div>
+
+              <div class="max-h-64 overflow-y-auto py-1">
+                <!-- Option: All Company -->
+                <button
+                  type="button"
+                  @click="adminSelectedSalesPerson = 'all'; isScopeDropdownOpen = false"
+                  class="w-full px-3.5 py-2.5 flex items-center justify-between hover:bg-gray-50 transition-colors text-left cursor-pointer"
+                  :class="adminSelectedSalesPerson === 'all' ? 'bg-[#1b3b5f]/5' : ''"
+                >
+                  <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-xl bg-blue-50 text-[#1b3b5f] flex items-center justify-center shrink-0 border border-blue-100">
+                      <Building2 class="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p class="text-xs font-bold" :class="adminSelectedSalesPerson === 'all' ? 'text-[#1b3b5f]' : 'text-gray-900'">
+                        All Company
+                      </p>
+                      <p class="text-[11px] text-gray-500">Entire team aggregated view</p>
+                    </div>
+                  </div>
+                  <Check v-if="adminSelectedSalesPerson === 'all'" class="w-4 h-4 text-[#1b3b5f]" />
+                </button>
+
+                <div class="px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-400 bg-gray-50/70 border-y border-gray-100/80 my-1 flex items-center justify-between">
+                  <span>Sales Representatives</span>
+                  <span>{{ salesTeam.length }} Total</span>
+                </div>
+
+                <!-- Sales Team Options -->
+                <button
+                  v-for="rep in filteredSalesTeam"
+                  :key="rep.id"
+                  type="button"
+                  @click="adminSelectedSalesPerson = rep.id; isScopeDropdownOpen = false"
+                  class="w-full px-3.5 py-2.5 flex items-center justify-between hover:bg-gray-50 transition-colors text-left cursor-pointer"
+                  :class="adminSelectedSalesPerson === rep.id ? 'bg-[#1b3b5f]/5' : ''"
+                >
+                  <div class="flex items-center gap-2.5 min-w-0">
+                    <div class="w-8 h-8 rounded-xl bg-gray-100 text-gray-700 font-bold text-xs flex items-center justify-center shrink-0 border border-gray-200">
+                      {{ getInitials(rep.name) }}
+                    </div>
+                    <div class="min-w-0">
+                      <p class="text-xs font-bold truncate" :class="adminSelectedSalesPerson === rep.id ? 'text-[#1b3b5f]' : 'text-gray-900'">
+                        {{ rep.name }}
+                      </p>
+                      <span class="inline-block text-[10px] font-semibold px-1.5 py-0.2 rounded bg-gray-100 text-gray-600 border border-gray-200">
+                        {{ rep.role }}
+                      </span>
+                    </div>
+                  </div>
+                  <Check v-if="adminSelectedSalesPerson === rep.id" class="w-4 h-4 text-[#1b3b5f] shrink-0" />
+                </button>
+
+                <div v-if="filteredSalesTeam.length === 0" class="px-3.5 py-4 text-center text-xs text-gray-500">
+                  No team member matching "{{ scopeSearchQuery }}"
+                </div>
+              </div>
+            </div>
+          </transition>
         </div>
 
         <!-- Date & Calendar Indicator -->

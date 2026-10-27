@@ -19,30 +19,8 @@
         </p>
       </div>
 
-      <!-- Controls: Main Tab Switcher + Valuation Mode + Refresh -->
-      <div class="flex flex-wrap items-center gap-2.5">
-        <!-- Cost vs Sale Price Toggle -->
-        <div class="bg-gray-100 p-1 rounded-xl flex items-center border border-gray-200/80 shadow-2xs">
-          <button
-            @click="valuationMode = 'cost'"
-            class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5"
-            :class="valuationMode === 'cost' ? 'bg-white text-gray-900 shadow-xs' : 'text-gray-500 hover:text-gray-900'"
-            title="Valuation based on actual Landed / Purchase Cost"
-          >
-            <ShieldCheck class="w-3.5 h-3.5 text-emerald-600" />
-            <span>Cost Price</span>
-          </button>
-          <button
-            @click="valuationMode = 'sale'"
-            class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5"
-            :class="valuationMode === 'sale' ? 'bg-white text-gray-900 shadow-xs' : 'text-gray-500 hover:text-gray-900'"
-            title="Valuation based on Selling Price / MRP"
-          >
-            <Tag class="w-3.5 h-3.5 text-sky-600" />
-            <span>Sale Price</span>
-          </button>
-        </div>
-
+      <!-- Controls: Refresh Button -->
+      <div class="flex items-center gap-2.5">
         <button
           @click="fetchAnalytics(true)"
           :disabled="loading"
@@ -977,7 +955,7 @@ definePageMeta({
 
 import { ref, computed, onMounted } from 'vue'
 import { 
-  IndianRupee, Boxes, Users, AlertTriangle, ShieldCheck, Tag, Clock, 
+  IndianRupee, Boxes, Users, AlertTriangle, Tag, Clock, 
   RefreshCw, AlertCircle, Crown, Search, Building2, Truck, 
   TrendingUp, Flame, Zap, Activity 
 } from 'lucide-vue-next'
@@ -988,7 +966,6 @@ const data = ref<any | null>(null)
 
 // Navigation state
 const mainTab = ref<'sales' | 'movement' | 'purchases'>('sales')
-const valuationMode = ref<'cost' | 'sale'>('cost')
 const skuRankingMode = ref<'revenue' | 'volume'>('revenue')
 const movementSubTab = ref<'fast' | 'dead' | 'risk' | 'negative'>('fast')
 
