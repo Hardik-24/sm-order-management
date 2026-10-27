@@ -646,268 +646,201 @@ const getCustomerInitials = (name: string) => {
         </div>
 
         <div class="space-y-4">
-          <div 
-            v-for="(item, idx) in form.items" 
-            :key="idx" 
-            class="bg-gradient-to-b from-white to-gray-50/70 p-4 sm:p-5 rounded-2xl border border-gray-200/90 shadow-2xs hover:border-gray-300 transition-all space-y-4"
-          >
-            <!-- Item Card Top Header: Item Number, Category / SKU Pill, and Clean Remove Button -->
-            <div class="flex items-center justify-between pb-3 border-b border-gray-100/90 gap-2">
-              <div class="flex items-center gap-2.5 flex-wrap">
-                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-black bg-[#1b3b5f]/10 text-[#1b3b5f] border border-[#1b3b5f]/15">
-                  <Package class="w-3.5 h-3.5" />
-                  Item #{{ idx + 1 }}
-                </span>
+          <div v-for="(item, idx) in form.items" :key="idx" class="bg-gray-50/80 p-3.5 sm:p-4 rounded-xl border border-gray-200 space-y-3">
+            <div class="flex flex-col md:flex-row md:items-start gap-3 md:gap-4">
+              <!-- Product Select -->
+              <div class="flex-1 w-full min-w-0">
+                <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1.5">Product *</label>
+                <CustomSelect 
+                  :modelValue="item.productId"
+                  @update:modelValue="val => { item.productId = val; onProductChange(idx) }"
+                  :options="productOptions"
+                  searchable
+                  searchPlaceholder="Search product or HSN..."
+                  placeholder="Select Product"
+                  class="w-full"
+                />
 
-                <!-- Category & SKU tag when product is selected -->
-                <template v-if="getSelectedProduct(item.productId)">
-                  <span v-if="getSelectedProduct(item.productId)?.category?.name" class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-gray-100 text-gray-700 border border-gray-200">
-                    {{ getSelectedProduct(item.productId)?.category?.name }}
-                  </span>
-                  <span v-if="getSelectedProduct(item.productId)?.sku" class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-mono font-bold text-gray-500 bg-white border border-gray-200 shadow-2xs">
-                    {{ getSelectedProduct(item.productId)?.sku }}
-                  </span>
-                </template>
-              </div>
-
-              <!-- Delete Button -->
-              <button 
-                type="button" 
-                @click="removeItem(idx)" 
-                class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold text-rose-600 hover:text-rose-800 hover:bg-rose-50 rounded-xl transition cursor-pointer border border-transparent hover:border-rose-200"
-                title="Remove Item"
-              >
-                <Trash2 class="w-3.5 h-3.5" />
-                <span class="hidden sm:inline">Remove</span>
-              </button>
-            </div>
-
-            <!-- Product Selection Row -->
-            <div>
-              <label class="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-2">Select Product *</label>
-              <CustomSelect 
-                :modelValue="item.productId"
-                @update:modelValue="val => { item.productId = val; onProductChange(idx) }"
-                :options="productOptions"
-                searchable
-                searchPlaceholder="Search product by name, SKU or HSN..."
-                placeholder="Choose catalog item..."
-                class="w-full"
-              />
-
-              <!-- Enhanced Product Intelligence Showcase -->
-              <div v-if="getSelectedProduct(item.productId)" class="mt-2.5 flex flex-wrap items-center gap-2">
-                <!-- Stock Pill -->
-                <span 
-                  class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold border shadow-2xs transition-colors"
-                  :class="[
-                    Number(getSelectedProduct(item.productId)?.stock ?? 0) <= 0 
-                      ? 'bg-rose-50 text-rose-700 border-rose-200' 
-                      : Number(getSelectedProduct(item.productId)?.stock ?? 0) < 10 
-                        ? 'bg-amber-50 text-amber-800 border-amber-200' 
-                        : 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                  ]"
-                >
+                <!-- Live Stock Badge right below the product name -->
+                <div v-if="getSelectedProduct(item.productId)" class="mt-2 flex flex-wrap items-center gap-2">
                   <span 
-                    class="w-2 h-2 rounded-full"
+                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold border shadow-2xs transition-colors"
                     :class="[
                       Number(getSelectedProduct(item.productId)?.stock ?? 0) <= 0 
-                        ? 'bg-rose-500 animate-pulse' 
+                        ? 'bg-rose-50 text-rose-700 border-rose-200' 
                         : Number(getSelectedProduct(item.productId)?.stock ?? 0) < 10 
-                          ? 'bg-amber-500' 
-                          : 'bg-emerald-500'
+                          ? 'bg-amber-50 text-amber-700 border-amber-200' 
+                          : 'bg-emerald-50 text-emerald-700 border-emerald-200'
                     ]"
-                  ></span>
-                  <span>
-                    Stock: <strong class="font-black">{{ getSelectedProduct(item.productId)?.stock ?? 0 }}</strong> {{ getSelectedProduct(item.productId)?.unit || 'units' }}
+                  >
+                    <span 
+                      class="w-2 h-2 rounded-full"
+                      :class="[
+                        Number(getSelectedProduct(item.productId)?.stock ?? 0) <= 0 
+                          ? 'bg-rose-500' 
+                          : Number(getSelectedProduct(item.productId)?.stock ?? 0) < 10 
+                            ? 'bg-amber-500' 
+                            : 'bg-emerald-500'
+                      ]"
+                    ></span>
+                    <span>
+                      Stock: <strong class="font-bold">{{ getSelectedProduct(item.productId)?.stock ?? 0 }}</strong> {{ getSelectedProduct(item.productId)?.unit || 'units' }}
+                    </span>
+                    <span v-if="Number(getSelectedProduct(item.productId)?.stock ?? 0) <= 0" class="text-[10px] font-bold text-rose-600 uppercase tracking-wide">
+                      (Out of Stock)
+                    </span>
+                    <span v-else-if="Number(getSelectedProduct(item.productId)?.stock ?? 0) < 10" class="text-[10px] font-bold text-amber-600 uppercase tracking-wide">
+                      (Low Stock)
+                    </span>
                   </span>
-                  <span v-if="Number(getSelectedProduct(item.productId)?.stock ?? 0) <= 0" class="text-[10px] font-extrabold text-rose-600 uppercase tracking-wide">
-                    (Out of Stock)
-                  </span>
-                  <span v-else-if="Number(getSelectedProduct(item.productId)?.stock ?? 0) < 10" class="text-[10px] font-extrabold text-amber-700 uppercase tracking-wide">
-                    (Low Stock)
-                  </span>
-                </span>
 
-                <!-- Catalog Selling Price Reference -->
-                <span v-if="getSelectedProduct(item.productId)?.price" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium bg-white text-gray-700 border border-gray-200 shadow-2xs">
-                  <Tag class="w-3.5 h-3.5 text-sky-600" />
-                  <span>MRP: <strong class="text-gray-900 font-bold">{{ formatCurrency(getSelectedProduct(item.productId)?.price) }}</strong></span>
-                </span>
+                  <span v-if="getSelectedProduct(item.productId)?.category?.name" class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-gray-100 text-gray-600 border border-gray-200">
+                    {{ getSelectedProduct(item.productId)?.category?.name }}
+                  </span>
+                </div>
+              </div>
 
-                <!-- HSN Code -->
-                <span v-if="getSelectedProduct(item.productId)?.hsnCode" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono font-medium bg-gray-50 text-gray-600 border border-gray-200">
-                  <span>HSN: {{ getSelectedProduct(item.productId)?.hsnCode }}</span>
-                </span>
+              <!-- Quantity, Rate, Tax %, Total & Remove in a responsive flex layout -->
+              <div class="grid grid-cols-12 gap-2 items-end w-full md:w-auto">
+                <!-- Qty -->
+                <div class="col-span-3 sm:col-span-2 md:w-20">
+                  <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1.5">Qty *</label>
+                  <input type="number" v-model.number="item.quantity" min="1" required class="w-full border border-gray-300 rounded-lg shadow-xs p-2 bg-white text-sm font-bold focus:ring-[#1b3b5f] focus:border-[#1b3b5f]" />
+                </div>
+
+                <!-- Unit Price (Rate) -->
+                <div class="col-span-3 sm:col-span-3 md:w-28">
+                  <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1.5 flex items-center gap-1 truncate">
+                    <IndianRupee class="w-3 h-3 text-gray-400 shrink-0" />
+                    <span>Rate *</span>
+                  </label>
+                  <div class="relative flex items-center">
+                    <IndianRupee class="absolute left-2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+                    <input type="number" v-model.number="item.unitPrice" min="0" step="0.01" required class="w-full pl-6 border border-gray-300 rounded-lg shadow-xs p-2 bg-white text-sm font-bold focus:ring-[#1b3b5f] focus:border-[#1b3b5f]" />
+                  </div>
+                </div>
+
+                <!-- Tax Rate % -->
+                <div class="col-span-2 sm:col-span-2 md:w-20">
+                  <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1.5 truncate">
+                    <span>Tax %</span>
+                  </label>
+                  <div class="relative flex items-center">
+                    <input 
+                      type="number" 
+                      v-model.number="item.taxRate" 
+                      min="0" 
+                      max="100" 
+                      step="0.1" 
+                      placeholder="18"
+                      class="w-full pr-5 border border-gray-300 rounded-lg shadow-xs p-2 bg-white text-sm font-bold focus:ring-[#1b3b5f] focus:border-[#1b3b5f] text-right" 
+                    />
+                    <span class="absolute right-1.5 text-xs font-semibold text-gray-400 pointer-events-none">%</span>
+                  </div>
+                </div>
+
+                <!-- Line Total -->
+                <div class="col-span-3 sm:col-span-4 md:w-28">
+                  <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1.5 flex items-center justify-between">
+                    <span>Total</span>
+                    <span v-if="item.isTaxInclusive" class="text-[8px] font-bold text-blue-700 bg-blue-50 px-1 py-0.2 rounded border border-blue-200">INCL</span>
+                    <span v-else class="text-[8px] font-bold text-gray-600 bg-gray-100 px-1 py-0.2 rounded border border-gray-200">+TAX</span>
+                  </label>
+                  <div class="p-2 bg-gray-50 text-gray-900 rounded-lg font-bold text-xs sm:text-sm border border-gray-200 truncate text-right">
+                    {{ formatCurrency(calculateItemTotals(item).total) }}
+                  </div>
+                </div>
+
+                <!-- Remove -->
+                <div class="col-span-1 sm:col-span-1 md:w-auto flex justify-center pb-0.5">
+                  <button type="button" @click="removeItem(idx)" class="p-2 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg shrink-0 transition-colors cursor-pointer" title="Remove Item">
+                    <Trash2 class="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             </div>
 
-            <!-- Structured Pricing & Quantity Grid -->
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
-              <!-- 1. Quantity Box -->
-              <div class="bg-white p-3 rounded-xl border border-gray-200/90 shadow-2xs focus-within:border-[#1b3b5f] focus-within:ring-2 focus-within:ring-[#1b3b5f]/15 transition">
-                <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1 flex items-center justify-between">
-                  <span>Quantity *</span>
-                  <span class="text-[10px] font-medium text-gray-400 lowercase">{{ getSelectedProduct(item.productId)?.unit || 'units' }}</span>
-                </label>
+            <!-- Item-Level Options & Notes -->
+            <div class="flex flex-wrap items-center gap-4 pt-2 border-t border-gray-200/60 text-xs">
+              <!-- Tax Inclusive Toggle -->
+              <label class="flex items-center gap-2 cursor-pointer select-none">
                 <input 
-                  type="number" 
-                  v-model.number="item.quantity" 
-                  min="1" 
-                  required 
-                  class="w-full text-base sm:text-lg font-black text-gray-900 bg-transparent focus:outline-none" 
-                  placeholder="1"
+                  type="checkbox" 
+                  v-model="item.isTaxInclusive" 
+                  @change="onTaxInclusiveToggle(item)"
+                  class="w-3.5 h-3.5 rounded text-[#1b3b5f] focus:ring-[#1b3b5f]" 
+                />
+                <span class="text-gray-700 font-medium">Tax Inclusive Rate</span>
+                <span v-if="item.isTaxInclusive" class="text-[10px] text-blue-600 font-semibold">(Tax incl.)</span>
+                <span v-else class="text-[10px] text-gray-500">(+{{ item.taxRate ?? 0 }}% Tax)</span>
+              </label>
+
+              <!-- Last Billed Price Interactive Pill -->
+              <div v-if="form.customerId && item.productId" class="flex items-center">
+                <!-- If Price History Exists -->
+                <div 
+                  v-if="historicalPricesMap[item.productId]" 
+                  class="inline-flex items-center gap-2 px-2.5 py-1 rounded-lg text-xs transition border"
+                  :class="item.applyLastPrice 
+                    ? 'bg-emerald-50 text-emerald-900 border-emerald-300 shadow-xs ring-1 ring-emerald-400/30' 
+                    : 'bg-amber-50/90 text-amber-900 border-amber-200 hover:bg-amber-100/80'"
+                >
+                  <span class="w-1.5 h-1.5 rounded-full shrink-0" :class="item.applyLastPrice ? 'bg-emerald-600' : 'bg-amber-500'"></span>
+                  <span>
+                    Last Billed: 
+                    <strong class="font-bold text-gray-900">
+                      {{ formatCurrency(item.isTaxInclusive ? historicalPricesMap[item.productId].unitPrice : historicalPricesMap[item.productId].basePrice) }}
+                    </strong>
+                    <span class="text-[10px] text-gray-500 ml-1">
+                      ({{ item.isTaxInclusive ? 'Incl. Tax' : '+Tax' }} • {{ historicalPricesMap[item.productId].daysAgo }}d ago)
+                    </span>
+                  </span>
+
+                  <button
+                    type="button"
+                    @click="applyHistoricalPrice(item, historicalPricesMap[item.productId])"
+                    class="ml-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase transition cursor-pointer select-none"
+                    :class="item.applyLastPrice 
+                      ? 'bg-emerald-600 text-white shadow-xs' 
+                      : 'bg-amber-200 text-amber-900 hover:bg-amber-300'"
+                    :title="`Voucher ${historicalPricesMap[item.productId].voucherNo} on ${formatDate(historicalPricesMap[item.productId].voucherDate)}`"
+                  >
+                    {{ item.applyLastPrice ? '✓ Applied' : 'Apply' }}
+                  </button>
+                </div>
+
+                <!-- If Loading -->
+                <div v-else-if="loadingPrices[item.productId]" class="text-[11px] text-gray-400 flex items-center gap-1.5 italic">
+                  <Loader2 class="w-3 h-3 animate-spin text-gray-400" />
+                  <span>Checking price history...</span>
+                </div>
+
+                <!-- If First Time Item -->
+                <div v-else-if="historicalPricesMap[item.productId] === null" class="text-[11px] text-gray-400 italic">
+                  First time ordering this item
+                </div>
+              </div>
+
+              <!-- Item Notes Input -->
+              <div class="flex-1 min-w-[180px]">
+                <input 
+                  type="text" 
+                  v-model="item.itemNotes" 
+                  placeholder="Optional item note: e.g. custom edge-banding..."
+                  class="w-full px-2.5 py-1 text-xs border border-gray-300 rounded-lg bg-white focus:ring-1 focus:ring-[#1b3b5f]"
                 />
               </div>
 
-              <!-- 2. Unit Rate Box -->
-              <div class="bg-white p-3 rounded-xl border border-gray-200/90 shadow-2xs focus-within:border-[#1b3b5f] focus-within:ring-2 focus-within:ring-[#1b3b5f]/15 transition">
-                <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1 flex items-center justify-between">
-                  <span>Rate / Unit *</span>
-                  <span class="text-[10px] font-medium" :class="item.isTaxInclusive ? 'text-blue-600 font-bold' : 'text-gray-400'">
-                    {{ item.isTaxInclusive ? 'Incl. Tax' : '+Tax' }}
-                  </span>
-                </label>
-                <div class="flex items-center">
-                  <span class="text-sm font-bold text-gray-400 mr-1 select-none">₹</span>
-                  <input 
-                    type="number" 
-                    v-model.number="item.unitPrice" 
-                    min="0" 
-                    step="0.01" 
-                    required 
-                    class="w-full text-base sm:text-lg font-black text-gray-900 bg-transparent focus:outline-none" 
-                    placeholder="0.00"
-                  />
-                </div>
-              </div>
-
-              <!-- 3. GST Rate % Box -->
-              <div class="bg-white p-3 rounded-xl border border-gray-200/90 shadow-2xs focus-within:border-[#1b3b5f] focus-within:ring-2 focus-within:ring-[#1b3b5f]/15 transition">
-                <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1 flex items-center justify-between">
-                  <span>GST Slab</span>
-                  <span class="text-[10px] font-medium text-gray-400">standard</span>
-                </label>
-                <div class="flex items-center justify-between">
-                  <input 
-                    type="number" 
-                    v-model.number="item.taxRate" 
-                    min="0" 
-                    max="100" 
-                    step="0.1" 
-                    placeholder="18"
-                    class="w-full text-base sm:text-lg font-black text-gray-900 bg-transparent focus:outline-none" 
-                  />
-                  <span class="text-sm font-bold text-gray-400 select-none ml-1">%</span>
-                </div>
-              </div>
-
-              <!-- 4. Line Total Card -->
-              <div class="bg-gradient-to-br from-emerald-50 via-teal-50/40 to-emerald-50/20 p-3 rounded-xl border border-emerald-200/90 shadow-2xs flex flex-col justify-between">
-                <div class="flex items-center justify-between">
-                  <span class="text-[11px] font-bold text-emerald-900 uppercase tracking-wider">Item Total</span>
-                  <span 
-                    class="text-[9.5px] font-extrabold px-1.5 py-0.5 rounded border"
-                    :class="item.isTaxInclusive ? 'bg-blue-100 text-blue-800 border-blue-200' : 'bg-emerald-100 text-emerald-800 border-emerald-200'"
-                  >
-                    {{ item.isTaxInclusive ? 'TAX INCL' : '+GST' }}
-                  </span>
-                </div>
-                <div class="text-base sm:text-xl font-black text-emerald-950 truncate mt-1">
-                  {{ formatCurrency(calculateItemTotals(item).total) }}
-                </div>
-              </div>
-            </div>
-
-            <!-- Item-Level Options & Pricing History -->
-            <div class="pt-3 border-t border-gray-100 flex flex-col lg:flex-row lg:items-center justify-between gap-3 text-xs">
-              <div class="flex flex-wrap items-center gap-3">
-                <!-- Tax Inclusive Toggle Pill -->
-                <label class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border cursor-pointer select-none transition-all shadow-2xs"
-                  :class="item.isTaxInclusive ? 'bg-blue-50 border-blue-200 text-blue-900 font-bold' : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'"
-                >
-                  <input 
-                    type="checkbox" 
-                    v-model="item.isTaxInclusive" 
-                    @change="onTaxInclusiveToggle(item)"
-                    class="w-3.5 h-3.5 rounded text-[#1b3b5f] focus:ring-[#1b3b5f]" 
-                  />
-                  <span>Tax Inclusive Rate</span>
-                </label>
-
-                <!-- Last Billed Price Interactive Pill -->
-                <div v-if="form.customerId && item.productId" class="flex items-center">
-                  <!-- If Price History Exists -->
-                  <div 
-                    v-if="historicalPricesMap[item.productId]" 
-                    class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs transition border shadow-2xs"
-                    :class="item.applyLastPrice 
-                      ? 'bg-emerald-50 text-emerald-900 border-emerald-300 ring-1 ring-emerald-400/30' 
-                      : 'bg-amber-50 text-amber-900 border-amber-200 hover:bg-amber-100/80'"
-                  >
-                    <Clock class="w-3.5 h-3.5 shrink-0" :class="item.applyLastPrice ? 'text-emerald-700' : 'text-amber-600'" />
-                    <span>
-                      Last Billed: 
-                      <strong class="font-extrabold text-gray-900">
-                        {{ formatCurrency(item.isTaxInclusive ? historicalPricesMap[item.productId].unitPrice : historicalPricesMap[item.productId].basePrice) }}
-                      </strong>
-                      <span class="text-[10.5px] text-gray-500 ml-1">
-                        ({{ item.isTaxInclusive ? 'Incl. Tax' : '+Tax' }} • {{ historicalPricesMap[item.productId].daysAgo }}d ago)
-                      </span>
-                    </span>
-
-                    <button
-                      type="button"
-                      @click="applyHistoricalPrice(item, historicalPricesMap[item.productId])"
-                      class="ml-1.5 px-2.5 py-1 rounded-lg text-[10.5px] font-black uppercase tracking-wider transition cursor-pointer select-none flex items-center gap-1 shadow-2xs active:scale-95"
-                      :class="item.applyLastPrice 
-                        ? 'bg-emerald-600 text-white' 
-                        : 'bg-amber-200 hover:bg-amber-300 text-amber-950 font-bold'"
-                      :title="`Voucher ${historicalPricesMap[item.productId].voucherNo} on ${formatDate(historicalPricesMap[item.productId].voucherDate)}`"
-                    >
-                      <Zap class="w-3 h-3" />
-                      <span>{{ item.applyLastPrice ? 'Applied' : 'Apply Rate' }}</span>
-                    </button>
-                  </div>
-
-                  <!-- If Loading -->
-                  <div v-else-if="loadingPrices[item.productId]" class="text-xs text-gray-400 flex items-center gap-1.5 italic bg-gray-50 px-3 py-1.5 rounded-xl border border-gray-200">
-                    <Loader2 class="w-3.5 h-3.5 animate-spin text-gray-400" />
-                    <span>Checking price history...</span>
-                  </div>
-
-                  <!-- If First Time Item -->
-                  <div v-else-if="historicalPricesMap[item.productId] === null" class="text-xs text-gray-400 italic bg-gray-50 px-3 py-1.5 rounded-xl border border-gray-200">
-                    First time ordering this item
-                  </div>
-                </div>
-              </div>
-
-              <!-- Item Notes & Tax Split -->
-              <div class="flex items-center gap-3 w-full lg:w-auto">
-                <div class="flex-1 lg:w-64">
-                  <div class="relative">
-                    <FileText class="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                    <input 
-                      type="text" 
-                      v-model="item.itemNotes" 
-                      placeholder="Optional notes (cutting, shade, batch)..."
-                      class="w-full pl-8 pr-3 py-1.5 text-xs border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f]"
-                    />
-                  </div>
-                </div>
-
-                <!-- Tax Breakdown Mini-Pill -->
-                <div class="text-[11px] text-gray-500 font-medium shrink-0 hidden sm:flex items-center gap-1.5 bg-gray-100/80 px-2.5 py-1.5 rounded-xl border border-gray-200/80">
-                  <span>Base: <strong class="text-gray-800">{{ formatCurrency(calculateItemTotals(item).taxable) }}</strong></span>
-                  <span>•</span>
-                  <span>GST: <strong class="text-gray-800">{{ formatCurrency(calculateItemTotals(item).taxAmount) }}</strong></span>
-                </div>
+              <!-- Item Breakdown Mini-Pill -->
+              <div class="text-[11px] text-gray-500 font-medium ml-auto flex items-center gap-2">
+                <span>Taxable: <strong class="text-gray-700">{{ formatCurrency(calculateItemTotals(item).taxable) }}</strong></span>
+                <span>•</span>
+                <span>Tax: <strong class="text-gray-700">{{ formatCurrency(calculateItemTotals(item).taxAmount) }}</strong></span>
               </div>
             </div>
           </div>
 
-          <div v-if="!form.items.length" class="text-sm text-gray-500 text-center py-10 bg-gray-50/80 rounded-2xl border-2 border-dashed border-gray-200">
+          <div v-if="!form.items.length" class="text-sm text-gray-500 text-center py-8 bg-gray-50 rounded-xl border border-dashed border-gray-300">
             No products added yet. Click "Add Product" to begin.
           </div>
         </div>
