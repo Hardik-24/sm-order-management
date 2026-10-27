@@ -97,7 +97,7 @@
         <!-- 1. Total Invoiced Revenue -->
         <div class="bg-white rounded-2xl p-5 border border-gray-200/80 shadow-xs relative overflow-hidden group hover:border-gray-300 transition-all">
           <div class="flex items-center justify-between">
-            <span class="text-xs font-semibold uppercase tracking-wider text-gray-500">Total B2B Revenue</span>
+            <span class="text-xs font-semibold uppercase tracking-wider text-gray-500">Total Sales Revenue</span>
             <div class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100">
               <IndianRupee class="w-5 h-5" />
             </div>
@@ -108,47 +108,47 @@
             </div>
             <div class="flex items-center justify-between text-xs text-gray-500 mt-2">
               <span>{{ formatCurrency(data.sales.totalRevenue) }}</span>
-              <span class="text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 text-[11px]">3,156 Vouchers</span>
+              <span class="text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 text-[11px]">{{ formatNumber(data.sales.totalVouchers) }} Invoices</span>
             </div>
           </div>
           <div class="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 to-teal-500"></div>
         </div>
 
-        <!-- 2. Wholesale GST Share (SMG) -->
+        <!-- 2. Taxable Base Value -->
         <div class="bg-white rounded-2xl p-5 border border-gray-200/80 shadow-xs relative overflow-hidden group hover:border-gray-300 transition-all">
           <div class="flex items-center justify-between">
-            <span class="text-xs font-semibold uppercase tracking-wider text-gray-500">Wholesale Channel (SMG)</span>
+            <span class="text-xs font-semibold uppercase tracking-wider text-gray-500">Taxable Base Value</span>
             <div class="w-9 h-9 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center border border-sky-100">
               <Building2 class="w-5 h-5" />
             </div>
           </div>
           <div class="mt-3">
             <div class="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
-              {{ formatCrores(channelSMG?.revenue || 0) }}
+              {{ formatCrores(data.sales.taxableAmount || 0) }}
             </div>
             <div class="flex items-center justify-between text-xs text-gray-500 mt-2">
-              <span class="text-sky-700 font-semibold">{{ channelSMG?.sharePercent || 0 }}% Share</span>
-              <span>{{ formatNumber(channelSMG?.count || 0) }} B2B Invoices</span>
+              <span>{{ formatCurrency(data.sales.taxableAmount || 0) }}</span>
+              <span class="text-sky-700 font-semibold bg-sky-50 px-2 py-0.5 rounded-full border border-sky-200 text-[11px]">Excl. GST</span>
             </div>
           </div>
           <div class="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-sky-400 to-sky-500"></div>
         </div>
 
-        <!-- 3. Retail / Counter Share (RETAIL) -->
+        <!-- 3. GST Tax Collected -->
         <div class="bg-white rounded-2xl p-5 border border-gray-200/80 shadow-xs relative overflow-hidden group hover:border-gray-300 transition-all">
           <div class="flex items-center justify-between">
-            <span class="text-xs font-semibold uppercase tracking-wider text-gray-500">Retail Channel (Cash/Counter)</span>
+            <span class="text-xs font-semibold uppercase tracking-wider text-gray-500">GST Collected</span>
             <div class="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center border border-amber-100">
-              <Users class="w-5 h-5" />
+              <ShieldCheck class="w-5 h-5" />
             </div>
           </div>
           <div class="mt-3">
             <div class="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
-              {{ formatCrores(channelRetail?.revenue || 0) }}
+              {{ formatCrores(data.sales.taxAmount || 0) }}
             </div>
             <div class="flex items-center justify-between text-xs text-gray-500 mt-2">
-              <span class="text-amber-700 font-semibold">{{ channelRetail?.sharePercent || 0 }}% Share</span>
-              <span>{{ formatNumber(channelRetail?.count || 0) }} Cash Bills</span>
+              <span>{{ formatCurrency(data.sales.taxAmount || 0) }}</span>
+              <span class="text-amber-700 font-semibold bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 text-[11px]">Output Tax</span>
             </div>
           </div>
           <div class="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 to-amber-500"></div>
@@ -168,74 +168,10 @@
             </div>
             <div class="flex items-center justify-between text-xs text-gray-500 mt-2">
               <span>Per Transaction</span>
-              <span class="text-indigo-700 font-semibold bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100 text-[11px]">1,506 Accounts</span>
+              <span class="text-indigo-700 font-semibold bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100 text-[11px]">{{ formatNumber(data.sales.totalVouchers) }} Invoices</span>
             </div>
           </div>
           <div class="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-400 to-indigo-500"></div>
-        </div>
-      </div>
-
-      <!-- Channel Split Visual Comparison Banner -->
-      <div class="bg-white rounded-2xl p-6 border border-gray-200/80 shadow-xs">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-gray-100 gap-2">
-          <div>
-            <h2 class="text-base font-bold text-gray-900 flex items-center gap-2">
-              <Building2 class="w-5 h-5 text-sky-600" />
-              B2B Wholesale vs Retail Sales Distribution
-            </h2>
-            <p class="text-xs text-gray-500 mt-0.5">Comparative breakdown between GST registered wholesale series and counter retail sales</p>
-          </div>
-        </div>
-        <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-          <!-- SMG Card -->
-          <div class="p-4 rounded-xl bg-sky-50/60 border border-sky-100 flex flex-col justify-between">
-            <div>
-              <div class="flex items-center justify-between">
-                <span class="text-xs font-bold uppercase tracking-wider text-sky-800">Series: SMG (GST Wholesale B2B)</span>
-                <span class="px-2 py-0.5 rounded-full text-xs font-extrabold bg-sky-100 text-sky-900">{{ channelSMG?.sharePercent || 0 }}% of Total</span>
-              </div>
-              <div class="text-2xl font-black text-gray-900 mt-2">{{ formatCurrency(channelSMG?.revenue || 0) }}</div>
-            </div>
-            <div class="mt-4 pt-3 border-t border-sky-200/60 grid grid-cols-3 gap-2 text-xs">
-              <div>
-                <span class="text-gray-500 block text-[11px]">Invoices:</span>
-                <span class="font-bold text-gray-800">{{ formatNumber(channelSMG?.count || 0) }}</span>
-              </div>
-              <div>
-                <span class="text-gray-500 block text-[11px]">Taxable Amt:</span>
-                <span class="font-bold text-gray-800">{{ formatCrores(channelSMG?.taxable || 0) }}</span>
-              </div>
-              <div>
-                <span class="text-gray-500 block text-[11px]">GST Collected:</span>
-                <span class="font-bold text-sky-700">{{ formatCrores(channelSMG?.tax || 0) }}</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- RETAIL Card -->
-          <div class="p-4 rounded-xl bg-amber-50/60 border border-amber-100 flex flex-col justify-between">
-            <div>
-              <div class="flex items-center justify-between">
-                <span class="text-xs font-bold uppercase tracking-wider text-amber-800">Series: RETAIL (Counter / Cash)</span>
-                <span class="px-2 py-0.5 rounded-full text-xs font-extrabold bg-amber-100 text-amber-900">{{ channelRetail?.sharePercent || 0 }}% of Total</span>
-              </div>
-              <div class="text-2xl font-black text-gray-900 mt-2">{{ formatCurrency(channelRetail?.revenue || 0) }}</div>
-            </div>
-            <div class="mt-4 pt-3 border-t border-amber-200/60 grid grid-cols-3 gap-2 text-xs">
-              <div>
-                <span class="text-gray-500 block text-[11px]">Vouchers:</span>
-                <span class="font-bold text-gray-800">{{ formatNumber(channelRetail?.count || 0) }}</span>
-              </div>
-              <div>
-                <span class="text-gray-500 block text-[11px]">Taxable Amt:</span>
-                <span class="font-bold text-gray-800">{{ formatCrores(channelRetail?.taxable || 0) }}</span>
-              </div>
-              <div>
-                <span class="text-gray-500 block text-[11px]">GST Collected:</span>
-                <span class="font-bold text-amber-700">{{ formatCrores(channelRetail?.tax || 0) }}</span>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -957,7 +893,7 @@ import { ref, computed, onMounted } from 'vue'
 import { 
   IndianRupee, Boxes, Users, AlertTriangle, Tag, Clock, 
   RefreshCw, AlertCircle, Crown, Search, Building2, Truck, 
-  TrendingUp, Flame, Zap, Activity 
+  TrendingUp, Flame, Zap, Activity, ShieldCheck 
 } from 'lucide-vue-next'
 
 const loading = ref(true)
@@ -995,15 +931,6 @@ const fetchAnalytics = async (forceRefresh = false) => {
 
 onMounted(() => {
   fetchAnalytics()
-})
-
-// Channel computations
-const channelSMG = computed(() => {
-  return data.value?.sales?.channels?.find((ch: any) => ch.series === 'SMG')
-})
-
-const channelRetail = computed(() => {
-  return data.value?.sales?.channels?.find((ch: any) => ch.series === 'RETAIL')
 })
 
 const averageInvoiceValue = computed(() => {

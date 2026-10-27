@@ -33,7 +33,7 @@ export default defineEventHandler(async (event) => {
       topRevenueItems,
       deadStockItems,
       topCustomers,
-      channelSplit,
+      salesKpi,
       supplierStats,
       paymentTermsDist,
       criticalStockoutRisk,
@@ -151,18 +151,15 @@ export default defineEventHandler(async (event) => {
         LIMIT 25
       `),
 
-      // 7. Wholesale (SMG) vs Retail Channel Split
+      // 7. Sales Aggregate KPIs (Outward Sales Invoices)
       prisma.$queryRawUnsafe(`
         SELECT 
-          series,
-          "voucherType",
           COUNT(id)::int AS count,
-          SUM("totalAmount")::numeric AS revenue,
-          SUM("taxableAmount")::numeric AS taxable,
-          SUM("taxAmount")::numeric AS tax
+          COALESCE(SUM("totalAmount"), 0)::numeric AS revenue,
+          COALESCE(SUM("taxableAmount"), 0)::numeric AS taxable,
+          COALESCE(SUM("taxAmount"), 0)::numeric AS tax
         FROM busy_vouchers
-        GROUP BY series, "voucherType"
-        ORDER BY revenue DESC
+        WHERE "voucherType" = 9
       `),
 
       // 8. Supplier Base Statistics
@@ -279,8 +276,11 @@ export default defineEventHandler(async (event) => {
       lastInvoiceDate: c.last_invoice_date ? new Date(c.last_invoice_date).toISOString() : null
     }))
 
-    const totalVoucherRevenue = (channelSplit as any[]).reduce((sum, ch) => sum + Number(ch.revenue || 0), 0)
-    const totalVoucherCount = (channelSplit as any[]).reduce((sum, ch) => sum + Number(ch.count || 0), 0)
+    const salesSummary = (salesKpi as any[])[0] || {}
+    const totalSalesRevenue = Number(salesSummary.revenue || 0)
+    const totalSalesCount = Number(salesSummary.count || 0)
+    const totalTaxable = Number(salesSummary.taxable || 0)
+    const totalTax = Number(salesSummary.tax || 0)
 
     const result = {
       success: true,
@@ -289,17 +289,11 @@ export default defineEventHandler(async (event) => {
 
       // ─── 1. SALES INTELLIGENCE ──────────────────────────────────────────
       sales: {
-        totalRevenue: totalVoucherRevenue,
-        totalVouchers: totalVoucherCount,
-        channels: (channelSplit as any[]).map(ch => ({
-          series: ch.series,
-          voucherType: Number(ch.voucherType),
-          count: Number(ch.count),
-          revenue: Number(ch.revenue),
-          taxable: Number(ch.taxable),
-          tax: Number(ch.tax),
-          sharePercent: totalVoucherRevenue > 0 ? Number(((Number(ch.revenue) / totalVoucherRevenue) * 100).toFixed(1)) : 0
-        })),
+        totalRevenue: totalSalesRevenue,
+        totalVouchers: totalSalesCount,
+        taxableAmount: totalTaxable,
+        taxAmount: totalTax,
+        averageOrderValue: totalSalesCount > 0 ? Math.round(totalSalesRevenue / totalSalesCount) : 0,
         highPerformingRevenue: (topRevenueItems as any[]).map(enrichItem),
         highPerformingVolume: (fastMovingQty as any[]).map(enrichItem),
         topCustomers: customerList

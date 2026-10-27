@@ -394,6 +394,12 @@ async function runSync() {
   // -----------------------------------------------------------------------------
   if (data.vouchers && data.vouchers.length > 0) {
     console.log("\n[5/5] Syncing Full Sales Vouchers (Voucher Explorer)...");
+
+    // Purge any legacy non-sales vouchers (legacy voucherType 2 / series RETAIL)
+    await prisma.$executeRawUnsafe(`
+      DELETE FROM busy_vouchers WHERE "voucherType" != 9 OR series = 'RETAIL';
+    `);
+
     const vchChunkSize = 100;
     let vchSyncedCount = 0;
 
@@ -414,7 +420,7 @@ async function runSync() {
         const sgst = Number(v.sgstAmount) || 0;
         const igst = Number(v.igstAmount) || 0;
         const itemsJson = JSON.stringify(itemsArr);
-        return `(gen_random_uuid(), ${esc(v.voucherNo)}, ${v.voucherType || 2}, ${esc(v.series || 'RETAIL')}, '${v.voucherDate}'::timestamp, ${esc(v.customerCode)}, ${esc(v.customerName)}, ${tot}, ${taxable}, ${taxAmt}, ${cgst}, ${sgst}, ${igst}, ${iCount}, ${esc(itemsJson)}::jsonb, NOW(), NOW())`;
+        return `(gen_random_uuid(), ${esc(v.voucherNo)}, ${v.voucherType || 9}, ${esc(v.series || 'SMG')}, '${v.voucherDate}'::timestamp, ${esc(v.customerCode)}, ${esc(v.customerName)}, ${tot}, ${taxable}, ${taxAmt}, ${cgst}, ${sgst}, ${igst}, ${iCount}, ${esc(itemsJson)}::jsonb, NOW(), NOW())`;
       }).join(',');
 
       await prisma.$executeRawUnsafe(`

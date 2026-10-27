@@ -15,7 +15,7 @@ export default defineEventHandler(async (event) => {
   const limit = Math.min(100, Math.max(1, parseInt(query.limit as string) || 25))
   const skip = (page - 1) * limit
 
-  const where: any = {}
+  const where: any = { voucherType: 9 }
 
   if (series && series !== 'ALL') {
     where.series = series
@@ -81,21 +81,6 @@ export default defineEventHandler(async (event) => {
       })
     ]
 
-    if (shouldComputeStats) {
-      tasks.push(
-        prisma.busyVoucher.count({ where: { series: 'SMG' } }),
-        prisma.busyVoucher.aggregate({
-          where: { series: 'SMG' },
-          _sum: { totalAmount: true, taxableAmount: true, taxAmount: true }
-        }),
-        prisma.busyVoucher.count({ where: { series: 'RETAIL' } }),
-        prisma.busyVoucher.aggregate({
-          where: { series: 'RETAIL' },
-          _sum: { totalAmount: true, taxableAmount: true, taxAmount: true }
-        })
-      )
-    }
-
     const results = await Promise.all(tasks)
     const vouchers = results[0]
     const total = results[1]
@@ -104,24 +89,14 @@ export default defineEventHandler(async (event) => {
 
     let stats = null
     if (shouldComputeStats) {
-      const smgCount = results[4]
-      const smgSum = results[5]
-      const retailCount = results[6]
-      const retailSum = results[7]
-
       stats = {
-        totalCount: isUnfilteredFirstPage ? total : (smgCount + retailCount),
+        totalCount: total,
         totalAmount: Number(summary._sum.totalAmount || 0),
         totalTaxable: Number(summary._sum.taxableAmount || 0),
         totalTax: Number(summary._sum.taxAmount || 0),
-        smgCount,
-        smgAmount: Number(smgSum._sum.totalAmount || 0),
-        smgTaxable: Number(smgSum._sum.taxableAmount || 0),
-        smgTax: Number(smgSum._sum.taxAmount || 0),
-        retailCount,
-        retailAmount: Number(retailSum._sum.totalAmount || 0),
-        retailTaxable: Number(retailSum._sum.taxableAmount || 0),
-        retailTax: Number(retailSum._sum.taxAmount || 0)
+        totalCgst: Number(summary._sum.cgstAmount || 0),
+        totalSgst: Number(summary._sum.sgstAmount || 0),
+        totalIgst: Number(summary._sum.igstAmount || 0)
       }
     }
 

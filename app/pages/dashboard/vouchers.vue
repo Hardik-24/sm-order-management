@@ -52,36 +52,36 @@
         </div>
       </div>
 
-      <!-- 2. Wholesale (SMG) -->
-      <div class="bg-white rounded-xl border border-[#e5e2dc] p-3.5 sm:p-5 shadow-sm">
-        <div class="flex gap-2.5 sm:gap-4">
-          <div class="flex flex-col justify-between shrink-0">
-            <div class="bg-sky-50 p-2 sm:p-2.5 rounded-lg text-sky-600 border border-sky-100/50">
-              <Building2 class="w-4 h-4 sm:w-5 sm:h-5" />
-            </div>
-            <div class="w-6 sm:w-8 h-1 bg-sky-500 rounded-full mt-4 sm:mt-6"></div>
-          </div>
-          <div class="flex flex-col justify-center min-w-0">
-            <p class="text-[10px] font-bold text-sky-600 uppercase tracking-widest mb-0.5 truncate">Wholesale (SMG)</p>
-            <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">{{ (stats?.smgCount || 0).toLocaleString() }}</h3>
-            <p class="text-[11px] sm:text-xs text-sky-600 font-medium truncate">B2B Trade & Dealer</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- 3. Retail Direct -->
+      <!-- 2. Total Invoiced Value -->
       <div class="bg-white rounded-xl border border-[#e5e2dc] p-3.5 sm:p-5 shadow-sm">
         <div class="flex gap-2.5 sm:gap-4">
           <div class="flex flex-col justify-between shrink-0">
             <div class="bg-emerald-50 p-2 sm:p-2.5 rounded-lg text-emerald-600 border border-emerald-100/50">
-              <ShoppingBag class="w-4 h-4 sm:w-5 sm:h-5" />
+              <IndianRupee class="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div class="w-6 sm:w-8 h-1 bg-emerald-500 rounded-full mt-4 sm:mt-6"></div>
           </div>
           <div class="flex flex-col justify-center min-w-0">
-            <p class="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-0.5 truncate">Retail Direct</p>
-            <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">{{ (stats?.retailCount || 0).toLocaleString() }}</h3>
-            <p class="text-[11px] sm:text-xs text-emerald-600 font-medium truncate">Counter sales</p>
+            <p class="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-0.5 truncate">Total Invoiced Amount</p>
+            <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">{{ formatCurrency(stats?.totalAmount || 0) }}</h3>
+            <p class="text-[11px] sm:text-xs text-emerald-600 font-medium truncate">Gross sales value</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. GST Tax Collected -->
+      <div class="bg-white rounded-xl border border-[#e5e2dc] p-3.5 sm:p-5 shadow-sm">
+        <div class="flex gap-2.5 sm:gap-4">
+          <div class="flex flex-col justify-between shrink-0">
+            <div class="bg-sky-50 p-2 sm:p-2.5 rounded-lg text-sky-600 border border-sky-100/50">
+              <ShieldCheck class="w-4 h-4 sm:w-5 sm:h-5" />
+            </div>
+            <div class="w-6 sm:w-8 h-1 bg-sky-500 rounded-full mt-4 sm:mt-6"></div>
+          </div>
+          <div class="flex flex-col justify-center min-w-0">
+            <p class="text-[10px] font-bold text-sky-600 uppercase tracking-widest mb-0.5 truncate">Total GST Collected</p>
+            <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">{{ formatCurrency(stats?.totalTax || 0) }}</h3>
+            <p class="text-[11px] sm:text-xs text-sky-600 font-medium truncate">Taxable: {{ formatCurrency(stats?.totalTaxable || 0) }}</p>
           </div>
         </div>
       </div>
@@ -109,26 +109,12 @@
           </button>
         </div>
 
-        <!-- Series Selector Pills (Matching tab pills in billing.vue) -->
-        <div class="flex items-center gap-1.5 w-full sm:w-auto overflow-x-auto no-scrollbar">
-          <button
-            v-for="s in seriesOptions"
-            :key="s.value"
-            @click="selectSeries(s.value)"
-            class="px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors whitespace-nowrap flex items-center gap-1.5 cursor-pointer"
-            :class="selectedSeries === s.value
-              ? 'bg-[#1b3b5f] text-white border-[#1b3b5f]'
-              : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'"
-          >
-            <span>{{ s.label }}</span>
-            <span
-              v-if="s.count !== undefined"
-              class="px-1.5 py-0.2 rounded-full text-[10px] font-bold"
-              :class="selectedSeries === s.value ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'"
-            >
-              {{ s.count }}
-            </span>
-          </button>
+        <!-- Sales Series Indicator -->
+        <div class="flex items-center gap-2 text-xs text-gray-500">
+          <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-sky-50 text-sky-700 font-semibold border border-sky-100">
+            <Receipt class="w-3.5 h-3.5" />
+            BUSY Sales Series: SMG
+          </span>
         </div>
       </div>
 
@@ -262,11 +248,8 @@
                     <span class="text-xs font-bold text-gray-900 group-hover:text-[#1b3b5f] transition-colors">
                       {{ v.voucherNo }}
                     </span>
-                    <span
-                      class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-bold"
-                      :class="v.series === 'SMG' ? 'bg-sky-100 text-sky-800' : 'bg-emerald-100 text-emerald-800'"
-                    >
-                      {{ v.series === 'SMG' ? 'SMG' : 'RETAIL' }}
+                    <span class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-bold bg-sky-100 text-sky-800">
+                      {{ v.series || 'SMG' }}
                     </span>
                   </div>
                   <p class="text-[11px] text-gray-400 mt-0.5 tabular-nums">
@@ -339,11 +322,8 @@
                 <span class="text-xs font-bold text-gray-900 shrink-0">
                   {{ v.voucherNo }}
                 </span>
-                <span
-                  class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-bold shrink-0"
-                  :class="v.series === 'SMG' ? 'bg-sky-100 text-sky-800' : 'bg-emerald-100 text-emerald-800'"
-                >
-                  {{ v.series === 'SMG' ? 'SMG' : 'RETAIL' }}
+                <span class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-bold shrink-0 bg-sky-100 text-sky-800">
+                  {{ v.series || 'SMG' }}
                 </span>
                 <span class="text-gray-300 text-xs shrink-0">&bull;</span>
                 <span class="text-xs font-semibold text-gray-700 truncate" :title="v.customerName">
@@ -633,8 +613,8 @@ import {
   Calendar,
   Clock,
   RefreshCw,
-  Building2,
-  ShoppingBag,
+  IndianRupee,
+  ShieldCheck,
   Filter,
   Eye,
   ChevronLeft,
@@ -658,7 +638,6 @@ const router = useRouter()
 // Reactive Filter States
 const searchInput = ref((route.query.search as string) || '')
 const debouncedSearch = ref(searchInput.value)
-const selectedSeries = ref<'ALL' | 'SMG' | 'RETAIL'>((route.query.series as any) || 'ALL')
 const selectedDatePreset = ref<string>('all')
 const customDateFrom = ref<string>('')
 const customDateTo = ref<string>('')
@@ -688,13 +667,6 @@ const selectedVoucher = ref<any>(null)
 const isDrawerOpen = ref(false)
 const copiedVoucherNo = ref(false)
 
-// Series options with counts
-const seriesOptions = computed(() => [
-  { label: 'All Series', value: 'ALL' },
-  { label: 'Wholesale (SMG)', value: 'SMG', count: stats.value?.smgCount },
-  { label: 'Retail Direct', value: 'RETAIL', count: stats.value?.retailCount }
-])
-
 // Date presets
 const datePresets = [
   { id: 'all', label: 'All Time' },
@@ -706,7 +678,7 @@ const datePresets = [
 
 // Active filters detector
 const hasActiveFilters = computed(() => {
-  return !!debouncedSearch.value || selectedSeries.value !== 'ALL' || selectedDatePreset.value !== 'all' || !!customDateFrom.value || !!customDateTo.value
+  return !!debouncedSearch.value || selectedDatePreset.value !== 'all' || !!customDateFrom.value || !!customDateTo.value
 })
 
 // Formatted last synced time
@@ -747,12 +719,6 @@ function clearSearch() {
   fetchVouchers(false)
 }
 
-function selectSeries(series: string) {
-  selectedSeries.value = series as any
-  currentPage.value = 1
-  fetchVouchers(false)
-}
-
 function selectDatePreset(presetId: string) {
   selectedDatePreset.value = presetId
   const now = new Date()
@@ -785,7 +751,6 @@ function selectDatePreset(presetId: string) {
 function resetAllFilters() {
   searchInput.value = ''
   debouncedSearch.value = ''
-  selectedSeries.value = 'ALL'
   selectedDatePreset.value = 'all'
   customDateFrom.value = ''
   customDateTo.value = ''
@@ -812,7 +777,6 @@ async function fetchVouchers(includeStats = false) {
     const params: Record<string, any> = {
       page: currentPage.value,
       limit: pageSize.value,
-      series: selectedSeries.value,
       search: debouncedSearch.value,
       sortBy: 'voucherDate',
       sortOrder: 'desc'
