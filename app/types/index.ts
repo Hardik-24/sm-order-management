@@ -144,6 +144,15 @@ export interface Order {
   updatedAt: string
 }
 
+export interface OrderTrendItem {
+  key?: string
+  label: string
+  fullDate?: string
+  count: number
+  totalAmount: number
+  isToday?: boolean
+}
+
 export interface DashboardStats {
   ordersToday: number
   ordersTodayChange: number
@@ -152,13 +161,18 @@ export interface DashboardStats {
   awaitingBilling: number
   readyForDelivery: number
   delivered: number
-  orderFlow: {
+  orderFlow?: {
     sales: number
     approval: number
     packing: number
     billing: number
     delivery: number
     total: number
+  }
+  orderTrends?: {
+    last7Days: OrderTrendItem[]
+    todayHourly: OrderTrendItem[]
+    last30Days: OrderTrendItem[]
   }
   needsAttention: NeedsAttentionItem[]
 }

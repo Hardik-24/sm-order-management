@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { Calendar } from 'lucide-vue-next'
 import { formatDate } from '~/lib/utils'
 
 import StatCards from '~/components/dashboard/StatCards.vue'
-import OrderFlowPipeline from '~/components/dashboard/OrderFlowPipeline.vue'
+import OrderVolumeChart from '~/components/dashboard/OrderVolumeChart.vue'
 import NeedsAttention from '~/components/dashboard/NeedsAttention.vue'
 import OrderTable from '~/components/dashboard/OrderTable.vue'
 
@@ -16,7 +16,7 @@ definePageMeta({
 
 const currentDate = new Date()
 
-const { data: dashboardData, pending: dashboardPending, refresh: refreshDashboard } = useFetch('/api/dashboard')
+const { data: dashboardData, pending: dashboardPending, refresh: refreshDashboard } = useFetch<any>('/api/dashboard')
 
 const page = ref(1)
 const limit = ref(5)
@@ -45,7 +45,7 @@ const queryObj = computed(() => {
   return q
 })
 
-const { data: ordersData, pending: ordersPending, refresh: refreshOrders } = useFetch('/api/orders', {
+const { data: ordersData, pending: ordersPending, refresh: refreshOrders } = useFetch<any>('/api/orders', {
   query: queryObj,
   watch: [queryObj]
 })
@@ -53,7 +53,6 @@ const { data: ordersData, pending: ordersPending, refresh: refreshOrders } = use
 // Realtime instant synchronization across all devices
 const { onOrderSync } = useRealtimeSync()
 onOrderSync(() => {
-  // 
   refreshDashboard()
   refreshOrders()
 })
@@ -80,10 +79,10 @@ const handleOrderSelect = (orderId: string) => {
     <!-- Stat Cards (always rendered, numbers animate when data arrives) -->
     <StatCards :stats="dashboardData" :isLoading="dashboardPending" />
 
-    <!-- Pipeline & Attention -->
+    <!-- Order Velocity Chart & Attention -->
     <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
       <div class="lg:col-span-3">
-        <OrderFlowPipeline :flow="dashboardData?.orderFlow" />
+        <OrderVolumeChart :trends="dashboardData?.orderTrends" :isLoading="dashboardPending" />
       </div>
       <div class="lg:col-span-2">
         <NeedsAttention :items="dashboardData?.needsAttention || []" />
