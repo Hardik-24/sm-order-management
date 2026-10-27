@@ -1,8 +1,24 @@
 import { requireAuth } from '~~/server/utils/auth'
 import { prisma } from '~~/server/utils/prisma'
+import { getQuery } from 'h3'
 
 export default defineEventHandler(async (event) => {
-  await requireAuth(event)
+  const user = await requireAuth(event)
+  const query = getQuery(event)
+
+  let targetSalesPersonId: string | undefined = undefined
+
+  if (user.role === 'ADMIN') {
+    if (query.salesPersonId && query.salesPersonId !== 'all') {
+      targetSalesPersonId = String(query.salesPersonId)
+    }
+  } else if (user.role === 'SALES') {
+    if (query.salesPersonId === 'mine' || query.salesPersonId === user.id || query.scope === 'mine') {
+      targetSalesPersonId = user.id
+    }
+  }
+
+  const personFilter = targetSalesPersonId ? { salesPersonId: targetSalesPersonId } : {}
 
   const today = new Date()
   today.setHours(0, 0, 0, 0)
@@ -29,26 +45,29 @@ export default defineEventHandler(async (event) => {
     readyOrders,
     recentOrders
   ] = await Promise.all([
-    prisma.order.count({ where: { createdAt: { gte: today, lt: tomorrow } } }),
-    prisma.order.count({ where: { createdAt: { gte: yesterday, lt: today } } }),
+    prisma.order.count({ where: { createdAt: { gte: today, lt: tomorrow }, ...personFilter } }),
+    prisma.order.count({ where: { createdAt: { gte: yesterday, lt: today }, ...personFilter } }),
     prisma.order.count({
       where: {
         isApproved: false,
-        overallStatus: { notIn: ['CANCELLED', 'DELIVERED'] }
+        overallStatus: { notIn: ['CANCELLED', 'DELIVERED'] },
+        ...personFilter
       }
     }),
     prisma.order.count({ 
       where: { 
         isApproved: true,
         billingStatus: { status: 'PENDING' },
-        overallStatus: { not: 'DELIVERED' }
+        overallStatus: { not: 'DELIVERED' },
+        ...personFilter
       } 
     }),
     prisma.order.count({ 
       where: { 
         isApproved: true,
         packingStatus: { status: { in: ['PENDING', 'IN_PROGRESS'] } },
-        overallStatus: { not: 'DELIVERED' }
+        overallStatus: { not: 'DELIVERED' },
+        ...personFilter
       } 
     }),
     prisma.order.count({
@@ -56,35 +75,38 @@ export default defineEventHandler(async (event) => {
         isApproved: true,
         deliveryStatus: { status: 'WAITING' },
         billingStatus: { status: 'GENERATED' },
-        packingStatus: { status: 'PACKED' }
+        packingStatus: { status: 'PACKED' },
+        ...personFilter
       }
     }),
     prisma.order.count({
-      where: { overallStatus: 'DELIVERED', createdAt: { gte: today, lt: tomorrow } }
+      where: { overallStatus: 'DELIVERED', createdAt: { gte: today, lt: tomorrow }, ...personFilter }
     }),
-    prisma.order.count({ where: { overallStatus: 'DISPATCHED' } }),
+    prisma.order.count({ where: { overallStatus: 'DISPATCHED', ...personFilter } }),
     prisma.order.findMany({
       where: {
         isApproved: false,
-        overallStatus: { notIn: ['CANCELLED', 'DELIVERED'] }
+        overallStatus: { notIn: ['CANCELLED', 'DELIVERED'] },
+        ...personFilter
       },
       include: { customer: true },
       take: 5
     }),
     prisma.order.findMany({
-      where: { isApproved: true, billingStatus: { status: 'PENDING' }, createdAt: { lt: oneHourAgo } },
+      where: { isApproved: true, billingStatus: { status: 'PENDING' }, createdAt: { lt: oneHourAgo }, ...personFilter },
       include: { customer: true },
       take: 5
     }),
     prisma.order.findMany({
-      where: { isApproved: true, deliveryStatus: { status: 'WAITING' }, billingStatus: { status: 'GENERATED' }, packingStatus: { status: 'PACKED' } },
+      where: { isApproved: true, deliveryStatus: { status: 'WAITING' }, billingStatus: { status: 'GENERATED' }, packingStatus: { status: 'PACKED' }, ...personFilter },
       include: { customer: true },
       take: 5
     }),
     prisma.order.findMany({
       where: {
         createdAt: { gte: thirtyDaysAgo },
-        overallStatus: { not: 'CANCELLED' }
+        overallStatus: { not: 'CANCELLED' },
+        ...personFilter
       },
       select: {
         id: true,
@@ -231,6 +253,7 @@ export default defineEventHandler(async (event) => {
     delivered,
     orderFlow,
     orderTrends,
-    needsAttention
+    needsAttention,
+    filteredSalesPersonId: targetSalesPersonId || null
   }
 })

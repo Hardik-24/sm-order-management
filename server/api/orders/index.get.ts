@@ -3,7 +3,7 @@ import { prisma } from '~~/server/utils/prisma'
 import { resolveDestinationPin, loadCustomerPins } from '~~/server/utils/customerPins'
 
 export default defineEventHandler(async (event) => {
-  await requireAuth(event)
+  const user = await requireAuth(event)
   const query = getQuery(event)
   
   const isUnlimited = Number(query.limit) === -1 || query.limit === 'unlimited'
@@ -62,6 +62,18 @@ export default defineEventHandler(async (event) => {
       andConditions.push({ deliveryStatus: { status: { in: ['WAITING', 'ASSIGNED'] } } })
     } else {
       andConditions.push({ deliveryStatus: { status: deliveryStatus } })
+    }
+  }
+
+  // Salesperson scoping: Admin can select any rep; Sales can see own orders
+  const salesPersonId = query.salesPersonId as string
+  if (user.role === 'ADMIN') {
+    if (salesPersonId && salesPersonId !== 'all') {
+      andConditions.push({ salesPersonId })
+    }
+  } else if (user.role === 'SALES') {
+    if (salesPersonId === 'mine' || salesPersonId === user.id || query.scope === 'mine') {
+      andConditions.push({ salesPersonId: user.id })
     }
   }
   

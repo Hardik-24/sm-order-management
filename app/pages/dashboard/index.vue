@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { Calendar } from 'lucide-vue-next'
+import { Calendar, Building2, User as UserIcon, Filter, ChevronDown } from 'lucide-vue-next'
 import { formatDate } from '~/lib/utils'
 
 import StatCards from '~/components/dashboard/StatCards.vue'
@@ -14,9 +14,49 @@ definePageMeta({
   layout: 'dashboard'
 })
 
+const { user } = useAuth()
+const isSales = computed(() => user.value?.role === 'SALES')
+const isAdmin = computed(() => user.value?.role === 'ADMIN')
+
+// 1. Sales rep toggle: defaults to 'mine' (personal target view)
+const salesScope = ref<'mine' | 'all'>('mine')
+
+// 2. Admin dropdown: defaults to 'all' (company-wide view)
+const adminSelectedSalesPerson = ref<string>('all')
+
+// Fetch active team members for Admin dropdown
+const { data: allUsers } = useFetch<any[]>('/api/users')
+const salesTeam = computed(() => {
+  if (!allUsers.value) return []
+  return allUsers.value.filter(u => u.role === 'SALES' || u.role === 'ADMIN')
+})
+
+// Resolve active filter for dashboard & orders
+const effectiveSalesPersonId = computed(() => {
+  if (isAdmin.value) {
+    return adminSelectedSalesPerson.value !== 'all' ? adminSelectedSalesPerson.value : undefined
+  }
+  if (isSales.value) {
+    return salesScope.value === 'mine' ? user.value?.id : undefined
+  }
+  return undefined
+})
+
 const currentDate = new Date()
 
-const { data: dashboardData, pending: dashboardPending, refresh: refreshDashboard } = useFetch<any>('/api/dashboard')
+// Dashboard stats query (reactive to scope changes)
+const dashboardQuery = computed(() => {
+  const q: any = {}
+  if (effectiveSalesPersonId.value) {
+    q.salesPersonId = effectiveSalesPersonId.value
+  }
+  return q
+})
+
+const { data: dashboardData, pending: dashboardPending, refresh: refreshDashboard } = useFetch<any>('/api/dashboard', {
+  query: dashboardQuery,
+  watch: [dashboardQuery]
+})
 
 const page = ref(1)
 const limit = ref(5)
@@ -32,6 +72,7 @@ const isApproved = ref('')
 const isPanelOpen = ref(false)
 const selectedOrderId = ref<string | null>(null)
 
+// Recent orders table query (reactive to scope changes)
 const queryObj = computed(() => {
   const q: any = { page: page.value, limit: limit.value }
   if (search.value) q.search = search.value
@@ -42,6 +83,9 @@ const queryObj = computed(() => {
   if (packingStatus.value) q.packingStatus = packingStatus.value
   if (deliveryStatus.value) q.deliveryStatus = deliveryStatus.value
   if (isApproved.value) q.isApproved = isApproved.value
+  if (effectiveSalesPersonId.value) {
+    q.salesPersonId = effectiveSalesPersonId.value
+  }
   return q
 })
 
@@ -65,18 +109,66 @@ const handleOrderSelect = (orderId: string) => {
 
 <template>
   <div class="space-y-6">
-    <!-- Header Banner -->
+    <!-- Header Banner with Role-Based Scope Controls -->
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2">
       <div>
-        <p class="text-sm text-gray-600 font-medium">Here's what's happening across Silicon Marketing today.</p>
+        <p class="text-sm text-gray-600 font-medium">
+          Here's what's happening across Silicon Marketing today.
+        </p>
       </div>
-      <div class="flex items-center gap-2 text-[13px] text-gray-500 font-medium">
-        {{ formatDate(currentDate) }}
-        <Calendar class="w-4 h-4 ml-1" />
+
+      <div class="flex items-center gap-3 flex-wrap">
+        <!-- 1. SALES ROLE TOGGLE: All Company vs My Orders -->
+        <div v-if="isSales" class="inline-flex items-center bg-gray-100 p-1 rounded-xl border border-gray-200/80 shadow-2xs">
+          <button
+            type="button"
+            @click="salesScope = 'all'"
+            class="px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer"
+            :class="salesScope === 'all' ? 'bg-white text-[#1b3b5f] shadow-2xs font-bold' : 'text-gray-500 hover:text-gray-900'"
+          >
+            <Building2 class="w-3.5 h-3.5" />
+            <span>All Company</span>
+          </button>
+          <button
+            type="button"
+            @click="salesScope = 'mine'"
+            class="px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer"
+            :class="salesScope === 'mine' ? 'bg-white text-[#1b3b5f] shadow-2xs font-bold' : 'text-gray-500 hover:text-gray-900'"
+          >
+            <UserIcon class="w-3.5 h-3.5" />
+            <span>My Orders</span>
+          </button>
+        </div>
+
+        <!-- 2. ADMIN ROLE DROPDOWN: All Company or Specific Sales Rep -->
+        <div v-else-if="isAdmin" class="flex items-center gap-2">
+          <span class="text-xs text-gray-500 font-medium hidden sm:inline">Scope:</span>
+          <div class="relative">
+            <select
+              v-model="adminSelectedSalesPerson"
+              class="appearance-none bg-white border border-gray-200 text-gray-800 text-xs font-semibold rounded-xl pl-8 pr-8 py-1.5 shadow-2xs hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f] transition cursor-pointer"
+            >
+              <option value="all">🏢 All Company (Entire Team)</option>
+              <optgroup label="Filter by Sales Rep">
+                <option v-for="rep in salesTeam" :key="rep.id" :value="rep.id">
+                  👤 {{ rep.name }} ({{ rep.role }})
+                </option>
+              </optgroup>
+            </select>
+            <Filter class="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <ChevronDown class="w-3.5 h-3.5 text-gray-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+          </div>
+        </div>
+
+        <!-- Date & Calendar Indicator -->
+        <div class="flex items-center gap-2 text-[13px] text-gray-500 font-medium pl-1">
+          {{ formatDate(currentDate) }}
+          <Calendar class="w-4 h-4 ml-0.5 text-[#1b3b5f]" />
+        </div>
       </div>
     </div>
 
-    <!-- Stat Cards (always rendered, numbers animate when data arrives) -->
+    <!-- Stat Cards (non-clickable, hover border animation intact) -->
     <StatCards :stats="dashboardData" :isLoading="dashboardPending" />
 
     <!-- Order Velocity Chart & Attention -->
