@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { Calendar, Building2, User as UserIcon, Filter, ChevronDown, Check, Search, X, Users } from 'lucide-vue-next'
+import { Calendar, Building2, User as UserIcon, Filter, ChevronDown, Check, Search, X, Users, Plus } from 'lucide-vue-next'
 import { formatDate } from '~/lib/utils'
 
 import StatCards from '~/components/dashboard/StatCards.vue'
@@ -14,7 +14,7 @@ definePageMeta({
   layout: 'dashboard'
 })
 
-const { user } = useAuth()
+const { user, canAccessRoute } = useAuth()
 const isSales = computed(() => user.value?.role === 'SALES')
 const isAdmin = computed(() => user.value?.role === 'ADMIN')
 
@@ -139,14 +139,16 @@ const handleOrderSelect = (orderId: string) => {
 </script>
 
 <template>
-  <div class="space-y-6">
-    <!-- Header Banner with Role-Based Scope Controls -->
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2">
-      <div>
-        <p class="text-sm text-gray-600 font-medium">
-          Here's what's happening across Silicon Marketing today.
-        </p>
-      </div>
+  <div>
+    <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+    <!-- Header Banner with Role-Based Scope Controls (Mobile: #1, Desktop: Row 1) -->
+    <div class="col-span-1 lg:col-span-5 order-1 lg:order-1">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <p class="text-sm text-gray-600 font-medium">
+            Here's what's happening across Silicon Marketing today.
+          </p>
+        </div>
 
       <div class="flex items-center gap-3 flex-wrap">
         <!-- 1. SALES ROLE TOGGLE: All Company vs My Orders -->
@@ -325,69 +327,87 @@ const handleOrderSelect = (orderId: string) => {
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- Stat Cards (non-clickable, hover border animation intact) -->
+  <!-- Stat Cards (Mobile: #4, Desktop: Row 2 full-width) -->
+  <div class="col-span-1 lg:col-span-5 order-4 lg:order-2">
     <StatCards :stats="dashboardData" :isLoading="dashboardPending" />
+  </div>
 
-    <!-- Order Velocity Chart & Attention -->
-    <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
-      <div class="lg:col-span-3">
-        <OrderVolumeChart :trends="dashboardData?.orderTrends" :isLoading="dashboardPending" />
-      </div>
-      <div class="lg:col-span-2">
-        <NeedsAttention :items="dashboardData?.needsAttention || []" />
-      </div>
-    </div>
+  <!-- Order Velocity Chart / Analysis (Mobile: #5 at bottom, Desktop: Row 3 left 3-cols) -->
+  <div class="col-span-1 lg:col-span-3 order-5 lg:order-3">
+    <OrderVolumeChart :trends="dashboardData?.orderTrends" :isLoading="dashboardPending" />
+  </div>
 
-    <!-- Recent Orders Table -->
-    <div>
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
-        <div>
-          <h2 class="text-lg font-bold text-gray-900">Recent Orders</h2>
-          <p class="text-xs text-gray-500 mt-0.5">
-            <span v-if="isAdmin && adminSelectedSalesPerson !== 'all' && selectedRep">
-              Showing orders created by <strong class="text-gray-900 font-semibold">{{ selectedRep.name }}</strong>
-            </span>
-            <span v-else-if="isSales && salesScope === 'mine'">
-              Showing your <strong class="text-gray-900 font-semibold">personal orders</strong>
-            </span>
-            <span v-else>
-              Showing orders across the <strong class="text-gray-900 font-semibold">entire company</strong>
-            </span>
-          </p>
-        </div>
+  <!-- Needs Attention (Mobile: #3 right after recent orders, Desktop: Row 3 right 2-cols) -->
+  <div class="col-span-1 lg:col-span-2 order-3 lg:order-4">
+    <NeedsAttention :items="dashboardData?.needsAttention || []" />
+  </div>
+
+  <!-- Recent Orders Table (Mobile: #2 right under header, Desktop: Row 4 full-width) -->
+  <div class="col-span-1 lg:col-span-5 order-2 lg:order-5">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+      <div>
+        <h2 class="text-lg font-bold text-gray-900">Recent Orders</h2>
+        <p class="text-xs text-gray-500 mt-0.5">
+          <span v-if="isAdmin && adminSelectedSalesPerson !== 'all' && selectedRep">
+            Showing orders created by <strong class="text-gray-900 font-semibold">{{ selectedRep.name }}</strong>
+          </span>
+          <span v-else-if="isSales && salesScope === 'mine'">
+            Showing your <strong class="text-gray-900 font-semibold">personal orders</strong>
+          </span>
+          <span v-else>
+            Showing orders across the <strong class="text-gray-900 font-semibold">entire company</strong>
+          </span>
+        </p>
+      </div>
+
+      <div class="flex items-center gap-2.5 flex-wrap">
         <div v-if="(isAdmin && adminSelectedSalesPerson !== 'all') || (isSales && salesScope === 'mine')" class="self-start sm:self-auto">
           <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-[#1b3b5f]/10 text-[#1b3b5f] border border-[#1b3b5f]/15">
             <UserIcon class="w-3.5 h-3.5" />
             Filtered: {{ isAdmin ? (selectedRep?.name || 'Representative') : 'My Orders' }}
           </span>
         </div>
+
+        <!-- Create Order CTA Button -->
+        <NuxtLink
+          v-if="canAccessRoute('/dashboard/orders/create')"
+          to="/dashboard/orders/create"
+          class="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 bg-[#1b3b5f] hover:bg-[#152e4d] text-white rounded-xl text-xs font-bold shadow-xs transition-all active:scale-[0.98] cursor-pointer"
+        >
+          <Plus class="w-4 h-4" />
+          <span>Create Order</span>
+        </NuxtLink>
       </div>
-      <OrderTable 
-        :orders="ordersData?.orders || []"
-        :isLoading="ordersPending"
-        :total="ordersData?.total || 0"
-        v-model:page="page"
-        v-model:limit="limit"
-        v-model:search="search"
-        v-model:startDate="startDate"
-        v-model:endDate="endDate"
-        v-model:status="status"
-        v-model:billingStatus="billingStatus"
-        v-model:packingStatus="packingStatus"
-        v-model:deliveryStatus="deliveryStatus"
-        v-model:isApproved="isApproved"
-        @select="handleOrderSelect"
-      />
     </div>
 
-    <!-- Slide-out Order Detail Panel -->
-    <OrderDetailPanel 
-      :order-id="selectedOrderId"
-      :is-open="isPanelOpen"
-      context="overview"
-      @close="isPanelOpen = false"
-      @updated="() => { refreshOrders(); refreshDashboard(); }"
+    <OrderTable 
+      :orders="ordersData?.orders || []"
+      :isLoading="ordersPending"
+      :total="ordersData?.total || 0"
+      v-model:page="page"
+      v-model:limit="limit"
+      v-model:search="search"
+      v-model:startDate="startDate"
+      v-model:endDate="endDate"
+      v-model:status="status"
+      v-model:billingStatus="billingStatus"
+      v-model:packingStatus="packingStatus"
+      v-model:deliveryStatus="deliveryStatus"
+      v-model:isApproved="isApproved"
+      @select="handleOrderSelect"
     />
+    </div>
   </div>
+
+  <!-- Slide-out Order Detail Panel -->
+  <OrderDetailPanel 
+    :order-id="selectedOrderId"
+    :is-open="isPanelOpen"
+    context="overview"
+    @close="isPanelOpen = false"
+    @updated="() => { refreshOrders(); refreshDashboard(); }"
+  />
+</div>
 </template>
