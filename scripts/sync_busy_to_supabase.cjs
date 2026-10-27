@@ -360,6 +360,11 @@ async function runSync() {
 
     console.log(`  -> Matched ${pricesToUpsert.length} / ${data.historicalPrices.length} historical price pairs.`);
 
+    // Purge any legacy non-sales historical prices (purchase rates from VchType 2)
+    await prisma.$executeRawUnsafe(`
+      DELETE FROM historical_prices WHERE source = 'BUSY' AND "voucherNo" NOT LIKE 'SMG%';
+    `);
+
     const hpChunkSize = 100;
     let hpSyncedCount = 0;
     for (let i = 0; i < pricesToUpsert.length; i += hpChunkSize) {
