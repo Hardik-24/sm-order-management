@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { Calendar, Building2, User as UserIcon, Filter, ChevronDown, Check, Search, X, Users } from 'lucide-vue-next'
 import { formatDate } from '~/lib/utils'
 
@@ -69,11 +69,10 @@ const currentDate = new Date()
 
 // Dashboard stats query (reactive to scope changes)
 const dashboardQuery = computed(() => {
-  const q: any = {}
-  if (effectiveSalesPersonId.value) {
-    q.salesPersonId = effectiveSalesPersonId.value
+  return {
+    salesPersonId: effectiveSalesPersonId.value || 'all',
+    scope: isSales.value ? salesScope.value : (adminSelectedSalesPerson.value === 'all' ? 'all' : 'single')
   }
-  return q
 })
 
 const { data: dashboardData, pending: dashboardPending, refresh: refreshDashboard } = useFetch<any>('/api/dashboard', {
@@ -97,7 +96,12 @@ const selectedOrderId = ref<string | null>(null)
 
 // Recent orders table query (reactive to scope changes)
 const queryObj = computed(() => {
-  const q: any = { page: page.value, limit: limit.value }
+  const q: any = { 
+    page: page.value, 
+    limit: limit.value,
+    salesPersonId: effectiveSalesPersonId.value || 'all',
+    scope: isSales.value ? salesScope.value : (adminSelectedSalesPerson.value === 'all' ? 'all' : 'single')
+  }
   if (search.value) q.search = search.value
   if (startDate.value) q.startDate = startDate.value
   if (endDate.value) q.endDate = endDate.value
@@ -106,15 +110,19 @@ const queryObj = computed(() => {
   if (packingStatus.value) q.packingStatus = packingStatus.value
   if (deliveryStatus.value) q.deliveryStatus = deliveryStatus.value
   if (isApproved.value) q.isApproved = isApproved.value
-  if (effectiveSalesPersonId.value) {
-    q.salesPersonId = effectiveSalesPersonId.value
-  }
   return q
 })
 
 const { data: ordersData, pending: ordersPending, refresh: refreshOrders } = useFetch<any>('/api/orders', {
   query: queryObj,
   watch: [queryObj]
+})
+
+// Watch scope changes to immediately reset page to 1 and reload data
+watch([adminSelectedSalesPerson, salesScope], () => {
+  page.value = 1
+  refreshDashboard()
+  refreshOrders()
 })
 
 // Realtime instant synchronization across all devices
@@ -333,7 +341,28 @@ const handleOrderSelect = (orderId: string) => {
 
     <!-- Recent Orders Table -->
     <div>
-      <h2 class="text-lg font-medium text-gray-900 mb-4">Recent Orders</h2>
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+        <div>
+          <h2 class="text-lg font-bold text-gray-900">Recent Orders</h2>
+          <p class="text-xs text-gray-500 mt-0.5">
+            <span v-if="isAdmin && adminSelectedSalesPerson !== 'all' && selectedRep">
+              Showing orders created by <strong class="text-gray-900 font-semibold">{{ selectedRep.name }}</strong>
+            </span>
+            <span v-else-if="isSales && salesScope === 'mine'">
+              Showing your <strong class="text-gray-900 font-semibold">personal orders</strong>
+            </span>
+            <span v-else>
+              Showing orders across the <strong class="text-gray-900 font-semibold">entire company</strong>
+            </span>
+          </p>
+        </div>
+        <div v-if="(isAdmin && adminSelectedSalesPerson !== 'all') || (isSales && salesScope === 'mine')" class="self-start sm:self-auto">
+          <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-[#1b3b5f]/10 text-[#1b3b5f] border border-[#1b3b5f]/15">
+            <UserIcon class="w-3.5 h-3.5" />
+            Filtered: {{ isAdmin ? (selectedRep?.name || 'Representative') : 'My Orders' }}
+          </span>
+        </div>
+      </div>
       <OrderTable 
         :orders="ordersData?.orders || []"
         :isLoading="ordersPending"
