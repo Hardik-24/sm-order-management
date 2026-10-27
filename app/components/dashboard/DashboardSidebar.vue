@@ -205,6 +205,7 @@
     <div
       v-if="isMobileMenuOpen"
       ref="mobileMenuContentRef"
+      @click="onMobileNavContainerClick"
       class="absolute top-14 inset-x-0 bg-[#1c1c1c] border-b border-gray-800 shadow-2xl flex flex-col p-4 max-h-[calc(100dvh-3.5rem)] overflow-y-auto z-[210]"
     >
       
@@ -545,8 +546,16 @@ watch(isMobileMenuOpen, (open) => {
   }
 })
 
+// Auto-collapse mobile menu on any link/button click
+const onMobileNavContainerClick = (e: MouseEvent) => {
+  const target = e.target as HTMLElement
+  if (target && (target.closest('a') || target.closest('button'))) {
+    isMobileMenuOpen.value = false
+  }
+}
+
 watch(() => route.path, () => {
   isMobileMenuOpen.value = false
-})
+}, { immediate: true })
 </script>
 

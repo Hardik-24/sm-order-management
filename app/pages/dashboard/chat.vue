@@ -2,7 +2,7 @@
   <div class="h-full w-full flex flex-col bg-white overflow-hidden select-text overscroll-none">
     <!-- Header (WhatsApp style) -->
     <header class="bg-[#f0f2f5] border-b border-gray-200 px-4 py-3 flex items-center justify-between shrink-0 z-20">
-      <div class="flex items-center gap-4">
+      <div class="flex items-center gap-3 sm:gap-4">
         <div class="w-10 h-10 rounded-full bg-[#1b3b5f] flex items-center justify-center text-white shrink-0 shadow-sm">
           <MessageSquare class="w-5 h-5" />
         </div>
@@ -20,7 +20,7 @@
 
     <!-- Chat Messages Area (Scrollable) -->
     <div 
-      class="flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6 space-y-3 relative bg-[#efeae2]" 
+      class="flex-1 overflow-y-auto overscroll-contain p-3 sm:p-6 space-y-3 relative bg-[#efeae2]" 
       ref="chatContainer"
       style="background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-repeat: repeat; opacity: 0.95;"
     >
@@ -36,7 +36,7 @@
 
       <template v-else>
         <!-- Security notification banner -->
-        <div class="flex justify-center mb-6">
+        <div class="flex justify-center mb-4 sm:mb-6">
           <div class="bg-[#ffeecd] text-[#54656f] text-xs py-1.5 px-4 rounded-lg shadow-sm inline-block text-center max-w-sm">
             Messages are end-to-end secured.
           </div>
@@ -93,7 +93,7 @@
 
           <!-- Message Body Container (with touch swipe support) -->
           <div 
-            class="flex max-w-[85%] md:max-w-[70%] transition-transform duration-100 ease-out"
+            class="flex max-w-[88%] sm:max-w-[80%] md:max-w-[70%] transition-transform duration-100 ease-out"
             :class="msg.userId === user?.id ? 'flex-row-reverse' : 'flex-row'"
             :style="swipingMsgId === msg.id ? { transform: `translateX(${swipeDistance}px)` } : {}"
             @touchstart="e => onTouchStart(e, msg)"
@@ -107,21 +107,24 @@
               <img 
                 :src="msg.user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(msg.user.name)}&background=e8e0d4&color=1b3b5f`" 
                 alt="Avatar" 
-                class="w-8 h-8 rounded-full shadow-sm border border-gray-200"
+                class="w-7 h-7 sm:w-8 sm:h-8 rounded-full shadow-sm border border-gray-200"
               />
             </div>
 
-            <!-- Bubble -->
+            <!-- WhatsApp Native Bubble -->
             <div 
-              class="relative px-3 py-2 rounded-lg shadow-sm text-[14.5px] leading-snug whitespace-pre-wrap break-words text-[#111b21] flex flex-col cursor-default min-w-[140px]"
-              :class="msg.userId === user?.id ? 'bg-[#d9fdd3] rounded-tr-none' : 'bg-white rounded-tl-none border border-gray-100'"
+              class="relative rounded-2xl shadow-sm text-[14.5px] leading-snug whitespace-pre-wrap break-words text-[#111b21] flex flex-col cursor-default min-w-[120px] max-w-full overflow-hidden"
+              :class="[
+                msg.userId === user?.id ? 'bg-[#d9fdd3] rounded-tr-none' : 'bg-white rounded-tl-none border border-gray-100',
+                getMsgAttachment(msg)?.type === 'image' && !getMessageText(msg) ? 'p-1' : 'px-3 py-2'
+              ]"
             >
               <!-- Tail Triangles -->
               <div v-if="msg.userId === user?.id" class="absolute top-0 -right-2 w-0 h-0 border-t-[10px] border-t-[#d9fdd3] border-r-[10px] border-r-transparent"></div>
               <div v-if="msg.userId !== user?.id" class="absolute top-0 -left-2 w-0 h-0 border-t-[10px] border-t-white border-l-[10px] border-l-transparent"></div>
 
               <!-- Sender Name (if not me) -->
-              <div v-if="msg.userId !== user?.id" class="flex items-center gap-2 mb-1">
+              <div v-if="msg.userId !== user?.id" class="flex items-center gap-2 mb-1" :class="getMsgAttachment(msg)?.type === 'image' && !getMessageText(msg) ? 'px-2 pt-1' : ''">
                 <span class="font-bold text-xs text-[#d14b62]">{{ msg.user.name }}</span>
                 <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-sm bg-gray-100 text-gray-500 uppercase tracking-widest border border-gray-200">
                   {{ msg.user.role }}
@@ -133,87 +136,95 @@
                 v-if="getMsgReply(msg)" 
                 @click.stop="scrollToMessage(getMsgReply(msg).id)"
                 class="mb-2 p-2 rounded-md cursor-pointer transition-colors border-l-4 text-xs select-none"
-                :class="msg.userId === user?.id ? 'bg-[#0000000a] hover:bg-[#00000014] border-l-[#00a884]' : 'bg-[#f0f2f5] hover:bg-[#e5e7eb] border-l-[#027eb5]'"
+                :class="[
+                  msg.userId === user?.id ? 'bg-[#0000000a] hover:bg-[#00000014] border-l-[#00a884]' : 'bg-[#f0f2f5] hover:bg-[#e5e7eb] border-l-[#027eb5]',
+                  getMsgAttachment(msg)?.type === 'image' && !getMessageText(msg) ? 'mx-1 mt-1' : ''
+                ]"
                 title="Click to view original message"
               >
                 <div class="flex items-center gap-1 font-bold text-[11px] leading-none mb-1" :class="msg.userId === user?.id ? 'text-[#008f6f]' : 'text-[#027eb5]'">
                   <Reply class="w-3 h-3 transform -scale-x-100" />
                   <span>{{ getMsgReply(msg).senderName }}</span>
                 </div>
-                <div class="text-[#54656f] text-[12px] truncate max-w-[260px] sm:max-w-md">
+                <div class="text-[#54656f] text-[12px] truncate max-w-[240px] sm:max-w-md">
                   {{ getMsgReply(msg).text }}
                 </div>
               </div>
 
               <!-- ATTACHMENT SECTION -->
-              <div v-if="getMsgAttachment(msg)" class="mb-2">
+              <div v-if="getMsgAttachment(msg)" :class="getMessageText(msg) ? 'mb-1.5' : ''">
                 <!-- Case 1: Image Attachment -->
-                <div v-if="getMsgAttachment(msg).type === 'image'" class="relative rounded-lg overflow-hidden max-w-sm">
+                <div v-if="getMsgAttachment(msg).type === 'image'" class="relative rounded-xl overflow-hidden max-w-sm sm:max-w-md">
                   <!-- A. Image is revealed (Full resolution) -->
                   <div 
                     v-if="isImageRevealed(msg)" 
-                    class="relative group/img rounded-lg overflow-hidden bg-black/5 cursor-pointer"
+                    class="relative group/img rounded-xl overflow-hidden bg-black/5 cursor-pointer select-none"
                     @click="openLightbox(getMsgAttachment(msg).url, getMsgAttachment(msg).name, getMsgAttachment(msg).size)"
                   >
                     <img 
                       :src="getMsgAttachment(msg).url" 
                       :alt="getMsgAttachment(msg).name" 
                       loading="lazy"
-                      class="w-full max-h-[340px] sm:max-h-[400px] object-cover rounded-lg transition-transform duration-200 group-hover/img:scale-[1.01]"
+                      class="w-full max-h-[340px] sm:max-h-[420px] object-cover rounded-xl transition-all duration-200 group-hover/img:brightness-[0.98]"
                     />
-                    <!-- Overlay Top/Bottom Actions -->
-                    <div class="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/75 via-black/30 to-transparent flex items-center justify-between opacity-90 sm:opacity-0 group-hover/img:opacity-100 transition-opacity">
-                      <span class="text-[11px] text-white/90 truncate max-w-[170px] drop-shadow-sm font-medium">
-                        {{ getMsgAttachment(msg).name }}
-                      </span>
-                      <div class="flex items-center gap-1.5">
-                        <!-- 1-Tap Save to Device -->
-                        <button 
-                          @click.stop="saveFileToDevice(getMsgAttachment(msg).url, getMsgAttachment(msg).name)"
-                          class="px-2.5 py-1 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-semibold flex items-center gap-1 shadow-md transition-all active:scale-95"
-                          title="Save to Phone/PC"
-                        >
-                          <Loader2 v-if="downloadingFile === getMsgAttachment(msg).name" class="w-3.5 h-3.5 animate-spin" />
-                          <Download v-else class="w-3.5 h-3.5" />
-                          <span>Save</span>
-                        </button>
-                        <!-- Fullscreen View -->
-                        <button 
-                          @click.stop="openLightbox(getMsgAttachment(msg).url, getMsgAttachment(msg).name, getMsgAttachment(msg).size)"
-                          class="p-1 rounded-full bg-black/50 hover:bg-black/70 text-white transition-colors"
-                          title="View Fullscreen"
-                        >
-                          <Maximize2 class="w-3.5 h-3.5" />
-                        </button>
-                      </div>
+                    
+                    <!-- Top-Right 1-Tap Save Button -->
+                    <button 
+                      @click.stop="saveFileToDevice(getMsgAttachment(msg).url, getMsgAttachment(msg).name)"
+                      class="absolute top-2 right-2 p-1.5 rounded-full bg-black/45 hover:bg-emerald-600 active:scale-90 text-white backdrop-blur-md shadow-md transition-all flex items-center justify-center z-10"
+                      title="Save to Phone/PC"
+                    >
+                      <Loader2 v-if="downloadingFile === getMsgAttachment(msg).name" class="w-4 h-4 animate-spin" />
+                      <Download v-else class="w-4 h-4" />
+                    </button>
+
+                    <!-- Bottom Gradient Overlay for High Contrast Timestamp on Image -->
+                    <div class="absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-black/60 via-black/20 to-transparent pointer-events-none rounded-b-xl"></div>
+
+                    <!-- Floating WhatsApp Timestamp badge ON the image (when no caption text) -->
+                    <div 
+                      v-if="!getMessageText(msg)"
+                      class="absolute bottom-2 right-2 px-2 py-0.5 rounded-full bg-black/45 backdrop-blur-sm text-white text-[10px] font-medium flex items-center gap-1 shadow-sm select-none z-10"
+                    >
+                      <span>{{ formatTime(msg.createdAt) }}</span>
+                      <CheckCheck v-if="msg.userId === user?.id" class="w-3.5 h-3.5 text-[#53bdeb]" />
+                    </div>
+
+                    <!-- Archived Badge on Image if from Drive -->
+                    <div 
+                      v-if="getMsgAttachment(msg).storageProvider === 'gdrive'"
+                      class="absolute bottom-2 left-2 px-2 py-0.5 rounded-full bg-black/50 backdrop-blur-sm text-sky-200 text-[10px] font-medium flex items-center gap-1 border border-sky-400/20 shadow-sm z-10"
+                    >
+                      <Cloud class="w-3 h-3 text-sky-400" />
+                      <span>Drive Archive</span>
                     </div>
                   </div>
 
                   <!-- B. WhatsApp-style Blur Preview (Tap to load) -->
                   <div 
                     v-else 
-                    class="relative w-64 h-56 rounded-lg overflow-hidden bg-gray-900 flex flex-col items-center justify-center p-3 cursor-pointer select-none group/blur"
+                    class="relative w-64 h-56 rounded-xl overflow-hidden bg-gray-900 flex flex-col items-center justify-center p-3 cursor-pointer select-none group/blur shadow-inner"
                     @click="revealImage(msg.id)"
                   >
                     <!-- Blurred background image -->
                     <img 
                       v-if="getMsgAttachment(msg).blurPreview"
                       :src="getMsgAttachment(msg).blurPreview" 
-                      class="absolute inset-0 w-full h-full object-cover filter blur-lg scale-110 opacity-70"
+                      class="absolute inset-0 w-full h-full object-cover filter blur-md scale-110 opacity-75 transition-opacity"
                     />
-                    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
+                    <div class="absolute inset-0 bg-black/40 backdrop-blur-xs"></div>
 
-                    <!-- Center circular download button -->
-                    <div class="relative z-10 flex flex-col items-center gap-1.5">
-                      <div class="w-12 h-12 rounded-full bg-black/60 border border-white/30 text-white flex items-center justify-center shadow-lg group-hover/blur:scale-110 transition-transform">
-                        <Download class="w-5 h-5 text-white" />
+                    <!-- Center circular WhatsApp download button -->
+                    <div class="relative z-10 flex flex-col items-center gap-2">
+                      <div class="w-14 h-14 rounded-full bg-black/55 border-2 border-white/50 text-white flex items-center justify-center shadow-2xl group-hover/blur:scale-105 active:scale-95 transition-all">
+                        <Download class="w-6 h-6 text-white" />
                       </div>
-                      <div class="bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-full text-white text-xs font-semibold shadow-sm flex items-center gap-1.5 border border-white/10">
+                      <div class="bg-black/60 backdrop-blur-md px-3 py-1 rounded-full text-white text-xs font-semibold shadow-md flex items-center gap-1.5 border border-white/15">
                         <span>Load Photo</span>
-                        <span class="text-white/60">·</span>
-                        <span class="text-white/90 text-[11px]">{{ formatFileSize(getMsgAttachment(msg).size) }}</span>
+                        <span class="text-white/40">·</span>
+                        <span class="text-white/95 text-[11px]">{{ formatFileSize(getMsgAttachment(msg).size) }}</span>
                       </div>
-                      <div v-if="getMsgAttachment(msg).storageProvider === 'gdrive'" class="flex items-center gap-1 text-[10px] text-sky-200 bg-sky-950/60 backdrop-blur-sm px-2 py-0.5 rounded-full border border-sky-400/20 font-medium">
+                      <div v-if="getMsgAttachment(msg).storageProvider === 'gdrive'" class="flex items-center gap-1 text-[10px] text-sky-200 bg-sky-950/70 backdrop-blur-sm px-2.5 py-0.5 rounded-full border border-sky-400/30 font-medium shadow-sm">
                         <Cloud class="w-3 h-3 text-sky-400" />
                         <span>Drive Archive</span>
                       </div>
@@ -222,7 +233,7 @@
                     <!-- Top right instant Save to Device -->
                     <button 
                       @click.stop="saveFileToDevice(getMsgAttachment(msg).url, getMsgAttachment(msg).name)"
-                      class="absolute top-2 right-2 z-10 p-1.5 rounded-full bg-black/60 hover:bg-emerald-600 text-white transition-colors shadow-sm"
+                      class="absolute top-2 right-2 z-10 p-2 rounded-full bg-black/50 hover:bg-emerald-600 active:scale-90 text-white transition-all shadow-md backdrop-blur-md"
                       title="Save Directly to Device"
                     >
                       <Download class="w-3.5 h-3.5" />
@@ -233,7 +244,7 @@
                 <!-- Case 2: Document / File Attachment (PDF, Excel, Word, etc.) -->
                 <div 
                   v-else 
-                  class="rounded-lg p-2.5 transition-colors border max-w-sm"
+                  class="rounded-xl p-3 transition-colors border max-w-sm sm:max-w-md shadow-xs"
                   :class="msg.userId === user?.id ? 'bg-black/5 hover:bg-black/10 border-black/10' : 'bg-gray-50 hover:bg-gray-100 border-gray-200'"
                 >
                   <div class="flex items-center justify-between gap-3">
@@ -277,16 +288,19 @@
                 </div>
               </div>
 
-              <!-- Content Text (Caption or message) -->
+              <!-- Content Text (Caption or text message) -->
               <div 
                 v-if="getMessageText(msg)" 
-                class="pr-14 min-w-[100px]" 
+                class="min-w-[100px] text-[14.5px] leading-snug break-words"
+                :class="getMsgAttachment(msg)?.type === 'image' ? 'px-2 pt-1 pb-4' : 'pr-14'"
                 v-html="formatMessage(getMessageText(msg))"
               ></div>
-              <div v-else class="pr-14 h-3"></div>
 
-              <!-- Timestamp (Float right inside bubble) -->
-              <span class="text-[10px] text-[#667781] absolute bottom-1.5 right-2 flex items-center justify-end select-none">
+              <!-- Timestamp for text messages OR messages with captions -->
+              <span 
+                v-if="getMessageText(msg) || !getMsgAttachment(msg) || getMsgAttachment(msg).type !== 'image'"
+                class="text-[10px] text-[#667781] absolute bottom-1.5 right-2 flex items-center justify-end select-none"
+              >
                 {{ formatTime(msg.createdAt) }}
                 <CheckCheck v-if="msg.userId === user?.id" class="w-3.5 h-3.5 ml-1 text-[#53bdeb]" />
               </span>
@@ -381,7 +395,7 @@
     </transition>
 
     <!-- Composer Footer (WhatsApp style) -->
-    <div class="bg-[#f0f2f5] px-4 py-3 shrink-0 flex items-end gap-2.5 z-20 border-t border-gray-200">
+    <div class="bg-[#f0f2f5] px-3 sm:px-4 py-2.5 sm:py-3 shrink-0 flex items-end gap-2 sm:gap-2.5 z-20 border-t border-gray-200">
       <!-- Hidden File Input -->
       <input 
         ref="fileInputRef" 
@@ -404,7 +418,7 @@
       </button>
 
       <!-- Input container -->
-      <div class="flex-1 bg-white rounded-xl shadow-sm border border-gray-200 flex items-end px-4 py-2 relative">
+      <div class="flex-1 bg-white rounded-xl shadow-sm border border-gray-200 flex items-end px-3 sm:px-4 py-2 relative">
         <textarea
           v-model="newMessage"
           @keydown.enter.prevent="handleEnter"
@@ -420,7 +434,7 @@
       <button 
         @click="sendMessage"
         :disabled="(!newMessage.trim() && !pendingAttachment) || isSending || isProcessingAttachment"
-        class="w-12 h-12 rounded-full flex items-center justify-center shrink-0 transition-all text-white shadow-sm"
+        class="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center shrink-0 transition-all text-white shadow-sm"
         :class="(newMessage.trim() || pendingAttachment) && !isSending && !isProcessingAttachment ? 'bg-[#00a884] hover:bg-[#008f6f]' : 'bg-gray-300'"
         :title="pendingAttachment ? 'Send attachment' : 'Send message'"
       >
@@ -429,7 +443,7 @@
       </button>
     </div>
 
-    <!-- Fullscreen Lightbox Zoom Modal for Images -->
+    <!-- Fullscreen Lightbox Modal with Multi-Touch Pinch-To-Zoom & Pan -->
     <transition
       enter-active-class="transition duration-200 ease-out"
       enter-from-class="opacity-0 scale-95"
@@ -440,55 +454,64 @@
     >
       <div 
         v-if="lightbox" 
-        class="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex flex-col select-none"
+        class="fixed inset-0 z-[9999] bg-black/95 backdrop-blur-md flex flex-col select-none touch-none pt-[max(env(safe-area-inset-top),10px)] pb-[max(env(safe-area-inset-bottom),14px)] pl-[max(env(safe-area-inset-left),10px)] pr-[max(env(safe-area-inset-right),10px)]"
         @keydown.esc="closeLightbox"
       >
-        <!-- Lightbox Top Navigation Bar -->
-        <div class="flex items-center justify-between px-4 py-3 bg-black/60 border-b border-white/10 shrink-0 text-white z-10">
-          <div class="flex items-center gap-3 min-w-0">
-            <span class="font-semibold text-sm truncate max-w-xs sm:max-w-md">{{ lightbox.name }}</span>
-            <span v-if="lightbox.size" class="text-xs text-white/60 bg-white/10 px-2 py-0.5 rounded-full font-medium">
+        <!-- Lightbox Top Navigation Bar (Always in Safe Area) -->
+        <div class="flex items-center justify-between px-3 sm:px-4 py-2.5 bg-black/70 border-b border-white/10 shrink-0 text-white z-20">
+          <div class="flex items-center gap-2 min-w-0">
+            <span class="font-semibold text-xs sm:text-sm truncate max-w-[130px] sm:max-w-md">{{ lightbox.name }}</span>
+            <span v-if="lightbox.size" class="text-[10px] sm:text-xs text-white/60 bg-white/10 px-2 py-0.5 rounded-full font-medium shrink-0">
               {{ formatFileSize(lightbox.size) }}
             </span>
           </div>
 
           <!-- Controls (Zoom, Save to Device, Close) -->
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-1.5 sm:gap-2">
             <!-- Zoom Out -->
             <button 
               @click="zoomOut" 
-              class="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition"
+              class="p-1.5 sm:p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition active:scale-95"
               title="Zoom out"
             >
               <ZoomOut class="w-4 h-4" />
             </button>
-            <span class="text-xs text-white/80 font-mono w-10 text-center">{{ Math.round(lightbox.scale * 100) }}%</span>
+
+            <!-- Reset Zoom Badge -->
+            <button 
+              @click="resetZoom"
+              class="text-xs text-white/80 font-mono px-1.5 py-0.5 rounded hover:bg-white/10 transition"
+              title="Tap to reset zoom (100%)"
+            >
+              {{ Math.round(lightbox.scale * 100) }}%
+            </button>
+
             <!-- Zoom In -->
             <button 
               @click="zoomIn" 
-              class="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition"
+              class="p-1.5 sm:p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition active:scale-95"
               title="Zoom in"
             >
               <ZoomIn class="w-4 h-4" />
             </button>
 
-            <div class="h-4 w-px bg-white/20 mx-1"></div>
+            <div class="h-4 w-px bg-white/20 mx-0.5 sm:mx-1"></div>
 
             <!-- 1-Tap Save to Device -->
             <button 
               @click="saveFileToDevice(lightbox.url, lightbox.name)" 
-              class="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg shadow-sm transition"
+              class="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white text-xs font-semibold rounded-lg shadow-sm transition"
               title="Save to Phone/PC Downloads"
             >
-              <Loader2 v-if="downloadingFile === lightbox.name" class="w-4 h-4 animate-spin" />
-              <Download v-else class="w-4 h-4" />
-              <span>Save to Device</span>
+              <Loader2 v-if="downloadingFile === lightbox.name" class="w-3.5 h-3.5 animate-spin" />
+              <Download v-else class="w-3.5 h-3.5" />
+              <span class="hidden sm:inline">Save</span>
             </button>
 
             <!-- Close Lightbox -->
             <button 
               @click="closeLightbox" 
-              class="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition ml-2"
+              class="p-1.5 sm:p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition ml-1 active:scale-95"
               title="Close (Esc)"
             >
               <X class="w-5 h-5" />
@@ -496,17 +519,41 @@
           </div>
         </div>
 
-        <!-- Lightbox Center Content -->
+        <!-- Lightbox Center Content with Gesture Handlers -->
         <div 
-          class="flex-1 overflow-auto flex items-center justify-center p-4 relative"
+          class="flex-1 overflow-hidden flex items-center justify-center p-2 sm:p-4 relative select-none touch-none"
+          @wheel="onLightboxWheel"
+          @mousedown="onLightboxMouseDown"
+          @mousemove="onLightboxMouseMove"
+          @mouseup="onLightboxMouseUp"
+          @mouseleave="onLightboxMouseUp"
+          @touchstart="onLightboxTouchStart"
+          @touchmove="onLightboxTouchMove"
+          @touchend="onLightboxTouchEnd"
+          @touchcancel="onLightboxTouchEnd"
           @click.self="closeLightbox"
         >
           <img 
             :src="lightbox.url" 
             :alt="lightbox.name"
-            class="max-h-[85vh] max-w-[90vw] object-contain transition-transform duration-150 rounded-lg shadow-2xl"
-            :style="{ transform: `scale(${lightbox.scale})` }"
+            class="max-h-[85vh] max-w-[95vw] object-contain rounded-lg shadow-2xl pointer-events-auto select-none"
+            :style="{
+              transform: `translate(${lightbox.translateX}px, ${lightbox.translateY}px) scale(${lightbox.scale})`,
+              transition: isPinchingOrDragging ? 'none' : 'transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1)',
+              cursor: lightbox.scale > 1 ? 'grab' : 'zoom-in'
+            }"
+            draggable="false"
           />
+
+          <!-- Mobile Gesture Hint -->
+          <div 
+            v-if="lightbox.scale === 1" 
+            class="absolute bottom-4 inset-x-0 flex justify-center pointer-events-none transition-opacity duration-300"
+          >
+            <div class="px-3 py-1 rounded-full bg-black/60 backdrop-blur-md text-white/70 text-[11px] font-medium border border-white/10 shadow-sm">
+              Pinch or double-tap to zoom
+            </div>
+          </div>
         </div>
       </div>
     </transition>
@@ -558,13 +605,168 @@ const revealedImageIds = ref<Set<string>>(new Set())
 // Download state for "Save to Device"
 const downloadingFile = ref<string | null>(null)
 
-// Lightbox modal state
+// Lightbox modal state with Pinch-To-Zoom and Pan
 const lightbox = ref<{
   url: string
   name: string
   size?: number
   scale: number
+  translateX: number
+  translateY: number
 } | null>(null)
+
+// Gestures tracking for Lightbox
+const isPinchingOrDragging = ref(false)
+let initialPinchDistance = 0
+let initialScaleAtPinch = 1
+let panStartPointer = { x: 0, y: 0 }
+let lastTapTimestamp = 0
+let isMouseDown = false
+let mouseDragStart = { x: 0, y: 0 }
+
+function openLightbox(url: string, name: string, size?: number) {
+  lightbox.value = {
+    url,
+    name,
+    size,
+    scale: 1,
+    translateX: 0,
+    translateY: 0
+  }
+}
+
+function closeLightbox() {
+  lightbox.value = null
+  isPinchingOrDragging.value = false
+}
+
+function resetZoom() {
+  if (!lightbox.value) return
+  lightbox.value.scale = 1
+  lightbox.value.translateX = 0
+  lightbox.value.translateY = 0
+}
+
+function zoomIn() {
+  if (!lightbox.value) return
+  lightbox.value.scale = Math.min(5, +(lightbox.value.scale + 0.4).toFixed(1))
+}
+
+function zoomOut() {
+  if (!lightbox.value) return
+  const nextScale = Math.max(1, +(lightbox.value.scale - 0.4).toFixed(1))
+  lightbox.value.scale = nextScale
+  if (nextScale === 1) {
+    lightbox.value.translateX = 0
+    lightbox.value.translateY = 0
+  }
+}
+
+// Multi-Touch Pinch-To-Zoom & Pan for Mobile
+function onLightboxTouchStart(e: TouchEvent) {
+  if (!lightbox.value) return
+
+  if (e.touches.length === 2) {
+    // 2 fingers: Pinch to zoom
+    isPinchingOrDragging.value = true
+    const dx = e.touches[0].clientX - e.touches[1].clientX
+    const dy = e.touches[0].clientY - e.touches[1].clientY
+    initialPinchDistance = Math.hypot(dx, dy)
+    initialScaleAtPinch = lightbox.value.scale
+  } else if (e.touches.length === 1) {
+    // 1 finger: Check for double-tap
+    const now = Date.now()
+    if (now - lastTapTimestamp < 300) {
+      // Double tap toggles zoom
+      if (lightbox.value.scale > 1.2) {
+        resetZoom()
+      } else {
+        lightbox.value.scale = 2.5
+        lightbox.value.translateX = 0
+        lightbox.value.translateY = 0
+      }
+      lastTapTimestamp = 0
+      return
+    }
+    lastTapTimestamp = now
+
+    // If already zoomed in, enable smooth 1-finger pan
+    if (lightbox.value.scale > 1) {
+      isPinchingOrDragging.value = true
+      panStartPointer = {
+        x: e.touches[0].clientX - lightbox.value.translateX,
+        y: e.touches[0].clientY - lightbox.value.translateY
+      }
+    }
+  }
+}
+
+function onLightboxTouchMove(e: TouchEvent) {
+  if (!lightbox.value) return
+
+  if (e.touches.length === 2) {
+    e.preventDefault()
+    const dx = e.touches[0].clientX - e.touches[1].clientX
+    const dy = e.touches[0].clientY - e.touches[1].clientY
+    const currentDist = Math.hypot(dx, dy)
+    if (initialPinchDistance > 0) {
+      const factor = currentDist / initialPinchDistance
+      const nextScale = Math.min(Math.max(initialScaleAtPinch * factor, 0.8), 5)
+      lightbox.value.scale = parseFloat(nextScale.toFixed(2))
+    }
+  } else if (e.touches.length === 1 && lightbox.value.scale > 1 && isPinchingOrDragging.value) {
+    e.preventDefault()
+    lightbox.value.translateX = e.touches[0].clientX - panStartPointer.x
+    lightbox.value.translateY = e.touches[0].clientY - panStartPointer.y
+  }
+}
+
+function onLightboxTouchEnd(e: TouchEvent) {
+  if (!lightbox.value) return
+  if (e.touches.length === 0) {
+    isPinchingOrDragging.value = false
+    if (lightbox.value.scale < 1) {
+      resetZoom()
+    }
+  } else if (e.touches.length === 1 && lightbox.value.scale > 1) {
+    panStartPointer = {
+      x: e.touches[0].clientX - lightbox.value.translateX,
+      y: e.touches[0].clientY - lightbox.value.translateY
+    }
+  }
+}
+
+// Mouse wheel & drag on desktop
+function onLightboxWheel(e: WheelEvent) {
+  if (!lightbox.value) return
+  e.preventDefault()
+  const delta = e.deltaY < 0 ? 0.25 : -0.25
+  const nextScale = Math.min(Math.max(lightbox.value.scale + delta, 1), 5)
+  lightbox.value.scale = parseFloat(nextScale.toFixed(1))
+  if (lightbox.value.scale === 1) {
+    lightbox.value.translateX = 0
+    lightbox.value.translateY = 0
+  }
+}
+
+function onLightboxMouseDown(e: MouseEvent) {
+  if (!lightbox.value || lightbox.value.scale <= 1) return
+  isMouseDown = true
+  mouseDragStart = {
+    x: e.clientX - lightbox.value.translateX,
+    y: e.clientY - lightbox.value.translateY
+  }
+}
+
+function onLightboxMouseMove(e: MouseEvent) {
+  if (!isMouseDown || !lightbox.value || lightbox.value.scale <= 1) return
+  lightbox.value.translateX = e.clientX - mouseDragStart.x
+  lightbox.value.translateY = e.clientY - mouseDragStart.y
+}
+
+function onLightboxMouseUp() {
+  isMouseDown = false
+}
 
 // Swipe-to-reply gesture tracking
 const swipingMsgId = ref<string | null>(null)
@@ -794,30 +996,6 @@ async function saveFileToDevice(url: string, filename: string) {
   } finally {
     downloadingFile.value = null
   }
-}
-
-// Lightbox modal controls
-function openLightbox(url: string, name: string, size?: number) {
-  lightbox.value = {
-    url,
-    name,
-    size,
-    scale: 1
-  }
-}
-
-function closeLightbox() {
-  lightbox.value = null
-}
-
-function zoomIn() {
-  if (!lightbox.value) return
-  lightbox.value.scale = Math.min(3, +(lightbox.value.scale + 0.3).toFixed(1))
-}
-
-function zoomOut() {
-  if (!lightbox.value) return
-  lightbox.value.scale = Math.max(0.6, +(lightbox.value.scale - 0.3).toFixed(1))
 }
 
 const handleKeydown = (e: KeyboardEvent) => {

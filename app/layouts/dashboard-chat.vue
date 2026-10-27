@@ -3,14 +3,14 @@
     <!-- Sidebar (Top on mobile, Left on desktop) -->
     <DashboardSidebar class="shrink-0" />
     
-    <!-- Topbar (Mobile only) -->
-    <DashboardTopbar class="md:hidden shrink-0" />
+    <!-- Mobile top spacer to offset fixed top mobile menu bar -->
+    <div class="h-14 md:hidden shrink-0" aria-hidden="true"></div>
     
     <div class="flex flex-1 flex-col overflow-hidden relative min-w-0 min-h-0">
-      <!-- Topbar (Desktop only) -->
+      <!-- Topbar (Desktop only - Mobile has dedicated WhatsApp header) -->
       <DashboardTopbar class="hidden md:flex shrink-0" />
       
-      <!-- No padding, no overflow-y-auto — the page content fills everything -->
+      <!-- Full-bleed page content -->
       <main class="flex-1 overflow-hidden relative flex flex-col min-h-0">
         <slot />
       </main>
