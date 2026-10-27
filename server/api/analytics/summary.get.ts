@@ -237,7 +237,7 @@ export default defineEventHandler(async (event) => {
 
     // Cross-match current stock for fast moving items
     const productStocks: any[] = await prisma.$queryRawUnsafe(`
-      SELECT name, stock::int, COALESCE("costPrice", price, 0)::numeric AS cost_price, c.name AS category_name
+      SELECT p.name, p.stock::int, COALESCE(p."costPrice", p.price, 0)::numeric AS cost_price, c.name AS category_name
       FROM products p
       LEFT JOIN categories c ON p."categoryId" = c.id
       WHERE p."isActive" = true

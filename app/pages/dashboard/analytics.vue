@@ -971,6 +971,10 @@
 </template>
 
 <script setup lang="ts">
+definePageMeta({
+  layout: 'dashboard'
+})
+
 import { ref, computed, onMounted } from 'vue'
 import { 
   IndianRupee, Boxes, Users, AlertTriangle, ShieldCheck, Tag, Clock, 
