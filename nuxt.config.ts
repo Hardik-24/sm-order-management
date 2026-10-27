@@ -27,6 +27,7 @@ export default defineNuxtConfig({
   runtimeConfig: {
     authSecret: process.env.NUXT_AUTH_SECRET || 'dev-secret-change-in-production',
     googleSheetId: process.env.GOOGLE_SHEET_ID || '124p_ZVSTqLTkIs9o04-7BsJjDH6SLFFabArHW9UQ7FI',
+    googleDriveArchiveFolderId: process.env.GOOGLE_DRIVE_ARCHIVE_FOLDER_ID || '17Y406tMwu0c-mHcl4WlmwbSY8Cg8K9I3',
     googleServiceAccountKey: process.env.GOOGLE_SERVICE_ACCOUNT_KEY || process.env.GOOGLE_SERVICE_ACCOUNT_JSON || process.env.GOOGLE_CREDENTIALS || '',
     googleClientEmail: process.env.GOOGLE_CLIENT_EMAIL || process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || '',
     googlePrivateKey: process.env.GOOGLE_PRIVATE_KEY || '',

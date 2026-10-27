@@ -26,10 +26,11 @@ export function getGoogleDriveClient(): JWT {
 export function getGoogleDriveFolderId(): string | null {
   const config = useRuntimeConfig()
   return (
+    (config.googleDriveArchiveFolderId as string) ||
     (config.googleDriveFolderId as string) ||
-    process.env.GOOGLE_DRIVE_FOLDER_ID ||
     process.env.GOOGLE_DRIVE_ARCHIVE_FOLDER_ID ||
-    null
+    process.env.GOOGLE_DRIVE_FOLDER_ID ||
+    '17Y406tMwu0c-mHcl4WlmwbSY8Cg8K9I3'
   )
 }
 
