@@ -204,7 +204,7 @@
                     <div class="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
 
                     <!-- Center circular download button -->
-                    <div class="relative z-10 flex flex-col items-center gap-2">
+                    <div class="relative z-10 flex flex-col items-center gap-1.5">
                       <div class="w-12 h-12 rounded-full bg-black/60 border border-white/30 text-white flex items-center justify-center shadow-lg group-hover/blur:scale-110 transition-transform">
                         <Download class="w-5 h-5 text-white" />
                       </div>
@@ -212,6 +212,10 @@
                         <span>Load Photo</span>
                         <span class="text-white/60">·</span>
                         <span class="text-white/90 text-[11px]">{{ formatFileSize(getMsgAttachment(msg).size) }}</span>
+                      </div>
+                      <div v-if="getMsgAttachment(msg).storageProvider === 'gdrive'" class="flex items-center gap-1 text-[10px] text-sky-200 bg-sky-950/60 backdrop-blur-sm px-2 py-0.5 rounded-full border border-sky-400/20 font-medium">
+                        <Cloud class="w-3 h-3 text-sky-400" />
+                        <span>Drive Archive</span>
                       </div>
                     </div>
 
@@ -249,10 +253,13 @@
                         <div class="text-xs sm:text-[13px] font-semibold text-[#111b21] truncate leading-tight">
                           {{ getMsgAttachment(msg).name }}
                         </div>
-                        <div class="text-[11px] text-[#667781] mt-0.5 flex items-center gap-1 font-medium">
+                        <div class="text-[11px] text-[#667781] mt-0.5 flex items-center gap-1.5 font-medium flex-wrap">
                           <span>{{ formatFileSize(getMsgAttachment(msg).size) }}</span>
                           <span>•</span>
                           <span class="uppercase">{{ getFileExt(getMsgAttachment(msg).name) }}</span>
+                          <span v-if="getMsgAttachment(msg).storageProvider === 'gdrive'" class="inline-flex items-center gap-0.5 text-[9.5px] text-sky-700 bg-sky-50 px-1.5 py-0.2 rounded border border-sky-200 font-semibold ml-1">
+                            <Cloud class="w-2.5 h-2.5 text-sky-600" /> Drive Archive
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -513,7 +520,7 @@ import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { 
   MessageSquare, Send, Loader2, CheckCheck, Trash2, Reply, X, 
   Paperclip, Download, FileText, FileSpreadsheet, File, 
-  ZoomIn, ZoomOut, Maximize2 
+  ZoomIn, ZoomOut, Maximize2, Cloud 
 } from 'lucide-vue-next'
 import { useAuth } from '~/composables/useAuth'
 import { useRealtimeSync } from '~/composables/useRealtimeSync'
