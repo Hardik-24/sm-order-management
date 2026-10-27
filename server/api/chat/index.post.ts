@@ -5,19 +5,28 @@ export default defineEventHandler(async (event) => {
   const user = requireAuth(event)
   const body = await readBody(event)
 
-  if (!body.content || !body.content.trim()) {
-    throw createError({ statusCode: 400, message: 'Message content is required' })
+  const text = (body.content || '').trim()
+  if (!text && !body.attachment) {
+    throw createError({ statusCode: 400, message: 'Message content or attachment is required' })
   }
 
-  let contentToSave = body.content.trim()
-  if (body.replyTo && typeof body.replyTo === 'object') {
+  let contentToSave = text
+  if (body.attachment || (body.replyTo && typeof body.replyTo === 'object')) {
     contentToSave = JSON.stringify({
-      text: body.content.trim(),
-      replyTo: {
+      text,
+      replyTo: body.replyTo && typeof body.replyTo === 'object' ? {
         id: body.replyTo.id,
         senderName: body.replyTo.senderName,
         text: (body.replyTo.text || '').slice(0, 150)
-      }
+      } : null,
+      attachment: body.attachment && typeof body.attachment === 'object' ? {
+        url: body.attachment.url,
+        name: body.attachment.name,
+        size: body.attachment.size,
+        type: body.attachment.type,
+        mimeType: body.attachment.mimeType,
+        blurPreview: body.attachment.blurPreview || null
+      } : null
     })
   }
 
@@ -40,12 +49,14 @@ export default defineEventHandler(async (event) => {
 
   let parsedContent = message.content
   let replyTo = null
+  let attachment = null
   if (message.content.startsWith('{') && message.content.endsWith('}')) {
     try {
       const parsed = JSON.parse(message.content)
-      if (parsed && parsed.text !== undefined) {
-        parsedContent = parsed.text
+      if (parsed && (parsed.text !== undefined || parsed.attachment !== undefined)) {
+        parsedContent = parsed.text || ''
         replyTo = parsed.replyTo || null
+        attachment = parsed.attachment || null
       }
     } catch (e) {}
   }
@@ -53,6 +64,7 @@ export default defineEventHandler(async (event) => {
   return {
     ...message,
     parsedContent,
-    replyTo
+    replyTo,
+    attachment
   }
 })
