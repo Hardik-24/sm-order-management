@@ -64,11 +64,12 @@
       <!-- BUSY Live Sync Indicator -->
       <div 
         v-if="syncStatusText" 
-        class="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200"
-        :title="'BUSY ERP Server: ' + (fullSyncTime || 'Live')"
+        @click="fetchSyncStatus"
+        class="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 transition-colors cursor-pointer hover:bg-emerald-100/70"
+        :title="'BUSY ERP Server: ' + (fullSyncTime || 'Live') + ' • Click to check now'"
       >
         <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-        <span class="text-[11px] font-semibold text-emerald-800 tracking-tight">BUSY: {{ syncStatusText }}</span>
+        <span class="text-[11px] font-semibold text-emerald-800 tracking-tight select-none">BUSY: {{ syncStatusText }}</span>
       </div>
 
       <!-- Notifications -->
@@ -269,10 +270,32 @@ const { onOrderSync } = useRealtimeSync()
 const unsubscribeSync = onOrderSync((event) => {
   // Instantly refresh notifications list whenever any order timeline or status updates across all connected devices
   fetchNotifications(true)
+
+  // Instantly refresh BUSY timestamp when a sync finishes across any device or background script
+  if (
+    event?.type === 'SYNC_CHANGE' ||
+    event?.type === 'DB_SYSTEM_SETTING_CHANGE' ||
+    event?.table === 'system_settings'
+  ) {
+    fetchSyncStatus()
+  }
 })
 
 const syncStatusText = ref('')
 const fullSyncTime = ref('')
+const lastSyncedDate = ref<Date | null>(null)
+
+const updateRelativeSyncText = () => {
+  if (!lastSyncedDate.value) return
+  const diffMin = Math.round((Date.now() - lastSyncedDate.value.getTime()) / 60000)
+  if (diffMin < 2) {
+    syncStatusText.value = 'Synced just now'
+  } else if (diffMin < 60) {
+    syncStatusText.value = `Synced ${diffMin}m ago`
+  } else {
+    syncStatusText.value = lastSyncedDate.value.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' })
+  }
+}
 
 const fetchSyncStatus = async () => {
   try {
@@ -280,15 +303,9 @@ const fetchSyncStatus = async () => {
     if (res?.lastSynced) {
       const d = new Date(res.lastSynced)
       if (!isNaN(d.getTime())) {
+        lastSyncedDate.value = d
         fullSyncTime.value = d.toLocaleString('en-IN')
-        const diffMin = Math.round((Date.now() - d.getTime()) / 60000)
-        if (diffMin < 2) {
-          syncStatusText.value = 'Synced just now'
-        } else if (diffMin < 60) {
-          syncStatusText.value = `Synced ${diffMin}m ago`
-        } else {
-          syncStatusText.value = d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' })
-        }
+        updateRelativeSyncText()
       }
     }
   } catch (e) {
@@ -296,13 +313,45 @@ const fetchSyncStatus = async () => {
   }
 }
 
+let syncPollTimer: any = null
+let relativeTimer: any = null
+
+const handleVisibilityChange = () => {
+  if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+    fetchSyncStatus()
+  }
+}
+
 onMounted(() => {
   fetchNotifications()
   fetchSyncStatus()
+
+  // 1. Locally update the relative text every 30 seconds (0ms network request)
+  relativeTimer = setInterval(() => {
+    if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+      updateRelativeSyncText()
+    }
+  }, 30000)
+
+  // 2. Gentle 60s background check (only runs when tab is actively visible)
+  syncPollTimer = setInterval(() => {
+    if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+      fetchSyncStatus()
+    }
+  }, 60000)
+
+  if (typeof document !== 'undefined') {
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+  }
 })
 
 onUnmounted(() => {
   if (unsubscribeSync) unsubscribeSync()
+  if (syncPollTimer) clearInterval(syncPollTimer)
+  if (relativeTimer) clearInterval(relativeTimer)
+  if (typeof document !== 'undefined') {
+    document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }
 })
 
 const searchQuery = ref('')

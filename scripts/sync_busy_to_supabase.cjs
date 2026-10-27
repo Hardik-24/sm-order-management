@@ -475,6 +475,36 @@ async function runSync() {
     create: { key: 'last_synced', value: new Date().toISOString() }
   });
 
+  // Broadcast instant realtime event so open dashboards refresh timestamp without reload
+  try {
+    const { createClient } = require('@supabase/supabase-js');
+    const sbUrl = process.env.NUXT_PUBLIC_SUPABASE_URL || 'https://xfzvkqjkbwwdqtxgasrh.supabase.co';
+    const sbKey = process.env.NUXT_PUBLIC_SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhmenZrcWprYnd3ZHF0eGdhc3JoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg1Njg1MzYsImV4cCI6MjEwNDE0NDUzNn0.0D6O8IL-2Dg53GIuMoti0yA2seDfj4XVpPj1aarfb4s';
+    const sbClient = createClient(sbUrl, sbKey);
+    const channel = sbClient.channel('sm_orders_realtime');
+    await new Promise((resolve) => {
+      channel.subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          channel.send({
+            type: 'broadcast',
+            event: 'SYNC_CHANGE',
+            payload: { type: 'SYNC_CHANGE', timestamp: Date.now() }
+          }).then(() => {
+            sbClient.removeChannel(channel);
+            resolve();
+          }).catch(() => resolve());
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          resolve();
+        }
+      });
+      // Safety timeout after 2 seconds
+      setTimeout(resolve, 2000);
+    });
+    console.log("  -> Sent instant SYNC_CHANGE realtime broadcast to all active dashboards.");
+  } catch (bErr) {
+    // Non-blocking note
+  }
+
   if (data.monthlyFlow && data.monthlyFlow.length > 0) {
     await prisma.systemSetting.upsert({
       where: { key: 'busy_monthly_flow' },
