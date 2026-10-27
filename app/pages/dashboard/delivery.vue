@@ -808,7 +808,7 @@ watch(counts, (newVal) => {
     >
       <div 
         v-if="selectedTripOrderIds.length > 0"
-        class="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-full max-w-xl px-3 sm:px-4 pointer-events-auto"
+        class="fixed top-4 sm:top-auto sm:bottom-6 left-1/2 -translate-x-1/2 z-40 w-full max-w-xl px-3 sm:px-4 pointer-events-auto"
       >
         <div class="bg-gray-900/95 backdrop-blur-md text-white rounded-2xl shadow-2xl border border-gray-700/60 p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4">
           <!-- Row 1 on mobile, Left side on desktop -->

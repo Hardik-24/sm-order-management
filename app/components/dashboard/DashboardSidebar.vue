@@ -158,55 +158,21 @@
   </aside>
 
   
-  <!-- Mobile Top Navigation -->
-  <aside class="flex md:hidden flex-col bg-[#1c1c1c] text-white w-full z-[200] fixed top-0 inset-x-0 shadow-md">
-    <!-- Horizontal Scroll Icons + Toggle Button -->
-    <div class="flex items-center w-full h-14 border-b border-gray-800">
-      
-      <!-- Scrollable Icons Area -->
-      <div class="flex-1 flex flex-row items-center overflow-x-auto no-scrollbar px-3 gap-6 h-full">
-        <NuxtLink v-if="canAccessRoute('/dashboard')" to="/dashboard" :class="[isLinkActive('/dashboard') ? 'text-sky-400' : 'text-gray-400']"><LayoutDashboard class="w-5 h-5" /></NuxtLink>
-        <NuxtLink v-if="canAccessRoute('/dashboard/orders')" to="/dashboard/orders" :class="[isLinkActive('/dashboard/orders') ? 'text-sky-400' : 'text-gray-400']"><ClipboardList class="w-5 h-5" /></NuxtLink>
-        <NuxtLink v-if="canAccessRoute('/dashboard/order-requests')" to="/dashboard/order-requests" class="relative" :class="[isLinkActive('/dashboard/order-requests') ? 'text-sky-400' : 'text-gray-400']">
-          <Inbox class="w-5 h-5" />
-          <span v-if="pendingRequestsCount > 0" class="absolute -top-1.5 -right-1.5 w-2 h-2 rounded-full bg-amber-400 ring-2 ring-[#1c1c1c]"></span>
-        </NuxtLink>
-        <NuxtLink v-if="['ADMIN', 'SALES'].includes(user?.role || '') && canAccessRoute('/dashboard/orders/create')" to="/dashboard/orders/create" :class="[isLinkActive('/dashboard/orders/create') ? 'text-sky-400' : 'text-gray-400']"><PenTool class="w-5 h-5" /></NuxtLink>
-        <NuxtLink v-if="canAccessRoute('/dashboard/quotations')" to="/dashboard/quotations" title="Quotations" :class="[isLinkActive('/dashboard/quotations') ? 'text-sky-400' : 'text-gray-400']"><Calculator class="w-5 h-5" /></NuxtLink>
-        <NuxtLink v-if="['ADMIN', 'SALES'].includes(user?.role || '') && canAccessRoute('/dashboard/approve-orders')" to="/dashboard/approve-orders" :class="[isLinkActive('/dashboard/approve-orders') ? 'text-sky-400' : 'text-gray-400']">
-          <CheckCheck class="w-5 h-5" />
-        </NuxtLink>
-        <NuxtLink v-if="canAccessRoute('/dashboard/packing')" to="/dashboard/packing" :class="[isLinkActive('/dashboard/packing') ? 'text-sky-400' : 'text-gray-400']"><Package class="w-5 h-5" /></NuxtLink>
-        <NuxtLink v-if="canAccessRoute('/dashboard/billing')" to="/dashboard/billing" :class="[isLinkActive('/dashboard/billing') ? 'text-sky-400' : 'text-gray-400']"><IndianRupee class="w-5 h-5" /></NuxtLink>
-        <NuxtLink v-if="canAccessRoute('/dashboard/delivery')" to="/dashboard/delivery" :class="[isLinkActive('/dashboard/delivery') ? 'text-sky-400' : 'text-gray-400']"><Truck class="w-5 h-5" /></NuxtLink>
-        <NuxtLink v-if="canAccessRoute('/dashboard/inventory')" to="/dashboard/inventory" :class="[isLinkActive('/dashboard/inventory') ? 'text-sky-400' : 'text-gray-400']"><Boxes class="w-5 h-5" /></NuxtLink>
-        <NuxtLink v-if="canAccessRoute('/dashboard/chat')" to="/dashboard/chat" :class="[isLinkActive('/dashboard/chat') ? 'text-sky-400' : 'text-gray-400']"><MessageSquare class="w-5 h-5" /></NuxtLink>
-        <NuxtLink v-if="canAccessRoute('/dashboard/customers')" to="/dashboard/customers" :class="[isLinkActive('/dashboard/customers') ? 'text-sky-400' : 'text-gray-400']"><User class="w-5 h-5" /></NuxtLink>
-        <NuxtLink v-if="canAccessRoute('/dashboard/products')" to="/dashboard/products" :class="[isLinkActive('/dashboard/products') ? 'text-sky-400' : 'text-gray-400']"><Box class="w-5 h-5" /></NuxtLink>
-        <NuxtLink v-if="canAccessRoute('/dashboard/vouchers')" to="/dashboard/vouchers" :class="[isLinkActive('/dashboard/vouchers') ? 'text-sky-400' : 'text-gray-400']"><Receipt class="w-5 h-5" /></NuxtLink>
-        <NuxtLink v-if="user?.role === 'ADMIN' && canAccessRoute('/dashboard/admin')" to="/dashboard/admin" :class="[isLinkActive('/dashboard/admin') ? 'text-sky-400' : 'text-gray-400']"><Settings class="w-5 h-5" /></NuxtLink>
-      </div>
-
-      <!-- Toggle Expand -->
-      <button @click="isMobileMenuOpen = !isMobileMenuOpen" class="h-full px-4 flex items-center justify-center bg-[#141414] border-l border-gray-800 text-gray-400 hover:text-white shrink-0 shadow-[-4px_0_10px_rgba(0,0,0,0.5)]">
-        <Menu v-if="!isMobileMenuOpen" class="w-5 h-5" />
-        <X v-else class="w-5 h-5" />
-      </button>
-    </div>
-
+  <!-- Mobile Bottom Navigation -->
+  <aside class="flex md:hidden flex-col bg-[#1c1c1c] text-white w-full z-[200] fixed bottom-0 inset-x-0 shadow-[0_-4px_20px_rgba(0,0,0,0.4)] border-t border-gray-800 pb-[env(safe-area-inset-bottom)]">
     <!-- Backdrop when menu is open -->
     <div
       v-if="isMobileMenuOpen"
-      class="fixed inset-0 top-14 bg-black/60 backdrop-blur-xs z-[205]"
+      class="fixed inset-0 bottom-14 bg-black/60 backdrop-blur-xs z-[205]"
       @click="isMobileMenuOpen = false"
     ></div>
 
-    <!-- Expanded Menu Content (Absolute to push over content smoothly without jumping) -->
+    <!-- Expanded Menu Content (Opens upwards above the bottom navigation bar) -->
     <div
       v-if="isMobileMenuOpen"
       ref="mobileMenuContentRef"
       @click="onMobileNavContainerClick"
-      class="absolute top-14 inset-x-0 bg-[#1c1c1c] border-b border-gray-800 shadow-2xl flex flex-col p-4 max-h-[calc(100dvh-3.5rem)] overflow-y-auto z-[210]"
+      class="absolute bottom-14 inset-x-0 bg-[#1c1c1c] border-t border-gray-800 shadow-2xl flex flex-col p-4 max-h-[calc(100dvh-4.5rem)] overflow-y-auto z-[210] rounded-t-2xl"
     >
       
       <!-- Brand in Mobile Expanded Header -->
@@ -215,6 +181,9 @@
           <span class="brand-silicon font-light text-gray-400">SILICON</span> 
           <span class="brand-marketing font-bold text-gray-100">MARKETING</span>
         </span>
+        <button @click.stop="isMobileMenuOpen = false" class="text-gray-400 hover:text-white p-1 rounded-lg">
+          <X class="w-5 h-5" />
+        </button>
       </div>
       <div class="flex flex-col gap-1 mb-4">
         <div class="flex items-center gap-3 rounded-md py-2 px-3 text-sm bg-[#242424] border border-gray-800">
@@ -310,6 +279,39 @@
           <span class="font-medium whitespace-nowrap">Logout</span>
         </button>
       </div>
+    </div>
+
+    <!-- Horizontal Scroll Icons + Toggle Button Bar (Always visible at bottom) -->
+    <div class="flex items-center w-full h-14 relative z-[215] bg-[#1c1c1c]">
+      <!-- Scrollable Icons Area -->
+      <div class="flex-1 flex flex-row items-center overflow-x-auto no-scrollbar px-3 gap-6 h-full">
+        <NuxtLink v-if="canAccessRoute('/dashboard')" to="/dashboard" :class="[isLinkActive('/dashboard') ? 'text-sky-400' : 'text-gray-400']"><LayoutDashboard class="w-5 h-5" /></NuxtLink>
+        <NuxtLink v-if="canAccessRoute('/dashboard/orders')" to="/dashboard/orders" :class="[isLinkActive('/dashboard/orders') ? 'text-sky-400' : 'text-gray-400']"><ClipboardList class="w-5 h-5" /></NuxtLink>
+        <NuxtLink v-if="canAccessRoute('/dashboard/order-requests')" to="/dashboard/order-requests" class="relative" :class="[isLinkActive('/dashboard/order-requests') ? 'text-sky-400' : 'text-gray-400']">
+          <Inbox class="w-5 h-5" />
+          <span v-if="pendingRequestsCount > 0" class="absolute -top-1.5 -right-1.5 w-2 h-2 rounded-full bg-amber-400 ring-2 ring-[#1c1c1c]"></span>
+        </NuxtLink>
+        <NuxtLink v-if="['ADMIN', 'SALES'].includes(user?.role || '') && canAccessRoute('/dashboard/orders/create')" to="/dashboard/orders/create" :class="[isLinkActive('/dashboard/orders/create') ? 'text-sky-400' : 'text-gray-400']"><PenTool class="w-5 h-5" /></NuxtLink>
+        <NuxtLink v-if="canAccessRoute('/dashboard/quotations')" to="/dashboard/quotations" title="Quotations" :class="[isLinkActive('/dashboard/quotations') ? 'text-sky-400' : 'text-gray-400']"><Calculator class="w-5 h-5" /></NuxtLink>
+        <NuxtLink v-if="['ADMIN', 'SALES'].includes(user?.role || '') && canAccessRoute('/dashboard/approve-orders')" to="/dashboard/approve-orders" :class="[isLinkActive('/dashboard/approve-orders') ? 'text-sky-400' : 'text-gray-400']">
+          <CheckCheck class="w-5 h-5" />
+        </NuxtLink>
+        <NuxtLink v-if="canAccessRoute('/dashboard/packing')" to="/dashboard/packing" :class="[isLinkActive('/dashboard/packing') ? 'text-sky-400' : 'text-gray-400']"><Package class="w-5 h-5" /></NuxtLink>
+        <NuxtLink v-if="canAccessRoute('/dashboard/billing')" to="/dashboard/billing" :class="[isLinkActive('/dashboard/billing') ? 'text-sky-400' : 'text-gray-400']"><IndianRupee class="w-5 h-5" /></NuxtLink>
+        <NuxtLink v-if="canAccessRoute('/dashboard/delivery')" to="/dashboard/delivery" :class="[isLinkActive('/dashboard/delivery') ? 'text-sky-400' : 'text-gray-400']"><Truck class="w-5 h-5" /></NuxtLink>
+        <NuxtLink v-if="canAccessRoute('/dashboard/inventory')" to="/dashboard/inventory" :class="[isLinkActive('/dashboard/inventory') ? 'text-sky-400' : 'text-gray-400']"><Boxes class="w-5 h-5" /></NuxtLink>
+        <NuxtLink v-if="canAccessRoute('/dashboard/chat')" to="/dashboard/chat" :class="[isLinkActive('/dashboard/chat') ? 'text-sky-400' : 'text-gray-400']"><MessageSquare class="w-5 h-5" /></NuxtLink>
+        <NuxtLink v-if="canAccessRoute('/dashboard/customers')" to="/dashboard/customers" :class="[isLinkActive('/dashboard/customers') ? 'text-sky-400' : 'text-gray-400']"><User class="w-5 h-5" /></NuxtLink>
+        <NuxtLink v-if="canAccessRoute('/dashboard/products')" to="/dashboard/products" :class="[isLinkActive('/dashboard/products') ? 'text-sky-400' : 'text-gray-400']"><Box class="w-5 h-5" /></NuxtLink>
+        <NuxtLink v-if="canAccessRoute('/dashboard/vouchers')" to="/dashboard/vouchers" :class="[isLinkActive('/dashboard/vouchers') ? 'text-sky-400' : 'text-gray-400']"><Receipt class="w-5 h-5" /></NuxtLink>
+        <NuxtLink v-if="user?.role === 'ADMIN' && canAccessRoute('/dashboard/admin')" to="/dashboard/admin" :class="[isLinkActive('/dashboard/admin') ? 'text-sky-400' : 'text-gray-400']"><Settings class="w-5 h-5" /></NuxtLink>
+      </div>
+
+      <!-- Toggle Expand Button -->
+      <button @click="isMobileMenuOpen = !isMobileMenuOpen" class="h-full px-4 flex items-center justify-center bg-[#141414] border-l border-gray-800 text-gray-400 hover:text-white shrink-0 shadow-[-4px_0_10px_rgba(0,0,0,0.5)] cursor-pointer">
+        <Menu v-if="!isMobileMenuOpen" class="w-5 h-5" />
+        <X v-else class="w-5 h-5" />
+      </button>
     </div>
   </aside>
 </template>
@@ -494,7 +496,7 @@ const animateMobileMenu = () => {
   if (!mobileMenuContentRef.value) return
   const links = mobileMenuContentRef.value.querySelectorAll('nav a, h3, div')
   gsap.fromTo(mobileMenuContentRef.value,
-    { opacity: 0, y: -10 },
+    { opacity: 0, y: 15 },
     { opacity: 1, y: 0, duration: 0.25, ease: 'power2.out' }
   )
   if (links.length) {

@@ -1,24 +1,21 @@
 <template>
   <div class="flex h-screen w-full overflow-hidden bg-[#faf8f5] flex-col md:flex-row">
-    <!-- Sidebar (Top on mobile, Left on desktop) -->
-    <DashboardSidebar class="shrink-0" />
-    
-    <!-- Mobile top spacer to offset fixed top mobile menu bar -->
-    <div class="h-14 md:hidden shrink-0" aria-hidden="true"></div>
-    
-    <!-- Topbar (Mobile only) -->
+    <!-- Topbar (Mobile only) - cleanly sits at top of mobile viewport -->
     <DashboardTopbar class="md:hidden shrink-0" />
     
     <div class="flex flex-1 flex-col overflow-hidden relative min-w-0">
       <!-- Topbar (Desktop only) -->
       <DashboardTopbar class="hidden md:flex shrink-0" />
       
-      <main class="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6 relative max-w-full">
+      <main class="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6 pb-20 md:pb-6 relative max-w-full">
         <!-- If user does not have permission for current route, render Access Denied -->
         <AccessDenied v-if="!isRouteAllowed" :pageName="currentPageName" />
         <slot v-else />
       </main>
     </div>
+
+    <!-- Navigation Bar / Sidebar (Desktop: left sidebar; Mobile: fixed bottom bar) -->
+    <DashboardSidebar class="shrink-0" />
   </div>
 </template>
 

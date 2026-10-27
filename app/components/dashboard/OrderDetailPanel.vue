@@ -876,7 +876,7 @@ watch(editForm, () => {
 
   <!-- Mandatory Order Cancellation Modal -->
   <Teleport to="body">
-    <div v-if="isCancelModalOpen" class="fixed inset-x-0 bottom-0 top-14 md:inset-0 z-[220] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+    <div v-if="isCancelModalOpen" class="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
       <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden border border-gray-200">
         <div class="p-6">
           <div class="w-12 h-12 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center mb-4 border border-rose-100">
@@ -917,7 +917,7 @@ watch(editForm, () => {
 
   <!-- Explicit Confirmation for Quantity Mismatch Modal -->
   <Teleport to="body">
-    <div v-if="isMismatchModalOpen && mismatchModalItem" class="fixed inset-x-0 bottom-0 top-14 md:inset-0 z-[220] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+    <div v-if="isMismatchModalOpen && mismatchModalItem" class="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
       <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden border border-gray-200">
         <div class="p-6">
           <div 
@@ -1027,7 +1027,7 @@ watch(editForm, () => {
   </Teleport>
 
   <Teleport to="body">
-    <div v-if="isOpen" class="fixed inset-x-0 bottom-0 top-14 md:inset-0 z-[100] overflow-hidden pointer-events-none">
+    <div v-if="isOpen" class="fixed inset-0 z-[220] overflow-hidden pointer-events-none">
       <div class="absolute inset-0 bg-black/30 backdrop-blur-[2px] pointer-events-auto transition-opacity" @click="closePanel"></div>
       
       <div 
@@ -2071,7 +2071,7 @@ watch(editForm, () => {
 
   <!-- Edit Order Modal -->
   <Teleport to="body">
-    <div v-if="isEditModalOpen" class="fixed inset-x-0 bottom-0 top-14 md:inset-0 z-[220] flex items-center justify-center p-2 sm:p-4">
+    <div v-if="isEditModalOpen" class="fixed inset-0 z-[250] flex items-center justify-center p-2 sm:p-4">
       <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" @click="isEditModalOpen = false; hide()"></div>
       
       <div class="relative bg-[#faf8f5] w-full max-w-4xl rounded-xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[calc(100vh-4.5rem)] md:max-h-[92vh] overflow-hidden transform transition-all border border-gray-200">

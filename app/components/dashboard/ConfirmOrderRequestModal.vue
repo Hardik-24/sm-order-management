@@ -276,7 +276,7 @@ const submitConversion = async () => {
 
 <template>
   <Teleport to="body">
-    <div v-if="isOpen" class="fixed inset-x-0 bottom-0 top-14 md:inset-0 z-[220] flex items-center justify-center p-2 sm:p-4 md:p-6 overflow-y-auto">
+    <div v-if="isOpen" class="fixed inset-0 z-[220] flex items-center justify-center p-2 sm:p-4 md:p-6 overflow-y-auto">
       <!-- Backdrop -->
       <div class="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity" @click="closeModal"></div>
 

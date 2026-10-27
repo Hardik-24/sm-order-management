@@ -1,8 +1,8 @@
 <template>
-  <Transition name="slide-up">
+  <Transition name="snackbar-slide">
     <div 
       v-if="snackbarState !== 'hidden'" 
-      class="fixed bottom-6 sm:bottom-8 left-1/2 -translate-x-1/2 z-[100000] w-[calc(100%-2rem)] sm:w-auto max-w-md sm:max-w-xl flex justify-between px-4 py-3 sm:px-5 sm:py-3.5 rounded-2xl shadow-[0_12px_40px_rgb(0,0,0,0.18)] border transition-all duration-300 backdrop-blur-md" 
+      class="fixed top-3 sm:top-auto sm:bottom-8 left-1/2 -translate-x-1/2 z-[100000] w-[calc(100%-1.5rem)] sm:w-auto max-w-md sm:max-w-xl flex justify-between px-4 py-3 sm:px-5 sm:py-3.5 rounded-2xl shadow-[0_12px_40px_rgb(0,0,0,0.22)] border transition-all duration-300 backdrop-blur-md" 
       :class="[
         colorClasses,
         snackbarState === 'editing' && hasActions 
@@ -69,14 +69,34 @@ const currentIcon = computed(() => {
 </script>
 
 <style scoped>
-.slide-up-enter-active,
-.slide-up-leave-active {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+.snackbar-slide-enter-active,
+.snackbar-slide-leave-active {
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.slide-up-enter-from,
-.slide-up-leave-to {
-  opacity: 0;
-  transform: translate(-50%, 100%);
+@media (max-width: 639px) {
+  .snackbar-slide-enter-from,
+  .snackbar-slide-leave-to {
+    opacity: 0;
+    transform: translate(-50%, -100%);
+  }
+  .snackbar-slide-enter-to,
+  .snackbar-slide-leave-from {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+@media (min-width: 640px) {
+  .snackbar-slide-enter-from,
+  .snackbar-slide-leave-to {
+    opacity: 0;
+    transform: translate(-50%, 100%);
+  }
+  .snackbar-slide-enter-to,
+  .snackbar-slide-leave-from {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
 }
 </style>

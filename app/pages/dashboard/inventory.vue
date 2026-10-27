@@ -232,7 +232,7 @@ onUnmounted(() => {
     <Teleport to="body">
       <div 
         v-if="isSyncing || syncStatusData?.syncRequested" 
-        class="fixed inset-x-0 bottom-0 top-14 md:inset-0 z-[150] flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200 overflow-y-auto"
+        class="fixed inset-0 z-[150] flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200 overflow-y-auto"
       >
         <!-- Dark Backdrop -->
         <div class="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity"></div>
@@ -550,7 +550,7 @@ onUnmounted(() => {
     <Teleport to="body">
       <div 
         v-if="isDetailModalOpen && selectedProduct" 
-        class="fixed inset-x-0 bottom-0 top-14 md:inset-0 z-[150] flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
+        class="fixed inset-0 z-[150] flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
       >
       <!-- Backdrop -->
       <div 

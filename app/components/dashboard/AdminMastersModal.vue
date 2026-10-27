@@ -1,6 +1,6 @@
 <template>
   <Teleport to="body">
-    <div v-if="isOpen" class="fixed inset-x-0 bottom-0 top-14 md:inset-0 z-[60] flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
+    <div v-if="isOpen" class="fixed inset-0 z-[60] flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
       <!-- Backdrop -->
       <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="emit('close')"></div>
 
@@ -367,7 +367,7 @@
   <!-- SUB-MODAL: ADD / EDIT OPTION (Payment Term / Product UOM)   -->
   <!-- ═══════════════════════════════════════════════════════════ -->
   <Teleport to="body">
-    <div v-if="isOptionModalOpen" class="fixed inset-x-0 bottom-0 top-14 md:inset-0 z-[150] flex items-center justify-center p-3 sm:p-4">
+    <div v-if="isOptionModalOpen" class="fixed inset-0 z-[150] flex items-center justify-center p-3 sm:p-4">
       <div class="absolute inset-0 bg-black/50 backdrop-blur-xs" @click="isOptionModalOpen = false"></div>
       <div class="relative bg-white rounded-xl shadow-xl w-full max-w-md p-5 border border-gray-200 space-y-4">
         <div class="flex items-center justify-between border-b border-gray-100 pb-3">
@@ -442,7 +442,7 @@
   <!-- SUB-MODAL: ADD / EDIT CATEGORY                             -->
   <!-- ═══════════════════════════════════════════════════════════ -->
   <Teleport to="body">
-    <div v-if="isCategoryModalOpen" class="fixed inset-x-0 bottom-0 top-14 md:inset-0 z-[150] flex items-center justify-center p-3 sm:p-4">
+    <div v-if="isCategoryModalOpen" class="fixed inset-0 z-[150] flex items-center justify-center p-3 sm:p-4">
       <div class="absolute inset-0 bg-black/50 backdrop-blur-xs" @click="isCategoryModalOpen = false"></div>
       <div class="relative bg-white rounded-xl shadow-xl w-full max-w-md p-5 border border-gray-200 space-y-4">
         <div class="flex items-center justify-between border-b border-gray-100 pb-3">

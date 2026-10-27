@@ -353,7 +353,7 @@
     <Teleport to="body">
       <div 
         v-if="isDetailModalOpen && selectedProduct" 
-        class="fixed inset-x-0 bottom-0 top-14 md:inset-0 z-[150] flex items-center justify-center p-2 sm:p-4 overflow-y-auto"
+        class="fixed inset-0 z-[150] flex items-center justify-center p-2 sm:p-4 overflow-y-auto"
       >
       <div 
         ref="detailBackdropRef"
@@ -509,7 +509,7 @@
 
     <!-- Product Form Modal (Edit / Add) -->
     <Teleport to="body">
-      <div v-if="isProductModalOpen" class="fixed inset-x-0 bottom-0 top-14 md:inset-0 z-[150] flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
+      <div v-if="isProductModalOpen" class="fixed inset-0 z-[150] flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
         <div 
           ref="formBackdropRef"
           class="absolute inset-0 bg-black/50 backdrop-blur-sm" 
@@ -629,7 +629,7 @@
 
     <!-- Category Modal -->
     <Teleport to="body">
-      <div v-if="isCategoryModalOpen" class="fixed inset-x-0 bottom-0 top-14 md:inset-0 z-[150] flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
+      <div v-if="isCategoryModalOpen" class="fixed inset-0 z-[150] flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
         <div 
           class="absolute inset-0 bg-black/50 backdrop-blur-sm" 
           @click="closeCategoryModal"
