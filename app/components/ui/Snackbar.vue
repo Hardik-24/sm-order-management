@@ -2,7 +2,7 @@
   <Transition name="snackbar-slide">
     <div 
       v-if="snackbarState !== 'hidden'" 
-      class="fixed top-3 sm:top-auto sm:bottom-8 left-1/2 -translate-x-1/2 z-[100000] w-[calc(100%-1.5rem)] sm:w-auto max-w-md sm:max-w-xl flex justify-between px-4 py-3 sm:px-5 sm:py-3.5 rounded-2xl shadow-[0_12px_40px_rgb(0,0,0,0.22)] border transition-all duration-300 backdrop-blur-md" 
+      class="fixed top-[calc(0.75rem+env(safe-area-inset-top,0px))] sm:top-auto sm:bottom-8 left-1/2 -translate-x-1/2 z-[100000] w-[calc(100%-1.5rem)] sm:w-auto max-w-md sm:max-w-xl flex justify-between px-4 py-3 sm:px-5 sm:py-3.5 rounded-2xl shadow-[0_12px_40px_rgb(0,0,0,0.22)] border transition-all duration-300 backdrop-blur-md" 
       :class="[
         colorClasses,
         snackbarState === 'editing' && hasActions 

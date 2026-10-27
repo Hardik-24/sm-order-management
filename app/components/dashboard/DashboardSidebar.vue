@@ -159,11 +159,11 @@
 
   
   <!-- Mobile Bottom Navigation -->
-  <aside class="flex md:hidden flex-col bg-[#1c1c1c] text-white w-full z-[200] fixed bottom-0 inset-x-0 shadow-[0_-4px_20px_rgba(0,0,0,0.4)] border-t border-gray-800 pb-[env(safe-area-inset-bottom)]">
+  <aside class="flex md:hidden flex-col bg-[#1c1c1c] text-white w-full z-[200] fixed bottom-0 inset-x-0 shadow-[0_-4px_20px_rgba(0,0,0,0.4)] border-t border-gray-800 pb-[env(safe-area-inset-bottom,0px)]">
     <!-- Backdrop when menu is open -->
     <div
       v-if="isMobileMenuOpen"
-      class="fixed inset-0 bottom-14 bg-black/60 backdrop-blur-xs z-[205]"
+      class="fixed inset-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] bg-black/60 backdrop-blur-xs z-[205]"
       @click="isMobileMenuOpen = false"
     ></div>
 
@@ -172,7 +172,7 @@
       v-if="isMobileMenuOpen"
       ref="mobileMenuContentRef"
       @click="onMobileNavContainerClick"
-      class="absolute bottom-14 inset-x-0 bg-[#1c1c1c] border-t border-gray-800 shadow-2xl flex flex-col p-4 max-h-[calc(100dvh-4.5rem)] overflow-y-auto z-[210] rounded-t-2xl"
+      class="absolute bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] inset-x-0 bg-[#1c1c1c] border-t border-gray-800 shadow-2xl flex flex-col p-4 max-h-[calc(100dvh-5.5rem-env(safe-area-inset-bottom,0px))] overflow-y-auto z-[210] rounded-t-2xl"
     >
       
       <!-- Brand in Mobile Expanded Header -->

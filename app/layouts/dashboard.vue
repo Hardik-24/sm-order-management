@@ -7,7 +7,7 @@
       <!-- Topbar (Desktop only) -->
       <DashboardTopbar class="hidden md:flex shrink-0" />
       
-      <main class="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6 pb-20 md:pb-6 relative max-w-full">
+      <main class="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6 pb-[calc(5rem+env(safe-area-inset-bottom,0px))] md:pb-6 relative max-w-full">
         <!-- If user does not have permission for current route, render Access Denied -->
         <AccessDenied v-if="!isRouteAllowed" :pageName="currentPageName" />
         <slot v-else />

@@ -1928,7 +1928,7 @@ watch(editForm, () => {
         <!-- 5. Sticky Bottom Action Footer (Responsive Multi-Line on Mobile, Never Crops Buttons) -->
         <div 
           v-if="order"
-          class="px-4 sm:px-6 py-2.5 sm:py-3.5 bg-white border-t border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 shrink-0 shadow-lg z-20"
+          class="px-4 sm:px-6 py-2.5 sm:py-3.5 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] sm:pb-3.5 bg-white border-t border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 shrink-0 shadow-lg z-20"
         >
           <div class="flex items-center justify-between sm:block">
             <template v-if="context !== 'delivery'">

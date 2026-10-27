@@ -1,5 +1,5 @@
 <template>
-  <header class="flex h-16 w-full items-center justify-between border-b border-gray-200 bg-white px-6 transition-all duration-300">
+  <header class="flex min-h-[4rem] h-[calc(4rem+env(safe-area-inset-top,0px))] pt-[env(safe-area-inset-top,0px)] w-full items-center justify-between border-b border-gray-200 bg-white px-4 sm:px-6 transition-all duration-300">
     <!-- Title & Breadcrumb -->
     <div class="flex items-center gap-4">
       
