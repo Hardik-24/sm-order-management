@@ -487,12 +487,6 @@ const getItemsTotalQuantity = (order: Order) => {
               <span class="text-sm font-bold text-gray-950 shrink-0 font-mono">
                 {{ order.orderNumber }}
               </span>
-              <span v-if="order.vehicleMode === 'PARTY_VEHICLE' && order.overallStatus !== 'CANCELLED'" class="text-[9px] font-bold text-amber-800 bg-amber-50 px-1.5 py-0.2 rounded border border-amber-200">
-                🚗 Party
-              </span>
-              <span v-else-if="order.vehicleMode === 'THIRD_PARTY' && order.overallStatus !== 'CANCELLED'" class="text-[9px] font-bold text-indigo-800 bg-indigo-50 px-1.5 py-0.2 rounded border border-indigo-200">
-                📦 3rd Party
-              </span>
               <span v-if="order.overallStatus === 'CANCELLED'" class="text-[9px] font-bold text-gray-600 bg-gray-200 px-1.5 py-0.2 rounded border border-rose-500">
                 🚫 CANCELLED
               </span>

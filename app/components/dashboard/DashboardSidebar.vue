@@ -282,7 +282,7 @@
     </div>
 
     <!-- Horizontal Scroll Icons + Toggle Button Bar (Always visible at bottom) -->
-    <div class="flex items-center w-full h-14 relative z-[215] bg-[#1c1c1c]">
+    <div class="flex items-center w-full h-14 relative z-[215] bg-[#1c1c1c]" @click="onBottomBarClick">
       <!-- Scrollable Icons Area -->
       <div class="flex-1 flex flex-row items-center overflow-x-auto no-scrollbar px-3 gap-6 h-full">
         <NuxtLink v-if="canAccessRoute('/dashboard')" to="/dashboard" :class="[isLinkActive('/dashboard') ? 'text-sky-400' : 'text-gray-400']"><LayoutDashboard class="w-5 h-5" /></NuxtLink>
@@ -548,11 +548,31 @@ watch(isMobileMenuOpen, (open) => {
   }
 })
 
-// Auto-collapse mobile menu on any link/button click
+const scrollToTop = () => {
+  if (typeof window !== 'undefined') {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
+    document.documentElement.scrollTop = 0
+    document.body.scrollTop = 0
+    const mainEl = document.querySelector('main')
+    if (mainEl) {
+      mainEl.scrollTop = 0
+    }
+  }
+}
+
+const onBottomBarClick = (e: MouseEvent) => {
+  const target = e.target as HTMLElement
+  if (target && target.closest('a')) {
+    scrollToTop()
+  }
+}
+
+// Auto-collapse mobile menu on any link/button click and reset scroll
 const onMobileNavContainerClick = (e: MouseEvent) => {
   const target = e.target as HTMLElement
   if (target && (target.closest('a') || target.closest('button'))) {
     isMobileMenuOpen.value = false
+    scrollToTop()
   }
 }
 

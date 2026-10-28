@@ -7,7 +7,7 @@
       <!-- Topbar (Desktop only) -->
       <DashboardTopbar class="hidden md:flex shrink-0" />
       
-      <main class="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6 pb-[calc(5rem+env(safe-area-inset-bottom,0px))] md:pb-6 relative max-w-full">
+      <main ref="mainContentRef" class="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6 pb-[calc(5rem+env(safe-area-inset-bottom,0px))] md:pb-6 relative max-w-full">
         <!-- If user does not have permission for current route, render Access Denied -->
         <AccessDenied v-if="!isRouteAllowed" :pageName="currentPageName" />
         <slot v-else />
@@ -20,7 +20,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import DashboardSidebar from '~/components/dashboard/DashboardSidebar.vue'
 import DashboardTopbar from '~/components/dashboard/DashboardTopbar.vue'
 import AccessDenied from '~/components/ui/AccessDenied.vue'
@@ -29,6 +29,32 @@ import { APP_PAGES, getPageKeyFromPath } from '~/utils/permissions'
 const { user, fetchUser, canAccessRoute } = useAuth()
 const route = useRoute()
 const { onOrderSync } = useRealtimeSync()
+
+const mainContentRef = ref<HTMLElement | null>(null)
+
+const scrollToTop = () => {
+  if (mainContentRef.value) {
+    mainContentRef.value.scrollTop = 0
+  }
+  if (typeof window !== 'undefined') {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
+    document.documentElement.scrollTop = 0
+    document.body.scrollTop = 0
+    const mainEl = document.querySelector('main')
+    if (mainEl) {
+      mainEl.scrollTop = 0
+    }
+  }
+}
+
+// Reset scroll to top whenever navigation occurs
+watch(() => route.fullPath, () => {
+  scrollToTop()
+  nextTick(() => {
+    scrollToTop()
+    setTimeout(scrollToTop, 60)
+  })
+})
 
 const isRouteAllowed = computed(() => {
   if (!user.value) return true

@@ -1073,6 +1073,16 @@ watch(editForm, () => {
 
           <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <button 
+              v-if="canEditOrders"
+              @click="openEditModal" 
+              title="Edit Full Order Details"
+              class="px-2.5 py-1 text-xs font-bold text-white bg-[#1b3b5f] hover:bg-[#132c49] active:bg-[#0e2035] rounded-lg transition-all flex items-center gap-1.5 shadow-xs cursor-pointer active:scale-95"
+            >
+              <Edit class="w-3.5 h-3.5" />
+              <span class="hidden sm:inline">Edit Order</span>
+            </button>
+
+            <button 
               v-if="canEditOrderStatus"
               @click="openAdminStatusModal" 
               title="Edit Status Across Departments"
@@ -1239,9 +1249,11 @@ watch(editForm, () => {
                 <button 
                   v-if="canEditOrders" 
                   @click="openEditModal" 
-                  class="text-xs font-semibold text-[#1b3b5f] flex items-center gap-1 hover:underline cursor-pointer"
+                  class="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold text-white bg-[#1b3b5f] hover:bg-[#132c49] active:bg-[#0e2035] rounded-lg transition-all shadow-xs hover:shadow cursor-pointer active:scale-95"
+                  title="Edit Order Details"
                 >
-                  <Edit class="w-3 h-3" /> Edit
+                  <Edit class="w-3.5 h-3.5" /> 
+                  <span>Edit Order</span>
                 </button>
               </div>
               
@@ -1946,6 +1958,17 @@ watch(editForm, () => {
           </div>
 
           <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap justify-end">
+            <!-- Edit Order Details -->
+            <button 
+              v-if="canEditOrders && order.overallStatus !== 'CANCELLED'"
+              @click="openEditModal"
+              title="Edit full order details"
+              class="px-2.5 sm:px-3.5 py-1.5 sm:py-2 text-[11px] sm:text-xs font-bold text-white bg-[#1b3b5f] hover:bg-[#132c49] active:bg-[#0e2035] rounded-lg shadow-sm hover:shadow transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap active:scale-95"
+            >
+              <Edit class="w-3.5 h-3.5" />
+              <span>Edit Order</span>
+            </button>
+
             <!-- Edit Status across departments -->
             <button 
               v-if="canEditOrderStatus"
