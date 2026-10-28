@@ -2,7 +2,7 @@
   <Teleport to="body">
     <div
       v-if="modelValue"
-      class="fixed inset-0 z-[60] overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-0 sm:p-4 lg:p-6 animate-in fade-in duration-200"
+      class="fixed inset-0 z-[300] overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-0 sm:p-4 lg:p-6 animate-in fade-in duration-200"
     >
       <!-- Modal Box: Responsive Full-screen on mobile, rounded card on sm+ (Matching GenerateBillModal.vue:6) -->
       <div
@@ -1490,7 +1490,7 @@
     <!-- Stock Override Confirmation Dialog -->
     <div
       v-if="stockOverrideModalOpen && targetOverrideRow"
-      class="fixed inset-0 z-[80] overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
+      class="fixed inset-0 z-[350] overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
     >
       <div
         class="bg-white rounded-2xl shadow-2xl border border-gray-200 w-full max-w-md p-6 overflow-hidden animate-in zoom-in-95 duration-150 text-gray-900"
@@ -1590,7 +1590,7 @@
     <!-- Drawing Canvas Signature Modal -->
     <div
       v-if="isSignatureModalOpen"
-      class="fixed inset-0 z-[85] overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
+      class="fixed inset-0 z-[360] overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
     >
       <div
         class="bg-white rounded-3xl shadow-2xl border border-gray-200 w-full max-w-lg p-6 overflow-hidden animate-in zoom-in-95 duration-150 text-gray-900 flex flex-col gap-4"

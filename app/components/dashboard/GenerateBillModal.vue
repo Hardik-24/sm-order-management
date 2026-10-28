@@ -1,9 +1,9 @@
 <template>
   <Teleport to="body">
-    <div v-if="isOpen" class="fixed inset-0 z-[220] flex items-center justify-center p-2 sm:p-4 md:p-6 overflow-y-auto">
+    <div v-if="isOpen" class="fixed inset-0 z-[350] flex items-center justify-center p-2 sm:p-4 md:p-6 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[calc(1rem+env(safe-area-inset-top,0px))] overflow-y-auto">
       <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="closeModal"></div>
       
-      <div class="relative bg-white rounded-xl shadow-2xl w-full max-w-5xl flex flex-col max-h-[calc(100vh-4.5rem)] md:max-h-[90vh] overflow-hidden">
+      <div class="relative bg-white rounded-xl shadow-2xl w-full max-w-5xl flex flex-col max-h-[calc(100dvh-2.5rem-env(safe-area-inset-bottom,0px)-env(safe-area-inset-top,0px))] md:max-h-[90vh] overflow-hidden">
       
       <!-- Header -->
       <div class="flex items-center justify-between p-4 sm:p-5 border-b border-gray-100 bg-gray-50">

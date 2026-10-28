@@ -377,7 +377,7 @@
     <Teleport to="body">
       <div 
         v-if="isDetailModalOpen && selectedCustomer" 
-        class="fixed inset-0 z-[150] flex items-center justify-center p-2 sm:p-4 overflow-y-auto"
+        class="fixed inset-0 z-[300] flex items-center justify-center p-2 sm:p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[calc(1rem+env(safe-area-inset-top,0px))] overflow-y-auto"
       >
       <div 
         ref="detailBackdropRef"
@@ -387,10 +387,10 @@
 
       <div 
         ref="detailModalRef"
-        class="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[calc(100dvh-4.5rem)] md:max-h-[92vh] overflow-hidden flex flex-col border border-gray-100 overscroll-contain"
+        class="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[calc(100dvh-2.5rem-env(safe-area-inset-bottom,0px)-env(safe-area-inset-top,0px))] md:max-h-[92vh] overflow-hidden flex flex-col border border-gray-100 overscroll-contain"
       >
         <!-- Header -->
-        <div class="px-6 py-4 bg-gray-50/80 border-b border-gray-100 flex items-center justify-between">
+        <div class="px-6 py-4 bg-gray-50/80 border-b border-gray-100 flex items-center justify-between shrink-0">
           <div class="flex items-center gap-2 text-sm font-semibold text-gray-700">
             <Building2 class="w-4 h-4 text-[#1b3b5f]" />
             Customer Profile: {{ selectedCustomer.customerCode || 'CUST-XXXX' }}
@@ -404,7 +404,7 @@
         </div>
 
         <!-- Body -->
-        <div class="p-6 overflow-y-auto space-y-6 flex-1">
+        <div class="p-4 sm:p-6 overflow-y-auto space-y-6 flex-1">
           <!-- Full Company Name & Badges -->
           <div class="flex items-start justify-between gap-4">
             <div>
@@ -591,7 +591,7 @@
         </div>
 
         <!-- Footer -->
-        <div class="px-6 py-3.5 bg-gray-50/80 border-t border-gray-100 flex items-center justify-between">
+        <div class="px-6 py-3.5 bg-gray-50/80 border-t border-gray-100 flex items-center justify-between shrink-0">
           <button 
             v-if="canEditCustomers"
             @click="editCustomerFromDetail()"
@@ -613,7 +613,7 @@
 
     <!-- Edit / Add Modal Form -->
     <Teleport to="body">
-      <div v-if="isModalOpen" class="fixed inset-0 z-[150] flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
+      <div v-if="isModalOpen" class="fixed inset-0 z-[300] flex items-center justify-center p-2 sm:p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[calc(1rem+env(safe-area-inset-top,0px))] overflow-y-auto">
         <div 
           ref="formBackdropRef"
           class="absolute inset-0 bg-black/60 backdrop-blur-sm" 
@@ -622,7 +622,7 @@
         
         <div 
           ref="formModalRef"
-          class="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[calc(100dvh-4.5rem)] md:max-h-[92vh] overflow-hidden flex flex-col overscroll-contain border border-gray-100"
+          class="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[calc(100dvh-2.5rem-env(safe-area-inset-bottom,0px)-env(safe-area-inset-top,0px))] md:max-h-[92vh] overflow-hidden flex flex-col overscroll-contain border border-gray-100"
         >
           <!-- Modern Dark Header -->
           <div class="px-5 sm:px-6 py-4 border-b border-gray-800 flex items-center justify-between shrink-0 bg-[#171717] text-white">

@@ -481,29 +481,24 @@ const getItemsTotalQuantity = (order: Order) => {
             ? 'bg-gray-100/75 active:bg-gray-200/60 text-gray-400 [&_span]:!text-gray-400 [&_p]:!text-gray-400 opacity-60 border-l-4 border-l-gray-400' 
             : ((order as any).isUrgent ? 'bg-rose-50/20 active:bg-gray-100 border-l-4 border-l-rose-500' : 'hover:bg-gray-50 active:bg-gray-100')"
         >
-          <!-- LINE 1: Identity & Overall Status -->
+          <!-- LINE 1: Order Number & Badges (Left) + Overall Status Badge (Right) -->
           <div class="flex items-center justify-between gap-2 min-w-0">
-            <div class="flex items-center gap-1.5 min-w-0 flex-1 truncate">
-              <span class="text-sm font-semibold text-gray-900 shrink-0">
+            <div class="flex items-center gap-1.5 min-w-0 flex-wrap">
+              <span class="text-sm font-bold text-gray-950 shrink-0 font-mono">
                 {{ order.orderNumber }}
               </span>
-              <span v-if="order.vehicleMode === 'PARTY_VEHICLE' && order.overallStatus !== 'CANCELLED'" class="text-[9px] font-bold text-amber-800 bg-amber-50 px-1 py-0.2 rounded border border-amber-200">
+              <span v-if="order.vehicleMode === 'PARTY_VEHICLE' && order.overallStatus !== 'CANCELLED'" class="text-[9px] font-bold text-amber-800 bg-amber-50 px-1.5 py-0.2 rounded border border-amber-200">
                 🚗 Party
               </span>
-              <span v-else-if="order.vehicleMode === 'THIRD_PARTY' && order.overallStatus !== 'CANCELLED'" class="text-[9px] font-bold text-indigo-800 bg-indigo-50 px-1 py-0.2 rounded border border-indigo-200">
+              <span v-else-if="order.vehicleMode === 'THIRD_PARTY' && order.overallStatus !== 'CANCELLED'" class="text-[9px] font-bold text-indigo-800 bg-indigo-50 px-1.5 py-0.2 rounded border border-indigo-200">
                 📦 3rd Party
               </span>
-              <span v-if="order.overallStatus === 'CANCELLED'" class="text-[9px] font-bold text-gray-600 bg-gray-200 px-1 py-0.2 rounded border border-rose-500">
+              <span v-if="order.overallStatus === 'CANCELLED'" class="text-[9px] font-bold text-gray-600 bg-gray-200 px-1.5 py-0.2 rounded border border-rose-500">
                 🚫 CANCELLED
               </span>
-              <span v-else-if="(order as any).isUrgent" class="text-[9px] font-bold text-rose-600 bg-rose-50 px-1 py-0.2 rounded border border-rose-200">
+              <span v-else-if="(order as any).isUrgent" class="text-[9px] font-bold text-rose-600 bg-rose-50 px-1.5 py-0.2 rounded border border-rose-200 animate-pulse">
                 ⚡ URGENT
               </span>
-              <span class="text-gray-300 text-xs shrink-0">•</span>
-              <span class="text-xs font-medium text-gray-700 truncate" :title="order.customer?.name || ''">
-                {{ order.customer?.name || 'Walk-in Customer' }}
-              </span>
-              <span v-if="(order.customer as any)?.isPriorityClient" class="text-amber-500 font-bold text-xs">★</span>
             </div>
             
             <!-- Overall Status Badge (Cleanly anchored on top right) -->
@@ -515,13 +510,24 @@ const getItemsTotalQuantity = (order: Order) => {
             />
           </div>
 
-          <!-- LINE 2: Items, Time & Pipeline Dots -->
+          <!-- LINE 2: Customer Name & Details -->
+          <div class="flex items-center gap-1.5 min-w-0 text-xs">
+            <span class="font-semibold text-gray-800 truncate" :title="order.customer?.name || ''">
+              {{ order.customer?.name || 'Walk-in Customer' }}
+            </span>
+            <span v-if="(order.customer as any)?.isPriorityClient" class="text-amber-500 font-bold text-xs shrink-0" title="Priority Client">★</span>
+            <span v-if="order.customer?.company" class="text-gray-400 text-[11px] truncate shrink-0">
+              ({{ order.customer?.company }})
+            </span>
+          </div>
+
+          <!-- LINE 3: Items, Time & Pipeline Dots -->
           <div class="flex items-center justify-between gap-2 min-w-0 pt-0.5">
             <div class="flex items-baseline gap-1.5 shrink-0">
-              <span class="text-xs font-medium text-gray-700">
+              <span class="text-xs font-medium text-gray-600">
                 {{ order.items?.length || 0 }} items
               </span>
-              <span class="text-gray-200 text-[10px]">•</span>
+              <span class="text-gray-300 text-[10px]">•</span>
               <span class="text-[11px] text-gray-400 tabular-nums">
                 {{ formatTime(order.createdAt) }}
               </span>

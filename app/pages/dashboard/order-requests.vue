@@ -638,7 +638,7 @@ watch(() => data.value?.counts, () => {
     <Teleport to="body">
       <div 
         v-if="isDrawerOpen" 
-        class="fixed inset-0 z-[100] flex justify-end"
+        class="fixed inset-0 z-[220] flex justify-end"
       >
         <!-- Backdrop -->
         <div 
@@ -978,7 +978,7 @@ watch(() => data.value?.counts, () => {
       <!-- Decline Confirmation Prompt Modal -->
       <div 
         v-if="showDeclineModal" 
-        class="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs"
+        class="fixed inset-0 z-[350] flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs"
       >
         <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
           <!-- Header -->
@@ -1039,7 +1039,7 @@ watch(() => data.value?.counts, () => {
       <!-- Delete Confirmation Prompt Modal -->
       <div 
         v-if="showDeleteConfirm" 
-        class="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs"
+        class="fixed inset-0 z-[350] flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs"
       >
         <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
           <!-- Header -->

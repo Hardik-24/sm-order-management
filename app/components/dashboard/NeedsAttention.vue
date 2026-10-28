@@ -81,12 +81,12 @@ const getTextColorClass = (statusType: string | undefined) => {
 
   <!-- All Alerts Modal -->
   <Teleport to="body">
-    <div v-if="isModalOpen" class="fixed inset-0 z-[60] flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
+    <div v-if="isModalOpen" class="fixed inset-0 z-[300] flex items-center justify-center p-2 sm:p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[calc(1rem+env(safe-area-inset-top,0px))] overflow-y-auto">
       <!-- Backdrop -->
       <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" @click="isModalOpen = false"></div>
       
       <!-- Modal Content -->
-      <div class="relative bg-[#faf8f5] w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col max-h-[85vh] m-4 overflow-hidden transform transition-all">
+      <div class="relative bg-[#faf8f5] w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col max-h-[calc(100dvh-2.5rem-env(safe-area-inset-bottom,0px)-env(safe-area-inset-top,0px))] md:max-h-[85vh] m-2 sm:m-4 overflow-hidden transform transition-all">
         <!-- Header -->
         <div class="px-6 py-4 border-b border-gray-200 bg-white flex items-center justify-between shrink-0">
           <h2 class="text-lg font-bold text-gray-900">Needs Attention ({{ items.length }})</h2>

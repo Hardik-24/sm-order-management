@@ -232,7 +232,7 @@ onUnmounted(() => {
     <Teleport to="body">
       <div 
         v-if="isSyncing || syncStatusData?.syncRequested" 
-        class="fixed inset-0 z-[150] flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200 overflow-y-auto"
+        class="fixed inset-0 z-[300] flex items-center justify-center p-3 sm:p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[calc(1rem+env(safe-area-inset-top,0px))] animate-in fade-in duration-200 overflow-y-auto"
       >
         <!-- Dark Backdrop -->
         <div class="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity"></div>
@@ -550,7 +550,7 @@ onUnmounted(() => {
     <Teleport to="body">
       <div 
         v-if="isDetailModalOpen && selectedProduct" 
-        class="fixed inset-0 z-[150] flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
+        class="fixed inset-0 z-[300] flex items-center justify-center p-2 sm:p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[calc(1rem+env(safe-area-inset-top,0px))] overflow-y-auto"
       >
       <!-- Backdrop -->
       <div 
@@ -562,10 +562,10 @@ onUnmounted(() => {
       <!-- Modal Card -->
       <div 
         ref="modalRef"
-        class="relative bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[calc(100dvh-4.5rem)] md:max-h-[90vh] overflow-hidden flex flex-col border border-gray-100"
+        class="relative bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[calc(100dvh-2.5rem-env(safe-area-inset-bottom,0px)-env(safe-area-inset-top,0px))] md:max-h-[90vh] overflow-hidden flex flex-col border border-gray-100"
       >
         <!-- Header -->
-        <div class="px-6 py-4 bg-gray-50/80 border-b border-gray-100 flex items-center justify-between">
+        <div class="px-6 py-4 bg-gray-50/80 border-b border-gray-100 flex items-center justify-between shrink-0">
           <div class="flex items-center gap-2 text-sm font-semibold text-gray-700">
             <Package class="w-4 h-4 text-[#1b3b5f]" />
             Item Details
@@ -580,7 +580,7 @@ onUnmounted(() => {
         </div>
 
         <!-- Body -->
-        <div class="p-6 overflow-y-auto space-y-6 flex-1">
+        <div class="p-4 sm:p-6 overflow-y-auto space-y-6 flex-1">
           <!-- Full Untruncated Name -->
           <div>
             <span class="text-[11px] font-semibold text-gray-400 uppercase tracking-widest block mb-1">Product Description</span>
@@ -681,7 +681,7 @@ onUnmounted(() => {
         </div>
 
         <!-- Footer -->
-        <div class="px-6 py-3.5 bg-gray-50/80 border-t border-gray-100 flex justify-end">
+        <div class="px-6 py-3.5 bg-gray-50/80 border-t border-gray-100 flex justify-end shrink-0">
           <button 
             @click="closeProductDetail" 
             class="px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white rounded-lg text-sm font-medium transition-colors shadow-sm"

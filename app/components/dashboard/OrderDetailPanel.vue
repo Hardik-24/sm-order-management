@@ -1287,21 +1287,21 @@ watch(editForm, () => {
                 </div>
 
                 <!-- Transport Mode -->
-                <div class="col-span-1">
+                <div class="col-span-2 sm:col-span-1 min-w-0">
                   <span class="block text-[10px] sm:text-[11px] uppercase font-bold text-gray-400 tracking-wider mb-1">Transport Mode</span>
-                  <span 
-                    class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold border"
+                  <div 
+                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-semibold border max-w-full flex-wrap leading-tight"
                     :class="order.vehicleMode === 'PARTY_VEHICLE' 
                       ? 'bg-amber-50 text-amber-800 border-amber-200' 
                       : (order.vehicleMode === 'THIRD_PARTY' 
                         ? 'bg-indigo-50 text-indigo-800 border-indigo-200' 
                         : 'bg-[#1b3b5f]/10 text-[#1b3b5f] border-[#1b3b5f]/20')"
                   >
-                    <Car v-if="order.vehicleMode === 'PARTY_VEHICLE'" class="w-3 h-3 text-amber-600 shrink-0" />
-                    <Package v-else-if="order.vehicleMode === 'THIRD_PARTY'" class="w-3 h-3 text-indigo-600 shrink-0" />
-                    <Truck v-else class="w-3 h-3 text-[#1b3b5f] shrink-0" />
-                    <span class="truncate">{{ order.vehicleMode === 'PARTY_VEHICLE' ? 'Party Vehicle / Pickup' : (order.vehicleMode === 'THIRD_PARTY' ? 'Third Party (Porter/Rapido)' : 'Our Delivery Fleet') }}</span>
-                  </span>
+                    <Car v-if="order.vehicleMode === 'PARTY_VEHICLE'" class="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                    <Package v-else-if="order.vehicleMode === 'THIRD_PARTY'" class="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                    <Truck v-else class="w-3.5 h-3.5 text-[#1b3b5f] shrink-0" />
+                    <span class="whitespace-normal break-words">{{ order.vehicleMode === 'PARTY_VEHICLE' ? 'Party Vehicle / Pickup' : (order.vehicleMode === 'THIRD_PARTY' ? 'Third Party (Porter/Rapido)' : 'Our Delivery Fleet') }}</span>
+                  </div>
                 </div>
 
                 <div class="col-span-2 pt-2 border-t border-gray-100">

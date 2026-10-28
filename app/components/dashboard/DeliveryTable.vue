@@ -904,7 +904,7 @@ const saveDriverAssignment = async () => {
 
     <!-- Quick Assign Driver Modal -->
     <Teleport to="body">
-      <div v-if="assignModalOrder" class="fixed inset-0 z-[60] bg-black/50 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
+      <div v-if="assignModalOrder" class="fixed inset-0 z-[300] bg-black/50 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[calc(1rem+env(safe-area-inset-top,0px))] overflow-y-auto">
       <div class="bg-white w-full max-w-sm rounded-2xl overflow-hidden shadow-2xl border border-gray-200 flex flex-col p-6 space-y-4">
         <div class="flex items-center justify-between border-b border-gray-100 pb-3">
           <div>
@@ -956,8 +956,8 @@ const saveDriverAssignment = async () => {
 
     <!-- Live Tracking & Route Snapshot Modal -->
     <Teleport to="body">
-      <div v-if="trackingModalOrder" class="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
-      <div class="bg-white w-full max-w-2xl rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[calc(100vh-4.5rem)] md:max-h-[92vh]">
+      <div v-if="trackingModalOrder" class="fixed inset-0 z-[300] bg-black/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[calc(1rem+env(safe-area-inset-top,0px))] overflow-y-auto">
+      <div class="bg-white w-full max-w-2xl rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[calc(100dvh-2.5rem-env(safe-area-inset-bottom,0px)-env(safe-area-inset-top,0px))] md:max-h-[92vh]">
         <!-- Modal Header -->
         <div class="p-4 bg-[#1b3b5f] text-white flex items-center justify-between">
           <div class="flex items-center gap-3">

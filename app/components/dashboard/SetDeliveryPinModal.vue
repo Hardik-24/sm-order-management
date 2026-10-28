@@ -1,7 +1,7 @@
 <template>
   <Teleport to="body">
-    <div v-if="isOpen" class="fixed inset-0 z-[220] flex items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
-      <div class="bg-white rounded-2xl shadow-2xl border border-gray-100 w-full max-w-2xl overflow-hidden flex flex-col max-h-[calc(100vh-4.5rem)] md:max-h-[92vh]">
+    <div v-if="isOpen" class="fixed inset-0 z-[350] flex items-center justify-center p-2 sm:p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[calc(1rem+env(safe-area-inset-top,0px))] bg-black/60 backdrop-blur-sm overflow-y-auto">
+      <div class="bg-white rounded-2xl shadow-2xl border border-gray-100 w-full max-w-2xl overflow-hidden flex flex-col max-h-[calc(100dvh-2.5rem-env(safe-area-inset-bottom,0px)-env(safe-area-inset-top,0px))] md:max-h-[92vh]">
         <!-- Header -->
         <div class="px-4 sm:px-6 py-3.5 sm:py-4 bg-[#1a1a1a] text-white flex items-center justify-between shrink-0">
           <div class="flex items-center gap-2.5 sm:gap-3 min-w-0">
