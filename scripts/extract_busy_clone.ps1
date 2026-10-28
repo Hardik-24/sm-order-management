@@ -64,7 +64,9 @@ while (-not $rsP.EOF) {
     $opVal = if ($op -ne $null -and $op -ne [DBNull]::Value) { [double]$op } else { 0 }
     $drVal = if ($dr -ne $null -and $dr -ne [DBNull]::Value) { [double]$dr } else { 0 }
     $crVal = if ($cr -ne $null -and $cr -ne [DBNull]::Value) { [double]$cr } else { 0 }
-    $closing = [Math]::Round($opVal + $drVal - $crVal, 2)
+    # NOTE: In BUSY DailySum (MasterType = 6), Cr1 is Inward (Receipts) and Dr1 is Outward (Dispatches/Sales).
+    # Closing Stock = Opening Balance + Total Inward (Cr1) - Total Outward (Dr1)
+    $closing = [Math]::Round($opVal + $crVal - $drVal, 2)
     
     $sku = if ($alias -ne "") { $alias } else { $name }
     $prodCodeToSku[$code] = $sku
@@ -138,7 +140,7 @@ Write-Host "  Extracted $($customers.Count) customers."
 # 4. Monthly Inventory Flow (DailySum)
 Write-Host "Extracting Monthly Inventory Flow..."
 $sqlFlow = @"
-SELECT MONTH(Date) AS M, YEAR(Date) AS Y, SUM(Dr1) AS TotalIn, SUM(Cr1) AS TotalOut
+SELECT MONTH(Date) AS M, YEAR(Date) AS Y, SUM(Cr1) AS TotalIn, SUM(Dr1) AS TotalOut
 FROM DailySum
 WHERE MasterType = 6 AND MasterCode2 = 0
 GROUP BY YEAR(Date), MONTH(Date)
