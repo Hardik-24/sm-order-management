@@ -43,13 +43,9 @@
             <PenTool class="shrink-0 w-4 h-4 transition-colors" :class="isLinkActive('/dashboard/orders/create') ? 'text-sky-400' : 'text-gray-400'" />
             <span v-if="!isSidebarCollapsed" class="font-medium whitespace-nowrap">Create Order</span>
           </NuxtLink>
-          <NuxtLink v-if="['ADMIN', 'SALES'].includes(user?.role || '') && canAccessRoute('/dashboard/approve-orders')" to="/dashboard/approve-orders" title="Approve Orders" class="flex items-center gap-3 rounded-md py-2.5 text-sm transition-colors relative" :class="[isLinkActive('/dashboard/approve-orders') ? 'bg-[#182d47] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50 hover:text-gray-200', isSidebarCollapsed ? 'justify-center px-0' : 'px-3']">
+          <NuxtLink v-if="['ADMIN', 'SALES'].includes(user?.role || '') && canAccessRoute('/dashboard/approve-orders')" to="/dashboard/approve-orders" title="Approve Orders" class="flex items-center gap-3 rounded-md py-2.5 text-sm transition-colors" :class="[isLinkActive('/dashboard/approve-orders') ? 'bg-[#182d47] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50 hover:text-gray-200', isSidebarCollapsed ? 'justify-center px-0' : 'px-3']">
             <CheckCheck class="shrink-0 w-4 h-4 transition-colors" :class="isLinkActive('/dashboard/approve-orders') ? 'text-sky-400' : 'text-gray-400'" />
-            <span v-if="!isSidebarCollapsed" class="font-medium whitespace-nowrap flex-1">Approve Orders</span>
-            <span v-if="pendingApprovalCount > 0 && !isSidebarCollapsed" class="bg-emerald-500/20 text-emerald-300 text-[10px] font-bold px-1.5 py-0.5 rounded-full border border-emerald-500/30">
-              {{ pendingApprovalCount }}
-            </span>
-            <span v-if="pendingApprovalCount > 0 && isSidebarCollapsed" class="absolute top-2 right-2 w-2 h-2 rounded-full bg-emerald-400 ring-2 ring-[#1c1c1c]"></span>
+            <span v-if="!isSidebarCollapsed" class="font-medium whitespace-nowrap">Approve Orders</span>
           </NuxtLink>
           <NuxtLink v-if="canAccessRoute('/dashboard/packing')" to="/dashboard/packing" title="Packing" class="flex items-center gap-3 rounded-md py-2.5 text-sm transition-colors" :class="[isLinkActive('/dashboard/packing') ? 'bg-[#182d47] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50 hover:text-gray-200', isSidebarCollapsed ? 'justify-center px-0' : 'px-3']">
             <Package class="shrink-0 w-4 h-4 transition-colors" :class="isLinkActive('/dashboard/packing') ? 'text-sky-400' : 'text-gray-400'" />
@@ -207,14 +203,9 @@
         <NuxtLink v-if="['ADMIN', 'SALES'].includes(user?.role || '') && canAccessRoute('/dashboard/orders/create')" to="/dashboard/orders/create" class="flex items-center gap-3 rounded-md py-2.5 px-3 text-sm transition-colors" :class="[isLinkActive('/dashboard/orders/create') ? 'bg-[#182d47] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50']">
           <PenTool class="w-4 h-4 transition-colors" :class="isLinkActive('/dashboard/orders/create') ? 'text-sky-400' : 'text-gray-400'" /> <span class="font-medium">Create Order</span>
         </NuxtLink>
-        <NuxtLink v-if="['ADMIN', 'SALES'].includes(user?.role || '') && canAccessRoute('/dashboard/approve-orders')" to="/dashboard/approve-orders" class="flex items-center justify-between rounded-md py-2.5 px-3 text-sm transition-colors" :class="[isLinkActive('/dashboard/approve-orders') ? 'bg-[#182d47] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50']">
-          <div class="flex items-center gap-3">
-            <CheckCheck class="w-4 h-4 transition-colors" :class="isLinkActive('/dashboard/approve-orders') ? 'text-sky-400' : 'text-gray-400'" />
-            <span class="font-medium">Approve Orders</span>
-          </div>
-          <span v-if="pendingApprovalCount > 0" class="bg-emerald-500/20 text-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-500/30">
-            {{ pendingApprovalCount }}
-          </span>
+        <NuxtLink v-if="['ADMIN', 'SALES'].includes(user?.role || '') && canAccessRoute('/dashboard/approve-orders')" to="/dashboard/approve-orders" class="flex items-center gap-3 rounded-md py-2.5 px-3 text-sm transition-colors" :class="[isLinkActive('/dashboard/approve-orders') ? 'bg-[#182d47] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50']">
+          <CheckCheck class="w-4 h-4 transition-colors" :class="isLinkActive('/dashboard/approve-orders') ? 'text-sky-400' : 'text-gray-400'" />
+          <span class="font-medium">Approve Orders</span>
         </NuxtLink>
         <NuxtLink v-if="canAccessRoute('/dashboard/packing')" to="/dashboard/packing" class="flex items-center gap-3 rounded-md py-2.5 px-3 text-sm transition-colors" :class="[isLinkActive('/dashboard/packing') ? 'bg-[#182d47] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50']">
           <Package class="w-4 h-4 transition-colors" :class="isLinkActive('/dashboard/packing') ? 'text-sky-400' : 'text-gray-400'" /> <span class="font-medium">Packing</span>
@@ -296,9 +287,8 @@
       <div class="flex-1 flex flex-row items-center overflow-x-auto no-scrollbar px-3 gap-6 h-full">
         <!-- OPERATIONS -->
         <NuxtLink v-if="['ADMIN', 'SALES'].includes(user?.role || '') && canAccessRoute('/dashboard/orders/create')" to="/dashboard/orders/create" title="Create Order" class="shrink-0" :class="[isLinkActive('/dashboard/orders/create') ? 'text-sky-400' : 'text-gray-400']"><PenTool class="w-5 h-5" /></NuxtLink>
-        <NuxtLink v-if="['ADMIN', 'SALES'].includes(user?.role || '') && canAccessRoute('/dashboard/approve-orders')" to="/dashboard/approve-orders" title="Approve Orders" class="relative shrink-0" :class="[isLinkActive('/dashboard/approve-orders') ? 'text-sky-400' : 'text-gray-400']">
+        <NuxtLink v-if="['ADMIN', 'SALES'].includes(user?.role || '') && canAccessRoute('/dashboard/approve-orders')" to="/dashboard/approve-orders" title="Approve Orders" class="shrink-0" :class="[isLinkActive('/dashboard/approve-orders') ? 'text-sky-400' : 'text-gray-400']">
           <CheckCheck class="w-5 h-5" />
-          <span v-if="pendingApprovalCount > 0" class="absolute -top-1.5 -right-1.5 w-2 h-2 rounded-full bg-emerald-400 ring-2 ring-[#1c1c1c]"></span>
         </NuxtLink>
         <NuxtLink v-if="canAccessRoute('/dashboard/packing')" to="/dashboard/packing" title="Packing" class="shrink-0" :class="[isLinkActive('/dashboard/packing') ? 'text-sky-400' : 'text-gray-400']"><Package class="w-5 h-5" /></NuxtLink>
         <NuxtLink v-if="canAccessRoute('/dashboard/billing')" to="/dashboard/billing" title="Billing" class="shrink-0" :class="[isLinkActive('/dashboard/billing') ? 'text-sky-400' : 'text-gray-400']"><IndianRupee class="w-5 h-5" /></NuxtLink>

@@ -1097,11 +1097,11 @@ onMounted(() => {
   </Teleport>
 
   <Teleport to="body">
-    <div v-if="isOpen" class="fixed inset-x-0 top-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] md:bottom-0 md:inset-0 z-[190] overflow-hidden pointer-events-none">
+    <div v-if="isOpen" class="fixed inset-x-0 top-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] md:bottom-0 md:inset-0 z-[190] overflow-hidden pointer-events-none flex justify-end">
       <div class="absolute inset-0 bg-black/30 backdrop-blur-[2px] pointer-events-auto transition-opacity" @click="closePanel"></div>
       
       <div 
-        class="absolute inset-y-0 right-0 max-w-full w-full bg-white shadow-2xl pointer-events-auto flex flex-col h-full overflow-hidden transform transition-all duration-300 border-l border-gray-200/80 relative"
+        class="relative z-10 max-w-full w-full bg-white shadow-2xl pointer-events-auto flex flex-col h-full overflow-hidden transform transition-all duration-300 border-l border-gray-200/80 ml-auto"
         :class="context === 'packing' ? 'sm:max-w-[760px] md:max-w-[880px] lg:max-w-[960px] xl:max-w-[1020px]' : 'sm:max-w-[500px] md:max-w-[540px]'"
       >
         <LoadingTopBar :loading="isLoading" />
