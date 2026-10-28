@@ -10,7 +10,7 @@ export interface AppPageDef {
 
 export const APP_PAGES: AppPageDef[] = [
   // Dashboard
-  { key: 'OVERVIEW', path: '/dashboard', label: 'Overview', category: 'Dashboard', description: 'Main metrics, KPIs, and daily business pulse' },
+  { key: 'OVERVIEW', path: '/dashboard', label: 'Home', category: 'Dashboard', description: 'Main metrics, KPIs, and daily business pulse' },
   { key: 'ANALYTICS', path: '/dashboard/analytics', label: 'Analytics', category: 'Dashboard', description: 'Business intelligence, stock valuation, and operational statistics' },
   { key: 'ORDERS', path: '/dashboard/orders', label: 'Orders List', category: 'Dashboard', description: 'View, filter, and track all sales orders' },
   { key: 'CREATE_ORDER', path: '/dashboard/orders/create', label: 'Create Order', category: 'Dashboard', description: 'Create and submit new orders' },

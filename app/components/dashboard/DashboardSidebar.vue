@@ -34,6 +34,16 @@
         </div>
       </div>
 
+      <!-- HOME -->
+      <div v-if="canAccessRoute('/dashboard')">
+        <nav class="flex flex-col gap-1">
+          <NuxtLink to="/dashboard" title="Home" class="flex items-center gap-3 rounded-md py-2.5 text-sm transition-colors" :class="[isLinkActive('/dashboard') ? 'bg-[#182d47] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50 hover:text-gray-200', isSidebarCollapsed ? 'justify-center px-0' : 'px-3']">
+            <Home class="shrink-0 w-4 h-4 transition-colors" :class="isLinkActive('/dashboard') ? 'text-sky-400' : 'text-gray-400'" />
+            <span v-if="!isSidebarCollapsed" class="font-medium whitespace-nowrap">Home</span>
+          </NuxtLink>
+        </nav>
+      </div>
+
       <!-- OPERATIONS -->
       <div v-if="(['ADMIN', 'SALES'].includes(user?.role || '') && canAccessRoute('/dashboard/orders/create')) || (['ADMIN', 'SALES'].includes(user?.role || '') && canAccessRoute('/dashboard/approve-orders')) || canAccessRoute('/dashboard/packing') || canAccessRoute('/dashboard/billing') || canAccessRoute('/dashboard/delivery') || canAccessRoute('/dashboard/inventory') || canAccessDriverApp">
         <h3 v-if="!isSidebarCollapsed" class="mb-3 px-3 text-[10px] font-bold uppercase tracking-widest text-gray-500 whitespace-nowrap">OPERATIONS</h3>
@@ -71,14 +81,10 @@
       </div>
 
       <!-- DASHBOARD -->
-      <div v-if="canAccessRoute('/dashboard') || canAccessRoute('/dashboard/analytics') || canAccessRoute('/dashboard/orders') || canAccessRoute('/dashboard/order-requests') || canAccessRoute('/dashboard/quotations') || canAccessRoute('/dashboard/chat')">
+      <div v-if="canAccessRoute('/dashboard/analytics') || canAccessRoute('/dashboard/orders') || canAccessRoute('/dashboard/order-requests') || canAccessRoute('/dashboard/quotations') || canAccessRoute('/dashboard/chat')">
         <h3 v-if="!isSidebarCollapsed" class="mb-3 px-3 text-[10px] font-bold uppercase tracking-widest text-gray-500 whitespace-nowrap">DASHBOARD</h3>
         <div v-else class="mb-3 h-3 flex justify-center border-b border-gray-800 mx-2"></div>
         <nav class="flex flex-col gap-1">
-          <NuxtLink v-if="canAccessRoute('/dashboard')" to="/dashboard" title="Overview" class="flex items-center gap-3 rounded-md py-2.5 text-sm transition-colors" :class="[isLinkActive('/dashboard') ? 'bg-[#182d47] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50 hover:text-gray-200', isSidebarCollapsed ? 'justify-center px-0' : 'px-3']">
-            <LayoutDashboard class="shrink-0 w-4 h-4 transition-colors" :class="isLinkActive('/dashboard') ? 'text-sky-400' : 'text-gray-400'" />
-            <span v-if="!isSidebarCollapsed" class="font-medium whitespace-nowrap">Overview</span>
-          </NuxtLink>
           <NuxtLink v-if="canAccessRoute('/dashboard/analytics')" to="/dashboard/analytics" title="Analytics" class="flex items-center gap-3 rounded-md py-2.5 text-sm transition-colors" :class="[isLinkActive('/dashboard/analytics') ? 'bg-[#182d47] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50 hover:text-gray-200', isSidebarCollapsed ? 'justify-center px-0' : 'px-3']">
             <BarChart3 class="shrink-0 w-4 h-4 transition-colors" :class="isLinkActive('/dashboard/analytics') ? 'text-sky-400' : 'text-gray-400'" />
             <span v-if="!isSidebarCollapsed" class="font-medium whitespace-nowrap">Analytics</span>
@@ -197,6 +203,13 @@
         </div>
       </div>
 
+      <!-- HOME -->
+      <div v-if="canAccessRoute('/dashboard')" class="flex flex-col gap-1 mb-6">
+        <NuxtLink to="/dashboard" class="flex items-center gap-3 rounded-md py-2.5 px-3 text-sm transition-colors" :class="[isLinkActive('/dashboard') ? 'bg-[#182d47] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50']">
+          <Home class="w-4 h-4 transition-colors" :class="isLinkActive('/dashboard') ? 'text-sky-400' : 'text-gray-400'" /> <span class="font-medium">Home</span>
+        </NuxtLink>
+      </div>
+
       <!-- OPERATIONS -->
       <div v-if="(['ADMIN', 'SALES'].includes(user?.role || '') && canAccessRoute('/dashboard/orders/create')) || (['ADMIN', 'SALES'].includes(user?.role || '') && canAccessRoute('/dashboard/approve-orders')) || canAccessRoute('/dashboard/packing') || canAccessRoute('/dashboard/billing') || canAccessRoute('/dashboard/delivery') || canAccessRoute('/dashboard/inventory') || canAccessDriverApp" class="flex flex-col gap-1 mb-6">
         <h3 class="block mb-3 px-3 text-[10px] font-bold uppercase tracking-widest text-gray-500">OPERATIONS</h3>
@@ -285,6 +298,9 @@
     <div class="flex items-center w-full h-14 relative z-[215] bg-[#1c1c1c]" @click="onBottomBarClick">
       <!-- Scrollable Icons Area -->
       <div class="flex-1 flex flex-row items-center overflow-x-auto no-scrollbar px-3 gap-6 h-full">
+        <!-- HOME -->
+        <NuxtLink v-if="canAccessRoute('/dashboard')" to="/dashboard" title="Home" class="shrink-0" :class="[isLinkActive('/dashboard') ? 'text-sky-400' : 'text-gray-400']"><Home class="w-5 h-5" /></NuxtLink>
+
         <!-- OPERATIONS -->
         <NuxtLink v-if="['ADMIN', 'SALES'].includes(user?.role || '') && canAccessRoute('/dashboard/orders/create')" to="/dashboard/orders/create" title="Create Order" class="shrink-0" :class="[isLinkActive('/dashboard/orders/create') ? 'text-sky-400' : 'text-gray-400']"><PenTool class="w-5 h-5" /></NuxtLink>
         <NuxtLink v-if="['ADMIN', 'SALES'].includes(user?.role || '') && canAccessRoute('/dashboard/approve-orders')" to="/dashboard/approve-orders" title="Approve Orders" class="shrink-0" :class="[isLinkActive('/dashboard/approve-orders') ? 'text-sky-400' : 'text-gray-400']">
@@ -296,7 +312,6 @@
         <NuxtLink v-if="canAccessRoute('/dashboard/inventory')" to="/dashboard/inventory" title="Inventory" class="shrink-0" :class="[isLinkActive('/dashboard/inventory') ? 'text-sky-400' : 'text-gray-400']"><Boxes class="w-5 h-5" /></NuxtLink>
 
         <!-- DASHBOARD -->
-        <NuxtLink v-if="canAccessRoute('/dashboard')" to="/dashboard" title="Overview" class="shrink-0" :class="[isLinkActive('/dashboard') ? 'text-sky-400' : 'text-gray-400']"><LayoutDashboard class="w-5 h-5" /></NuxtLink>
         <NuxtLink v-if="canAccessRoute('/dashboard/analytics')" to="/dashboard/analytics" title="Analytics" class="shrink-0" :class="[isLinkActive('/dashboard/analytics') ? 'text-sky-400' : 'text-gray-400']"><BarChart3 class="w-5 h-5" /></NuxtLink>
         <NuxtLink v-if="canAccessRoute('/dashboard/orders')" to="/dashboard/orders" title="Orders" class="shrink-0" :class="[isLinkActive('/dashboard/orders') ? 'text-sky-400' : 'text-gray-400']"><ClipboardList class="w-5 h-5" /></NuxtLink>
         <NuxtLink v-if="canAccessRoute('/dashboard/order-requests')" to="/dashboard/order-requests" title="Order Requests" class="relative shrink-0" :class="[isLinkActive('/dashboard/order-requests') ? 'text-sky-400' : 'text-gray-400']">
@@ -326,6 +341,7 @@
 
 <script setup lang="ts">
 import { 
+  Home,
   LayoutDashboard, 
   BarChart3,
   ClipboardList, 

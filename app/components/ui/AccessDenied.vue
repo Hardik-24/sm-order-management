@@ -97,7 +97,7 @@ const primaryAccessiblePath = computed(() => {
 })
 
 const primaryAccessibleLabel = computed(() => {
-  if (allowedKeys.value.includes('OVERVIEW')) return 'Overview'
+  if (allowedKeys.value.includes('OVERVIEW')) return 'Home'
   return accessiblePages.value[0]?.label || 'Dashboard'
 })
 

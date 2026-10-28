@@ -403,7 +403,7 @@ const selectSuggestion = (order: any) => {
 
 const pageTitle = computed(() => {
   const path = route.path.split('/').filter(Boolean)
-  if (path.length <= 1) return 'Overview'
+  if (path.length <= 1) return 'Home'
   
   if (path[1] === 'orders' && path[2] === 'create') return 'Create Order'
   
