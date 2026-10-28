@@ -189,6 +189,10 @@ const submitApproval = async () => {
 }
 
 const openCancelModal = (order: any) => {
+  if (order.billingStatus?.status === 'GENERATED' || order.billingStatus?.invoiceNumber) {
+    showSnackbar('This order cannot be cancelled because its bill/invoice has already been generated.', 'error')
+    return
+  }
   orderToCancel.value = order
   cancelReason.value = ''
   isCancelModalOpen.value = true
@@ -573,7 +577,7 @@ const getTotalNos = (order: any) => {
                     <span>Review & Approve</span>
                   </button>
                   <button 
-                    v-if="order.overallStatus !== 'CANCELLED' && order.overallStatus !== 'DELIVERED'"
+                    v-if="order.overallStatus !== 'CANCELLED' && order.overallStatus !== 'DELIVERED' && order.billingStatus?.status !== 'GENERATED' && !order.billingStatus?.invoiceNumber"
                     @click.stop="openCancelModal(order)"
                     class="px-2.5 py-1 rounded-lg text-[11px] font-medium text-rose-600 hover:bg-rose-50 transition-colors border border-rose-200 flex items-center justify-center gap-1 cursor-pointer whitespace-nowrap"
                     title="Cancel Order"
@@ -686,7 +690,7 @@ const getTotalNos = (order: any) => {
               <span>Review & Approve</span>
             </button>
             <button 
-              v-if="order.overallStatus !== 'CANCELLED' && order.overallStatus !== 'DELIVERED'"
+              v-if="order.overallStatus !== 'CANCELLED' && order.overallStatus !== 'DELIVERED' && order.billingStatus?.status !== 'GENERATED' && !order.billingStatus?.invoiceNumber"
               @click.stop="openCancelModal(order)"
               class="px-3 py-2 rounded-lg text-xs font-medium text-rose-600 hover:bg-rose-50 transition-colors border border-rose-200 flex items-center justify-center gap-1 cursor-pointer"
               title="Cancel Order"

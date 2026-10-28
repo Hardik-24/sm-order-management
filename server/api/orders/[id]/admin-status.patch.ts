@@ -151,6 +151,15 @@ export default defineEventHandler(async (event) => {
 
   // 5. Overall Status
   let targetOverall: OrderStatus = order.overallStatus
+  if (explicitOverallStatus === 'CANCELLED') {
+    if (order.billingStatus?.status === 'GENERATED' || order.billingStatus?.invoiceNumber) {
+      throw createError({ 
+        statusCode: 400, 
+        message: 'This order cannot be cancelled because its bill/invoice has already been generated.' 
+      })
+    }
+  }
+
   if (explicitOverallStatus && (!autoCalculateOverall || explicitOverallStatus === 'CANCELLED')) {
     if (explicitOverallStatus !== order.overallStatus) {
       changes.push(`Overall: ${order.overallStatus} → ${explicitOverallStatus}`)

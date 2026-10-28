@@ -7,6 +7,26 @@ export default defineEventHandler(async (event) => {
   const id = event.context.params?.id
   if (!id) throw createError({ statusCode: 400, message: 'Missing order ID' })
   
+  const existingOrder = await prisma.order.findUnique({
+    where: { id },
+    include: { billingStatus: true }
+  })
+  if (!existingOrder) throw createError({ statusCode: 404, message: 'Order not found' })
+
+  if (existingOrder.billingStatus?.status === 'GENERATED' || existingOrder.billingStatus?.invoiceNumber) {
+    throw createError({
+      statusCode: 400,
+      message: 'This order cannot be edited because its bill/invoice has already been generated.'
+    })
+  }
+
+  if (existingOrder.overallStatus === 'CANCELLED') {
+    throw createError({
+      statusCode: 400,
+      message: 'Cannot edit an order that has already been cancelled.'
+    })
+  }
+  
   const body = await readBody(event)
   const { orderNumber, customerId, deliveryAddress, deliveryAddressId, paymentTerms, notes, isUrgent, vehicleMode, items } = body
   

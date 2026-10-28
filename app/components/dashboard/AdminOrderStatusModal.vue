@@ -98,6 +98,10 @@ const overallOptions = [
   { value: 'CANCELLED', label: 'Cancelled' }
 ]
 
+const isBillGenerated = computed(() => {
+  return billingStatus.value === 'GENERATED' || props.order?.billingStatus?.status === 'GENERATED' || Boolean(props.order?.billingStatus?.invoiceNumber)
+})
+
 // Projected auto overall status
 const projectedOverallStatus = computed(() => {
   if (deliveryStatus.value === 'DELIVERED') return 'DELIVERED'
@@ -131,6 +135,11 @@ const closeModal = () => {
 // Submit admin status updates
 const submitStatusUpdate = async () => {
   if (!props.order || isSubmitting.value) return
+
+  if (!autoCalculateOverall.value && overallStatus.value === 'CANCELLED' && isBillGenerated.value) {
+    alert('This order cannot be cancelled because its bill/invoice has already been generated.')
+    return
+  }
 
   isSubmitting.value = true
   try {
@@ -474,9 +483,11 @@ const submitStatusUpdate = async () => {
                   v-for="opt in overallOptions"
                   :key="opt.value"
                   type="button"
-                  @click="overallStatus = opt.value"
-                  class="px-2.5 py-2 rounded-lg text-center border font-bold text-xs transition cursor-pointer"
+                  :disabled="opt.value === 'CANCELLED' && isBillGenerated"
+                  @click="opt.value === 'CANCELLED' && isBillGenerated ? null : overallStatus = opt.value"
+                  class="px-2.5 py-2 rounded-lg text-center border font-bold text-xs transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                   :class="overallStatus === opt.value ? 'bg-purple-700 text-white border-purple-700 shadow-xs' : 'bg-white text-gray-800 border-gray-200 hover:bg-gray-50'"
+                  :title="opt.value === 'CANCELLED' && isBillGenerated ? 'Cannot cancel an order whose bill has already been generated' : ''"
                 >
                   {{ opt.label }}
                 </button>

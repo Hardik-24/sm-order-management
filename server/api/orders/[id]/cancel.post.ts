@@ -18,10 +18,17 @@ export default defineEventHandler(async (event) => {
 
   const order = await prisma.order.findUnique({
     where: { id },
-    include: { deliveryStatus: true }
+    include: { deliveryStatus: true, billingStatus: true }
   })
 
   if (!order) throw createError({ statusCode: 404, message: 'Order not found' })
+
+  if (order.billingStatus?.status === 'GENERATED' || order.billingStatus?.invoiceNumber) {
+    throw createError({ 
+      statusCode: 400, 
+      message: 'This order cannot be cancelled because its bill/invoice has already been generated.' 
+    })
+  }
 
   if (order.overallStatus === 'CANCELLED') {
     throw createError({ statusCode: 400, message: 'Order is already cancelled' })

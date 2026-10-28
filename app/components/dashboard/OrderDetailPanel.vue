@@ -57,11 +57,24 @@ const order = ref<Order | null>(null)
 const isLoading = ref(false)
 const activeTab = ref<'DETAILS' | 'TIMELINE' | 'NOTES'>('DETAILS')
 
+const isBillGenerated = computed(() => {
+  return order.value?.billingStatus?.status === 'GENERATED' || Boolean(order.value?.billingStatus?.invoiceNumber)
+})
+
 const canCancelOrder = computed(() => {
   if (!order.value) return false
   if (order.value.overallStatus === 'CANCELLED' || order.value.overallStatus === 'DELIVERED') return false
+  if (isBillGenerated.value) return false
 
   return canCancelOrders.value
+})
+
+const canEditCurrentOrder = computed(() => {
+  if (!order.value) return false
+  if (order.value.overallStatus === 'CANCELLED') return false
+  if (isBillGenerated.value) return false
+
+  return canEditOrders.value
 })
 
 const canGenerateBill = computed(() => {
@@ -151,7 +164,12 @@ watch(() => props.isOpen, async (open) => {
 const isDeleting = ref(false)
 
 const deleteOrder = async () => {
-  if (!order.value || !confirm('Are you sure you want to completely delete this order? This action cannot be undone.')) return
+  if (!order.value) return
+  if (isBillGenerated.value) {
+    alert('This order cannot be deleted because its bill/invoice has already been generated.')
+    return
+  }
+  if (!confirm('Are you sure you want to completely delete this order? This action cannot be undone.')) return
   isDeleting.value = true
   try {
     const deletedId = order.value.id
@@ -172,6 +190,10 @@ const cancelReason = ref('')
 const isCancelling = ref(false)
 
 const openCancelModal = () => {
+  if (isBillGenerated.value) {
+    alert('This order cannot be cancelled because its bill/invoice has already been generated.')
+    return
+  }
   cancelReason.value = ''
   isCancelModalOpen.value = true
   nextTick(() => {
@@ -724,6 +746,10 @@ const cancelEdit = () => {
 
 const openEditModal = async () => {
   if (!order.value) return
+  if (isBillGenerated.value) {
+    alert('This order cannot be edited because its bill/invoice has already been generated.')
+    return
+  }
   isEditModalOpen.value = true
   isEditLoading.value = true
   nextTick(() => {
@@ -1117,8 +1143,18 @@ onMounted(() => {
           </div>
 
           <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            <!-- Billed / Locked Badge -->
+            <span 
+              v-if="isBillGenerated"
+              class="px-2.5 py-1 text-xs font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-lg flex items-center gap-1 shadow-2xs select-none"
+              :title="`Order is locked: Bill generated (${order?.billingStatus?.invoiceNumber ? 'Invoice #' + order.billingStatus.invoiceNumber : 'Generated'}). Editing and cancellation are disabled.`"
+            >
+              <Lock class="w-3.5 h-3.5 text-emerald-600" />
+              <span class="hidden sm:inline">Billed (Locked)</span>
+            </span>
+
             <button 
-              v-if="canEditOrders"
+              v-if="canEditCurrentOrder"
               @click="openEditModal" 
               title="Edit Full Order Details"
               class="px-2.5 py-1 text-xs font-bold text-white bg-[#1b3b5f] hover:bg-[#132c49] active:bg-[#0e2035] rounded-lg transition-all flex items-center gap-1.5 shadow-xs cursor-pointer active:scale-95"
@@ -1147,7 +1183,7 @@ onMounted(() => {
               <span class="hidden sm:inline">Cancel</span>
             </button>
             <button 
-              v-if="hasRole('ADMIN')"
+              v-if="hasRole('ADMIN') && !isBillGenerated"
               @click="deleteOrder" 
               :disabled="isDeleting"
               title="Delete Order (Admin Only)"
@@ -1292,7 +1328,7 @@ onMounted(() => {
                   Customer & Order Details
                 </h3>
                 <button 
-                  v-if="canEditOrders" 
+                  v-if="canEditCurrentOrder" 
                   @click="openEditModal" 
                   class="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold text-white bg-[#1b3b5f] hover:bg-[#132c49] active:bg-[#0e2035] rounded-lg transition-all shadow-xs hover:shadow cursor-pointer active:scale-95"
                   title="Edit Order Details"
@@ -1300,6 +1336,14 @@ onMounted(() => {
                   <Edit class="w-3.5 h-3.5" /> 
                   <span>Edit Order</span>
                 </button>
+                <span 
+                  v-else-if="isBillGenerated"
+                  class="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200"
+                  :title="`Order locked: Bill generated (${order?.billingStatus?.invoiceNumber ? 'Invoice #' + order.billingStatus.invoiceNumber : 'Generated'})`"
+                >
+                  <Lock class="w-3 h-3 text-emerald-600" />
+                  <span>Locked (Billed)</span>
+                </span>
               </div>
               
               <div class="grid grid-cols-2 gap-y-3.5 gap-x-4 text-xs sm:text-sm">
@@ -1952,7 +1996,7 @@ onMounted(() => {
                 Internal Notes
               </h3>
               <button 
-                v-if="canEditOrders" 
+                v-if="canEditCurrentOrder" 
                 @click="openEditModal" 
                 class="text-xs font-semibold text-[#1b3b5f] hover:underline flex items-center gap-1 cursor-pointer"
               >
@@ -1971,7 +2015,7 @@ onMounted(() => {
               <FileText class="w-8 h-8 text-gray-300 mx-auto mb-2" />
               <p class="text-xs font-medium text-gray-500">No internal notes for this order.</p>
               <button 
-                v-if="canEditOrders" 
+                v-if="canEditCurrentOrder" 
                 @click="openEditModal" 
                 class="mt-3 text-xs font-semibold text-[#1b3b5f] hover:underline cursor-pointer inline-flex items-center gap-1"
               >
