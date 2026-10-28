@@ -1,5 +1,8 @@
 <template>
   <div class="flex h-screen w-full overflow-hidden bg-[#faf8f5] flex-col md:flex-row">
+    <!-- Navigation Bar / Sidebar (Desktop: left sidebar; Mobile: fixed bottom bar) -->
+    <DashboardSidebar class="shrink-0" />
+
     <!-- Topbar (Mobile only) - cleanly sits at top of mobile viewport -->
     <DashboardTopbar class="md:hidden shrink-0" />
     
@@ -13,9 +16,6 @@
         <slot v-else />
       </main>
     </div>
-
-    <!-- Navigation Bar / Sidebar (Desktop: left sidebar; Mobile: fixed bottom bar) -->
-    <DashboardSidebar class="shrink-0" />
   </div>
 </template>
 
