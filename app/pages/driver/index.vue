@@ -190,19 +190,19 @@
 
       <!-- Loading State Skeleton -->
       <div v-if="isLoading" class="space-y-4">
-        <div v-for="i in 2" :key="i" class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 animate-pulse">
+        <div v-for="i in 2" :key="i" class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
           <div class="flex justify-between items-start mb-3">
             <div class="space-y-2 w-2/3">
-              <div class="h-4 bg-gray-200 rounded w-1/4"></div>
-              <div class="h-5 bg-gray-200 rounded w-3/4"></div>
-              <div class="h-3 bg-gray-100 rounded w-1/2"></div>
+              <div class="h-4 rounded animate-shimmer w-1/4"></div>
+              <div class="h-5 rounded animate-shimmer w-3/4"></div>
+              <div class="h-3 rounded animate-shimmer w-1/2"></div>
             </div>
-            <div class="h-5 bg-gray-100 rounded-full w-16"></div>
+            <div class="h-5 rounded-full animate-shimmer w-16"></div>
           </div>
-          <div class="h-16 bg-gray-50 rounded-xl mb-3"></div>
+          <div class="h-16 rounded-xl animate-shimmer mb-3"></div>
           <div class="flex gap-2">
-            <div class="h-10 bg-gray-100 rounded-xl flex-1"></div>
-            <div class="h-10 bg-gray-200 rounded-xl flex-1"></div>
+            <div class="h-10 rounded-xl animate-shimmer flex-1"></div>
+            <div class="h-10 rounded-xl animate-shimmer flex-1"></div>
           </div>
         </div>
       </div>

@@ -357,12 +357,15 @@ onUnmounted(() => {
             </tr>
           </thead>
           <tbody ref="tbodyRef" class="divide-y divide-gray-100">
-            <tr 
-              v-for="product in paginatedProducts" 
-              :key="product.id" 
-              @click="openProductDetail(product)"
-              class="hover:bg-[#1b3b5f]/5 cursor-pointer transition-colors group"
-            >
+            <TableSkeletonRows v-if="productsLoading && paginatedProducts.length === 0" :rows="6" :cols="6" />
+
+            <template v-else>
+              <tr 
+                v-for="product in paginatedProducts" 
+                :key="product.id" 
+                @click="openProductDetail(product)"
+                class="hover:bg-[#1b3b5f]/5 cursor-pointer transition-colors group"
+              >
               <!-- SKU / Code: Fixed width, wraps to max 2 lines -->
               <td class="px-5 py-3 w-44 min-w-[150px] max-w-[180px] text-xs font-mono font-medium text-gray-900 group-hover:text-[#1b3b5f]">
                 <span class="break-words line-clamp-2" :title="product.sku">
@@ -416,6 +419,7 @@ onUnmounted(() => {
                 </div>
               </td>
             </tr>
+            </template>
           </tbody>
         </table>
       </div>
@@ -425,6 +429,8 @@ onUnmounted(() => {
 
       <!-- MOBILE VIEW: High-Density Inventory Stock Cards (md:hidden) -->
       <div ref="mobileListRef" class="md:hidden divide-y divide-gray-100 bg-white relative min-h-[250px]">
+        <TableSkeletonRows v-if="productsLoading && paginatedProducts.length === 0" :rows="5" :cols="1" isMobile />
+
         <!-- Localized Mobile Blur Loading Animation -->
         <Transition
           enter-active-class="transition-opacity duration-200 ease-out"

@@ -74,18 +74,7 @@
             </tr>
           </thead>
           <tbody ref="tbodyRef" class="divide-y divide-gray-200 text-sm">
-            <template v-if="pending">
-              <tr v-for="i in 5" :key="i" class="animate-pulse hover:bg-transparent">
-                <td class="pl-5 pr-4 py-3.5 md:py-4"><div class="h-4 bg-gray-200 rounded w-3/4"></div></td>
-                <td class="hidden md:table-cell px-4 py-3.5 md:py-4"><div class="h-4 bg-gray-200 rounded w-full"></div></td>
-                <td class="hidden md:table-cell px-4 py-3.5 md:py-4"><div class="h-4 bg-gray-200 rounded w-3/4"></div></td>
-                <td class="hidden md:table-cell px-4 py-3.5 md:py-4"><div class="h-4 bg-gray-200 rounded w-full"></div></td>
-                <td class="hidden md:table-cell px-4 py-3.5 md:py-4"><div class="h-4 bg-gray-200 rounded w-full"></div></td>
-                <td class="hidden md:table-cell px-4 py-3.5 md:py-4"><div class="h-4 bg-gray-200 rounded w-3/4"></div></td>
-                <td class="px-4 py-3.5 md:py-4"><div class="h-5 bg-gray-200 rounded-full w-12 mx-auto md:mx-0"></div></td>
-                <td v-if="canEditCustomers" class="pl-2 pr-8 md:pr-10 py-3.5 md:py-4"><div class="h-4 bg-gray-200 rounded w-6 ml-auto"></div></td>
-              </tr>
-            </template>
+            <TableSkeletonRows v-if="pending" :rows="6" :cols="canEditCustomers ? 8 : 7" />
             <template v-else>
               <tr v-if="filteredCustomers.length === 0" class="hover:bg-gray-50">
                 <td colspan="8" class="px-6 py-12 text-center text-gray-500">No customers found.</td>
@@ -230,19 +219,7 @@
       <!-- MOBILE VIEW: High-Density Customer Cards (md:hidden) -->
       <div ref="mobileListRef" class="md:hidden divide-y divide-gray-100 bg-white">
         <!-- Skeleton Loading for Mobile Cards -->
-        <template v-if="pending">
-          <div v-for="i in 5" :key="'mob-cust-skel-' + i" class="p-3.5 space-y-2 animate-pulse">
-            <div class="flex justify-between">
-              <div class="h-4 bg-gray-200 rounded w-24"></div>
-              <div class="h-4 bg-gray-200 rounded w-16"></div>
-            </div>
-            <div class="h-4 bg-gray-200 rounded w-3/4"></div>
-            <div class="flex justify-between">
-              <div class="h-3 bg-gray-100 rounded w-32"></div>
-              <div class="h-3 bg-gray-100 rounded w-20"></div>
-            </div>
-          </div>
-        </template>
+        <TableSkeletonRows v-if="pending" :rows="5" :cols="1" isMobile />
 
         <template v-else>
           <div v-if="filteredCustomers.length === 0" class="p-8 text-center text-sm text-gray-500">

@@ -141,18 +141,7 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-200 text-sm">
-                <template v-if="productsPending">
-                  <tr v-for="i in 5" :key="i" class="animate-pulse hover:bg-transparent">
-                    <td class="px-5 py-3.5"><div class="h-4 bg-gray-200 rounded w-16"></div></td>
-                    <td class="px-5 py-3.5"><div class="h-4 bg-gray-200 rounded w-3/4"></div></td>
-                    <td class="px-5 py-3.5"><div class="h-4 bg-gray-200 rounded w-24"></div></td>
-                    <td class="px-5 py-3.5"><div class="h-4 bg-gray-200 rounded w-16"></div></td>
-                    <td class="px-5 py-3.5"><div class="h-4 bg-gray-200 rounded w-16 ml-auto"></div></td>
-                    <td class="px-5 py-3.5"><div class="h-4 bg-gray-200 rounded w-12 ml-auto"></div></td>
-                    <td class="px-5 py-3.5"><div class="h-5 bg-gray-200 rounded-full w-16"></div></td>
-                    <td v-if="canEditProducts" class="px-5 py-3.5"><div class="h-4 bg-gray-200 rounded w-8 ml-auto"></div></td>
-                  </tr>
-                </template>
+                <TableSkeletonRows v-if="productsPending" :rows="6" :cols="canEditProducts ? 8 : 7" />
                 <template v-else>
                   <tr v-if="filteredProducts.length === 0" class="hover:bg-gray-50">
                     <td colspan="8" class="px-6 py-12 text-center text-gray-500">No products found.</td>
@@ -224,19 +213,7 @@
         <!-- MOBILE VIEW: High-Density Product Cards (md:hidden) -->
         <div ref="mobileListRef" class="md:hidden divide-y divide-gray-100 bg-white">
           <!-- Skeleton Loading -->
-          <template v-if="productsPending">
-            <div v-for="i in 6" :key="'mob-prod-skel-' + i" class="p-3.5 space-y-2 animate-pulse">
-              <div class="flex justify-between">
-                <div class="h-4 bg-gray-200 rounded w-24"></div>
-                <div class="h-4 bg-gray-200 rounded w-16"></div>
-              </div>
-              <div class="h-4 bg-gray-200 rounded w-3/4"></div>
-              <div class="flex justify-between">
-                <div class="h-4 bg-gray-100 rounded w-28"></div>
-                <div class="h-4 bg-gray-100 rounded w-20"></div>
-              </div>
-            </div>
-          </template>
+          <TableSkeletonRows v-if="productsPending" :rows="5" :cols="1" isMobile />
 
           <template v-else>
             <div v-if="filteredProducts.length === 0" class="p-8 text-center text-sm text-gray-500">
