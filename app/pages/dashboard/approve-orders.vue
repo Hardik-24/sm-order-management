@@ -220,10 +220,28 @@ const submitCancel = async () => {
 }
 
 // GSAP Animation
-const { animateStagger, initContext } = useGsapAnimation()
+const { animateStagger, animateModalOpen, initContext } = useGsapAnimation()
 const statsContainer = ref<HTMLElement | null>(null)
 const tbodyRef = ref<HTMLElement | null>(null)
 const mobileListRef = ref<HTMLElement | null>(null)
+const reviewModalCardRef = ref<HTMLElement | null>(null)
+const cancelModalCardRef = ref<HTMLElement | null>(null)
+
+watch(isReviewModalOpen, (open) => {
+  if (open) {
+    nextTick(() => {
+      if (reviewModalCardRef.value) animateModalOpen(reviewModalCardRef.value)
+    })
+  }
+})
+
+watch(isCancelModalOpen, (open) => {
+  if (open) {
+    nextTick(() => {
+      if (cancelModalCardRef.value) animateModalOpen(cancelModalCardRef.value)
+    })
+  }
+})
 
 const counts = computed(() => {
   return {
@@ -442,9 +460,10 @@ const getTotalNos = (order: any) => {
         </div>
       </div>
 
-      <!-- Table Area with Pulsing Blur and Skeleton Support -->
+      <!-- Table Area with Shimmer Skeletons & Top Loading Bar -->
       <div class="relative min-h-[220px]">
-        <div v-if="isLoading" class="absolute inset-0 bg-white/50 backdrop-blur-[2px] z-10 animate-pulse pointer-events-none"></div>
+        <LoadingTopBar :active="isLoading" />
+        <div v-if="isLoading && data?.orders?.length > 0" class="absolute inset-0 bg-white/40 pointer-events-none z-10 transition-opacity"></div>
 
         <!-- Orders Table (Desktop Only - 100% Unchanged) -->
         <div ref="approveTableRef" class="hidden md:block overflow-x-auto no-scrollbar">
@@ -459,32 +478,8 @@ const getTotalNos = (order: any) => {
               </tr>
             </thead>
             <tbody ref="tbodyRef" class="divide-y divide-gray-100 bg-white">
-              <!-- Skeleton Rows when loading and no data -->
-              <template v-if="isLoading && (!data?.orders || data.orders.length === 0)">
-                <tr v-for="i in 6" :key="'skel-' + i" class="animate-pulse hover:bg-transparent">
-                  <td class="px-5 py-4 whitespace-nowrap">
-                    <div class="h-4 bg-gray-200 rounded w-24 mb-1.5"></div>
-                    <div class="h-3 bg-gray-100 rounded w-16"></div>
-                  </td>
-                  <td class="px-5 py-4">
-                    <div class="h-4 bg-gray-200 rounded w-36 mb-1.5"></div>
-                    <div class="h-3 bg-gray-100 rounded w-24"></div>
-                  </td>
-                  <td class="px-5 py-4">
-                    <div class="h-4 bg-gray-200 rounded w-44 mb-1.5"></div>
-                    <div class="h-3 bg-gray-100 rounded w-20"></div>
-                  </td>
-                  <td class="px-5 py-4 whitespace-nowrap">
-                    <div class="h-6 bg-gray-200 rounded-full w-28"></div>
-                  </td>
-                  <td class="px-5 py-4 text-right whitespace-nowrap pr-5">
-                    <div class="flex flex-col items-end gap-1.5">
-                      <div class="h-7 bg-gray-200 rounded-lg w-28"></div>
-                      <div class="h-6 bg-gray-100 rounded-lg w-20"></div>
-                    </div>
-                  </td>
-                </tr>
-              </template>
+              <!-- Skeleton Shimmer Rows when loading and no data -->
+              <TableSkeletonRows v-if="isLoading && (!data?.orders || data.orders.length === 0)" :rows="6" :cols="5" />
 
               <!-- Empty state -->
               <tr v-else-if="!isLoading && (!data?.orders || data.orders.length === 0)" class="text-center py-8">
@@ -595,18 +590,8 @@ const getTotalNos = (order: any) => {
 
       <!-- Mobile Card List View (Mobile Only: md:hidden) -->
       <div ref="mobileListRef" class="md:hidden divide-y divide-gray-100 bg-white">
-        <!-- Mobile Skeleton Loading -->
-        <template v-if="isLoading && (!data?.orders || data.orders.length === 0)">
-          <div v-for="i in 5" :key="'mob-skel-' + i" class="p-3.5 space-y-2.5 animate-pulse">
-            <div class="flex justify-between items-center">
-              <div class="h-4 bg-gray-200 rounded w-24"></div>
-              <div class="h-5 bg-gray-200 rounded-full w-20"></div>
-            </div>
-            <div class="h-3.5 bg-gray-200 rounded w-40"></div>
-            <div class="h-3 bg-gray-100 rounded w-28"></div>
-            <div class="h-8 bg-gray-200 rounded-lg w-full mt-2"></div>
-          </div>
-        </template>
+        <!-- Mobile Skeleton Shimmer Loading -->
+        <TableSkeletonRows v-if="isLoading && (!data?.orders || data.orders.length === 0)" :rows="5" :cols="1" isMobile />
 
         <!-- Mobile Empty State -->
         <div v-else-if="!isLoading && (!data?.orders || data.orders.length === 0)" class="py-12 px-4 text-center text-gray-400">
@@ -742,7 +727,7 @@ const getTotalNos = (order: any) => {
     <!-- Review & Approve Modal -->
     <Teleport to="body">
       <div v-if="isReviewModalOpen" class="fixed inset-0 z-[300] flex items-center justify-center p-2 sm:p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[calc(1rem+env(safe-area-inset-top,0px))] bg-black/60 backdrop-blur-xs overflow-y-auto">
-      <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[calc(100dvh-2.5rem-env(safe-area-inset-bottom,0px)-env(safe-area-inset-top,0px))] md:max-h-[92vh] flex flex-col shadow-2xl overflow-hidden border border-gray-200/80">
+      <div ref="reviewModalCardRef" class="bg-white rounded-2xl max-w-4xl w-full max-h-[calc(100dvh-2.5rem-env(safe-area-inset-bottom,0px)-env(safe-area-inset-top,0px))] md:max-h-[92vh] flex flex-col shadow-2xl overflow-hidden border border-gray-200/80">
         <!-- Modal Header -->
         <div class="px-6 py-4 border-b border-white/10 flex justify-between items-center bg-[#1c1c1c] text-white shrink-0">
           <div class="flex items-center gap-3">
@@ -928,7 +913,7 @@ const getTotalNos = (order: any) => {
     <!-- Mandatory Cancellation Modal -->
     <Teleport to="body">
       <div v-if="isCancelModalOpen" class="fixed inset-0 z-[300] flex items-center justify-center p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[calc(1rem+env(safe-area-inset-top,0px))] bg-black/60 backdrop-blur-xs overflow-y-auto">
-        <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden border border-gray-200">
+        <div ref="cancelModalCardRef" class="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden border border-gray-200">
           <div class="p-6">
             <div class="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mb-4 border border-rose-100 ring-4 ring-rose-50/50">
               <AlertTriangle class="w-6 h-6" />
