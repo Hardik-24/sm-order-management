@@ -37,7 +37,9 @@ export default defineEventHandler(async (event) => {
       supplierStats,
       paymentTermsDist,
       criticalStockoutRisk,
-      negativeStockItems
+      negativeStockItems,
+      salesMonthlyTrend,
+      categoryRevenueShare
     ] = await Promise.all([
       // 1. Inventory KPIs & Health Status
       prisma.$queryRawUnsafe(`
@@ -226,6 +228,41 @@ export default defineEventHandler(async (event) => {
         WHERE p.stock < 0 AND p."isActive" = true
         ORDER BY p.stock ASC
         LIMIT 15
+      `),
+
+      // 12. Monthly Sales Revenue & Invoice Count Trend (Chronological)
+      prisma.$queryRawUnsafe(`
+        SELECT 
+          TO_CHAR("voucherDate", 'YYYY-MM') AS ym,
+          TO_CHAR("voucherDate", 'Mon YY') AS label,
+          COUNT(id)::int AS count,
+          COALESCE(SUM("totalAmount"), 0)::numeric AS revenue,
+          COALESCE(SUM("taxableAmount"), 0)::numeric AS taxable,
+          COALESCE(SUM("taxAmount"), 0)::numeric AS tax
+        FROM busy_vouchers
+        WHERE "voucherType" = 9 AND "voucherDate" IS NOT NULL
+        GROUP BY ym, label
+        ORDER BY ym ASC
+      `),
+
+      // 13. Category Revenue Share from Invoices
+      prisma.$queryRawUnsafe(`
+        SELECT 
+          COALESCE(c.name, 'Uncategorized') AS category_name,
+          COUNT(DISTINCT v.id)::int AS invoice_count,
+          COALESCE(SUM((item->>'qty')::numeric), 0)::numeric AS total_qty,
+          COALESCE(SUM((item->>'amount')::numeric), 0)::numeric AS revenue
+        FROM busy_vouchers v,
+        LATERAL jsonb_array_elements(v.items::jsonb) AS item
+        LEFT JOIN products p ON LOWER(TRIM(p.name)) = LOWER(TRIM(item->>'name'))
+        LEFT JOIN categories c ON p."categoryId" = c.id
+        WHERE (item->>'qty')::numeric > 0 
+          AND item->>'name' NOT ILIKE '%freight%' 
+          AND item->>'name' NOT ILIKE '%discount%'
+          AND item->>'name' NOT ILIKE '%round off%'
+        GROUP BY c.name
+        ORDER BY revenue DESC NULLS LAST
+        LIMIT 8
       `)
     ])
 
@@ -282,6 +319,50 @@ export default defineEventHandler(async (event) => {
     const totalTaxable = Number(salesSummary.taxable || 0)
     const totalTax = Number(salesSummary.tax || 0)
 
+    // Process monthly sales trend with Month-over-Month calculation
+    const monthlyTrend = (salesMonthlyTrend as any[]).map((row, idx, arr) => {
+      const rev = Number(row.revenue || 0)
+      const prevRev = idx > 0 ? Number(arr[idx - 1].revenue || 0) : 0
+      const momGrowth = prevRev > 0 ? Number((((rev - prevRev) / prevRev) * 100).toFixed(1)) : null
+      return {
+        ym: row.ym,
+        label: row.label,
+        count: Number(row.count || 0),
+        revenue: rev,
+        taxable: Number(row.taxable || 0),
+        tax: Number(row.tax || 0),
+        avgInvoiceValue: Number(row.count) > 0 ? Math.round(rev / Number(row.count)) : 0,
+        momGrowth
+      }
+    })
+
+    // Process category revenue share
+    const totalCatRevenue = (categoryRevenueShare as any[]).reduce((sum, c) => sum + Number(c.revenue || 0), 0)
+    const categoryShare = (categoryRevenueShare as any[]).map(c => {
+      const rev = Number(c.revenue || 0)
+      const sharePct = totalCatRevenue > 0 ? Number(((rev / totalCatRevenue) * 100).toFixed(1)) : 0
+      return {
+        name: c.category_name,
+        invoiceCount: Number(c.invoice_count || 0),
+        totalQty: Number(c.total_qty || 0),
+        revenue: rev,
+        sharePct
+      }
+    })
+
+    // Customer Pareto 80/20 tiering
+    const top5Spend = customerList.slice(0, 5).reduce((sum, c) => sum + c.totalSpend, 0)
+    const top10Spend = customerList.slice(0, 10).reduce((sum, c) => sum + c.totalSpend, 0)
+    const top25Spend = customerList.reduce((sum, c) => sum + c.totalSpend, 0)
+    const paretoConcentration = {
+      top5Spend,
+      top5SharePct: totalSalesRevenue > 0 ? Number(((top5Spend / totalSalesRevenue) * 100).toFixed(1)) : 0,
+      top10Spend,
+      top10SharePct: totalSalesRevenue > 0 ? Number(((top10Spend / totalSalesRevenue) * 100).toFixed(1)) : 0,
+      top25Spend,
+      top25SharePct: totalSalesRevenue > 0 ? Number(((top25Spend / totalSalesRevenue) * 100).toFixed(1)) : 0
+    }
+
     const result = {
       success: true,
       timestamp: new Date().toISOString(),
@@ -294,6 +375,9 @@ export default defineEventHandler(async (event) => {
         taxableAmount: totalTaxable,
         taxAmount: totalTax,
         averageOrderValue: totalSalesCount > 0 ? Math.round(totalSalesRevenue / totalSalesCount) : 0,
+        monthlyTrend,
+        categoryRevenueShare: categoryShare,
+        paretoConcentration,
         highPerformingRevenue: (topRevenueItems as any[]).map(enrichItem),
         highPerformingVolume: (fastMovingQty as any[]).map(enrichItem),
         topCustomers: customerList

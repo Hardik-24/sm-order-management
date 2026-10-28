@@ -188,6 +188,56 @@
         </div>
       </div>
 
+      <!-- 1. Interactive Monthly Revenue & Invoice Trend Chart -->
+      <RevenueTrendChart 
+        :timeline="data.sales.monthlyTrend || []" 
+      />
+
+      <!-- 2. Category Share Donut & Customer Pareto Distribution Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div class="lg:col-span-7">
+          <CategoryShareDonut 
+            :categories="data.sales.categoryRevenueShare || []"
+            :selected-category="selectedCategoryFilter"
+            @select-category="handleSelectCategory"
+          />
+        </div>
+        <div class="lg:col-span-5">
+          <CustomerParetoChart 
+            :pareto="data.sales.paretoConcentration"
+            :total-sales-revenue="data.sales.totalRevenue"
+            @select-tier="handleSelectTier"
+          />
+        </div>
+      </div>
+
+      <!-- 3. Active Cross-Filter Banner (if Category or Tier is selected) -->
+      <div 
+        v-if="selectedCategoryFilter || selectedCustomerTierFilter !== 'all'" 
+        class="p-3 bg-indigo-50/90 rounded-xl border border-indigo-200 flex items-center justify-between text-xs text-indigo-900 shadow-2xs"
+      >
+        <div class="flex items-center gap-2 flex-wrap">
+          <span class="font-bold flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-indigo-600 animate-pulse"></span>
+            Active Table Filters:
+          </span>
+          <span v-if="selectedCategoryFilter" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white font-bold text-indigo-700 border border-indigo-200 shadow-2xs">
+            Category: {{ selectedCategoryFilter }}
+            <button @click="selectedCategoryFilter = null" class="cursor-pointer hover:text-indigo-950 p-0.5"><X class="w-3 h-3" /></button>
+          </span>
+          <span v-if="selectedCustomerTierFilter !== 'all'" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white font-bold text-amber-800 border border-amber-200 shadow-2xs">
+            Tier: {{ selectedCustomerTierFilter === 'vip' ? 'Top 5 VIPs' : 'Rank 6-10 Gold' }}
+            <button @click="selectedCustomerTierFilter = 'all'" class="cursor-pointer hover:text-amber-950 p-0.5"><X class="w-3 h-3" /></button>
+          </span>
+        </div>
+        <button 
+          @click="selectedCategoryFilter = null; selectedCustomerTierFilter = 'all'"
+          class="font-bold text-indigo-700 hover:text-indigo-950 underline cursor-pointer text-[11px] shrink-0"
+        >
+          Reset All Filters
+        </button>
+      </div>
+
       <!-- High-Performing SKUs Explorer & Top Customers Grid -->
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <!-- High-Performing SKUs (Left 7 Cols) -->
@@ -446,66 +496,18 @@
         </div>
       </div>
 
-      <!-- Monthly Movement Trendline (Inflow vs Outflow) -->
-      <div v-if="data.movement.monthlyFlow && data.movement.monthlyFlow.length > 0" class="bg-white rounded-2xl p-6 border border-gray-200/80 shadow-xs">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-gray-100">
-          <div>
-            <h2 class="text-base font-bold text-gray-900 flex items-center gap-2">
-              <TrendingUp class="w-5 h-5 text-sky-600" />
-              Monthly Warehouse Movement Velocity (Inflow vs Outflow)
-            </h2>
-            <p class="text-xs text-gray-500 mt-0.5">Month-by-month warehouse inflow (purchases/returns) vs outflow (sales/dispatches)</p>
-          </div>
-          <div class="flex items-center gap-4 text-xs font-semibold">
-            <span class="flex items-center gap-1.5 text-emerald-700">
-              <span class="w-3 h-3 rounded-sm bg-emerald-500"></span> Inward Receipts
-            </span>
-            <span class="flex items-center gap-1.5 text-rose-700">
-              <span class="w-3 h-3 rounded-sm bg-rose-500"></span> Outward Dispatches
-            </span>
-          </div>
-        </div>
+      <!-- 1. Interactive Monthly Movement Velocity Chart (Dual Bar + Net Balance) -->
+      <WarehouseVelocityChart 
+        :monthly-flow="data.movement.monthlyFlow || []" 
+      />
 
-        <!-- Visual Grouped Bar Chart -->
-        <div class="mt-6 grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-3">
-          <div 
-            v-for="m in data.movement.monthlyFlow" 
-            :key="m.label"
-            class="flex flex-col items-center p-3 rounded-xl bg-gray-50/70 border border-gray-100 hover:bg-gray-100/60 transition-all text-center"
-          >
-            <span class="text-xs font-bold text-gray-700 mb-2">{{ m.label }}</span>
-            
-            <!-- Bar container -->
-            <div class="w-full flex items-end justify-center gap-2 h-28 pb-1 border-b border-gray-200">
-              <!-- Inward Bar -->
-              <div class="w-4 bg-emerald-500 rounded-t-sm transition-all duration-500 relative group flex items-end justify-center" :style="{ height: getBarHeight(m.inward) + '%' }">
-                <span class="opacity-0 group-hover:opacity-100 absolute -top-7 text-[10px] font-bold bg-gray-900 text-white px-1.5 py-0.5 rounded shadow whitespace-nowrap z-10 transition-opacity">
-                  +{{ formatNumber(m.inward) }}
-                </span>
-              </div>
-              <!-- Outward Bar -->
-              <div class="w-4 bg-rose-400 rounded-t-sm transition-all duration-500 relative group flex items-end justify-center" :style="{ height: getBarHeight(m.outward) + '%' }">
-                <span class="opacity-0 group-hover:opacity-100 absolute -top-7 text-[10px] font-bold bg-gray-900 text-white px-1.5 py-0.5 rounded shadow whitespace-nowrap z-10 transition-opacity">
-                  -{{ formatNumber(m.outward) }}
-                </span>
-              </div>
-            </div>
-
-            <!-- Month Stats -->
-            <div class="mt-2 text-[11px] space-y-0.5 w-full">
-              <div class="flex justify-between text-gray-500">
-                <span>In:</span> <span class="font-semibold text-emerald-700">{{ formatNumber(m.inward) }}</span>
-              </div>
-              <div class="flex justify-between text-gray-500">
-                <span>Out:</span> <span class="font-semibold text-rose-700">{{ formatNumber(m.outward) }}</span>
-              </div>
-              <div class="flex justify-between font-bold pt-1 border-t border-gray-200" :class="m.net >= 0 ? 'text-emerald-700' : 'text-rose-600'">
-                <span>Net:</span> <span>{{ m.net >= 0 ? '+' : '' }}{{ formatNumber(m.net) }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <!-- 2. Catalog Health & Stock Runway Distribution Segment Bar -->
+      <StockRunwaySegmentBar 
+        :fast-count="data.movement.fastMoving.length"
+        :stockout-count="data.movement.stockoutRisk.length"
+        :dead-count="data.movement.deadStock.length"
+        @select-tab="t => movementSubTab = t"
+      />
 
       <!-- Movement Explorer Card with Sub-Tabs (Fast-Moving, Dead Stock, Stockout Risk, Negative Stock) -->
       <div class="bg-white rounded-2xl p-6 border border-gray-200/80 shadow-xs flex flex-col">
@@ -843,7 +845,12 @@
         </div>
       </div>
 
-      <!-- Category Procurement & Margin Spread Analysis -->
+      <!-- 1. Interactive Category Capital Allocation & Margin Spread Chart -->
+      <CategoryCapitalSpreadChart 
+        :categories="data.purchases.categories || []" 
+      />
+
+      <!-- Category Procurement & Margin Spread Analysis Table -->
       <div class="bg-white rounded-2xl p-6 border border-gray-200/80 shadow-xs flex flex-col">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-gray-100 gap-2">
           <div>
@@ -910,10 +917,16 @@ import { ref, computed, onMounted, nextTick } from 'vue'
 import { 
   IndianRupee, Boxes, Users, AlertTriangle, Tag, Clock, 
   RefreshCw, AlertCircle, Crown, Search, Building2, Truck, 
-  TrendingUp, Flame, Zap, Activity, ShieldCheck 
+  TrendingUp, Flame, Zap, Activity, ShieldCheck, X, PieChart 
 } from 'lucide-vue-next'
 import { useGsapAnimation } from '~/composables/useGsapAnimation'
 import OdometerNumber from '~/components/ui/OdometerNumber.vue'
+import RevenueTrendChart from '~/components/analytics/RevenueTrendChart.vue'
+import CategoryShareDonut from '~/components/analytics/CategoryShareDonut.vue'
+import CustomerParetoChart from '~/components/analytics/CustomerParetoChart.vue'
+import WarehouseVelocityChart from '~/components/analytics/WarehouseVelocityChart.vue'
+import CategoryCapitalSpreadChart from '~/components/analytics/CategoryCapitalSpreadChart.vue'
+import StockRunwaySegmentBar from '~/components/analytics/StockRunwaySegmentBar.vue'
 
 const { animateStagger, animateTabSwitch, initContext } = useGsapAnimation()
 const tabContentRef = ref<HTMLElement | null>(null)
@@ -926,6 +939,18 @@ const data = ref<any | null>(null)
 const mainTab = ref<'sales' | 'movement' | 'purchases'>('sales')
 const skuRankingMode = ref<'revenue' | 'volume'>('revenue')
 const movementSubTab = ref<'fast' | 'dead' | 'risk' | 'negative'>('fast')
+
+// Interactive Cross-Filter state
+const selectedCategoryFilter = ref<string | null>(null)
+const selectedCustomerTierFilter = ref<'all' | 'vip' | 'gold'>('all')
+
+const handleSelectCategory = (catName: string | null) => {
+  selectedCategoryFilter.value = catName
+}
+
+const handleSelectTier = (tier: 'all' | 'vip' | 'gold') => {
+  selectedCustomerTierFilter.value = tier
+}
 
 const switchTab = (tab: 'sales' | 'movement' | 'purchases') => {
   if (mainTab.value === tab) return
@@ -985,12 +1010,17 @@ const averageInvoiceValue = computed(() => {
   return Math.round(rev / cnt)
 })
 
-// Filtered SKUs for Sales Tab
+// Filtered SKUs for Sales Tab (Supports Category Drill-Down)
 const filteredSkus = computed(() => {
   if (!data.value?.sales) return []
-  const list = skuRankingMode.value === 'revenue' 
+  let list = skuRankingMode.value === 'revenue' 
     ? data.value.sales.highPerformingRevenue 
     : data.value.sales.highPerformingVolume
+
+  if (selectedCategoryFilter.value) {
+    const targetCat = selectedCategoryFilter.value.toLowerCase().trim()
+    list = list.filter((p: any) => (p.category || '').toLowerCase().trim() === targetCat)
+  }
 
   if (!skuSearchQuery.value.trim()) return list
 
@@ -1002,10 +1032,17 @@ const filteredSkus = computed(() => {
   )
 })
 
-// Filtered Customers for Sales Tab
+// Filtered Customers for Sales Tab (Supports Pareto Tier Drill-Down)
 const filteredCustomers = computed(() => {
   if (!data.value?.sales?.topCustomers) return []
-  const list = data.value.sales.topCustomers
+  let list = data.value.sales.topCustomers
+
+  if (selectedCustomerTierFilter.value === 'vip') {
+    list = list.slice(0, 5)
+  } else if (selectedCustomerTierFilter.value === 'gold') {
+    list = list.slice(5, 15)
+  }
+
   if (!customerSearchQuery.value.trim()) return list
 
   const q = customerSearchQuery.value.toLowerCase().trim()
@@ -1060,16 +1097,6 @@ const grossMarginSpreadPercentage = computed(() => {
   if (cost === 0) return 0
   return Math.round(((sale - cost) / cost) * 100)
 })
-
-// Bar height calculator for Monthly Velocity Chart
-const getBarHeight = (value: number) => {
-  if (!data.value?.movement?.monthlyFlow || data.value.movement.monthlyFlow.length === 0) return 10
-  const maxVal = Math.max(
-    ...data.value.movement.monthlyFlow.map((m: any) => Math.max(m.inward || 0, m.outward || 0))
-  )
-  if (maxVal === 0) return 10
-  return Math.max(8, Math.min(100, Math.round((value / maxVal) * 100)))
-}
 
 // Relative timestamp formatter
 const formattedLastSynced = computed(() => {
