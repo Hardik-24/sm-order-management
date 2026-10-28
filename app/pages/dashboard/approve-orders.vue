@@ -25,10 +25,7 @@ import {
   IndianRupee,
   Loader2,
   Award,
-  Ban,
-  Minus,
-  Plus,
-  RotateCcw
+  Ban
 } from 'lucide-vue-next'
 import { formatCurrency, formatDateTime } from '~/lib/utils'
 import { useGsapAnimation } from '~/composables/useGsapAnimation'
@@ -166,16 +163,6 @@ const computedOrderTotal = computed(() => {
     return sum + (Number(itm.approvedQuantity || 0) * Number(itm.unitPrice || 0))
   }, 0)
 })
-
-const stepQty = (item: any, delta: number) => {
-  const current = Number(item.approvedQuantity || 0)
-  const next = Math.max(0, current + delta)
-  item.approvedQuantity = next
-}
-
-const resetQty = (item: any) => {
-  item.approvedQuantity = item.quantity
-}
 
 const submitApproval = async () => {
   if (!selectedOrder.value) return
@@ -771,321 +758,214 @@ const getTotalNos = (order: any) => {
     <Teleport to="body">
       <div 
         v-if="isReviewModalOpen" 
-        class="fixed inset-0 z-[300] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto"
+        class="fixed inset-0 z-[350] flex items-center justify-center p-2 sm:p-4 md:p-6 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[calc(1rem+env(safe-area-inset-top,0px))] overflow-y-auto"
       >
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="isReviewModalOpen = false"></div>
+        
         <div 
           ref="reviewModalCardRef" 
-          class="bg-white w-full h-[94dvh] sm:h-auto sm:max-h-[90vh] sm:max-w-4xl rounded-t-2xl sm:rounded-2xl flex flex-col shadow-2xl overflow-hidden border border-gray-200/80"
+          class="relative bg-white rounded-xl shadow-2xl w-full max-w-5xl flex flex-col max-h-[calc(100dvh-2.5rem-env(safe-area-inset-bottom,0px)-env(safe-area-inset-top,0px))] md:max-h-[90vh] overflow-hidden border border-gray-100"
         >
-          <!-- Modal Header -->
-          <div class="px-4 py-3.5 sm:px-6 sm:py-4 border-b border-white/10 flex justify-between items-center bg-[#1c1c1c] text-white shrink-0">
-            <div class="flex items-center gap-2.5 sm:gap-3 min-w-0">
-              <div class="w-8 h-8 rounded-lg bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
-                <CheckCheck class="w-4 h-4" />
-              </div>
-              <div class="min-w-0">
-                <div class="flex items-center gap-2 flex-wrap">
-                  <h3 class="text-sm sm:text-base font-bold truncate">Approve: {{ selectedOrder?.orderNumber }}</h3>
-                  <span v-if="selectedOrder?.isUrgent" class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">
-                    <Zap class="w-2.5 h-2.5 fill-rose-300" /> URGENT
-                  </span>
-                </div>
-                <p class="text-xs text-gray-300 truncate">
-                  {{ selectedOrder?.customer?.company || selectedOrder?.customer?.name || 'Direct Customer' }}
-                </p>
-              </div>
+          <!-- Header -->
+          <div class="flex items-center justify-between p-4 sm:p-5 border-b border-gray-100 bg-gray-50 shrink-0">
+            <div>
+              <h2 class="text-base sm:text-lg font-bold text-gray-900 flex items-center gap-2">
+                <CheckCheck class="w-5 h-5 text-[#1b3b5f]" />
+                <span>Review & Approve Order</span>
+              </h2>
+              <p class="text-xs sm:text-sm text-gray-500 mt-0.5 sm:mt-1">Order: {{ selectedOrder?.orderNumber }}</p>
             </div>
-            <button 
-              @click="isReviewModalOpen = false" 
-              class="text-gray-400 hover:text-white p-2 rounded-xl hover:bg-white/10 active:bg-white/20 transition-colors cursor-pointer shrink-0 ml-2"
-              title="Close modal"
-            >
+            <button @click="isReviewModalOpen = false" class="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-200 transition-colors cursor-pointer">
               <X class="w-5 h-5" />
             </button>
           </div>
 
-          <!-- Modal Body (Scrollable) -->
-          <div class="p-3.5 sm:p-6 overflow-y-auto flex-1 space-y-4 sm:space-y-6">
-            <!-- Client & Delivery Card -->
-            <div class="bg-gray-50/80 rounded-xl p-3.5 sm:p-4 border border-gray-200/80 flex flex-col sm:flex-row gap-3 sm:gap-4 justify-between items-start sm:items-center text-xs">
-              <div class="flex items-start sm:items-center gap-3 min-w-0">
-                <div class="w-10 h-10 rounded-xl bg-[#1b3b5f] text-white font-bold flex items-center justify-center text-sm shadow-xs shrink-0 mt-0.5 sm:mt-0">
-                  {{ (selectedOrder?.customer?.company || selectedOrder?.customer?.name || 'C')[0]?.toUpperCase() }}
-                </div>
-                <div class="min-w-0">
-                  <div class="font-bold text-gray-900 text-sm flex items-center gap-1.5 flex-wrap">
-                    <span class="truncate">{{ selectedOrder?.customer?.company || selectedOrder?.customer?.name }}</span>
-                    <span 
-                      v-if="selectedOrder?.customer?.privilegeTier" 
-                      class="text-[9px] px-1.5 py-0.5 rounded font-bold uppercase border shadow-2xs"
-                      :class="getPrivilegeColor(selectedOrder?.customer?.privilegeTier)"
-                    >
-                      {{ selectedOrder?.customer?.privilegeTier }}
-                    </span>
-                    <span 
-                      v-if="selectedOrder?.customer?.isPriorityClient"
-                      class="text-[9px] px-1.5 py-0.5 rounded font-bold text-amber-700 bg-amber-50 border border-amber-200 shadow-2xs"
-                    >
-                      ★ Priority
-                    </span>
-                  </div>
-                  <div class="text-xs text-gray-500 mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
-                    <span v-if="selectedOrder?.customer?.name && selectedOrder?.customer?.company" class="text-gray-600">{{ selectedOrder?.customer?.name }}</span>
-                    <a 
-                      v-if="selectedOrder?.customer?.phone" 
-                      :href="`tel:${selectedOrder?.customer?.phone}`" 
-                      class="text-blue-600 hover:text-blue-700 flex items-center gap-1 font-medium"
-                    >
-                      <Phone class="w-3 h-3" /> {{ selectedOrder?.customer?.phone }}
-                    </a>
-                  </div>
-                </div>
+          <!-- Content -->
+          <div class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
+            <!-- Customer Details Row -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-xl border border-gray-200 text-xs">
+              <div>
+                <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Customer Details</p>
+                <p class="text-sm font-bold text-gray-900 flex items-center gap-2">
+                  <span>{{ selectedOrder?.customer?.company || selectedOrder?.customer?.name }}</span>
+                  <span 
+                    v-if="selectedOrder?.customer?.privilegeTier" 
+                    class="text-[9px] px-1.5 py-0.5 rounded font-bold uppercase border shadow-2xs" 
+                    :class="getPrivilegeColor(selectedOrder?.customer?.privilegeTier)"
+                  >
+                    {{ selectedOrder?.customer?.privilegeTier }}
+                  </span>
+                  <span 
+                    v-if="selectedOrder?.customer?.isPriorityClient" 
+                    class="text-[9px] px-1.5 py-0.5 rounded font-bold text-amber-700 bg-amber-50 border border-amber-200 shadow-2xs"
+                  >
+                    ★ Priority
+                  </span>
+                </p>
+                <p v-if="selectedOrder?.customer?.name && selectedOrder?.customer?.company" class="text-xs text-gray-600 mt-0.5">{{ selectedOrder?.customer?.name }}</p>
+                <p class="text-xs text-gray-500 mt-0.5 truncate flex items-center gap-1">
+                  <MapPin class="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                  <span>{{ selectedOrder?.deliveryAddress || selectedOrder?.customer?.address || 'Direct Delivery' }}</span>
+                </p>
+                <p v-if="selectedOrder?.customer?.phone" class="text-xs text-blue-600 mt-1 flex items-center gap-1 font-medium">
+                  <Phone class="w-3 h-3" /> {{ selectedOrder?.customer?.phone }}
+                </p>
               </div>
-
-              <div class="flex flex-col sm:items-end gap-1.5 text-xs text-gray-600 w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-200/60">
-                <div class="flex items-center gap-1.5 flex-wrap">
-                  <span v-if="selectedOrder?.customer?.paymentTerms" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-700 border border-gray-200">
-                    {{ selectedOrder?.customer?.paymentTerms }}
-                  </span>
-                  <span class="text-[11px] text-gray-500 font-medium">
-                    Order Date: {{ formatDateTime(selectedOrder?.createdAt) }}
-                  </span>
+              
+              <div class="space-y-2">
+                <div class="grid grid-cols-2 gap-2">
+                  <div class="bg-white p-2.5 rounded-lg border border-gray-200">
+                    <span class="text-[10px] font-bold text-gray-500 uppercase tracking-widest block">Order Date</span>
+                    <span class="text-xs font-semibold text-gray-800">{{ formatDateTime(selectedOrder?.createdAt) }}</span>
+                  </div>
+                  <div class="bg-white p-2.5 rounded-lg border border-gray-200">
+                    <span class="text-[10px] font-bold text-gray-500 uppercase tracking-widest block">Payment Terms</span>
+                    <span class="text-xs font-semibold text-gray-800">{{ selectedOrder?.customer?.paymentTerms || 'Standard' }}</span>
+                  </div>
                 </div>
-                <div class="flex items-center gap-1 text-gray-500 text-xs truncate max-w-full sm:max-w-xs">
-                  <MapPin class="w-3 h-3 text-gray-400 shrink-0" />
-                  <span class="truncate">{{ selectedOrder?.deliveryAddress || 'Registered Delivery Location' }}</span>
+                <div v-if="selectedOrder?.isUrgent" class="p-2 rounded-lg bg-rose-50 border border-rose-200 flex items-center gap-2 text-rose-700 text-xs font-bold">
+                  <Zap class="w-4 h-4 fill-rose-600 shrink-0" />
+                  <span>⚡ Urgent Priority Order - Expedited Processing</span>
                 </div>
               </div>
             </div>
 
-            <!-- Items Section -->
+            <!-- Items Verification Table (Scrollable on mobile, unified clean layout without plus/minus) -->
             <div>
-              <div class="flex items-center justify-between mb-2.5 sm:mb-3">
-                <div>
-                  <h4 class="text-xs sm:text-sm font-bold text-gray-900">Item Verification & Rate Adjustment</h4>
-                  <p class="text-[11px] sm:text-xs text-gray-500 mt-0.5">Adjust approved quantities or rates if volume discounts apply</p>
-                </div>
-                <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-gray-100 text-gray-600 shrink-0">
+              <div class="flex items-center justify-between mb-3">
+                <h3 class="text-xs font-bold text-gray-900 uppercase tracking-widest">
+                  Item Verification & Rate Adjustment
+                </h3>
+                <span class="text-xs text-gray-500">
                   {{ editableItems.length }} item{{ editableItems.length > 1 ? 's' : '' }}
                 </span>
               </div>
 
-              <!-- Desktop Table View (hidden on mobile, visible md and up) -->
-              <div class="hidden md:block border border-gray-200 rounded-xl overflow-hidden shadow-2xs">
-                <table class="w-full text-left text-xs">
-                  <thead class="bg-gray-50/80 border-b border-gray-200 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
-                    <tr>
-                      <th class="py-2.5 px-3.5">Item & SKU</th>
-                      <th class="py-2.5 px-3 text-center">Ordered</th>
-                      <th class="py-2.5 px-3">Approved Qty</th>
-                      <th class="py-2.5 px-3">Unit Rate (₹)</th>
-                      <th class="py-2.5 px-3 text-center">Tax Mode</th>
-                      <th class="py-2.5 px-3.5 text-right">Subtotal</th>
+              <div class="border border-gray-200 rounded-xl overflow-x-auto">
+                <table class="w-full text-left border-collapse min-w-[700px] text-xs">
+                  <thead>
+                    <tr class="bg-gray-50 border-b border-gray-200 font-bold text-gray-500 uppercase tracking-widest text-[10px]">
+                      <th class="px-3 py-3">Item / SKU</th>
+                      <th class="px-3 py-3 text-center w-20">Ordered</th>
+                      <th class="px-3 py-3 text-center w-28">Approved Qty</th>
+                      <th class="px-3 py-3 text-right w-32">Rate (₹)</th>
+                      <th class="px-3 py-3 text-center w-24">Tax Mode</th>
+                      <th class="px-3 py-3 text-right w-28">Total (₹)</th>
                     </tr>
                   </thead>
                   <tbody class="divide-y divide-gray-100 bg-white">
-                    <tr v-for="item in editableItems" :key="item.id" class="hover:bg-gray-50/60 transition-colors">
-                      <td class="py-3 px-3.5">
-                        <div class="font-semibold text-gray-900 text-xs sm:text-sm">{{ item.productName }}</div>
-                        <div class="text-[10px] text-gray-400 flex items-center gap-1.5 mt-0.5">
-                          <span class="font-mono bg-gray-100 px-1.5 py-0.2 rounded text-gray-600">SKU: {{ item.sku }}</span>
-                          <span v-if="item.applyLastPrice" class="text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded font-semibold border border-emerald-200">
-                            Last Price Applied
+                    <tr v-for="item in editableItems" :key="item.id" class="hover:bg-gray-50/50">
+                      <td class="px-3 py-2.5">
+                        <p class="font-bold text-gray-900">{{ item.productName }}</p>
+                        <p class="text-[11px] text-gray-500 mt-0.5 font-mono">
+                          SKU: {{ item.sku }}
+                        </p>
+                        <div class="flex flex-wrap items-center gap-1.5 mt-1">
+                          <span 
+                            v-if="item.applyLastPrice" 
+                            class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-2xs"
+                            title="Applied Customer's Last Agreed Price"
+                          >
+                            Last Price
+                          </span>
+                          <span 
+                            v-if="item.itemNotes" 
+                            class="inline-flex items-center text-[10px] text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200/70 truncate max-w-[220px]" 
+                            :title="item.itemNotes"
+                          >
+                            💬 {{ item.itemNotes }}
                           </span>
                         </div>
-                        <div v-if="item.itemNotes" class="mt-1.5 text-xs text-amber-800 bg-amber-50/90 p-2 rounded-lg border border-amber-200/80 flex items-start gap-1.5">
-                          <span class="font-bold shrink-0">Note:</span>
-                          <span>{{ item.itemNotes }}</span>
-                        </div>
                       </td>
-                      <td class="py-3 px-3 text-center font-semibold text-gray-600">
-                        {{ item.quantity }}
-                      </td>
-                      <td class="py-3 px-3">
+                      <td class="px-3 py-2.5 text-center text-gray-600 font-semibold">{{ item.quantity }}</td>
+                      <td class="px-3 py-2.5 text-center">
                         <input 
-                          v-model.number="item.approvedQuantity" 
                           type="number" 
                           min="0"
-                          class="w-20 px-2.5 py-1.5 border border-gray-300 rounded-lg font-bold text-gray-900 text-xs focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f] outline-none transition-all"
+                          v-model.number="item.approvedQuantity" 
+                          class="w-20 text-center font-bold text-xs border border-gray-300 rounded p-1.5 focus:ring-[#1b3b5f] focus:border-[#1b3b5f] bg-white outline-none" 
                         />
                       </td>
-                      <td class="py-3 px-3">
-                        <div class="relative flex items-center w-28">
-                          <IndianRupee class="absolute left-2.5 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+                      <td class="px-3 py-2.5 text-right">
+                        <div class="relative inline-flex items-center">
+                          <span class="absolute left-2 text-gray-400 text-xs">₹</span>
                           <input 
-                            v-model.number="item.unitPrice" 
                             type="number" 
-                            step="0.01" 
+                            step="0.01"
                             min="0"
-                            class="w-full pl-7 pr-2.5 py-1.5 border border-gray-300 rounded-lg font-bold text-gray-900 text-xs focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f] outline-none transition-all"
+                            v-model.number="item.unitPrice" 
+                            class="w-28 text-right pl-5 pr-2 text-xs border border-gray-300 rounded p-1.5 focus:ring-[#1b3b5f] focus:border-[#1b3b5f] bg-white font-medium outline-none" 
                           />
                         </div>
                       </td>
-                      <td class="py-3 px-3 text-center">
-                        <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold" :class="item.isTaxInclusive ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-gray-100 text-gray-600'">
+                      <td class="px-3 py-2.5 text-center">
+                        <span 
+                          class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold"
+                          :class="item.isTaxInclusive ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-gray-100 text-gray-600'"
+                        >
                           {{ item.isTaxInclusive ? 'Tax Incl.' : 'Tax Excl.' }}
                         </span>
                       </td>
-                      <td class="py-3 px-3.5 text-right font-bold text-gray-900">
+                      <td class="px-3 py-2.5 text-right font-bold text-gray-900">
                         {{ formatCurrency(Number(item.approvedQuantity || 0) * Number(item.unitPrice || 0)) }}
                       </td>
                     </tr>
                   </tbody>
                 </table>
               </div>
+            </div>
 
-              <!-- Mobile Card-Based Items View (visible on < md) -->
-              <div class="md:hidden space-y-3">
-                <div 
-                  v-for="(item, idx) in editableItems" 
-                  :key="item.id" 
-                  class="bg-white rounded-xl border border-gray-200 p-3 shadow-2xs space-y-2.5"
-                >
-                  <!-- Item Header -->
-                  <div class="flex items-start justify-between gap-2">
-                    <div class="min-w-0 flex-1">
-                      <div class="flex items-center gap-1.5">
-                        <span class="w-5 h-5 rounded-full bg-gray-100 text-gray-500 font-bold text-[10px] flex items-center justify-center shrink-0">
-                          {{ idx + 1 }}
-                        </span>
-                        <div class="font-bold text-gray-900 text-xs sm:text-sm leading-tight truncate">
-                          {{ item.productName }}
-                        </div>
-                      </div>
-                      <div class="flex items-center gap-1.5 flex-wrap mt-1 ml-6.5 text-[10px]">
-                        <span class="font-mono bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">
-                          SKU: {{ item.sku }}
-                        </span>
-                        <span 
-                          class="px-1.5 py-0.5 rounded font-semibold"
-                          :class="item.isTaxInclusive ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-gray-100 text-gray-600'"
-                        >
-                          {{ item.isTaxInclusive ? 'Tax Incl.' : 'Tax Excl.' }}
-                        </span>
-                        <span v-if="item.applyLastPrice" class="text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-semibold border border-emerald-200">
-                          Last Price
-                        </span>
-                      </div>
-                    </div>
+            <!-- Approval Notes & Summary Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+              <div>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Approval Notes (Optional)</label>
+                <textarea 
+                  v-model="approvalNotes" 
+                  rows="3"
+                  placeholder="e.g. Special rate approved for volume discount, priority truck dispatch authorized..."
+                  class="w-full p-2.5 text-xs border border-gray-300 rounded-xl focus:ring-[#1b3b5f] focus:border-[#1b3b5f] outline-none resize-none bg-white"
+                ></textarea>
+              </div>
+
+              <div class="flex justify-end">
+                <div class="w-full sm:w-80 bg-gray-50 rounded-xl p-4 border border-gray-200 space-y-2 text-xs">
+                  <div class="flex justify-between items-center text-gray-600">
+                    <span>Total Items</span>
+                    <span class="font-semibold">{{ editableItems.length }}</span>
                   </div>
-
-                  <!-- Item Note if present -->
-                  <div v-if="item.itemNotes" class="text-xs text-amber-800 bg-amber-50 p-2 rounded-lg border border-amber-200 flex items-start gap-1.5">
-                    <span class="font-bold shrink-0">Note:</span>
-                    <span>{{ item.itemNotes }}</span>
+                  <div class="flex justify-between items-center text-gray-600">
+                    <span>Total Approved Units</span>
+                    <span class="font-semibold">{{ editableItems.reduce((sum, itm) => sum + Number(itm.approvedQuantity || 0), 0) }}</span>
                   </div>
-
-                  <!-- Touch Controls Grid: Approved Qty & Unit Rate -->
-                  <div class="grid grid-cols-2 gap-2 pt-1">
-                    <!-- Approved Qty Stepper -->
-                    <div class="bg-gray-50/80 p-2 rounded-lg border border-gray-200/80">
-                      <div class="flex items-center justify-between text-[11px] font-bold text-gray-700 mb-1">
-                        <span>Approved Qty</span>
-                        <span class="text-[10px] text-gray-500 font-normal">Ord: <strong class="text-gray-700">{{ item.quantity }}</strong></span>
-                      </div>
-                      <div class="flex items-center gap-1">
-                        <button 
-                          type="button" 
-                          @click="stepQty(item, -1)"
-                          class="w-7 h-7 rounded-lg bg-white border border-gray-300 text-gray-700 flex items-center justify-center hover:bg-gray-100 active:scale-95 transition-all text-xs font-bold shadow-2xs"
-                        >
-                          <Minus class="w-3.5 h-3.5" />
-                        </button>
-                        <input 
-                          v-model.number="item.approvedQuantity" 
-                          type="number" 
-                          min="0"
-                          class="w-full text-center py-1 bg-white border border-gray-300 rounded-lg font-bold text-gray-900 text-xs focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f] outline-none"
-                        />
-                        <button 
-                          type="button" 
-                          @click="stepQty(item, 1)"
-                          class="w-7 h-7 rounded-lg bg-white border border-gray-300 text-gray-700 flex items-center justify-center hover:bg-gray-100 active:scale-95 transition-all text-xs font-bold shadow-2xs"
-                        >
-                          <Plus class="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                      <button 
-                        v-if="item.approvedQuantity !== item.quantity" 
-                        type="button"
-                        @click="resetQty(item)"
-                        class="w-full mt-1.5 text-[9px] font-semibold text-blue-600 hover:text-blue-700 flex items-center justify-center gap-1"
-                      >
-                        <RotateCcw class="w-2.5 h-2.5" /> Reset to {{ item.quantity }}
-                      </button>
-                    </div>
-
-                    <!-- Unit Rate Input -->
-                    <div class="bg-gray-50/80 p-2 rounded-lg border border-gray-200/80">
-                      <div class="text-[11px] font-bold text-gray-700 mb-1">
-                        Unit Rate (₹)
-                      </div>
-                      <div class="relative flex items-center">
-                        <IndianRupee class="absolute left-2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
-                        <input 
-                          v-model.number="item.unitPrice" 
-                          type="number" 
-                          step="0.01" 
-                          min="0"
-                          class="w-full pl-6 pr-2 py-1 bg-white border border-gray-300 rounded-lg font-bold text-gray-900 text-xs focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f] outline-none"
-                        />
-                      </div>
-                      <div class="mt-1.5 text-[9px] text-gray-400 text-right">
-                        Per Unit
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Subtotal Bar for Item -->
-                  <div class="bg-gray-100/70 px-2.5 py-1.5 rounded-lg flex items-center justify-between text-xs">
-                    <span class="text-gray-500 text-[10px]">
-                      {{ item.approvedQuantity || 0 }} × ₹{{ Number(item.unitPrice || 0).toFixed(2) }}
-                    </span>
-                    <div class="font-bold text-gray-900 text-xs">
-                      {{ formatCurrency(Number(item.approvedQuantity || 0) * Number(item.unitPrice || 0)) }}
-                    </div>
+                  <div class="pt-3 border-t border-gray-200 flex justify-between items-center">
+                    <span class="text-xs font-bold text-gray-900 uppercase tracking-widest">Total Approved Value</span>
+                    <span class="text-xl font-black text-[#1b3b5f]">{{ formatCurrency(computedOrderTotal) }}</span>
                   </div>
                 </div>
               </div>
             </div>
 
-            <!-- Approval Notes -->
-            <div>
-              <label class="block text-xs font-bold text-gray-700 mb-1">Approval Notes (Optional)</label>
-              <textarea 
-                v-model="approvalNotes" 
-                rows="2"
-                placeholder="e.g. Special rate approved for volume discount, priority truck dispatch authorized..."
-                class="w-full p-2.5 sm:p-3 border border-gray-300 rounded-xl text-xs focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f] outline-none transition-all resize-none"
-              ></textarea>
-            </div>
           </div>
 
-          <!-- Modal Footer (Sticky at bottom, safe-area aware) -->
-          <div class="p-3.5 sm:px-6 sm:py-4 border-t border-gray-100 bg-gray-50/95 flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 shrink-0 pb-[calc(0.875rem+env(safe-area-inset-bottom,0px))] sm:pb-4">
-            <div class="flex items-center justify-between sm:block">
-              <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider block">Total Approved Value</span>
-              <span class="text-xl sm:text-2xl font-extrabold text-[#1b3b5f]">{{ formatCurrency(computedOrderTotal) }}</span>
-            </div>
-            <div class="flex items-center gap-2 sm:gap-3">
-              <button 
-                @click="isReviewModalOpen = false" 
-                type="button"
-                class="flex-1 sm:flex-none px-4 py-2.5 sm:py-2 text-xs font-semibold text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 active:bg-gray-100 transition-colors cursor-pointer text-center"
-              >
-                Cancel
-              </button>
-              <button 
-                @click="submitApproval" 
-                :disabled="isSubmittingApproval"
-                type="button"
-                class="flex-2 sm:flex-none px-5 sm:px-6 py-2.5 text-xs font-bold text-white bg-[#1b3b5f] hover:bg-[#132c49] active:scale-[0.98] rounded-xl shadow-sm hover:shadow transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
-              >
-                <Loader2 v-if="isSubmittingApproval" class="w-4 h-4 animate-spin" />
-                <CheckCheck v-else class="w-4 h-4" />
-                <span>Confirm & Approve</span>
-              </button>
-            </div>
+          <!-- Footer -->
+          <div class="p-4 border-t border-gray-100 bg-white flex flex-col-reverse sm:flex-row justify-end gap-2.5 sm:gap-3 shrink-0">
+            <button 
+              @click="isReviewModalOpen = false" 
+              type="button"
+              class="w-full sm:w-auto text-center px-4 py-2 text-xs font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button 
+              @click="submitApproval" 
+              :disabled="isSubmittingApproval"
+              type="button"
+              class="w-full sm:w-auto justify-center flex items-center gap-2 px-6 py-2 bg-[#1b3b5f] text-white text-xs font-bold rounded-lg hover:bg-[#132c49] transition-colors disabled:opacity-50 shadow-sm cursor-pointer"
+            >
+              <Loader2 v-if="isSubmittingApproval" class="w-4 h-4 animate-spin" />
+              <CheckCheck v-else class="w-4 h-4" />
+              <span>Confirm & Approve Order</span>
+            </button>
           </div>
         </div>
       </div>
