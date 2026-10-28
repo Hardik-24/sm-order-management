@@ -563,6 +563,9 @@ const scrollToTop = () => {
 const onBottomBarClick = (e: MouseEvent) => {
   const target = e.target as HTMLElement
   if (target && target.closest('a')) {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('close-order-panel'))
+    }
     scrollToTop()
   }
 }
@@ -572,6 +575,9 @@ const onMobileNavContainerClick = (e: MouseEvent) => {
   const target = e.target as HTMLElement
   if (target && (target.closest('a') || target.closest('button'))) {
     isMobileMenuOpen.value = false
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('close-order-panel'))
+    }
     scrollToTop()
   }
 }

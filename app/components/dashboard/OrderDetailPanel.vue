@@ -852,6 +852,20 @@ watch(editForm, () => {
   }
 }, { deep: true })
 
+const route = useRoute()
+watch(() => route.fullPath, () => {
+  if (props.isOpen) {
+    emit('close')
+  }
+})
+
+onMounted(() => {
+  if (typeof window !== 'undefined') {
+    window.addEventListener('close-order-panel', () => {
+      if (props.isOpen) emit('close')
+    })
+  }
+})
 
 </script>
 
@@ -1027,7 +1041,7 @@ watch(editForm, () => {
   </Teleport>
 
   <Teleport to="body">
-    <div v-if="isOpen" class="fixed inset-0 z-[220] overflow-hidden pointer-events-none">
+    <div v-if="isOpen" class="fixed inset-x-0 top-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] md:bottom-0 md:inset-0 z-[190] overflow-hidden pointer-events-none">
       <div class="absolute inset-0 bg-black/30 backdrop-blur-[2px] pointer-events-auto transition-opacity" @click="closePanel"></div>
       
       <div 
@@ -1937,10 +1951,10 @@ watch(editForm, () => {
 
         </div>
 
-        <!-- 5. Sticky Bottom Action Footer (Responsive Multi-Line on Mobile, Never Crops Buttons) -->
+        <!-- 5. Sticky Bottom Action Footer -->
         <div 
           v-if="order"
-          class="px-4 sm:px-6 py-2.5 sm:py-3.5 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] sm:pb-3.5 bg-white border-t border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 shrink-0 shadow-lg z-20"
+          class="px-4 sm:px-6 py-2.5 sm:py-3.5 bg-white border-t border-gray-200 flex items-center justify-between gap-2.5 sm:gap-3 shrink-0 shadow-lg z-20"
         >
           <div class="flex items-center justify-between sm:block">
             <template v-if="context !== 'delivery'">
@@ -1958,28 +1972,6 @@ watch(editForm, () => {
           </div>
 
           <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap justify-end">
-            <!-- Edit Order Details -->
-            <button 
-              v-if="canEditOrders && order.overallStatus !== 'CANCELLED'"
-              @click="openEditModal"
-              title="Edit full order details"
-              class="px-2.5 sm:px-3.5 py-1.5 sm:py-2 text-[11px] sm:text-xs font-bold text-white bg-[#1b3b5f] hover:bg-[#132c49] active:bg-[#0e2035] rounded-lg shadow-sm hover:shadow transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap active:scale-95"
-            >
-              <Edit class="w-3.5 h-3.5" />
-              <span>Edit Order</span>
-            </button>
-
-            <!-- Edit Status across departments -->
-            <button 
-              v-if="canEditOrderStatus"
-              @click="openAdminStatusModal"
-              title="Edit status across all departments"
-              class="px-2.5 sm:px-3.5 py-1.5 sm:py-2 text-[11px] sm:text-xs font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs whitespace-nowrap"
-            >
-              <SlidersHorizontal class="w-3.5 h-3.5" />
-              <span>Edit Status</span>
-            </button>
-
             <!-- Split Order button (Strictly Billing context only) -->
             <button 
               v-if="context === 'billing' && hasRole('ADMIN', 'BILLING') && order.billingStatus?.status !== 'GENERATED' && order.overallStatus !== 'CANCELLED' && order.deliveryStatus?.status !== 'DISPATCHED' && order.deliveryStatus?.status !== 'DELIVERED'"
@@ -2006,15 +1998,6 @@ watch(editForm, () => {
               <CheckCircle2 class="w-3.5 sm:w-4 h-3.5 sm:h-4 text-emerald-600" />
               <span>Bill Generated</span>
             </div>
-
-            <button 
-              v-if="canCancelOrder"
-              @click="openCancelModal"
-              class="px-2.5 sm:px-3.5 py-1.5 sm:py-2 text-[11px] sm:text-xs font-semibold text-rose-600 bg-white border border-rose-200 hover:bg-rose-50 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs whitespace-nowrap"
-            >
-              <Ban class="w-3.5 h-3.5" />
-              <span>Cancel Order</span>
-            </button>
 
             <!-- Approval desk actions only -->
             <template v-if="context === 'approval'">

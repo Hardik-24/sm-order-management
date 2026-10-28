@@ -506,11 +506,11 @@ const getItemsTotalQuantity = (order: Order) => {
 
           <!-- LINE 2: Customer Name & Details -->
           <div class="flex items-center gap-1.5 min-w-0 text-xs">
-            <span class="font-semibold text-gray-800 truncate" :title="order.customer?.name || ''">
+            <span class="font-semibold text-gray-800 shrink-0" :title="order.customer?.name || ''">
               {{ order.customer?.name || 'Walk-in Customer' }}
             </span>
             <span v-if="(order.customer as any)?.isPriorityClient" class="text-amber-500 font-bold text-xs shrink-0" title="Priority Client">★</span>
-            <span v-if="order.customer?.company" class="text-gray-400 text-[11px] truncate shrink-0">
+            <span v-if="order.customer?.company" class="text-gray-400 text-[11px] truncate min-w-0 flex-1">
               ({{ order.customer?.company }})
             </span>
           </div>

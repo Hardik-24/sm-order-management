@@ -374,11 +374,11 @@ const handleOrderSelect = (orderId: string) => {
           </span>
         </div>
 
-        <!-- Create Order CTA Button -->
+        <!-- Create Order CTA Button (Desktop only; on mobile, OrderTable's button after search bar is used) -->
         <NuxtLink
           v-if="canAccessRoute('/dashboard/orders/create')"
           to="/dashboard/orders/create"
-          class="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 bg-[#1b3b5f] hover:bg-[#152e4d] text-white rounded-xl text-xs font-bold shadow-xs transition-all active:scale-[0.98] cursor-pointer"
+          class="hidden md:inline-flex items-center justify-center gap-1.5 px-3.5 py-2 bg-[#1b3b5f] hover:bg-[#152e4d] text-white rounded-xl text-xs font-bold shadow-xs transition-all active:scale-[0.98] cursor-pointer"
         >
           <Plus class="w-4 h-4" />
           <span>Create Order</span>
