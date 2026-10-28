@@ -72,6 +72,23 @@ const canGenerateBill = computed(() => {
   return hasRole('ADMIN', 'BILLING')
 })
 
+const hasFooterActionButtons = computed(() => {
+  if (props.context === 'billing') {
+    return Boolean(
+      (hasRole('ADMIN', 'BILLING') && order.value?.billingStatus?.status !== 'GENERATED' && order.value?.overallStatus !== 'CANCELLED' && order.value?.deliveryStatus?.status !== 'DISPATCHED' && order.value?.deliveryStatus?.status !== 'DELIVERED') ||
+      canGenerateBill.value ||
+      order.value?.billingStatus?.status === 'GENERATED'
+    )
+  }
+  if (props.context === 'approval') {
+    return Boolean(
+      (!order.value?.isApproved && order.value?.overallStatus !== 'CANCELLED') ||
+      order.value?.isApproved
+    )
+  }
+  return false
+})
+
 const customerPhones = computed(() => {
   if (!order.value?.customer) return []
   const list: { display: string; number: string }[] = []
@@ -1970,22 +1987,31 @@ onMounted(() => {
           v-if="order"
           class="px-4 sm:px-6 py-2.5 sm:py-3.5 bg-white border-t border-gray-200 flex items-center justify-between gap-2.5 sm:gap-3 shrink-0 shadow-lg z-20"
         >
-          <div class="flex items-center justify-between sm:block">
+          <div 
+            class="flex items-center justify-between"
+            :class="hasFooterActionButtons ? 'flex-col sm:block items-start gap-0.5' : 'flex-1 w-full'"
+          >
             <template v-if="context !== 'delivery'">
-              <span class="text-[10px] sm:text-[11px] uppercase font-bold text-gray-400 tracking-wider block">Grand Total</span>
-              <span class="text-base sm:text-xl font-black text-[#1b3b5f] tracking-tight tabular-nums">
+              <span 
+                class="text-[10px] sm:text-[11px] uppercase font-bold text-gray-400 tracking-wider"
+                :class="{ 'sm:block': hasFooterActionButtons }"
+              >Grand Total</span>
+              <span class="text-base sm:text-xl font-black text-[#1b3b5f] tracking-tight tabular-nums text-right">
                 {{ formatCurrency(order.totalAmount || 0) }}
               </span>
             </template>
             <template v-else>
-              <span class="text-[10px] sm:text-[11px] uppercase font-bold text-gray-400 tracking-wider block">Total Quantity</span>
-              <span class="text-base sm:text-xl font-black text-[#1b3b5f] tracking-tight tabular-nums">
+              <span 
+                class="text-[10px] sm:text-[11px] uppercase font-bold text-gray-400 tracking-wider"
+                :class="{ 'sm:block': hasFooterActionButtons }"
+              >Total Quantity</span>
+              <span class="text-base sm:text-xl font-black text-[#1b3b5f] tracking-tight tabular-nums text-right">
                 {{ order.items?.reduce((sum, i) => sum + (Number(i.approvedQuantity ?? i.quantity) || 0), 0) }} nos.
               </span>
             </template>
           </div>
 
-          <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap justify-end">
+          <div v-if="hasFooterActionButtons" class="flex items-center gap-1.5 sm:gap-2 flex-wrap justify-end shrink-0">
             <!-- Split Order button (Strictly Billing context only) -->
             <button 
               v-if="context === 'billing' && hasRole('ADMIN', 'BILLING') && order.billingStatus?.status !== 'GENERATED' && order.overallStatus !== 'CANCELLED' && order.deliveryStatus?.status !== 'DISPATCHED' && order.deliveryStatus?.status !== 'DELIVERED'"
