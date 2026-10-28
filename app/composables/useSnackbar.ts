@@ -1,6 +1,6 @@
 import { ref, computed } from 'vue'
 
-export type SnackbarState = 'hidden' | 'editing' | 'saving' | 'saved'
+export type SnackbarState = 'hidden' | 'editing' | 'saving' | 'saved' | 'error'
 
 const snackbarState = ref<SnackbarState>('hidden')
 const snackbarMessage = ref('')
@@ -48,6 +48,35 @@ export const useSnackbar = () => {
     }, 3500)
   }
 
+  const showError = (msg = 'An error occurred', autoHideMs = 4500) => {
+    if (autoHideTimer) clearTimeout(autoHideTimer)
+    snackbarState.value = 'error'
+    snackbarMessage.value = msg
+    onSaveAction.value = null
+    onCancelAction.value = null
+    autoHideTimer = setTimeout(() => {
+      if (snackbarState.value === 'error') {
+        snackbarState.value = 'hidden'
+      }
+    }, autoHideMs)
+  }
+
+  const showSuccess = (msg = 'Changes saved successfully') => {
+    showSaved(msg)
+  }
+
+  const showSnackbar = (msg: string, type: 'success' | 'error' | 'saving' | 'info' = 'success') => {
+    if (type === 'success') {
+      showSaved(msg)
+    } else if (type === 'error') {
+      showError(msg)
+    } else if (type === 'saving') {
+      showSaving(msg)
+    } else {
+      showEditing(msg)
+    }
+  }
+
   const hide = () => {
     if (autoHideTimer) clearTimeout(autoHideTimer)
     snackbarState.value = 'hidden'
@@ -71,6 +100,9 @@ export const useSnackbar = () => {
     showEditing,
     showSaving,
     showSaved,
+    showError,
+    showSuccess,
+    showSnackbar,
     hide,
     handleSave,
     handleCancel

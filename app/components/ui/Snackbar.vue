@@ -49,6 +49,8 @@ const colorClasses = computed(() => {
       return 'bg-blue-50/95 border-blue-200 text-blue-900 shadow-blue-900/10'
     case 'saved':
       return 'bg-emerald-50/95 border-emerald-200 text-emerald-900 shadow-emerald-900/10'
+    case 'error':
+      return 'bg-rose-50/95 border-rose-200 text-rose-900 shadow-rose-900/10'
     default:
       return 'bg-white/95 border-gray-200 text-gray-800'
   }
@@ -62,6 +64,8 @@ const currentIcon = computed(() => {
       return Loader2
     case 'saved':
       return CheckCircle2
+    case 'error':
+      return AlertCircle
     default:
       return Info
   }

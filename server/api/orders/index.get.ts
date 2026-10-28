@@ -45,7 +45,11 @@ export default defineEventHandler(async (event) => {
     andConditions.push({ isUrgent: isUrgent === 'true' })
   }
   if (status) {
-    andConditions.push({ overallStatus: status })
+    if (status === '!CANCELLED' || status === 'ACTIVE') {
+      andConditions.push({ overallStatus: { not: 'CANCELLED' } })
+    } else {
+      andConditions.push({ overallStatus: status })
+    }
   }
   if (billingStatus) {
     if (billingStatus === 'ON_HOLD') {
