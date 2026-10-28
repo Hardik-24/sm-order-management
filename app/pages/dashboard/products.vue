@@ -343,7 +343,7 @@
 
       <div 
         ref="detailModalRef"
-        class="relative bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[calc(100dvh-2.5rem-env(safe-area-inset-bottom,0px)-env(safe-area-inset-top,0px))] md:max-h-[92vh] overflow-hidden flex flex-col border border-gray-100 overscroll-contain"
+        class="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[calc(100dvh-2.5rem-env(safe-area-inset-bottom,0px)-env(safe-area-inset-top,0px))] md:max-h-[92vh] overflow-hidden flex flex-col border border-gray-100 overscroll-contain"
       >
         <!-- Header -->
         <div class="px-6 py-4 bg-gray-50/80 border-b border-gray-100 flex items-center justify-between shrink-0">
@@ -458,6 +458,161 @@
               <div class="text-sm font-semibold text-gray-900">
                 {{ selectedProduct.unit || 'PIECE' }}
               </div>
+            </div>
+          </div>
+
+          <!-- Billed History (Where all billed & Party Rates) -->
+          <div class="mt-4 pt-4 border-t border-gray-100">
+            <div class="flex items-center justify-between mb-2.5">
+              <h4 class="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-2">
+                <Receipt class="w-3.5 h-3.5 text-[#1b3b5f]" />
+                <span>Billed History ({{ totalHistoryCount }})</span>
+                <span v-if="isLoadingPriceHistory" class="text-[10px] text-gray-400 flex items-center gap-1 font-normal lowercase">
+                  <Loader2 class="w-3 h-3 animate-spin text-gray-400" />
+                  loading...
+                </span>
+              </h4>
+              <NuxtLink
+                v-if="selectedProduct?.name"
+                :to="`/dashboard/vouchers?search=${encodeURIComponent(selectedProduct.name)}`"
+                target="_blank"
+                class="text-[11px] text-sky-600 hover:text-sky-800 font-semibold inline-flex items-center gap-0.5"
+                title="Search all invoices for this item in BUSY Voucher Explorer"
+              >
+                <span>View Invoices &rarr;</span>
+              </NuxtLink>
+            </div>
+
+            <!-- Stats Ribbon (when data exists) -->
+            <div v-if="productBillingSummary && (productPriceHistory.length > 0 || productAllVouchers.length > 0)" class="grid grid-cols-3 gap-2 mb-3">
+              <div class="p-2 bg-gray-50 rounded-lg border border-gray-100 text-center">
+                <span class="text-[10px] text-gray-400 font-medium block">Lowest Rate</span>
+                <span class="text-xs font-bold text-gray-800">
+                  {{ productBillingSummary.minRate ? formatCurrency(productBillingSummary.minRate) : '—' }}
+                </span>
+              </div>
+              <div class="p-2 bg-blue-50/50 rounded-lg border border-blue-100 text-center">
+                <span class="text-[10px] text-blue-600 font-medium block">Avg Billed Rate</span>
+                <span class="text-xs font-bold text-[#1b3b5f]">
+                  {{ productBillingSummary.avgRate ? formatCurrency(productBillingSummary.avgRate) : '—' }}
+                </span>
+              </div>
+              <div class="p-2 bg-gray-50 rounded-lg border border-gray-100 text-center">
+                <span class="text-[10px] text-gray-400 font-medium block">Highest Rate</span>
+                <span class="text-xs font-bold text-gray-800">
+                  {{ productBillingSummary.maxRate ? formatCurrency(productBillingSummary.maxRate) : '—' }}
+                </span>
+              </div>
+            </div>
+
+            <!-- View Mode Switcher & Search Bar -->
+            <div v-if="productPriceHistory.length > 0 || productAllVouchers.length > 0" class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 mb-2.5">
+              <!-- Mode Tabs -->
+              <div class="inline-flex p-0.5 bg-gray-100 rounded-lg text-xs font-medium shrink-0">
+                <button
+                  type="button"
+                  @click="historyViewMode = 'parties'"
+                  :class="historyViewMode === 'parties' ? 'bg-white text-gray-900 shadow-2xs' : 'text-gray-500 hover:text-gray-700'"
+                  class="px-2.5 py-1 rounded-md transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Users class="w-3 h-3" />
+                  <span>By Party ({{ productPriceHistory.length }})</span>
+                </button>
+                <button
+                  type="button"
+                  @click="historyViewMode = 'all'"
+                  :class="historyViewMode === 'all' ? 'bg-white text-gray-900 shadow-2xs' : 'text-gray-500 hover:text-gray-700'"
+                  class="px-2.5 py-1 rounded-md transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  <FileText class="w-3 h-3" />
+                  <span>All Invoices ({{ productAllVouchers.length }})</span>
+                </button>
+              </div>
+
+              <!-- Search input -->
+              <div class="relative flex-1 sm:max-w-xs">
+                <Search class="w-3 h-3 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  v-model="historySearchQuery"
+                  type="text"
+                  placeholder="Filter party or invoice..."
+                  class="w-full pl-7 pr-2.5 py-1 text-xs bg-gray-50 hover:bg-white focus:bg-white border border-gray-200 rounded-lg outline-none focus:border-[#1b3b5f] transition-all"
+                />
+              </div>
+            </div>
+
+            <!-- List Content -->
+            <div v-if="filteredProductHistory.length" class="max-h-64 overflow-y-auto space-y-2 pr-1">
+              <!-- Item Row -->
+              <div 
+                v-for="(item, idx) in filteredProductHistory" 
+                :key="item.id || (item.voucherNo + '-' + idx)"
+                class="p-2.5 bg-gray-50/80 hover:bg-gray-100/80 rounded-xl border border-gray-200 text-xs flex items-center justify-between transition-colors"
+              >
+                <div class="min-w-0 pr-2">
+                  <div class="flex items-center gap-1.5 flex-wrap">
+                    <p class="font-bold text-gray-900 truncate">
+                      {{ item.customer?.name || item.customerName || 'Direct Customer' }}
+                    </p>
+                    <span 
+                      v-if="item.customer?.customerCode || item.customerCode"
+                      class="text-[9px] px-1 py-0.2 rounded font-mono font-medium bg-gray-100 text-gray-600 border border-gray-200"
+                    >
+                      {{ item.customer?.customerCode || item.customerCode }}
+                    </span>
+                    <span 
+                      v-if="item.customer?.city"
+                      class="text-[9px] text-gray-400 font-normal"
+                    >
+                      ({{ item.customer.city }})
+                    </span>
+                  </div>
+
+                  <p class="text-[10px] text-gray-500 flex items-center gap-1.5 mt-0.5 flex-wrap">
+                    <span>Voucher: 
+                      <NuxtLink
+                        v-if="item.voucherNo"
+                        :to="`/dashboard/vouchers?search=${encodeURIComponent(item.voucherNo)}`"
+                        target="_blank"
+                        class="font-bold text-sky-700 hover:text-sky-900 font-mono underline hover:no-underline"
+                        title="View invoice details"
+                      >
+                        {{ item.voucherNo }}
+                      </NuxtLink>
+                      <strong v-else class="text-gray-700">-</strong>
+                    </span>
+                    <span>•</span>
+                    <span>{{ item.voucherDate ? formatDate(item.voucherDate) : '—' }}</span>
+                    <span>•</span>
+                    <span>Qty: {{ item.quantity ?? item.qty }} {{ item.unit || selectedProduct.unit || 'Nos.' }}</span>
+                    <span v-if="item.amount">
+                      • Total: ₹{{ Number(item.amount).toLocaleString('en-IN') }}
+                    </span>
+                  </p>
+                </div>
+
+                <div class="text-right shrink-0">
+                  <p class="font-bold text-sm text-[#1b3b5f]">
+                    {{ formatCurrency(item.unitPrice ?? item.rate ?? 0) }}
+                  </p>
+                  <span 
+                    class="text-[9px] px-1.5 py-0.2 rounded font-bold uppercase tracking-wider inline-block mt-0.5"
+                    :class="(item.isTaxInclusive ?? true) ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-gray-100 text-gray-600 border border-gray-200'"
+                  >
+                    {{ (item.isTaxInclusive ?? true) ? 'Tax Incl.' : '+Tax' }}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Empty filtered state -->
+            <div v-else-if="(productPriceHistory.length > 0 || productAllVouchers.length > 0) && !isLoadingPriceHistory" class="p-4 bg-gray-50 rounded-xl border border-dashed border-gray-200 text-center text-xs text-gray-400">
+              No matching records found for "{{ historySearchQuery }}".
+            </div>
+
+            <!-- Empty record state -->
+            <div v-else-if="!isLoadingPriceHistory" class="p-4 bg-gray-50 rounded-xl border border-dashed border-gray-200 text-center text-xs text-gray-400">
+              No historical billed transactions on record for this product.
             </div>
           </div>
         </div>
@@ -666,8 +821,10 @@
 import { ref, computed, nextTick, watch, onMounted, onUnmounted } from 'vue'
 import { 
   Plus, Search, Edit2, X, Loader2, Check, IndianRupee, Package, Filter, 
-  ChevronDown, ChevronLeft, ChevronRight, CheckCircle2, XCircle, Tag, Hash, Layers, ShieldCheck
+  ChevronDown, ChevronLeft, ChevronRight, CheckCircle2, XCircle, Tag, Hash, Layers, ShieldCheck,
+  Receipt, Users, FileText, Building2
 } from 'lucide-vue-next'
+import { formatCurrency, formatDate } from '~/lib/utils'
 import { useSnackbar } from '~/composables/useSnackbar'
 import { useGsapAnimation } from '~/composables/useGsapAnimation'
 import { useRealtimeSync } from '~/composables/useRealtimeSync'
@@ -757,6 +914,42 @@ const selectedProduct = ref<any | null>(null)
 const isDetailModalOpen = ref(false)
 const detailModalRef = ref<HTMLElement | null>(null)
 const detailBackdropRef = ref<HTMLElement | null>(null)
+
+// Product Billed Price History state
+const productPriceHistory = ref<any[]>([])
+const productAllVouchers = ref<any[]>([])
+const productBillingSummary = ref<any>(null)
+const isLoadingPriceHistory = ref(false)
+const historyViewMode = ref<'parties' | 'all'>('parties')
+const historySearchQuery = ref('')
+
+const totalHistoryCount = computed(() => {
+  return historyViewMode.value === 'parties' 
+    ? productPriceHistory.value.length 
+    : productAllVouchers.value.length
+})
+
+const filteredProductHistory = computed(() => {
+  const query = historySearchQuery.value.trim().toLowerCase()
+  if (historyViewMode.value === 'parties') {
+    if (!query) return productPriceHistory.value
+    return productPriceHistory.value.filter((hp: any) => {
+      const name = (hp.customer?.name || '').toLowerCase()
+      const comp = (hp.customer?.company || '').toLowerCase()
+      const code = (hp.customer?.customerCode || '').toLowerCase()
+      const vNo = (hp.voucherNo || '').toLowerCase()
+      return name.includes(query) || comp.includes(query) || code.includes(query) || vNo.includes(query)
+    })
+  } else {
+    if (!query) return productAllVouchers.value
+    return productAllVouchers.value.filter((v: any) => {
+      const name = (v.customerName || '').toLowerCase()
+      const code = (v.customerCode || '').toLowerCase()
+      const vNo = (v.voucherNo || '').toLowerCase()
+      return name.includes(query) || code.includes(query) || vNo.includes(query)
+    })
+  }
+})
 
 // Product Form modal state
 const isProductModalOpen = ref(false)
@@ -930,6 +1123,28 @@ const triggerRowAnimation = () => {
 const openProductDetail = (product: any) => {
   selectedProduct.value = product
   isDetailModalOpen.value = true
+  productPriceHistory.value = []
+  productAllVouchers.value = []
+  productBillingSummary.value = null
+  historySearchQuery.value = ''
+  historyViewMode.value = 'parties'
+
+  if (product && product.id) {
+    isLoadingPriceHistory.value = true
+    $fetch<any>(`/api/products/${product.id}/last-prices?limit=100`)
+      .then(res => {
+        productPriceHistory.value = res.historicalPrices || []
+        productAllVouchers.value = res.allVouchers || []
+        productBillingSummary.value = res.summary || null
+      })
+      .catch(err => {
+        console.error('Failed to load product price history:', err)
+      })
+      .finally(() => {
+        isLoadingPriceHistory.value = false
+      })
+  }
+
   nextTick(() => {
     animateModalOpen(detailModalRef.value, detailBackdropRef.value, { duration: 0.26 })
   })
@@ -938,12 +1153,14 @@ const openProductDetail = (product: any) => {
 const closeProductDetail = () => {
   isDetailModalOpen.value = false
   selectedProduct.value = null
+  productPriceHistory.value = []
+  productAllVouchers.value = []
+  productBillingSummary.value = null
 }
 
 const editProductFromDetail = () => {
   const prod = selectedProduct.value
-  isDetailModalOpen.value = false
-  selectedProduct.value = null
+  closeProductDetail()
   if (prod) {
     openProductModal(prod)
   }
