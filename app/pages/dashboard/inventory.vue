@@ -217,16 +217,6 @@ onUnmounted(() => {
           </span>
         </p>
       </div>
-
-      <button 
-        @click="(isSyncing || syncStatusData?.syncRequested) ? cancelSync() : requestSync()" 
-        class="flex items-center gap-2 px-4 py-2 text-white text-sm font-medium rounded-lg transition-colors shadow-sm whitespace-nowrap"
-        :class="(isSyncing || syncStatusData?.syncRequested) ? 'bg-red-600 hover:bg-red-700' : 'bg-[#1b3b5f] hover:bg-[#1b3b5f]/90'"
-      >
-        <RefreshCw v-if="!(isSyncing || syncStatusData?.syncRequested)" class="w-4 h-4" />
-        <XCircle v-else class="w-4 h-4" />
-        {{ (isSyncing || syncStatusData?.syncRequested) ? 'Cancel Sync' : 'Load Stock from Busy' }}
-      </button>
     </div>
 
     <!-- Real-Time Sync Progress Modal Popup (Centered in Active Viewport Screen) -->
