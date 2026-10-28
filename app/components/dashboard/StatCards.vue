@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { ShoppingBag, ArrowUp, ArrowDown, Box, Truck, CheckCheck, IndianRupee } from 'lucide-vue-next'
 import type { DashboardStats } from '~/types'
 import { useGsapAnimation } from '~/composables/useGsapAnimation'
@@ -15,6 +15,13 @@ const props = withDefaults(defineProps<{
 
 const { animateStagger, initContext } = useGsapAnimation()
 const containerRef = ref<HTMLElement | null>(null)
+
+watch(() => props.isLoading, (loading) => {
+  if (!loading && containerRef.value) {
+    const cards = containerRef.value.querySelectorAll('.stat-card')
+    animateStagger(cards, { duration: 0.24, stagger: 0.03, y: 6 })
+  }
+})
 
 onMounted(() => {
   initContext(containerRef.value || undefined)

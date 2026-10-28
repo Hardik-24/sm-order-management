@@ -10,6 +10,7 @@ import { useGsapAnimation } from '~/composables/useGsapAnimation'
 import { useRealtimeSync } from '~/composables/useRealtimeSync'
 import RowsPerPageSelect from '~/components/ui/RowsPerPageSelect.vue'
 import FloatingHorizontalScrollbar from '~/components/ui/FloatingHorizontalScrollbar.vue'
+import LoadingTopBar from '~/components/ui/LoadingTopBar.vue'
 
 definePageMeta({ layout: 'dashboard' })
 
@@ -319,6 +320,7 @@ onUnmounted(() => {
 
       <!-- Table Container -->
       <div ref="inventoryTableRef" class="hidden md:block overflow-x-auto no-scrollbar relative min-h-[350px]">
+        <LoadingTopBar :loading="productsLoading || isSyncing" />
 
         <!-- Localized Table Blur Loading Animation -->
         <Transition

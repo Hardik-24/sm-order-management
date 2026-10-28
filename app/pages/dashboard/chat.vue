@@ -24,8 +24,20 @@
       ref="chatContainer"
       style="background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-repeat: repeat; opacity: 0.95;"
     >
-      <div v-if="pending" class="flex justify-center items-center h-full">
-        <Loader2 class="w-8 h-8 animate-spin text-[#00a884]" />
+      <!-- Chat Shimmer Bubble Skeletons -->
+      <div v-if="pending" class="space-y-4 py-4 max-w-lg mx-auto">
+        <div class="flex justify-start">
+          <div class="h-12 w-48 rounded-2xl rounded-tl-none animate-shimmer"></div>
+        </div>
+        <div class="flex justify-end">
+          <div class="h-16 w-64 rounded-2xl rounded-tr-none animate-shimmer"></div>
+        </div>
+        <div class="flex justify-start">
+          <div class="h-10 w-40 rounded-2xl rounded-tl-none animate-shimmer"></div>
+        </div>
+        <div class="flex justify-end">
+          <div class="h-14 w-52 rounded-2xl rounded-tr-none animate-shimmer"></div>
+        </div>
       </div>
       
       <div v-else-if="messages.length === 0" class="flex justify-center my-10">
@@ -46,7 +58,7 @@
           v-for="(msg, idx) in messages" 
           :key="msg.id"
           :id="`msg-${msg.id}`"
-          class="flex w-full group items-center relative transition-all duration-300"
+          class="message-bubble flex w-full group items-center relative transition-all duration-300"
           :class="[
             msg.userId === user?.id ? 'justify-end' : 'justify-start',
             highlightedMsgId === msg.id ? 'bg-[#00a884]/20 rounded-xl p-1 shadow-sm' : ''
@@ -571,9 +583,11 @@ import {
 } from 'lucide-vue-next'
 import { useAuth } from '~/composables/useAuth'
 import { useRealtimeSync } from '~/composables/useRealtimeSync'
+import { useGsapAnimation } from '~/composables/useGsapAnimation'
 
 const { user } = useAuth()
 const { onOrderSync, notifyChange } = useRealtimeSync()
+const { animateStagger, initContext } = useGsapAnimation()
 
 const messages = ref<any[]>([])
 const pending = ref(true)
@@ -1134,10 +1148,22 @@ const scrollToBottom = async () => {
 
 // Fetch initial messages
 const loadMessages = async () => {
+  const isFirstLoad = pending.value
   try {
     const data = await $fetch<any[]>('/api/chat')
     messages.value = data
     scrollToBottom()
+    if (isFirstLoad) {
+      nextTick(() => {
+        if (chatContainer.value) {
+          const bubbles = chatContainer.value.querySelectorAll('.message-bubble')
+          const targetBubbles = Array.from(bubbles).slice(-15)
+          if (targetBubbles.length) {
+            animateStagger(targetBubbles, { duration: 0.22, stagger: 0.02, y: 10 })
+          }
+        }
+      })
+    }
   } catch (err) {
     console.error('Failed to load chat:', err)
   } finally {
@@ -1146,6 +1172,7 @@ const loadMessages = async () => {
 }
 
 onMounted(() => {
+  initContext(chatContainer.value || undefined)
   loadMessages()
   inputRef.value?.focus()
   window.addEventListener('keydown', handleKeydown)

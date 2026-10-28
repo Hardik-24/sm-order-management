@@ -6,6 +6,8 @@ import TableFilterButtons from '~/components/dashboard/TableFilterButtons.vue'
 import RowsPerPageSelect from '~/components/ui/RowsPerPageSelect.vue'
 import StatusBadge from '~/components/ui/StatusBadge.vue'
 import FloatingHorizontalScrollbar from '~/components/ui/FloatingHorizontalScrollbar.vue'
+import LoadingTopBar from '~/components/ui/LoadingTopBar.vue'
+import TableSkeletonRows from '~/components/ui/TableSkeletonRows.vue'
 import type { Order } from '~/types'
 
 const props = defineProps<{
@@ -307,7 +309,8 @@ const getItemsTotalQuantity = (order: Order) => {
     </div>
     
     <div class="relative min-h-[200px]">
-      <div v-if="isLoading" class="absolute inset-0 bg-white/50 backdrop-blur-[2px] z-10 animate-pulse"></div>
+      <LoadingTopBar :loading="isLoading" />
+      <div v-if="isLoading && orders?.length" class="absolute inset-0 bg-white/30 backdrop-blur-[1px] z-10 pointer-events-none transition-opacity duration-200"></div>
 
       <!-- DESKTOP / TABLET VIEW: Redesigned 6-Column Layout with Connected Workflow Pipeline -->
       <div ref="tableScrollRef" class="hidden md:block overflow-x-auto no-scrollbar" style="scrollbar-width: none; -ms-overflow-style: none;">
@@ -458,7 +461,8 @@ const getItemsTotalQuantity = (order: Order) => {
                 </button>
               </td>
             </tr>
-            <tr v-if="!orders?.length">
+            <TableSkeletonRows v-if="isLoading && !orders?.length" :cols="6" :rows="6" />
+            <tr v-else-if="!orders?.length && !isLoading">
               <td colspan="6" class="px-6 py-12 text-center text-sm text-gray-500">
                 No orders found.
               </td>
@@ -579,7 +583,9 @@ const getItemsTotalQuantity = (order: Order) => {
           </div>
         </div>
 
-        <div v-if="!orders?.length" class="px-4 py-8 text-center text-sm text-gray-500">
+        <TableSkeletonRows v-if="isLoading && !orders?.length" :cols="6" :rows="5" :isMobileOnly="true" :renderMobile="true" />
+
+        <div v-else-if="!orders?.length && !isLoading" class="px-4 py-8 text-center text-sm text-gray-500">
           No orders found.
         </div>
       </div>

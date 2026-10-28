@@ -290,29 +290,14 @@ const handlePanelClose = () => {
 }
 
 // GSAP Animations
-const { animateNumber, animateStagger, initContext } = useGsapAnimation()
+const { animateStagger, initContext } = useGsapAnimation()
 const statsContainer = ref<HTMLElement | null>(null)
-const numWaiting = ref<HTMLElement | null>(null)
-const numDispatched = ref<HTMLElement | null>(null)
-const numDelivered = ref<HTMLElement | null>(null)
-const numTotal = ref<HTMLElement | null>(null)
-
-const triggerStatAnimations = () => {
-  if (!statsData.value) return
-  nextTick(() => {
-    animateNumber(numWaiting.value, counts.value.waiting, { duration: 0.6 })
-    animateNumber(numDispatched.value, counts.value.dispatched, { duration: 0.65 })
-    animateNumber(numDelivered.value, counts.value.delivered, { duration: 0.7 })
-    animateNumber(numTotal.value, counts.value.total, { duration: 0.75 })
-  })
-}
 
 onMounted(() => {
   initContext(statsContainer.value || undefined)
   if (statsContainer.value) {
     animateStagger(statsContainer.value.children, { duration: 0.35, stagger: 0.06, y: 12 })
   }
-  triggerStatAnimations()
 
   // 1. Cross-tab instant 0ms broadcast sync from Driver portal
   if (typeof BroadcastChannel !== 'undefined') {
@@ -339,21 +324,6 @@ onUnmounted(() => {
   if (silentSyncTimer) clearInterval(silentSyncTimer)
   if (syncChannel) syncChannel.close()
 })
-
-let lastCounts = { waiting: -1, dispatched: -1, delivered: -1, onHold: -1, total: -1 }
-
-watch(counts, (newVal) => {
-  if (
-    newVal.waiting !== lastCounts.waiting ||
-    newVal.dispatched !== lastCounts.dispatched ||
-    newVal.delivered !== lastCounts.delivered ||
-    newVal.onHold !== lastCounts.onHold ||
-    newVal.total !== lastCounts.total
-  ) {
-    lastCounts = { ...newVal }
-    triggerStatAnimations()
-  }
-}, { deep: true })
 </script>
 
 <template>
@@ -416,7 +386,9 @@ watch(counts, (newVal) => {
           </div>
           <div class="flex flex-col justify-center min-w-0">
             <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">Awaiting Dispatch</p>
-            <h3 ref="numWaiting" class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 tabular-nums truncate">{{ counts.waiting }}</h3>
+            <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 tabular-nums truncate">
+              <OdometerNumber :value="counts.waiting" :loading="pending" />
+            </h3>
             <p class="text-[11px] sm:text-xs text-amber-600 font-medium truncate">Ready for driver</p>
           </div>
         </div>
@@ -435,7 +407,9 @@ watch(counts, (newVal) => {
           </div>
           <div class="flex flex-col justify-center min-w-0">
             <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">In Transit</p>
-            <h3 ref="numDispatched" class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 tabular-nums truncate">{{ counts.dispatched }}</h3>
+            <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 tabular-nums truncate">
+              <OdometerNumber :value="counts.dispatched" :loading="pending" />
+            </h3>
             <p class="text-[11px] sm:text-xs text-blue-600 font-medium truncate">Live on GPS</p>
           </div>
         </div>
@@ -454,7 +428,9 @@ watch(counts, (newVal) => {
           </div>
           <div class="flex flex-col justify-center min-w-0">
             <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">Delivered</p>
-            <h3 ref="numDelivered" class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 tabular-nums truncate">{{ counts.delivered }}</h3>
+            <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 tabular-nums truncate">
+              <OdometerNumber :value="counts.delivered" :loading="pending" />
+            </h3>
             <p class="text-[11px] sm:text-xs text-emerald-600 font-medium truncate">Completed orders</p>
           </div>
         </div>
@@ -473,7 +449,9 @@ watch(counts, (newVal) => {
           </div>
           <div class="flex flex-col justify-center min-w-0">
             <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">Total Orders</p>
-            <h3 ref="numTotal" class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 tabular-nums truncate">{{ counts.total }}</h3>
+            <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 tabular-nums truncate">
+              <OdometerNumber :value="counts.total" :loading="pending" />
+            </h3>
             <p class="text-[11px] sm:text-xs text-[#1b3b5f] font-medium truncate">All records</p>
           </div>
         </div>

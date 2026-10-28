@@ -34,7 +34,7 @@
     </div>
 
     <!-- Quick Stats Cards (Matching billing.vue:216-284 exact structure & typography) -->
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-4">
+    <div ref="statsContainerRef" class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-4 select-none">
       <!-- 1. Total Vouchers -->
       <div class="bg-white rounded-xl border border-[#e5e2dc] p-3.5 sm:p-5 shadow-sm">
         <div class="flex gap-2.5 sm:gap-4">
@@ -46,7 +46,9 @@
           </div>
           <div class="flex flex-col justify-center min-w-0">
             <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">Total Sales Invoices</p>
-            <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">{{ (stats?.totalCount || pagination.total || 0).toLocaleString() }}</h3>
+            <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">
+              <OdometerNumber :value="stats?.totalCount || pagination.total || 0" :loading="isLoading" />
+            </h3>
             <p class="text-[11px] sm:text-xs text-gray-500 font-medium truncate">Synced vouchers</p>
           </div>
         </div>
@@ -63,7 +65,9 @@
           </div>
           <div class="flex flex-col justify-center min-w-0">
             <p class="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-0.5 truncate">Total Invoiced Amount</p>
-            <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">{{ formatCurrency(stats?.totalAmount || 0) }}</h3>
+            <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">
+              <OdometerNumber :value="stats?.totalAmount || 0" prefix="₹" :loading="isLoading" />
+            </h3>
             <p class="text-[11px] sm:text-xs text-emerald-600 font-medium truncate">Gross sales value</p>
           </div>
         </div>
@@ -80,11 +84,14 @@
           </div>
           <div class="flex flex-col justify-center min-w-0">
             <p class="text-[10px] font-bold text-sky-600 uppercase tracking-widest mb-0.5 truncate">Total GST Collected</p>
-            <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">{{ formatCurrency(stats?.totalTax || 0) }}</h3>
+            <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">
+              <OdometerNumber :value="stats?.totalTax || 0" prefix="₹" :loading="isLoading" />
+            </h3>
             <p class="text-[11px] sm:text-xs text-sky-600 font-medium truncate">Taxable: {{ formatCurrency(stats?.totalTaxable || 0) }}</p>
           </div>
         </div>
       </div>
+    </div>
     </div>
 
     <!-- Search & Filter Controls Toolbar (Matching BillingTable.vue:104-145) -->
@@ -178,7 +185,9 @@
     </div>
 
     <!-- Main Vouchers Table Container (Matching BillingTable.vue) -->
-    <div class="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden flex flex-col">
+    <div class="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden flex flex-col relative">
+      <LoadingTopBar :loading="isLoading" />
+
       <!-- Toolbar Header -->
       <div class="px-5 py-3 border-b border-gray-200 bg-gray-50/50 flex flex-wrap items-center justify-between gap-3 text-xs text-gray-500">
         <div>
@@ -198,10 +207,24 @@
         </div>
       </div>
 
-      <!-- Loading State -->
-      <div v-if="isLoading" class="p-14 flex flex-col items-center justify-center text-gray-400 gap-2">
-        <Loader2 class="w-7 h-7 animate-spin text-[#1b3b5f]" />
-        <p class="text-xs font-medium text-gray-500">Loading BUSY sales invoices...</p>
+      <!-- Skeletons when initial loading -->
+      <div v-if="isLoading && vouchers.length === 0">
+        <div class="hidden md:block overflow-x-auto no-scrollbar">
+          <table class="w-full text-left border-collapse min-w-full text-sm text-gray-600">
+            <thead>
+              <tr class="bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                <th class="px-5 py-3.5 whitespace-nowrap">Voucher No</th>
+                <th class="px-5 py-3.5 whitespace-nowrap">Date</th>
+                <th class="px-5 py-3.5">Customer & Series</th>
+                <th class="px-5 py-3.5 whitespace-nowrap text-center">Items</th>
+                <th class="px-5 py-3.5 whitespace-nowrap text-right">Invoice Amount</th>
+                <th class="px-5 py-3.5 whitespace-nowrap text-right pr-5">Actions</th>
+              </tr>
+            </thead>
+            <TableSkeletonRows :cols="6" :rows="5" />
+          </table>
+        </div>
+        <TableSkeletonRows :cols="6" :rows="5" :isMobileOnly="true" :renderMobile="true" />
       </div>
 
       <!-- Empty State (Matching BillingTable.vue:195-201) -->
@@ -235,7 +258,7 @@
                 <th class="px-5 py-3.5 whitespace-nowrap text-right pr-5">Actions</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-gray-100 bg-white">
+            <tbody ref="tbodyRef" class="divide-y divide-gray-100 bg-white">
               <tr
                 v-for="v in vouchers"
                 :key="'desk-' + v.id"
@@ -309,7 +332,7 @@
         </div>
 
         <!-- MOBILE VIEW (Matching BillingTable.vue:351-420 exact 2-line cards) -->
-        <div class="block md:hidden divide-y divide-gray-100 bg-white">
+        <div ref="mobileListRef" class="block md:hidden divide-y divide-gray-100 bg-white">
           <div
             v-for="v in vouchers"
             :key="'mob-' + v.id"
@@ -398,13 +421,14 @@
       >
         <!-- Backdrop -->
         <div
+          ref="drawerBackdropRef"
           @click="closeVoucherDrawer"
           class="absolute inset-0 bg-black/40 backdrop-blur-[2px] transition-opacity duration-300"
         ></div>
 
         <!-- Slide-over Panel (Matching OrderDetailPanel.vue:1036 standard width: sm:max-w-[500px] md:max-w-[540px]) -->
         <div class="fixed inset-y-0 right-0 max-w-full flex w-full justify-end">
-          <div class="w-full sm:max-w-[500px] md:max-w-[540px] bg-white shadow-2xl border-l border-gray-200/80 flex flex-col h-full overflow-hidden">
+          <div ref="drawerPanelRef" class="w-full sm:max-w-[500px] md:max-w-[540px] bg-white shadow-2xl border-l border-gray-200/80 flex flex-col h-full overflow-hidden">
             <!-- 1. Drawer Header (Matching OrderDetailPanel.vue:1043-1110) -->
             <div class="px-5 sm:px-6 py-3.5 border-b border-gray-200/80 flex items-center justify-between bg-white flex-shrink-0 z-10">
               <div class="flex items-center gap-2 flex-wrap min-w-0">
@@ -600,11 +624,10 @@
         </div>
       </div>
     </Teleport>
-  </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   Receipt,
@@ -626,6 +649,10 @@ import {
   RotateCcw,
   Loader2
 } from 'lucide-vue-next'
+import { useGsapAnimation } from '~/composables/useGsapAnimation'
+import OdometerNumber from '~/components/ui/OdometerNumber.vue'
+import LoadingTopBar from '~/components/ui/LoadingTopBar.vue'
+import TableSkeletonRows from '~/components/ui/TableSkeletonRows.vue'
 import RowsPerPageSelect from '~/components/ui/RowsPerPageSelect.vue'
 
 definePageMeta({
@@ -634,6 +661,13 @@ definePageMeta({
 
 const route = useRoute()
 const router = useRouter()
+const { animateStagger, animateModalOpen, initContext } = useGsapAnimation()
+
+const statsContainerRef = ref<HTMLElement | null>(null)
+const tbodyRef = ref<HTMLElement | null>(null)
+const mobileListRef = ref<HTMLElement | null>(null)
+const drawerBackdropRef = ref<HTMLElement | null>(null)
+const drawerPanelRef = ref<HTMLElement | null>(null)
 
 // Reactive Filter States
 const searchInput = ref((route.query.search as string) || '')
@@ -649,6 +683,26 @@ const pageSize = ref(25)
 // Data state
 const isLoading = ref(false)
 const vouchers = ref<any[]>([])
+
+const triggerRowAnimation = () => {
+  nextTick(() => {
+    if (!isLoading.value) {
+      if (tbodyRef.value) {
+        const rows = tbodyRef.value.querySelectorAll('tr')
+        const targetRows = Array.from(rows).slice(0, 15)
+        animateStagger(targetRows, { duration: 0.22, stagger: 0.02, y: 6 })
+      }
+      if (mobileListRef.value) {
+        const cards = Array.from(mobileListRef.value.children).slice(0, 15)
+        animateStagger(cards, { duration: 0.22, stagger: 0.02, y: 6 })
+      }
+    }
+  })
+}
+
+watch([() => vouchers.value, isLoading], () => {
+  triggerRowAnimation()
+})
 const pagination = ref({
   page: 1,
   limit: 25,
@@ -819,6 +873,9 @@ function openVoucherDrawer(voucher: any) {
     itemCount: items.length
   }
   isDrawerOpen.value = true
+  nextTick(() => {
+    animateModalOpen(drawerPanelRef.value, drawerBackdropRef.value, { duration: 0.28 })
+  })
 }
 
 function closeVoucherDrawer() {
@@ -868,6 +925,10 @@ function formatDate(dateVal: any) {
 }
 
 onMounted(() => {
+  initContext(statsContainerRef.value || undefined)
+  if (statsContainerRef.value) {
+    animateStagger(statsContainerRef.value.children, { duration: 0.35, stagger: 0.06, y: 12 })
+  }
   fetchVouchers(true)
 })
 </script>

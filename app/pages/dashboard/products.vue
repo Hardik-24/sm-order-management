@@ -109,7 +109,8 @@
         </div>
       </div>
 
-      <div ref="tableRootRef" class="bg-white rounded-xl border border-[#e5e2dc] shadow-sm overflow-hidden flex flex-col">
+      <div ref="tableRootRef" class="bg-white rounded-xl border border-[#e5e2dc] shadow-sm overflow-hidden flex flex-col relative">
+        <LoadingTopBar :loading="productsPending" />
         <!-- Optional Toolbar Header -->
         <div class="p-3.5 border-b border-gray-100 bg-gray-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-gray-500">
           <div>
@@ -696,6 +697,7 @@ import { useRealtimeSync } from '~/composables/useRealtimeSync'
 import CustomSelect from '~/components/ui/CustomSelect.vue'
 import RowsPerPageSelect from '~/components/ui/RowsPerPageSelect.vue'
 import FloatingHorizontalScrollbar from '~/components/ui/FloatingHorizontalScrollbar.vue'
+import LoadingTopBar from '~/components/ui/LoadingTopBar.vue'
 
 definePageMeta({ layout: 'dashboard' })
 

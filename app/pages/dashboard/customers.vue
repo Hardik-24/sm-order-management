@@ -42,7 +42,8 @@
     </div>
 
     <!-- Table Container -->
-    <div ref="tableRootRef" class="bg-white rounded-xl border border-[#e5e2dc] shadow-sm overflow-hidden flex flex-col">
+    <div ref="tableRootRef" class="bg-white rounded-xl border border-[#e5e2dc] shadow-sm overflow-hidden flex flex-col relative">
+      <LoadingTopBar :loading="pending" />
       <!-- Toolbar Header -->
       <div class="px-5 py-3.5 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between gap-3 text-xs text-gray-500">
         <div>
@@ -72,7 +73,7 @@
               <th v-if="canEditCustomers" class="pl-2 pr-8 md:pr-10 py-3.5 text-[10px] font-bold text-gray-500 uppercase tracking-widest w-[22%] md:w-[8%] text-right">Actions</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-gray-200 text-sm">
+          <tbody ref="tbodyRef" class="divide-y divide-gray-200 text-sm">
             <template v-if="pending">
               <tr v-for="i in 5" :key="i" class="animate-pulse hover:bg-transparent">
                 <td class="pl-5 pr-4 py-3.5 md:py-4"><div class="h-4 bg-gray-200 rounded w-3/4"></div></td>
@@ -1067,6 +1068,7 @@ import SetDeliveryPinModal from '~/components/dashboard/SetDeliveryPinModal.vue'
 import CustomSelect from '~/components/ui/CustomSelect.vue'
 import RowsPerPageSelect from '~/components/ui/RowsPerPageSelect.vue'
 import FloatingHorizontalScrollbar from '~/components/ui/FloatingHorizontalScrollbar.vue'
+import LoadingTopBar from '~/components/ui/LoadingTopBar.vue'
 
 definePageMeta({ layout: 'dashboard' })
 
@@ -1500,13 +1502,21 @@ const saveCustomer = async () => {
 const currentPage = ref(1)
 const pageSize = ref(50)
 const tableRootRef = ref<HTMLElement | null>(null)
+const tbodyRef = ref<HTMLElement | null>(null)
 const mobileListRef = ref<HTMLElement | null>(null)
 
 const triggerCardAnimation = () => {
   nextTick(() => {
-    if (mobileListRef.value && !pending.value) {
-      const cards = Array.from(mobileListRef.value.children).slice(0, 15)
-      animateStagger(cards, { duration: 0.2, stagger: 0.02, y: 6 })
+    if (!pending.value) {
+      if (tbodyRef.value) {
+        const rows = tbodyRef.value.querySelectorAll('tr')
+        const targetRows = Array.from(rows).slice(0, 15)
+        animateStagger(targetRows, { duration: 0.22, stagger: 0.02, y: 6 })
+      }
+      if (mobileListRef.value) {
+        const cards = Array.from(mobileListRef.value.children).slice(0, 15)
+        animateStagger(cards, { duration: 0.22, stagger: 0.02, y: 6 })
+      }
     }
   })
 }

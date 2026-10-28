@@ -42,17 +42,30 @@
       <button @click="fetchAnalytics(true)" class="text-xs font-semibold text-red-700 underline hover:text-red-900">Try again</button>
     </div>
 
-    <!-- Loading Skeleton -->
-    <div v-if="loading && !data" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-pulse">
-      <div v-for="i in 4" :key="i" class="h-32 bg-gray-200/70 rounded-2xl"></div>
+    <!-- Loading Skeleton with Shimmer Wave -->
+    <div v-if="loading && !data" class="space-y-6">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div v-for="i in 4" :key="i" class="bg-white rounded-2xl p-5 border border-gray-200/80 shadow-xs space-y-3">
+          <div class="flex items-center justify-between">
+            <div class="h-3 w-28 rounded-md animate-shimmer"></div>
+            <div class="w-8 h-8 rounded-xl animate-shimmer"></div>
+          </div>
+          <div class="h-8 w-36 rounded-lg animate-shimmer"></div>
+          <div class="h-3 w-48 rounded-md animate-shimmer"></div>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div class="lg:col-span-7 h-80 rounded-2xl bg-white border border-gray-200/80 p-6 animate-shimmer"></div>
+        <div class="lg:col-span-5 h-80 rounded-2xl bg-white border border-gray-200/80 p-6 animate-shimmer"></div>
+      </div>
     </div>
 
     <!-- MAIN PILLAR TABS (Sales, Movement, Purchases) -->
     <div v-if="data" class="border-b border-gray-200">
       <nav class="flex space-x-6 sm:space-x-8 overflow-x-auto no-scrollbar" aria-label="Tabs">
         <button
-          @click="mainTab = 'sales'"
-          class="py-3 px-1 border-b-2 font-bold text-sm sm:text-base flex items-center gap-2 whitespace-nowrap transition-all"
+          @click="switchTab('sales')"
+          class="py-3 px-1 border-b-2 font-bold text-sm sm:text-base flex items-center gap-2 whitespace-nowrap transition-all cursor-pointer"
           :class="mainTab === 'sales' ? 'border-[#1b3b5f] text-[#1b3b5f]' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
         >
           <IndianRupee class="w-4 h-4" />
@@ -63,8 +76,8 @@
         </button>
 
         <button
-          @click="mainTab = 'movement'"
-          class="py-3 px-1 border-b-2 font-bold text-sm sm:text-base flex items-center gap-2 whitespace-nowrap transition-all"
+          @click="switchTab('movement')"
+          class="py-3 px-1 border-b-2 font-bold text-sm sm:text-base flex items-center gap-2 whitespace-nowrap transition-all cursor-pointer"
           :class="mainTab === 'movement' ? 'border-[#1b3b5f] text-[#1b3b5f]' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
         >
           <Activity class="w-4 h-4 text-sky-600" />
@@ -75,8 +88,8 @@
         </button>
 
         <button
-          @click="mainTab = 'purchases'"
-          class="py-3 px-1 border-b-2 font-bold text-sm sm:text-base flex items-center gap-2 whitespace-nowrap transition-all"
+          @click="switchTab('purchases')"
+          class="py-3 px-1 border-b-2 font-bold text-sm sm:text-base flex items-center gap-2 whitespace-nowrap transition-all cursor-pointer"
           :class="mainTab === 'purchases' ? 'border-[#1b3b5f] text-[#1b3b5f]' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
         >
           <Truck class="w-4 h-4 text-indigo-600" />
@@ -91,7 +104,7 @@
     <!-- ========================================================================================= -->
     <!-- PILLAR 1: SALES & REVENUE ANALYSIS -->
     <!-- ========================================================================================= -->
-    <div v-if="data && mainTab === 'sales'" class="space-y-6">
+    <div v-if="data && mainTab === 'sales'" ref="tabContentRef" class="space-y-6">
       <!-- Executive Sales KPIs (4 Cards) -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <!-- 1. Total Invoiced Revenue -->
@@ -103,8 +116,8 @@
             </div>
           </div>
           <div class="mt-3">
-            <div class="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
-              {{ formatCrores(data.sales.totalRevenue) }}
+            <div class="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight flex items-baseline">
+              <OdometerNumber :value="data.sales.totalRevenue >= 10000000 ? Number((data.sales.totalRevenue / 10000000).toFixed(2)) : data.sales.totalRevenue" prefix="₹" :suffix="data.sales.totalRevenue >= 10000000 ? ' Cr' : ''" :decimals="data.sales.totalRevenue >= 10000000 ? 2 : 0" :loading="loading" />
             </div>
             <div class="flex items-center justify-between text-xs text-gray-500 mt-2">
               <span>{{ formatCurrency(data.sales.totalRevenue) }}</span>
@@ -123,8 +136,8 @@
             </div>
           </div>
           <div class="mt-3">
-            <div class="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
-              {{ formatCrores(data.sales.taxableAmount || 0) }}
+            <div class="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight flex items-baseline">
+              <OdometerNumber :value="(data.sales.taxableAmount || 0) >= 10000000 ? Number(((data.sales.taxableAmount || 0) / 10000000).toFixed(2)) : (data.sales.taxableAmount || 0)" prefix="₹" :suffix="(data.sales.taxableAmount || 0) >= 10000000 ? ' Cr' : ''" :decimals="(data.sales.taxableAmount || 0) >= 10000000 ? 2 : 0" :loading="loading" />
             </div>
             <div class="flex items-center justify-between text-xs text-gray-500 mt-2">
               <span>{{ formatCurrency(data.sales.taxableAmount || 0) }}</span>
@@ -143,8 +156,8 @@
             </div>
           </div>
           <div class="mt-3">
-            <div class="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
-              {{ formatCrores(data.sales.taxAmount || 0) }}
+            <div class="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight flex items-baseline">
+              <OdometerNumber :value="(data.sales.taxAmount || 0) >= 10000000 ? Number(((data.sales.taxAmount || 0) / 10000000).toFixed(2)) : (data.sales.taxAmount || 0)" prefix="₹" :suffix="(data.sales.taxAmount || 0) >= 10000000 ? ' Cr' : ''" :decimals="(data.sales.taxAmount || 0) >= 10000000 ? 2 : 0" :loading="loading" />
             </div>
             <div class="flex items-center justify-between text-xs text-gray-500 mt-2">
               <span>{{ formatCurrency(data.sales.taxAmount || 0) }}</span>
@@ -163,8 +176,8 @@
             </div>
           </div>
           <div class="mt-3">
-            <div class="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
-              {{ formatCurrency(averageInvoiceValue) }}
+            <div class="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight flex items-baseline">
+              <OdometerNumber :value="averageInvoiceValue" prefix="₹" :loading="loading" />
             </div>
             <div class="flex items-center justify-between text-xs text-gray-500 mt-2">
               <span>Per Transaction</span>
@@ -346,7 +359,7 @@
     <!-- ========================================================================================= -->
     <!-- PILLAR 2: INVENTORY MOVEMENT & VELOCITY (User's Core Focus) -->
     <!-- ========================================================================================= -->
-    <div v-if="data && mainTab === 'movement'" class="space-y-6">
+    <div v-if="data && mainTab === 'movement'" ref="tabContentRef" class="space-y-6">
       <!-- Movement Executive KPIs (4 Cards) -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <!-- 1. Active Turnover SKUs -->
@@ -358,8 +371,9 @@
             </div>
           </div>
           <div class="mt-3">
-            <div class="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
-              {{ formatNumber(data.inventory.inStockCount) }} <span class="text-sm font-medium text-gray-400">SKUs</span>
+            <div class="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight flex items-baseline gap-1">
+              <OdometerNumber :value="data.inventory.inStockCount" :loading="loading" />
+              <span class="text-sm font-medium text-gray-400">SKUs</span>
             </div>
             <div class="flex items-center justify-between text-xs text-gray-500 mt-2">
               <span class="text-emerald-700 font-semibold">{{ inStockPercentage }}% Catalog Circulating</span>
@@ -378,8 +392,8 @@
             </div>
           </div>
           <div class="mt-3">
-            <div class="text-2xl sm:text-3xl font-extrabold text-rose-600 tracking-tight">
-              {{ formatCrores(data.movement.totalDeadStockCapital) }}
+            <div class="text-2xl sm:text-3xl font-extrabold text-rose-600 tracking-tight flex items-baseline">
+              <OdometerNumber :value="data.movement.totalDeadStockCapital >= 10000000 ? Number((data.movement.totalDeadStockCapital / 10000000).toFixed(2)) : data.movement.totalDeadStockCapital" prefix="₹" :suffix="data.movement.totalDeadStockCapital >= 10000000 ? ' Cr' : ''" :decimals="data.movement.totalDeadStockCapital >= 10000000 ? 2 : 0" :loading="loading" />
             </div>
             <div class="flex items-center justify-between text-xs text-gray-500 mt-2">
               <span class="text-rose-600 font-bold">{{ data.movement.deadStock.length }} Zero-Sale SKUs</span>
@@ -398,8 +412,9 @@
             </div>
           </div>
           <div class="mt-3">
-            <div class="text-2xl sm:text-3xl font-extrabold text-amber-600 tracking-tight">
-              {{ data.movement.stockoutRisk.length }} <span class="text-sm font-medium text-gray-400">Depleted Items</span>
+            <div class="text-2xl sm:text-3xl font-extrabold text-amber-600 tracking-tight flex items-baseline gap-1">
+              <OdometerNumber :value="data.movement.stockoutRisk.length" :loading="loading" />
+              <span class="text-sm font-medium text-gray-400">Depleted Items</span>
             </div>
             <div class="flex items-center justify-between text-xs text-gray-500 mt-2">
               <span class="text-amber-700 font-medium">Stock &le; 10 units</span>
@@ -418,8 +433,9 @@
             </div>
           </div>
           <div class="mt-3">
-            <div class="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
-              {{ data.inventory.negativeStockCount }} <span class="text-sm font-medium text-gray-400">Items</span>
+            <div class="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight flex items-baseline gap-1">
+              <OdometerNumber :value="data.inventory.negativeStockCount" :loading="loading" />
+              <span class="text-sm font-medium text-gray-400">Items</span>
             </div>
             <div class="flex items-center justify-between text-xs text-gray-500 mt-2">
               <span class="text-rose-600 font-semibold">Over-Dispatched in ERP</span>
@@ -742,7 +758,7 @@
     <!-- ========================================================================================= -->
     <!-- PILLAR 3: PURCHASE & SUPPLY CHAIN ANALYSIS -->
     <!-- ========================================================================================= -->
-    <div v-if="data && mainTab === 'purchases'" class="space-y-6">
+    <div v-if="data && mainTab === 'purchases'" ref="tabContentRef" class="space-y-6">
       <!-- Purchase Executive KPIs (4 Cards) -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <!-- 1. Total Registered Suppliers -->
@@ -754,8 +770,9 @@
             </div>
           </div>
           <div class="mt-3">
-            <div class="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
-              {{ formatNumber(data.purchases.totalSuppliers) }} <span class="text-sm font-medium text-gray-400">Suppliers</span>
+            <div class="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight flex items-baseline gap-1">
+              <OdometerNumber :value="data.purchases.totalSuppliers" :loading="loading" />
+              <span class="text-sm font-medium text-gray-400">Suppliers</span>
             </div>
             <div class="flex items-center justify-between text-xs text-gray-500 mt-2">
               <span class="text-indigo-700 font-semibold">{{ data.purchases.gstRegistered }} GST Registered</span>
@@ -794,8 +811,8 @@
             </div>
           </div>
           <div class="mt-3">
-            <div class="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
-              {{ formatCrores(data.inventory.totalCostValue) }}
+            <div class="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight flex items-baseline">
+              <OdometerNumber :value="data.inventory.totalCostValue >= 10000000 ? Number((data.inventory.totalCostValue / 10000000).toFixed(2)) : data.inventory.totalCostValue" prefix="₹" :suffix="data.inventory.totalCostValue >= 10000000 ? ' Cr' : ''" :decimals="data.inventory.totalCostValue >= 10000000 ? 2 : 0" :loading="loading" />
             </div>
             <div class="flex items-center justify-between text-xs text-gray-500 mt-2">
               <span>Landed Purchase Cost</span>
@@ -814,8 +831,8 @@
             </div>
           </div>
           <div class="mt-3">
-            <div class="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
-              {{ formatCrores(data.inventory.totalSaleValue) }}
+            <div class="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight flex items-baseline">
+              <OdometerNumber :value="data.inventory.totalSaleValue >= 10000000 ? Number((data.inventory.totalSaleValue / 10000000).toFixed(2)) : data.inventory.totalSaleValue" prefix="₹" :suffix="data.inventory.totalSaleValue >= 10000000 ? ' Cr' : ''" :decimals="data.inventory.totalSaleValue >= 10000000 ? 2 : 0" :loading="loading" />
             </div>
             <div class="flex items-center justify-between text-xs text-gray-500 mt-2">
               <span class="text-emerald-700 font-semibold">+{{ formatCrores(data.inventory.totalSaleValue - data.inventory.totalCostValue) }} Spread</span>
@@ -889,12 +906,17 @@ definePageMeta({
   layout: 'dashboard'
 })
 
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { 
   IndianRupee, Boxes, Users, AlertTriangle, Tag, Clock, 
   RefreshCw, AlertCircle, Crown, Search, Building2, Truck, 
   TrendingUp, Flame, Zap, Activity, ShieldCheck 
 } from 'lucide-vue-next'
+import { useGsapAnimation } from '~/composables/useGsapAnimation'
+import OdometerNumber from '~/components/ui/OdometerNumber.vue'
+
+const { animateStagger, animateTabSwitch, initContext } = useGsapAnimation()
+const tabContentRef = ref<HTMLElement | null>(null)
 
 const loading = ref(true)
 const error = ref<string | null>(null)
@@ -904,6 +926,20 @@ const data = ref<any | null>(null)
 const mainTab = ref<'sales' | 'movement' | 'purchases'>('sales')
 const skuRankingMode = ref<'revenue' | 'volume'>('revenue')
 const movementSubTab = ref<'fast' | 'dead' | 'risk' | 'negative'>('fast')
+
+const switchTab = (tab: 'sales' | 'movement' | 'purchases') => {
+  if (mainTab.value === tab) return
+  mainTab.value = tab
+  nextTick(() => {
+    if (tabContentRef.value) {
+      animateTabSwitch(tabContentRef.value)
+      const cards = tabContentRef.value.querySelectorAll('.grid > div')
+      if (cards.length) {
+        animateStagger(cards, { duration: 0.22, stagger: 0.03, y: 8 })
+      }
+    }
+  })
+}
 
 // Search filter state
 const skuSearchQuery = ref('')
@@ -918,6 +954,15 @@ const fetchAnalytics = async (forceRefresh = false) => {
     const res = await $fetch<any>(url)
     if (res && res.success) {
       data.value = res
+      nextTick(() => {
+        if (tabContentRef.value) {
+          animateTabSwitch(tabContentRef.value)
+          const cards = tabContentRef.value.querySelectorAll('.grid > div')
+          if (cards.length) {
+            animateStagger(cards, { duration: 0.24, stagger: 0.03, y: 8 })
+          }
+        }
+      })
     } else {
       throw new Error('Invalid response structure')
     }
@@ -930,6 +975,7 @@ const fetchAnalytics = async (forceRefresh = false) => {
 }
 
 onMounted(() => {
+  initContext(tabContentRef.value || undefined)
   fetchAnalytics()
 })
 

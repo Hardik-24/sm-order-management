@@ -8,6 +8,8 @@ import TableFilterButtons from '~/components/dashboard/TableFilterButtons.vue'
 import RowsPerPageSelect from '~/components/ui/RowsPerPageSelect.vue'
 import StatusBadge from '~/components/ui/StatusBadge.vue'
 import FloatingHorizontalScrollbar from '~/components/ui/FloatingHorizontalScrollbar.vue'
+import LoadingTopBar from '~/components/ui/LoadingTopBar.vue'
+import TableSkeletonRows from '~/components/ui/TableSkeletonRows.vue'
 import type { Order } from '~/types'
 import { useGsapAnimation } from '~/composables/useGsapAnimation'
 import LiveTrackingMap from '~/components/ui/LiveTrackingMap.vue'
@@ -401,9 +403,8 @@ const saveDriverAssignment = async () => {
 
     <!-- Table Area -->
     <div class="relative min-h-[200px]">
-      <Transition name="fade">
-        <div v-if="isLoading" class="absolute inset-0 bg-white/50 backdrop-blur-[2px] z-10 animate-pulse pointer-events-none"></div>
-      </Transition>
+      <LoadingTopBar :loading="isLoading" />
+      <div v-if="isLoading && orders?.length" class="absolute inset-0 bg-white/30 backdrop-blur-[1px] z-10 pointer-events-none transition-opacity duration-200"></div>
 
       <!-- DESKTOP / TABLET VIEW: Full Multi-column Table -->
       <div ref="tableScrollRef" class="hidden md:block overflow-x-auto no-scrollbar">
@@ -655,7 +656,8 @@ const saveDriverAssignment = async () => {
                 </div>
               </td>
             </tr>
-            <tr v-if="!orders?.length">
+            <TableSkeletonRows v-if="isLoading && !orders?.length" :cols="6" :rows="6" />
+            <tr v-else-if="!orders?.length && !isLoading">
               <td colspan="10" class="px-6 py-12 text-center text-sm text-gray-400">
                 <Truck class="w-8 h-8 mx-auto text-gray-300 mb-2" />
                 <p class="font-semibold text-gray-700">No delivery orders found</p>
@@ -869,7 +871,9 @@ const saveDriverAssignment = async () => {
           </div>
         </div>
 
-        <div v-if="!orders?.length" class="px-4 py-8 text-center text-sm text-gray-500">
+        <TableSkeletonRows v-if="isLoading && !orders?.length" :cols="6" :rows="5" :isMobileOnly="true" :renderMobile="true" />
+
+        <div v-else-if="!orders?.length && !isLoading" class="px-4 py-8 text-center text-sm text-gray-500">
           No delivery orders found.
         </div>
       </div>

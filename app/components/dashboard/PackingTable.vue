@@ -7,6 +7,8 @@ import {
 import TableFilterButtons from '~/components/dashboard/TableFilterButtons.vue'
 import RowsPerPageSelect from '~/components/ui/RowsPerPageSelect.vue'
 import FloatingHorizontalScrollbar from '~/components/ui/FloatingHorizontalScrollbar.vue'
+import LoadingTopBar from '~/components/ui/LoadingTopBar.vue'
+import TableSkeletonRows from '~/components/ui/TableSkeletonRows.vue'
 import { useGsapAnimation } from '~/composables/useGsapAnimation'
 import type { Order } from '~/types'
 
@@ -166,7 +168,8 @@ const getPackingProgress = (order: any) => {
 
     <!-- Table Area with Pulsing Blur and Skeleton Support -->
     <div class="relative min-h-[220px]">
-      <div v-if="isLoading" class="absolute inset-0 bg-white/50 backdrop-blur-[2px] z-10 animate-pulse pointer-events-none"></div>
+      <LoadingTopBar :loading="isLoading" />
+      <div v-if="isLoading && orders?.length" class="absolute inset-0 bg-white/30 backdrop-blur-[1px] z-10 pointer-events-none transition-opacity duration-200"></div>
 
       <!-- DESKTOP / TABLET VIEW: Multi-Column Table -->
       <div ref="tableScrollRef" class="hidden md:block overflow-x-auto no-scrollbar">
@@ -184,32 +187,7 @@ const getPackingProgress = (order: any) => {
           <tbody ref="tbodyRef" class="divide-y divide-gray-100 bg-white relative">
             
             <!-- Skeleton Rows -->
-            <template v-if="isLoading && (!orders || orders.length === 0)">
-              <tr v-for="i in 6" :key="'skel-' + i" class="animate-pulse hover:bg-transparent">
-                <td class="px-5 py-4 whitespace-nowrap">
-                  <div class="h-4 bg-gray-200 rounded w-24 mb-1.5"></div>
-                  <div class="h-3 bg-gray-100 rounded w-16"></div>
-                </td>
-                <td class="px-5 py-4">
-                  <div class="h-4 bg-gray-200 rounded w-36 mb-1.5"></div>
-                  <div class="h-3 bg-gray-100 rounded w-24"></div>
-                </td>
-                <td class="px-5 py-4">
-                  <div class="h-4 bg-gray-200 rounded w-40 mb-1.5"></div>
-                  <div class="h-3 bg-gray-100 rounded w-16"></div>
-                </td>
-                <td class="px-5 py-4 whitespace-nowrap">
-                  <div class="h-4 bg-gray-200 rounded w-24 mb-1.5"></div>
-                  <div class="h-1.5 bg-gray-100 rounded w-28"></div>
-                </td>
-                <td class="px-5 py-4 whitespace-nowrap">
-                  <div class="h-6 bg-gray-200 rounded-full w-28"></div>
-                </td>
-                <td class="px-5 py-4 text-right whitespace-nowrap pr-5">
-                  <div class="h-8 bg-gray-200 rounded-lg w-28 ml-auto"></div>
-                </td>
-              </tr>
-            </template>
+            <TableSkeletonRows v-if="isLoading && (!orders || orders.length === 0)" :cols="6" :rows="6" />
 
             <!-- Empty State -->
             <tr v-else-if="!isLoading && (!orders || orders.length === 0)" class="text-center py-8">
@@ -369,18 +347,7 @@ const getPackingProgress = (order: any) => {
       <!-- MOBILE VIEW: 2-Line High-Density Non-Scrollable Rows -->
       <div ref="mobileListRef" class="block md:hidden divide-y divide-gray-100 bg-white">
         <!-- Skeleton Loading for Mobile -->
-        <template v-if="isLoading && (!orders || orders.length === 0)">
-          <div v-for="i in 6" :key="'mob-skel-' + i" class="p-3.5 space-y-2 animate-pulse">
-            <div class="flex justify-between">
-              <div class="h-4 bg-gray-200 rounded w-24"></div>
-              <div class="h-4 bg-gray-200 rounded w-20"></div>
-            </div>
-            <div class="flex justify-between">
-              <div class="h-3 bg-gray-100 rounded w-32"></div>
-              <div class="h-6 bg-gray-200 rounded w-16"></div>
-            </div>
-          </div>
-        </template>
+        <TableSkeletonRows v-if="isLoading && (!orders || orders.length === 0)" :cols="6" :rows="5" :isMobileOnly="true" :renderMobile="true" />
 
         <!-- Mobile Data Cards (Matching Approve Orders typography) -->
         <div 

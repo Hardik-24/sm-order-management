@@ -24,6 +24,7 @@ const props = withDefaults(defineProps<{
   loading?: boolean
   duration?: number
   formatCommas?: boolean
+  decimals?: number
   class?: string
 }>(), {
   value: 0,
@@ -32,6 +33,7 @@ const props = withDefaults(defineProps<{
   loading: false,
   duration: 0.65,
   formatCommas: true,
+  decimals: 0,
   class: ''
 })
 
@@ -39,8 +41,15 @@ const numberTextRef = ref<HTMLElement | null>(null)
 const currentDisplayNum = ref<number>(0)
 
 const formatNumber = (num: number): string => {
-  const rounded = Math.round(num)
-  const formatted = props.formatCommas ? rounded.toLocaleString('en-IN') : String(rounded)
+  let formatted = ''
+  if (props.decimals > 0) {
+    formatted = props.formatCommas 
+      ? num.toLocaleString('en-IN', { minimumFractionDigits: props.decimals, maximumFractionDigits: props.decimals })
+      : num.toFixed(props.decimals)
+  } else {
+    const rounded = Math.round(num)
+    formatted = props.formatCommas ? rounded.toLocaleString('en-IN') : String(rounded)
+  }
   return `${props.prefix}${formatted}${props.suffix}`
 }
 

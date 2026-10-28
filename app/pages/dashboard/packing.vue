@@ -125,34 +125,15 @@ const handlePanelClose = () => {
 }
 
 // GSAP Animations
-const { animateNumber, animateStagger, initContext } = useGsapAnimation()
+const { animateStagger, initContext } = useGsapAnimation()
 const statsContainer = ref<HTMLElement | null>(null)
-const numPending = ref<HTMLElement | null>(null)
-const numUrgent = ref<HTMLElement | null>(null)
-const numInProgress = ref<HTMLElement | null>(null)
-const numPacked = ref<HTMLElement | null>(null)
-
-const triggerStatAnimations = () => {
-  if (!stats.value) return
-  nextTick(() => {
-    if (numPending.value) animateNumber(numPending.value, counts.value.pending, { duration: 0.55 })
-    if (numUrgent.value) animateNumber(numUrgent.value, counts.value.urgent, { duration: 0.6 })
-    if (numInProgress.value) animateNumber(numInProgress.value, counts.value.inProgress, { duration: 0.65 })
-    if (numPacked.value) animateNumber(numPacked.value, counts.value.packed, { duration: 0.7 })
-  })
-}
 
 onMounted(() => {
   initContext(statsContainer.value || undefined)
   if (statsContainer.value) {
     animateStagger(statsContainer.value.children, { duration: 0.35, stagger: 0.06, y: 12 })
   }
-  triggerStatAnimations()
 })
-
-watch(() => counts.value, () => {
-  triggerStatAnimations()
-}, { deep: true })
 </script>
 
 <template>
@@ -193,7 +174,9 @@ watch(() => counts.value, () => {
           </div>
           <div class="flex flex-col justify-center min-w-0">
             <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">Pending Packing</p>
-            <h3 ref="numPending" class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">{{ counts.pending }}</h3>
+            <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">
+              <OdometerNumber :value="counts.pending" :loading="pending" />
+            </h3>
             <p class="text-[11px] sm:text-xs text-amber-600 font-medium truncate">Awaiting picking</p>
           </div>
         </div>
@@ -212,7 +195,9 @@ watch(() => counts.value, () => {
           </div>
           <div class="flex flex-col justify-center min-w-0">
             <p class="text-[10px] font-bold text-rose-600 uppercase tracking-widest mb-0.5 truncate">⚡ Urgent Orders</p>
-            <h3 ref="numUrgent" class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">{{ counts.urgent }}</h3>
+            <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">
+              <OdometerNumber :value="counts.urgent" :loading="pending" />
+            </h3>
             <p class="text-[11px] sm:text-xs text-rose-500 font-medium truncate">High priority</p>
           </div>
         </div>
@@ -231,7 +216,9 @@ watch(() => counts.value, () => {
           </div>
           <div class="flex flex-col justify-center min-w-0">
             <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">Currently Packing</p>
-            <h3 ref="numInProgress" class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">{{ counts.inProgress }}</h3>
+            <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">
+              <OdometerNumber :value="counts.inProgress" :loading="pending" />
+            </h3>
             <p class="text-[11px] sm:text-xs text-blue-600 font-medium truncate">On floor</p>
           </div>
         </div>
@@ -250,7 +237,9 @@ watch(() => counts.value, () => {
           </div>
           <div class="flex flex-col justify-center min-w-0">
             <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">Ready / Packed</p>
-            <h3 ref="numPacked" class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">{{ counts.packed }}</h3>
+            <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">
+              <OdometerNumber :value="counts.packed" :loading="pending" />
+            </h3>
             <p class="text-[11px] sm:text-xs text-emerald-600 font-medium truncate">Ready for dispatch</p>
           </div>
         </div>

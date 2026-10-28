@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue'
+import { ref, watch, computed, nextTick } from 'vue'
 import { X, MoreHorizontal, Lock, Edit, Package, PackageCheck, Truck, Check, Box, Plus, Trash2, MapPin, AlertCircle, AlertTriangle, Ban, CheckCheck, CheckCircle2, Zap, User, IndianRupee, Clock, Building2, Phone, FileText, Calendar, Copy, ChevronRight, Car, GitFork, SlidersHorizontal, Loader2 } from 'lucide-vue-next'
 import StatusBadge from '~/components/ui/StatusBadge.vue'
 import GenerateBillModal from '~/components/dashboard/GenerateBillModal.vue'
 import SetDeliveryPinModal from '~/components/dashboard/SetDeliveryPinModal.vue'
 import PartyVehicleHandoverModal from '~/components/dashboard/PartyVehicleHandoverModal.vue'
 import AdminOrderStatusModal from '~/components/dashboard/AdminOrderStatusModal.vue'
+import LoadingTopBar from '~/components/ui/LoadingTopBar.vue'
 import CustomSelect from '~/components/ui/CustomSelect.vue'
 import { formatCurrency, formatDateTime, formatDate, formatTime, getDisplayStatus, getOverallColor, getStatusColor } from '~~/app/lib/utils'
 import type { Order } from '~/types'
@@ -30,8 +31,11 @@ const onAdminStatusUpdated = (updatedOrder: any) => {
 const { showEditing, showSaving, showSaved, hide } = useSnackbar()
 const { paymentTermsOptions } = useMasters()
 const { notifyChange, onOrderSync } = useRealtimeSync()
-const { animateStagger } = useGsapAnimation()
+const { animateStagger, animateModalOpen, initContext } = useGsapAnimation()
 const itemsTbodyRef = ref<HTMLElement | null>(null)
+const cancelModalCardRef = ref<HTMLElement | null>(null)
+const mismatchModalCardRef = ref<HTMLElement | null>(null)
+const editModalCardRef = ref<HTMLElement | null>(null)
 
 const props = withDefaults(defineProps<{
   orderId: string | null
@@ -153,6 +157,9 @@ const isCancelling = ref(false)
 const openCancelModal = () => {
   cancelReason.value = ''
   isCancelModalOpen.value = true
+  nextTick(() => {
+    if (cancelModalCardRef.value) animateModalOpen(cancelModalCardRef.value)
+  })
 }
 
 const confirmCancelOrder = async () => {
@@ -571,6 +578,9 @@ const handlePackingCheckboxToggle = (idx: number, event: Event) => {
     packedQty: currentPacked
   }
   isMismatchModalOpen.value = true
+  nextTick(() => {
+    if (mismatchModalCardRef.value) animateModalOpen(mismatchModalCardRef.value)
+  })
 }
 
 const confirmMismatchPacked = () => {
@@ -699,6 +709,9 @@ const openEditModal = async () => {
   if (!order.value) return
   isEditModalOpen.value = true
   isEditLoading.value = true
+  nextTick(() => {
+    if (editModalCardRef.value) animateModalOpen(editModalCardRef.value)
+  })
   
   try {
     if (!customersList.value.length) {
@@ -891,7 +904,7 @@ onMounted(() => {
   <!-- Mandatory Order Cancellation Modal -->
   <Teleport to="body">
     <div v-if="isCancelModalOpen" class="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-      <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden border border-gray-200">
+      <div ref="cancelModalCardRef" class="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden border border-gray-200">
         <div class="p-6">
           <div class="w-12 h-12 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center mb-4 border border-rose-100">
             <Ban class="w-6 h-6" />
@@ -932,7 +945,7 @@ onMounted(() => {
   <!-- Explicit Confirmation for Quantity Mismatch Modal -->
   <Teleport to="body">
     <div v-if="isMismatchModalOpen && mismatchModalItem" class="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-      <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden border border-gray-200">
+      <div ref="mismatchModalCardRef" class="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden border border-gray-200">
         <div class="p-6">
           <div 
             class="w-12 h-12 rounded-full flex items-center justify-center mb-4 border"
@@ -1045,13 +1058,14 @@ onMounted(() => {
       <div class="absolute inset-0 bg-black/30 backdrop-blur-[2px] pointer-events-auto transition-opacity" @click="closePanel"></div>
       
       <div 
-        class="absolute inset-y-0 right-0 max-w-full w-full bg-white shadow-2xl pointer-events-auto flex flex-col h-full overflow-hidden transform transition-all duration-300 border-l border-gray-200/80"
+        class="absolute inset-y-0 right-0 max-w-full w-full bg-white shadow-2xl pointer-events-auto flex flex-col h-full overflow-hidden transform transition-all duration-300 border-l border-gray-200/80 relative"
         :class="context === 'packing' ? 'sm:max-w-[760px] md:max-w-[880px] lg:max-w-[960px] xl:max-w-[1020px]' : 'sm:max-w-[500px] md:max-w-[540px]'"
       >
+        <LoadingTopBar :loading="isLoading" />
       
       <template v-if="order">
         <!-- Loading Overlay -->
-        <div v-if="isLoading" class="absolute inset-0 bg-white/50 backdrop-blur-[2px] z-50 pointer-events-auto animate-pulse transition-all duration-300"></div>
+        <div v-if="isLoading" class="absolute inset-0 bg-white/20 backdrop-blur-[1px] z-50 pointer-events-none transition-opacity duration-200"></div>
 
         <!-- 1. Header Bar -->
         <div class="px-5 sm:px-6 py-3.5 border-b border-gray-200/80 flex items-center justify-between bg-white flex-shrink-0 z-10">
@@ -2080,7 +2094,7 @@ onMounted(() => {
     <div v-if="isEditModalOpen" class="fixed inset-0 z-[250] flex items-center justify-center p-2 sm:p-4">
       <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" @click="isEditModalOpen = false; hide()"></div>
       
-      <div class="relative bg-[#faf8f5] w-full max-w-4xl rounded-xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[calc(100vh-4.5rem)] md:max-h-[92vh] overflow-hidden transform transition-all border border-gray-200">
+      <div ref="editModalCardRef" class="relative bg-[#faf8f5] w-full max-w-4xl rounded-xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[calc(100vh-4.5rem)] md:max-h-[92vh] overflow-hidden transform transition-all border border-gray-200">
         <div class="px-4 py-3 sm:px-6 sm:py-4 border-b border-gray-200 bg-white flex items-center justify-between shrink-0">
           <h2 class="text-base sm:text-lg font-bold text-gray-900 truncate">Edit Order: {{ order?.orderNumber }}</h2>
           <div class="flex items-center gap-3">

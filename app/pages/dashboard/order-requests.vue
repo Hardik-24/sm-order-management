@@ -245,30 +245,21 @@ const totalPages = computed(() => {
   return data.value?.totalPages || 1
 })
 
-const { animateNumber, animateStagger, initContext } = useGsapAnimation()
+const { animateStagger, initContext } = useGsapAnimation()
 const statsContainer = ref<HTMLElement | null>(null)
-const numPending = ref<HTMLElement | null>(null)
-const numConfirmed = ref<HTMLElement | null>(null)
-const numDeclined = ref<HTMLElement | null>(null)
-const numAll = ref<HTMLElement | null>(null)
-
-const triggerStatAnimations = () => {
-  if (!data.value?.counts) return
-  nextTick(() => {
-    animateNumber(numPending.value, data.value?.counts?.pending || 0, { duration: 0.6 })
-    animateNumber(numConfirmed.value, data.value?.counts?.confirmed || 0, { duration: 0.65 })
-    animateNumber(numDeclined.value, data.value?.counts?.declined || 0, { duration: 0.7 })
-    animateNumber(numAll.value, data.value?.counts?.all || 0, { duration: 0.55 })
-  })
-}
-
 const tbodyRef = ref<HTMLElement | null>(null)
+const mobileListRef = ref<HTMLElement | null>(null)
 
 const triggerRowAnimation = () => {
   nextTick(() => {
-    if (!isLoading.value && tbodyRef.value) {
-      const rows = tbodyRef.value.querySelectorAll('tr')
-      animateStagger(rows, { duration: 0.18, stagger: 0.015, y: 4 })
+    if (!isLoading.value) {
+      if (tbodyRef.value) {
+        const rows = tbodyRef.value.querySelectorAll('tr')
+        animateStagger(rows, { duration: 0.18, stagger: 0.015, y: 4 })
+      }
+      if (mobileListRef.value) {
+        animateStagger(mobileListRef.value.children, { duration: 0.18, stagger: 0.015, y: 4 })
+      }
     }
   })
 }
@@ -282,12 +273,7 @@ onMounted(() => {
   if (statsContainer.value) {
     animateStagger(statsContainer.value.children, { duration: 0.35, stagger: 0.06, y: 12 })
   }
-  triggerStatAnimations()
   triggerRowAnimation()
-})
-
-watch(() => data.value?.counts, () => {
-  triggerStatAnimations()
 })
 </script>
 
@@ -335,7 +321,9 @@ watch(() => data.value?.counts, () => {
           </div>
           <div class="flex flex-col justify-center min-w-0">
             <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">Pending Review</p>
-            <h3 ref="numPending" class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">0</h3>
+            <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">
+              <OdometerNumber :value="counts.pending" :loading="isLoading" />
+            </h3>
             <p class="text-xs text-amber-600 font-medium truncate">Action needed</p>
           </div>
         </div>
@@ -355,7 +343,9 @@ watch(() => data.value?.counts, () => {
           </div>
           <div class="flex flex-col justify-center min-w-0">
             <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">Converted Orders</p>
-            <h3 ref="numConfirmed" class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">0</h3>
+            <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">
+              <OdometerNumber :value="counts.confirmed" :loading="isLoading" />
+            </h3>
             <p class="text-xs text-gray-500 truncate">Confirmed</p>
           </div>
         </div>
@@ -375,7 +365,9 @@ watch(() => data.value?.counts, () => {
           </div>
           <div class="flex flex-col justify-center min-w-0">
             <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">Declined</p>
-            <h3 ref="numDeclined" class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">0</h3>
+            <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">
+              <OdometerNumber :value="counts.declined" :loading="isLoading" />
+            </h3>
             <p class="text-xs text-rose-500 font-medium truncate">Rejected</p>
           </div>
         </div>
@@ -395,7 +387,9 @@ watch(() => data.value?.counts, () => {
           </div>
           <div class="flex flex-col justify-center min-w-0">
             <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">Total Inquiries</p>
-            <h3 ref="numAll" class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">0</h3>
+            <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">
+              <OdometerNumber :value="counts.all" :loading="isLoading" />
+            </h3>
             <p class="text-xs text-gray-500 truncate">All time</p>
           </div>
         </div>
@@ -437,7 +431,8 @@ watch(() => data.value?.counts, () => {
 
       <!-- Table Content -->
       <div class="relative min-h-[200px]">
-        <div v-if="isLoading" class="absolute inset-0 bg-white/50 backdrop-blur-[2px] z-10 animate-pulse"></div>
+        <LoadingTopBar :active="isLoading" />
+        <div v-if="isLoading && requestsList.length > 0" class="absolute inset-0 bg-white/40 pointer-events-none z-10 transition-opacity"></div>
         <div ref="desktopTableScrollRef" class="hidden md:block no-scrollbar" :class="isSidebarCollapsed ? 'overflow-hidden' : 'overflow-x-auto'" style="scrollbar-width: none; -ms-overflow-style: none;">
           <table 
             class="w-full text-left border-collapse"
@@ -454,7 +449,9 @@ watch(() => data.value?.counts, () => {
               </tr>
             </thead>
             <tbody ref="tbodyRef" class="divide-y divide-gray-200 bg-white">
-              <tr v-if="requestsList.length === 0 && !isLoading" class="text-center">
+              <TableSkeletonRows v-if="isLoading && requestsList.length === 0" :rows="6" :cols="6" />
+
+              <tr v-else-if="requestsList.length === 0 && !isLoading" class="text-center">
                 <td colspan="6" class="py-16 text-gray-400">
                   <Inbox class="w-10 h-10 mx-auto text-gray-300 mb-2 stroke-1" />
                   <p class="font-medium text-gray-600">No order requests found</p>
@@ -543,8 +540,10 @@ watch(() => data.value?.counts, () => {
         <FloatingHorizontalScrollbar :target="desktopTableScrollRef" />
 
         <!-- MOBILE VIEW: Stacked Cards (Hidden on desktop) -->
-        <div class="md:hidden flex flex-col divide-y divide-gray-100 bg-white">
-          <div v-if="requestsList.length === 0 && !isLoading" class="p-10 text-center text-gray-400">
+        <div ref="mobileListRef" class="md:hidden flex flex-col divide-y divide-gray-100 bg-white">
+          <TableSkeletonRows v-if="isLoading && requestsList.length === 0" :rows="5" :cols="1" isMobile />
+
+          <div v-else-if="requestsList.length === 0 && !isLoading" class="p-10 text-center text-gray-400">
             <Inbox class="w-8 h-8 mx-auto text-gray-300 mb-2 stroke-1" />
             <p class="font-medium text-gray-600 text-sm">No order requests found</p>
           </div>

@@ -220,14 +220,10 @@ const submitCancel = async () => {
 }
 
 // GSAP Animation
-const { animateNumber, animateStagger, initContext } = useGsapAnimation()
+const { animateStagger, initContext } = useGsapAnimation()
 const statsContainer = ref<HTMLElement | null>(null)
 const tbodyRef = ref<HTMLElement | null>(null)
 const mobileListRef = ref<HTMLElement | null>(null)
-const numPending = ref<HTMLElement | null>(null)
-const numUrgent = ref<HTMLElement | null>(null)
-const numApproved = ref<HTMLElement | null>(null)
-const numTotal = ref<HTMLElement | null>(null)
 
 const counts = computed(() => {
   return {
@@ -237,15 +233,6 @@ const counts = computed(() => {
     total: statsData.value?.total ?? 0
   }
 })
-
-const triggerStatAnimations = () => {
-  nextTick(() => {
-    if (numPending.value) animateNumber(numPending.value, counts.value.pending, { duration: 0.55 })
-    if (numUrgent.value) animateNumber(numUrgent.value, counts.value.urgent, { duration: 0.6 })
-    if (numApproved.value) animateNumber(numApproved.value, counts.value.approved, { duration: 0.65 })
-    if (numTotal.value) animateNumber(numTotal.value, counts.value.total, { duration: 0.5 })
-  })
-}
 
 const triggerRowAnimation = () => {
   nextTick(() => {
@@ -268,13 +255,8 @@ onMounted(() => {
   if (statsContainer.value) {
     animateStagger(statsContainer.value.children, { duration: 0.35, stagger: 0.06, y: 12 })
   }
-  triggerStatAnimations()
   triggerRowAnimation()
 })
-
-watch(() => counts.value, () => {
-  triggerStatAnimations()
-}, { deep: true })
 
 watch([() => data.value?.orders, () => isLoading.value], () => {
   triggerRowAnimation()
@@ -336,7 +318,9 @@ const getTotalNos = (order: any) => {
           </div>
           <div class="flex flex-col justify-center min-w-0">
             <p class="text-[9px] sm:text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">Pending</p>
-            <h3 ref="numPending" class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5">{{ counts.pending }}</h3>
+            <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5">
+              <OdometerNumber :value="counts.pending" :loading="isLoading" />
+            </h3>
             <p class="text-[10px] sm:text-xs text-amber-600 font-medium truncate">Awaiting review</p>
           </div>
         </div>
@@ -353,7 +337,9 @@ const getTotalNos = (order: any) => {
           </div>
           <div class="flex flex-col justify-center min-w-0">
             <p class="text-[9px] sm:text-[10px] font-bold text-rose-600 uppercase tracking-widest mb-0.5 truncate">⚡ Urgent</p>
-            <h3 ref="numUrgent" class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5">{{ counts.urgent }}</h3>
+            <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5">
+              <OdometerNumber :value="counts.urgent" :loading="isLoading" />
+            </h3>
             <p class="text-[10px] sm:text-xs text-rose-500 font-medium truncate">High priority</p>
           </div>
         </div>
@@ -370,7 +356,9 @@ const getTotalNos = (order: any) => {
           </div>
           <div class="flex flex-col justify-center min-w-0">
             <p class="text-[9px] sm:text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">Approved</p>
-            <h3 ref="numApproved" class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5">{{ counts.approved }}</h3>
+            <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5">
+              <OdometerNumber :value="counts.approved" :loading="isLoading" />
+            </h3>
             <p class="text-[10px] sm:text-xs text-emerald-600 font-medium truncate">Approved</p>
           </div>
         </div>
@@ -387,7 +375,9 @@ const getTotalNos = (order: any) => {
           </div>
           <div class="flex flex-col justify-center min-w-0">
             <p class="text-[9px] sm:text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">Total</p>
-            <h3 ref="numTotal" class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5">{{ counts.total }}</h3>
+            <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5">
+              <OdometerNumber :value="counts.total" :loading="isLoading" />
+            </h3>
             <p class="text-[10px] sm:text-xs text-gray-500 truncate">Total listed</p>
           </div>
         </div>

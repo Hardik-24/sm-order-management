@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, nextTick, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { X, Plus, Trash2, Zap, MapPin, UserCheck, ShieldAlert, Award, FileText, IndianRupee, Truck, Car, AlertCircle, Package, Loader2, Clock, Crown, Check, Tag } from 'lucide-vue-next'
 import { formatCurrency, formatDate } from '~/lib/utils'
 import CustomSelect from '~/components/ui/CustomSelect.vue'
 import { useSnackbar } from '~/composables/useSnackbar'
 import { useRealtimeSync } from '~/composables/useRealtimeSync'
+import { useGsapAnimation } from '~/composables/useGsapAnimation'
+import OdometerNumber from '~/components/ui/OdometerNumber.vue'
 
 definePageMeta({ layout: 'dashboard' })
 
@@ -13,6 +15,10 @@ const router = useRouter()
 const { user } = useAuth()
 const { showSaving, showSaved, hide } = useSnackbar()
 const { paymentTermsOptions } = useMasters()
+const { animateModalOpen, initContext } = useGsapAnimation()
+
+const customerBannerRef = ref<HTMLElement | null>(null)
+const itemsContainerRef = ref<HTMLElement | null>(null)
 
 const form = ref({
   customerId: '',
@@ -117,6 +123,12 @@ const onCustomerChange = () => {
       form.value.deliveryAddressId = ''
       form.value.deliveryAddress = `${fullAddress}${c.pincode ? ' - ' + c.pincode : ''}`
     }
+
+    nextTick(() => {
+      if (customerBannerRef.value) {
+        animateModalOpen(customerBannerRef.value, null, { duration: 0.25 })
+      }
+    })
   }
 }
 
@@ -137,6 +149,12 @@ const addItem = () => {
     isTaxInclusive: false,
     applyLastPrice: false,
     itemNotes: ''
+  })
+
+  nextTick(() => {
+    if (itemsContainerRef.value?.lastElementChild) {
+      animateModalOpen(itemsContainerRef.value.lastElementChild as HTMLElement, null, { duration: 0.25 })
+    }
   })
 }
 
@@ -408,7 +426,7 @@ const getCustomerInitials = (name: string) => {
             />
 
             <!-- Selected Customer Info Banner (Enhanced & Prominent) -->
-            <div v-if="selectedCustomer" class="mt-3.5 p-4 sm:p-5 bg-gradient-to-r from-slate-50 via-white to-sky-50/20 rounded-2xl border border-gray-200 shadow-2xs transition-all">
+            <div v-if="selectedCustomer" ref="customerBannerRef" class="mt-3.5 p-4 sm:p-5 bg-gradient-to-r from-slate-50 via-white to-sky-50/20 rounded-2xl border border-gray-200 shadow-2xs transition-all">
               <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
                 <!-- Left: Big Avatar, Name, Company & Code -->
                 <div class="flex items-start sm:items-center gap-3.5 min-w-0">
@@ -645,7 +663,7 @@ const getCustomerInitials = (name: string) => {
           </button>
         </div>
 
-        <div class="space-y-4">
+        <div ref="itemsContainerRef" class="space-y-4">
           <div v-for="(item, idx) in form.items" :key="idx" class="bg-gray-50/80 p-3.5 sm:p-4 rounded-xl border border-gray-200 space-y-3">
             <div class="flex flex-col md:flex-row md:items-start gap-3 md:gap-4">
               <!-- Product Select -->
@@ -869,7 +887,9 @@ const getCustomerInitials = (name: string) => {
             </div>
             <div class="pt-2.5 border-t border-gray-200 flex justify-between items-center">
               <span class="text-xs font-bold text-gray-900 uppercase tracking-wider">Total Amount</span>
-              <span class="text-2xl font-black text-[#1b3b5f]">{{ formatCurrency(orderSummary.grandTotal) }}</span>
+              <span class="text-2xl font-black text-[#1b3b5f] flex items-baseline">
+                <OdometerNumber :value="orderSummary.grandTotal" prefix="₹" />
+              </span>
             </div>
           </div>
         </div>

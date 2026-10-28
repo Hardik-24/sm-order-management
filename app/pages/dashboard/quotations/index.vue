@@ -23,7 +23,7 @@
     </div>
 
     <!-- Quick Stats Cards (Matching billing.vue:216-284 exact structure & typography) -->
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-4">
+    <div ref="statsContainerRef" class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-4 select-none">
       <!-- 1. Total Quotes -->
       <div class="bg-white rounded-xl border border-[#e5e2dc] p-3.5 sm:p-5 shadow-sm">
         <div class="flex gap-2.5 sm:gap-4">
@@ -35,7 +35,9 @@
           </div>
           <div class="flex flex-col justify-center min-w-0">
             <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">Total Quotes</p>
-            <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">{{ quotations.length }}</h3>
+            <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">
+              <OdometerNumber :value="quotations.length" :loading="isLoading" />
+            </h3>
             <p class="text-[11px] sm:text-xs text-gray-500 font-medium truncate">Recorded in system</p>
           </div>
         </div>
@@ -52,7 +54,9 @@
           </div>
           <div class="flex flex-col justify-center min-w-0">
             <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">This Month</p>
-            <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">{{ quotesThisMonth }}</h3>
+            <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">
+              <OdometerNumber :value="quotesThisMonth" :loading="isLoading" />
+            </h3>
             <p class="text-[11px] sm:text-xs text-amber-600 font-medium truncate">Issued in {{ currentMonthName }}</p>
           </div>
         </div>
@@ -140,7 +144,9 @@
     </div>
 
     <!-- Quotations Table Card (Matching BillingTable.vue) -->
-    <div class="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden flex flex-col">
+    <div class="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden flex flex-col relative">
+      <LoadingTopBar :loading="isLoading" />
+
       <!-- Toolbar Header -->
       <div class="px-5 py-3 border-b border-gray-200 bg-gray-50/50 flex flex-wrap items-center justify-between gap-3 text-xs text-gray-500">
         <div>
@@ -150,10 +156,24 @@
         </div>
       </div>
 
-      <!-- Loading State -->
-      <div v-if="isLoading" class="p-14 flex flex-col items-center justify-center text-gray-400 gap-2">
-        <Loader2 class="w-7 h-7 animate-spin text-[#1b3b5f]" />
-        <p class="text-xs font-medium text-gray-500">Loading quotations...</p>
+      <!-- Skeletons when initial loading -->
+      <div v-if="isLoading && filteredQuotations.length === 0">
+        <div class="hidden md:block overflow-x-auto no-scrollbar">
+          <table class="w-full text-left border-collapse min-w-full text-sm text-gray-600">
+            <thead>
+              <tr class="bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                <th class="px-5 py-3.5 whitespace-nowrap">Quote No.</th>
+                <th class="px-5 py-3.5">Customer & Destination</th>
+                <th class="px-5 py-3.5 whitespace-nowrap text-center">Items</th>
+                <th class="px-5 py-3.5 whitespace-nowrap">Created By</th>
+                <th class="px-5 py-3.5 whitespace-nowrap text-center">Date</th>
+                <th class="px-5 py-3.5 whitespace-nowrap text-right pr-5">Actions</th>
+              </tr>
+            </thead>
+            <TableSkeletonRows :cols="6" :rows="5" />
+          </table>
+        </div>
+        <TableSkeletonRows :cols="6" :rows="5" :isMobileOnly="true" :renderMobile="true" />
       </div>
 
       <!-- Empty State matching BillingTable.vue:195-201 -->
@@ -189,7 +209,7 @@
                 <th class="px-5 py-3.5 whitespace-nowrap text-right pr-5">Actions</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-gray-100 bg-white">
+            <tbody ref="tbodyRef" class="divide-y divide-gray-100 bg-white">
               <tr
                 v-for="quote in filteredQuotations"
                 :key="quote.id"
@@ -279,7 +299,7 @@
         </div>
 
         <!-- Mobile View (Matching BillingTable.vue:351-420 exact 2-line layout) -->
-        <div class="block md:hidden divide-y divide-gray-100 bg-white">
+        <div ref="mobileListRef" class="block md:hidden divide-y divide-gray-100 bg-white">
           <div
             v-for="quote in filteredQuotations"
             :key="'mob-' + quote.id"
@@ -356,7 +376,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import {
   Calculator,
   Plus,
@@ -376,6 +396,10 @@ import {
 } from 'lucide-vue-next'
 import { useSnackbar } from '~/composables/useSnackbar'
 import { useAuth } from '~/composables/useAuth'
+import { useGsapAnimation } from '~/composables/useGsapAnimation'
+import OdometerNumber from '~/components/ui/OdometerNumber.vue'
+import LoadingTopBar from '~/components/ui/LoadingTopBar.vue'
+import TableSkeletonRows from '~/components/ui/TableSkeletonRows.vue'
 import { getEffectiveActionPermissions } from '~/utils/permissions'
 import QuotationModal from '~/components/quotations/QuotationModal.vue'
 
@@ -385,6 +409,12 @@ definePageMeta({
 
 const { showSaved, showEditing } = useSnackbar()
 const { user } = useAuth()
+const { animateStagger, initContext } = useGsapAnimation()
+
+const statsContainerRef = ref<HTMLElement | null>(null)
+const tbodyRef = ref<HTMLElement | null>(null)
+const mobileListRef = ref<HTMLElement | null>(null)
+
 const isAdmin = computed(() => user.value?.role === 'ADMIN')
 const canDeleteQuotations = computed(() => {
   if (!user.value) return false
@@ -399,6 +429,26 @@ const isLoading = ref(false)
 const searchQuery = ref('')
 const sheetDiagnostics = ref<any>(null)
 const isCheckingSheet = ref(false)
+
+const triggerRowAnimation = () => {
+  nextTick(() => {
+    if (!isLoading.value) {
+      if (tbodyRef.value) {
+        const rows = tbodyRef.value.querySelectorAll('tr')
+        const targetRows = Array.from(rows).slice(0, 15)
+        animateStagger(targetRows, { duration: 0.22, stagger: 0.02, y: 6 })
+      }
+      if (mobileListRef.value) {
+        const cards = Array.from(mobileListRef.value.children).slice(0, 15)
+        animateStagger(cards, { duration: 0.22, stagger: 0.02, y: 6 })
+      }
+    }
+  })
+}
+
+watch([() => filteredQuotations.value, isLoading], () => {
+  triggerRowAnimation()
+})
 
 const checkSheetStatus = async (forceSync = false) => {
   isCheckingSheet.value = true
@@ -528,6 +578,10 @@ const deleteQuote = async (quote: any) => {
 }
 
 onMounted(() => {
+  initContext(statsContainerRef.value || undefined)
+  if (statsContainerRef.value) {
+    animateStagger(statsContainerRef.value.children, { duration: 0.35, stagger: 0.06, y: 12 })
+  }
   fetchQuotations()
   checkSheetStatus()
 })

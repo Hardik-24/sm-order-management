@@ -143,33 +143,15 @@ const onOrderSplit = () => {
 }
 
 // GSAP Animations
-const { animateNumber, animateStagger, initContext } = useGsapAnimation()
+const { animateStagger, initContext } = useGsapAnimation()
 const statsContainer = ref<HTMLElement | null>(null)
-const numPending = ref<HTMLElement | null>(null)
-const numUrgent = ref<HTMLElement | null>(null)
-const numGenerated = ref<HTMLElement | null>(null)
-const numOnHold = ref<HTMLElement | null>(null)
-
-const triggerStatAnimations = () => {
-  nextTick(() => {
-    animateNumber(numPending.value, counts.value.pending, { duration: 0.6 })
-    animateNumber(numUrgent.value, counts.value.urgent, { duration: 0.65 })
-    animateNumber(numGenerated.value, counts.value.generated, { duration: 0.7 })
-    animateNumber(numOnHold.value, counts.value.onHold, { duration: 0.6 })
-  })
-}
 
 onMounted(() => {
   initContext(statsContainer.value || undefined)
   if (statsContainer.value) {
     animateStagger(statsContainer.value.children, { duration: 0.35, stagger: 0.06, y: 12 })
   }
-  triggerStatAnimations()
 })
-
-watch(() => counts.value, () => {
-  triggerStatAnimations()
-}, { deep: true })
 </script>
 
 <template>
@@ -225,7 +207,9 @@ watch(() => counts.value, () => {
           </div>
           <div class="flex flex-col justify-center min-w-0">
             <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">Awaiting Billing</p>
-            <h3 ref="numPending" class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">{{ counts.pending }}</h3>
+            <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">
+              <OdometerNumber :value="counts.pending" :loading="isLoading" />
+            </h3>
             <p class="text-[11px] sm:text-xs text-amber-600 font-medium truncate">Pending creation</p>
           </div>
         </div>
@@ -242,7 +226,9 @@ watch(() => counts.value, () => {
           </div>
           <div class="flex flex-col justify-center min-w-0">
             <p class="text-[10px] font-bold text-rose-600 uppercase tracking-widest mb-0.5 truncate">⚡ Urgent Orders</p>
-            <h3 ref="numUrgent" class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">{{ counts.urgent }}</h3>
+            <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">
+              <OdometerNumber :value="counts.urgent" :loading="isLoading" />
+            </h3>
             <p class="text-[11px] sm:text-xs text-rose-500 font-medium truncate">High priority</p>
           </div>
         </div>
@@ -259,7 +245,9 @@ watch(() => counts.value, () => {
           </div>
           <div class="flex flex-col justify-center min-w-0">
             <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">Generated</p>
-            <h3 ref="numGenerated" class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">{{ counts.generated }}</h3>
+            <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">
+              <OdometerNumber :value="counts.generated" :loading="isLoading" />
+            </h3>
             <p class="text-[11px] sm:text-xs text-emerald-600 font-medium truncate">Ready invoices</p>
           </div>
         </div>
@@ -276,7 +264,9 @@ watch(() => counts.value, () => {
           </div>
           <div class="flex flex-col justify-center min-w-0">
             <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">On Hold</p>
-            <h3 ref="numOnHold" class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">{{ counts.onHold }}</h3>
+            <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">
+              <OdometerNumber :value="counts.onHold" :loading="isLoading" />
+            </h3>
             <p class="text-[11px] sm:text-xs text-orange-500 font-medium truncate">Needs check</p>
           </div>
         </div>
