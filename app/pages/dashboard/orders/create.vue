@@ -90,7 +90,9 @@ const productOptions = computed(() => {
   return (products.value as any[] || []).map(p => ({
     label: p.sku === p.name ? p.name : `${p.sku} - ${p.name}`,
     value: p.id,
-    subtitle: p.hsnCode ? `HSN: ${p.hsnCode}` : ''
+    subtitle: p.hsnCode ? `HSN: ${p.hsnCode}` : '',
+    stock: p.stock ?? 0,
+    unit: p.unit || ''
   }))
 })
 

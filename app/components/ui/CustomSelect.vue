@@ -77,10 +77,45 @@
             @mouseleave="onMouseLeave"
           >
             <div class="flex items-center justify-between w-full min-w-0">
-              <span class="truncate">{{ option.label }}</span>
+              <span class="truncate font-medium">{{ option.label }}</span>
               <Check v-if="modelValue === option.value" class="w-4 h-4 shrink-0 ml-2 text-[#1b3b5f]" />
             </div>
-            <span v-if="option.subtitle" class="text-[10px] text-gray-400 text-right mt-0.5 truncate">{{ option.subtitle }}</span>
+            <div v-if="option.subtitle || option.stock !== undefined" class="flex items-center justify-between gap-2 mt-1 min-w-0">
+              <span v-if="option.subtitle" class="text-[10px] text-gray-500 font-mono truncate">
+                {{ option.subtitle }}
+              </span>
+              <span v-else class="text-[10px] text-gray-400"></span>
+
+              <div v-if="option.stock !== undefined && option.stock !== null" class="shrink-0 flex items-center">
+                <span 
+                  class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold tabular-nums border"
+                  :class="[
+                    Number(option.stock) <= 0 
+                      ? 'bg-rose-50 text-rose-700 border-rose-200/80' 
+                      : Number(option.stock) < 10 
+                        ? 'bg-amber-50 text-amber-800 border-amber-200/80' 
+                        : 'bg-emerald-50 text-emerald-700 border-emerald-200/80'
+                  ]"
+                >
+                  <span 
+                    class="w-1.5 h-1.5 rounded-full" 
+                    :class="[
+                      Number(option.stock) <= 0 
+                        ? 'bg-rose-500' 
+                        : Number(option.stock) < 10 
+                          ? 'bg-amber-500' 
+                          : 'bg-emerald-500'
+                    ]"
+                  ></span>
+                  <span>
+                    Stock: {{ option.stock }} {{ option.unit || '' }}
+                  </span>
+                  <span v-if="Number(option.stock) <= 0" class="text-[9px] font-bold uppercase tracking-tight text-rose-600">
+                    (Out)
+                  </span>
+                </span>
+              </div>
+            </div>
           </li>
           <li v-if="filteredOptions.length === 0" class="px-3 py-4 text-sm text-center text-gray-500">
             No options found.
@@ -102,7 +137,15 @@
         <div class="absolute left-4 w-2 h-2 bg-gray-900 rotate-45"
              :class="isTooltipFlipped ? '-bottom-1' : '-top-1'"></div>
         <div>{{ hoveredOption.label }}</div>
-        <div v-if="hoveredOption.subtitle" class="text-gray-400 text-[10px] mt-1">{{ hoveredOption.subtitle }}</div>
+        <div v-if="hoveredOption.subtitle || hoveredOption.stock !== undefined" class="flex items-center justify-between gap-3 text-gray-400 text-[10px] mt-1">
+          <span v-if="hoveredOption.subtitle">{{ hoveredOption.subtitle }}</span>
+          <span 
+            v-if="hoveredOption.stock !== undefined && hoveredOption.stock !== null" 
+            :class="hoveredOption.stock > 0 ? (hoveredOption.stock < 10 ? 'text-amber-400 font-semibold' : 'text-emerald-400 font-semibold') : 'text-rose-400 font-semibold'"
+          >
+            Stock: {{ hoveredOption.stock }} {{ hoveredOption.unit || '' }} {{ hoveredOption.stock <= 0 ? '(Out of stock)' : '' }}
+          </span>
+        </div>
       </div>
     </Teleport>
   </div>
@@ -113,9 +156,18 @@ import { ref, computed, nextTick, watch, onUnmounted } from 'vue'
 import { ChevronDown, Search, Check } from 'lucide-vue-next'
 import { rankSelectOptions } from '~/utils/search'
 
+export interface SelectOption {
+  label: string
+  value: any
+  subtitle?: string
+  stock?: number | null
+  unit?: string | null
+  [key: string]: any
+}
+
 const props = defineProps<{
   modelValue: any
-  options: { label: string; value: any; subtitle?: string }[]
+  options: SelectOption[]
   placeholder?: string
   searchable?: boolean
   searchPlaceholder?: string
@@ -145,7 +197,7 @@ const filteredOptions = computed(() => {
   return rankSelectOptions(props.options, searchQuery.value)
 })
 
-const hoveredOption = ref<{ label: string; value: any; subtitle?: string } | null>(null)
+const hoveredOption = ref<SelectOption | null>(null)
 const tooltipX = ref(0)
 const tooltipY = ref(0)
 const isTooltipFlipped = ref(false)

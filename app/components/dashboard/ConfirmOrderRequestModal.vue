@@ -117,7 +117,9 @@ const productOptions = computed(() => {
   return productsList.value.map(p => ({
     label: `${p.sku} - ${p.name}`,
     value: p.id,
-    subtitle: `Stock: ${p.stock ?? 0} ${p.unit || ''} | ₹${Number(p.price || 0).toLocaleString('en-IN')}`
+    subtitle: p.hsnCode ? `HSN: ${p.hsnCode} | ₹${Number(p.price || 0).toLocaleString('en-IN')}` : `₹${Number(p.price || 0).toLocaleString('en-IN')}`,
+    stock: p.stock ?? 0,
+    unit: p.unit || ''
   }))
 })
 
