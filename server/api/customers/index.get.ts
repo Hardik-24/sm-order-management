@@ -1,26 +1,30 @@
 import { requireAuth } from '~~/server/utils/auth'
 import { prisma } from '~~/server/utils/prisma'
 import { loadCustomerPins, syncPinsFromDatabase } from '~~/server/utils/customerPins'
+import { buildMultiTokenPrismaOr, rankServerItems } from '~~/server/utils/search'
 
 export default defineEventHandler(async (event) => {
   await requireAuth(event)
   const query = getQuery(event)
-  const search = query.search as string
+  const search = typeof query.search === 'string' ? query.search.trim() : ''
   
   const where: any = {}
   if (query.includeInactive !== 'true') {
     where.isActive = true
   }
   if (search) {
-    where.OR = [
-      { name: { contains: search, mode: 'insensitive' } },
-      { company: { contains: search, mode: 'insensitive' } },
-      { alias: { contains: search, mode: 'insensitive' } },
-      { customerCode: { contains: search, mode: 'insensitive' } },
-      { email: { contains: search, mode: 'insensitive' } },
-      { phone: { contains: search, mode: 'insensitive' } },
-      { gstNumber: { contains: search, mode: 'insensitive' } }
-    ]
+    const multiTokenFilter = buildMultiTokenPrismaOr(search, (token) => [
+      { name: { contains: token, mode: 'insensitive' } },
+      { company: { contains: token, mode: 'insensitive' } },
+      { alias: { contains: token, mode: 'insensitive' } },
+      { customerCode: { contains: token, mode: 'insensitive' } },
+      { email: { contains: token, mode: 'insensitive' } },
+      { phone: { contains: token, mode: 'insensitive' } },
+      { gstNumber: { contains: token, mode: 'insensitive' } }
+    ])
+    if (multiTokenFilter) {
+      where.AND = multiTokenFilter.AND
+    }
   }
 
   const customers = await prisma.customer.findMany({
@@ -43,7 +47,7 @@ export default defineEventHandler(async (event) => {
   await syncPinsFromDatabase()
   const pins = loadCustomerPins()
 
-  return customers.map(c => {
+  const mapped = customers.map(c => {
     const idKey = (c.id || '').toLowerCase().trim()
     const nameKey = (c.name || '').toLowerCase().trim()
     const compKey = (c.company || '').toLowerCase().trim()
@@ -78,4 +82,15 @@ export default defineEventHandler(async (event) => {
       orderCount: (c as any)._count?.orders ?? 0,
     }
   })
+
+  if (search) {
+    return rankServerItems(mapped, search, {
+      primary: c => c.company || c.name,
+      secondary: c => c.customerCode || c.alias,
+      meta: c => c.city || c.email,
+      code: c => c.phone || c.gstNumber
+    })
+  }
+
+  return mapped
 })

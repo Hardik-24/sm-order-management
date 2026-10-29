@@ -111,6 +111,7 @@
 <script setup lang="ts">
 import { ref, computed, nextTick, watch, onUnmounted } from 'vue'
 import { ChevronDown, Search, Check } from 'lucide-vue-next'
+import { rankSelectOptions } from '~/utils/search'
 
 const props = defineProps<{
   modelValue: any
@@ -141,14 +142,7 @@ const displayLabel = computed(() => {
 
 const filteredOptions = computed(() => {
   if (!props.searchable || !searchQuery.value) return props.options
-  const q = searchQuery.value.toLowerCase().trim()
-  if (!q) return props.options
-  
-  const terms = q.split(/\s+/).filter(Boolean)
-  return props.options.filter(o => {
-    const text = `${o.label || ''} ${o.subtitle || ''}`.toLowerCase()
-    return terms.every(term => text.includes(term))
-  })
+  return rankSelectOptions(props.options, searchQuery.value)
 })
 
 const hoveredOption = ref<{ label: string; value: any; subtitle?: string } | null>(null)

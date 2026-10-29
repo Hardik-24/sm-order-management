@@ -402,6 +402,7 @@ import LoadingTopBar from '~/components/ui/LoadingTopBar.vue'
 import TableSkeletonRows from '~/components/ui/TableSkeletonRows.vue'
 import { getEffectiveActionPermissions } from '~/utils/permissions'
 import QuotationModal from '~/components/quotations/QuotationModal.vue'
+import { rankAndFilter } from '~/utils/search'
 
 definePageMeta({
   layout: 'dashboard'
@@ -509,18 +510,12 @@ const fetchQuotations = async () => {
   }
 }
 
-// Filtered Quotations
+// Filtered Quotations with relevance ranking
 const filteredQuotations = computed(() => {
-  const q = searchQuery.value.trim().toLowerCase()
-  if (!q) return quotations.value
-
-  return quotations.value.filter(item => {
-    return (
-      item.quoteNumber?.toLowerCase().includes(q) ||
-      item.customerName?.toLowerCase().includes(q) ||
-      item.customerPlace?.toLowerCase().includes(q) ||
-      item.createdByName?.toLowerCase().includes(q)
-    )
+  if (!quotations.value) return []
+  return rankAndFilter(quotations.value as any[], searchQuery.value, {
+    primary: q => [q.quoteNumber, q.customerName],
+    secondary: q => [q.customerPlace, q.createdByName]
   })
 })
 

@@ -9,6 +9,7 @@ import NeedsAttention from '~/components/dashboard/NeedsAttention.vue'
 import OrderTable from '~/components/dashboard/OrderTable.vue'
 
 import OrderDetailPanel from '~/components/dashboard/OrderDetailPanel.vue'
+import { rankAndFilter } from '~/utils/search'
 
 definePageMeta({
   layout: 'dashboard'
@@ -40,11 +41,10 @@ const selectedRep = computed(() => {
 
 const filteredSalesTeam = computed(() => {
   if (!scopeSearchQuery.value.trim()) return salesTeam.value
-  const q = scopeSearchQuery.value.toLowerCase().trim()
-  return salesTeam.value.filter(r => 
-    r.name?.toLowerCase().includes(q) || 
-    r.role?.toLowerCase().includes(q)
-  )
+  return rankAndFilter(salesTeam.value, scopeSearchQuery.value, {
+    primary: r => r.name,
+    secondary: r => r.role
+  })
 })
 
 function getInitials(name: string) {

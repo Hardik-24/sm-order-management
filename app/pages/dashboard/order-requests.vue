@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onMounted } from 'vue'
+import { refDebounced } from '@vueuse/core'
 import { useRouter } from 'vue-router'
 import { 
   Inbox, 
@@ -45,6 +46,7 @@ const desktopTableScrollRef = ref<HTMLElement | null>(null)
 const page = ref(1)
 const limit = ref(10)
 const search = ref('')
+const debouncedSearch = refDebounced(search, 300)
 const activeTab = ref<'ALL' | 'PENDING' | 'CONFIRMED' | 'DECLINED'>('ALL')
 
 const queryObj = computed(() => {
@@ -55,8 +57,8 @@ const queryObj = computed(() => {
   if (activeTab.value !== 'ALL') {
     q.status = activeTab.value
   }
-  if (search.value.trim()) {
-    q.search = search.value.trim()
+  if (debouncedSearch.value.trim()) {
+    q.search = debouncedSearch.value.trim()
   }
   return q
 })

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import { refDebounced } from '@vueuse/core'
 import OrderTable from '~/components/dashboard/OrderTable.vue'
 import OrderDetailPanel from '~/components/dashboard/OrderDetailPanel.vue'
 
@@ -11,6 +12,7 @@ const { hasRole } = useAuth()
 const page = ref(1)
 const limit = ref(10)
 const search = ref('')
+const debouncedSearch = refDebounced(search, 300)
 const status = ref('')
 const billingStatus = ref('')
 const packingStatus = ref('')
@@ -22,7 +24,7 @@ const selectedOrderId = ref<string | null>(null)
 const isPanelOpen = ref(false)
 
 // Reset page to 1 whenever any filter or search changes
-watch([search, status, billingStatus, packingStatus, deliveryStatus, isApproved, startDate, endDate], () => {
+watch([debouncedSearch, status, billingStatus, packingStatus, deliveryStatus, isApproved, startDate, endDate], () => {
   page.value = 1
 })
 
@@ -31,7 +33,7 @@ const queryObj = computed(() => {
     page: page.value, 
     limit: limit.value 
   }
-  if (search.value && search.value.trim()) q.search = search.value.trim()
+  if (debouncedSearch.value && debouncedSearch.value.trim()) q.search = debouncedSearch.value.trim()
   if (status.value) q.status = status.value
   if (billingStatus.value) q.billingStatus = billingStatus.value
   if (packingStatus.value) q.packingStatus = packingStatus.value

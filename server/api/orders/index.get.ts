@@ -1,6 +1,7 @@
 import { requireAuth } from '~~/server/utils/auth'
 import { prisma } from '~~/server/utils/prisma'
 import { resolveDestinationPin, loadCustomerPins } from '~~/server/utils/customerPins'
+import { buildMultiTokenPrismaOr } from '~~/server/utils/search'
 
 export default defineEventHandler(async (event) => {
   const user = await requireAuth(event)
@@ -27,15 +28,16 @@ export default defineEventHandler(async (event) => {
   const andConditions: any[] = []
   
   if (search) {
-    andConditions.push({
-      OR: [
-        { orderNumber: { contains: search, mode: 'insensitive' } },
-        { customer: { company: { contains: search, mode: 'insensitive' } } },
-        { customer: { name: { contains: search, mode: 'insensitive' } } },
-        { customer: { phone: { contains: search, mode: 'insensitive' } } },
-        { customer: { city: { contains: search, mode: 'insensitive' } } }
-      ]
-    })
+    const multiTokenFilter = buildMultiTokenPrismaOr(search, (token) => [
+      { orderNumber: { contains: token, mode: 'insensitive' } },
+      { customer: { company: { contains: token, mode: 'insensitive' } } },
+      { customer: { name: { contains: token, mode: 'insensitive' } } },
+      { customer: { phone: { contains: token, mode: 'insensitive' } } },
+      { customer: { city: { contains: token, mode: 'insensitive' } } }
+    ])
+    if (multiTokenFilter?.AND) {
+      andConditions.push(...multiTokenFilter.AND)
+    }
   }
 
   if (isApproved !== undefined && isApproved !== '') {

@@ -1,5 +1,6 @@
 import { requireRole } from '~~/server/utils/auth'
 import { prisma } from '~~/server/utils/prisma'
+import { buildMultiTokenPrismaOr } from '~~/server/utils/search'
 
 export default defineEventHandler(async (event) => {
   requireRole(event, ['ADMIN', 'DELIVERY', 'SALES'])
@@ -17,22 +18,25 @@ export default defineEventHandler(async (event) => {
     where.driverId = driverId
   }
   if (search) {
-    where.OR = [
-      { tripNumber: { contains: search, mode: 'insensitive' } },
-      { driverName: { contains: search, mode: 'insensitive' } },
-      { vehicleNumber: { contains: search, mode: 'insensitive' } },
+    const multiTokenFilter = buildMultiTokenPrismaOr(search, (token) => [
+      { tripNumber: { contains: token, mode: 'insensitive' } },
+      { driverName: { contains: token, mode: 'insensitive' } },
+      { vehicleNumber: { contains: token, mode: 'insensitive' } },
       {
         stops: {
           some: {
             OR: [
-              { customerName: { contains: search, mode: 'insensitive' } },
-              { addressLine: { contains: search, mode: 'insensitive' } },
-              { order: { orderNumber: { contains: search, mode: 'insensitive' } } }
+              { customerName: { contains: token, mode: 'insensitive' } },
+              { addressLine: { contains: token, mode: 'insensitive' } },
+              { order: { orderNumber: { contains: token, mode: 'insensitive' } } }
             ]
           }
         }
       }
-    ]
+    ])
+    if (multiTokenFilter) {
+      where.AND = multiTokenFilter.AND
+    }
   }
 
   const trips = await prisma.trip.findMany({

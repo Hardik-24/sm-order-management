@@ -11,6 +11,7 @@ import { useRealtimeSync } from '~/composables/useRealtimeSync'
 import RowsPerPageSelect from '~/components/ui/RowsPerPageSelect.vue'
 import FloatingHorizontalScrollbar from '~/components/ui/FloatingHorizontalScrollbar.vue'
 import LoadingTopBar from '~/components/ui/LoadingTopBar.vue'
+import { rankProducts } from '~/utils/search'
 
 definePageMeta({ layout: 'dashboard' })
 
@@ -96,18 +97,10 @@ watch(currentPage, () => {
   })
 })
 
-// Computed filtering with multi-token fuzzy word matching
+// Computed filtering with smart relevance ranking and exact-match prioritization
 const filteredProducts = computed(() => {
   if (!products.value) return []
-  const q = searchQuery.value.toLowerCase().trim()
-  if (!q) return products.value as any[]
-  
-  const terms = q.split(/\s+/).filter(Boolean)
-  
-  return (products.value as any[]).filter(p => {
-    const searchableText = `${p.name || ''} ${p.sku || ''} ${p.hsnCode || ''} ${p.category?.name || ''}`.toLowerCase()
-    return terms.every(term => searchableText.includes(term))
-  })
+  return rankProducts(products.value as any[], searchQuery.value)
 })
 
 watch(searchQuery, () => {

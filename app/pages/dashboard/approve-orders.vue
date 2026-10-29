@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
+import { refDebounced } from '@vueuse/core'
 import { useRouter } from 'vue-router'
 import { 
   CheckCheck, 
@@ -47,12 +48,13 @@ const page = ref(1)
 const limit = ref(10)
 const approveTableRef = ref<HTMLElement | null>(null)
 const search = ref('')
+const debouncedSearch = refDebounced(search, 300)
 const startDate = ref('')
 const endDate = ref('')
 const activeTab = ref<'PENDING' | 'URGENT' | 'APPROVED' | 'ALL'>('PENDING')
 
 // Reset page on search or date change
-watch([search, startDate, endDate], () => {
+watch([debouncedSearch, startDate, endDate], () => {
   page.value = 1
 })
 
@@ -80,8 +82,8 @@ const queryObj = computed(() => {
   if (endDate.value) {
     q.endDate = endDate.value
   }
-  if (search.value.trim()) {
-    q.search = search.value.trim()
+  if (debouncedSearch.value.trim()) {
+    q.search = debouncedSearch.value.trim()
   }
   return q
 })

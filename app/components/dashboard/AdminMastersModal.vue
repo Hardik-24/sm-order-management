@@ -500,6 +500,7 @@ import {
 import { useSnackbar } from '~/composables/useSnackbar'
 import { useRealtimeSync } from '~/composables/useRealtimeSync'
 import type { MasterOptionItem, MasterCategoryItem } from '~/composables/useMasters'
+import { rankAndFilter } from '~/utils/search'
 
 const props = defineProps<{
   isOpen: boolean
@@ -553,33 +554,30 @@ const tabs = computed(() => [
   { id: 'CATEGORIES' as TabKey, label: 'Product Groups', icon: Layers, count: categories.value.length },
 ])
 
-// Filtered Lists
+// Filtered Lists with relevance ranking
 const filteredPaymentTerms = computed(() => {
-  const q = searchQuery.value.trim().toLowerCase()
-  if (!q) return paymentTerms.value
-  return paymentTerms.value.filter(i => 
-    i.label.toLowerCase().includes(q) || 
-    i.value.toLowerCase().includes(q) ||
-    (i.description && i.description.toLowerCase().includes(q))
-  )
+  if (!paymentTerms.value) return []
+  return rankAndFilter(paymentTerms.value, searchQuery.value, {
+    primary: i => i.label,
+    secondary: i => i.value,
+    meta: i => i.description
+  })
 })
 
 const filteredProductUom = computed(() => {
-  const q = searchQuery.value.trim().toLowerCase()
-  if (!q) return productUom.value
-  return productUom.value.filter(i => 
-    i.label.toLowerCase().includes(q) || 
-    i.value.toLowerCase().includes(q)
-  )
+  if (!productUom.value) return []
+  return rankAndFilter(productUom.value, searchQuery.value, {
+    primary: i => i.label,
+    secondary: i => i.value
+  })
 })
 
 const filteredCategories = computed(() => {
-  const q = searchQuery.value.trim().toLowerCase()
-  if (!q) return categories.value
-  return categories.value.filter(c => 
-    c.name.toLowerCase().includes(q) ||
-    (c.description && c.description.toLowerCase().includes(q))
-  )
+  if (!categories.value) return []
+  return rankAndFilter(categories.value, searchQuery.value, {
+    primary: c => c.name,
+    secondary: c => c.description
+  })
 })
 
 // ─── Option Modal State (Payment Terms & UOM) ────────────────

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, computed, nextTick, onMounted } from 'vue'
+import { refDebounced } from '@vueuse/core'
 import BillingTable from '~/components/dashboard/BillingTable.vue'
 import OrderDetailPanel from '~/components/dashboard/OrderDetailPanel.vue'
 import GenerateBillModal from '~/components/dashboard/GenerateBillModal.vue'
@@ -13,6 +14,7 @@ definePageMeta({ layout: 'dashboard' })
 const page = ref(1)
 const limit = ref(10)
 const search = ref('')
+const debouncedSearch = refDebounced(search, 300)
 const startDate = ref('')
 const endDate = ref('')
 const status = ref('')
@@ -44,7 +46,7 @@ const queryObj = computed(() => {
     q.billingStatus = 'ON_HOLD'
   }
 
-  if (search.value.trim()) q.search = search.value.trim()
+  if (debouncedSearch.value.trim()) q.search = debouncedSearch.value.trim()
   if (startDate.value) q.startDate = startDate.value
   if (endDate.value) q.endDate = endDate.value
   if (status.value) q.status = status.value

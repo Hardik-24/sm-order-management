@@ -828,6 +828,7 @@ import { formatCurrency, formatDate } from '~/lib/utils'
 import { useSnackbar } from '~/composables/useSnackbar'
 import { useGsapAnimation } from '~/composables/useGsapAnimation'
 import { useRealtimeSync } from '~/composables/useRealtimeSync'
+import { rankProducts, rankAndFilter } from '~/utils/search'
 import CustomSelect from '~/components/ui/CustomSelect.vue'
 import RowsPerPageSelect from '~/components/ui/RowsPerPageSelect.vue'
 import FloatingHorizontalScrollbar from '~/components/ui/FloatingHorizontalScrollbar.vue'
@@ -996,8 +997,10 @@ const categoryOptions = computed(() => {
 const filteredFilterCategories = computed(() => {
   if (!categories.value) return []
   if (!categorySearchQuery.value) return categories.value
-  const q = categorySearchQuery.value.toLowerCase()
-  return categories.value.filter((c: any) => c.name.toLowerCase().includes(q))
+  return rankAndFilter(categories.value as any[], categorySearchQuery.value, {
+    primary: c => c.name,
+    secondary: c => c.description
+  })
 })
 
 const filteredProducts = computed(() => {
@@ -1009,15 +1012,7 @@ const filteredProducts = computed(() => {
   }
   
   if (searchQuery.value) {
-    const q = searchQuery.value.toLowerCase().trim()
-    if (q) {
-      const terms = q.split(/\s+/).filter(Boolean)
-      filtered = filtered.filter((p: any) => {
-        const catName = getCategoryName(p.categoryId)
-        const searchableText = `${p.name || ''} ${p.sku || ''} ${p.hsnCode || ''} ${catName || ''}`.toLowerCase()
-        return terms.every(term => searchableText.includes(term))
-      })
-    }
+    filtered = rankProducts(filtered, searchQuery.value, getCategoryName)
   }
   
   return filtered

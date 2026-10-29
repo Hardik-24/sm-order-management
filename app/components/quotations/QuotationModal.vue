@@ -1765,6 +1765,7 @@ import { toBlob, toPng, toJpeg } from 'html-to-image'
 import { jsPDF } from 'jspdf'
 import { useSnackbar } from '~/composables/useSnackbar'
 import { useAuth } from '~/composables/useAuth'
+import { rankAndFilter } from '~/utils/search'
 
 const props = defineProps<{
   modelValue: boolean
@@ -2189,15 +2190,12 @@ const searchInputRef = ref<HTMLInputElement | null>(null)
 const highlightedIndex = ref(-1)
 
 const filteredSearchResults = computed(() => {
-  const q = searchQuery.value.trim().toLowerCase()
+  const q = searchQuery.value.trim()
   if (q.length < 2) return []
-  return products.value
-    .filter(p => (
-      p.articleNumber.toLowerCase().includes(q) ||
-      p.description.toLowerCase().includes(q) ||
-      p.brand.toLowerCase().includes(q)
-    ))
-    .slice(0, 10)
+  return rankAndFilter(products.value, q, {
+    primary: p => [p.articleNumber, p.description],
+    secondary: p => p.brand
+  }).slice(0, 15)
 })
 
 const navigateResults = (dir: number) => {

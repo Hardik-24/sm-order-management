@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
+import { refDebounced } from '@vueuse/core'
 import DeliveryTable from '~/components/dashboard/DeliveryTable.vue'
 import OrderDetailPanel from '~/components/dashboard/OrderDetailPanel.vue'
 import CreateTripModal from '~/components/dashboard/CreateTripModal.vue'
@@ -150,6 +151,7 @@ const onTripCreated = (createdTrip?: any) => {
 const page = ref(1)
 const limit = ref(10)
 const search = ref('')
+const debouncedSearch = refDebounced(search, 300)
 const startDate = ref('')
 const endDate = ref('')
 const status = ref('')
@@ -174,7 +176,7 @@ const queryObj = computed(() => {
     q.deliveryStatus = activeTab.value
   }
 
-  if (search.value) q.search = search.value
+  if (debouncedSearch.value) q.search = debouncedSearch.value.trim()
   if (startDate.value) q.startDate = startDate.value
   if (endDate.value) q.endDate = endDate.value
   if (status.value) q.status = status.value

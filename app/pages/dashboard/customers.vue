@@ -1046,6 +1046,7 @@ import CustomSelect from '~/components/ui/CustomSelect.vue'
 import RowsPerPageSelect from '~/components/ui/RowsPerPageSelect.vue'
 import FloatingHorizontalScrollbar from '~/components/ui/FloatingHorizontalScrollbar.vue'
 import LoadingTopBar from '~/components/ui/LoadingTopBar.vue'
+import { rankAndFilter } from '~/utils/search'
 
 definePageMeta({ layout: 'dashboard' })
 
@@ -1244,16 +1245,14 @@ const getCustomerAddresses = (customer: any) => {
   }]
 }
 
-// Computed filtering with multi-token smart search
+// Computed filtering with smart multi-token search and relevance ranking
 const filteredCustomers = computed(() => {
   if (!customers.value) return []
-  const q = searchQuery.value.toLowerCase().trim()
-  if (!q) return customers.value as any[]
-
-  const terms = q.split(/\s+/).filter(Boolean)
-  return (customers.value as any[]).filter(c => {
-    const searchableText = `${c.customerCode || ''} ${c.company || ''} ${c.alias || ''} ${c.name || ''} ${c.phone || ''} ${c.alternatePhone || ''} ${c.email || ''} ${c.city || ''} ${c.gstNumber || ''}`.toLowerCase()
-    return terms.every(term => searchableText.includes(term))
+  return rankAndFilter(customers.value as any[], searchQuery.value, {
+    primary: c => [c.company, c.name],
+    secondary: c => [c.customerCode, c.alias],
+    meta: c => [c.city, c.email],
+    code: c => [c.phone, c.alternatePhone, c.gstNumber]
   })
 })
 

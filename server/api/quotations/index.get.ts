@@ -1,6 +1,7 @@
 import { defineEventHandler, getQuery } from 'h3'
 import { getPrisma, resetPrisma } from '~~/server/utils/prisma'
 import { requireAuth } from '~~/server/utils/auth'
+import { buildMultiTokenPrismaOr } from '~~/server/utils/search'
 
 export default defineEventHandler(async (event) => {
   // Optional auth check or user session
@@ -18,12 +19,15 @@ export default defineEventHandler(async (event) => {
   const runQuery = async (prismaClient: typeof p) => {
     const whereClause: any = {}
     if (search) {
-      whereClause.OR = [
-        { quoteNumber: { contains: search, mode: 'insensitive' } },
-        { customerName: { contains: search, mode: 'insensitive' } },
-        { customerPlace: { contains: search, mode: 'insensitive' } },
-        { createdByName: { contains: search, mode: 'insensitive' } }
-      ]
+      const multiTokenFilter = buildMultiTokenPrismaOr(search, (token) => [
+        { quoteNumber: { contains: token, mode: 'insensitive' } },
+        { customerName: { contains: token, mode: 'insensitive' } },
+        { customerPlace: { contains: token, mode: 'insensitive' } },
+        { createdByName: { contains: token, mode: 'insensitive' } }
+      ])
+      if (multiTokenFilter) {
+        whereClause.AND = multiTokenFilter.AND
+      }
     }
 
     const [quotations, totalCount] = await Promise.all([

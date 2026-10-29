@@ -1,6 +1,7 @@
 import { defineEventHandler, getQuery, createError } from 'h3'
 import { prisma } from '~~/server/utils/prisma'
 import { requireAuth } from '~~/server/utils/auth'
+import { buildMultiTokenPrismaOr } from '~~/server/utils/search'
 
 export default defineEventHandler(async (event) => {
   requireAuth(event)
@@ -23,13 +24,16 @@ export default defineEventHandler(async (event) => {
   }
 
   if (search) {
-    where.OR = [
-      { requestNumber: { contains: search, mode: 'insensitive' } },
-      { customerName: { contains: search, mode: 'insensitive' } },
-      { companyName: { contains: search, mode: 'insensitive' } },
-      { phone: { contains: search, mode: 'insensitive' } },
-      { city: { contains: search, mode: 'insensitive' } },
-    ]
+    const multiTokenFilter = buildMultiTokenPrismaOr(search, (token) => [
+      { requestNumber: { contains: token, mode: 'insensitive' } },
+      { customerName: { contains: token, mode: 'insensitive' } },
+      { companyName: { contains: token, mode: 'insensitive' } },
+      { phone: { contains: token, mode: 'insensitive' } },
+      { city: { contains: token, mode: 'insensitive' } },
+    ])
+    if (multiTokenFilter) {
+      where.AND = multiTokenFilter.AND
+    }
   }
 
   if (startDate || endDate) {

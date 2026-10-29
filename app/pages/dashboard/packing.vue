@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, computed, nextTick, onMounted } from 'vue'
+import { refDebounced } from '@vueuse/core'
 import PackingTable from '~/components/dashboard/PackingTable.vue'
 import OrderDetailPanel from '~/components/dashboard/OrderDetailPanel.vue'
 import { Package, Clock, Box, PlayCircle, Zap, CheckCircle2, RefreshCw } from 'lucide-vue-next'
@@ -11,6 +12,7 @@ definePageMeta({ layout: 'dashboard' })
 const page = ref(1)
 const limit = ref(10)
 const search = ref('')
+const debouncedSearch = refDebounced(search, 300)
 const startDate = ref('')
 const endDate = ref('')
 const status = ref('')
@@ -41,7 +43,7 @@ const queryObj = computed(() => {
     q.packingStatus = 'PACKED'
   }
 
-  if (search.value) q.search = search.value
+  if (debouncedSearch.value) q.search = debouncedSearch.value.trim()
   if (status.value) q.status = status.value
   if (billingStatus.value) q.billingStatus = billingStatus.value
   if (deliveryStatus.value) q.deliveryStatus = deliveryStatus.value
