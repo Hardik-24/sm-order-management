@@ -105,6 +105,7 @@ export default defineEventHandler(async (event) => {
       if (!Array.isArray(items)) {
         items = items && typeof items === 'object' ? [items] : []
       }
+      items = items.filter((it: any) => it && typeof it === 'object' && Object.keys(it).length > 0 && it.name)
       return {
         ...v,
         items,

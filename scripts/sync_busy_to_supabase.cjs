@@ -414,9 +414,11 @@ async function runSync() {
         let itemsArr = [];
         if (Array.isArray(v.items)) {
           itemsArr = v.items;
-        } else if (v.items && typeof v.items === 'object') {
+        } else if (v.items && typeof v.items === 'object' && Object.keys(v.items).length > 0) {
           itemsArr = [v.items];
         }
+        // Filter out empty or invalid item objects (e.g. [{}] from empty PowerShell serialization)
+        itemsArr = itemsArr.filter(it => it && typeof it === 'object' && Object.keys(it).length > 0 && it.name);
         const iCount = itemsArr.length;
         const tot = Number(v.totalAmount) || 0;
         const taxable = Number(v.taxableAmount) || 0;
