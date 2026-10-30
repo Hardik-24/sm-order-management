@@ -48,11 +48,15 @@ const selectedCustomer = computed(() => {
 })
 
 const customerOptions = computed(() => {
-  return (customers.value as any[] || []).map(c => ({
-    label: `${c.customerCode ? `[${c.customerCode}] ` : ''}${c.name} ${c.company ? `(${c.company})` : ''}`,
-    value: c.id,
-    subtitle: c.city ? `${c.city} • ${c.phone}` : c.phone
-  }))
+  return (customers.value as any[] || []).map(c => {
+    const hasDistinctCompany = c.company && c.company.trim().toLowerCase() !== c.name?.trim().toLowerCase()
+    const label = hasDistinctCompany ? `${c.name} (${c.company.trim()})` : (c.name || c.company || '')
+    return {
+      label,
+      value: c.id,
+      subtitle: c.city ? c.city.trim() : ''
+    }
+  })
 })
 
 const addressOptions = computed(() => {
@@ -90,9 +94,9 @@ const productOptions = computed(() => {
   return (products.value as any[] || []).map(p => ({
     label: p.sku === p.name ? p.name : `${p.sku} - ${p.name}`,
     value: p.id,
-    subtitle: p.hsnCode ? `HSN: ${p.hsnCode}` : '',
     stock: p.stock ?? 0,
-    unit: p.unit || ''
+    unit: p.unit || '',
+    hsnCode: p.hsnCode || ''
   }))
 })
 
@@ -408,9 +412,6 @@ const getCustomerInitials = (name: string) => {
       <div class="bg-white p-4 sm:p-6 rounded-xl border border-gray-200 shadow-sm space-y-4">
         <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider border-b border-gray-100 pb-2 mb-4 flex items-center justify-between">
           <span>Customer & Fulfillment Details</span>
-          <span v-if="selectedCustomer" class="text-xs font-normal normal-case text-gray-500">
-            Code: <strong class="text-gray-800">{{ selectedCustomer.customerCode || 'N/A' }}</strong>
-          </span>
         </h3>
         
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
@@ -422,7 +423,7 @@ const getCustomerInitials = (name: string) => {
               @update:modelValue="val => { form.customerId = val; onCustomerChange() }"
               :options="customerOptions"
               searchable
-              searchPlaceholder="Search customers by name, code, company..."
+              searchPlaceholder="Search customers by name, company, city..."
               placeholder="Select Customer"
               class="w-full"
             />
