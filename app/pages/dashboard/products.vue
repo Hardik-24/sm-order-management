@@ -14,7 +14,7 @@
               v-model="searchQuery"
               type="text"
               placeholder="Search SKU or Name..."
-              class="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-[#4ecdc4] focus:ring-1 focus:ring-[#4ecdc4] text-sm bg-white"
+              class="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-[#1b3b5f] focus:ring-1 focus:ring-[#1b3b5f] text-sm bg-white"
             />
           </div>
 
@@ -24,7 +24,7 @@
             <div class="relative flex-1 sm:w-56 z-40">
               <div 
                 @click="openCategoryFilter"
-                class="w-full pl-8 sm:pl-9 pr-7 sm:pr-8 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-[#4ecdc4] focus:ring-1 focus:ring-[#4ecdc4] text-xs sm:text-sm bg-white text-gray-700 cursor-pointer flex items-center justify-between transition-colors hover:bg-gray-50"
+                class="w-full pl-8 sm:pl-9 pr-7 sm:pr-8 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-[#1b3b5f] focus:ring-1 focus:ring-[#1b3b5f] text-xs sm:text-sm bg-white text-gray-700 cursor-pointer flex items-center justify-between transition-colors hover:bg-gray-50"
               >
                 <Filter class="absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 w-3.5 sm:w-4 h-3.5 sm:h-4 text-gray-400" />
                 <span class="truncate block w-full text-left">{{ selectedCategory ? getCategoryName(selectedCategory) : 'All Categories' }}</span>
@@ -44,7 +44,7 @@
                       v-model="categorySearchQuery"
                       type="text"
                       placeholder="Search categories..."
-                      class="w-full pl-8 pr-3 py-1.5 border border-gray-200 rounded-md text-sm focus:outline-none focus:border-[#4ecdc4] focus:ring-1 focus:ring-[#4ecdc4] bg-white"
+                      class="w-full pl-8 pr-3 py-1.5 border border-gray-200 rounded-md text-sm focus:outline-none focus:border-[#1b3b5f] focus:ring-1 focus:ring-[#1b3b5f] bg-white"
                       @click.stop
                       @keydown.down.prevent="handleKeydown('down')"
                       @keydown.up.prevent="handleKeydown('up')"
@@ -196,7 +196,7 @@
                     <button @click="product.isEditingStock = true; product.editStock = (product.stock !== undefined ? product.stock : product.stockQuantity)" class="text-gray-400 hover:text-gray-700 p-1" title="Quick Edit Stock">
                       <Package class="w-3.5 h-3.5" />
                     </button>
-                    <button @click="openProductModal(product)" class="text-[#1b3b5f] hover:text-[#4ecdc4] p-1" title="Edit Product">
+                    <button @click="openProductModal(product)" class="text-[#1b3b5f] hover:text-[#132c49] p-1" title="Edit Product">
                       <Edit2 class="w-4 h-4" />
                     </button>
                   </div>
@@ -669,18 +669,18 @@
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div class="space-y-1">
                   <label class="block text-[10px] font-medium text-gray-500 uppercase tracking-widest">SKU / Item Code *</label>
-                  <input v-model="productForm.sku" required type="text" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#4ecdc4] focus:ring-1 focus:ring-[#4ecdc4] outline-none text-sm uppercase font-mono" />
+                  <input v-model="productForm.sku" required type="text" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#1b3b5f] focus:ring-1 focus:ring-[#1b3b5f] outline-none text-sm uppercase font-mono" />
                 </div>
 
                 <div class="space-y-1">
                   <label class="block text-[10px] font-medium text-gray-500 uppercase tracking-widest">HSN Code</label>
-                  <input v-model="productForm.hsnCode" type="text" placeholder="e.g. 44089090" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#4ecdc4] focus:ring-1 focus:ring-[#4ecdc4] outline-none text-sm font-mono" />
+                  <input v-model="productForm.hsnCode" type="text" placeholder="e.g. 44089090" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#1b3b5f] focus:ring-1 focus:ring-[#1b3b5f] outline-none text-sm font-mono" />
                 </div>
               </div>
               
               <div class="space-y-1">
                 <label class="block text-[10px] font-medium text-gray-500 uppercase tracking-widest">Product Name *</label>
-                <input v-model="productForm.name" required type="text" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#4ecdc4] focus:ring-1 focus:ring-[#4ecdc4] outline-none text-sm" />
+                <input v-model="productForm.name" required type="text" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#1b3b5f] focus:ring-1 focus:ring-[#1b3b5f] outline-none text-sm" />
               </div>
 
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -714,23 +714,23 @@
               <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div class="space-y-1">
                   <label class="block text-[10px] font-medium text-gray-500 uppercase tracking-widest">Price (₹) *</label>
-                  <input v-model.number="productForm.price" required type="number" min="0" step="0.01" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#4ecdc4] focus:ring-1 focus:ring-[#4ecdc4] outline-none text-sm" />
+                  <input v-model.number="productForm.price" required type="number" min="0" step="0.01" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#1b3b5f] focus:ring-1 focus:ring-[#1b3b5f] outline-none text-sm" />
                 </div>
 
                 <div class="space-y-1">
                   <label class="block text-[10px] font-medium text-gray-500 uppercase tracking-widest">Stock *</label>
-                  <input v-model.number="productForm.stockQuantity" required type="number" min="0" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#4ecdc4] focus:ring-1 focus:ring-[#4ecdc4] outline-none text-sm" />
+                  <input v-model.number="productForm.stockQuantity" required type="number" min="0" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#1b3b5f] focus:ring-1 focus:ring-[#1b3b5f] outline-none text-sm" />
                 </div>
 
                 <div class="space-y-1">
                   <label class="block text-[10px] font-medium text-gray-500 uppercase tracking-widest">GST Rate (%)</label>
-                  <input v-model.number="productForm.taxRate" type="number" min="0" max="100" step="0.1" placeholder="e.g. 18" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#4ecdc4] focus:ring-1 focus:ring-[#4ecdc4] outline-none text-sm" />
+                  <input v-model.number="productForm.taxRate" type="number" min="0" max="100" step="0.1" placeholder="e.g. 18" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#1b3b5f] focus:ring-1 focus:ring-[#1b3b5f] outline-none text-sm" />
                 </div>
               </div>
               
               <div class="space-y-1 flex items-center pt-2">
                 <label class="flex items-center gap-2 cursor-pointer">
-                  <input v-model="productForm.isActive" type="checkbox" class="w-4 h-4 text-[#1b3b5f] border-gray-300 rounded focus:ring-[#4ecdc4]" />
+                  <input v-model="productForm.isActive" type="checkbox" class="w-4 h-4 text-[#1b3b5f] border-gray-300 rounded focus:ring-[#1b3b5f]" />
                   <span class="text-sm text-gray-700">Active Product</span>
                 </label>
               </div>
@@ -782,11 +782,11 @@
             <form id="categoryForm" @submit.prevent="saveCategory" class="space-y-4">
               <div class="space-y-1">
                 <label class="block text-[10px] font-medium text-gray-500 uppercase tracking-widest">Name *</label>
-                <input v-model="categoryForm.name" required type="text" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#4ecdc4] focus:ring-1 focus:ring-[#4ecdc4] outline-none text-sm" />
+                <input v-model="categoryForm.name" required type="text" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#1b3b5f] focus:ring-1 focus:ring-[#1b3b5f] outline-none text-sm" />
               </div>
               <div class="space-y-1">
                 <label class="block text-[10px] font-medium text-gray-500 uppercase tracking-widest">Description</label>
-                <textarea v-model="categoryForm.description" rows="2" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#4ecdc4] focus:ring-1 focus:ring-[#4ecdc4] outline-none text-sm"></textarea>
+                <textarea v-model="categoryForm.description" rows="2" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#1b3b5f] focus:ring-1 focus:ring-[#1b3b5f] outline-none text-sm"></textarea>
               </div>
             </form>
           </div>

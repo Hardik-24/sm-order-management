@@ -12,7 +12,7 @@
 
     <!-- Search Bar -->
     <div class="flex-1 max-w-xl mx-8 hidden md:block relative">
-      <div class="relative flex items-center w-full h-10 rounded-lg border border-gray-300 bg-[#f9fafb] px-3 focus-within:border-[#4ecdc4] focus-within:bg-white focus-within:ring-1 focus-within:ring-[#4ecdc4] transition-colors">
+      <div class="relative flex items-center w-full h-10 rounded-lg border border-gray-300 bg-[#f9fafb] px-3 focus-within:border-[#1b3b5f] focus-within:bg-white focus-within:ring-1 focus-within:ring-[#1b3b5f] transition-colors">
         <Search class="w-4 h-4 text-gray-400 shrink-0" />
         <input 
           type="text" 

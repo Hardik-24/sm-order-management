@@ -2,9 +2,13 @@
   <div ref="containerRef" class="relative">
     <!-- Trigger -->
     <div 
+      tabindex="0"
       @click="toggleOpen"
-      class="w-full border border-gray-300 rounded-lg focus:outline-none focus:border-[#1b3b5f] focus:ring-2 focus:ring-[#1b3b5f]/20 bg-white text-gray-800 cursor-pointer flex items-center justify-between transition-colors hover:bg-gray-50/80 select-none"
-      :class="triggerClass || 'px-3 py-2 text-sm'"
+      class="w-full border rounded-lg focus:outline-none focus:border-[#1b3b5f] focus:ring-2 focus:ring-[#1b3b5f]/20 bg-white text-gray-800 cursor-pointer flex items-center justify-between transition-colors hover:bg-gray-50/80 select-none"
+      :class="[
+        triggerClass || 'px-3 py-2 text-sm',
+        isOpen ? 'border-[#1b3b5f] ring-2 ring-[#1b3b5f]/20' : 'border-gray-300'
+      ]"
     >
       <span class="block w-full text-left line-clamp-2" :title="displayLabel">{{ displayLabel }}</span>
       <ChevronDown class="w-4 h-4 text-gray-400 shrink-0 ml-2 transition-transform duration-200" :class="{ 'rotate-180': isOpen }" />
@@ -54,7 +58,7 @@
                 v-model="searchQuery"
                 type="text"
                 :placeholder="searchPlaceholder"
-                class="w-full pl-8 pr-3 py-1.5 border border-gray-200 rounded-md text-sm focus:outline-none focus:border-[#4ecdc4] focus:ring-1 focus:ring-[#4ecdc4] bg-white text-gray-900"
+                class="w-full pl-8 pr-3 py-1.5 border border-gray-200 rounded-md text-sm focus:outline-none focus:border-[#1b3b5f] focus:ring-1 focus:ring-[#1b3b5f] bg-white text-gray-900"
                 @click.stop
               />
             </div>

@@ -85,7 +85,7 @@ const handleLogin = async () => {
                 v-model="email"
                 type="text" 
                 placeholder="Enter your email or username"
-                class="block w-full pl-9 pr-3 py-2.5 text-sm border border-gray-300 rounded-lg bg-white text-[#1a1a1a] focus:outline-none focus:ring-2 focus:ring-[#4ecdc4] focus:border-transparent transition-shadow"
+                class="block w-full pl-9 pr-3 py-2.5 text-sm border border-gray-300 rounded-lg bg-white text-[#1a1a1a] focus:outline-none focus:ring-2 focus:ring-[#1b3b5f]/30 focus:border-[#1b3b5f] transition-shadow"
                 required
               />
             </div>
@@ -104,7 +104,7 @@ const handleLogin = async () => {
                 v-model="password"
                 :type="showPassword ? 'text' : 'password'" 
                 placeholder="••••••••"
-                class="block w-full pl-9 pr-10 py-2.5 text-sm border border-gray-300 rounded-lg bg-white text-[#1a1a1a] focus:outline-none focus:ring-2 focus:ring-[#4ecdc4] focus:border-transparent transition-shadow"
+                class="block w-full pl-9 pr-10 py-2.5 text-sm border border-gray-300 rounded-lg bg-white text-[#1a1a1a] focus:outline-none focus:ring-2 focus:ring-[#1b3b5f]/30 focus:border-[#1b3b5f] transition-shadow"
                 required
               />
               <button 
@@ -121,7 +121,7 @@ const handleLogin = async () => {
           <!-- Options -->
           <div class="flex items-center justify-between text-xs mt-2">
             <label class="flex items-center gap-2 cursor-pointer">
-              <input v-model="rememberMe" type="checkbox" class="rounded border-gray-300 text-[#1b3b5f] focus:ring-[#4ecdc4]" />
+              <input v-model="rememberMe" type="checkbox" class="rounded border-gray-300 text-[#1b3b5f] focus:ring-[#1b3b5f]" />
               <span class="text-gray-600">Remember me</span>
             </label>
             <a href="#" class="text-[#1b3b5f] hover:underline font-medium">Forgot password?</a>

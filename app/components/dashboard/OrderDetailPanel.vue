@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, computed, nextTick } from 'vue'
-import { X, MoreHorizontal, Lock, Edit, Package, PackageCheck, Truck, Check, Box, Plus, Trash2, MapPin, AlertCircle, AlertTriangle, Ban, CheckCheck, CheckCircle2, Zap, User, IndianRupee, Clock, Building2, Phone, FileText, Calendar, Copy, ChevronRight, Car, GitFork, SlidersHorizontal, Loader2 } from 'lucide-vue-next'
+import { X, MoreHorizontal, Lock, Edit, Package, PackageCheck, Truck, Check, Box, Plus, Trash2, MapPin, AlertCircle, AlertTriangle, Ban, CheckCheck, CheckCircle2, Zap, User, IndianRupee, Clock, Building2, Phone, FileText, Calendar, Copy, ChevronRight, Car, GitFork, SlidersHorizontal, Loader2, Save } from 'lucide-vue-next'
 import StatusBadge from '~/components/ui/StatusBadge.vue'
 import GenerateBillModal from '~/components/dashboard/GenerateBillModal.vue'
 import SetDeliveryPinModal from '~/components/dashboard/SetDeliveryPinModal.vue'
@@ -28,7 +28,7 @@ const onAdminStatusUpdated = (updatedOrder: any) => {
   emit('updated', updatedOrder)
 }
 
-const { showEditing, showSaving, showSaved, hide } = useSnackbar()
+const { showEditing, showSaving, showSaved, showError, hide } = useSnackbar()
 const { paymentTermsOptions } = useMasters()
 const { notifyChange, onOrderSync } = useRealtimeSync()
 const { animateStagger, animateModalOpen, initContext } = useGsapAnimation()
@@ -86,6 +86,12 @@ const canGenerateBill = computed(() => {
 })
 
 const hasFooterActionButtons = computed(() => {
+  if (props.context === 'packing') {
+    return Boolean(
+      hasRole('ADMIN', 'PACKING') && 
+      order.value?.overallStatus !== 'CANCELLED'
+    )
+  }
   if (props.context === 'billing') {
     return Boolean(
       (hasRole('ADMIN', 'BILLING') && order.value?.billingStatus?.status !== 'GENERATED' && order.value?.overallStatus !== 'CANCELLED' && order.value?.deliveryStatus?.status !== 'DISPATCHED' && order.value?.deliveryStatus?.status !== 'DELIVERED') ||
@@ -148,6 +154,8 @@ const isGenerateModalOpen = ref(false)
 
 const showPackingForm = ref(false)
 const packingForm = ref({ status: '', items: [] as any[], holdReason: '' })
+const hasPackingChanges = ref(false)
+const isSavingPacking = ref(false)
 
 watch(() => props.orderId, async (newId) => {
   if (newId && props.isOpen) {
@@ -231,6 +239,7 @@ const fetchOrder = async (id: string) => {
   try {
     const data = await $fetch<Order>(`/api/orders/${id}`)
     order.value = data
+    hasPackingChanges.value = false
     packingForm.value = {
       status: data.packingStatus?.status || 'PENDING',
       items: data.items?.map(i => {
@@ -343,6 +352,11 @@ const productOptions = computed(() => {
 })
 
 const closePanel = () => {
+  if (hasPackingChanges.value) {
+    const discard = confirm('You have unsaved packing changes. Are you sure you want to discard them?')
+    if (!discard) return
+    hasPackingChanges.value = false
+  }
   hide()
   showBillingForm.value = false
   emit('close')
@@ -399,34 +413,6 @@ const updateBilling = async () => {
   }
 }
 
-const updatePacking = async () => {
-  if (!order.value) return
-  showSaving()
-  try {
-    const itemsData = (packingForm.value.items || []).map(i => ({
-      id: i.id,
-      packedQuantity: Number(i.packedQuantity !== undefined ? i.packedQuantity : (i.isPacked ? i.quantity : 0))
-    }))
-    await $fetch(`/api/orders/${order.value.id}/packing`, {
-      method: 'PATCH',
-      body: {
-        status: packingForm.value.status,
-        items: itemsData,
-        holdReason: packingForm.value.status === 'ON_HOLD' ? packingForm.value.holdReason : undefined
-      }
-    })
-    showSaved('Packing updated successfully')
-    notifyChange({ orderId: order.value.id, action: 'PACKING_UPDATED', status: packingForm.value.status })
-    emit('updated')
-    await fetchOrder(order.value.id)
-  } catch (err: any) {
-    console.error('Failed to update packing:', err)
-    hide()
-  }
-}
-
-let packingSyncTimer: any = null
-
 const recalculatePackingStatus = () => {
   if (!packingForm.value.items || !packingForm.value.items.length) return
   // An order is considered fully packed when all line items have been confirmed/packed by the packer
@@ -440,80 +426,50 @@ const recalculatePackingStatus = () => {
   } else {
     packingForm.value.status = 'PENDING'
   }
-
-  if (order.value && order.value.packingStatus) {
-    order.value.packingStatus.status = packingForm.value.status as any
-  }
 }
 
-const syncPackingState = (immediate = false) => {
-  if (!order.value) return
+const savePackingChanges = async () => {
+  if (!order.value || isSavingPacking.value) return
+  isSavingPacking.value = true
+  showSaving('Saving packing changes...')
+  try {
+    const itemsData = (packingForm.value.items || []).map(i => ({
+      id: i.id,
+      packedQuantity: Math.max(0, Number(i.packedQuantity !== undefined ? i.packedQuantity : (i.isPacked ? i.quantity : 0))),
+      isPacked: Boolean(i.isPacked)
+    }))
 
-  // 1. Instant local optimistic update on order.value items (0ms latency)
-  if (order.value.items && packingForm.value.items) {
-    order.value.items.forEach(ordItem => {
-      const match = packingForm.value.items.find(p => p.id === ordItem.id)
-      if (match) {
-        ordItem.packedQuantity = match.packedQuantity
-        ;(ordItem as any).isPacked = Boolean(match.isPacked)
+    const res = await $fetch<any>(`/api/orders/${order.value.id}/packing`, {
+      method: 'PATCH',
+      body: {
+        status: packingForm.value.status,
+        items: itemsData,
+        holdReason: packingForm.value.status === 'ON_HOLD' ? packingForm.value.holdReason : undefined
       }
     })
-  }
 
-  // 2. Broadcast immediately over local broadcast channel & websockets for instant cross-tab / device sync
-  const optimisticOrder = {
-    ...order.value,
-    items: order.value.items ? order.value.items.map(it => ({ ...it })) : [],
-    packingStatus: {
-      ...(order.value.packingStatus || {}),
-      status: packingForm.value.status
+    if (order.value && order.value.packingStatus) {
+      order.value.packingStatus.status = packingForm.value.status as any
     }
-  }
 
-  // Optimistically inform parent table so row progress updates instantly
-  emit('updated', optimisticOrder)
+    hasPackingChanges.value = false
+    showSaved('Packing updated successfully')
 
-  notifyChange({
-    orderId: order.value.id,
-    action: 'PACKING_ITEM_UPDATED',
-    status: packingForm.value.status,
-    order: optimisticOrder
-  })
+    // Broadcast verified backend update to everyone via WebSockets
+    notifyChange({
+      orderId: order.value.id,
+      action: 'PACKING_UPDATED',
+      status: packingForm.value.status,
+      order: res
+    })
 
-  const runPatch = async () => {
-    try {
-      const itemsData = (packingForm.value.items || []).map(i => ({
-        id: i.id,
-        packedQuantity: Math.max(0, Number(i.packedQuantity || 0)),
-        isPacked: Boolean(i.isPacked)
-      }))
-      const res = await $fetch<any>(`/api/orders/${order.value!.id}/packing`, {
-        method: 'PATCH',
-        body: {
-          status: packingForm.value.status,
-          items: itemsData,
-          holdReason: packingForm.value.status === 'ON_HOLD' ? packingForm.value.holdReason : undefined
-        }
-      })
-      // Broadcast verified backend update to everyone via WebSockets
-      notifyChange({
-        orderId: order.value!.id,
-        action: 'PACKING_UPDATED',
-        status: packingForm.value.status,
-        order: res
-      })
-      emit('updated', res)
-    } catch (err: any) {
-      console.error('Failed to sync packing:', err)
-    }
-  }
-
-  if (immediate) {
-    if (packingSyncTimer) clearTimeout(packingSyncTimer)
-    runPatch()
-  } else {
-    if (packingSyncTimer) clearTimeout(packingSyncTimer)
-    packingSyncTimer = setTimeout(runPatch, 250)
+    emit('updated', res)
+    await fetchOrder(order.value.id)
+  } catch (err: any) {
+    console.error('Failed to update packing:', err)
+    showError(err?.data?.message || 'Failed to update packing')
+  } finally {
+    isSavingPacking.value = false
   }
 }
 
@@ -540,7 +496,7 @@ const decrementPackedQty = (idx: number) => {
     item.isPacked = false
   }
   recalculatePackingStatus()
-  syncPackingState(false)
+  hasPackingChanges.value = true
 }
 
 const incrementPackedQty = (idx: number) => {
@@ -558,7 +514,7 @@ const incrementPackedQty = (idx: number) => {
     item.isPacked = false
   }
   recalculatePackingStatus()
-  syncPackingState(false)
+  hasPackingChanges.value = true
 }
 
 const handlePackedQtyInput = (idx: number) => {
@@ -576,7 +532,7 @@ const handlePackedQtyInput = (idx: number) => {
     item.isPacked = false
   }
   recalculatePackingStatus()
-  syncPackingState(false)
+  hasPackingChanges.value = true
 }
 
 const handlePackingCheckboxToggle = (idx: number, event: Event) => {
@@ -591,7 +547,7 @@ const handlePackingCheckboxToggle = (idx: number, event: Event) => {
     item.isPacked = false
     item.packedQuantity = 0
     recalculatePackingStatus()
-    syncPackingState(true)
+    hasPackingChanges.value = true
     return
   }
 
@@ -600,7 +556,7 @@ const handlePackingCheckboxToggle = (idx: number, event: Event) => {
     // Quantities match full approved quantity exactly
     item.isPacked = true
     recalculatePackingStatus()
-    syncPackingState(true)
+    hasPackingChanges.value = true
     return
   }
 
@@ -632,7 +588,7 @@ const confirmMismatchPacked = () => {
     item.isPacked = true
     item.packedQuantity = mismatchModalItem.value.packedQty
     recalculatePackingStatus()
-    syncPackingState(true)
+    hasPackingChanges.value = true
   }
   isMismatchModalOpen.value = false
   mismatchModalItem.value = null
@@ -646,7 +602,7 @@ const confirmFullPacked = () => {
     item.isPacked = true
     item.packedQuantity = mismatchModalItem.value.approvedQty
     recalculatePackingStatus()
-    syncPackingState(true)
+    hasPackingChanges.value = true
   }
   isMismatchModalOpen.value = false
   mismatchModalItem.value = null
@@ -673,7 +629,7 @@ const markAsPacked = async () => {
     }
   })
   recalculatePackingStatus()
-  syncPackingState(true)
+  hasPackingChanges.value = true
 }
 
 const getItemTotal = (item: any) => {
@@ -1879,7 +1835,12 @@ onMounted(() => {
                 <div v-if="context === 'packing' && hasRole('ADMIN', 'PACKING')" class="p-4 bg-gray-50 border-t border-gray-200 rounded-b-lg relative">
                   <div class="flex items-center justify-between">
                     <div>
-                      <p class="text-sm font-bold text-gray-900">Packing Progress</p>
+                      <div class="flex items-center gap-2">
+                        <p class="text-sm font-bold text-gray-900">Packing Progress</p>
+                        <span v-if="hasPackingChanges" class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                          Unsaved Changes
+                        </span>
+                      </div>
                       <p class="text-xs text-gray-500 mt-1">
                         {{ packingForm.items.filter(i => i.isPacked).length }} of {{ packingForm.items.length }} items packed
                       </p>
@@ -2058,6 +2019,31 @@ onMounted(() => {
           </div>
 
           <div v-if="hasFooterActionButtons" class="flex items-center gap-1.5 sm:gap-2 flex-wrap justify-end shrink-0">
+            <!-- Packing footer action button -->
+            <template v-if="context === 'packing'">
+              <div 
+                v-if="order.packingStatus?.status === 'PACKED' && !hasPackingChanges"
+                class="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[11px] sm:text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 whitespace-nowrap"
+              >
+                <CheckCircle2 class="w-3.5 sm:w-4 h-3.5 sm:h-4 text-emerald-600" />
+                <span>Packing Complete</span>
+              </div>
+              <button 
+                v-else
+                type="button"
+                @click="savePackingChanges"
+                :disabled="!hasPackingChanges || isSavingPacking"
+                class="px-3.5 sm:px-4 py-1.5 sm:py-2 text-[11px] sm:text-xs font-bold rounded-lg shadow-sm transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer disabled:cursor-not-allowed"
+                :class="hasPackingChanges && !isSavingPacking 
+                  ? 'bg-[#1b3b5f] text-white hover:bg-[#132c49] shadow hover:shadow-md' 
+                  : 'bg-gray-100 text-gray-400 border border-gray-200'"
+              >
+                <Loader2 v-if="isSavingPacking" class="w-3.5 sm:w-4 h-3.5 sm:h-4 animate-spin text-white" />
+                <Save v-else class="w-3.5 sm:w-4 h-3.5 sm:h-4" :class="hasPackingChanges ? 'text-white' : 'text-gray-400'" />
+                <span>{{ isSavingPacking ? 'Saving...' : 'Save Changes' }}</span>
+              </button>
+            </template>
+
             <!-- Split Order button (Strictly Billing context only) -->
             <button 
               v-if="context === 'billing' && hasRole('ADMIN', 'BILLING') && order.billingStatus?.status !== 'GENERATED' && order.overallStatus !== 'CANCELLED' && order.deliveryStatus?.status !== 'DISPATCHED' && order.deliveryStatus?.status !== 'DELIVERED'"

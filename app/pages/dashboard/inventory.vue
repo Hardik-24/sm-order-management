@@ -282,7 +282,7 @@ onUnmounted(() => {
             v-model="searchQuery"
             type="text" 
             placeholder="Search items by name, SKU, HSN, group..."
-            class="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:border-[#4ecdc4] focus:ring-1 focus:ring-[#4ecdc4] bg-white"
+            class="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:border-[#1b3b5f] focus:ring-1 focus:ring-[#1b3b5f] bg-white"
           />
         </div>
         

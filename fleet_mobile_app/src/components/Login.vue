@@ -14,7 +14,7 @@
             v-model="email" 
             type="email" 
             required
-            class="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#4ecdc4]"
+            class="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3b5f]"
             placeholder="driver@siliconmarketing.com"
           >
         </div>
@@ -25,7 +25,7 @@
             v-model="password" 
             type="password" 
             required
-            class="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#4ecdc4]"
+            class="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3b5f]"
             placeholder="••••••••"
           >
         </div>
