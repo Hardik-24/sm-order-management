@@ -6,16 +6,28 @@ export default defineEventHandler(async (event) => {
   await requireRole(event, ['ADMIN', 'SALES'])
   
   const body = await readBody(event)
+  if (!body) {
+    throw createError({ statusCode: 400, message: 'Request body is required' })
+  }
+
   const { 
     customerId, 
     deliveryAddress, 
     deliveryAddressId,
-    paymentTerms, 
+    paymentTerms = 'IMMEDIATE', 
     notes, 
     isUrgent = false,
     vehicleMode = 'OUR_FLEET',
     items 
   } = body
+
+  if (!customerId) {
+    throw createError({ statusCode: 400, message: 'Customer ID is required' })
+  }
+
+  if (!items || !Array.isArray(items) || items.length === 0) {
+    throw createError({ statusCode: 400, message: 'Order must contain at least one item' })
+  }
 
   let resolvedDeliveryAddress = deliveryAddress
   if (deliveryAddressId && (!resolvedDeliveryAddress || resolvedDeliveryAddress.trim() === '')) {
@@ -121,7 +133,7 @@ export default defineEventHandler(async (event) => {
           vehicleMode: (vehicleMode === 'PARTY_VEHICLE' || vehicleMode === 'THIRD_PARTY') ? vehicleMode : 'OUR_FLEET',
           isUrgent: Boolean(isUrgent),
           isApproved: false,
-          paymentTerms,
+          paymentTerms: paymentTerms || 'IMMEDIATE',
           notes,
           totalAmount,
           overallStatus: 'CONFIRMED',

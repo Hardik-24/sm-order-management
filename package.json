@@ -3,6 +3,7 @@
   "type": "module",
   "private": true,
   "scripts": {
+    "test": "node scripts/run_automated_tests.cjs",
     "build": "prisma generate && nuxt build",
     "dev": "nuxt dev",
     "generate": "nuxt generate",

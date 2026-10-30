@@ -2,7 +2,7 @@
 
 export function buildMultiTokenPrismaOr(
   query: string,
-  fieldMappers: ((term: string) => any)[]
+  fieldMappers: ((term: string) => any[]) | ((term: string) => any)[]
 ): any {
   const q = String(query || '').trim()
   if (!q) return undefined
@@ -10,11 +10,23 @@ export function buildMultiTokenPrismaOr(
   const tokens = q.split(/\s+/).filter(Boolean)
   if (tokens.length === 0) return undefined
 
-  // Every token must match in at least one of the fields (AND across tokens, OR across fields)
+  // Support both a generator function `(token) => [cond1, cond2]` and an array of mapper functions `[fn1, fn2]`
   return {
-    AND: tokens.map(token => ({
-      OR: fieldMappers.map(mapFn => mapFn(token))
-    }))
+    AND: tokens.map(token => {
+      if (typeof fieldMappers === 'function') {
+        const conditions = fieldMappers(token)
+        return { OR: Array.isArray(conditions) ? conditions : [conditions] }
+      }
+      if (Array.isArray(fieldMappers)) {
+        return {
+          OR: fieldMappers.flatMap(mapFn => {
+            const res = mapFn(token)
+            return Array.isArray(res) ? res : [res]
+          })
+        }
+      }
+      return { OR: [] }
+    })
   }
 }
 
@@ -48,99 +60,66 @@ export function rankServerItems<T>(
   const tokens = q.split(/\s+/).filter(Boolean)
   if (tokens.length === 0) return items
 
-  const scored: { item: T; score: number; primaryText: string }[] = []
+  return [...items].sort((a, b) => {
+    const scoreA = computeItemScore(a, q, tokens, fieldMap)
+    const scoreB = computeItemScore(b, q, tokens, fieldMap)
+    return scoreB - scoreA
+  })
+}
 
-  for (const item of items) {
-    const primary = String(fieldMap.primary ? fieldMap.primary(item) || '' : '').toLowerCase().trim()
-    const secondary = String(fieldMap.secondary ? fieldMap.secondary(item) || '' : '').toLowerCase().trim()
-    const meta = String(fieldMap.meta ? fieldMap.meta(item) || '' : '').toLowerCase().trim()
-    const code = String(fieldMap.code ? fieldMap.code(item) || '' : '').toLowerCase().trim()
+function computeItemScore<T>(
+  item: T,
+  fullQuery: string,
+  tokens: string[],
+  fieldMap: {
+    primary?: (item: T) => string | null | undefined
+    secondary?: (item: T) => string | null | undefined
+    meta?: (item: T) => string | null | undefined
+    code?: (item: T) => string | null | undefined
+  }
+): number {
+  let score = 0
+  const primary = (fieldMap.primary ? fieldMap.primary(item) : '')?.toLowerCase() || ''
+  const secondary = (fieldMap.secondary ? fieldMap.secondary(item) : '')?.toLowerCase() || ''
+  const meta = (fieldMap.meta ? fieldMap.meta(item) : '')?.toLowerCase() || ''
+  const code = (fieldMap.code ? fieldMap.code(item) : '')?.toLowerCase() || ''
 
-    let score = 0
+  // 1. Exact full query matches
+  if (primary === fullQuery) score += 1000
+  else if (primary.startsWith(fullQuery)) score += 600
+  else if (matchesWordBoundary(primary, fullQuery)) score += 400
+  else if (primary.includes(fullQuery)) score += 200
 
-    // Exact match
-    if (primary === q) score += 100000
-    else if (secondary === q) score += 80000
+  if (secondary === fullQuery) score += 700
+  else if (secondary.startsWith(fullQuery)) score += 400
 
-    // Prefix match
-    if (primary.startsWith(q)) score += 40000
-    else if (secondary.startsWith(q)) score += 25000
+  if (code === fullQuery) score += 500
+  else if (code.startsWith(fullQuery)) score += 300
 
-    // Word boundary full query
-    if (matchesWordBoundary(primary, q)) score += 20000
-    else if (matchesWordBoundary(secondary, q)) score += 12000
-    else if (primary.includes(q)) score += 8000
-
-    let allTokensInPrimary = true
-    let lastPrimaryIdx = -1
-    let inOrderInPrimary = true
-
-    for (const t of tokens) {
-      let tokenScore = 0
-      let matchedInPrimary = false
-
-      const words = primary.split(/[\s\-_\/.,()[\]:]+/).filter(Boolean)
-      const tIdx = primary.indexOf(t)
-      if (words.includes(t)) {
-        tokenScore = Math.max(tokenScore, 3000)
-        matchedInPrimary = true
-      } else if (matchesWordBoundary(primary, t)) {
-        tokenScore = Math.max(tokenScore, 1800)
-        matchedInPrimary = true
-      } else if (tIdx !== -1) {
-        tokenScore = Math.max(tokenScore, 800)
-        matchedInPrimary = true
-      }
-      if (tIdx !== -1) {
-        if (tIdx < lastPrimaryIdx) inOrderInPrimary = false
-        lastPrimaryIdx = tIdx
-      }
-
-      if (!matchedInPrimary) {
-        allTokensInPrimary = false
-        const sWords = secondary.split(/[\s\-_\/.,()[\]:]+/).filter(Boolean)
-        if (sWords.includes(t)) tokenScore = Math.max(tokenScore, 2000)
-        else if (matchesWordBoundary(secondary, t)) tokenScore = Math.max(tokenScore, 1200)
-        else if (secondary.includes(t)) tokenScore = Math.max(tokenScore, 400)
-
-        const mWords = meta.split(/[\s\-_\/.,()[\]:]+/).filter(Boolean)
-        if (mWords.includes(t)) tokenScore = Math.max(tokenScore, 500)
-        else if (matchesWordBoundary(meta, t)) tokenScore = Math.max(tokenScore, 300)
-        else if (meta.includes(t)) tokenScore = Math.max(tokenScore, 100)
-
-        if (t.length < 4) {
-          if (code === t) tokenScore = Math.max(tokenScore, 3000)
-          else if (code.startsWith(t)) tokenScore = Math.max(tokenScore, 1500)
-        } else {
-          if (code === t) tokenScore = Math.max(tokenScore, 3000)
-          else if (code.startsWith(t)) tokenScore = Math.max(tokenScore, 1500)
-          else if (code.includes(t)) tokenScore = Math.max(tokenScore, 100)
-        }
-      }
-
-      if (tokenScore === 0) {
-        score = 0
-        break
-      }
-      score += tokenScore
+  // 2. Token-by-token evaluation
+  let allTokensMatchPrimaryWord = true
+  for (const token of tokens) {
+    if (matchesWordBoundary(primary, token)) {
+      score += 150
+    } else if (primary.includes(token)) {
+      score += 70
+      allTokensMatchPrimaryWord = false
+    } else {
+      allTokensMatchPrimaryWord = false
     }
 
-    if (score > 0) {
-      if (allTokensInPrimary) score += 6000
-      if (allTokensInPrimary && inOrderInPrimary) score += 4000
-      const lenDiff = Math.max(0, primary.length - q.length)
-      score += Math.max(0, 500 - lenDiff * 4)
-      scored.push({ item, score, primaryText: primary })
-    }
+    if (secondary.startsWith(token)) score += 80
+    else if (secondary.includes(token)) score += 40
+
+    if (meta.startsWith(token)) score += 60
+    else if (meta.includes(token)) score += 20
+
+    if (code.startsWith(token)) score += 70
   }
 
-  scored.sort((a, b) => {
-    if (b.score !== a.score) return b.score - a.score
-    if (a.primaryText.length !== b.primaryText.length) {
-      return a.primaryText.length - b.primaryText.length
-    }
-    return a.primaryText.localeCompare(b.primaryText)
-  })
+  if (allTokensMatchPrimaryWord && tokens.length > 1) {
+    score += 250
+  }
 
-  return scored.map(s => s.item)
+  return score
 }
