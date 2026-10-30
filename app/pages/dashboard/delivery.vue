@@ -278,6 +278,9 @@ function performSilentSync(updatedOrder?: any) {
 const { onOrderSync, notifyChange } = useRealtimeSync()
 onOrderSync((event) => {
   if (event?.order) applyOrderUpdate(event.order)
+  if (event?.type === 'TRIP_CHANGE' || event?.action === 'REORDER_STOPS' || event?.type === 'REORDER_STOPS') {
+    refreshTrips()
+  }
   triggerSilentSync()
 })
 
@@ -291,11 +294,23 @@ const handlePanelClose = () => {
   selectedOrderId.value = null
 }
 
-// GSAP Animations
+// GSAP Animations & Focus / Visibility Sync
 const { animateStagger, initContext } = useGsapAnimation()
 const statsContainer = ref<HTMLElement | null>(null)
 
 onMounted(() => {
+  if (typeof document !== 'undefined') {
+    const handleVis = () => {
+      if (document.visibilityState === 'visible') {
+        refresh()
+        refreshStats()
+        refreshTrips()
+      }
+    }
+    document.addEventListener('visibilitychange', handleVis)
+    window.addEventListener('focus', handleVis)
+  }
+
   initContext(statsContainer.value || undefined)
   if (statsContainer.value) {
     animateStagger(statsContainer.value.children, { duration: 0.35, stagger: 0.06, y: 12 })

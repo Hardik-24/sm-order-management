@@ -200,20 +200,30 @@ public class NavigationManager {
         this.mCurrentDestLat = destLat;
         this.mCurrentDestLng = destLng;
         this.mCurrentDestTitle = (title != null && !title.trim().isEmpty()) ? title : "Customer Delivery";
-        this.mCurrentOrderId = (orderId != null) ? orderId : "";
+        String newOrderId = (orderId != null) ? orderId : "";
+        boolean isSameOrder = this.mCurrentOrderId != null && this.mCurrentOrderId.equals(newOrderId);
+        this.mCurrentOrderId = newOrderId;
         this.mAuthToken = (authToken != null) ? authToken : "";
         if (apiUrl != null && !apiUrl.trim().isEmpty()) {
             this.mApiUrl = apiUrl.trim();
         }
 
-        this.mIsTripActive = !isPreview;
-        this.mTotalDistanceDrivenMeters = initialDistanceKm > 0 ? (initialDistanceKm * 1000.0) : 0.0;
+        // If trip was already active for this order, preserve active status even if opened for directions
+        if (!isPreview || (isSameOrder && this.mIsTripActive)) {
+            this.mIsTripActive = true;
+        } else {
+            this.mIsTripActive = false;
+        }
+
+        if (initialDistanceKm > 0) {
+            this.mTotalDistanceDrivenMeters = (initialDistanceKm * 1000.0);
+        }
         
         // Preserve or set valid start coordinates instead of zeroing out
         if (startLat != 0.0 && startLng != 0.0) {
             this.mLastLat = startLat;
             this.mLastLng = startLng;
-        } else if (activity != null) {
+        } else if (activity != null && (mLastLat == 0.0 || mLastLng == 0.0)) {
             Location loc = getLastKnownLocationSafely(activity);
             if (loc != null) {
                 this.mLastLat = loc.getLatitude();
@@ -223,8 +233,12 @@ public class NavigationManager {
 
         this.mLastRemainingMeters = -1;
         this.mLastRemainingSeconds = -1;
-        synchronized (mPendingPings) {
-            mPendingPings.clear();
+        
+        // Only clear pending buffer if switching to a completely new order
+        if (!isSameOrder) {
+            synchronized (mPendingPings) {
+                mPendingPings.clear();
+            }
         }
 
         if (mIsTripActive) {

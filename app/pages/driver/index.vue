@@ -871,6 +871,30 @@ async function deliverStopPrompt(trip: any, stop: any) {
 
   showSaving('Completing delivery...')
   try {
+    // 1. Fetch fresh doorstep GPS fix before completing stop
+    let doorstepCoords = currentCoords ? { ...currentCoords } : undefined
+    try {
+      if (typeof navigator !== 'undefined' && navigator.geolocation) {
+        const freshPos = await new Promise<any>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 2500,
+            maximumAge: 1000
+          })
+        })
+        if (freshPos?.coords?.latitude && freshPos?.coords?.longitude) {
+          doorstepCoords = {
+            lat: freshPos.coords.latitude,
+            lng: freshPos.coords.longitude,
+            speed: 0,
+            heading: freshPos.coords.heading || undefined,
+            timestamp: Date.now()
+          }
+          currentCoords = doorstepCoords
+        }
+      }
+    } catch (ignored) {}
+
     const res = await $fetch<{ success: boolean; isTripCompleted?: boolean; nextPendingStop?: any }>('/api/driver/trip', {
       method: 'POST',
       body: {
@@ -878,7 +902,7 @@ async function deliverStopPrompt(trip: any, stop: any) {
         tripId: trip.id,
         stopId: stop.id,
         orderId: stop.orderId,
-        coords: currentCoords || undefined
+        coords: doorstepCoords || currentCoords || undefined
       }
     })
 
@@ -1642,13 +1666,37 @@ async function completeTripPrompt(orderId: string) {
   showSaving('Completing trip & finalizing payout...')
 
   try {
+    // 1. Fetch fresh doorstep GPS fix before completing trip
+    let doorstepCoords = currentCoords ? { ...currentCoords } : undefined
+    try {
+      if (typeof navigator !== 'undefined' && navigator.geolocation) {
+        const freshPos = await new Promise<any>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 2500,
+            maximumAge: 1000
+          })
+        })
+        if (freshPos?.coords?.latitude && freshPos?.coords?.longitude) {
+          doorstepCoords = {
+            lat: freshPos.coords.latitude,
+            lng: freshPos.coords.longitude,
+            speed: 0,
+            heading: freshPos.coords.heading || undefined,
+            timestamp: Date.now()
+          }
+          currentCoords = doorstepCoords
+        }
+      }
+    } catch (ignored) {}
+
     const pointsToSend = offlineGpsQueue.length > 0 ? [...offlineGpsQueue] : undefined
     const res = await $fetch<{ success: boolean; trip: any }>('/api/driver/trip', {
       method: 'POST',
       body: {
         action: 'complete',
         orderId,
-        coords: currentCoords,
+        coords: doorstepCoords || currentCoords,
         points: pointsToSend,
       }
     })

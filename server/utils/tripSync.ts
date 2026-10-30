@@ -129,21 +129,34 @@ export async function syncOrderTripState(
     return
   }
 
-  // ── CASE C: Order marked DISPATCHED manually ──
-  if (newDeliveryStatus === 'DISPATCHED') {
+  // ── CASE C: Order marked ASSIGNED (e.g. reverted from DELIVERED or DISPATCHED) ──
+  if (newDeliveryStatus === 'ASSIGNED') {
     await tx.tripStop.updateMany({
-      where: { orderId, status: 'PENDING' },
-      data: { status: 'IN_TRANSIT' }
+      where: { orderId },
+      data: {
+        status: 'PENDING',
+        deliveredAt: null,
+        notes: options?.notes || null
+      }
     })
 
     for (const stop of existingStops) {
       const trip = stop.trip
-      if (trip && trip.status === 'PLANNED') {
+      if (!trip) continue
+
+      const allTripStops = await tx.tripStop.findMany({
+        where: { tripId: trip.id }
+      })
+
+      const hasDeliveredOrInTransit = allTripStops.some(s => s.status === 'DELIVERED' || s.status === 'IN_TRANSIT')
+
+      // If trip was completed, reopen it appropriately
+      if (trip.status === 'COMPLETED') {
         await tx.trip.update({
           where: { id: trip.id },
           data: {
-            status: 'IN_TRANSIT',
-            startTime: trip.startTime || new Date()
+            status: hasDeliveredOrInTransit ? 'IN_TRANSIT' : 'PLANNED',
+            endTime: null
           }
         })
       }
@@ -151,7 +164,36 @@ export async function syncOrderTripState(
     return
   }
 
-  // ── CASE D: Order put ON_HOLD ──
+  // ── CASE D: Order marked DISPATCHED manually (or reverted from DELIVERED) ──
+  if (newDeliveryStatus === 'DISPATCHED') {
+    await tx.tripStop.updateMany({
+      where: { orderId },
+      data: {
+        status: 'IN_TRANSIT',
+        deliveredAt: null,
+        notes: options?.notes || null
+      }
+    })
+
+    for (const stop of existingStops) {
+      const trip = stop.trip
+      if (!trip) continue
+
+      if (trip.status === 'PLANNED' || trip.status === 'COMPLETED') {
+        await tx.trip.update({
+          where: { id: trip.id },
+          data: {
+            status: 'IN_TRANSIT',
+            startTime: trip.startTime || new Date(),
+            endTime: null
+          }
+        })
+      }
+    }
+    return
+  }
+
+  // ── CASE E: Order put ON_HOLD ──
   if (newDeliveryStatus === 'ON_HOLD') {
     await tx.tripStop.updateMany({
       where: { orderId, status: { in: ['PENDING', 'IN_TRANSIT'] } },

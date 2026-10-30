@@ -1004,6 +1004,28 @@ async function deliverStopPrompt(trip: any, stop: any) {
       }
     }
 
+    // 1. Fetch fresh, high-accuracy doorstep GPS location fix from phone hardware (with fast 2.5s fallback)
+    let doorstepCoords = currentCoords ? { ...currentCoords } : undefined
+    try {
+      const freshPos = await new Promise<any>((resolve, reject) => {
+        geo.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 2500,
+          maximumAge: 1000
+        })
+      })
+      if (freshPos?.coords?.latitude && freshPos?.coords?.longitude) {
+        doorstepCoords = {
+          lat: freshPos.coords.latitude,
+          lng: freshPos.coords.longitude,
+          speed: 0,
+          heading: freshPos.coords.heading || undefined,
+          timestamp: Date.now()
+        }
+        currentCoords = doorstepCoords
+      }
+    } catch (ignored) {}
+
     const res = await fetchAuth('/api/driver/trip', {
       method: 'POST',
       body: {
@@ -1011,7 +1033,7 @@ async function deliverStopPrompt(trip: any, stop: any) {
         tripId: trip.id,
         stopId: stop.id,
         orderId: stop.orderId,
-        coords: currentCoords || undefined
+        coords: doorstepCoords || currentCoords || undefined
       }
     })
 
@@ -1954,13 +1976,35 @@ async function completeTripPrompt(orderId: string) {
   showSaving('Completing trip & finalizing payout...')
 
   try {
+    // 1. Fetch fresh, high-accuracy doorstep GPS location fix from phone hardware (with fast 2.5s fallback)
+    let doorstepCoords = currentCoords ? { ...currentCoords } : undefined
+    try {
+      const freshPos = await new Promise<any>((resolve, reject) => {
+        geo.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 2500,
+          maximumAge: 1000
+        })
+      })
+      if (freshPos?.coords?.latitude && freshPos?.coords?.longitude) {
+        doorstepCoords = {
+          lat: freshPos.coords.latitude,
+          lng: freshPos.coords.longitude,
+          speed: 0,
+          heading: freshPos.coords.heading || undefined,
+          timestamp: Date.now()
+        }
+        currentCoords = doorstepCoords
+      }
+    } catch (ignored) {}
+
     const pointsToSend = offlineGpsQueue.length > 0 ? [...offlineGpsQueue] : undefined
     const res = await fetchAuth('/api/driver/trip', {
       method: 'POST',
       body: {
         action: 'complete',
         orderId,
-        coords: currentCoords,
+        coords: doorstepCoords || currentCoords,
         points: pointsToSend,
       }
     })
@@ -2012,6 +2056,7 @@ function handleVisibilityChange() {
     if (activeTripOrderId.value) {
       requestScreenWakeLock()
       startBackgroundAudioKeepAlive()
+      startGpsTracking()
     }
     fetchAssignedDeliveries()
   }
@@ -2055,7 +2100,23 @@ async function openDirections(order: any) {
     if (navPlugin) {
       try {
         const { value: token } = await Preferences.get({ key: 'auth_token' })
-        const isTripAlreadyActive = activeTripOrderId.value === order.id
+        const isTripAlreadyActive = Boolean(
+          activeTripOrderId.value && (
+            activeTripOrderId.value === order.id ||
+            activeTripOrderId.value === order.orderId
+          )
+        ) || Boolean(
+          activeDeliveryStop.value && (
+            activeDeliveryStop.value.id === order.id ||
+            activeDeliveryStop.value.orderId === order.id ||
+            activeDeliveryStop.value.orderId === order.orderId
+          )
+        ) || Boolean(
+          activeTrip.value && (
+            activeTrip.value.orderId === order.id ||
+            activeTrip.value.orderId === order.orderId
+          )
+        )
         const startTime = isTripAlreadyActive && activeTrip.value?.startTime 
           ? new Date(activeTrip.value.startTime).getTime() 
           : 0
@@ -2067,7 +2128,7 @@ async function openDirections(order: any) {
           title: customerTitle,
           orderNumber: order.orderNumber || activeTrip.value?.orderNumber || '',
           enableTurnByTurn: true,
-          orderId: order.id || activeTripOrderId.value || '',
+          orderId: order.orderId || order.id || activeTripOrderId.value || '',
           authToken: token || '',
           apiUrl: API_URL,
           initialDistanceKm: isTripAlreadyActive ? (displayDistanceKm.value || 0) : 0,

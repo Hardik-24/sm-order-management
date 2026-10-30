@@ -20,8 +20,12 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, message: 'Trip not found' })
   }
 
-  if (user.role === 'DELIVERY' && trip.driverId !== user.id && trip.driverName !== user.name) {
-    throw createError({ statusCode: 403, message: 'You are not assigned to this trip' })
+  if (user.role === 'DELIVERY') {
+    const isIdMatch = Boolean(trip.driverId && trip.driverId === user.id)
+    const isNameMatch = Boolean(trip.driverName && trip.driverName.trim().toLowerCase() === user.name.trim().toLowerCase())
+    if (!isIdMatch && !isNameMatch) {
+      throw createError({ statusCode: 403, message: 'You are not assigned to this trip' })
+    }
   }
 
   // Update stop sequences in a transaction
