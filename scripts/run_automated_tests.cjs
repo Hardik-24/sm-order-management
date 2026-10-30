@@ -82,21 +82,41 @@ async function runSuite() {
   console.log(`Target Host: ${cyan(BASE_URL)}`);
   console.log(`Timestamp:   ${new Date().toISOString()}\n`);
 
-  // 1. Fetch test users from DB (with resilient fallback for local network jitter)
+  // 1. Fetch test users from DB / API (with resilient API fallback for local TCP jitter)
+  const bootstrapAdminToken = jwt.sign(
+    { id: 'bootstrap-admin-runner', name: 'Automated Runner', email: 'admin@siliconmarketing.com', role: 'ADMIN' },
+    JWT_SECRET,
+    { expiresIn: '1h', algorithm: 'HS256' }
+  );
+
   let adminUser = null;
   let salesUser = null;
   let deliveryUser = null;
+
   try {
-    adminUser = await prisma.user.findFirst({ where: { role: 'ADMIN', isActive: true } });
-    salesUser = await prisma.user.findFirst({ where: { role: 'SALES', isActive: true } });
-    deliveryUser = await prisma.user.findFirst({ where: { role: 'DELIVERY', isActive: true } });
-  } catch (err) {
-    // Graceful fallback if local ISP encounters AWS pooler DNS/TCP round-robin jitter
+    const usersRes = await fetch(`${BASE_URL}/api/users`, {
+      headers: { Authorization: `Bearer ${bootstrapAdminToken}` }
+    });
+    if (usersRes.ok) {
+      const users = await usersRes.json();
+      if (Array.isArray(users)) {
+        adminUser = users.find(u => u.role === 'ADMIN' && u.isActive) || users.find(u => u.role === 'ADMIN');
+        salesUser = users.find(u => u.role === 'SALES' && u.isActive) || users.find(u => u.role === 'SALES');
+        deliveryUser = users.find(u => u.role === 'DELIVERY' && u.isActive) || users.find(u => u.role === 'DELIVERY');
+      }
+    }
+  } catch (err) {}
+
+  if (!adminUser || !salesUser) {
+    try {
+      adminUser = adminUser || await prisma.user.findFirst({ where: { role: 'ADMIN', isActive: true } });
+      salesUser = salesUser || await prisma.user.findFirst({ where: { role: 'SALES', isActive: true } });
+      deliveryUser = deliveryUser || await prisma.user.findFirst({ where: { role: 'DELIVERY', isActive: true } });
+    } catch (e) {}
   }
 
-  if (!adminUser) adminUser = { id: 'admin-auto-id', email: 'hardik@siliconmarketing.com', name: 'Hardik (Admin)', role: 'ADMIN' };
-  if (!salesUser) salesUser = { id: 'sales-auto-id', email: 'sales@siliconmarketing.com', name: 'Sales Rep', role: 'SALES' };
-  if (!deliveryUser) deliveryUser = { id: 'delivery-auto-id', email: 'delivery@siliconmarketing.com', name: 'Driver', role: 'DELIVERY' };
+  assert(adminUser, 'Admin user must exist');
+  assert(salesUser, 'Sales user must exist');
 
   const adminToken = createTestToken(adminUser);
   const salesToken = createTestToken(salesUser);
@@ -235,28 +255,45 @@ async function runSuite() {
 
   let createdOrderId = null;
   let testOrderNumber = null;
+  let globalCust = null;
+  let globalProd = null;
 
   await test('Order Creation: Submits test order with items, GST, and pricing', async () => {
-    // 1. Pick first valid customer and product
-    const cust = await prisma.customer.findFirst();
-    const prod = await prisma.product.findFirst();
-    assert(cust && prod, 'Must have at least 1 customer and 1 product in DB');
+    // 1. Pick first valid customer and product (via API or DB)
+    try {
+      const [cRes, pRes] = await Promise.all([
+        fetch(`${BASE_URL}/api/customers?limit=1`, { headers: { Authorization: `Bearer ${adminToken}` } }),
+        fetch(`${BASE_URL}/api/products?limit=1`, { headers: { Authorization: `Bearer ${adminToken}` } })
+      ]);
+      if (cRes.ok && pRes.ok) {
+        const cData = await cRes.json();
+        const pData = await pRes.json();
+        globalCust = (cData.customers || cData)[0];
+        globalProd = (pData.products || pData)[0];
+      }
+    } catch (e) {}
+
+    if (!globalCust || !globalProd) {
+      globalCust = await prisma.customer.findFirst();
+      globalProd = await prisma.product.findFirst();
+    }
+    assert(globalCust && globalProd, 'Must have at least 1 customer and 1 product in DB');
 
     const orderPayload = {
-      customerId: cust.id,
-      customerName: cust.name,
-      customerPhone: cust.phone || '9999999999',
-      deliveryAddress: cust.address || 'Mysuru Warehouse Test Site',
+      customerId: globalCust.id,
+      customerName: globalCust.name,
+      customerPhone: globalCust.phone || '9999999999',
+      deliveryAddress: globalCust.address || 'Mysuru Warehouse Test Site',
       deliveryMode: 'OUR_FLEET',
       notes: '[AUTOMATED_TEST_RUNNER] Machine verification order',
       items: [
         {
-          productId: prod.id,
-          productName: prod.name,
+          productId: globalProd.id,
+          productName: globalProd.name,
           quantity: 2,
           unitPrice: 500,
           totalPrice: 1000,
-          hsnCode: prod.hsnCode || '4412'
+          hsnCode: globalProd.hsnCode || '4412'
         }
       ],
       subtotal: 1000,
@@ -353,8 +390,8 @@ async function runSuite() {
   });
 
   await test('Edge Case: Handles special characters and script injection safely', async () => {
-    const cust = await prisma.customer.findFirst();
-    const prod = await prisma.product.findFirst();
+    const cust = globalCust || await prisma.customer.findFirst();
+    const prod = globalProd || await prisma.product.findFirst();
     const res = await fetch(`${BASE_URL}/api/orders`, {
       method: 'POST',
       headers: {
@@ -376,9 +413,11 @@ async function runSuite() {
     const data = await res.json();
     assert(data.id, 'Order created with special chars escaped');
     // Clean up immediate edge order
-    await prisma.orderItem.deleteMany({ where: { orderId: data.id } });
-    await prisma.orderTimeline.deleteMany({ where: { orderId: data.id } });
-    await prisma.order.delete({ where: { id: data.id } });
+    try {
+      await prisma.orderItem.deleteMany({ where: { orderId: data.id } });
+      await prisma.orderTimeline.deleteMany({ where: { orderId: data.id } });
+      await prisma.order.delete({ where: { id: data.id } });
+    } catch (e) {}
   });
 
   // TEARDOWN / CLEANUP

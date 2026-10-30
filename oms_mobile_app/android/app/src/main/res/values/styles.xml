@@ -16,10 +16,17 @@
         <item name="android:statusBarColor">#ffffff</item>
         <item name="android:windowLightStatusBar">true</item>
         <item name="android:navigationBarColor">#1c1c1c</item>
+        <item name="android:windowLightNavigationBar">false</item>
     </style>
-
 
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
         <item name="android:background">@drawable/splash</item>
+        <item name="android:statusBarColor">#1c1c1c</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:navigationBarColor">#1c1c1c</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        <item name="windowSplashScreenBackground">#1c1c1c</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splash</item>
+        <item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>
     </style>
 </resources>

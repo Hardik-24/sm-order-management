@@ -1,5 +1,4 @@
 <template>
-  <AppSplashScreen />
   <NuxtLoadingIndicator color="#1b3b5f" :height="3" />
   <Snackbar />
   <NuxtLayout>
@@ -9,7 +8,6 @@
 
 <script setup lang="ts">
 import { onMounted } from 'vue'
-import AppSplashScreen from '~/components/ui/AppSplashScreen.vue'
 import Snackbar from '~/components/ui/Snackbar.vue'
 
 onMounted(() => {
