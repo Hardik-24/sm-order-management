@@ -279,7 +279,7 @@ async function runSuite() {
       include: { items: true, deliveryStatus: true, billingStatus: true }
     });
     assert(order, 'Created order not found in DB');
-    assert(order.approvalStatus === 'PENDING', `Expected PENDING approval status, got ${order.approvalStatus}`);
+    assert(order.isApproved === false, `Expected isApproved to be false initially, got ${order.isApproved}`);
     assert(order.items.length === 1, 'Expected 1 item in order');
   });
 
@@ -292,12 +292,12 @@ async function runSuite() {
         Authorization: `Bearer ${adminToken}`
       },
       body: JSON.stringify({
-        approvalStatus: 'APPROVED'
+        isApproved: true
       })
     });
     assert(res.status === 200, `Expected 200 OK on approval, got ${res.status}`);
     const updated = await prisma.order.findUnique({ where: { id: createdOrderId } });
-    assert(updated.approvalStatus === 'APPROVED', `Approval status not updated: ${updated.approvalStatus}`);
+    assert(updated.isApproved === true, `Expected isApproved to be true, got ${updated.isApproved}`);
   });
 
   await test('Customer Tracking Redaction: Driver payout is stripped from public tracking payload', async () => {
