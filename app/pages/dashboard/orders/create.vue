@@ -474,15 +474,11 @@ const getCustomerInitials = (name: string) => {
                 </div>
               </div>
 
-              <!-- Bottom Meta Row: Account Manager & Payment Terms -->
-              <div v-if="selectedCustomer.customerManager || selectedCustomer.paymentTerms" class="mt-3.5 pt-3 border-t border-gray-100 flex flex-wrap items-center justify-between gap-2.5 text-xs">
-                <div v-if="selectedCustomer.customerManager" class="flex items-center gap-2 text-gray-600 bg-white px-3 py-1.5 rounded-xl border border-gray-200 shadow-2xs">
+              <!-- Bottom Meta Row: Account Manager -->
+              <div v-if="selectedCustomer.customerManager" class="mt-3.5 pt-3 border-t border-gray-100 flex flex-wrap items-center justify-between gap-2.5 text-xs">
+                <div class="flex items-center gap-2 text-gray-600 bg-white px-3 py-1.5 rounded-xl border border-gray-200 shadow-2xs">
                   <UserCheck class="w-4 h-4 text-[#1b3b5f]" />
                   <span>Account Manager: <strong class="text-gray-900 font-bold">{{ selectedCustomer.customerManager.name }}</strong></span>
-                </div>
-                <div v-if="selectedCustomer.paymentTerms" class="flex items-center gap-1.5 text-gray-500 bg-white px-3 py-1.5 rounded-xl border border-gray-200 shadow-2xs">
-                  <Clock class="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Profile Default Terms: <strong class="text-gray-800 font-bold">{{ selectedCustomer.paymentTerms }}</strong></span>
                 </div>
               </div>
             </div>

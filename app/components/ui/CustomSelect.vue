@@ -77,11 +77,11 @@
             @mouseleave="onMouseLeave"
           >
             <div class="flex items-center justify-between w-full min-w-0">
-              <span class="truncate font-medium">{{ option.label }}</span>
+              <span class="font-medium whitespace-normal break-words leading-snug">{{ option.label }}</span>
               <Check v-if="modelValue === option.value" class="w-4 h-4 shrink-0 ml-2 text-[#1b3b5f]" />
             </div>
-            <div v-if="option.subtitle || option.stock !== undefined" class="flex items-center justify-between gap-2 mt-1 min-w-0">
-              <span v-if="option.subtitle" class="text-[10px] text-gray-500 font-mono truncate">
+            <div v-if="option.subtitle || option.stock !== undefined" class="flex items-center justify-between gap-2 mt-1.5 min-w-0">
+              <span v-if="option.subtitle" class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-gray-100 text-gray-700 border border-gray-200/80">
                 {{ option.subtitle }}
               </span>
               <span v-else class="text-[10px] text-gray-400"></span>
