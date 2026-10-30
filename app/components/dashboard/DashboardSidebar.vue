@@ -377,7 +377,7 @@ const isSidebarCollapsed = useState('sidebarCollapsed', () => false)
 const isMobileMenuOpen = useState('mobileMenuOpen', () => false)
 
 const canAccessDriverApp = computed(() => {
-  return ['ADMIN', 'DELIVERY'].includes(user.value?.role || '') || canAccessRoute('/dashboard/delivery')
+  return canAccessRoute('/driver')
 })
 
 const isLinkActive = (path: string) => {

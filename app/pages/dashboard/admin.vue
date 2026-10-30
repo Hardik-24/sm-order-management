@@ -729,7 +729,7 @@
                       class="text-xs font-semibold px-2.5 py-0.5 rounded-full"
                       :class="form.role === 'ADMIN' ? 'bg-purple-100 text-purple-800 border border-purple-200' : 'bg-emerald-50 text-[#1b3b5f] border border-emerald-200'"
                     >
-                      {{ form.role === 'ADMIN' ? 'All 13 Modules Granted' : `${form.allowedPages.length} of ${availablePagesCount} Selected` }}
+                      {{ form.role === 'ADMIN' ? `All ${APP_PAGES.length} Modules Granted` : `${form.allowedPages.length} of ${availablePagesCount} Selected` }}
                     </span>
                   </div>
                   <p class="text-xs text-gray-500 mt-1">
@@ -774,7 +774,7 @@
                     <div class="flex items-center justify-between">
                       <h5 class="text-sm font-bold text-purple-900">Lockout Protected: Permanent Full Access</h5>
                       <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-200 text-purple-800 uppercase tracking-wide">
-                        13 of 13 Modules
+                        {{ APP_PAGES.length }} of {{ APP_PAGES.length }} Modules
                       </span>
                     </div>
                     <p class="text-xs text-purple-800/80 leading-relaxed">

@@ -37,9 +37,8 @@ export default defineEventHandler(async (event) => {
   // Lockout Prevention: Administrator role always retains full access to all modules and actions
   if (effectiveRole === 'ADMIN') {
     allowedPages = [
-      'OVERVIEW', 'ORDERS', 'CREATE_ORDER', 'ORDER_REQUESTS', 'CHAT',
-      'APPROVE_ORDERS', 'PACKING', 'BILLING', 'DELIVERY', 'INVENTORY',
-      'CUSTOMERS', 'PRODUCTS', 'ADMIN'
+      'OVERVIEW', 'ANALYTICS', 'ORDERS', 'CREATE_ORDER', 'ORDER_REQUESTS', 'CHAT',
+      'QUOTATIONS', 'APPROVE_ORDERS', 'PACKING', 'BILLING', 'DELIVERY', 'INVENTORY', 'DRIVER_PORTAL', 'CUSTOMERS', 'PRODUCTS', 'VOUCHERS', 'ADMIN'
     ]
     actionPermissions = {
       canEditOrders: true,

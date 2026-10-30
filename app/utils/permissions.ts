@@ -24,6 +24,7 @@ export const APP_PAGES: AppPageDef[] = [
   { key: 'BILLING', path: '/dashboard/billing', label: 'Billing & Invoicing', category: 'Operations', description: 'Generate invoices and tax splits' },
   { key: 'DELIVERY', path: '/dashboard/delivery', label: 'Delivery & Dispatch', category: 'Operations', description: 'Trip planning and driver dispatch' },
   { key: 'INVENTORY', path: '/dashboard/inventory', label: 'Inventory', category: 'Operations', description: 'Stock levels and product availability' },
+  { key: 'DRIVER_PORTAL', path: '/driver', label: 'Driver Portal', category: 'Operations', description: 'Driver delivery manifests, active trips, and live GPS transit console' },
 
   // Data
   { key: 'CUSTOMERS', path: '/dashboard/customers', label: 'Customers', category: 'Data', description: 'Customer accounts and details' },
@@ -37,7 +38,7 @@ export const APP_PAGES: AppPageDef[] = [
 export const DEFAULT_ROLE_PAGES: Record<UserRole, string[]> = {
   ADMIN: [
     'OVERVIEW', 'ANALYTICS', 'ORDERS', 'CREATE_ORDER', 'ORDER_REQUESTS', 'CHAT',
-    'QUOTATIONS', 'APPROVE_ORDERS', 'PACKING', 'BILLING', 'DELIVERY', 'INVENTORY',
+    'QUOTATIONS', 'APPROVE_ORDERS', 'PACKING', 'BILLING', 'DELIVERY', 'INVENTORY', 'DRIVER_PORTAL',
     'CUSTOMERS', 'PRODUCTS', 'VOUCHERS', 'ADMIN'
   ],
   SALES: [
@@ -51,7 +52,7 @@ export const DEFAULT_ROLE_PAGES: Record<UserRole, string[]> = {
     'OVERVIEW', 'ORDERS', 'PACKING', 'INVENTORY', 'CHAT'
   ],
   DELIVERY: [
-    'OVERVIEW', 'ORDERS', 'DELIVERY', 'CHAT'
+    'OVERVIEW', 'ORDERS', 'DELIVERY', 'DRIVER_PORTAL', 'CHAT'
   ],
 }
 
@@ -61,6 +62,7 @@ export const DEFAULT_ROLE_PAGES: Record<UserRole, string[]> = {
 export function getPageKeyFromPath(path: string): string | null {
   const cleanPath = (path || '').split('?')[0].replace(/\/+$/, '') || '/dashboard'
 
+  if (cleanPath === '/driver' || cleanPath.startsWith('/driver/')) return 'DRIVER_PORTAL'
   if (cleanPath === '/dashboard') return 'OVERVIEW'
   if (cleanPath.startsWith('/dashboard/analytics')) return 'ANALYTICS'
   if (cleanPath === '/dashboard/orders/create') return 'CREATE_ORDER'

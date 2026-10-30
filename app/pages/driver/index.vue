@@ -1,5 +1,8 @@
 <template>
-  <div class="min-h-screen bg-gray-100 flex flex-col font-sans pb-16">
+  <div v-if="user && !canAccessRoute('/driver')" class="min-h-screen bg-[#faf8f5] flex items-center justify-center p-4">
+    <AccessDenied pageName="Driver Portal" />
+  </div>
+  <div v-else class="min-h-screen bg-gray-100 flex flex-col font-sans pb-16">
     <!-- Top Header with Silicon Marketing Branding -->
     <header class="bg-[#1b3b5f] text-white shadow-md sticky top-0 z-30">
       <!-- Silicon Marketing Brand Ribbon -->
@@ -773,11 +776,12 @@ import {
   ArrowUp, ArrowDown, XCircle
 } from 'lucide-vue-next'
 import LiveTrackingMap from '~/components/ui/LiveTrackingMap.vue'
+import AccessDenied from '~/components/ui/AccessDenied.vue'
 import { useSnackbar } from '~/composables/useSnackbar'
 
 definePageMeta({ layout: false })
 
-const { user, fetchUser, logout } = useAuth()
+const { user, fetchUser, logout, canAccessRoute } = useAuth()
 const { showSaving, showSaved, showEditing } = useSnackbar()
 
 const userInitials = computed(() => {
