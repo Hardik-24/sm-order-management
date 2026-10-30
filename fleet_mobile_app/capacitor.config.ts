@@ -3,23 +3,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 const config: CapacitorConfig = {
   appId: 'com.siliconmarketing.fleet',
   appName: 'SM Fleet',
-  webDir: 'dist',
-  plugins: {
-    SplashScreen: {
-      launchShowDuration: 1800,
-      launchAutoHide: true,
-      launchFadeOutDuration: 400,
-      backgroundColor: '#1c1c1c',
-      androidScaleType: 'CENTER_CROP',
-      showSpinner: false,
-      androidSplashResourceName: 'splash'
-    },
-    StatusBar: {
-      style: 'LIGHT',
-      backgroundColor: '#ffffff',
-      overlaysWebView: false
-    }
-  }
+  webDir: 'dist'
 };
 
 export default config;

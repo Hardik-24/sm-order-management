@@ -26,18 +26,6 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(OMSBridgePlugin.class);
         super.onCreate(savedInstanceState);
 
-        // Enforce system bar colors: Pure White status bar (dark icons), #1c1c1c navigation bar (light icons)
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
-            getWindow().setStatusBarColor(android.graphics.Color.WHITE);
-            getWindow().setNavigationBarColor(android.graphics.Color.parseColor("#1c1c1c"));
-        }
-        androidx.core.view.WindowInsetsControllerCompat insetsController =
-            androidx.core.view.WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
-        if (insetsController != null) {
-            insetsController.setAppearanceLightStatusBars(true);
-            insetsController.setAppearanceLightNavigationBars(false);
-        }
-
         Bridge bridgeInstance = this.bridge;
         if (bridgeInstance != null) {
             WebView webView = bridgeInstance.getWebView();
