@@ -1,7 +1,15 @@
 import { defineEventHandler, readBody, createError } from 'h3'
 import { prisma } from '~~/server/utils/prisma'
+import { enforceRateLimit } from '~~/server/utils/rateLimit'
 
 export default defineEventHandler(async (event) => {
+  enforceRateLimit(event, {
+    max: 20,
+    windowSeconds: 1800,
+    namespace: 'order_request_submit',
+    message: 'Too many order requests submitted. Please wait before submitting again.'
+  })
+
   const body = await readBody(event)
 
   if (!body) {

@@ -4,12 +4,7 @@ import { requireAuth } from '~~/server/utils/auth'
 import { buildMultiTokenPrismaOr } from '~~/server/utils/search'
 
 export default defineEventHandler(async (event) => {
-  // Optional auth check or user session
-  try {
-    const user = requireAuth(event)
-  } catch (e) {
-    // allow reading if logged in or standard dashboard
-  }
+  requireAuth(event)
 
   const query = getQuery(event)
   const search = String(query.search || '').trim()

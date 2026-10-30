@@ -1,9 +1,21 @@
 import { defineEventHandler, createError, readMultipartFormData } from 'h3'
 import { requireAuth } from '~~/server/utils/auth'
 import { createClient } from '@supabase/supabase-js'
+import { enforceRateLimit } from '~~/server/utils/rateLimit'
+
+const FORBIDDEN_EXTENSIONS = new Set([
+  'exe', 'bat', 'cmd', 'sh', 'php', 'phtml', 'vbs', 'scr', 'jar', 'html', 'htm', 'js', 'py', 'dll', 'com', 'msi', 'reg', 'ps1', 'apk'
+])
 
 export default defineEventHandler(async (event) => {
   requireAuth(event)
+
+  enforceRateLimit(event, {
+    max: 30,
+    windowSeconds: 600,
+    namespace: 'chat_upload',
+    message: 'Too many files uploaded in a short period. Please wait a moment.'
+  })
 
   const parts = await readMultipartFormData(event)
   if (!parts || parts.length === 0) {
@@ -31,6 +43,9 @@ export default defineEventHandler(async (event) => {
   const originalName = filePart.filename
   const ext = (originalName.split('.').pop() || 'bin').toLowerCase()
   const cleanExt = ext.replace(/[^a-z0-9]/g, '')
+  if (FORBIDDEN_EXTENSIONS.has(cleanExt)) {
+    throw createError({ statusCode: 400, message: `File type .${cleanExt} is not permitted for security reasons.` })
+  }
   const randomSuffix = Math.random().toString(36).substring(2, 10)
   const storagePath = `${Date.now()}_${randomSuffix}.${cleanExt}`
 

@@ -1,5 +1,6 @@
 import { defineEventHandler, readBody } from 'h3'
 import { getPrisma, resetPrisma } from '~~/server/utils/prisma'
+import { requireAuth } from '~~/server/utils/auth'
 
 export interface InventoryCheckRequest {
   items: Array<{
@@ -17,6 +18,7 @@ export interface InventoryItemStatus {
 }
 
 export default defineEventHandler(async (event) => {
+  requireAuth(event)
   try {
     const body = await readBody<InventoryCheckRequest>(event)
     const items = body?.items || []

@@ -66,15 +66,7 @@ export default defineNuxtConfig({
     experimental: {
       asyncContext: true,
     },
-  },
-
-  routeRules: {
-    '/api/**': {
-      cors: true,
-      headers: {
-        'Access-Control-Allow-Methods': 'GET,HEAD,PUT,PATCH,POST,DELETE',
-      }
-    }
+    hidePoweredBy: true,
   },
 
   vite: {

@@ -1,9 +1,9 @@
 import { defineEventHandler, readBody } from 'h3'
 import { getPrisma, resetPrisma } from '~~/server/utils/prisma'
-import { getUserFromEvent } from '~~/server/utils/auth'
+import { requireAuth } from '~~/server/utils/auth'
 
 export default defineEventHandler(async (event) => {
-  const user = getUserFromEvent(event)
+  const user = requireAuth(event)
   const body = await readBody(event)
 
   if (!body?.customerName || !body?.items || !Array.isArray(body.items) || body.items.length === 0) {

@@ -1,8 +1,16 @@
 import { prisma } from '~~/server/utils/prisma'
 import { getTrip } from '~~/server/utils/driverTrips'
 import { resolveDestinationPin } from '~~/server/utils/customerPins'
+import { enforceRateLimit } from '~~/server/utils/rateLimit'
 
 export default defineEventHandler(async (event) => {
+  enforceRateLimit(event, {
+    max: 60,
+    windowSeconds: 300,
+    namespace: 'order_tracking',
+    message: 'Too many tracking requests. Please slow down.'
+  })
+
   const orderNumber = event.context.params?.orderNumber
   if (!orderNumber) {
     throw createError({ statusCode: 400, message: 'Missing order number' })
@@ -141,7 +149,6 @@ export default defineEventHandler(async (event) => {
       endTime: trip.endTime,
       durationMinutes: trip.durationMinutes,
       totalDistanceKm: trip.totalDistanceKm,
-      calculatedPayout: trip.calculatedPayout,
       startLocation: trip.startLocation,
       currentLocation: trip.currentLocation,
       destinationCoords: trip.destinationCoords,

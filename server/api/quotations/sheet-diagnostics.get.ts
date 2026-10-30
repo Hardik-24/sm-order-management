@@ -1,8 +1,10 @@
 import { defineEventHandler } from 'h3'
 import { GoogleSpreadsheet } from 'google-spreadsheet'
 import { createGoogleAuth, getGoogleSheetId, getGoogleCredentials, getSheetLastSyncedAt } from '~~/server/utils/googleAuth'
+import { requireAuth } from '~~/server/utils/auth'
 
 export default defineEventHandler(async (event) => {
+  requireAuth(event)
   const sheetId = getGoogleSheetId()
   const creds = getGoogleCredentials()
   const lastSynced = getSheetLastSyncedAt()

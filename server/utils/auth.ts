@@ -29,7 +29,7 @@ export function createToken(user: SessionUser): string {
       actionPermissions: user.actionPermissions
     },
     SECRET,
-    { expiresIn: '7d' }
+    { expiresIn: '7d', algorithm: 'HS256' }
   )
 }
 
@@ -43,7 +43,7 @@ export function revokeUserSessions(email: string) {
 /** Verify and decode a JWT token */
 export function verifyToken(token: string): SessionUser | null {
   try {
-    const decoded = jwt.verify(token, SECRET) as any
+    const decoded = jwt.verify(token, SECRET, { algorithms: ['HS256'] }) as any
     if (decoded && decoded.email) {
       const revokedAt = revokedSessions[decoded.email.toLowerCase()]
       if (revokedAt && decoded.iat && decoded.iat <= revokedAt) {

@@ -2,6 +2,7 @@ import { defineEventHandler, getQuery } from 'h3'
 import { GoogleSpreadsheet } from 'google-spreadsheet'
 import { createGoogleAuth, getGoogleSheetId, setSheetLastSyncedAt } from '~~/server/utils/googleAuth'
 import fallbackProducts from '~~/server/data/sheet-products-fallback.json'
+import { requireAuth } from '~~/server/utils/auth'
 
 export interface SheetProductItem {
   articleNumber: string
@@ -24,6 +25,7 @@ let isFetching = false
 const CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes cache
 
 export default defineEventHandler(async (event) => {
+  requireAuth(event)
   const query = getQuery(event)
   const force = query.force === 'true' || query.force === '1'
 
