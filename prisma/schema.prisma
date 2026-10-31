@@ -214,6 +214,7 @@ model Customer {
   privilegeTier     PrivilegeTier     @default(BRONZE)
   isPriorityClient  Boolean           @default(false)
   isActive          Boolean           @default(true)
+  isBusySynced      Boolean           @default(true)
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
 

@@ -29,13 +29,34 @@
           <!-- Customer & Invoice Metadata Row -->
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-xl border border-gray-200">
             <div>
-              <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Bill To Customer</p>
+              <div class="flex items-center justify-between mb-1">
+                <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Bill To Customer</p>
+                <span v-if="order.customer?.isBusySynced === false" class="text-[9px] font-black uppercase tracking-wider bg-amber-100 text-amber-900 px-1.5 py-0.5 rounded border border-amber-300">
+                  Provisional Lead
+                </span>
+                <span v-else-if="order.customer?.customerCode" class="text-[9px] font-mono font-bold bg-white text-emerald-800 px-1.5 py-0.5 rounded border border-emerald-300">
+                  {{ order.customer.customerCode }}
+                </span>
+              </div>
               <p class="text-sm font-bold text-gray-900">{{ order.customer?.name }}</p>
               <p v-if="order.customer?.company" class="text-xs text-gray-600">{{ order.customer.company }}</p>
               <p class="text-xs text-gray-500 mt-0.5 truncate">{{ order.deliveryAddress || order.customer?.address || 'No address' }}</p>
               <p v-if="order.customer?.gstNumber" class="text-xs font-mono font-semibold text-gray-700 mt-1">
                 GSTIN: {{ order.customer.gstNumber }}
               </p>
+
+              <!-- Provisional Lead Gate Action -->
+              <div v-if="order.customer?.isBusySynced === false" class="mt-2.5 p-2 bg-amber-100/90 border border-amber-300 rounded-lg text-amber-950 text-xs flex items-center justify-between gap-2">
+                <span class="text-[11px] font-medium leading-tight">Must link to Busy customer ledger before billing.</span>
+                <button
+                  type="button"
+                  @click="isLinkModalOpen = true"
+                  class="px-2 py-1 bg-[#1b3b5f] text-white rounded text-[11px] font-bold hover:bg-[#132c49] transition cursor-pointer flex items-center gap-1 shrink-0"
+                >
+                  <Link2 class="w-3 h-3" />
+                  <span>Link Customer</span>
+                </button>
+              </div>
             </div>
             
             <div class="space-y-2">
@@ -72,6 +93,20 @@
 
           <!-- Items Reconciliation Table -->
           <div>
+            <!-- Advisory Banner for Unsynced Items -->
+            <div v-if="hasUnsyncedItems" class="mb-3 p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-xs flex items-start gap-2.5 shadow-2xs">
+              <AlertTriangle class="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+              <div class="min-w-0 flex-1">
+                <p class="font-bold text-amber-950 flex items-center gap-1.5 flex-wrap">
+                  <span>Contains Item(s) Not in Busy</span>
+                  <span class="text-[9px] font-bold bg-amber-200 text-amber-900 px-1.5 py-0.2 rounded uppercase">Requires Busy Sync</span>
+                </p>
+                <p class="text-[11px] text-amber-800 mt-0.5 leading-relaxed">
+                  Before generating this invoice, enter the tagged item(s) in Busy and sync so reporting remains accurate.
+                </p>
+              </div>
+            </div>
+
             <div class="flex items-center justify-between mb-3">
               <h3 class="text-xs font-bold text-gray-900 uppercase tracking-widest">
                 Reconcile & Adjust Billed Quantities
@@ -114,6 +149,15 @@
                         {{ item.sku || item.product?.sku }} <span v-if="item.product?.hsnCode">| HSN: {{ item.product.hsnCode }}</span>
                       </p>
                       <div class="flex flex-wrap items-center gap-1.5 mt-1">
+                        <!-- Not in Busy Badge -->
+                        <span 
+                          v-if="item.isBusySynced === false || item.product?.isBusySynced === false"
+                          class="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider bg-amber-100 text-amber-900 px-1.5 py-0.5 rounded border border-amber-300 shadow-2xs"
+                          title="Product not yet created in Busy."
+                        >
+                          <AlertCircle class="w-2.5 h-2.5 text-amber-700 shrink-0" />
+                          Not in Busy
+                        </span>
                         <span 
                           v-if="item.isTaxInclusive" 
                           class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-blue-50 text-blue-700 border border-blue-200 shadow-2xs"
@@ -232,23 +276,34 @@
         </button>
         <button 
           @click="confirmGenerate" 
-          :disabled="isGenerating || !invoiceNumber.trim()"
+          :disabled="isGenerating || !invoiceNumber.trim() || order?.customer?.isBusySynced === false || hasUnsyncedItems"
           class="w-full sm:w-auto justify-center flex items-center gap-2 px-6 py-2 bg-[#1b3b5f] text-white text-xs font-bold rounded-lg hover:bg-[#132c49] transition-colors disabled:opacity-50 shadow-sm cursor-pointer"
         >
           <Loader2 v-if="isGenerating" class="w-4 h-4 animate-spin" />
           <Check v-else class="w-4 h-4" />
-          {{ isGenerating ? 'Generating...' : 'Confirm & Generate Bill' }}
+          <span v-if="order?.customer?.isBusySynced === false">Link Busy Customer First</span>
+          <span v-else-if="hasUnsyncedItems">Items Not in Busy</span>
+          <span v-else>{{ isGenerating ? 'Generating...' : 'Confirm & Generate Bill' }}</span>
         </button>
       </div>
     </div>
   </div>
+
+  <!-- Link Customer Ledger Modal -->
+  <LinkCustomerModal 
+    :isOpen="isLinkModalOpen"
+    :order="order"
+    @close="isLinkModalOpen = false"
+    @linked="onCustomerLinked"
+  />
   </Teleport>
 </template>
 
 <script setup lang="ts">
 import { ref, watch, computed, nextTick } from 'vue'
-import { X, FileText, Loader2, Check, GitFork } from 'lucide-vue-next'
+import { X, FileText, Loader2, Check, GitFork, AlertTriangle, Link2, AlertCircle } from 'lucide-vue-next'
 import { useGsapAnimation } from '~/composables/useGsapAnimation'
+import LinkCustomerModal from '~/components/dashboard/LinkCustomerModal.vue'
 
 const { animateModalOpen } = useGsapAnimation()
 const modalCardRef = ref<HTMLElement | null>(null)
@@ -263,6 +318,14 @@ const emit = defineEmits(['close', 'generated', 'openSplit'])
 const order = ref<any>(null)
 const pending = ref(false)
 const isGenerating = ref(false)
+const isLinkModalOpen = ref(false)
+
+const onCustomerLinked = (updatedOrder: any) => {
+  if (updatedOrder && order.value) {
+    order.value.customer = updatedOrder.customer
+    order.value.customerId = updatedOrder.customerId
+  }
+}
 
 const invoiceNumber = ref('')
 const invoiceDate = ref(new Date().toISOString().split('T')[0])
@@ -373,7 +436,19 @@ const grandTotal = computed(() => {
   return editableItems.value.reduce((sum, item) => sum + calculateTotal(item), 0)
 })
 
+const hasUnsyncedItems = computed(() => {
+  return editableItems.value.some((i: any) => i.isBusySynced === false || i.product?.isBusySynced === false)
+})
+
 const confirmGenerate = async () => {
+  if (order.value?.customer?.isBusySynced === false) {
+    alert('Cannot generate invoice: This customer is a provisional lead. Please click "Link Customer" to map this order to a verified Busy ledger first.')
+    return
+  }
+  if (hasUnsyncedItems.value) {
+    alert('Cannot generate invoice: Order contains items not yet created in Busy. Please enter the items in Busy, run sync, and then generate the bill.')
+    return
+  }
   if (!invoiceNumber.value.trim()) {
     alert('Please enter an Invoice / Bill Number')
     return

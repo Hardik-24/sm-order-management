@@ -38,10 +38,13 @@ export default defineEventHandler(async (event) => {
   const order = await prisma.order.findUnique({
     where: { id },
     include: {
+      customer: true,
       billingStatus: true,
       packingStatus: true,
       deliveryStatus: true,
-      items: true
+      items: {
+        include: { product: true }
+      }
     }
   })
 
@@ -68,6 +71,19 @@ export default defineEventHandler(async (event) => {
     changes.push(`Billing: ${order.billingStatus?.status || 'PENDING'} → ${billingStatus}`)
     billingUpdate.status = billingStatus
     if (billingStatus === 'GENERATED') {
+      if (order.customer?.isBusySynced === false) {
+        throw createError({
+          statusCode: 400,
+          message: `Cannot generate invoice: Customer "${order.customer.name}" is a provisional lead. Please link this order to a verified Busy customer ledger first.`
+        })
+      }
+      const unsyncedItem = order.items?.find((i: any) => i.isBusySynced === false || i.product?.isBusySynced === false)
+      if (unsyncedItem) {
+        throw createError({
+          statusCode: 400,
+          message: `Cannot generate invoice: Product "${unsyncedItem.sku || unsyncedItem.productName}" is not yet created in Busy. Please enter it in Busy and sync before generating the invoice.`
+        })
+      }
       billingUpdate.generatedById = order.billingStatus?.generatedById || user.id
       billingUpdate.generatedAt = order.billingStatus?.generatedAt || new Date()
       if (invoiceNumber) billingUpdate.invoiceNumber = invoiceNumber

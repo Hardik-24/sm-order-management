@@ -216,6 +216,13 @@ const getTotalNos = (order: any) => {
                 <div class="text-xs font-semibold text-gray-900 truncate flex items-center gap-1.5" :title="order.customer?.name || 'Walk-in Customer'">
                   <span class="truncate">{{ order.customer?.name || 'Walk-in Customer' }}</span>
                   <span 
+                    v-if="order.customer?.isBusySynced === false" 
+                    class="text-[9px] font-black uppercase tracking-wider bg-purple-100 text-purple-900 px-1.5 py-0.2 rounded border border-purple-300 shadow-2xs shrink-0"
+                    title="Customer is a provisional lead not yet in Busy"
+                  >
+                    Lead
+                  </span>
+                  <span 
                     v-if="order.customer?.privilegeTier" 
                     class="text-[9px] px-1.5 py-0.2 rounded font-bold uppercase border shadow-2xs"
                     :class="getPrivilegeColor(order.customer.privilegeTier)"
@@ -343,6 +350,9 @@ const getTotalNos = (order: any) => {
               </span>
               <span v-if="(order as any).hasUnsyncedBusyItems" class="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-50 text-amber-800 border border-amber-300">
                 ⚠️ Not in Busy
+              </span>
+              <span v-if="order.customer?.isBusySynced === false" class="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold bg-purple-100 text-purple-900 border border-purple-300">
+                Lead
               </span>
               <span class="text-gray-300 text-xs shrink-0">&bull;</span>
               <span class="text-xs font-semibold text-gray-700 truncate" :title="order.customer?.company || order.customer?.name || ''">

@@ -22,10 +22,36 @@ export default defineEventHandler(async (event) => {
 
   const order = await prisma.order.findUnique({
     where: { id },
-    include: { billingStatus: true, packingStatus: true, deliveryStatus: true }
+    include: {
+      customer: true,
+      billingStatus: true,
+      packingStatus: true,
+      deliveryStatus: true,
+      items: {
+        include: { product: true }
+      }
+    }
   })
 
   if (!order) throw createError({ statusCode: 404, message: 'Order not found' })
+
+  // Enforcement Gate for Final Invoice Generation
+  if (status === 'GENERATED' || invoiceNumber) {
+    if (order.customer?.isBusySynced === false) {
+      throw createError({
+        statusCode: 400,
+        message: `Cannot generate invoice: Customer "${order.customer.name}" is a provisional lead. Please link this order to a verified Busy customer ledger first.`
+      })
+    }
+
+    const unsyncedItem = order.items?.find((i: any) => i.isBusySynced === false || i.product?.isBusySynced === false)
+    if (unsyncedItem) {
+      throw createError({
+        statusCode: 400,
+        message: `Cannot generate invoice: Product "${unsyncedItem.sku || unsyncedItem.productName}" is not yet created in Busy. Please enter it in Busy and sync before generating the invoice.`
+      })
+    }
+  }
 
   if (items && Array.isArray(items)) {
     for (const item of items) {

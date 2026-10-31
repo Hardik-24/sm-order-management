@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { ref, watch, computed, nextTick } from 'vue'
-import { X, MoreHorizontal, Lock, Edit, Package, PackageCheck, Truck, Check, Box, Plus, Trash2, MapPin, AlertCircle, AlertTriangle, Ban, CheckCheck, CheckCircle2, Zap, User, IndianRupee, Clock, Building2, Phone, FileText, Calendar, Copy, ChevronRight, Car, GitFork, SlidersHorizontal, Loader2, Save } from 'lucide-vue-next'
+import { X, MoreHorizontal, Lock, Edit, Package, PackageCheck, Truck, Check, Box, Plus, Trash2, MapPin, AlertCircle, AlertTriangle, Ban, CheckCheck, CheckCircle2, Zap, User, IndianRupee, Clock, Building2, Phone, FileText, Calendar, Copy, ChevronRight, Car, GitFork, SlidersHorizontal, Loader2, Save, Link2, UserCheck } from 'lucide-vue-next'
 import StatusBadge from '~/components/ui/StatusBadge.vue'
 import GenerateBillModal from '~/components/dashboard/GenerateBillModal.vue'
 import SetDeliveryPinModal from '~/components/dashboard/SetDeliveryPinModal.vue'
 import PartyVehicleHandoverModal from '~/components/dashboard/PartyVehicleHandoverModal.vue'
 import AdminOrderStatusModal from '~/components/dashboard/AdminOrderStatusModal.vue'
+import LinkCustomerModal from '~/components/dashboard/LinkCustomerModal.vue'
 import LoadingTopBar from '~/components/ui/LoadingTopBar.vue'
 import CustomSelect from '~/components/ui/CustomSelect.vue'
 import { formatCurrency, formatDateTime, formatDate, formatTime, getDisplayStatus, getOverallColor, getStatusColor } from '~~/app/lib/utils'
@@ -16,6 +17,14 @@ import { useRealtimeSync } from '~/composables/useRealtimeSync'
 const isPinModalOpen = ref(false)
 const isHandoverModalOpen = ref(false)
 const isAdminStatusModalOpen = ref(false)
+const isLinkModalOpen = ref(false)
+
+const handleCustomerLinked = (updatedOrder: any) => {
+  if (updatedOrder) {
+    order.value = { ...order.value, ...updatedOrder }
+  }
+  emit('updated', updatedOrder)
+}
 
 const openAdminStatusModal = () => {
   isAdminStatusModalOpen.value = true
@@ -1187,6 +1196,12 @@ onMounted(() => {
                 <h3 class="text-sm font-bold text-gray-900 truncate">
                   {{ order.customer?.company || order.customer?.name || 'Customer' }}
                 </h3>
+                <span v-if="order.customer?.isBusySynced === false" class="text-[9px] font-black uppercase tracking-wider bg-purple-100 text-purple-900 px-1.5 py-0.5 rounded border border-purple-300 shadow-2xs">
+                  Provisional Lead
+                </span>
+                <span v-else-if="order.customer?.customerCode" class="text-[9px] font-mono font-bold bg-gray-100 text-emerald-800 px-1.5 py-0.2 rounded border border-gray-200">
+                  {{ order.customer.customerCode }}
+                </span>
               </div>
               <div class="flex items-center gap-1.5 min-w-0 text-xs text-gray-500 mt-0.5">
                 <span v-if="order.customer?.company && order.customer?.name" class="font-medium text-gray-700 truncate max-w-[120px] sm:max-w-none">
@@ -1610,6 +1625,32 @@ onMounted(() => {
                   {{ (order as any)?.hasDestinationPin ? '📍 Pin Verified' : '📍 Set Pin' }}
                 </button>
               </div>
+            </div>
+
+            <!-- Advisory Banner: Provisional Customer Lead -->
+            <div v-if="order.customer?.isBusySynced === false" class="p-3 sm:p-3.5 bg-purple-50/90 border border-purple-200/90 rounded-xl flex items-start justify-between gap-3 text-xs text-purple-950 shadow-2xs">
+              <div class="flex items-start gap-2.5">
+                <div class="w-6 h-6 rounded-lg bg-purple-200/70 flex items-center justify-center shrink-0 text-purple-800 mt-0.5">
+                  <UserCheck class="w-3.5 h-3.5" />
+                </div>
+                <div>
+                  <div class="font-bold text-purple-950 flex items-center gap-1.5 flex-wrap">
+                    <span>Provisional Customer Lead — Not in Busy</span>
+                    <span class="text-[9px] font-bold bg-purple-200/80 text-purple-900 px-1.5 py-0.2 rounded uppercase">Non-blocking</span>
+                  </div>
+                  <p class="text-[11px] text-purple-900/80 mt-0.5 leading-relaxed">
+                    Packing and dispatch remain fully active. Before invoice generation, this order must be linked to an official Busy customer ledger.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                @click="isLinkModalOpen = true"
+                class="px-2.5 py-1 text-xs font-bold text-white bg-[#1b3b5f] hover:bg-[#132c49] rounded-lg transition shadow-2xs flex items-center gap-1 cursor-pointer shrink-0"
+              >
+                <Link2 class="w-3 h-3" />
+                <span>Link Customer</span>
+              </button>
             </div>
 
             <!-- Advisory Banner: Unsynced Busy Items -->
@@ -2500,6 +2541,14 @@ onMounted(() => {
         if (order?.id) fetchOrder(order.id);
         emit('updated');
       }"
+    />
+
+    <!-- Link Customer Ledger Modal -->
+    <LinkCustomerModal
+      :isOpen="isLinkModalOpen"
+      :order="order"
+      @close="isLinkModalOpen = false"
+      @linked="handleCustomerLinked"
     />
   </Teleport>
 </template>

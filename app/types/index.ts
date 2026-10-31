@@ -68,7 +68,9 @@ export interface Customer {
   state: string
   pincode: string
   gstNumber?: string | null
+  customerCode?: string | null
   paymentTerms: string
+  isBusySynced?: boolean
   isActive: boolean
 }
 

@@ -409,6 +409,9 @@ const getItemsTotalQuantity = (order: Order) => {
               <td class="px-5 py-3.5 min-w-0">
                 <div class="text-xs font-semibold text-gray-900 truncate flex items-center gap-1.5" :title="order.customer?.name || 'Walk-in Customer'">
                   <span class="truncate">{{ order.customer?.name || 'Walk-in Customer' }}</span>
+                  <span v-if="(order.customer as any)?.isBusySynced === false" class="text-[9px] font-black uppercase tracking-wider bg-purple-100 text-purple-900 px-1.5 py-0.2 rounded border border-purple-300 shadow-2xs shrink-0" title="Provisional Lead — Not in Busy">
+                    Lead
+                  </span>
                   <span v-if="(order.customer as any)?.isPriorityClient" class="text-amber-500 font-bold text-xs shrink-0" title="Priority Client">★</span>
                 </div>
                 <p class="text-[11px] text-gray-500 truncate mt-0.5" :title="[order.customer?.company, order.customer?.city || order.customer?.phone].filter(Boolean).join(' • ') || '—'">
@@ -561,6 +564,9 @@ const getItemsTotalQuantity = (order: Order) => {
           <div class="flex items-center gap-1.5 min-w-0 text-xs">
             <span class="font-semibold text-gray-800 shrink-0" :title="order.customer?.name || ''">
               {{ order.customer?.name || 'Walk-in Customer' }}
+            </span>
+            <span v-if="(order.customer as any)?.isBusySynced === false" class="text-[9px] font-black uppercase tracking-wider bg-purple-100 text-purple-900 px-1.5 py-0.2 rounded border border-purple-300 shadow-2xs shrink-0">
+              Lead
             </span>
             <span v-if="(order.customer as any)?.isPriorityClient" class="text-amber-500 font-bold text-xs shrink-0" title="Priority Client">★</span>
             <span v-if="order.customer?.company" class="text-gray-400 text-[11px] truncate min-w-0 flex-1">

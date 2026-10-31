@@ -343,5 +343,22 @@ onMounted(() => {
       @split-order="openSplitModal"
     />
 
+    <!-- Generate Bill Modal -->
+    <GenerateBillModal 
+      :isOpen="isGenerateModalOpen"
+      :orderId="generatingOrderId"
+      @close="isGenerateModalOpen = false"
+      @generated="onInvoiceGenerated"
+      @openSplit="openSplitModal"
+    />
+
+    <!-- Split Order Modal -->
+    <SplitOrderModal
+      :isOpen="isSplitModalOpen"
+      :orderId="splittingOrderId"
+      @close="isSplitModalOpen = false"
+      @split="onOrderSplit"
+    />
+
   </div>
 </template>

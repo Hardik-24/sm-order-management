@@ -78,7 +78,8 @@ export default defineEventHandler(async (event) => {
             city: quotation.customerPlace || 'Mysuru',
             state: 'Karnataka',
             pincode: body.pincode || '570001',
-            paymentTerms: body.paymentTerms || 'Net 30'
+            paymentTerms: body.paymentTerms || 'Net 30',
+            isBusySynced: false
           }
         })
         customerId = newCustomer.id
