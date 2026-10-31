@@ -142,6 +142,7 @@ async function runSync() {
         "costPrice" = COALESCE(v.costPrice, p."costPrice"),
         stock = v.stock,
         "hsnCode" = COALESCE(v.hsnCode, p."hsnCode"),
+        "isBusySynced" = true,
         "isActive" = v.isActive,
         "updatedAt" = NOW()
       FROM (VALUES ${valuesList}) AS v(id, sku, name, categoryId, price, costPrice, stock, hsnCode, isActive)
@@ -161,8 +162,8 @@ async function runSync() {
       ).join(',');
 
       await prisma.$executeRawUnsafe(`
-        INSERT INTO products (id, sku, name, "categoryId", unit, price, "costPrice", stock, "hsnCode", "taxRate", "hasVariants", "isActive", "createdAt", "updatedAt")
-        VALUES ${valuesList}
+        INSERT INTO products (id, sku, name, "categoryId", unit, price, "costPrice", stock, "hsnCode", "taxRate", "hasVariants", "isBusySynced", "isActive", "createdAt", "updatedAt")
+        VALUES ${valuesList.map(v => v.replace(', false,', ', false, true,'))}
         ON CONFLICT (sku) DO UPDATE SET
           name = EXCLUDED.name,
           "categoryId" = EXCLUDED."categoryId",
@@ -170,11 +171,27 @@ async function runSync() {
           "costPrice" = COALESCE(EXCLUDED."costPrice", products."costPrice"),
           stock = EXCLUDED.stock,
           "hsnCode" = COALESCE(EXCLUDED."hsnCode", products."hsnCode"),
+          "isBusySynced" = true,
           "isActive" = EXCLUDED."isActive",
           "updatedAt" = NOW();
       `);
       insertedCount += chunk.length;
     }
+  }
+
+  // Auto-heal order_items whose product is now synced from Busy
+  try {
+    const healedCount = await prisma.$executeRawUnsafe(`
+      UPDATE order_items AS oi
+      SET "isBusySynced" = true
+      FROM products AS p
+      WHERE oi."productId" = p.id AND p."isBusySynced" = true AND oi."isBusySynced" = false;
+    `);
+    if (healedCount > 0) {
+      console.log(`  -> Auto-healed ${healedCount} order items to isBusySynced=true!`);
+    }
+  } catch (err) {
+    console.warn('  -> Could not auto-heal order items:', err.message);
   }
 
   console.log(`  -> Products sync complete! Updated: ${updatedCount}, Inserted: ${insertedCount}.`);

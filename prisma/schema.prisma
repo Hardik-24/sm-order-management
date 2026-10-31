@@ -177,6 +177,7 @@ model Product {
   hasVariants    Boolean            @default(false)
   variantOptions Json?
   variants       Json?
+  isBusySynced   Boolean            @default(true)
   isActive       Boolean            @default(true)
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
@@ -329,6 +330,7 @@ model OrderItem {
   applyLastPrice   Boolean  @default(false)
   itemNotes        String?
   isPacked         Boolean  @default(false)
+  isBusySynced     Boolean  @default(true)
 
   // Relations
   order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)

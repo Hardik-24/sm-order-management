@@ -56,8 +56,11 @@ export default defineEventHandler(async (event) => {
     landmark: activeTripStop.landmark
   } : null
 
+  const hasUnsyncedBusyItems = order.items?.some((i: any) => i.isBusySynced === false || i.product?.isBusySynced === false) || false
+
   return {
     ...order,
+    hasUnsyncedBusyItems,
     destinationCoords: pin ? { lat: pin.lat, lng: pin.lng, areaName: pin.areaName, landmark: pin.landmark } : null,
     hasDestinationPin: !!pin,
     assignedTrip

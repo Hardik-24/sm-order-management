@@ -133,7 +133,8 @@ export default defineEventHandler(async (event) => {
         })
       }
 
-      // If product still does not exist in DB catalog, create it
+      // If product still does not exist in DB catalog, create it and mark as not in Busy
+      let isItemBusySynced = true
       if (!product) {
         const cat = await getDefaultCategory()
         const unitPrice = typeof it.unitPrice === 'number' && it.unitPrice >= 0
@@ -149,9 +150,13 @@ export default defineEventHandler(async (event) => {
             unit: it.uom || 'PIECE',
             price: unitPrice,
             stock: 0,
-            taxRate: 18
+            taxRate: 18,
+            isBusySynced: false
           }
         })
+        isItemBusySynced = false
+      } else if (product.isBusySynced === false) {
+        isItemBusySynced = false
       }
 
       const qty = Math.max(1, parseInt(String(it.quantity), 10) || 1)
@@ -193,7 +198,8 @@ export default defineEventHandler(async (event) => {
         taxAmount,
         totalPrice: lineTotal,
         isTaxInclusive,
-        itemNotes: it.itemNotes ? String(it.itemNotes) : null
+        itemNotes: it.itemNotes ? String(it.itemNotes) : null,
+        isBusySynced: isItemBusySynced
       })
     }
 

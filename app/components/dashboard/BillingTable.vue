@@ -201,6 +201,10 @@ const getTotalNos = (order: any) => {
                   <span v-else-if="order.isUrgent" class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-bold bg-rose-100 text-rose-700 border border-rose-300">
                     ⚡ URGENT
                   </span>
+                  <span v-if="(order as any).hasUnsyncedBusyItems" class="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-50 text-amber-800 border border-amber-300 shadow-2xs" title="Contains new catalog product not yet in Busy">
+                    <AlertCircle class="w-2.5 h-2.5 text-amber-600" />
+                    Not in Busy
+                  </span>
                 </div>
                 <p class="text-[11px] text-gray-400 mt-0.5 tabular-nums">
                   {{ formatDateTime(order.createdAt) }}
@@ -336,6 +340,9 @@ const getTotalNos = (order: any) => {
               </span>
               <span v-else-if="order.isUrgent" class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-bold bg-rose-100 text-rose-700 border border-rose-300">
                 ⚡ URGENT
+              </span>
+              <span v-if="(order as any).hasUnsyncedBusyItems" class="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-50 text-amber-800 border border-amber-300">
+                ⚠️ Not in Busy
               </span>
               <span class="text-gray-300 text-xs shrink-0">&bull;</span>
               <span class="text-xs font-semibold text-gray-700 truncate" :title="order.customer?.company || order.customer?.name || ''">

@@ -84,7 +84,8 @@ export default defineEventHandler(async (event) => {
       approvedQuantity: qty,
       isTaxInclusive: isTaxInclusive,
       applyLastPrice: Boolean(item.applyLastPrice),
-      itemNotes: item.itemNotes ? String(item.itemNotes) : null
+      itemNotes: item.itemNotes ? String(item.itemNotes) : null,
+      isBusySynced: product.isBusySynced ?? true
     })
   }
 

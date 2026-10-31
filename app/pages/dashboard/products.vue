@@ -154,6 +154,9 @@
                   >
                 <td class="px-5 py-3 font-mono text-xs text-gray-600 w-36 min-w-[130px] max-w-[160px] group-hover:text-[#1b3b5f]">
                   <span class="break-words line-clamp-2" :title="product.sku">{{ product.sku }}</span>
+                  <span v-if="product.isBusySynced === false" class="inline-block mt-0.5 text-[9px] font-bold bg-amber-50 text-amber-800 border border-amber-300 px-1.5 py-0.2 rounded">
+                    Not in Busy
+                  </span>
                 </td>
                 <td class="px-5 py-3 font-medium text-[#1a1a1a] min-w-[220px] group-hover:text-[#1b3b5f] transition-colors">
                   <span class="break-words line-clamp-2" :title="product.name">{{ product.name }}</span>
@@ -227,9 +230,12 @@
               class="p-3.5 space-y-2 hover:bg-gray-50 active:bg-gray-100 transition-colors cursor-pointer"
             >
               <!-- Line 1: SKU Tag -->
-              <div class="flex items-center">
+              <div class="flex items-center gap-1.5 flex-wrap">
                 <span class="text-xs font-mono font-bold text-gray-900 bg-gray-100 px-2 py-0.5 rounded border border-gray-200">
                   {{ product.sku }}
+                </span>
+                <span v-if="product.isBusySynced === false" class="text-[9px] font-bold text-amber-800 bg-amber-50 px-1.5 py-0.2 rounded border border-amber-300">
+                  ⚠️ Not in Busy
                 </span>
               </div>
 

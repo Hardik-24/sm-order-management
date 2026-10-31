@@ -147,6 +147,25 @@ onOrderSync((event) => {
   }
 })
 
+const hasUnsyncedBusyItems = computed(() => {
+  if (!order.value) return false
+  if (order.value.hasUnsyncedBusyItems !== undefined) {
+    return Boolean(order.value.hasUnsyncedBusyItems)
+  }
+  return order.value.items?.some((i: any) => i.isBusySynced === false || i.product?.isBusySynced === false) || false
+})
+
+const copyItemForBusy = (item: any) => {
+  const sku = item.product?.sku || item.sku || ''
+  const name = item.product?.name || item.productName || ''
+  const rate = item.unitPrice || 0
+  const text = `${sku} - ${name} (Rate: ₹${rate})`
+  if (navigator?.clipboard?.writeText) {
+    navigator.clipboard.writeText(text)
+  }
+  showSaved(`Copied ${sku} details for Busy!`)
+}
+
 // Inline form states
 const showBillingForm = ref(false)
 const billingForm = ref({ status: '', invoiceNumber: '', holdReason: '' })
@@ -1593,6 +1612,24 @@ onMounted(() => {
               </div>
             </div>
 
+            <!-- Advisory Banner: Unsynced Busy Items -->
+            <div v-if="hasUnsyncedBusyItems" class="p-3 sm:p-3.5 bg-amber-50/90 border border-amber-200/90 rounded-xl flex items-start justify-between gap-3 text-xs text-amber-900 shadow-2xs">
+              <div class="flex items-start gap-2.5">
+                <div class="w-6 h-6 rounded-lg bg-amber-200/70 flex items-center justify-center shrink-0 text-amber-800 mt-0.5">
+                  <AlertTriangle class="w-3.5 h-3.5" />
+                </div>
+                <div>
+                  <div class="font-bold text-amber-950 flex items-center gap-1.5 flex-wrap">
+                    <span>New Catalog Product(s) — Not in Busy</span>
+                    <span class="text-[9px] font-bold bg-amber-200/80 text-amber-900 px-1.5 py-0.2 rounded uppercase">Non-blocking</span>
+                  </div>
+                  <p class="text-[11px] text-amber-800 mt-0.5 leading-relaxed">
+                    Packing, driver assignment, and delivery are <strong>fully active</strong>. Billing team: please create the tagged item(s) in Busy before final invoice generation.
+                  </p>
+                </div>
+              </div>
+            </div>
+
             <!-- D. Line Items Table -->
             <div>
               <div class="flex items-center justify-between mb-2.5">
@@ -1648,6 +1685,26 @@ onMounted(() => {
                             {{ item.product?.name }}
                           </div>
                           <div class="flex flex-wrap items-center gap-1 mt-1.5">
+                            <!-- Not in Busy Badge & Copy Button -->
+                            <div v-if="(item as any)?.isBusySynced === false || item.product?.isBusySynced === false" class="inline-flex items-center gap-1">
+                              <span 
+                                class="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider bg-amber-100 text-amber-900 px-1.5 py-0.5 rounded border border-amber-300 shadow-2xs" 
+                                title="New catalog product not yet created in Busy. Operations & delivery are unaffected."
+                              >
+                                <AlertCircle class="w-2.5 h-2.5 text-amber-700 shrink-0" />
+                                Not in Busy
+                              </span>
+                              <button
+                                type="button"
+                                @click.stop="copyItemForBusy(item)"
+                                class="inline-flex items-center gap-0.5 text-[9px] font-bold text-amber-800 hover:text-amber-950 bg-white hover:bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 transition-colors cursor-pointer"
+                                title="Copy SKU & Name for entering into Busy"
+                              >
+                                <Copy class="w-2.5 h-2.5 text-amber-700" />
+                                Copy
+                              </button>
+                            </div>
+
                             <span v-if="(item as any)?.isTaxInclusive && context !== 'delivery'" class="text-[9px] font-bold uppercase tracking-wider bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded border border-indigo-200/70" title="Tax Inclusive Rate">
                               Tax Inc.
                             </span>

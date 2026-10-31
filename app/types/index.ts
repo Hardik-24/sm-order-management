@@ -53,6 +53,7 @@ export interface Product {
   unit: ProductUnit
   price: number
   stock: number
+  isBusySynced?: boolean
   isActive: boolean
 }
 
@@ -81,6 +82,8 @@ export interface OrderItem {
   unitPrice: number
   packedQuantity: number
   remainingQuantity?: number
+  isBusySynced?: boolean
+  product?: Product
 }
 
 export interface BillingStatus {
@@ -135,6 +138,7 @@ export interface Order {
   totalAmount: number
   overallStatus: OrderStatus
   items: OrderItem[]
+  hasUnsyncedBusyItems?: boolean
   billingStatus?: BillingStatus | null
   packingStatus?: PackingStatus | null
   deliveryStatus?: DeliveryStatus | null
