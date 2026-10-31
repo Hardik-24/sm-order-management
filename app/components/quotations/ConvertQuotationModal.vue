@@ -12,6 +12,7 @@ import {
   Truck,
   Car,
   AlertCircle,
+  AlertTriangle,
   Package,
   Loader2,
   Crown,
@@ -190,6 +191,19 @@ const getSelectedProduct = (productId?: string) => {
   if (!productId) return null
   return productMap.value[productId] || null
 }
+
+const isItemNotInBusy = (item: ConvertItemRow) => {
+  const prod = getSelectedProduct(item.productId)
+  if (prod) {
+    return prod.isBusySynced === false
+  }
+  // If product not in DB catalog (new item from quotation)
+  return true
+}
+
+const hasUnsyncedBusyItems = computed(() => {
+  return form.value.items.some(it => isItemNotInBusy(it))
+})
 
 const productOptions = computed(() => {
   return productsList.value.map(p => ({
@@ -850,6 +864,22 @@ const submitConversion = async () => {
               </button>
             </div>
 
+            <!-- Advisory Banner: Unsynced Busy Items -->
+            <div v-if="hasUnsyncedBusyItems" class="p-3 bg-amber-50/90 border border-amber-200/90 rounded-xl flex items-start gap-2.5 text-xs text-amber-900 shadow-2xs">
+              <div class="w-6 h-6 rounded-lg bg-amber-200/70 flex items-center justify-center shrink-0 text-amber-800 mt-0.5">
+                <AlertTriangle class="w-3.5 h-3.5" />
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="font-bold text-amber-950 flex items-center gap-1.5 flex-wrap">
+                  <span>Contains Item(s) Not in Busy</span>
+                  <span class="text-[9px] font-bold bg-amber-200/80 text-amber-900 px-1.5 py-0.2 rounded uppercase">Non-blocking</span>
+                </div>
+                <p class="text-[11px] text-amber-800 mt-0.5 leading-relaxed">
+                  New catalog items will be auto-created and tagged <strong>Not in Busy</strong>. Packing, dispatch, and delivery are <strong>100% active and unblocked</strong>.
+                </p>
+              </div>
+            </div>
+
             <div class="space-y-4">
               <div
                 v-for="(item, idx) in form.items"
@@ -858,9 +888,18 @@ const submitConversion = async () => {
               >
                 <!-- Mobile Item Card Header: Index tag + Remove action -->
                 <div class="flex items-center justify-between md:hidden pb-1.5 border-b border-gray-200/60">
-                  <span class="text-xs font-bold font-mono text-gray-600 bg-gray-200/70 px-2 py-0.5 rounded">
-                    #{{ idx + 1 }} Item
-                  </span>
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-xs font-bold font-mono text-gray-600 bg-gray-200/70 px-2 py-0.5 rounded">
+                      #{{ idx + 1 }} Item
+                    </span>
+                    <span 
+                      v-if="isItemNotInBusy(item)" 
+                      class="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider bg-amber-100 text-amber-900 px-1.5 py-0.5 rounded border border-amber-300 shadow-2xs"
+                    >
+                      <AlertCircle class="w-2.5 h-2.5 text-amber-700 shrink-0" />
+                      Not in Busy
+                    </span>
+                  </div>
                   <button
                     type="button"
                     @click="removeItem(idx)"
@@ -920,17 +959,32 @@ const submitConversion = async () => {
                         </span>
                       </span>
 
+                      <!-- Not in Busy Badge (Desktop) -->
+                      <span 
+                        v-if="getSelectedProduct(item.productId)?.isBusySynced === false"
+                        class="hidden md:inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-900 px-2 py-0.5 rounded border border-amber-300 shadow-2xs"
+                        title="Product not yet created in Busy. Operations & delivery are unaffected."
+                      >
+                        <AlertCircle class="w-2.5 h-2.5 text-amber-700 shrink-0" />
+                        Not in Busy
+                      </span>
+
                       <span v-if="getSelectedProduct(item.productId)?.category?.name" class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-gray-100 text-gray-600 border border-gray-200">
                         {{ getSelectedProduct(item.productId)?.category?.name }}
                       </span>
                     </div>
 
                     <!-- Quoted Origin Pill (If imported from Google Sheet/Quotation) -->
-                    <div v-else class="mt-1.5 flex items-center gap-2 text-[11px] text-gray-500">
-                      <span class="font-mono text-gray-700 bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200 font-semibold">
+                    <div v-else class="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                      <span class="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-900 px-2 py-0.5 rounded border border-amber-300 shadow-2xs">
+                        <AlertCircle class="w-2.5 h-2.5 text-amber-700 shrink-0" />
+                        New Item — Not in Busy
+                      </span>
+                      <span class="font-mono text-gray-700 bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200 font-semibold text-[11px]">
                         {{ item.articleNumber }}
                       </span>
-                      <span class="truncate">{{ item.description }}</span>
+                      <span class="text-[11px] text-gray-600 truncate max-w-[200px]">{{ item.description }}</span>
+                      <span class="text-[10px] text-amber-700 font-medium">(Will auto-create in catalog)</span>
                     </div>
                   </div>
 
@@ -1105,12 +1159,12 @@ const submitConversion = async () => {
         </div>
 
         <!-- Footer Actions -->
-        <div class="p-4 sm:p-5 border-t border-gray-100 bg-gray-50 flex items-center justify-end gap-3 shrink-0">
+        <div class="p-3 sm:p-5 border-t border-gray-100 bg-gray-50 flex items-center justify-end gap-2 sm:gap-3 shrink-0">
           <button
             type="button"
             @click="closeModal"
             :disabled="isSubmitting"
-            class="px-4 py-2 border border-gray-300 rounded-xl font-semibold text-gray-700 bg-white hover:bg-gray-100 transition cursor-pointer disabled:opacity-50"
+            class="px-3 py-1.5 sm:px-4 sm:py-2 border border-gray-300 rounded-lg sm:rounded-xl font-semibold text-gray-700 bg-white hover:bg-gray-100 transition cursor-pointer disabled:opacity-50 text-xs sm:text-sm"
           >
             Cancel
           </button>
@@ -1119,11 +1173,12 @@ const submitConversion = async () => {
             type="button"
             @click="submitConversion"
             :disabled="isSubmitting"
-            class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white rounded-xl font-bold shadow-md shadow-emerald-900/10 transition flex items-center gap-2 cursor-pointer disabled:opacity-50 text-sm"
+            class="px-3.5 py-1.5 sm:px-5 sm:py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white rounded-lg sm:rounded-xl font-bold shadow-md shadow-emerald-900/10 transition flex items-center gap-1.5 sm:gap-2 cursor-pointer disabled:opacity-50 text-xs sm:text-sm"
           >
-            <Loader2 v-if="isSubmitting" class="w-4 h-4 animate-spin" />
-            <ShoppingBag v-else class="w-4 h-4" />
-            <span>{{ isSubmitting ? 'Converting to Order...' : 'Confirm & Create Sales Order' }}</span>
+            <Loader2 v-if="isSubmitting" class="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" />
+            <ShoppingBag v-else class="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span class="sm:hidden">{{ isSubmitting ? 'Converting...' : 'Confirm & Create' }}</span>
+            <span class="hidden sm:inline">{{ isSubmitting ? 'Converting to Order...' : 'Confirm & Create Sales Order' }}</span>
           </button>
         </div>
 

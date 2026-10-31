@@ -673,9 +673,18 @@ const getCustomerInitials = (name: string) => {
           <div v-for="(item, idx) in form.items" :key="idx" class="bg-gray-50/80 p-3.5 sm:p-4 rounded-xl border border-gray-200 space-y-3">
             <!-- Mobile Item Card Header: Index tag + Remove action -->
             <div class="flex items-center justify-between md:hidden pb-1.5 border-b border-gray-200/60">
-              <span class="text-xs font-bold font-mono text-gray-600 bg-gray-200/70 px-2 py-0.5 rounded">
-                #{{ idx + 1 }} Item
-              </span>
+              <div class="flex items-center gap-1.5">
+                <span class="text-xs font-bold font-mono text-gray-600 bg-gray-200/70 px-2 py-0.5 rounded">
+                  #{{ idx + 1 }} Item
+                </span>
+                <span 
+                  v-if="getSelectedProduct(item.productId)?.isBusySynced === false"
+                  class="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider bg-amber-100 text-amber-900 px-1.5 py-0.5 rounded border border-amber-300 shadow-2xs"
+                >
+                  <AlertCircle class="w-2.5 h-2.5 text-amber-700 shrink-0" />
+                  Not in Busy
+                </span>
+              </div>
               <button 
                 type="button" 
                 @click="removeItem(idx)" 
@@ -732,6 +741,15 @@ const getCustomerInitials = (name: string) => {
                     <span v-else-if="Number(getSelectedProduct(item.productId)?.stock ?? 0) < 10" class="text-[10px] font-bold text-amber-600 uppercase tracking-wide">
                       (Low Stock)
                     </span>
+                  </span>
+
+                  <span 
+                    v-if="getSelectedProduct(item.productId)?.isBusySynced === false"
+                    class="hidden md:inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-900 px-2 py-0.5 rounded border border-amber-300 shadow-2xs"
+                    title="Product not yet created in Busy. Operations & delivery are unaffected."
+                  >
+                    <AlertCircle class="w-2.5 h-2.5 text-amber-700 shrink-0" />
+                    Not in Busy
                   </span>
 
                   <span v-if="getSelectedProduct(item.productId)?.category?.name" class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-gray-100 text-gray-600 border border-gray-200">
@@ -938,11 +956,11 @@ const getCustomerInitials = (name: string) => {
       </div>
 
       <!-- Actions -->
-      <div class="flex justify-end gap-3 pt-4">
-        <NuxtLink to="/dashboard/orders" class="px-6 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors">
+      <div class="flex justify-end gap-2 sm:gap-3 pt-4">
+        <NuxtLink to="/dashboard/orders" class="px-3.5 py-2 sm:px-6 sm:py-2.5 border border-gray-300 rounded-lg text-xs sm:text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors">
           Cancel
         </NuxtLink>
-        <button type="submit" :disabled="!form.items.length" class="px-6 py-2.5 bg-[#1b3b5f] text-white text-sm font-bold rounded-lg hover:bg-[#1b3b5f]/90 disabled:opacity-50 transition-colors shadow-sm">
+        <button type="submit" :disabled="!form.items.length" class="px-4 py-2 sm:px-6 sm:py-2.5 bg-[#1b3b5f] text-white text-xs sm:text-sm font-bold rounded-lg hover:bg-[#1b3b5f]/90 disabled:opacity-50 transition-colors shadow-sm cursor-pointer">
           Submit Order
         </button>
       </div>
