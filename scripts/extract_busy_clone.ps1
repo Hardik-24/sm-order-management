@@ -2,6 +2,30 @@
 # Extract Operational Catalog from Local BUSY Clone (Read-Only)
 # Target: D:\BusyWin Data\SM\Clone\db12026.bds
 # =====================================================================
+
+# Disable Console QuickEdit Mode to prevent accidental mouse clicks from freezing execution
+try {
+    Add-Type @"
+using System;
+using System.Runtime.InteropServices;
+public class QuickEditDisabler {
+    [DllImport("kernel32.dll")] public static extern IntPtr GetStdHandle(int n);
+    [DllImport("kernel32.dll")] public static extern bool GetConsoleMode(IntPtr h, out uint m);
+    [DllImport("kernel32.dll")] public static extern bool SetConsoleMode(IntPtr h, uint m);
+    public static void Disable() {
+        IntPtr h = GetStdHandle(-10);
+        uint m;
+        if (GetConsoleMode(h, out m)) {
+            m &= ~0x0040u;
+            m |= 0x0080u;
+            SetConsoleMode(h, m);
+        }
+    }
+}
+"@ -ErrorAction SilentlyContinue
+    [QuickEditDisabler]::Disable()
+} catch {}
+
 $cloneDir = "D:\BusyWin Data\SM\Clone"
 $dbFile = Get-ChildItem -Path $cloneDir -Filter "db1*.bds" | Select-Object -First 1
 
