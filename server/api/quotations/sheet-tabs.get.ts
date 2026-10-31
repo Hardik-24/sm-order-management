@@ -16,35 +16,44 @@ export default defineEventHandler(async (event) => {
   }
 
   const sheetId = getGoogleSheetId()
-  const doc = new GoogleSpreadsheet(sheetId, authWrapper.auth)
-  await doc.loadInfo()
 
-  const allTabs: Array<{
-    sheetId: number
-    title: string
-    rowCount: number
-    columnCount: number
-    index: number
-  }> = []
+  try {
+    const doc = new GoogleSpreadsheet(sheetId, authWrapper.auth)
+    await doc.loadInfo()
 
-  for (let i = 0; i < doc.sheetCount; i++) {
-    const s = doc.sheetsByIndex[i]
-    allTabs.push({
-      sheetId: s.sheetId,
-      title: s.title,
-      rowCount: s.rowCount,
-      columnCount: s.columnCount,
-      index: i
+    const allTabs: Array<{
+      sheetId: number
+      title: string
+      rowCount: number
+      columnCount: number
+      index: number
+    }> = []
+
+    for (let i = 0; i < doc.sheetCount; i++) {
+      const s = doc.sheetsByIndex[i]
+      allTabs.push({
+        sheetId: s.sheetId,
+        title: s.title,
+        rowCount: s.rowCount,
+        columnCount: s.columnCount,
+        index: i
+      })
+    }
+
+    const configuredTabs = await getConfiguredQuotationTabs()
+
+    return {
+      success: true,
+      sheetTitle: doc.title,
+      sheetId,
+      allTabs,
+      configuredTabs
+    }
+  } catch (err: any) {
+    console.error(`[Google Sheets] Failed loading tabs from spreadsheet ${sheetId}:`, err?.message || err)
+    throw createError({
+      statusCode: 500,
+      statusMessage: `Failed to load tabs from sheet (${sheetId}): ${err?.message || 'Unknown error'}`
     })
-  }
-
-  const configuredTabs = await getConfiguredQuotationTabs()
-
-  return {
-    success: true,
-    sheetTitle: doc.title,
-    sheetId,
-    allTabs,
-    configuredTabs
   }
 })

@@ -10,11 +10,11 @@ export interface GoogleCredentials {
 
 export function getGoogleSheetId(): string {
   const config = useRuntimeConfig()
-  return (
-    (config.googleSheetId as string) ||
-    process.env.GOOGLE_SHEET_ID ||
-    '1PYRIoXZ-zYiQSUUStywNICkw20S4JjxVxbgwRG8wZ5Q'
-  )
+  const val = (config.googleSheetId as string) || process.env.GOOGLE_SHEET_ID
+  if (val && val.trim() && val !== '124p_ZVSTqLTkIs9o04-7BsJjDH6SLFFabArHW9UQ7FI') {
+    return val.trim()
+  }
+  return '1PYRIoXZ-zYiQSUUStywNICkw20S4JjxVxbgwRG8wZ5Q'
 }
 
 export function getGoogleCredentials(): GoogleCredentials | null {
