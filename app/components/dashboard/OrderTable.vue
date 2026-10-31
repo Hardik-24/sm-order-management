@@ -264,59 +264,60 @@ const getItemsTotalQuantity = (order: Order) => {
     <!-- Top Bar -->
     <div class="p-4 border-b border-gray-200 bg-white rounded-t-xl relative flex flex-col md:flex-row md:items-center justify-between gap-4">
       <div class="flex flex-col sm:flex-row gap-3 sm:items-center w-full md:w-auto">
-          <div class="relative w-full md:w-80 lg:w-96">
-            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-              <Search class="h-4 w-4 text-gray-400" />
-            </div>
-            <input 
-              :value="search"
-              @input="e => { emit('update:search', (e.target as HTMLInputElement).value); emit('update:page', 1) }"
-              type="text" 
-              placeholder="Search orders, customers..."
-              class="block w-full pl-10 pr-9 py-2 border border-gray-300 rounded-lg text-sm bg-white placeholder:text-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f] transition-all shadow-sm"
-            />
-            <button 
-              v-if="search"
-              @click="{ emit('update:search', ''); emit('update:page', 1) }"
-              class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
-            >
-              <X class="h-4 w-4" />
-            </button>
-          </div>
-
-          <!-- Segmented Scope Toggle: All Company vs My Orders -->
-          <div
-            v-if="canViewAllCompanyOrders"
-            class="inline-flex items-center bg-gray-100 p-0.5 rounded-lg border border-gray-200 shrink-0 self-stretch sm:self-auto justify-center"
+        <!-- Segmented Scope Toggle: All Company vs My Orders (Mobile: full row at top above search; Desktop: inline) -->
+        <div
+          v-if="canViewAllCompanyOrders"
+          class="inline-flex items-center bg-gray-100 p-1 rounded-xl border border-gray-200/80 shadow-2xs w-full sm:w-auto justify-center sm:justify-start shrink-0 order-first sm:order-2"
+        >
+          <button
+            type="button"
+            @click="emit('update:scope', 'all'); emit('update:page', 1)"
+            class="flex-1 sm:flex-initial px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+            :class="(scope || 'all') === 'all' ? 'bg-white text-[#1b3b5f] shadow-2xs font-bold' : 'text-gray-500 hover:text-gray-900'"
           >
-            <button
-              type="button"
-              @click="emit('update:scope', 'all'); emit('update:page', 1)"
-              class="px-2.5 py-1.5 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-              :class="(scope || 'all') === 'all' ? 'bg-white text-[#1b3b5f] shadow-2xs font-bold' : 'text-gray-500 hover:text-gray-900'"
-            >
-              <Building2 class="w-3.5 h-3.5" />
-              <span>All Company</span>
-            </button>
-            <button
-              type="button"
-              @click="emit('update:scope', 'mine'); emit('update:page', 1)"
-              class="px-2.5 py-1.5 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-              :class="scope === 'mine' ? 'bg-white text-[#1b3b5f] shadow-2xs font-bold' : 'text-gray-500 hover:text-gray-900'"
-            >
-              <UserIcon class="w-3.5 h-3.5" />
-              <span>My Orders</span>
-            </button>
-          </div>
-          
-          <NuxtLink 
-            v-if="hasRole('ADMIN', 'SALES')" 
-            to="/dashboard/orders/create"
-            class="px-4 py-2 bg-[#1b3b5f] text-white text-sm font-medium rounded-lg hover:bg-[#1b3b5f]/90 transition-colors shadow-sm whitespace-nowrap text-center"
+            <Building2 class="w-3.5 h-3.5" />
+            <span>All Company</span>
+          </button>
+          <button
+            type="button"
+            @click="emit('update:scope', 'mine'); emit('update:page', 1)"
+            class="flex-1 sm:flex-initial px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+            :class="scope === 'mine' ? 'bg-white text-[#1b3b5f] shadow-2xs font-bold' : 'text-gray-500 hover:text-gray-900'"
           >
-            + Create New Order
-          </NuxtLink>
+            <UserIcon class="w-3.5 h-3.5" />
+            <span>My Orders</span>
+          </button>
         </div>
+
+        <!-- Search Bar: Under toggle on mobile, leftmost on desktop -->
+        <div class="relative w-full md:w-80 lg:w-96 order-2 sm:order-1">
+          <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+            <Search class="h-4 w-4 text-gray-400" />
+          </div>
+          <input 
+            :value="search"
+            @input="e => { emit('update:search', (e.target as HTMLInputElement).value); emit('update:page', 1) }"
+            type="text" 
+            placeholder="Search orders, customers..."
+            class="block w-full pl-10 pr-9 py-2 border border-gray-300 rounded-lg text-sm bg-white placeholder:text-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f] transition-all shadow-sm"
+          />
+          <button 
+            v-if="search"
+            @click="{ emit('update:search', ''); emit('update:page', 1) }"
+            class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <X class="h-4 w-4" />
+          </button>
+        </div>
+        
+        <NuxtLink 
+          v-if="hasRole('ADMIN', 'SALES')" 
+          to="/dashboard/orders/create"
+          class="px-4 py-2 bg-[#1b3b5f] text-white text-sm font-medium rounded-lg hover:bg-[#1b3b5f]/90 transition-colors shadow-sm whitespace-nowrap text-center order-3"
+        >
+          + Create New Order
+        </NuxtLink>
+      </div>
         
         <div class="flex items-center gap-1.5 sm:gap-2.5 w-full sm:w-auto justify-between sm:justify-end flex-nowrap">
           <TableFilterButtons

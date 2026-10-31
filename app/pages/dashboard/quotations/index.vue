@@ -109,9 +109,34 @@
 
     <!-- Search & Filter Controls Toolbar (Matching BillingTable.vue:104-145) -->
     <div class="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
-      <div class="p-4 flex flex-col sm:flex-row justify-between items-center gap-3.5 bg-gray-50/50">
-        <!-- Search Input matching BillingTable.vue:106-122 -->
-        <div class="relative w-full sm:w-80">
+      <div class="p-4 flex flex-col sm:flex-row justify-between sm:items-center gap-3.5 bg-gray-50/50">
+        <!-- 1. Scope Toggle: At top above search on mobile, utilizing full row (flex-1 buttons); on desktop pushed right next to Refresh -->
+        <div
+          v-if="canViewAllCompanyOrders"
+          class="inline-flex items-center bg-gray-100 p-1 rounded-xl border border-gray-200/80 shadow-2xs w-full sm:w-auto justify-center sm:justify-start shrink-0 order-first sm:order-2 sm:ml-auto"
+        >
+          <button
+            type="button"
+            @click="quoteScope = 'all'"
+            class="flex-1 sm:flex-initial px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+            :class="quoteScope === 'all' ? 'bg-white text-[#1b3b5f] shadow-2xs font-bold' : 'text-gray-500 hover:text-gray-900'"
+          >
+            <Building2 class="w-3.5 h-3.5" />
+            <span>All Company</span>
+          </button>
+          <button
+            type="button"
+            @click="quoteScope = 'mine'"
+            class="flex-1 sm:flex-initial px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+            :class="quoteScope === 'mine' ? 'bg-white text-[#1b3b5f] shadow-2xs font-bold' : 'text-gray-500 hover:text-gray-900'"
+          >
+            <UserIcon class="w-3.5 h-3.5" />
+            <span>My Quotes</span>
+          </button>
+        </div>
+
+        <!-- 2. Search Input: Below toggle on mobile, leftmost on desktop -->
+        <div class="relative w-full sm:w-80 order-2 sm:order-1">
           <Search class="w-4 h-4 absolute left-3 top-2.5 text-gray-400" />
           <input
             v-model="searchQuery"
@@ -128,37 +153,13 @@
           </button>
         </div>
 
-        <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
-          <!-- Segmented Scope Toggle: All Company vs My Quotes -->
-          <div
-            v-if="canViewAllCompanyOrders"
-            class="inline-flex items-center bg-gray-100 p-0.5 rounded-lg border border-gray-200 shrink-0 self-stretch sm:self-auto justify-center"
-          >
-            <button
-              type="button"
-              @click="quoteScope = 'all'"
-              class="px-2.5 py-1.5 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-              :class="quoteScope === 'all' ? 'bg-white text-[#1b3b5f] shadow-2xs font-bold' : 'text-gray-500 hover:text-gray-900'"
-            >
-              <Building2 class="w-3.5 h-3.5" />
-              <span>All Company</span>
-            </button>
-            <button
-              type="button"
-              @click="quoteScope = 'mine'"
-              class="px-2.5 py-1.5 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-              :class="quoteScope === 'mine' ? 'bg-white text-[#1b3b5f] shadow-2xs font-bold' : 'text-gray-500 hover:text-gray-900'"
-            >
-              <UserIcon class="w-3.5 h-3.5" />
-              <span>My Quotes</span>
-            </button>
-          </div>
-
+        <!-- 3. Actions (Refresh button) -->
+        <div class="flex items-center gap-2 w-full sm:w-auto justify-end order-3">
           <button
             type="button"
             @click="fetchQuotations"
             :disabled="isLoading"
-            class="inline-flex items-center gap-2 px-3 py-2 text-xs sm:text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 shadow-sm transition-colors cursor-pointer disabled:opacity-50"
+            class="inline-flex items-center gap-2 px-3 py-2 text-xs sm:text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 shadow-sm transition-colors cursor-pointer disabled:opacity-50 w-full sm:w-auto justify-center"
             title="Refresh Quotations"
           >
             <RefreshCw class="w-4 h-4" :class="{ 'animate-spin': isLoading }" />
