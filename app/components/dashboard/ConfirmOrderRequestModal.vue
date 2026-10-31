@@ -96,7 +96,7 @@ const customerOptions = computed(() => {
         ? `${props.matchedCustomer.name} (${props.matchedCustomer.company || 'Existing Customer'})`
         : `➕ Create New Lead: ${req.customerName} (${req.companyName || req.phone})`,
       value: props.matchedCustomer?.id || '',
-      subtitle: isMatched ? `Matched via phone ${req.phone}` : 'Will create a new customer record automatically'
+      subtitle: isMatched ? `Matched via phone ${req.phone}` : 'Provisional Lead • Link Busy ledger before billing'
     })
   }
 

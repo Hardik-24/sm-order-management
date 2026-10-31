@@ -141,9 +141,9 @@ const customerOptions = computed(() => {
   // If quotation customer is not matched to DB, offer creating new lead
   if (q && !matchedCustomer.value) {
     options.push({
-      label: `➕ Create New Customer: ${q.customerName}`,
+      label: `➕ Create as Provisional Lead: ${q.customerName}`,
       value: '',
-      subtitle: `Will auto-create customer record (${q.customerPlace || 'No place specified'})`
+      subtitle: `Provisional Lead (${q.customerPlace || 'No place'}) • Link Busy ledger before billing`
     })
   }
 
@@ -687,7 +687,7 @@ const submitConversion = async () => {
                     </div>
                   </div>
                   <div class="mt-2.5 pt-2 border-t border-blue-100/80 text-[11px] text-blue-700 flex items-center gap-1.5 font-medium">
-                    <span>⚡ Order will auto-create this customer profile in database upon confirmation.</span>
+                    <span>📌 Saved as <strong>Provisional Lead</strong>. Operations remain unblocked, but must be linked to a Busy ledger before billing.</span>
                   </div>
                 </div>
               </div>
@@ -875,7 +875,7 @@ const submitConversion = async () => {
                   <span class="text-[9px] font-bold bg-amber-200/80 text-amber-900 px-1.5 py-0.2 rounded uppercase">Non-blocking</span>
                 </div>
                 <p class="text-[11px] text-amber-800 mt-0.5 leading-relaxed">
-                  New catalog items will be auto-created and tagged <strong>Not in Busy</strong>. Packing, dispatch, and delivery are <strong>100% active and unblocked</strong>.
+                  Items not in Busy will be saved as provisional items tagged <strong>Not in Busy</strong>. Packing and dispatch are <strong>100% active</strong>; items must be created in Busy before final billing.
                 </p>
               </div>
             </div>
@@ -984,7 +984,7 @@ const submitConversion = async () => {
                         {{ item.articleNumber }}
                       </span>
                       <span class="text-[11px] text-gray-600 truncate max-w-[200px]">{{ item.description }}</span>
-                      <span class="text-[10px] text-amber-700 font-medium">(Will auto-create in catalog)</span>
+                      <span class="text-[10px] text-amber-700 font-medium">(Provisional • Not in Busy)</span>
                     </div>
                   </div>
 

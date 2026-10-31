@@ -52,7 +52,8 @@ export default defineEventHandler(async (event) => {
           address: orderRequest.deliveryAddress || 'Address to be verified',
           city: orderRequest.city || 'Ahmedabad',
           pincode: orderRequest.pincode,
-          paymentTerms: body.paymentTerms || '30 Days'
+          paymentTerms: body.paymentTerms || '30 Days',
+          isBusySynced: false
         }
       })
       customerId = newCustomer.id
