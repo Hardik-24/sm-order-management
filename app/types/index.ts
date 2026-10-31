@@ -186,3 +186,32 @@ export interface NeedsAttentionItem {
   issueType: 'pending_approval' | 'billing_pending' | 'packing_shortage' | 'ready_for_delivery' | 'delayed'
   timeAgo: string
 }
+
+export interface Quotation {
+  id: string
+  quoteNumber: string
+  customerName: string
+  customerPlace?: string | null
+  customerPhone?: string | null
+  validityDays: number
+  taxMode: string
+  quoteNotes?: string | null
+  items: any[]
+  totalItems: number
+  totalMrp: number
+  subtotal: number
+  discountAmount: number
+  gstAmount: number
+  grandTotal: number
+  createdById?: string | null
+  createdByName?: string | null
+  createdByRole?: string | null
+  signature?: string | null
+  status: 'PENDING' | 'CONVERTED' | string
+  convertedOrderId?: string | null
+  convertedOrderNumber?: string | null
+  convertedAt?: string | null
+  createdAt: string
+  updatedAt: string
+}
+

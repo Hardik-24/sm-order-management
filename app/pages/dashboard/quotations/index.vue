@@ -191,15 +191,16 @@
                 <th class="px-5 py-3.5 whitespace-nowrap">Quote No.</th>
                 <th class="px-5 py-3.5">Customer & Destination</th>
                 <th class="px-5 py-3.5 whitespace-nowrap text-center">Items</th>
+                <th class="px-5 py-3.5 whitespace-nowrap text-center">Status</th>
                 <th class="px-5 py-3.5 whitespace-nowrap">Created By</th>
                 <th class="px-5 py-3.5 whitespace-nowrap text-center">Date</th>
                 <th class="px-5 py-3.5 whitespace-nowrap text-right pr-5">Actions</th>
               </tr>
             </thead>
-            <TableSkeletonRows :cols="6" :rows="5" />
+            <TableSkeletonRows :cols="7" :rows="5" />
           </table>
         </div>
-        <TableSkeletonRows :cols="6" :rows="5" :isMobileOnly="true" :renderMobile="true" />
+        <TableSkeletonRows :cols="7" :rows="5" :isMobileOnly="true" :renderMobile="true" />
       </div>
 
       <!-- Empty State matching BillingTable.vue:195-201 -->
@@ -230,6 +231,7 @@
                 <th class="px-5 py-3.5 whitespace-nowrap">Quote No.</th>
                 <th class="px-5 py-3.5">Customer & Destination</th>
                 <th class="px-5 py-3.5 whitespace-nowrap text-center">Items</th>
+                <th class="px-5 py-3.5 whitespace-nowrap text-center">Status</th>
                 <th class="px-5 py-3.5 whitespace-nowrap">Created By</th>
                 <th class="px-5 py-3.5 whitespace-nowrap text-center">Date</th>
                 <th class="px-5 py-3.5 whitespace-nowrap text-right pr-5">Actions</th>
@@ -278,7 +280,26 @@
                   </div>
                 </td>
 
-                <!-- 4. Created By -->
+                <!-- 4. Conversion Status Column -->
+                <td class="px-5 py-3.5 whitespace-nowrap text-center">
+                  <span
+                    v-if="quote.status === 'CONVERTED'"
+                    class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200"
+                    :title="quote.convertedOrderNumber ? `Converted to Order ${quote.convertedOrderNumber}` : 'Converted to Sales Order'"
+                  >
+                    <CheckCircle2 class="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <span>Converted</span>
+                  </span>
+                  <span
+                    v-else
+                    class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200"
+                  >
+                    <Clock class="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                    <span>Pending</span>
+                  </span>
+                </td>
+
+                <!-- 5. Created By -->
                 <td class="px-5 py-3.5 whitespace-nowrap">
                   <div class="text-xs font-semibold text-gray-800 truncate">
                     {{ quote.createdByName || 'Sales Staff' }}
@@ -288,16 +309,28 @@
                   </p>
                 </td>
 
-                <!-- 5. Date -->
+                <!-- 6. Date -->
                 <td class="px-5 py-3.5 whitespace-nowrap text-center">
                   <span class="text-xs text-gray-700">
                     {{ formatDisplayDate(new Date(quote.createdAt)) }}
                   </span>
                 </td>
 
-                <!-- 6. Actions (Matching BillingTable.vue button style) -->
+                <!-- 7. Actions (Convert, View Slip, Delete) -->
                 <td class="px-5 py-3.5 text-right whitespace-nowrap pr-5" @click.stop>
                   <div class="flex items-center justify-end gap-1.5">
+                    <!-- Convert Button (Shown if Pending and created by current user or admin) -->
+                    <button
+                      v-if="canConvertQuote(quote)"
+                      type="button"
+                      @click="openConvertModal(quote)"
+                      class="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 active:scale-98 shadow-2xs transition-all flex items-center justify-center gap-1 cursor-pointer whitespace-nowrap"
+                      title="Convert this quotation to a confirmed Sales Order"
+                    >
+                      <ShoppingBag class="w-3.5 h-3.5" />
+                      <span>Convert</span>
+                    </button>
+
                     <button
                       type="button"
                       @click="viewQuoteDetails(quote)"
@@ -332,17 +365,34 @@
             @click="viewQuoteDetails(quote)"
             class="px-3.5 py-3 cursor-pointer transition-colors flex flex-col gap-1.5 hover:bg-gray-50 active:bg-gray-100"
           >
-            <!-- LINE 1: Quote #, Destination, Customer & Date -->
+            <!-- LINE 1: Quote #, Status Badge, Destination, Customer & Date -->
             <div class="flex items-center justify-between gap-2 min-w-0">
               <div class="flex items-center gap-1.5 min-w-0 flex-1">
                 <span class="text-xs font-bold text-gray-900 shrink-0">
                   {{ quote.quoteNumber }}
                 </span>
+
+                <!-- Mobile Conversion Status Badge -->
+                <span
+                  v-if="quote.status === 'CONVERTED'"
+                  class="inline-flex items-center gap-0.5 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200 shrink-0"
+                >
+                  <CheckCircle2 class="w-2.5 h-2.5 text-emerald-600" />
+                  <span>Converted</span>
+                </span>
+                <span
+                  v-else
+                  class="inline-flex items-center gap-0.5 text-[10px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.2 rounded border border-amber-200 shrink-0"
+                >
+                  <Clock class="w-2.5 h-2.5 text-amber-600" />
+                  <span>Pending</span>
+                </span>
+
                 <span
                   v-if="quote.customerPlace"
-                  class="inline-flex items-center gap-0.5 text-[10px] font-semibold text-slate-600 bg-slate-100 px-1.5 py-0.2 rounded border border-slate-200 truncate max-w-[120px]"
+                  class="inline-flex items-center gap-0.5 text-[10px] font-semibold text-slate-600 bg-slate-100 px-1.5 py-0.2 rounded border border-slate-200 truncate max-w-[100px]"
                 >
-                  <MapPin class="w-2.5 h-2.5 text-[#1b3b5f] shrink-0" />
+                  <MapPin class="w-2.5 h-2.5 text-[#1b3b5f]" />
                   <span class="truncate">{{ quote.customerPlace }}</span>
                 </span>
                 <span class="text-gray-300 text-xs shrink-0">&bull;</span>
@@ -356,7 +406,7 @@
               </span>
             </div>
 
-            <!-- LINE 2: Items, Phone, Staff & View Action -->
+            <!-- LINE 2: Items, Phone, Staff & Actions (Convert / View) -->
             <div class="flex items-center justify-between gap-2 min-w-0 pt-0.5">
               <div class="flex items-baseline gap-1.5 min-w-0">
                 <span class="text-[11px] font-semibold text-blue-700 bg-blue-50 px-1.5 py-0.2 rounded border border-blue-100 shrink-0">
@@ -372,6 +422,18 @@
               </div>
 
               <div class="flex items-center gap-2 shrink-0">
+                <!-- Convert button for mobile -->
+                <button
+                  v-if="canConvertQuote(quote)"
+                  type="button"
+                  @click.stop="openConvertModal(quote)"
+                  class="px-2 py-0.5 rounded text-[11px] font-bold text-white bg-emerald-600 active:bg-emerald-700 flex items-center gap-1 shadow-2xs cursor-pointer"
+                  title="Convert this quotation to a sales order"
+                >
+                  <ShoppingBag class="w-3 h-3" />
+                  <span>Convert</span>
+                </button>
+
                 <span class="text-xs font-semibold text-[#1b3b5f] flex items-center gap-0.5">
                   <span>View</span>
                   <ChevronRight class="w-3 h-3 text-gray-400" />
@@ -380,7 +442,7 @@
                   v-if="canDeleteQuotations"
                   type="button"
                   @click.stop="deleteQuote(quote)"
-                  class="p-1 rounded text-gray-300 hover:text-rose-600 active:bg-rose-50 transition"
+                  class="p-1 rounded text-gray-300 hover:text-rose-600 active:bg-rose-50 transition cursor-pointer"
                   title="Delete Quotation"
                 >
                   <Trash2 class="w-3 h-3" />
@@ -397,6 +459,14 @@
       v-model="isModalOpen"
       :initial-quote="selectedQuote"
       @created="onQuoteCreated"
+      @convert="openConvertModal"
+    />
+
+    <!-- Convert Quotation to Sales Order Modal -->
+    <ConvertQuotationModal
+      v-model="isConvertModalOpen"
+      :quotation="selectedQuoteForConversion"
+      @converted="onQuotationConverted"
     />
   </div>
 </template>
@@ -420,7 +490,9 @@ import {
   ChevronRight,
   AlertCircle,
   Building2,
-  User as UserIcon
+  User as UserIcon,
+  Clock,
+  ShoppingBag
 } from 'lucide-vue-next'
 import { useSnackbar } from '~/composables/useSnackbar'
 import { useAuth } from '~/composables/useAuth'
@@ -430,6 +502,7 @@ import LoadingTopBar from '~/components/ui/LoadingTopBar.vue'
 import TableSkeletonRows from '~/components/ui/TableSkeletonRows.vue'
 import { getEffectiveActionPermissions } from '~/utils/permissions'
 import QuotationModal from '~/components/quotations/QuotationModal.vue'
+import ConvertQuotationModal from '~/components/quotations/ConvertQuotationModal.vue'
 import { rankAndFilter } from '~/utils/search'
 
 definePageMeta({
@@ -540,6 +613,37 @@ const formatLastSynced = (iso?: string | null) => {
 // Modal State
 const isModalOpen = ref(false)
 const selectedQuote = ref<any | null>(null)
+
+// Convert Modal State
+const isConvertModalOpen = ref(false)
+const selectedQuoteForConversion = ref<any | null>(null)
+
+const canConvertQuote = (quote: any) => {
+  if (!user.value || !quote) return false
+  if (quote.status === 'CONVERTED') return false
+  if (user.value.role === 'ADMIN') return true
+  if (quote.createdById && quote.createdById === user.value.id) return true
+  if (quote.createdByName && user.value.name && quote.createdByName.toLowerCase() === user.value.name.toLowerCase()) return true
+  return false
+}
+
+const openConvertModal = (quote: any) => {
+  selectedQuoteForConversion.value = quote
+  isConvertModalOpen.value = true
+}
+
+const onQuotationConverted = (order: any) => {
+  if (selectedQuoteForConversion.value) {
+    const q = quotations.value.find(item => item.id === selectedQuoteForConversion.value.id)
+    if (q) {
+      q.status = 'CONVERTED'
+      q.convertedOrderId = order.id
+      q.convertedOrderNumber = order.orderNumber
+      q.convertedAt = new Date().toISOString()
+    }
+  }
+  fetchQuotations()
+}
 
 // Load Quotations from DB
 const fetchQuotations = async () => {

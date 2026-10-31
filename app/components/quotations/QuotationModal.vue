@@ -77,16 +77,56 @@
         <!-- ══════════════════════════════════════════════════════════════════ -->
         <div v-if="isSuccessView" class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
           <!-- Success Banner -->
-          <div class="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 sm:p-5 flex items-center gap-3.5">
-            <div class="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-sm">
-              <CheckCircle2 class="w-6 h-6" />
+          <div
+            class="border rounded-2xl p-4 sm:p-5 flex items-center justify-between gap-3.5 flex-wrap"
+            :class="props.initialQuote?.status === 'CONVERTED'
+              ? 'bg-emerald-50 border-emerald-200'
+              : 'bg-emerald-50/70 border-emerald-200/80'"
+          >
+            <div class="flex items-center gap-3.5 min-w-0">
+              <div
+                class="w-10 h-10 rounded-xl text-white flex items-center justify-center shrink-0 shadow-sm"
+                :class="props.initialQuote?.status === 'CONVERTED' ? 'bg-emerald-600' : 'bg-[#1b3b5f]'"
+              >
+                <CheckCircle2 v-if="props.initialQuote?.status === 'CONVERTED'" class="w-6 h-6" />
+                <FileText v-else class="w-6 h-6" />
+              </div>
+              <div class="min-w-0">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <h3 class="text-sm sm:text-base font-bold text-gray-900">
+                    {{ props.initialQuote?.status === 'CONVERTED' ? 'Quotation Converted to Sales Order' : (isEditingExisting ? 'Quotation Details & Slip' : 'Quotation Generated & Saved!') }}
+                  </h3>
+                  <span
+                    v-if="props.initialQuote?.status === 'CONVERTED'"
+                    class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200"
+                  >
+                    Order # {{ props.initialQuote.convertedOrderNumber }}
+                  </span>
+                  <span
+                    v-else
+                    class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200"
+                  >
+                    Pending Conversion
+                  </span>
+                </div>
+                <p class="text-xs text-gray-600 mt-0.5">
+                  Quote <strong>{{ quoteNumber }}</strong> for <strong>{{ customerName || 'Valued Customer' }}</strong>.
+                  <span v-if="props.initialQuote?.status === 'CONVERTED'"> Converted into official Sales Order.</span>
+                  <span v-else> Ready to share or convert into a confirmed Sales Order.</span>
+                </p>
+              </div>
             </div>
-            <div class="min-w-0">
-              <h3 class="text-sm sm:text-base font-bold text-emerald-950">Quotation Generated & Saved!</h3>
-              <p class="text-xs text-emerald-800 mt-0.5">
-                Quote <strong>{{ quoteNumber }}</strong> for <strong>{{ customerName || 'Valued Customer' }}</strong> has been safely recorded in the database.
-              </p>
-            </div>
+
+            <!-- Convert Button right on banner if eligible -->
+            <button
+              v-if="canConvertCurrentQuote"
+              type="button"
+              @click="triggerConversion"
+              class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white rounded-xl text-xs sm:text-sm font-bold shadow-sm transition flex items-center gap-1.5 cursor-pointer ml-auto"
+            >
+              <ShoppingBag class="w-4 h-4" />
+              <span>Convert to Sales Order</span>
+            </button>
           </div>
 
           <!-- Sharing Action Bar -->
@@ -1825,7 +1865,8 @@ import {
   Printer,
   Edit3,
   Database,
-  UserPlus
+  UserPlus,
+  ShoppingBag
 } from 'lucide-vue-next'
 import CustomSelect from '~/components/ui/CustomSelect.vue'
 import { toBlob, toPng, toJpeg } from 'html-to-image'
@@ -1842,6 +1883,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void
   (e: 'created', quote: any): void
+  (e: 'convert', quote: any): void
 }>()
 
 const { showSaved, showEditing } = useSnackbar()
@@ -1860,6 +1902,20 @@ const isSaving = ref(false)
 const isExporting = ref(false)
 const exportAction = ref<'whatsapp' | 'download' | 'pdf' | 'print' | null>(null)
 const quotationCardRef = ref<HTMLElement | null>(null)
+
+const canConvertCurrentQuote = computed(() => {
+  if (!props.initialQuote || !user.value) return false
+  if (props.initialQuote.status === 'CONVERTED') return false
+  if (user.value.role === 'ADMIN') return true
+  if (props.initialQuote.createdById && props.initialQuote.createdById === user.value.id) return true
+  if (props.initialQuote.createdByName && user.value.name && props.initialQuote.createdByName.toLowerCase() === user.value.name.toLowerCase()) return true
+  return false
+})
+
+const triggerConversion = () => {
+  emit('convert', props.initialQuote)
+  emit('update:modelValue', false)
+}
 
 // Multi-Page PDF Pagination State & Types
 interface PdfPageData {
