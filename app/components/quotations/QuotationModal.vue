@@ -515,15 +515,66 @@
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 sm:gap-3.5">
-              <!-- Customer / Company Name -->
+              <!-- Customer / Company Name (DB Picker or Manual Entry) -->
               <div class="sm:col-span-5">
-                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Customer / Company Name *</label>
-                <input
-                  v-model="customerName"
-                  type="text"
-                  placeholder="e.g. Rajesh Patel / Royal Interiors"
-                  class="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-xs font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f] transition"
-                />
+                <div class="flex items-center justify-between mb-1 gap-1">
+                  <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest truncate">
+                    Customer / Company *
+                  </label>
+                  <button
+                    type="button"
+                    @click="toggleCustomerInputMode()"
+                    class="text-[10px] font-bold text-[#1b3b5f] hover:text-[#132c49] flex items-center gap-1 hover:underline cursor-pointer shrink-0"
+                  >
+                    <component :is="isManualCustomer ? Database : Edit3" class="w-3 h-3 text-[#1b3b5f]" />
+                    <span>{{ isManualCustomer ? 'Choose from Database' : '+ Enter Manually / New' }}</span>
+                  </button>
+                </div>
+
+                <!-- Mode A: Database Customer Picker -->
+                <div v-if="!isManualCustomer" class="space-y-1.5">
+                  <CustomSelect
+                    :modelValue="selectedCustomerId"
+                    @update:modelValue="onCustomerSelect"
+                    :options="customerOptions"
+                    searchable
+                    searchPlaceholder="Search customers by name, company, city..."
+                    placeholder="Select Customer from Database"
+                    class="w-full text-xs"
+                    triggerClass="px-3 py-2 text-xs font-medium"
+                  />
+                  <div v-if="selectedCustomerObj" class="flex items-center gap-1.5 text-[10px] text-gray-500">
+                    <span class="inline-flex items-center px-1.5 py-0.2 rounded font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                      DB Customer
+                    </span>
+                    <span v-if="selectedCustomerObj.customerCode" class="font-mono text-gray-700">
+                      {{ selectedCustomerObj.customerCode }}
+                    </span>
+                    <span v-if="selectedCustomerObj.companyName" class="text-gray-600 truncate max-w-[150px]">
+                      • {{ selectedCustomerObj.companyName }}
+                    </span>
+                    <button 
+                      type="button" 
+                      @click="clearCustomerSelection()" 
+                      class="text-red-500 hover:text-red-700 hover:underline ml-auto font-medium"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Mode B: Manual Customer Input -->
+                <div v-else class="space-y-1">
+                  <input
+                    v-model="customerName"
+                    type="text"
+                    placeholder="e.g. Rajesh Patel / Royal Interiors"
+                    class="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-xs font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f] transition"
+                  />
+                  <p class="text-[10px] text-amber-700 font-medium">
+                    Manual entry: saved for this quote only, not added to customer database.
+                  </p>
+                </div>
               </div>
 
               <!-- Place / City -->
@@ -1777,8 +1828,12 @@ import {
   Eraser,
   ZoomIn,
   ZoomOut,
-  Printer
+  Printer,
+  Edit3,
+  Database,
+  UserPlus
 } from 'lucide-vue-next'
+import CustomSelect from '~/components/ui/CustomSelect.vue'
 import { toBlob, toPng, toJpeg } from 'html-to-image'
 import { jsPDF } from 'jspdf'
 import { useSnackbar } from '~/composables/useSnackbar'
@@ -2075,6 +2130,71 @@ const customerPhone = ref('')
 const validityDays = ref<number | string>(7)
 const quoteNotes = ref('')
 const taxMode = ref<'EXTRA' | 'INCLUSIVE' | 'NONE'>('EXTRA')
+
+// Customer DB vs Manual Selection
+const dbCustomers = ref<any[]>([])
+const isLoadingCustomers = ref(false)
+const selectedCustomerId = ref<string>('')
+const isManualCustomer = ref(false)
+
+const loadDbCustomers = async () => {
+  if (dbCustomers.value.length > 0) return
+  isLoadingCustomers.value = true
+  try {
+    const data = await $fetch<any[]>('/api/customers')
+    dbCustomers.value = data || []
+  } catch (err) {
+    console.warn('Could not load customers for quotation:', err)
+  } finally {
+    isLoadingCustomers.value = false
+  }
+}
+
+const customerOptions = computed(() => {
+  return dbCustomers.value.map(c => {
+    const city = c.addresses?.[0]?.city ? ` (${c.addresses[0].city})` : (c.city ? ` (${c.city})` : '')
+    const comp = c.companyName ? ` • ${c.companyName}` : ''
+    return {
+      label: `${c.name}${comp}${city}`,
+      value: c.id
+    }
+  })
+})
+
+const selectedCustomerObj = computed(() => {
+  return dbCustomers.value.find(c => c.id === selectedCustomerId.value) || null
+})
+
+const onCustomerSelect = (val: string) => {
+  selectedCustomerId.value = val
+  const cust = dbCustomers.value.find(c => c.id === val)
+  if (cust) {
+    customerName.value = cust.name || ''
+    customerPlace.value = cust.addresses?.[0]?.city || cust.city || ''
+    customerPhone.value = cust.phone || cust.addresses?.[0]?.phone || ''
+  }
+}
+
+const clearCustomerSelection = () => {
+  selectedCustomerId.value = ''
+  customerName.value = ''
+  customerPlace.value = ''
+  customerPhone.value = ''
+}
+
+const toggleCustomerInputMode = () => {
+  isManualCustomer.value = !isManualCustomer.value
+  if (isManualCustomer.value) {
+    selectedCustomerId.value = ''
+  } else {
+    if (customerName.value.trim() && dbCustomers.value.length > 0) {
+      const match = dbCustomers.value.find(c => c.name.toLowerCase() === customerName.value.trim().toLowerCase())
+      if (match) {
+        selectedCustomerId.value = match.id
+      }
+    }
+  }
+}
 
 // Line Items
 interface QuoteRow {
@@ -2581,6 +2701,8 @@ const resetForNewQuote = () => {
   customerName.value = ''
   customerPlace.value = ''
   customerPhone.value = ''
+  selectedCustomerId.value = ''
+  isManualCustomer.value = false
   validityDays.value = 7
   quoteNotes.value = ''
   taxMode.value = 'EXTRA'
@@ -2600,6 +2722,15 @@ watch(
       customerName.value = newQuote.customerName || ''
       customerPlace.value = newQuote.customerPlace || ''
       customerPhone.value = newQuote.customerPhone || ''
+      
+      const match = dbCustomers.value.find(c => c.name.toLowerCase() === (newQuote.customerName || '').trim().toLowerCase())
+      if (match) {
+        selectedCustomerId.value = match.id
+        isManualCustomer.value = false
+      } else {
+        selectedCustomerId.value = ''
+        isManualCustomer.value = true
+      }
       signatureDataUrl.value = newQuote.signature || null
       hasDrawnSignature.value = Boolean(newQuote.signature)
       validityDays.value = newQuote.validityDays || 7
@@ -2636,6 +2767,7 @@ watch(
   (isOpen) => {
     if (isOpen) {
       setupViewportObserver()
+      loadDbCustomers()
     }
   }
 )
@@ -3004,6 +3136,7 @@ watch(
 onMounted(() => {
   preloadLogo()
   loadSheetCatalog()
+  loadDbCustomers()
   setupViewportObserver()
 })
 
