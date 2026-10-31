@@ -674,12 +674,12 @@
                 :class="highlightedIndex === idx ? 'bg-sky-50/70 border-l-4 border-l-[#1b3b5f]' : 'hover:bg-gray-50/80'"
               >
                 <div class="flex items-center gap-2.5 min-w-0">
-                  <span class="w-6 h-6 rounded-md bg-gray-100 text-gray-700 font-mono text-[11px] font-bold flex items-center justify-center shrink-0">
+                  <span class="w-6 h-6 rounded-md bg-gray-100 text-gray-700 text-[11px] font-bold flex items-center justify-center shrink-0">
                     #
                   </span>
                   <div class="min-w-0">
                     <div class="flex items-center gap-1.5 flex-wrap">
-                      <span class="font-mono font-bold text-xs text-gray-900 bg-gray-100 px-1.5 py-0.2 rounded">
+                      <span class="font-bold text-xs text-gray-900 bg-gray-100 px-1.5 py-0.2 rounded">
                         {{ item.articleNumber }}
                       </span>
                       <span class="text-[9px] font-bold px-1.5 py-0.2 rounded uppercase bg-blue-50 text-blue-800 border border-blue-200">
@@ -687,12 +687,12 @@
                       </span>
                       <span 
                         v-if="item.sourceTab" 
-                        class="text-[9px] font-mono font-semibold px-1.5 py-0.2 rounded border"
+                        class="text-[9px] font-semibold px-1.5 py-0.2 rounded border"
                         :class="item.sourceTab === '2026JULY' 
                           ? 'bg-slate-100 text-slate-700 border-slate-200' 
                           : 'bg-amber-50 text-amber-800 border-amber-200'"
                       >
-                        {{ item.sourceTab === '2026JULY' ? item.sourceTab : 'Legacy: ' + item.sourceTab }}
+                        {{ item.sourceTab === '2026JULY' ? item.sourceTab : 'Old Price List: ' + item.sourceTab }}
                       </span>
                       <span v-if="item.stock" class="text-[9px] font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
                         Sheet Stock: {{ item.stock }}
@@ -707,7 +707,7 @@
                 <div class="text-right shrink-0">
                   <div class="flex items-baseline gap-1.5 justify-end">
                     <span class="text-xs text-gray-400 line-through">₹{{ item.mrp.toLocaleString('en-IN') }}</span>
-                    <span class="text-xs sm:text-sm font-black text-[#1b3b5f]">
+                    <span class="text-xs sm:text-sm font-bold text-[#1b3b5f]">
                       ₹{{ Math.round(item.mrp * (1 - item.defaultDiscount / 100)).toLocaleString('en-IN') }}
                     </span>
                   </div>
@@ -779,23 +779,23 @@
                 </thead>
                 <tbody class="divide-y divide-gray-100 bg-white">
                   <tr v-for="(row, idx) in quoteItems" :key="row.id" class="hover:bg-gray-50/70 transition-colors">
-                    <td class="py-2.5 px-2 text-center text-gray-400 font-mono text-[11px]">{{ idx + 1 }}</td>
+                    <td class="py-2.5 px-2 text-center text-gray-400 font-semibold text-xs">{{ idx + 1 }}</td>
                     <td class="py-2.5 px-2.5">
                       <input
                         v-if="row.isCustom"
                         v-model="row.articleNumber"
                         type="text"
                         placeholder="Code"
-                        class="w-full font-mono font-bold text-xs border border-gray-200 rounded px-1.5 py-0.5"
+                        class="w-full font-bold text-xs border border-gray-200 rounded px-1.5 py-0.5"
                       />
                       <div v-else class="flex items-center gap-1.5 flex-wrap">
-                        <span class="font-mono font-bold text-xs text-gray-900">{{ row.articleNumber }}</span>
+                        <span class="font-bold text-xs text-gray-900">{{ row.articleNumber }}</span>
                         <span 
                           v-if="row.sourceTab && row.sourceTab !== '2026JULY'" 
-                          class="text-[9px] font-mono px-1.5 py-0.2 rounded bg-amber-50 text-amber-800 border border-amber-200"
-                          :title="'Price from legacy tab: ' + row.sourceTab"
+                          class="text-[9px] font-semibold px-1.5 py-0.2 rounded bg-amber-50 text-amber-800 border border-amber-200"
+                          :title="'Price from old price list: ' + row.sourceTab"
                         >
-                          Legacy: {{ row.sourceTab }}
+                          Old Price List: {{ row.sourceTab }}
                         </span>
                       </div>
                     </td>
@@ -880,13 +880,13 @@
                     </td>
 
                     <!-- MRP -->
-                    <td class="py-2.5 px-2.5 text-right font-mono text-gray-600 tabular-nums">
+                    <td class="py-2.5 px-2.5 text-right font-medium text-gray-700">
                       <input
                         v-if="row.isCustom"
                         v-model.number="row.mrp"
                         type="number"
                         min="0"
-                        class="w-16 text-right font-mono text-xs border border-gray-200 rounded px-1 py-0.5"
+                        class="w-16 text-right font-medium text-xs border border-gray-200 rounded px-1 py-0.5"
                       />
                       <span v-else>₹{{ row.mrp.toLocaleString('en-IN') }}</span>
                     </td>
@@ -918,12 +918,12 @@
                     </td>
 
                     <!-- Net Rate -->
-                    <td class="py-2.5 px-3 text-right bg-emerald-50/20 font-bold text-emerald-900 font-mono tabular-nums">
+                    <td class="py-2.5 px-3 text-right bg-emerald-50/20 font-bold text-emerald-900">
                       ₹{{ calculateUnitRate(row).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
                     </td>
 
                     <!-- Total Value -->
-                    <td class="py-2.5 px-3 text-right font-black text-gray-900 font-mono tabular-nums">
+                    <td class="py-2.5 px-3 text-right font-bold text-gray-900">
                       ₹{{ Math.round(calculateLineTotal(row)).toLocaleString('en-IN') }}
                     </td>
 
@@ -1062,23 +1062,23 @@
             <div class="md:col-span-5 bg-white rounded-2xl border border-gray-200 p-4 space-y-2 text-xs">
               <div class="flex justify-between text-gray-500">
                 <span>Total MRP:</span>
-                <span class="font-mono font-semibold">₹{{ totalMrp.toLocaleString('en-IN') }}</span>
+                <span class="font-semibold text-gray-700">₹{{ totalMrp.toLocaleString('en-IN') }}</span>
               </div>
               <div v-if="totalDiscountSaved > 0" class="flex justify-between text-emerald-800 font-semibold bg-emerald-50 px-2 py-1 rounded">
                 <span>Total Discount:</span>
-                <span class="font-mono">-₹{{ totalDiscountSaved.toLocaleString('en-IN') }}</span>
+                <span class="font-semibold">-₹{{ totalDiscountSaved.toLocaleString('en-IN') }}</span>
               </div>
               <div class="flex justify-between text-gray-700 font-bold">
                 <span>Subtotal (After Disc):</span>
-                <span class="font-mono">₹{{ subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}</span>
+                <span class="font-bold text-gray-800">₹{{ subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}</span>
               </div>
               <div v-if="taxMode === 'EXTRA'" class="flex justify-between text-gray-600">
                 <span>GST (18%):</span>
-                <span class="font-mono font-semibold">+₹{{ gstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}</span>
+                <span class="font-semibold text-gray-700">+₹{{ gstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}</span>
               </div>
-              <div class="pt-2 border-t-2 border-gray-100 flex justify-between items-baseline font-black">
+              <div class="pt-2 border-t-2 border-gray-100 flex justify-between items-baseline font-bold">
                 <span class="text-xs uppercase text-[#1b3b5f]">Grand Total:</span>
-                <span class="text-2xl font-mono text-[#1b3b5f]">₹{{ Math.round(grandTotal).toLocaleString('en-IN') }}</span>
+                <span class="text-2xl font-bold text-[#1b3b5f]">₹{{ Math.round(grandTotal).toLocaleString('en-IN') }}</span>
               </div>
             </div>
           </div>
