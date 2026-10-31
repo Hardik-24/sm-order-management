@@ -640,6 +640,15 @@
                       <span class="text-[9px] font-bold px-1.5 py-0.2 rounded uppercase bg-blue-50 text-blue-800 border border-blue-200">
                         {{ item.brand }}
                       </span>
+                      <span 
+                        v-if="item.sourceTab" 
+                        class="text-[9px] font-mono font-semibold px-1.5 py-0.2 rounded border"
+                        :class="item.sourceTab === '2026JULY' 
+                          ? 'bg-slate-100 text-slate-700 border-slate-200' 
+                          : 'bg-amber-50 text-amber-800 border-amber-200'"
+                      >
+                        {{ item.sourceTab === '2026JULY' ? item.sourceTab : 'Legacy: ' + item.sourceTab }}
+                      </span>
                       <span v-if="item.stock" class="text-[9px] font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
                         Sheet Stock: {{ item.stock }}
                       </span>
@@ -734,7 +743,16 @@
                         placeholder="Code"
                         class="w-full font-mono font-bold text-xs border border-gray-200 rounded px-1.5 py-0.5"
                       />
-                      <span v-else class="font-mono font-bold text-xs text-gray-900">{{ row.articleNumber }}</span>
+                      <div v-else class="flex items-center gap-1.5 flex-wrap">
+                        <span class="font-mono font-bold text-xs text-gray-900">{{ row.articleNumber }}</span>
+                        <span 
+                          v-if="row.sourceTab && row.sourceTab !== '2026JULY'" 
+                          class="text-[9px] font-mono px-1.5 py-0.2 rounded bg-amber-50 text-amber-800 border border-amber-200"
+                          :title="'Price from legacy tab: ' + row.sourceTab"
+                        >
+                          Legacy: {{ row.sourceTab }}
+                        </span>
+                      </div>
                     </td>
                     <td class="py-2.5 px-3">
                       <input
@@ -2014,6 +2032,7 @@ interface SheetProduct {
   defaultDiscount: number
   stock: string
   flag: string
+  sourceTab?: string
 }
 const products = ref<SheetProduct[]>([])
 const isSyncingSheet = ref(false)
@@ -2070,6 +2089,7 @@ interface QuoteRow {
   moq?: number
   gstRate?: number
   stock?: string
+  sourceTab?: string
   isCustom?: boolean
   inStock?: boolean
   manualStockOverride?: boolean | null
@@ -2226,7 +2246,8 @@ const addItemToQuote = (item: SheetProduct) => {
       discount: item.defaultDiscount || 0,
       moq: item.moq || 1,
       gstRate: item.gstRate || 18,
-      stock: item.stock || item.flag || ''
+      stock: item.stock || item.flag || '',
+      sourceTab: item.sourceTab
     })
     showSaved(`Added ${item.articleNumber} to quote`)
   }

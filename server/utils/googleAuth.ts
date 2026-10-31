@@ -13,7 +13,7 @@ export function getGoogleSheetId(): string {
   return (
     (config.googleSheetId as string) ||
     process.env.GOOGLE_SHEET_ID ||
-    '124p_ZVSTqLTkIs9o04-7BsJjDH6SLFFabArHW9UQ7FI'
+    '1PYRIoXZ-zYiQSUUStywNICkw20S4JjxVxbgwRG8wZ5Q'
   )
 }
 
@@ -123,11 +123,23 @@ export function createGoogleAuth(): { auth: JWT; credentials: GoogleCredentials 
   const creds = getGoogleCredentials()
   if (!creds) return null
 
-  const auth = new JWT({
+  const config = useRuntimeConfig()
+  const impersonateEmail =
+    (config.googleImpersonateEmail as string) ||
+    process.env.GOOGLE_IMPERSONATE_EMAIL ||
+    'hardikpatel@siliconmarketing.in'
+
+  const authOptions: any = {
     email: creds.email,
     key: creds.key,
     scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly']
-  })
+  }
+
+  if (impersonateEmail && impersonateEmail.trim()) {
+    authOptions.subject = impersonateEmail.trim()
+  }
+
+  const auth = new JWT(authOptions)
 
   return { auth, credentials: creds }
 }

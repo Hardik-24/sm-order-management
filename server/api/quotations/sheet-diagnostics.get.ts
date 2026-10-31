@@ -2,12 +2,15 @@ import { defineEventHandler } from 'h3'
 import { GoogleSpreadsheet } from 'google-spreadsheet'
 import { createGoogleAuth, getGoogleSheetId, getGoogleCredentials, getSheetLastSyncedAt } from '~~/server/utils/googleAuth'
 import { requireAuth } from '~~/server/utils/auth'
+import { getConfiguredQuotationTabs, getSheetCatalogCache } from '~~/server/utils/sheetCatalog'
 
 export default defineEventHandler(async (event) => {
   requireAuth(event)
   const sheetId = getGoogleSheetId()
   const creds = getGoogleCredentials()
   const lastSynced = getSheetLastSyncedAt()
+  const configuredTabs = await getConfiguredQuotationTabs()
+  const cache = getSheetCatalogCache()
 
   const result: Record<string, any> = {
     timestamp: new Date().toISOString(),
@@ -19,7 +22,8 @@ export default defineEventHandler(async (event) => {
     sheetUrl: `https://docs.google.com/spreadsheets/d/${sheetId}/edit`,
     canConnect: false,
     spreadsheetTitle: null,
-    rowCount: 0,
+    rowCount: cache.cachedProducts ? cache.cachedProducts.length : 0,
+    configuredTabs,
     columns: [],
     error: null,
     recommendation: null
@@ -43,10 +47,13 @@ export default defineEventHandler(async (event) => {
     result.canConnect = true
     result.spreadsheetTitle = doc.title
 
-    const sheet = doc.sheetsByIndex[0]
+    const primaryTab = configuredTabs[0] || '2026JULY'
+    const sheet = doc.sheetsByTitle[primaryTab] || doc.sheetsByIndex[0]
     if (sheet) {
       result.sheetTitle = sheet.title
-      result.rowCount = sheet.rowCount
+      if (!result.rowCount) {
+        result.rowCount = sheet.rowCount
+      }
       await sheet.loadHeaderRow()
       result.columns = sheet.headerValues || []
     }

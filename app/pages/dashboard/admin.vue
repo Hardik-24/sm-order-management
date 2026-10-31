@@ -15,6 +15,14 @@
       </div>
       <div class="flex items-center gap-2.5">
         <button 
+          @click="isSheetTabsModalOpen = true"
+          class="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 hover:text-[#1b3b5f] hover:border-[#1b3b5f]/40 px-3.5 py-2 rounded-lg hover:bg-[#1b3b5f]/5 transition-all shadow-xs text-sm font-medium cursor-pointer"
+        >
+          <FileSpreadsheet class="w-4 h-4 text-emerald-600" />
+          <span>Price List Sheets</span>
+        </button>
+
+        <button 
           @click="isMastersModalOpen = true"
           class="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 hover:text-[#1b3b5f] hover:border-[#1b3b5f]/40 px-3.5 py-2 rounded-lg hover:bg-[#1b3b5f]/5 transition-all shadow-xs text-sm font-medium cursor-pointer"
         >
@@ -876,6 +884,9 @@
     <!-- Dropdown Masters Modal -->
     <AdminMastersModal :isOpen="isMastersModalOpen" @close="isMastersModalOpen = false" />
 
+    <!-- Google Sheet Price List Tabs Modal -->
+    <AdminSheetTabsModal :isOpen="isSheetTabsModalOpen" @close="isSheetTabsModalOpen = false" />
+
   </div>
 </template>
 
@@ -891,9 +902,11 @@ import {
   ShieldCheck, 
   KeyRound,
   Lock,
-  Database
+  Database,
+  FileSpreadsheet
 } from 'lucide-vue-next'
 import AdminMastersModal from '~/components/dashboard/AdminMastersModal.vue'
+import AdminSheetTabsModal from '~/components/dashboard/AdminSheetTabsModal.vue'
 import { useSnackbar } from '~/composables/useSnackbar'
 import { useGsapAnimation } from '~/composables/useGsapAnimation'
 import CustomSelect from '~/components/ui/CustomSelect.vue'
@@ -943,6 +956,7 @@ const adminTableRef = ref<HTMLElement | null>(null)
 const mobileListRef = ref<HTMLElement | null>(null)
 const isModalOpen = ref(false)
 const isMastersModalOpen = ref(false)
+const isSheetTabsModalOpen = ref(false)
 const isSaving = ref(false)
 const editingUser = ref<any>(null)
 const loadingStatusUsers = ref<Record<string, boolean>>({})
