@@ -277,6 +277,7 @@ async function runSync() {
         pincode = COALESCE(v.pincode, c.pincode),
         "gstNumber" = COALESCE(v.gstNumber, c."gstNumber"),
         city = COALESCE(v.city, c.city),
+        "isBusySynced" = true,
         "is_busy_synced" = true,
         "updatedAt" = NOW()
       FROM (VALUES ${valuesList}) AS v(id, customerCode, name, company, alias, phone, address, pincode, gstNumber, city)

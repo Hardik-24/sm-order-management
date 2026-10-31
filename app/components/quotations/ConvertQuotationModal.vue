@@ -56,12 +56,16 @@ const loadData = async () => {
   if (customersList.value.length && productsList.value.length) return
   isLoadingData.value = true
   try {
-    const [cData, pData] = await Promise.all([
+    const [cResult, pResult] = await Promise.allSettled([
       $fetch<any[]>('/api/customers'),
       $fetch<any[]>('/api/products')
     ])
-    customersList.value = cData || []
-    productsList.value = pData || []
+    if (cResult.status === 'fulfilled' && Array.isArray(cResult.value)) {
+      customersList.value = cResult.value
+    }
+    if (pResult.status === 'fulfilled' && Array.isArray(pResult.value)) {
+      productsList.value = pResult.value
+    }
   } catch (err) {
     console.error('Failed to load customers or products:', err)
   } finally {
@@ -293,8 +297,8 @@ const initForm = async () => {
   })
 }
 
-watch(() => props.modelValue, (open) => {
-  if (open) {
+watch([() => props.modelValue, () => props.quotation], ([open, q]) => {
+  if (open && q) {
     initForm()
   }
 })
