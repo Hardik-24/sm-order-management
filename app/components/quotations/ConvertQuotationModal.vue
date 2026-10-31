@@ -16,7 +16,8 @@ import {
   Loader2,
   Crown,
   CheckCircle2,
-  ShoppingBag
+  ShoppingBag,
+  PackageSearch
 } from 'lucide-vue-next'
 import { formatCurrency } from '~/lib/utils'
 import CustomSelect from '~/components/ui/CustomSelect.vue'
@@ -582,26 +583,42 @@ const submitConversion = async () => {
                   class="w-full bg-white"
                 />
 
-                <!-- Selected Customer Info Banner (Matching create.vue:431-484 exact layout) -->
-                <div v-if="selectedCustomer" class="mt-3.5 p-4 sm:p-5 bg-gradient-to-r from-slate-50 via-white to-sky-50/20 rounded-2xl border border-gray-200 shadow-2xs transition-all">
-                  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
-                    <!-- Left: Big Avatar, Name, Company & Code -->
-                    <div class="flex items-start sm:items-center gap-3.5 min-w-0">
-                      <div class="w-12 h-12 rounded-2xl bg-[#1b3b5f] text-white flex items-center justify-center font-black text-base shadow-xs shrink-0 tracking-wider">
+                <!-- Selected Customer Info Banner (Enhanced & Mobile-Optimized) -->
+                <div v-if="selectedCustomer" class="mt-3.5 p-3.5 sm:p-5 bg-gradient-to-r from-slate-50 via-white to-sky-50/20 rounded-2xl border border-gray-200 shadow-2xs transition-all">
+                  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <!-- Left: Avatar, Name, Company, Code, & Badges -->
+                    <div class="flex items-start sm:items-center gap-3 sm:gap-3.5 min-w-0">
+                      <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-[#1b3b5f] text-white flex items-center justify-center font-black text-sm sm:text-base shadow-xs shrink-0 tracking-wider">
                         {{ getCustomerInitials(selectedCustomer.name) }}
                       </div>
-                      <div class="min-w-0">
-                        <div class="flex items-center gap-2 flex-wrap">
-                          <h4 class="text-base sm:text-lg font-extrabold text-gray-900 tracking-tight leading-snug">
+                      <div class="min-w-0 flex-1">
+                        <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                          <h4 class="text-sm sm:text-base font-extrabold text-gray-900 tracking-tight leading-snug">
                             {{ selectedCustomer.name }}
                           </h4>
-                          <span v-if="selectedCustomer.customerCode" class="px-2 py-0.5 rounded-md text-xs font-mono font-bold bg-gray-100 text-gray-700 border border-gray-200">
-                            {{ selectedCustomer.customerCode }}
-                          </span>
+                          <div class="flex items-center gap-1.5 flex-wrap">
+                            <span
+                              class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg font-extrabold text-[10px] uppercase tracking-wider border shadow-2xs"
+                              :class="getPrivilegeBadgeStyle(selectedCustomer.privilegeTier || 'BRONZE')"
+                            >
+                              <Award class="w-3 h-3" />
+                              <span>{{ selectedCustomer.privilegeTier || 'BRONZE' }}</span>
+                            </span>
+
+                            <span v-if="selectedCustomer.isPriorityClient" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg font-extrabold text-[10px] uppercase tracking-wider bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-xs">
+                              <Crown class="w-3 h-3" />
+                              <span>Priority</span>
+                            </span>
+
+                            <span v-if="selectedCustomer.customerCode" class="px-1.5 py-0.2 rounded text-[10px] font-mono font-bold bg-gray-100 text-gray-600 border border-gray-200">
+                              {{ selectedCustomer.customerCode }}
+                            </span>
+                          </div>
                         </div>
-                        <div class="flex items-center gap-2 text-xs text-gray-500 font-medium mt-0.5 flex-wrap">
-                          <span v-if="selectedCustomer.company" class="text-gray-700 font-semibold">{{ selectedCustomer.company }}</span>
-                          <span v-if="selectedCustomer.company && (selectedCustomer.city || selectedCustomer.phone)">•</span>
+
+                        <div class="flex items-center gap-2 text-xs text-gray-500 font-medium mt-1 flex-wrap">
+                          <span v-if="selectedCustomer.company && selectedCustomer.company !== selectedCustomer.name" class="text-gray-700 font-semibold">{{ selectedCustomer.company }}</span>
+                          <span v-if="selectedCustomer.company && selectedCustomer.company !== selectedCustomer.name && (selectedCustomer.city || selectedCustomer.phone)">•</span>
                           <span v-if="selectedCustomer.city" class="flex items-center gap-1 text-gray-600">
                             <MapPin class="w-3.5 h-3.5 text-gray-400 shrink-0" />
                             {{ selectedCustomer.city }}
@@ -610,28 +627,14 @@ const submitConversion = async () => {
                         </div>
                       </div>
                     </div>
-
-                    <!-- Right: Privilege Tier Badge -->
-                    <div class="flex items-center gap-2 flex-wrap self-start sm:self-auto shrink-0">
-                      <div
-                        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-extrabold text-xs uppercase tracking-wider border shadow-2xs"
-                        :class="getPrivilegeBadgeStyle(selectedCustomer.privilegeTier || 'BRONZE')"
-                      >
-                        <Award class="w-4 h-4" />
-                        <span>{{ selectedCustomer.privilegeTier || 'BRONZE' }} TIER</span>
-                      </div>
-
-                      <div v-if="selectedCustomer.isPriorityClient" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-extrabold text-xs uppercase tracking-wider bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-xs">
-                        <Crown class="w-4 h-4" />
-                        <span>Priority Client</span>
-                      </div>
-                    </div>
                   </div>
 
                   <!-- Account Manager row -->
-                  <div v-if="selectedCustomer.customerManager" class="mt-3 pt-2.5 border-t border-gray-100 flex items-center gap-2 text-xs text-gray-600">
-                    <UserCheck class="w-4 h-4 text-[#1b3b5f]" />
-                    <span>Account Manager: <strong class="text-gray-900 font-bold">{{ selectedCustomer.customerManager.name }}</strong></span>
+                  <div v-if="selectedCustomer.customerManager" class="mt-2.5 pt-2.5 border-t border-gray-100 flex flex-wrap items-center justify-between gap-2 text-xs">
+                    <div class="flex items-center gap-1.5 text-gray-600 bg-white px-2.5 py-1 rounded-lg border border-gray-200 shadow-2xs text-[11px]">
+                      <UserCheck class="w-3.5 h-3.5 text-[#1b3b5f]" />
+                      <span>Account Manager: <strong class="text-gray-900 font-bold">{{ selectedCustomer.customerManager.name }}</strong></span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -808,6 +811,23 @@ const submitConversion = async () => {
                 :key="idx"
                 class="bg-gray-50/80 p-3.5 sm:p-4 rounded-xl border border-gray-200 space-y-3"
               >
+                <!-- Mobile Item Card Header: Index tag + Remove action -->
+                <div class="flex items-center justify-between md:hidden pb-1.5 border-b border-gray-200/60">
+                  <span class="text-xs font-bold font-mono text-gray-600 bg-gray-200/70 px-2 py-0.5 rounded">
+                    #{{ idx + 1 }} Item
+                  </span>
+                  <button
+                    type="button"
+                    @click="removeItem(idx)"
+                    :disabled="form.items.length <= 1"
+                    class="p-1 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors flex items-center gap-1 text-xs font-semibold cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                    title="Remove Item"
+                  >
+                    <Trash2 class="w-3.5 h-3.5" />
+                    <span>Remove</span>
+                  </button>
+                </div>
+
                 <div class="flex flex-col md:flex-row md:items-start gap-3 md:gap-4">
                   <!-- Product Select or Custom Name (Matching create.vue:668-718) -->
                   <div class="flex-1 w-full min-w-0">
@@ -869,81 +889,83 @@ const submitConversion = async () => {
                     </div>
                   </div>
 
-                  <!-- Quantity, Rate, Tax %, Total & Remove (Matching create.vue:721-776 exact layout) -->
-                  <div class="grid grid-cols-12 gap-2 items-end w-full md:w-auto">
-                    <!-- Qty -->
-                    <div class="col-span-3 sm:col-span-2 md:w-20">
-                      <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1.5">Qty *</label>
-                      <input
-                        type="number"
-                        v-model.number="item.quantity"
-                        min="1"
-                        required
-                        class="w-full border border-gray-300 rounded-lg shadow-2xs p-2 bg-white text-sm font-bold focus:ring-[#1b3b5f] focus:border-[#1b3b5f]"
-                      />
-                    </div>
-
-                    <!-- Unit Price (Rate) -->
-                    <div class="col-span-3 sm:col-span-3 md:w-28">
-                      <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1.5 flex items-center gap-1 truncate">
-                        <IndianRupee class="w-3 h-3 text-gray-400 shrink-0" />
-                        <span>Rate *</span>
-                      </label>
-                      <div class="relative flex items-center">
-                        <IndianRupee class="absolute left-2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+                  <!-- Quantity, Rate, Tax %, Total (Clean 2x2 grid on mobile, inline on desktop) -->
+                  <div class="w-full md:w-auto">
+                    <div class="grid grid-cols-2 sm:grid-cols-4 md:flex md:items-end gap-2.5 sm:gap-2">
+                      <!-- Qty -->
+                      <div class="col-span-1 md:w-20">
+                        <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1.5">Qty *</label>
                         <input
                           type="number"
-                          v-model.number="item.unitPrice"
-                          min="0"
-                          step="0.01"
+                          v-model.number="item.quantity"
+                          min="1"
                           required
-                          class="w-full pl-6 border border-gray-300 rounded-lg shadow-2xs p-2 bg-white text-sm font-bold focus:ring-[#1b3b5f] focus:border-[#1b3b5f]"
+                          class="w-full border border-gray-300 rounded-lg shadow-2xs p-2 bg-white text-sm font-bold focus:ring-[#1b3b5f] focus:border-[#1b3b5f]"
                         />
                       </div>
-                    </div>
 
-                    <!-- Tax Rate % -->
-                    <div class="col-span-2 sm:col-span-2 md:w-20">
-                      <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1.5 truncate">
-                        <span>Tax %</span>
-                      </label>
-                      <div class="relative flex items-center">
-                        <input
-                          type="number"
-                          v-model.number="item.taxRate"
-                          min="0"
-                          max="100"
-                          step="0.1"
-                          placeholder="18"
-                          class="w-full pr-5 border border-gray-300 rounded-lg shadow-2xs p-2 bg-white text-sm font-bold focus:ring-[#1b3b5f] focus:border-[#1b3b5f] text-right"
-                        />
-                        <span class="absolute right-1.5 text-xs font-semibold text-gray-400 pointer-events-none">%</span>
+                      <!-- Unit Price (Rate) -->
+                      <div class="col-span-1 md:w-28">
+                        <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1.5 flex items-center gap-1 truncate">
+                          <IndianRupee class="w-3 h-3 text-gray-400 shrink-0" />
+                          <span>Rate *</span>
+                        </label>
+                        <div class="relative flex items-center">
+                          <IndianRupee class="absolute left-2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+                          <input
+                            type="number"
+                            v-model.number="item.unitPrice"
+                            min="0"
+                            step="0.01"
+                            required
+                            class="w-full pl-6 border border-gray-300 rounded-lg shadow-2xs p-2 bg-white text-sm font-bold focus:ring-[#1b3b5f] focus:border-[#1b3b5f]"
+                          />
+                        </div>
                       </div>
-                    </div>
 
-                    <!-- Line Total -->
-                    <div class="col-span-3 sm:col-span-4 md:w-28">
-                      <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1.5 flex items-center justify-between">
-                        <span>Total</span>
-                        <span v-if="item.isTaxInclusive" class="text-[8px] font-bold text-blue-700 bg-blue-50 px-1 py-0.2 rounded border border-blue-200">INCL</span>
-                        <span v-else class="text-[8px] font-bold text-gray-600 bg-gray-100 px-1 py-0.2 rounded border border-gray-200">+TAX</span>
-                      </label>
-                      <div class="p-2 bg-gray-50 text-gray-900 rounded-lg font-bold text-xs sm:text-sm border border-gray-200 truncate text-right">
-                        {{ formatCurrency(calculateItemTotals(item).total) }}
+                      <!-- Tax Rate % -->
+                      <div class="col-span-1 md:w-20">
+                        <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1.5 truncate">
+                          <span>Tax %</span>
+                        </label>
+                        <div class="relative flex items-center">
+                          <input
+                            type="number"
+                            v-model.number="item.taxRate"
+                            min="0"
+                            max="100"
+                            step="0.1"
+                            placeholder="18"
+                            class="w-full pr-5 border border-gray-300 rounded-lg shadow-2xs p-2 bg-white text-sm font-bold focus:ring-[#1b3b5f] focus:border-[#1b3b5f] text-right"
+                          />
+                          <span class="absolute right-1.5 text-xs font-semibold text-gray-400 pointer-events-none">%</span>
+                        </div>
                       </div>
-                    </div>
 
-                    <!-- Remove -->
-                    <div class="col-span-1 sm:col-span-1 md:w-auto flex justify-center pb-0.5">
-                      <button
-                        type="button"
-                        @click="removeItem(idx)"
-                        :disabled="form.items.length <= 1"
-                        class="p-2 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg shrink-0 transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
-                        title="Remove Item"
-                      >
-                        <Trash2 class="w-4 h-4" />
-                      </button>
+                      <!-- Line Total -->
+                      <div class="col-span-1 md:w-28">
+                        <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1.5 flex items-center justify-between">
+                          <span>Total</span>
+                          <span v-if="item.isTaxInclusive" class="text-[8px] font-bold text-blue-700 bg-blue-50 px-1 py-0.2 rounded border border-blue-200">INCL</span>
+                          <span v-else class="text-[8px] font-bold text-gray-600 bg-gray-100 px-1 py-0.2 rounded border border-gray-200">+TAX</span>
+                        </label>
+                        <div class="p-2 bg-white sm:bg-gray-50 text-gray-900 rounded-lg font-bold text-xs sm:text-sm border border-gray-200 truncate text-right shadow-2xs">
+                          {{ formatCurrency(calculateItemTotals(item).total) }}
+                        </div>
+                      </div>
+
+                      <!-- Remove (Desktop only) -->
+                      <div class="hidden md:flex md:w-auto justify-center pb-0.5">
+                        <button
+                          type="button"
+                          @click="removeItem(idx)"
+                          :disabled="form.items.length <= 1"
+                          class="p-2 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg shrink-0 transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                          title="Remove Item"
+                        >
+                          <Trash2 class="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -963,7 +985,7 @@ const submitConversion = async () => {
                   </label>
 
                   <!-- Item Notes Input -->
-                  <div class="flex-1 min-w-[180px]">
+                  <div class="flex-1 w-full sm:w-auto min-w-[200px]">
                     <input
                       type="text"
                       v-model="item.itemNotes"
@@ -979,6 +1001,28 @@ const submitConversion = async () => {
                     <span>Tax: <strong class="text-gray-700">{{ formatCurrency(calculateItemTotals(item).taxAmount) }}</strong></span>
                   </div>
                 </div>
+              </div>
+
+              <!-- Polished Empty State Box -->
+              <div 
+                v-if="!form.items.length" 
+                class="my-3 px-4 py-8 sm:py-10 bg-slate-50/70 rounded-2xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-center transition-all"
+              >
+                <div class="w-12 h-12 rounded-2xl bg-white border border-slate-200/80 shadow-2xs flex items-center justify-center text-slate-400 mb-3">
+                  <PackageSearch class="w-6 h-6 text-[#1b3b5f]/70" />
+                </div>
+                <p class="text-sm font-bold text-gray-800">No products added yet</p>
+                <p class="text-xs text-gray-500 mt-1 max-w-xs">
+                  Click below to select products and build your order.
+                </p>
+                <button
+                  type="button"
+                  @click="addItem"
+                  class="mt-4 px-4 py-2 bg-[#1b3b5f] hover:bg-[#132c49] text-white rounded-xl text-xs font-bold shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <Plus class="w-3.5 h-3.5" />
+                  <span>+ Add Product</span>
+                </button>
               </div>
             </div>
 
