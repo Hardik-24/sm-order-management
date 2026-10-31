@@ -17,7 +17,8 @@ import {
   Crown,
   CheckCircle2,
   ShoppingBag,
-  PackageSearch
+  PackageSearch,
+  UserPlus
 } from 'lucide-vue-next'
 import { formatCurrency } from '~/lib/utils'
 import CustomSelect from '~/components/ui/CustomSelect.vue'
@@ -533,7 +534,7 @@ const submitConversion = async () => {
             >
               <input type="checkbox" v-model="form.isUrgent" class="w-3.5 h-3.5 text-rose-600 rounded focus:ring-rose-500" />
               <Zap class="w-3.5 h-3.5 text-rose-600" />
-              <span class="hidden sm:inline">⚡ Urgent Order</span>
+              <span class="hidden sm:inline">Urgent Order</span>
               <span class="sm:hidden">Urgent</span>
             </label>
 
@@ -559,15 +560,22 @@ const submitConversion = async () => {
 
           <!-- Section 1: Customer Profile & Order Info (Matching create.vue:411-654) -->
           <div class="bg-white p-4 sm:p-6 rounded-xl border border-gray-200 shadow-2xs space-y-4">
-            <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider border-b border-gray-100 pb-2 mb-4 flex items-center justify-between">
-              <span>Customer & Fulfillment Details</span>
-              <span v-if="selectedCustomer" class="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full flex items-center gap-1 normal-case tracking-normal">
-                <CheckCircle2 class="w-3 h-3 text-emerald-600" /> Registered Customer
+            <div class="border-b border-gray-100 pb-2 mb-4 flex items-center justify-between gap-2">
+              <h3 class="text-xs sm:text-sm font-bold text-gray-900 uppercase tracking-wider truncate">
+                <span class="sm:hidden">Customer & Delivery</span>
+                <span class="hidden sm:inline">Customer & Fulfillment Details</span>
+              </h3>
+              <span v-if="selectedCustomer" class="shrink-0 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full flex items-center gap-1 normal-case tracking-normal shadow-2xs">
+                <CheckCircle2 class="w-3 h-3 text-emerald-600 shrink-0" />
+                <span class="sm:hidden">Registered</span>
+                <span class="hidden sm:inline">Registered Customer</span>
               </span>
-              <span v-else class="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full normal-case tracking-normal">
-                New Customer Lead
+              <span v-else class="shrink-0 text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2.5 py-0.5 rounded-full flex items-center gap-1 normal-case tracking-normal shadow-2xs">
+                <UserPlus class="w-3 h-3 text-blue-600 shrink-0" />
+                <span class="sm:hidden">New Lead</span>
+                <span class="hidden sm:inline">New Customer Lead</span>
               </span>
-            </h3>
+            </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
               <!-- Customer Picker (Matching create.vue:419-485) -->
@@ -637,6 +645,37 @@ const submitConversion = async () => {
                     </div>
                   </div>
                 </div>
+
+                <!-- New Customer Lead Info Banner (Mobile-Optimized) -->
+                <div v-else-if="quotation && !form.customerId" class="mt-3.5 p-3.5 sm:p-5 bg-gradient-to-r from-blue-50/70 via-white to-sky-50/20 rounded-2xl border border-blue-200 shadow-2xs transition-all">
+                  <div class="flex items-start sm:items-center gap-3 sm:gap-3.5 min-w-0">
+                    <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-blue-600 text-white flex items-center justify-center font-black text-sm sm:text-base shadow-xs shrink-0 tracking-wider">
+                      {{ getCustomerInitials(quotation.customerName) }}
+                    </div>
+                    <div class="min-w-0 flex-1">
+                      <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                        <h4 class="text-sm sm:text-base font-extrabold text-gray-900 tracking-tight leading-snug">
+                          {{ quotation.customerName }}
+                        </h4>
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-extrabold uppercase tracking-wider bg-blue-100 text-blue-700 border border-blue-200">
+                          <UserPlus class="w-3 h-3 text-blue-600 shrink-0" />
+                          <span>New Customer Lead</span>
+                        </span>
+                      </div>
+                      <div class="flex items-center gap-2 text-xs text-gray-500 font-medium mt-1 flex-wrap">
+                        <span v-if="quotation.customerPlace" class="flex items-center gap-1 text-gray-600">
+                          <MapPin class="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                          {{ quotation.customerPlace }}
+                        </span>
+                        <span v-if="quotation.customerPlace && quotation.customerPhone">•</span>
+                        <span v-if="quotation.customerPhone" class="text-gray-600 font-mono">{{ quotation.customerPhone }}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="mt-2.5 pt-2 border-t border-blue-100/80 text-[11px] text-blue-700 flex items-center gap-1.5 font-medium">
+                    <span>⚡ Order will auto-create this customer profile in database upon confirmation.</span>
+                  </div>
+                </div>
               </div>
 
               <!-- Placed By (Matching create.vue:488-492) -->
@@ -669,7 +708,7 @@ const submitConversion = async () => {
               <div class="md:col-span-2">
                 <label class="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-2 flex items-center justify-between">
                   <span>Transport & Delivery Vehicle *</span>
-                  <span class="text-[11px] font-semibold" :class="form.vehicleMode === 'OUR_FLEET' ? 'text-[#1b3b5f]' : (form.vehicleMode === 'THIRD_PARTY' ? 'text-indigo-700' : 'text-amber-700')">
+                  <span class="hidden md:inline text-[11px] font-semibold" :class="form.vehicleMode === 'OUR_FLEET' ? 'text-[#1b3b5f]' : (form.vehicleMode === 'THIRD_PARTY' ? 'text-indigo-700' : 'text-amber-700')">
                     {{ form.vehicleMode === 'OUR_FLEET' ? '✓ Company Fleet Dispatch' : (form.vehicleMode === 'THIRD_PARTY' ? '📦 Third Party (Porter/Rapido Handover)' : '🚗 Party Transport (Direct Handover)') }}
                   </span>
                 </label>
@@ -768,24 +807,30 @@ const submitConversion = async () => {
 
               <!-- Delivery Address Textarea (Matching create.vue:643-646) -->
               <div class="md:col-span-2">
-                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Delivery Address (Site / Destination) *</label>
+                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+                  <span class="sm:hidden">Delivery Address *</span>
+                  <span class="hidden sm:inline">Delivery Address (Site / Destination) *</span>
+                </label>
                 <textarea
                   v-model="form.deliveryAddress"
                   rows="2"
                   class="w-full text-sm border border-gray-300 rounded-lg p-3 bg-white text-gray-900 focus:ring-[#1b3b5f] focus:border-[#1b3b5f] resize-none"
                   required
-                  placeholder="Enter delivery address, site destination, or landmark..."
+                  placeholder="Delivery address, site or landmark..."
                 ></textarea>
               </div>
 
               <!-- Internal Order Notes (Matching create.vue:649-652) -->
               <div class="md:col-span-2">
-                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Internal Order Instructions / Dispatch Notes</label>
+                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+                  <span class="sm:hidden">Internal Dispatch Notes</span>
+                  <span class="hidden sm:inline">Internal Order Instructions / Dispatch Notes</span>
+                </label>
                 <textarea
                   v-model="form.notes"
                   rows="2"
                   class="w-full text-sm border border-gray-300 rounded-lg p-3 bg-white text-gray-900 focus:ring-[#1b3b5f] focus:border-[#1b3b5f] resize-none"
-                  placeholder="e.g. Call client before arrival, verify site unloading clearance..."
+                  placeholder="e.g. Call before arrival, gate timing, site contact..."
                 ></textarea>
               </div>
             </div>
@@ -989,7 +1034,7 @@ const submitConversion = async () => {
                     <input
                       type="text"
                       v-model="item.itemNotes"
-                      placeholder="Optional item note: e.g. edge-banding, packing mark..."
+                      placeholder="Note (e.g. edge-banding, batch)..."
                       class="w-full px-2.5 py-1 text-xs border border-gray-300 rounded-lg bg-white focus:ring-1 focus:ring-[#1b3b5f]"
                     />
                   </div>

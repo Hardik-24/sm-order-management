@@ -401,7 +401,7 @@ const getCustomerInitials = (name: string) => {
         <input type="checkbox" v-model="form.isUrgent" class="w-4 h-4 text-rose-600 rounded focus:ring-rose-500" />
         <div class="flex items-center gap-1.5 font-bold text-xs uppercase tracking-wider">
           <Zap class="w-4 h-4 text-rose-600" />
-          <span>⚡ Urgent Order</span>
+          <span>Urgent Order</span>
         </div>
       </label>
     </div>
@@ -411,7 +411,8 @@ const getCustomerInitials = (name: string) => {
       <!-- Section 1: Customer Profile & Order Info -->
       <div class="bg-white p-4 sm:p-6 rounded-xl border border-gray-200 shadow-sm space-y-4">
         <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider border-b border-gray-100 pb-2 mb-4 flex items-center justify-between">
-          <span>Customer & Fulfillment Details</span>
+          <span class="sm:hidden">Customer & Delivery</span>
+          <span class="hidden sm:inline">Customer & Fulfillment Details</span>
         </h3>
         
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
@@ -520,7 +521,7 @@ const getCustomerInitials = (name: string) => {
           <div class="md:col-span-2">
             <label class="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-2 flex items-center justify-between">
               <span>Transport & Delivery Vehicle *</span>
-              <span class="text-[11px] font-semibold" :class="form.vehicleMode === 'OUR_FLEET' ? 'text-[#1b3b5f]' : (form.vehicleMode === 'THIRD_PARTY' ? 'text-indigo-700' : 'text-amber-700')">
+              <span class="hidden md:inline text-[11px] font-semibold" :class="form.vehicleMode === 'OUR_FLEET' ? 'text-[#1b3b5f]' : (form.vehicleMode === 'THIRD_PARTY' ? 'text-indigo-700' : 'text-amber-700')">
                 {{ form.vehicleMode === 'OUR_FLEET' ? '✓ Company Fleet Dispatch' : (form.vehicleMode === 'THIRD_PARTY' ? '📦 Third Party (Porter/Rapido Handover)' : '🚗 Party Transport (Direct Handover)') }}
               </span>
             </label>
@@ -641,14 +642,20 @@ const getCustomerInitials = (name: string) => {
 
           <!-- Delivery Address Textarea -->
           <div class="md:col-span-2">
-            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Delivery Address (Site / Destination) *</label>
-            <textarea v-model="form.deliveryAddress" rows="2" class="w-full text-sm border border-gray-300 rounded-lg p-3 focus:ring-[#1b3b5f] focus:border-[#1b3b5f] resize-none" required placeholder="Enter delivery address, godown name, or landmark..."></textarea>
+            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+              <span class="sm:hidden">Delivery Address *</span>
+              <span class="hidden sm:inline">Delivery Address (Site / Destination) *</span>
+            </label>
+            <textarea v-model="form.deliveryAddress" rows="2" class="w-full text-sm border border-gray-300 rounded-lg p-3 focus:ring-[#1b3b5f] focus:border-[#1b3b5f] resize-none" required placeholder="Delivery address, site or landmark..."></textarea>
           </div>
 
           <!-- Internal Order Notes -->
           <div class="md:col-span-2">
-            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Internal Order Instructions / Dispatch Notes</label>
-            <textarea v-model="form.notes" rows="2" class="w-full text-sm border border-gray-300 rounded-lg p-3 focus:ring-[#1b3b5f] focus:border-[#1b3b5f] resize-none" placeholder="e.g. Call client 30 mins before arrival, deliver only between 10am-2pm, verify site unloading clearance..."></textarea>
+            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+              <span class="sm:hidden">Internal Dispatch Notes</span>
+              <span class="hidden sm:inline">Internal Order Instructions / Dispatch Notes</span>
+            </label>
+            <textarea v-model="form.notes" rows="2" class="w-full text-sm border border-gray-300 rounded-lg p-3 focus:ring-[#1b3b5f] focus:border-[#1b3b5f] resize-none" placeholder="e.g. Call before arrival, gate timing, site contact..."></textarea>
           </div>
         </div>
       </div>
@@ -861,7 +868,7 @@ const getCustomerInitials = (name: string) => {
                 <input 
                   type="text" 
                   v-model="item.itemNotes" 
-                  placeholder="Optional item note: e.g. custom edge-banding..."
+                  placeholder="Note (e.g. edge-banding, batch)..."
                   class="w-full px-2.5 py-1 text-xs border border-gray-300 rounded-lg bg-white focus:ring-1 focus:ring-[#1b3b5f]"
                 />
               </div>
