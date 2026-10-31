@@ -527,7 +527,7 @@
                     class="text-[10px] font-bold text-[#1b3b5f] hover:text-[#132c49] flex items-center gap-1 hover:underline cursor-pointer shrink-0"
                   >
                     <component :is="isManualCustomer ? Database : Edit3" class="w-3 h-3 text-[#1b3b5f]" />
-                    <span>{{ isManualCustomer ? 'Choose from Database' : '+ Enter Manually / New' }}</span>
+                    <span>{{ isManualCustomer ? 'Choose from Database' : '+ Enter Manually' }}</span>
                   </button>
                 </div>
 
@@ -543,20 +543,14 @@
                     class="w-full text-xs"
                     triggerClass="px-3 py-2 text-xs font-medium"
                   />
-                  <div v-if="selectedCustomerObj" class="flex items-center gap-1.5 text-[10px] text-gray-500">
-                    <span class="inline-flex items-center px-1.5 py-0.2 rounded font-bold bg-blue-50 text-blue-700 border border-blue-200">
-                      DB Customer
-                    </span>
-                    <span v-if="selectedCustomerObj.customerCode" class="font-mono text-gray-700">
-                      {{ selectedCustomerObj.customerCode }}
-                    </span>
-                    <span v-if="selectedCustomerObj.companyName" class="text-gray-600 truncate max-w-[150px]">
-                      • {{ selectedCustomerObj.companyName }}
+                  <div v-if="selectedCustomerObj" class="flex items-center justify-between text-[10px] text-gray-500 pt-0.5">
+                    <span v-if="selectedCustomerObj.companyName" class="text-gray-600 truncate font-medium">
+                      {{ selectedCustomerObj.companyName }}
                     </span>
                     <button 
                       type="button" 
                       @click="clearCustomerSelection()" 
-                      class="text-red-500 hover:text-red-700 hover:underline ml-auto font-medium"
+                      class="text-red-500 hover:text-red-700 hover:underline ml-auto font-medium cursor-pointer"
                     >
                       Clear
                     </button>
@@ -624,7 +618,7 @@
 
           <!-- Step 2: Search & Autocomplete Bar -->
           <div class="relative z-30">
-            <div class="bg-white rounded-2xl border-2 border-emerald-600/30 shadow-sm p-3 sm:p-3.5 transition-all focus-within:border-emerald-600 focus-within:ring-4 focus-within:ring-emerald-600/10">
+            <div class="bg-white rounded-2xl border-2 border-[#1b3b5f]/30 shadow-sm p-3 sm:p-3.5 transition-all focus-within:border-[#1b3b5f] focus-within:ring-4 focus-within:ring-[#1b3b5f]/10">
               <div class="flex items-center gap-3">
                 <div class="w-9 h-9 rounded-xl bg-[#1b3b5f] text-white flex items-center justify-center shrink-0 shadow-xs">
                   <Search class="w-4 h-4" />
@@ -677,7 +671,7 @@
                 @click="addItemToQuote(item)"
                 @mouseenter="highlightedIndex = idx"
                 class="p-3 sm:p-3.5 flex items-center justify-between gap-3 cursor-pointer transition-colors"
-                :class="highlightedIndex === idx ? 'bg-emerald-50/70 border-l-4 border-l-[#1b3b5f]' : 'hover:bg-gray-50/80'"
+                :class="highlightedIndex === idx ? 'bg-sky-50/70 border-l-4 border-l-[#1b3b5f]' : 'hover:bg-gray-50/80'"
               >
                 <div class="flex items-center gap-2.5 min-w-0">
                   <span class="w-6 h-6 rounded-md bg-gray-100 text-gray-700 font-mono text-[11px] font-bold flex items-center justify-center shrink-0">
