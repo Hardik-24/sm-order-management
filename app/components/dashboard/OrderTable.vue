@@ -26,6 +26,7 @@ const props = defineProps<{
   deliveryStatus?: string
   isApproved?: string
   scope?: string
+  showScopeToggle?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -55,6 +56,11 @@ const canViewAllCompanyOrders = computed(() => {
   if (user.value.role === 'ADMIN') return true
   const perms = getEffectiveActionPermissions(user.value)
   return perms.canViewAllCompanyOrders ?? true
+})
+
+const shouldShowScopeToggle = computed(() => {
+  if (props.showScopeToggle !== undefined) return props.showScopeToggle
+  return props.scope !== undefined
 })
 
 const tbodyRef = ref<HTMLElement | null>(null)
@@ -266,7 +272,7 @@ const getItemsTotalQuantity = (order: Order) => {
       <div class="flex flex-col sm:flex-row gap-3 sm:items-center w-full md:w-auto">
         <!-- Segmented Scope Toggle: All Company vs My Orders (Mobile: full row at top above search; Desktop: inline) -->
         <div
-          v-if="canViewAllCompanyOrders"
+          v-if="shouldShowScopeToggle && canViewAllCompanyOrders"
           class="inline-flex items-center bg-gray-100 p-1 rounded-xl border border-gray-200/80 shadow-2xs w-full sm:w-auto justify-center sm:justify-start shrink-0 order-first sm:order-2"
         >
           <button

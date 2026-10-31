@@ -404,6 +404,7 @@ const handleOrderSelect = (orderId: string) => {
       :orders="ordersData?.orders || []"
       :isLoading="ordersPending"
       :total="ordersData?.total || 0"
+      :showScopeToggle="false"
       v-model:page="page"
       v-model:limit="limit"
       v-model:search="search"
