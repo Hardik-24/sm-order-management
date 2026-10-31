@@ -74,12 +74,14 @@ export default defineEventHandler(async (event) => {
   // Salesperson scoping: Admin can select any rep; Sales can toggle All Company vs My Orders
   const salesPersonId = (query.salesPersonId as string) || ''
   const scope = (query.scope as string) || ''
+  const canViewAllCompany = user.role === 'ADMIN' || (user.actionPermissions?.canViewAllCompanyOrders ?? true)
+
   if (user.role === 'ADMIN') {
     if (salesPersonId && salesPersonId !== 'all') {
       andConditions.push({ salesPersonId })
     }
   } else if (user.role === 'SALES') {
-    if (scope === 'mine' || salesPersonId === 'mine' || salesPersonId === user.id) {
+    if (!canViewAllCompany || scope === 'mine' || salesPersonId === 'mine' || salesPersonId === user.id) {
       andConditions.push({ salesPersonId: user.id })
     }
   }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Search, Filter, MoreHorizontal, ChevronRight, Check, Calendar, X, ArrowRight, Clock, Package, Truck, IndianRupee, CheckCheck } from 'lucide-vue-next'
+import { Search, Filter, MoreHorizontal, ChevronRight, Check, Calendar, X, ArrowRight, Clock, Package, Truck, IndianRupee, CheckCheck, Building2, User as UserIcon } from 'lucide-vue-next'
 import { formatTime, getDisplayStatus, getOverallColor, getStatusColor } from '~~/app/lib/utils'
 import CustomSelect from '~/components/ui/CustomSelect.vue'
 import TableFilterButtons from '~/components/dashboard/TableFilterButtons.vue'
@@ -8,6 +8,7 @@ import StatusBadge from '~/components/ui/StatusBadge.vue'
 import FloatingHorizontalScrollbar from '~/components/ui/FloatingHorizontalScrollbar.vue'
 import LoadingTopBar from '~/components/ui/LoadingTopBar.vue'
 import TableSkeletonRows from '~/components/ui/TableSkeletonRows.vue'
+import { getEffectiveActionPermissions } from '~/utils/permissions'
 import type { Order } from '~/types'
 
 const props = defineProps<{
@@ -24,6 +25,7 @@ const props = defineProps<{
   packingStatus?: string
   deliveryStatus?: string
   isApproved?: string
+  scope?: string
 }>()
 
 const emit = defineEmits<{
@@ -37,6 +39,7 @@ const emit = defineEmits<{
   (e: 'update:packingStatus', val: string): void
   (e: 'update:deliveryStatus', val: string): void
   (e: 'update:isApproved', val: string): void
+  (e: 'update:scope', val: string): void
   (e: 'select', orderId: string): void
 }>()
 
@@ -46,6 +49,13 @@ import { useGsapAnimation } from '~/composables/useGsapAnimation'
 
 const { user, hasRole } = useAuth()
 const { animateStagger, initContext } = useGsapAnimation()
+
+const canViewAllCompanyOrders = computed(() => {
+  if (!user.value) return false
+  if (user.value.role === 'ADMIN') return true
+  const perms = getEffectiveActionPermissions(user.value)
+  return perms.canViewAllCompanyOrders ?? true
+})
 
 const tbodyRef = ref<HTMLElement | null>(null)
 const mobileListRef = ref<HTMLElement | null>(null)
@@ -271,6 +281,31 @@ const getItemsTotalQuantity = (order: Order) => {
               class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
             >
               <X class="h-4 w-4" />
+            </button>
+          </div>
+
+          <!-- Segmented Scope Toggle: All Company vs My Orders -->
+          <div
+            v-if="canViewAllCompanyOrders"
+            class="inline-flex items-center bg-gray-100 p-0.5 rounded-lg border border-gray-200 shrink-0 self-stretch sm:self-auto justify-center"
+          >
+            <button
+              type="button"
+              @click="emit('update:scope', 'all'); emit('update:page', 1)"
+              class="px-2.5 py-1.5 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              :class="(scope || 'all') === 'all' ? 'bg-white text-[#1b3b5f] shadow-2xs font-bold' : 'text-gray-500 hover:text-gray-900'"
+            >
+              <Building2 class="w-3.5 h-3.5" />
+              <span>All Company</span>
+            </button>
+            <button
+              type="button"
+              @click="emit('update:scope', 'mine'); emit('update:page', 1)"
+              class="px-2.5 py-1.5 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              :class="scope === 'mine' ? 'bg-white text-[#1b3b5f] shadow-2xs font-bold' : 'text-gray-500 hover:text-gray-900'"
+            >
+              <UserIcon class="w-3.5 h-3.5" />
+              <span>My Orders</span>
             </button>
           </div>
           

@@ -126,6 +126,7 @@ export async function requireActionPermission(
     // Default role capabilities
     if (permission === 'canEditOrders' && dbUser.role === 'SALES') hasPerm = true
     if (permission === 'canEditCustomers' && dbUser.role === 'SALES') hasPerm = true
+    if (permission === 'canViewAllCompanyOrders') hasPerm = true
   }
 
   if (!hasPerm) {

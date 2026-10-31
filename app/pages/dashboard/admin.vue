@@ -203,6 +203,16 @@
                       Delete Quotes
                     </span>
                     <span 
+                      v-if="u.role === 'SALES'"
+                      class="text-[9px] font-semibold px-1.5 py-0.5 rounded border"
+                      :class="getEffectiveActionPermissions(u).canViewAllCompanyOrders 
+                        ? 'bg-sky-50 text-sky-700 border-sky-200' 
+                        : 'bg-purple-50 text-purple-700 border-purple-200'"
+                      :title="getEffectiveActionPermissions(u).canViewAllCompanyOrders ? 'Can view all company orders & quotes' : 'Restricted to personal orders & quotes only'"
+                    >
+                      {{ getEffectiveActionPermissions(u).canViewAllCompanyOrders ? 'All Company Scope' : 'My Scope Only' }}
+                    </span>
+                    <span 
                       v-if="!getEffectiveActionPermissions(u).canEditOrders && !getEffectiveActionPermissions(u).canEditOrderStatus && !getEffectiveActionPermissions(u).canCancelOrders && !getEffectiveActionPermissions(u).canEditCustomers && !getEffectiveActionPermissions(u).canEditProducts && !getEffectiveActionPermissions(u).canDeleteQuotations"
                       class="text-[9px] text-gray-400 italic"
                     >
@@ -373,6 +383,15 @@
                   class="text-[9px] font-semibold px-1.5 py-0.2 rounded bg-rose-50 text-rose-700 border border-rose-200"
                 >
                   Delete Quotes
+                </span>
+                <span 
+                  v-if="u.role === 'SALES'"
+                  class="text-[9px] font-semibold px-1.5 py-0.2 rounded border"
+                  :class="getEffectiveActionPermissions(u).canViewAllCompanyOrders 
+                    ? 'bg-sky-50 text-sky-700 border-sky-200' 
+                    : 'bg-purple-50 text-purple-700 border-purple-200'"
+                >
+                  {{ getEffectiveActionPermissions(u).canViewAllCompanyOrders ? 'All Company' : 'My Scope' }}
                 </span>
               </div>
             </div>
@@ -724,6 +743,41 @@
                     </p>
                   </div>
                 </div>
+
+                <!-- 7. View All Company Orders & Quotes -->
+                <div
+                  @click="toggleActionPermission('canViewAllCompanyOrders')"
+                  class="p-3 rounded-lg border text-left transition-all flex items-start gap-2.5 select-none"
+                  :class="[
+                    form.role === 'ADMIN' ? 'cursor-not-allowed bg-purple-50/30 border-purple-200' : 'cursor-pointer',
+                    form.actionPermissions.canViewAllCompanyOrders 
+                      ? 'border-[#1b3b5f] bg-sky-50/25 text-[#1a1a1a] shadow-2xs' 
+                      : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50/60'
+                  ]"
+                >
+                  <div class="mt-0.5 shrink-0">
+                    <div 
+                      class="w-4 h-4 rounded border flex items-center justify-center transition-colors"
+                      :class="form.actionPermissions.canViewAllCompanyOrders ? 'bg-[#1b3b5f] border-[#1b3b5f] text-white' : 'border-gray-300 bg-white'"
+                    >
+                      <Check v-if="form.actionPermissions.canViewAllCompanyOrders" class="w-3 h-3 stroke-[3]" />
+                    </div>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center justify-between gap-1">
+                      <span class="text-xs font-semibold text-gray-900">View All Company Orders & Quotes</span>
+                      <span 
+                        class="text-[10px] font-semibold px-1.5 py-0.2 rounded"
+                        :class="form.actionPermissions.canViewAllCompanyOrders ? 'bg-sky-100 text-sky-800' : 'bg-gray-100 text-gray-500'"
+                      >
+                        {{ form.actionPermissions.canViewAllCompanyOrders ? 'Company Scope' : 'My Scope Only' }}
+                      </span>
+                    </div>
+                    <p class="text-[11px] text-gray-500 mt-0.5 leading-snug">
+                      Allows user to switch between All Company and My Orders / My Quotations. If disabled, user is strictly restricted to their own data.
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -985,6 +1039,7 @@ const form = ref<{
     canEditCustomers: false,
     canEditProducts: false,
     canDeleteQuotations: false,
+    canViewAllCompanyOrders: true,
   }
 })
 
@@ -1018,14 +1073,15 @@ onMounted(() => {
 
 // Action Permissions helpers
 const activeActionCount = computed(() => {
-  if (form.value.role === 'ADMIN') return 6
+  if (form.value.role === 'ADMIN') return 7
   const a = form.value.actionPermissions
   return (a.canEditOrders ? 1 : 0) + 
          (a.canEditOrderStatus ? 1 : 0) + 
          (a.canCancelOrders ? 1 : 0) + 
          (a.canEditCustomers ? 1 : 0) + 
          (a.canEditProducts ? 1 : 0) + 
-         (a.canDeleteQuotations ? 1 : 0)
+         (a.canDeleteQuotations ? 1 : 0) +
+         (a.canViewAllCompanyOrders ? 1 : 0)
 })
 
 const toggleActionPermission = (key: keyof UserActionPermissions) => {
@@ -1098,6 +1154,7 @@ const onRoleChanged = (newRole: any) => {
       canEditCustomers: true,
       canEditProducts: true,
       canDeleteQuotations: true,
+      canViewAllCompanyOrders: true,
     }
   } else {
     form.value.allowedPages = form.value.allowedPages.filter(k => k !== 'ADMIN')
@@ -1111,6 +1168,7 @@ const onRoleChanged = (newRole: any) => {
       canEditCustomers: false,
       canEditProducts: false,
       canDeleteQuotations: false,
+      canViewAllCompanyOrders: true,
     }
     form.value.actionPermissions = { ...defaultActions }
   }
@@ -1209,7 +1267,7 @@ const openModal = (u: any = null) => {
       isActive: u.isActive !== false,
       allowedPages: u.role === 'ADMIN' ? APP_PAGES.map(p => p.key) : [...effective],
       actionPermissions: u.role === 'ADMIN' 
-        ? { canEditOrders: true, canEditOrderStatus: true, canCancelOrders: true, canEditCustomers: true, canEditProducts: true, canDeleteQuotations: true }
+        ? { canEditOrders: true, canEditOrderStatus: true, canCancelOrders: true, canEditCustomers: true, canEditProducts: true, canDeleteQuotations: true, canViewAllCompanyOrders: true }
         : { ...effectiveActions }
     }
   } else {
@@ -1222,6 +1280,7 @@ const openModal = (u: any = null) => {
       canEditCustomers: true,
       canEditProducts: false,
       canDeleteQuotations: false,
+      canViewAllCompanyOrders: true,
     }
     form.value = {
       name: '',
@@ -1265,6 +1324,7 @@ const saveUser = async () => {
         canEditCustomers: true,
         canEditProducts: true,
         canDeleteQuotations: true,
+        canViewAllCompanyOrders: true,
       }
     : { ...form.value.actionPermissions }
 

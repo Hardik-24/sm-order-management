@@ -129,6 +129,31 @@
         </div>
 
         <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+          <!-- Segmented Scope Toggle: All Company vs My Quotes -->
+          <div
+            v-if="canViewAllCompanyOrders"
+            class="inline-flex items-center bg-gray-100 p-0.5 rounded-lg border border-gray-200 shrink-0 self-stretch sm:self-auto justify-center"
+          >
+            <button
+              type="button"
+              @click="quoteScope = 'all'"
+              class="px-2.5 py-1.5 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              :class="quoteScope === 'all' ? 'bg-white text-[#1b3b5f] shadow-2xs font-bold' : 'text-gray-500 hover:text-gray-900'"
+            >
+              <Building2 class="w-3.5 h-3.5" />
+              <span>All Company</span>
+            </button>
+            <button
+              type="button"
+              @click="quoteScope = 'mine'"
+              class="px-2.5 py-1.5 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              :class="quoteScope === 'mine' ? 'bg-white text-[#1b3b5f] shadow-2xs font-bold' : 'text-gray-500 hover:text-gray-900'"
+            >
+              <UserIcon class="w-3.5 h-3.5" />
+              <span>My Quotes</span>
+            </button>
+          </div>
+
           <button
             type="button"
             @click="fetchQuotations"
@@ -392,7 +417,9 @@ import {
   Phone,
   MapPin,
   ChevronRight,
-  AlertCircle
+  AlertCircle,
+  Building2,
+  User as UserIcon
 } from 'lucide-vue-next'
 import { useSnackbar } from '~/composables/useSnackbar'
 import { useAuth } from '~/composables/useAuth'
@@ -422,6 +449,24 @@ const canDeleteQuotations = computed(() => {
   if (user.value.role === 'ADMIN') return true
   const perms = getEffectiveActionPermissions(user.value)
   return Boolean(perms.canDeleteQuotations)
+})
+const canViewAllCompanyOrders = computed(() => {
+  if (!user.value) return false
+  if (user.value.role === 'ADMIN') return true
+  const perms = getEffectiveActionPermissions(user.value)
+  return perms.canViewAllCompanyOrders ?? true
+})
+
+const quoteScope = ref<'all' | 'mine'>(canViewAllCompanyOrders.value ? 'all' : 'mine')
+
+watch(canViewAllCompanyOrders, (val) => {
+  if (!val) {
+    quoteScope.value = 'mine'
+  }
+})
+
+watch(quoteScope, () => {
+  fetchQuotations()
 })
 
 // State
@@ -499,7 +544,9 @@ const selectedQuote = ref<any | null>(null)
 const fetchQuotations = async () => {
   isLoading.value = true
   try {
-    const res = await $fetch<any>('/api/quotations')
+    const res = await $fetch<any>('/api/quotations', {
+      params: { scope: quoteScope.value }
+    })
     if (res?.quotations) {
       quotations.value = res.quotations
     }

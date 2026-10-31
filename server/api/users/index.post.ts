@@ -28,6 +28,7 @@ export default defineEventHandler(async (event) => {
       canEditCustomers: true,
       canEditProducts: true,
       canDeleteQuotations: true,
+      canViewAllCompanyOrders: true,
     }
   }
 

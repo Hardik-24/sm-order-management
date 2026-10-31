@@ -10,6 +10,7 @@ import OrderTable from '~/components/dashboard/OrderTable.vue'
 
 import OrderDetailPanel from '~/components/dashboard/OrderDetailPanel.vue'
 import { rankAndFilter } from '~/utils/search'
+import { getEffectiveActionPermissions } from '~/utils/permissions'
 
 definePageMeta({
   layout: 'dashboard'
@@ -19,8 +20,21 @@ const { user, canAccessRoute } = useAuth()
 const isSales = computed(() => user.value?.role === 'SALES')
 const isAdmin = computed(() => user.value?.role === 'ADMIN')
 
+const canViewAllCompanyOrders = computed(() => {
+  if (!user.value) return false
+  if (user.value.role === 'ADMIN') return true
+  const perms = getEffectiveActionPermissions(user.value)
+  return perms.canViewAllCompanyOrders ?? true
+})
+
 // 1. Sales rep toggle: defaults to 'mine' (personal target view)
 const salesScope = ref<'mine' | 'all'>('mine')
+
+watch(canViewAllCompanyOrders, (val) => {
+  if (!val && isSales.value) {
+    salesScope.value = 'mine'
+  }
+}, { immediate: true })
 
 // 2. Admin dropdown: defaults to 'all' (company-wide view)
 const adminSelectedSalesPerson = ref<string>('all')
@@ -161,7 +175,7 @@ const handleOrderSelect = (orderId: string) => {
           <!-- Scope Controls: Sales Toggle or Admin Dropdown (Mobile: #2 after date; Desktop: #1) -->
           <div class="w-full md:w-auto order-2 md:order-1">
             <!-- 1. SALES ROLE TOGGLE: All Company vs My Orders -->
-            <div v-if="isSales" class="inline-flex items-center bg-gray-100 p-1 rounded-xl border border-gray-200/80 shadow-2xs w-full sm:w-auto justify-center sm:justify-start">
+            <div v-if="isSales && canViewAllCompanyOrders" class="inline-flex items-center bg-gray-100 p-1 rounded-xl border border-gray-200/80 shadow-2xs w-full sm:w-auto justify-center sm:justify-start">
               <button
                 type="button"
                 @click="salesScope = 'all'"

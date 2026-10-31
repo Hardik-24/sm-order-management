@@ -146,6 +146,7 @@ export const DEFAULT_ROLE_ACTION_PERMISSIONS: Record<UserRole, UserActionPermiss
     canEditCustomers: true,
     canEditProducts: true,
     canDeleteQuotations: true,
+    canViewAllCompanyOrders: true,
   },
   SALES: {
     canEditOrders: true,
@@ -154,6 +155,7 @@ export const DEFAULT_ROLE_ACTION_PERMISSIONS: Record<UserRole, UserActionPermiss
     canEditCustomers: true,
     canEditProducts: false,
     canDeleteQuotations: false,
+    canViewAllCompanyOrders: true,
   },
   BILLING: {
     canEditOrders: false,
@@ -162,6 +164,7 @@ export const DEFAULT_ROLE_ACTION_PERMISSIONS: Record<UserRole, UserActionPermiss
     canEditCustomers: false,
     canEditProducts: false,
     canDeleteQuotations: false,
+    canViewAllCompanyOrders: true,
   },
   PACKING: {
     canEditOrders: false,
@@ -170,6 +173,7 @@ export const DEFAULT_ROLE_ACTION_PERMISSIONS: Record<UserRole, UserActionPermiss
     canEditCustomers: false,
     canEditProducts: false,
     canDeleteQuotations: false,
+    canViewAllCompanyOrders: true,
   },
   DELIVERY: {
     canEditOrders: false,
@@ -178,6 +182,7 @@ export const DEFAULT_ROLE_ACTION_PERMISSIONS: Record<UserRole, UserActionPermiss
     canEditCustomers: false,
     canEditProducts: false,
     canDeleteQuotations: false,
+    canViewAllCompanyOrders: true,
   },
 }
 
@@ -195,6 +200,7 @@ export function getEffectiveActionPermissions(
       canEditCustomers: false,
       canEditProducts: false,
       canDeleteQuotations: false,
+      canViewAllCompanyOrders: false,
     }
   }
 
@@ -207,6 +213,7 @@ export function getEffectiveActionPermissions(
       canEditCustomers: true,
       canEditProducts: true,
       canDeleteQuotations: true,
+      canViewAllCompanyOrders: true,
     }
   }
 
@@ -218,6 +225,7 @@ export function getEffectiveActionPermissions(
     canEditCustomers: false,
     canEditProducts: false,
     canDeleteQuotations: false,
+    canViewAllCompanyOrders: false,
   }
 
   const userPerms = (user.actionPermissions && typeof user.actionPermissions === 'object')
@@ -231,6 +239,7 @@ export function getEffectiveActionPermissions(
     canEditCustomers: userPerms.canEditCustomers !== undefined ? Boolean(userPerms.canEditCustomers) : defaults.canEditCustomers,
     canEditProducts: userPerms.canEditProducts !== undefined ? Boolean(userPerms.canEditProducts) : defaults.canEditProducts,
     canDeleteQuotations: userPerms.canDeleteQuotations !== undefined ? Boolean(userPerms.canDeleteQuotations) : defaults.canDeleteQuotations,
+    canViewAllCompanyOrders: userPerms.canViewAllCompanyOrders !== undefined ? Boolean(userPerms.canViewAllCompanyOrders) : defaults.canViewAllCompanyOrders,
   }
 }
 

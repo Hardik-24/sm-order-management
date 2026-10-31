@@ -3,11 +3,27 @@ import { ref, computed, watch } from 'vue'
 import { refDebounced } from '@vueuse/core'
 import OrderTable from '~/components/dashboard/OrderTable.vue'
 import OrderDetailPanel from '~/components/dashboard/OrderDetailPanel.vue'
+import { getEffectiveActionPermissions } from '~/utils/permissions'
 
 definePageMeta({ layout: 'dashboard' })
 
 // Assuming useAuth is auto-imported
-const { hasRole } = useAuth()
+const { user, hasRole } = useAuth()
+
+const canViewAllCompanyOrders = computed(() => {
+  if (!user.value) return false
+  if (user.value.role === 'ADMIN') return true
+  const perms = getEffectiveActionPermissions(user.value)
+  return perms.canViewAllCompanyOrders ?? true
+})
+
+const scope = ref<'all' | 'mine'>(canViewAllCompanyOrders.value ? 'all' : 'mine')
+
+watch(canViewAllCompanyOrders, (val) => {
+  if (!val) {
+    scope.value = 'mine'
+  }
+})
 
 const page = ref(1)
 const limit = ref(10)
@@ -24,14 +40,15 @@ const selectedOrderId = ref<string | null>(null)
 const isPanelOpen = ref(false)
 
 // Reset page to 1 whenever any filter or search changes
-watch([debouncedSearch, status, billingStatus, packingStatus, deliveryStatus, isApproved, startDate, endDate], () => {
+watch([debouncedSearch, status, billingStatus, packingStatus, deliveryStatus, isApproved, startDate, endDate, scope], () => {
   page.value = 1
 })
 
 const queryObj = computed(() => {
   const q: Record<string, any> = { 
     page: page.value, 
-    limit: limit.value 
+    limit: limit.value,
+    scope: scope.value 
   }
   if (debouncedSearch.value && debouncedSearch.value.trim()) q.search = debouncedSearch.value.trim()
   if (status.value) q.status = status.value
@@ -113,6 +130,7 @@ onOrderSync((event) => {
       v-model:isApproved="isApproved"
       v-model:startDate="startDate"
       v-model:endDate="endDate"
+      v-model:scope="scope"
       @select="handleSelect"
     />
 
