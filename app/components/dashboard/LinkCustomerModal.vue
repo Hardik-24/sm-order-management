@@ -55,7 +55,7 @@
           <div class="p-3 bg-blue-50/70 border border-blue-200 rounded-xl text-blue-900 flex items-start gap-2.5">
             <Info class="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
             <p class="text-[11px] leading-relaxed">
-              To generate an invoice and post to Busy, select the official Customer Ledger from Busy below. Downstream reporting will cleanly tie to this account.
+              To generate an invoice and post to Busy, select the official Customer Ledger from Busy below.
             </p>
           </div>
 

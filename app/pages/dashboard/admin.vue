@@ -8,40 +8,151 @@
 
   <div v-else class="space-y-5 sm:space-y-6 md:space-y-8 max-w-7xl mx-auto">
     <!-- Header -->
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
       <div>
-        <h2 class="text-2xl font-bold text-[#1a1a1a]">Administration</h2>
-        <p class="text-sm text-gray-500 mt-1">Manage system users, roles, and granular page access permissions</p>
-      </div>
-      <div class="flex items-center gap-2.5">
-        <button 
-          @click="isSheetTabsModalOpen = true"
-          class="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 hover:text-[#1b3b5f] hover:border-[#1b3b5f]/40 px-3.5 py-2 rounded-lg hover:bg-[#1b3b5f]/5 transition-all shadow-xs text-sm font-medium cursor-pointer"
-        >
-          <FileSpreadsheet class="w-4 h-4 text-emerald-600" />
-          <span>Price List Sheets</span>
-        </button>
-
-        <button 
-          @click="isMastersModalOpen = true"
-          class="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 hover:text-[#1b3b5f] hover:border-[#1b3b5f]/40 px-3.5 py-2 rounded-lg hover:bg-[#1b3b5f]/5 transition-all shadow-xs text-sm font-medium cursor-pointer"
-        >
-          <Database class="w-4 h-4 text-[#1b3b5f]" />
-          <span>Dropdown Masters</span>
-        </button>
-
-        <button 
-          @click="openModal()"
-          class="flex items-center gap-2 bg-[#1b3b5f] text-white px-4 py-2 rounded-lg hover:bg-[#132c49] transition-colors shadow-sm text-sm font-medium cursor-pointer"
-        >
-          <Plus class="w-4 h-4" />
-          <span>Add User</span>
-        </button>
+        <h2 class="text-2xl font-bold text-[#1a1a1a]">Administration Hub</h2>
+        <p class="text-sm text-gray-500 mt-1">Configure pricing sources, master dropdown catalogs, and team access permissions</p>
       </div>
     </div>
 
-    <!-- Users Table -->
-    <div class="bg-white rounded-xl border border-[#e5e2dc] shadow-sm overflow-hidden">
+    <!-- 3 Admin Hub Tiles -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6">
+      <!-- 1. Price List Sheets Tile -->
+      <div 
+        @click="isSheetTabsModalOpen = true"
+        class="group relative bg-white rounded-2xl border border-gray-200/90 p-6 shadow-xs hover:shadow-md hover:border-emerald-400 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer flex flex-col justify-between overflow-hidden"
+      >
+        <div class="absolute -right-6 -bottom-6 w-28 h-28 bg-emerald-50/80 rounded-full group-hover:scale-125 transition-transform duration-300 pointer-events-none"></div>
+        <div class="space-y-4 relative z-10">
+          <div class="flex items-center justify-between">
+            <div class="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-200/80 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform shadow-2xs">
+              <FileSpreadsheet class="w-6 h-6" />
+            </div>
+            <span class="text-[10px] font-bold uppercase tracking-wider bg-emerald-100/90 text-emerald-800 px-2.5 py-1 rounded-full border border-emerald-200 shadow-2xs">
+              Sheets Sync
+            </span>
+          </div>
+          <div>
+            <h3 class="text-base sm:text-lg font-bold text-gray-900 group-hover:text-emerald-700 transition-colors">
+              Price List Sheets
+            </h3>
+            <p class="text-xs text-gray-500 mt-1.5 leading-relaxed">
+              Google Sheets price list tabs, category mappings, and live quotation search rules.
+            </p>
+          </div>
+        </div>
+        <div class="pt-4 mt-4 border-t border-gray-100 flex items-center justify-between text-xs font-bold text-emerald-700 group-hover:text-emerald-800 relative z-10">
+          <span>Configure Sheets</span>
+          <ChevronRight class="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+        </div>
+      </div>
+
+      <!-- 2. Dropdown Masters Tile -->
+      <div 
+        @click="isMastersModalOpen = true"
+        class="group relative bg-white rounded-2xl border border-gray-200/90 p-6 shadow-xs hover:shadow-md hover:border-[#1b3b5f]/40 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer flex flex-col justify-between overflow-hidden"
+      >
+        <div class="absolute -right-6 -bottom-6 w-28 h-28 bg-sky-50/80 rounded-full group-hover:scale-125 transition-transform duration-300 pointer-events-none"></div>
+        <div class="space-y-4 relative z-10">
+          <div class="flex items-center justify-between">
+            <div class="w-12 h-12 rounded-xl bg-[#1b3b5f]/10 border border-[#1b3b5f]/20 text-[#1b3b5f] flex items-center justify-center group-hover:scale-110 transition-transform shadow-2xs">
+              <Database class="w-6 h-6" />
+            </div>
+            <span class="text-[10px] font-bold uppercase tracking-wider bg-sky-100/90 text-sky-800 px-2.5 py-1 rounded-full border border-sky-200 shadow-2xs">
+              Catalogs
+            </span>
+          </div>
+          <div>
+            <h3 class="text-base sm:text-lg font-bold text-gray-900 group-hover:text-[#1b3b5f] transition-colors">
+              Dropdown Masters
+            </h3>
+            <p class="text-xs text-gray-500 mt-1.5 leading-relaxed">
+              Manage vehicle fleets, payment terms, delivery cancellation reasons, and order categories.
+            </p>
+          </div>
+        </div>
+        <div class="pt-4 mt-4 border-t border-gray-100 flex items-center justify-between text-xs font-bold text-[#1b3b5f] group-hover:text-[#132c49] relative z-10">
+          <span>Manage Masters</span>
+          <ChevronRight class="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+        </div>
+      </div>
+
+      <!-- 3. Users & Permissions Tile -->
+      <div 
+        @click="isUsersModalOpen = true"
+        class="group relative bg-white rounded-2xl border border-gray-200/90 p-6 shadow-xs hover:shadow-md hover:border-purple-300 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer flex flex-col justify-between overflow-hidden"
+      >
+        <div class="absolute -right-6 -bottom-6 w-28 h-28 bg-purple-50/80 rounded-full group-hover:scale-125 transition-transform duration-300 pointer-events-none"></div>
+        <div class="space-y-4 relative z-10">
+          <div class="flex items-center justify-between">
+            <div class="w-12 h-12 rounded-xl bg-purple-50 border border-purple-200/80 text-purple-700 flex items-center justify-center group-hover:scale-110 transition-transform shadow-2xs">
+              <Users class="w-6 h-6" />
+            </div>
+            <span class="text-[10px] font-bold uppercase tracking-wider bg-purple-100/90 text-purple-800 px-2.5 py-1 rounded-full border border-purple-200 shadow-2xs">
+              {{ users?.length || 0 }} Accounts
+            </span>
+          </div>
+          <div>
+            <h3 class="text-base sm:text-lg font-bold text-gray-900 group-hover:text-purple-800 transition-colors">
+              Users & Permissions
+            </h3>
+            <p class="text-xs text-gray-500 mt-1.5 leading-relaxed">
+              System user accounts, operational roles, page access, and granular action permissions.
+            </p>
+          </div>
+        </div>
+        <div class="pt-4 mt-4 border-t border-gray-100 flex items-center justify-between text-xs font-bold text-purple-700 group-hover:text-purple-900 relative z-10">
+          <span>Manage Team & Access</span>
+          <ChevronRight class="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Users & Permissions Modal -->
+    <Teleport to="body">
+      <div v-if="isUsersModalOpen" class="fixed inset-0 z-[300] flex items-center justify-center p-2 sm:p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[calc(1rem+env(safe-area-inset-top,0px))] overflow-y-auto">
+        <!-- Backdrop -->
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="isUsersModalOpen = false"></div>
+
+        <!-- Modal Container -->
+        <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[calc(100dvh-2.5rem-env(safe-area-inset-bottom,0px)-env(safe-area-inset-top,0px))] md:max-h-[92vh] overflow-hidden flex flex-col border border-gray-100">
+          <!-- Header with + Add User Button -->
+          <div class="px-4 sm:px-6 py-3.5 sm:py-4 border-b border-gray-200 flex items-center justify-between bg-white shrink-0">
+            <div class="flex items-center gap-2.5 sm:gap-3 min-w-0">
+              <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center border border-purple-200 shrink-0">
+                <Users class="w-5 h-5" />
+              </div>
+              <div class="min-w-0">
+                <h3 class="text-base sm:text-lg font-bold text-[#1a1a1a] flex items-center gap-2 truncate">
+                  Users & Permissions
+                </h3>
+                <p class="text-xs text-gray-500 mt-0.5 truncate">
+                  Manage system accounts, assign roles, and configure granular action permissions
+                </p>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2.5 shrink-0 ml-2">
+              <button 
+                @click="openModal()"
+                class="flex items-center gap-1.5 bg-[#1b3b5f] text-white px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-lg hover:bg-[#132c49] transition-colors shadow-2xs text-xs font-semibold cursor-pointer"
+              >
+                <Plus class="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <span>Add User</span>
+              </button>
+
+              <button 
+                @click="isUsersModalOpen = false" 
+                class="text-gray-400 hover:text-gray-600 p-1.5 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+              >
+                <X class="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          <!-- Body: Users Table & Mobile Cards -->
+          <div class="overflow-y-auto flex-1">
+            <div class="bg-white overflow-hidden">
       <div ref="adminTableRef" class="hidden md:block overflow-x-auto no-scrollbar">
         <table class="w-full text-left border-collapse">
           <thead>
@@ -422,11 +533,15 @@
           </div>
         </template>
       </div>
-    </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
 
     <!-- Edit / Add User Modal with Page Access Fields -->
     <Teleport to="body">
-      <div v-if="isModalOpen" class="fixed inset-0 z-[300] flex items-center justify-center p-2 sm:p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[calc(1rem+env(safe-area-inset-top,0px))] overflow-y-auto">
+      <div v-if="isModalOpen" class="fixed inset-0 z-[350] flex items-center justify-center p-2 sm:p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[calc(1rem+env(safe-area-inset-top,0px))] overflow-y-auto">
         <!-- Backdrop -->
         <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="closeModal"></div>
         
@@ -1005,7 +1120,9 @@ import {
   KeyRound,
   Lock,
   Database,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Users,
+  ChevronRight
 } from 'lucide-vue-next'
 import AdminMastersModal from '~/components/dashboard/AdminMastersModal.vue'
 import AdminSheetTabsModal from '~/components/dashboard/AdminSheetTabsModal.vue'
@@ -1056,6 +1173,7 @@ const pageCategories = ['Dashboard', 'Operations', 'Data', 'Administration'] as 
 // State
 const adminTableRef = ref<HTMLElement | null>(null)
 const mobileListRef = ref<HTMLElement | null>(null)
+const isUsersModalOpen = ref(false)
 const isModalOpen = ref(false)
 const isMastersModalOpen = ref(false)
 const isSheetTabsModalOpen = ref(false)
@@ -1115,6 +1233,10 @@ const triggerRowAnimation = () => {
 watch([users, pending], () => {
   triggerRowAnimation()
 }, { immediate: false })
+
+watch(isUsersModalOpen, (val) => {
+  if (val) triggerRowAnimation()
+})
 
 onMounted(() => {
   triggerRowAnimation()
