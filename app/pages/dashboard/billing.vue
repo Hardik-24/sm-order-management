@@ -29,8 +29,7 @@ const activeTab = ref<'PENDING' | 'URGENT' | 'GENERATED' | 'ON_HOLD' | 'ALL'>('P
 const queryObj = computed(() => {
   const q: any = { 
     page: page.value, 
-    limit: limit.value,
-    isApproved: 'true'
+    limit: limit.value
   }
   
   if (billingStatus.value) {

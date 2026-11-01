@@ -172,12 +172,18 @@ onOrderSync((event) => {
   }
 })
 
+const unsyncedBusyItems = computed(() => {
+  if (!order.value?.items) return []
+  return order.value.items.filter((i: any) => (i as any).isBusySynced === false || i.product?.isBusySynced === false)
+})
+
 const hasUnsyncedBusyItems = computed(() => {
   if (!order.value) return false
+  if (unsyncedBusyItems.value.length > 0) return true
   if (order.value.hasUnsyncedBusyItems !== undefined) {
     return Boolean(order.value.hasUnsyncedBusyItems)
   }
-  return order.value.items?.some((i: any) => i.isBusySynced === false || i.product?.isBusySynced === false) || false
+  return false
 })
 
 const copyItemForBusy = (item: any) => {
@@ -1212,7 +1218,7 @@ onMounted(() => {
                 <h3 class="text-sm font-bold text-gray-900 truncate">
                   {{ order.customer?.company || order.customer?.name || 'Customer' }}
                 </h3>
-                <span v-if="order.customer?.isBusySynced === false" class="text-[9px] font-black uppercase tracking-wider bg-purple-100 text-purple-900 px-1.5 py-0.5 rounded border border-purple-300 shadow-2xs">
+                <span v-if="order.customer?.isBusySynced === false" class="text-[9px] font-black uppercase tracking-wider bg-amber-100 text-amber-900 px-1.5 py-0.5 rounded border border-amber-300 shadow-2xs">
                   Not in Busy
                 </span>
                 <span v-else-if="order.customer?.customerCode" class="text-[9px] font-mono font-bold bg-gray-100 text-emerald-800 px-1.5 py-0.2 rounded border border-gray-200">
@@ -1644,16 +1650,16 @@ onMounted(() => {
             </div>
 
             <!-- Advisory Banner: Customer Not in Busy -->
-            <div v-if="order.customer?.isBusySynced === false" class="p-3 sm:p-3.5 bg-purple-50/90 border border-purple-200/90 rounded-xl flex items-start justify-between gap-3 text-xs text-purple-950 shadow-2xs">
+            <div v-if="order.customer?.isBusySynced === false" class="p-3 sm:p-3.5 bg-amber-50/90 border border-amber-200/90 rounded-xl flex items-start justify-between gap-3 text-xs text-amber-950 shadow-2xs">
               <div class="flex items-start gap-2.5">
-                <div class="w-6 h-6 rounded-lg bg-purple-200/70 flex items-center justify-center shrink-0 text-purple-800 mt-0.5">
+                <div class="w-6 h-6 rounded-lg bg-amber-200/70 flex items-center justify-center shrink-0 text-amber-800 mt-0.5">
                   <UserCheck class="w-3.5 h-3.5" />
                 </div>
                 <div>
-                  <div class="font-bold text-purple-950 flex items-center gap-1.5 flex-wrap">
+                  <div class="font-bold text-amber-950 flex items-center gap-1.5 flex-wrap">
                     <span>Customer not in Busy</span>
                   </div>
-                  <p class="text-[11px] text-purple-900/80 mt-0.5 leading-relaxed">
+                  <p class="text-[11px] text-amber-800 mt-0.5 leading-relaxed">
                     Please link a Busy customer before generating the bill.
                   </p>
                 </div>
@@ -1662,26 +1668,74 @@ onMounted(() => {
                 v-if="canLinkBusyData"
                 type="button"
                 @click="isLinkModalOpen = true"
-                class="px-2.5 py-1 text-xs font-bold text-white bg-[#1b3b5f] hover:bg-[#132c49] rounded-lg transition shadow-2xs flex items-center gap-1 cursor-pointer shrink-0"
+                class="px-2.5 py-1 text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 active:scale-95 rounded-lg transition shadow-2xs flex items-center gap-1 cursor-pointer shrink-0"
               >
-                <Link2 class="w-3 h-3" />
+                <Link2 class="w-3 h-3 text-white" />
                 <span>Link Customer</span>
               </button>
             </div>
 
             <!-- Advisory Banner: Unsynced Busy Items -->
-            <div v-if="hasUnsyncedBusyItems" class="p-3 sm:p-3.5 bg-amber-50/90 border border-amber-200/90 rounded-xl flex items-start justify-between gap-3 text-xs text-amber-900 shadow-2xs">
+            <div v-if="hasUnsyncedBusyItems" class="p-3 sm:p-3.5 bg-amber-50/90 border border-amber-200/90 rounded-xl space-y-2.5 text-xs text-amber-950 shadow-2xs">
               <div class="flex items-start gap-2.5">
                 <div class="w-6 h-6 rounded-lg bg-amber-200/70 flex items-center justify-center shrink-0 text-amber-800 mt-0.5">
                   <AlertTriangle class="w-3.5 h-3.5" />
                 </div>
-                <div>
+                <div class="min-w-0 flex-1">
                   <div class="font-bold text-amber-950 flex items-center gap-1.5 flex-wrap">
                     <span>Items not in Busy</span>
+                    <span v-if="unsyncedBusyItems.length > 0" class="text-[10px] font-bold bg-amber-200 text-amber-900 px-1.5 py-0.2 rounded">
+                      {{ unsyncedBusyItems.length }} {{ unsyncedBusyItems.length === 1 ? 'item' : 'items' }}
+                    </span>
                   </div>
                   <p class="text-[11px] text-amber-800 mt-0.5 leading-relaxed">
-                    Please link Busy item(s) before generating the bill.
+                    Please link each item to a Busy product before generating the bill:
                   </p>
+                </div>
+              </div>
+
+              <!-- Unsynced Items List with Link Button directly in banner -->
+              <div v-if="unsyncedBusyItems.length > 0" class="space-y-1.5 pt-0.5">
+                <div 
+                  v-for="uItem in unsyncedBusyItems" 
+                  :key="uItem.id"
+                  class="p-2 sm:p-2.5 bg-white/95 border border-amber-200 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-2xs"
+                >
+                  <div class="min-w-0 flex-1">
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                      <span class="font-mono font-bold text-[11px] text-gray-800 bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200 shrink-0">
+                        {{ uItem.product?.sku || uItem.sku || 'NO-SKU' }}
+                      </span>
+                      <span class="font-semibold text-gray-900 truncate text-xs" :title="uItem.product?.name || uItem.productName || ''">
+                        {{ uItem.product?.name || uItem.productName || 'Unnamed Item' }}
+                      </span>
+                      <span class="text-[10px] text-gray-500 font-medium shrink-0">
+                        &bull; {{ uItem.approvedQuantity ?? uItem.quantity }} {{ uItem.unit || 'PCS' }}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div class="flex items-center gap-1.5 shrink-0 self-end sm:self-center">
+                    <button
+                      v-if="canLinkBusyData"
+                      type="button"
+                      @click.stop="openLinkItemModal(uItem)"
+                      class="px-2.5 py-1 text-[11px] font-bold text-white bg-amber-600 hover:bg-amber-700 active:scale-95 rounded-md transition shadow-2xs flex items-center gap-1 cursor-pointer"
+                      title="Link this item to an existing Busy product"
+                    >
+                      <Link2 class="w-3 h-3 text-white" />
+                      <span>Link Product</span>
+                    </button>
+                    <button
+                      type="button"
+                      @click.stop="copyItemForBusy(uItem)"
+                      class="px-2 py-1 text-[11px] font-semibold text-amber-800 hover:text-amber-950 bg-amber-100 hover:bg-amber-200 rounded-md border border-amber-300 transition cursor-pointer flex items-center gap-1"
+                      title="Copy SKU & Name for entering into Busy"
+                    >
+                      <Copy class="w-3 h-3 text-amber-700" />
+                      <span>Copy</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
