@@ -32,7 +32,7 @@
               <div class="flex items-center justify-between mb-1">
                 <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Bill To Customer</p>
                 <span v-if="order.customer?.isBusySynced === false" class="text-[9px] font-black uppercase tracking-wider bg-amber-100 text-amber-900 px-1.5 py-0.5 rounded border border-amber-300">
-                  Provisional Lead
+                  Not in Busy
                 </span>
                 <span v-else-if="order.customer?.customerCode" class="text-[9px] font-mono font-bold bg-white text-emerald-800 px-1.5 py-0.5 rounded border border-emerald-300">
                   {{ order.customer.customerCode }}
@@ -47,7 +47,7 @@
 
               <!-- Provisional Lead Gate Action -->
               <div v-if="order.customer?.isBusySynced === false" class="mt-2.5 p-2 bg-amber-100/90 border border-amber-300 rounded-lg text-amber-950 text-xs flex items-center justify-between gap-2">
-                <span class="text-[11px] font-medium leading-tight">Must link to Busy customer ledger before billing.</span>
+                <span class="text-[11px] font-medium leading-tight">Link a Busy customer before billing.</span>
                 <button
                   type="button"
                   @click="isLinkModalOpen = true"
@@ -98,11 +98,10 @@
               <AlertTriangle class="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
               <div class="min-w-0 flex-1">
                 <p class="font-bold text-amber-950 flex items-center gap-1.5 flex-wrap">
-                  <span>Contains Item(s) Not in Busy</span>
-                  <span class="text-[9px] font-bold bg-amber-200 text-amber-900 px-1.5 py-0.2 rounded uppercase">Requires Busy Sync</span>
+                  <span>Items not in Busy</span>
                 </p>
                 <p class="text-[11px] text-amber-800 mt-0.5 leading-relaxed">
-                  Before generating this invoice, enter the tagged item(s) in Busy and sync so reporting remains accurate.
+                  Please add these items in Busy or link them to existing products before creating the bill.
                 </p>
               </div>
             </div>
@@ -149,7 +148,7 @@
                         {{ item.sku || item.product?.sku }} <span v-if="item.product?.hsnCode">| HSN: {{ item.product.hsnCode }}</span>
                       </p>
                       <div class="flex flex-wrap items-center gap-1.5 mt-1">
-                        <!-- Not in Busy Badge -->
+                        <!-- Not in Busy Badge & Link Action -->
                         <span 
                           v-if="item.isBusySynced === false || item.product?.isBusySynced === false"
                           class="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider bg-amber-100 text-amber-900 px-1.5 py-0.5 rounded border border-amber-300 shadow-2xs"
@@ -158,6 +157,16 @@
                           <AlertCircle class="w-2.5 h-2.5 text-amber-700 shrink-0" />
                           Not in Busy
                         </span>
+                        <button
+                          v-if="item.isBusySynced === false || item.product?.isBusySynced === false"
+                          type="button"
+                          @click="openLinkProductModal(item)"
+                          class="inline-flex items-center gap-1 text-[9px] font-bold text-[#1b3b5f] bg-[#1b3b5f]/10 hover:bg-[#1b3b5f]/20 px-1.5 py-0.5 rounded border border-[#1b3b5f]/20 transition cursor-pointer"
+                          title="Link this item to an existing Busy product"
+                        >
+                          <Link2 class="w-2.5 h-2.5 text-[#1b3b5f]" />
+                          <span>Link Product</span>
+                        </button>
                         <span 
                           v-if="item.isTaxInclusive" 
                           class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-blue-50 text-blue-700 border border-blue-200 shadow-2xs"
@@ -296,6 +305,15 @@
     @close="isLinkModalOpen = false"
     @linked="onCustomerLinked"
   />
+
+  <!-- Link Busy Product Modal -->
+  <LinkItemModal 
+    :isOpen="isLinkItemModalOpen"
+    :order="order"
+    :item="selectedItemForLinking"
+    @close="isLinkItemModalOpen = false"
+    @linked="handleItemLinked"
+  />
   </Teleport>
 </template>
 
@@ -304,6 +322,7 @@ import { ref, watch, computed, nextTick } from 'vue'
 import { X, FileText, Loader2, Check, GitFork, AlertTriangle, Link2, AlertCircle } from 'lucide-vue-next'
 import { useGsapAnimation } from '~/composables/useGsapAnimation'
 import LinkCustomerModal from '~/components/dashboard/LinkCustomerModal.vue'
+import LinkItemModal from '~/components/dashboard/LinkItemModal.vue'
 
 const { animateModalOpen } = useGsapAnimation()
 const modalCardRef = ref<HTMLElement | null>(null)
@@ -319,11 +338,33 @@ const order = ref<any>(null)
 const pending = ref(false)
 const isGenerating = ref(false)
 const isLinkModalOpen = ref(false)
+const isLinkItemModalOpen = ref(false)
+const selectedItemForLinking = ref<any>(null)
 
 const onCustomerLinked = (updatedOrder: any) => {
   if (updatedOrder && order.value) {
     order.value.customer = updatedOrder.customer
     order.value.customerId = updatedOrder.customerId
+  }
+}
+
+const openLinkProductModal = (item: any) => {
+  selectedItemForLinking.value = item
+  isLinkItemModalOpen.value = true
+}
+
+const handleItemLinked = (updatedOrder: any) => {
+  if (updatedOrder) {
+    order.value = updatedOrder
+    if (updatedOrder.items) {
+      editableItems.value = updatedOrder.items.map((i: any) => ({
+        ...i,
+        billedQuantity: i.billedQuantity ?? i.packedQuantity ?? i.quantity,
+        unitPrice: Number(i.unitPrice),
+        discount: Number(i.discount || 0),
+        taxRate: Number(i.taxRate || 0)
+      }))
+    }
   }
 }
 
@@ -442,11 +483,11 @@ const hasUnsyncedItems = computed(() => {
 
 const confirmGenerate = async () => {
   if (order.value?.customer?.isBusySynced === false) {
-    alert('Cannot generate invoice: This customer is a provisional lead. Please click "Link Customer" to map this order to a verified Busy ledger first.')
+    alert('Cannot generate bill: This customer is not in Busy. Click "Link Customer" to link them first.')
     return
   }
   if (hasUnsyncedItems.value) {
-    alert('Cannot generate invoice: Order contains items not yet created in Busy. Please enter the items in Busy, run sync, and then generate the bill.')
+    alert('Cannot generate bill: Some items are not in Busy. Click "Link Product" on the tagged item(s) to link them first.')
     return
   }
   if (!invoiceNumber.value.trim()) {

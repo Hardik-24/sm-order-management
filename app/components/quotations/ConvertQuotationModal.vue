@@ -145,9 +145,9 @@ const customerOptions = computed(() => {
   // If quotation customer is not matched to DB, offer creating new lead
   if (q && !matchedCustomer.value) {
     options.push({
-      label: `➕ Create as Provisional Lead: ${q.customerName}`,
+      label: `➕ Create as New Lead: ${q.customerName}`,
       value: '',
-      subtitle: `Provisional Lead (${q.customerPlace || 'No place'}) • Link Busy ledger before billing`
+      subtitle: `New Lead (${q.customerPlace || 'No place'}) • Link to Busy before billing`
     })
   }
 
@@ -691,7 +691,7 @@ const submitConversion = async () => {
                     </div>
                   </div>
                   <div class="mt-2.5 pt-2 border-t border-blue-100/80 text-[11px] text-blue-700 flex items-center gap-1.5 font-medium">
-                    <span>📌 Saved as <strong>Provisional Lead</strong>. Operations remain unblocked, but must be linked to a Busy ledger before billing.</span>
+                    <span>📌 Customer is not in Busy. You can still deliver this order, but remember to link a Busy customer before billing.</span>
                   </div>
                 </div>
               </div>
@@ -875,11 +875,10 @@ const submitConversion = async () => {
               </div>
               <div class="min-w-0 flex-1">
                 <div class="font-bold text-amber-950 flex items-center gap-1.5 flex-wrap">
-                  <span>Contains Item(s) Not in Busy</span>
-                  <span class="text-[9px] font-bold bg-amber-200/80 text-amber-900 px-1.5 py-0.2 rounded uppercase">Non-blocking</span>
+                  <span>Items not in Busy</span>
                 </div>
                 <p class="text-[11px] text-amber-800 mt-0.5 leading-relaxed">
-                  Items not in Busy will be saved as provisional items tagged <strong>Not in Busy</strong>. Packing and dispatch are <strong>100% active</strong>; items must be created in Busy before final billing.
+                  You can pack and deliver this order. Please add these items to Busy before billing.
                 </p>
               </div>
             </div>
@@ -988,7 +987,7 @@ const submitConversion = async () => {
                         {{ item.articleNumber }}
                       </span>
                       <span class="text-[11px] text-gray-600 truncate max-w-[200px]">{{ item.description }}</span>
-                      <span class="text-[10px] text-amber-700 font-medium">(Provisional • Not in Busy)</span>
+                      <span class="text-[10px] text-amber-700 font-medium">(Not in Busy)</span>
                     </div>
                   </div>
 

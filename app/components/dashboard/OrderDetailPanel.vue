@@ -7,6 +7,7 @@ import SetDeliveryPinModal from '~/components/dashboard/SetDeliveryPinModal.vue'
 import PartyVehicleHandoverModal from '~/components/dashboard/PartyVehicleHandoverModal.vue'
 import AdminOrderStatusModal from '~/components/dashboard/AdminOrderStatusModal.vue'
 import LinkCustomerModal from '~/components/dashboard/LinkCustomerModal.vue'
+import LinkItemModal from '~/components/dashboard/LinkItemModal.vue'
 import LoadingTopBar from '~/components/ui/LoadingTopBar.vue'
 import CustomSelect from '~/components/ui/CustomSelect.vue'
 import { formatCurrency, formatDateTime, formatDate, formatTime, getDisplayStatus, getOverallColor, getStatusColor } from '~~/app/lib/utils'
@@ -18,12 +19,27 @@ const isPinModalOpen = ref(false)
 const isHandoverModalOpen = ref(false)
 const isAdminStatusModalOpen = ref(false)
 const isLinkModalOpen = ref(false)
+const isLinkItemModalOpen = ref(false)
+const selectedItemForLinking = ref<any>(null)
 
 const handleCustomerLinked = (updatedOrder: any) => {
   if (updatedOrder) {
     order.value = { ...order.value, ...updatedOrder }
   }
   emit('updated', updatedOrder)
+}
+
+const openLinkItemModal = (item: any) => {
+  selectedItemForLinking.value = item
+  isLinkItemModalOpen.value = true
+}
+
+const handleItemLinked = (updatedOrder: any) => {
+  if (updatedOrder) {
+    order.value = { ...order.value, ...updatedOrder }
+  }
+  emit('updated', updatedOrder)
+  showSaved('Item linked to Busy product successfully!')
 }
 
 const openAdminStatusModal = () => {
@@ -1197,7 +1213,7 @@ onMounted(() => {
                   {{ order.customer?.company || order.customer?.name || 'Customer' }}
                 </h3>
                 <span v-if="order.customer?.isBusySynced === false" class="text-[9px] font-black uppercase tracking-wider bg-purple-100 text-purple-900 px-1.5 py-0.5 rounded border border-purple-300 shadow-2xs">
-                  Provisional Lead
+                  Not in Busy
                 </span>
                 <span v-else-if="order.customer?.customerCode" class="text-[9px] font-mono font-bold bg-gray-100 text-emerald-800 px-1.5 py-0.2 rounded border border-gray-200">
                   {{ order.customer.customerCode }}
@@ -1627,7 +1643,7 @@ onMounted(() => {
               </div>
             </div>
 
-            <!-- Advisory Banner: Provisional Customer Lead -->
+            <!-- Advisory Banner: Customer Not in Busy -->
             <div v-if="order.customer?.isBusySynced === false" class="p-3 sm:p-3.5 bg-purple-50/90 border border-purple-200/90 rounded-xl flex items-start justify-between gap-3 text-xs text-purple-950 shadow-2xs">
               <div class="flex items-start gap-2.5">
                 <div class="w-6 h-6 rounded-lg bg-purple-200/70 flex items-center justify-center shrink-0 text-purple-800 mt-0.5">
@@ -1635,11 +1651,10 @@ onMounted(() => {
                 </div>
                 <div>
                   <div class="font-bold text-purple-950 flex items-center gap-1.5 flex-wrap">
-                    <span>Provisional Customer Lead — Not in Busy</span>
-                    <span class="text-[9px] font-bold bg-purple-200/80 text-purple-900 px-1.5 py-0.2 rounded uppercase">Non-blocking</span>
+                    <span>Customer not in Busy</span>
                   </div>
                   <p class="text-[11px] text-purple-900/80 mt-0.5 leading-relaxed">
-                    Packing and dispatch remain fully active. Before invoice generation, this order must be linked to an official Busy customer ledger.
+                    Delivery is not blocked. Please link a Busy customer before generating the bill.
                   </p>
                 </div>
               </div>
@@ -1661,11 +1676,10 @@ onMounted(() => {
                 </div>
                 <div>
                   <div class="font-bold text-amber-950 flex items-center gap-1.5 flex-wrap">
-                    <span>New Catalog Product(s) — Not in Busy</span>
-                    <span class="text-[9px] font-bold bg-amber-200/80 text-amber-900 px-1.5 py-0.2 rounded uppercase">Non-blocking</span>
+                    <span>Items not in Busy</span>
                   </div>
                   <p class="text-[11px] text-amber-800 mt-0.5 leading-relaxed">
-                    Packing, driver assignment, and delivery are <strong>fully active</strong>. Billing team: please create the tagged item(s) in Busy before final invoice generation.
+                    You can pack and deliver this order. Please add these items to Busy or link them below before billing.
                   </p>
                 </div>
               </div>
@@ -1726,15 +1740,24 @@ onMounted(() => {
                             {{ item.product?.name }}
                           </div>
                           <div class="flex flex-wrap items-center gap-1 mt-1.5">
-                            <!-- Not in Busy Badge & Copy Button -->
-                            <div v-if="(item as any)?.isBusySynced === false || item.product?.isBusySynced === false" class="inline-flex items-center gap-1">
+                            <!-- Not in Busy Badge, Link Button & Copy Button -->
+                            <div v-if="(item as any)?.isBusySynced === false || item.product?.isBusySynced === false" class="inline-flex items-center gap-1 flex-wrap">
                               <span 
                                 class="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider bg-amber-100 text-amber-900 px-1.5 py-0.5 rounded border border-amber-300 shadow-2xs" 
-                                title="New catalog product not yet created in Busy. Operations & delivery are unaffected."
+                                title="Product not in Busy. Operations & delivery are unaffected."
                               >
                                 <AlertCircle class="w-2.5 h-2.5 text-amber-700 shrink-0" />
                                 Not in Busy
                               </span>
+                              <button
+                                type="button"
+                                @click.stop="openLinkItemModal(item)"
+                                class="inline-flex items-center gap-0.5 text-[9px] font-bold text-[#1b3b5f] hover:text-[#132c49] bg-white hover:bg-sky-50 px-1.5 py-0.5 rounded border border-[#1b3b5f]/30 transition-colors cursor-pointer"
+                                title="Link this item to an existing Busy product"
+                              >
+                                <Link2 class="w-2.5 h-2.5 text-[#1b3b5f]" />
+                                Link Product
+                              </button>
                               <button
                                 type="button"
                                 @click.stop="copyItemForBusy(item)"
@@ -2549,6 +2572,15 @@ onMounted(() => {
       :order="order"
       @close="isLinkModalOpen = false"
       @linked="handleCustomerLinked"
+    />
+
+    <!-- Link Busy Product Modal -->
+    <LinkItemModal
+      :isOpen="isLinkItemModalOpen"
+      :order="order"
+      :item="selectedItemForLinking"
+      @close="isLinkItemModalOpen = false"
+      @linked="handleItemLinked"
     />
   </Teleport>
 </template>
