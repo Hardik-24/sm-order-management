@@ -94,7 +94,7 @@ export function requireRole(event: H3Event, allowedRoles: string[]): SessionUser
 /** Require specific action permission (e.g. canEditOrders, canEditOrderStatus, canCancelOrders, canEditCustomers, canEditProducts, canDeleteQuotations) */
 export async function requireActionPermission(
   event: H3Event,
-  permission: 'canEditOrders' | 'canEditOrderStatus' | 'canCancelOrders' | 'canEditCustomers' | 'canEditProducts' | 'canDeleteQuotations'
+  permission: 'canEditOrders' | 'canEditOrderStatus' | 'canCancelOrders' | 'canEditCustomers' | 'canEditProducts' | 'canDeleteQuotations' | 'canViewAllCompanyOrders' | 'canLinkBusyData'
 ): Promise<SessionUser> {
   const sessionUser = requireAuth(event)
   if (sessionUser.role === 'ADMIN') {
@@ -127,6 +127,7 @@ export async function requireActionPermission(
     if (permission === 'canEditOrders' && dbUser.role === 'SALES') hasPerm = true
     if (permission === 'canEditCustomers' && dbUser.role === 'SALES') hasPerm = true
     if (permission === 'canViewAllCompanyOrders') hasPerm = true
+    if (permission === 'canLinkBusyData' && (dbUser.role === 'BILLING' || dbUser.role === 'ADMIN')) hasPerm = true
   }
 
   if (!hasPerm) {

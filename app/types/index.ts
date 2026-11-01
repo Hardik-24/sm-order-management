@@ -16,6 +16,7 @@ export interface UserActionPermissions {
   canEditProducts: boolean
   canDeleteQuotations: boolean
   canViewAllCompanyOrders: boolean
+  canLinkBusyData: boolean
 }
 
 export interface SessionUser {

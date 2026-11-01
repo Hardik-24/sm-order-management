@@ -77,7 +77,7 @@ const emit = defineEmits<{
   (e: 'split-order', id: string): void
 }>()
 
-const { user, hasRole, canEditOrders, canCancelOrders, canEditOrderStatus } = useAuth()
+const { user, hasRole, canEditOrders, canCancelOrders, canEditOrderStatus, canLinkBusyData } = useAuth()
 const order = ref<Order | null>(null)
 const isLoading = ref(false)
 const activeTab = ref<'DETAILS' | 'TIMELINE' | 'NOTES'>('DETAILS')
@@ -1654,11 +1654,12 @@ onMounted(() => {
                     <span>Customer not in Busy</span>
                   </div>
                   <p class="text-[11px] text-purple-900/80 mt-0.5 leading-relaxed">
-                    Delivery is not blocked. Please link a Busy customer before generating the bill.
+                    Please link a Busy customer before generating the bill.
                   </p>
                 </div>
               </div>
               <button
+                v-if="canLinkBusyData"
                 type="button"
                 @click="isLinkModalOpen = true"
                 class="px-2.5 py-1 text-xs font-bold text-white bg-[#1b3b5f] hover:bg-[#132c49] rounded-lg transition shadow-2xs flex items-center gap-1 cursor-pointer shrink-0"
@@ -1679,7 +1680,7 @@ onMounted(() => {
                     <span>Items not in Busy</span>
                   </div>
                   <p class="text-[11px] text-amber-800 mt-0.5 leading-relaxed">
-                    You can pack and deliver this order. Please add these items to Busy or link them below before billing.
+                    Please link Busy item(s) before generating the bill.
                   </p>
                 </div>
               </div>
@@ -1750,6 +1751,7 @@ onMounted(() => {
                                 Not in Busy
                               </span>
                               <button
+                                v-if="canLinkBusyData"
                                 type="button"
                                 @click.stop="openLinkItemModal(item)"
                                 class="inline-flex items-center gap-0.5 text-[9px] font-bold text-[#1b3b5f] hover:text-[#132c49] bg-white hover:bg-sky-50 px-1.5 py-0.5 rounded border border-[#1b3b5f]/30 transition-colors cursor-pointer"

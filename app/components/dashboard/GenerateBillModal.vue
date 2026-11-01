@@ -49,6 +49,7 @@
               <div v-if="order.customer?.isBusySynced === false" class="mt-2.5 p-2 bg-amber-100/90 border border-amber-300 rounded-lg text-amber-950 text-xs flex items-center justify-between gap-2">
                 <span class="text-[11px] font-medium leading-tight">Link a Busy customer before billing.</span>
                 <button
+                  v-if="canLinkBusyData"
                   type="button"
                   @click="isLinkModalOpen = true"
                   class="px-2 py-1 bg-[#1b3b5f] text-white rounded text-[11px] font-bold hover:bg-[#132c49] transition cursor-pointer flex items-center gap-1 shrink-0"
@@ -56,6 +57,7 @@
                   <Link2 class="w-3 h-3" />
                   <span>Link Customer</span>
                 </button>
+                <span v-else class="text-[10px] text-amber-900 font-medium italic">Contact Admin to link</span>
               </div>
             </div>
             
@@ -158,7 +160,7 @@
                           Not in Busy
                         </span>
                         <button
-                          v-if="item.isBusySynced === false || item.product?.isBusySynced === false"
+                          v-if="(item.isBusySynced === false || item.product?.isBusySynced === false) && canLinkBusyData"
                           type="button"
                           @click="openLinkProductModal(item)"
                           class="inline-flex items-center gap-1 text-[9px] font-bold text-[#1b3b5f] bg-[#1b3b5f]/10 hover:bg-[#1b3b5f]/20 px-1.5 py-0.5 rounded border border-[#1b3b5f]/20 transition cursor-pointer"
@@ -273,6 +275,29 @@
                 <span class="text-xl font-black text-[#1b3b5f]">₹{{ grandTotal.toFixed(2) }}</span>
               </div>
             </div>
+
+            <!-- Prominent Billing Blocked Banner -->
+            <div v-if="isBusyBlocked" class="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-950 text-xs flex items-center justify-between gap-3 shadow-2xs">
+              <div class="flex items-center gap-2.5">
+                <div class="w-6 h-6 rounded-lg bg-amber-100 flex items-center justify-center shrink-0 text-amber-800">
+                  <AlertTriangle class="w-3.5 h-3.5" />
+                </div>
+                <div class="font-medium">
+                  <span v-if="isCustomerUnsynced && hasUnsyncedItems">
+                    <strong>Billing blocked:</strong> Please link customer and products with real Busy data first.
+                  </span>
+                  <span v-else-if="isCustomerUnsynced">
+                    <strong>Billing blocked:</strong> Please link customer with real Busy data first.
+                  </span>
+                  <span v-else>
+                    <strong>Billing blocked:</strong> Please link products with real Busy data first.
+                  </span>
+                </div>
+              </div>
+              <span class="text-[10px] font-bold uppercase tracking-wider bg-amber-200 text-amber-900 px-2 py-0.5 rounded border border-amber-300 shrink-0">
+                Action Required
+              </span>
+            </div>
           </div>
 
         </div>
@@ -285,13 +310,18 @@
         </button>
         <button 
           @click="confirmGenerate" 
-          :disabled="isGenerating || !invoiceNumber.trim() || order?.customer?.isBusySynced === false || hasUnsyncedItems"
-          class="w-full sm:w-auto justify-center flex items-center gap-2 px-6 py-2 bg-[#1b3b5f] text-white text-xs font-bold rounded-lg hover:bg-[#132c49] transition-colors disabled:opacity-50 shadow-sm cursor-pointer"
+          :disabled="isGenerating || (!isBusyBlocked && !invoiceNumber.trim())"
+          class="w-full sm:w-auto justify-center flex items-center gap-2 px-6 py-2 text-xs font-bold rounded-lg transition-colors shadow-sm cursor-pointer"
+          :class="isBusyBlocked 
+            ? 'bg-amber-600 hover:bg-amber-700 text-white' 
+            : 'bg-[#1b3b5f] hover:bg-[#132c49] text-white disabled:opacity-50'"
         >
           <Loader2 v-if="isGenerating" class="w-4 h-4 animate-spin" />
+          <Lock v-else-if="isBusyBlocked" class="w-4 h-4" />
           <Check v-else class="w-4 h-4" />
-          <span v-if="order?.customer?.isBusySynced === false">Link Busy Customer First</span>
-          <span v-else-if="hasUnsyncedItems">Items Not in Busy</span>
+          <span v-if="isCustomerUnsynced && hasUnsyncedItems">Link customer & products with real Busy data first</span>
+          <span v-else-if="isCustomerUnsynced">Link customer with real Busy data first</span>
+          <span v-else-if="hasUnsyncedItems">Link products with real Busy data first</span>
           <span v-else>{{ isGenerating ? 'Generating...' : 'Confirm & Generate Bill' }}</span>
         </button>
       </div>
@@ -319,11 +349,13 @@
 
 <script setup lang="ts">
 import { ref, watch, computed, nextTick } from 'vue'
-import { X, FileText, Loader2, Check, GitFork, AlertTriangle, Link2, AlertCircle } from 'lucide-vue-next'
+import { X, FileText, Loader2, Check, GitFork, AlertTriangle, Link2, AlertCircle, Lock } from 'lucide-vue-next'
 import { useGsapAnimation } from '~/composables/useGsapAnimation'
+import { useAuth } from '~/composables/useAuth'
 import LinkCustomerModal from '~/components/dashboard/LinkCustomerModal.vue'
 import LinkItemModal from '~/components/dashboard/LinkItemModal.vue'
 
+const { canLinkBusyData } = useAuth()
 const { animateModalOpen } = useGsapAnimation()
 const modalCardRef = ref<HTMLElement | null>(null)
 
@@ -477,17 +509,25 @@ const grandTotal = computed(() => {
   return editableItems.value.reduce((sum, item) => sum + calculateTotal(item), 0)
 })
 
+const isCustomerUnsynced = computed(() => order.value?.customer?.isBusySynced === false)
+
 const hasUnsyncedItems = computed(() => {
   return editableItems.value.some((i: any) => i.isBusySynced === false || i.product?.isBusySynced === false)
 })
 
+const isBusyBlocked = computed(() => isCustomerUnsynced.value || hasUnsyncedItems.value)
+
 const confirmGenerate = async () => {
-  if (order.value?.customer?.isBusySynced === false) {
-    alert('Cannot generate bill: This customer is not in Busy. Click "Link Customer" to link them first.')
+  if (isCustomerUnsynced.value && hasUnsyncedItems.value) {
+    alert('Cannot generate bill: Please link customer and products with real Busy data first.')
+    return
+  }
+  if (isCustomerUnsynced.value) {
+    alert('Cannot generate bill: Please link customer with real Busy data first.')
     return
   }
   if (hasUnsyncedItems.value) {
-    alert('Cannot generate bill: Some items are not in Busy. Click "Link Product" on the tagged item(s) to link them first.')
+    alert('Cannot generate bill: Please link products with real Busy data first.')
     return
   }
   if (!invoiceNumber.value.trim()) {

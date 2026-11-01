@@ -2,7 +2,7 @@
 import { ref, computed, nextTick, watch, onMounted } from 'vue'
 import { 
   Search, X, FileText, CheckCircle2, AlertCircle, ChevronRight, 
-  Ban, Zap, IndianRupee, Clock, CheckCheck, GitFork 
+  Ban, Zap, IndianRupee, Clock, CheckCheck, GitFork, Lock 
 } from 'lucide-vue-next'
 import { formatCurrency, formatDateTime, formatDate, formatTime } from '~~/app/lib/utils'
 import RowsPerPageSelect from '~/components/ui/RowsPerPageSelect.vue'
@@ -290,9 +290,14 @@ const getTotalNos = (order: any) => {
                   <button 
                     v-if="order.billingStatus?.status === 'PENDING' && order.overallStatus !== 'CANCELLED'"
                     @click.stop="emit('generate-invoice', order.id)"
-                    class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#1b3b5f] text-white hover:bg-[#132c49] shadow-2xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap"
+                    class="px-3 py-1.5 rounded-lg text-xs font-semibold shadow-2xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap"
+                    :class="((order as any).hasUnsyncedBusyItems || order.customer?.isBusySynced === false)
+                      ? 'bg-amber-600 hover:bg-amber-700 text-white'
+                      : 'bg-[#1b3b5f] text-white hover:bg-[#132c49]'"
+                    :title="((order as any).hasUnsyncedBusyItems || order.customer?.isBusySynced === false) ? 'Link customer/product with real Busy data required before billing' : 'Generate Bill'"
                   >
-                    <IndianRupee class="w-3.5 h-3.5" />
+                    <Lock v-if="(order as any).hasUnsyncedBusyItems || order.customer?.isBusySynced === false" class="w-3.5 h-3.5" />
+                    <IndianRupee v-else class="w-3.5 h-3.5" />
                     <span>Generate Bill</span>
                   </button>
                   <button 
@@ -396,9 +401,13 @@ const getTotalNos = (order: any) => {
               <button 
                 v-if="order.billingStatus?.status === 'PENDING' && order.overallStatus !== 'CANCELLED'"
                 @click.stop="emit('generate-invoice', order.id)"
-                class="px-2.5 py-1 bg-[#1b3b5f] text-white text-[11px] font-semibold rounded-md hover:bg-[#132c49] active:scale-95 transition-all shadow-2xs flex items-center gap-1 cursor-pointer"
+                class="px-2.5 py-1 text-white text-[11px] font-semibold rounded-md active:scale-95 transition-all shadow-2xs flex items-center gap-1 cursor-pointer"
+                :class="((order as any).hasUnsyncedBusyItems || order.customer?.isBusySynced === false)
+                  ? 'bg-amber-600 hover:bg-amber-700'
+                  : 'bg-[#1b3b5f] hover:bg-[#132c49]'"
               >
-                <IndianRupee class="w-3 h-3" />
+                <Lock v-if="(order as any).hasUnsyncedBusyItems || order.customer?.isBusySynced === false" class="w-3 h-3" />
+                <IndianRupee v-else class="w-3 h-3" />
                 <span>Generate</span>
               </button>
               <button 

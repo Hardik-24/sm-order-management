@@ -40,7 +40,7 @@ export default defineEventHandler(async (event) => {
     if (order.customer?.isBusySynced === false) {
       throw createError({
         statusCode: 400,
-        message: `Cannot generate invoice: Customer "${order.customer.name}" is a provisional lead. Please link this order to a verified Busy customer ledger first.`
+        message: `Cannot generate bill: Please link customer with real Busy data first.`
       })
     }
 
@@ -48,7 +48,7 @@ export default defineEventHandler(async (event) => {
     if (unsyncedItem) {
       throw createError({
         statusCode: 400,
-        message: `Cannot generate invoice: Product "${unsyncedItem.sku || unsyncedItem.productName}" is not yet created in Busy. Please enter it in Busy and sync before generating the invoice.`
+        message: `Cannot generate bill: Please link product with real Busy data first.`
       })
     }
   }

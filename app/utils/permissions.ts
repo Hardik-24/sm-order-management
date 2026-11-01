@@ -147,6 +147,7 @@ export const DEFAULT_ROLE_ACTION_PERMISSIONS: Record<UserRole, UserActionPermiss
     canEditProducts: true,
     canDeleteQuotations: true,
     canViewAllCompanyOrders: true,
+    canLinkBusyData: true,
   },
   SALES: {
     canEditOrders: true,
@@ -156,6 +157,7 @@ export const DEFAULT_ROLE_ACTION_PERMISSIONS: Record<UserRole, UserActionPermiss
     canEditProducts: false,
     canDeleteQuotations: false,
     canViewAllCompanyOrders: true,
+    canLinkBusyData: false,
   },
   BILLING: {
     canEditOrders: false,
@@ -165,6 +167,7 @@ export const DEFAULT_ROLE_ACTION_PERMISSIONS: Record<UserRole, UserActionPermiss
     canEditProducts: false,
     canDeleteQuotations: false,
     canViewAllCompanyOrders: true,
+    canLinkBusyData: true,
   },
   PACKING: {
     canEditOrders: false,
@@ -174,6 +177,7 @@ export const DEFAULT_ROLE_ACTION_PERMISSIONS: Record<UserRole, UserActionPermiss
     canEditProducts: false,
     canDeleteQuotations: false,
     canViewAllCompanyOrders: true,
+    canLinkBusyData: false,
   },
   DELIVERY: {
     canEditOrders: false,
@@ -183,6 +187,7 @@ export const DEFAULT_ROLE_ACTION_PERMISSIONS: Record<UserRole, UserActionPermiss
     canEditProducts: false,
     canDeleteQuotations: false,
     canViewAllCompanyOrders: true,
+    canLinkBusyData: false,
   },
 }
 
@@ -201,6 +206,7 @@ export function getEffectiveActionPermissions(
       canEditProducts: false,
       canDeleteQuotations: false,
       canViewAllCompanyOrders: false,
+      canLinkBusyData: false,
     }
   }
 
@@ -214,6 +220,7 @@ export function getEffectiveActionPermissions(
       canEditProducts: true,
       canDeleteQuotations: true,
       canViewAllCompanyOrders: true,
+      canLinkBusyData: true,
     }
   }
 
@@ -226,6 +233,7 @@ export function getEffectiveActionPermissions(
     canEditProducts: false,
     canDeleteQuotations: false,
     canViewAllCompanyOrders: false,
+    canLinkBusyData: false,
   }
 
   const userPerms = (user.actionPermissions && typeof user.actionPermissions === 'object')
@@ -240,6 +248,7 @@ export function getEffectiveActionPermissions(
     canEditProducts: userPerms.canEditProducts !== undefined ? Boolean(userPerms.canEditProducts) : defaults.canEditProducts,
     canDeleteQuotations: userPerms.canDeleteQuotations !== undefined ? Boolean(userPerms.canDeleteQuotations) : defaults.canDeleteQuotations,
     canViewAllCompanyOrders: userPerms.canViewAllCompanyOrders !== undefined ? Boolean(userPerms.canViewAllCompanyOrders) : defaults.canViewAllCompanyOrders,
+    canLinkBusyData: userPerms.canLinkBusyData !== undefined ? Boolean(userPerms.canLinkBusyData) : defaults.canLinkBusyData,
   }
 }
 
