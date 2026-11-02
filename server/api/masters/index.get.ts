@@ -24,6 +24,14 @@ const DEFAULT_PRODUCT_UOMS = [
   { group: 'PRODUCT_UOM', label: 'SET', value: 'SET', sortOrder: 10, isDefault: false }
 ]
 
+const DEFAULT_SHEET_SIZES = [
+  { group: 'SHEET_SIZE', label: '8 x 4 (Std)', value: '8x4', description: 'Standard sheet: 8ft x 4ft (32 sq.ft)', sortOrder: 1, isDefault: true },
+  { group: 'SHEET_SIZE', label: '7 x 4', value: '7x4', description: '7ft x 4ft (28 sq.ft)', sortOrder: 2, isDefault: false },
+  { group: 'SHEET_SIZE', label: '7 x 3', value: '7x3', description: '7ft x 3ft (21 sq.ft)', sortOrder: 3, isDefault: false },
+  { group: 'SHEET_SIZE', label: '6 x 4', value: '6x4', description: '6ft x 4ft (24 sq.ft)', sortOrder: 4, isDefault: false },
+  { group: 'SHEET_SIZE', label: '6 x 3', value: '6x3', description: '6ft x 3ft (18 sq.ft)', sortOrder: 5, isDefault: false }
+]
+
 export default defineEventHandler(async (event) => {
   requireAuth(event)
 
@@ -32,11 +40,19 @@ export default defineEventHandler(async (event) => {
   if (totalOptions === 0) {
     // Seed initial defaults
     await prisma.masterOption.createMany({
-      data: [...DEFAULT_PAYMENT_TERMS, ...DEFAULT_PRODUCT_UOMS]
+      data: [...DEFAULT_PAYMENT_TERMS, ...DEFAULT_PRODUCT_UOMS, ...DEFAULT_SHEET_SIZES]
     })
+  } else {
+    // Ensure SHEET_SIZE options are seeded for existing systems
+    const sheetSizesCount = await prisma.masterOption.count({ where: { group: 'SHEET_SIZE' } })
+    if (sheetSizesCount === 0) {
+      await prisma.masterOption.createMany({
+        data: DEFAULT_SHEET_SIZES
+      })
+    }
   }
 
-  // Fetch Payment Terms & Product UOM
+  // Fetch Payment Terms, Product UOM & Sheet Sizes
   const options = await prisma.masterOption.findMany({
     orderBy: [{ sortOrder: 'asc' }, { label: 'asc' }]
   })
@@ -53,10 +69,12 @@ export default defineEventHandler(async (event) => {
 
   const paymentTerms = options.filter(o => o.group === 'PAYMENT_TERMS')
   const productUom = options.filter(o => o.group === 'PRODUCT_UOM')
+  const sheetSizes = options.filter(o => o.group === 'SHEET_SIZE')
 
   return {
     paymentTerms,
     productUom,
+    sheetSizes,
     categories: categories.map(c => ({
       id: c.id,
       name: c.name,

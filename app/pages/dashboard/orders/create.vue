@@ -14,7 +14,7 @@ definePageMeta({ layout: 'dashboard' })
 const router = useRouter()
 const { user } = useAuth()
 const { showSaving, showSaved, hide } = useSnackbar()
-const { paymentTermsOptions } = useMasters()
+const { paymentTermsOptions, sheetSizesOptions } = useMasters()
 const { animateModalOpen, initContext } = useGsapAnimation()
 
 const customerBannerRef = ref<HTMLElement | null>(null)
@@ -314,14 +314,6 @@ const calcLength = ref<number>(8)
 const calcWidth = ref<number>(4)
 const calcSqftRate = ref<number>(0)
 
-const calcQuickSizes = [
-  { label: '8 × 4 (Std)', length: 8, width: 4 },
-  { label: '7 × 4', length: 7, width: 4 },
-  { label: '7 × 3', length: 7, width: 3 },
-  { label: '6 × 4', length: 6, width: 4 },
-  { label: '6 × 3', length: 6, width: 3 }
-]
-
 const setCalcSize = (l: number, w: number) => {
   calcLength.value = l
   calcWidth.value = w
@@ -341,12 +333,14 @@ const calcTotalRate = computed(() => {
 
 const openRateCalculator = (idx: number) => {
   calcItemIndex.value = idx
-  calcLength.value = 8
-  calcWidth.value = 4
+  // Use default configured sheet size, or first active size, or 8x4 as standard fallback
+  const defaultSize = sheetSizesOptions.value.find(s => s.isDefault) || sheetSizesOptions.value[0]
+  calcLength.value = defaultSize?.length || 8
+  calcWidth.value = defaultSize?.width || 4
   const currentItem = form.value.items[idx]
+  const currentArea = calcLength.value * calcWidth.value
   if (currentItem && currentItem.unitPrice > 0) {
-    // If unitPrice already exists, estimate sqft rate assuming 8x4 = 32
-    calcSqftRate.value = Number((currentItem.unitPrice / 32).toFixed(2))
+    calcSqftRate.value = currentArea > 0 ? Number((currentItem.unitPrice / currentArea).toFixed(2)) : 0
   } else {
     calcSqftRate.value = 0
   }
@@ -998,7 +992,7 @@ const getCustomerInitials = (name: string) => {
               class="mt-4 px-4 py-2 bg-[#1b3b5f] hover:bg-[#132c49] text-white rounded-xl text-xs font-bold shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <Plus class="w-3.5 h-3.5" />
-              <span>+ Add Product</span>
+              <span>Add Product</span>
             </button>
           </div>
         </div>
@@ -1072,20 +1066,21 @@ const getCustomerInitials = (name: string) => {
           </div>
 
           <!-- Quick Size Presets -->
-          <div class="space-y-1.5">
+          <div v-if="sheetSizesOptions.length > 0" class="space-y-1.5">
             <label class="block text-[11px] font-bold text-gray-600 uppercase tracking-wider">Quick Sheet Sizes</label>
             <div class="flex items-center gap-1.5 flex-wrap">
               <button
-                v-for="qs in calcQuickSizes"
+                v-for="qs in sheetSizesOptions"
                 :key="qs.label"
                 type="button"
                 @click="setCalcSize(qs.length, qs.width)"
-                class="px-2.5 py-1 rounded-lg text-xs font-bold border transition-colors cursor-pointer"
+                class="px-2.5 py-1 rounded-lg text-xs font-bold border transition-colors cursor-pointer flex items-center gap-1"
                 :class="calcLength === qs.length && calcWidth === qs.width
                   ? 'bg-[#1b3b5f] text-white border-[#1b3b5f] shadow-xs'
                   : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'"
               >
-                {{ qs.label }}
+                <span>{{ qs.label }}</span>
+                <span v-if="qs.isDefault" class="text-[9px] opacity-75">★</span>
               </button>
             </div>
           </div>

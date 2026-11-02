@@ -156,7 +156,7 @@
             <span>From:</span>
             <input
               v-model="customDateFrom"
-              @change="fetchVouchers(false)"
+              @change="fetchVouchers(true)"
               type="date"
               class="px-2 py-1 text-xs bg-white border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:ring-1 focus:ring-[#1b3b5f]"
             />
@@ -165,7 +165,7 @@
             <span>To:</span>
             <input
               v-model="customDateTo"
-              @change="fetchVouchers(false)"
+              @change="fetchVouchers(true)"
               type="date"
               class="px-2 py-1 text-xs bg-white border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:ring-1 focus:ring-[#1b3b5f]"
             />
@@ -762,7 +762,7 @@ function onSearchInput() {
   searchTimer = setTimeout(() => {
     debouncedSearch.value = searchInput.value.trim()
     currentPage.value = 1
-    fetchVouchers(false)
+    fetchVouchers(true)
   }, 300)
 }
 
@@ -770,36 +770,42 @@ function clearSearch() {
   searchInput.value = ''
   debouncedSearch.value = ''
   currentPage.value = 1
-  fetchVouchers(false)
+  fetchVouchers(true)
 }
 
 function selectDatePreset(presetId: string) {
   selectedDatePreset.value = presetId
   const now = new Date()
+  const toLocalDate = (d: Date) => {
+    const y = d.getFullYear()
+    const m = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    return `${y}-${m}-${day}`
+  }
 
   if (presetId === 'all') {
     customDateFrom.value = ''
     customDateTo.value = ''
   } else if (presetId === 'today') {
-    const todayStr = now.toISOString().split('T')[0]
+    const todayStr = toLocalDate(now)
     customDateFrom.value = todayStr
     customDateTo.value = todayStr
   } else if (presetId === '7days') {
     const prior = new Date(now)
     prior.setDate(prior.getDate() - 7)
-    customDateFrom.value = prior.toISOString().split('T')[0]
-    customDateTo.value = now.toISOString().split('T')[0]
+    customDateFrom.value = toLocalDate(prior)
+    customDateTo.value = toLocalDate(now)
   } else if (presetId === 'month') {
     const firstDay = new Date(now.getFullYear(), now.getMonth(), 1)
-    customDateFrom.value = firstDay.toISOString().split('T')[0]
-    customDateTo.value = now.toISOString().split('T')[0]
+    customDateFrom.value = toLocalDate(firstDay)
+    customDateTo.value = toLocalDate(now)
   } else if (presetId === 'fy2627') {
     customDateFrom.value = '2026-04-01'
     customDateTo.value = '2027-03-31'
   }
 
   currentPage.value = 1
-  fetchVouchers(false)
+  fetchVouchers(true)
 }
 
 function resetAllFilters() {
@@ -809,23 +815,23 @@ function resetAllFilters() {
   customDateFrom.value = ''
   customDateTo.value = ''
   currentPage.value = 1
-  fetchVouchers(false)
+  fetchVouchers(true)
 }
 
 function onPageSizeChange(newSize: number) {
   pageSize.value = newSize
   currentPage.value = 1
-  fetchVouchers(false)
+  fetchVouchers(true)
 }
 
 function goToPage(page: number) {
   if (page < 1 || page > pagination.value.totalPages) return
   currentPage.value = page
-  fetchVouchers(false)
+  fetchVouchers(true)
 }
 
 // Fetch vouchers from backend API
-async function fetchVouchers(includeStats = false) {
+async function fetchVouchers(includeStats = true) {
   isLoading.value = true
   try {
     const params: Record<string, any> = {
@@ -838,7 +844,7 @@ async function fetchVouchers(includeStats = false) {
 
     if (customDateFrom.value) params.dateFrom = customDateFrom.value
     if (customDateTo.value) params.dateTo = customDateTo.value
-    if (includeStats || !stats.value) params.includeStats = 'true'
+    if (includeStats) params.includeStats = 'true'
 
     const res: any = await $fetch('/api/vouchers', { params })
     if (res?.success) {

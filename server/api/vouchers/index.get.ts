@@ -40,7 +40,7 @@ export default defineEventHandler(async (event) => {
   if (dateFrom || dateTo) {
     where.voucherDate = {}
     if (dateFrom) {
-      where.voucherDate.gte = new Date(dateFrom)
+      where.voucherDate.gte = new Date(dateFrom.includes('T') ? dateFrom : `${dateFrom}T00:00:00.000Z`)
     }
     if (dateTo) {
       where.voucherDate.lte = new Date(dateTo.includes('T') ? dateTo : `${dateTo}T23:59:59.999Z`)
@@ -55,9 +55,6 @@ export default defineEventHandler(async (event) => {
   const sortOrder = query.sortOrder === 'asc' ? 'asc' : 'desc'
 
   try {
-    const isUnfilteredFirstPage = page === 1 && !search && series === 'ALL' && !dateFrom && !dateTo && !customerCode
-    const shouldComputeStats = query.includeStats === 'true' || isUnfilteredFirstPage
-
     const tasks: Promise<any>[] = [
       prisma.busyVoucher.findMany({
         where,
@@ -91,17 +88,14 @@ export default defineEventHandler(async (event) => {
     const summary = results[2]
     const lastSyncedSetting = results[3]
 
-    let stats = null
-    if (shouldComputeStats) {
-      stats = {
-        totalCount: total,
-        totalAmount: Number(summary._sum.totalAmount || 0),
-        totalTaxable: Number(summary._sum.taxableAmount || 0),
-        totalTax: Number(summary._sum.taxAmount || 0),
-        totalCgst: Number(summary._sum.cgstAmount || 0),
-        totalSgst: Number(summary._sum.sgstAmount || 0),
-        totalIgst: Number(summary._sum.igstAmount || 0)
-      }
+    const stats = {
+      totalCount: total,
+      totalAmount: Number(summary._sum.totalAmount || 0),
+      totalTaxable: Number(summary._sum.taxableAmount || 0),
+      totalTax: Number(summary._sum.taxAmount || 0),
+      totalCgst: Number(summary._sum.cgstAmount || 0),
+      totalSgst: Number(summary._sum.sgstAmount || 0),
+      totalIgst: Number(summary._sum.igstAmount || 0)
     }
 
     const normalizedVouchers = vouchers.map((v: any) => {

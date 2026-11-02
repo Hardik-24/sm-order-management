@@ -11,8 +11,8 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Missing required fields: group, label, and value' })
   }
 
-  if (!['PAYMENT_TERMS', 'PRODUCT_UOM'].includes(group)) {
-    throw createError({ statusCode: 400, statusMessage: 'Invalid group. Must be PAYMENT_TERMS or PRODUCT_UOM' })
+  if (!['PAYMENT_TERMS', 'PRODUCT_UOM', 'SHEET_SIZE'].includes(group)) {
+    throw createError({ statusCode: 400, statusMessage: 'Invalid group. Must be PAYMENT_TERMS, PRODUCT_UOM, or SHEET_SIZE' })
   }
 
   const cleanValue = value.trim()

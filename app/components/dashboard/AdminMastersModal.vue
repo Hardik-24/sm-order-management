@@ -18,7 +18,7 @@
                 Dropdown Masters & Catalogs
               </h3>
               <p class="text-xs text-gray-500 mt-0.5 truncate max-w-xs sm:max-w-md">
-                Centralized management for Terms, UOM, and Groups
+                Centralized management for Terms, UOM, Sheet Sizes, and Groups
               </p>
             </div>
           </div>
@@ -250,7 +250,107 @@
           </div>
 
           <!-- ═══════════════════════════════════════════════════════════ -->
-          <!-- TAB 3: PRODUCT GROUPS / CATEGORIES (132 Brands/Lines)      -->
+          <!-- TAB 3: SHEET SIZES (RATE CALCULATOR PRESETS)               -->
+          <!-- ═══════════════════════════════════════════════════════════ -->
+          <div v-else-if="activeTab === 'SHEET_SIZE'" class="space-y-4">
+            <!-- Toolbar -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div class="relative flex-1 max-w-sm">
+                <Search class="w-4 h-4 absolute left-3 top-2.5 text-gray-400" />
+                <input 
+                  v-model="searchQuery" 
+                  type="text" 
+                  placeholder="Search sheet sizes (e.g. 8x4, 7x4)..." 
+                  class="w-full pl-9 pr-3 py-1.5 text-xs bg-white border border-gray-200 rounded-lg focus:border-[#1b3b5f] focus:ring-1 focus:ring-[#1b3b5f] outline-none"
+                />
+              </div>
+
+              <button
+                @click="openOptionModal('SHEET_SIZE')"
+                class="flex items-center gap-1.5 bg-[#1b3b5f] text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-[#132c49] transition-colors shrink-0 shadow-xs"
+              >
+                <Plus class="w-3.5 h-3.5" />
+                <span>Add Sheet Size</span>
+              </button>
+            </div>
+
+            <!-- Table of Sheet Sizes -->
+            <div class="border border-gray-200 rounded-xl overflow-hidden shadow-2xs">
+              <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr class="bg-gray-50 border-b border-gray-200 text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                    <th class="px-4 py-2.5">Display Label</th>
+                    <th class="px-4 py-2.5">Dimensions (L × W)</th>
+                    <th class="px-4 py-2.5">Default</th>
+                    <th class="px-4 py-2.5">Status</th>
+                    <th class="px-4 py-2.5 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                  <tr v-if="filteredSheetSizes.length === 0">
+                    <td colspan="5" class="px-4 py-6 text-center text-gray-400">No sheet sizes found.</td>
+                  </tr>
+                  <tr v-for="item in filteredSheetSizes" :key="item.id" class="hover:bg-gray-50/60 transition-colors">
+                    <td class="px-4 py-3 font-semibold text-gray-900">
+                      <div class="flex items-center gap-2">
+                        <span>{{ item.label }}</span>
+                        <span v-if="item.description" class="text-[10px] text-gray-400 font-normal italic">({{ item.description }})</span>
+                      </div>
+                    </td>
+                    <td class="px-4 py-3 font-mono text-[11px] text-gray-600">
+                      <span class="bg-gray-100 px-2 py-0.5 rounded font-bold text-gray-800">{{ item.value }}</span>
+                    </td>
+                    <td class="px-4 py-3">
+                      <button 
+                        @click="setDefaultOption(item)" 
+                        type="button" 
+                        class="text-[10px] font-bold px-2 py-0.5 rounded-full border transition-all cursor-pointer"
+                        :class="item.isDefault 
+                          ? 'bg-emerald-50 text-[#1b3b5f] border-emerald-300 shadow-2xs font-bold' 
+                          : 'bg-gray-50 text-gray-400 border-gray-200 hover:text-gray-600 hover:border-gray-300'"
+                        :title="item.isDefault ? 'Default preset for rate calculator' : 'Click to set as default'"
+                      >
+                        {{ item.isDefault ? '★ Default' : 'Set Default' }}
+                      </button>
+                    </td>
+                    <td class="px-4 py-3">
+                      <button 
+                        type="button" 
+                        @click="toggleOptionActive(item)"
+                        class="px-2 py-0.5 rounded-md text-[10px] font-semibold border transition-colors"
+                        :class="item.isActive !== false 
+                          ? 'bg-green-50 text-green-700 border-green-200' 
+                          : 'bg-gray-100 text-gray-500 border-gray-200'"
+                      >
+                        {{ item.isActive !== false ? 'Active' : 'Disabled' }}
+                      </button>
+                    </td>
+                    <td class="px-4 py-3 text-right">
+                      <div class="flex items-center justify-end gap-1">
+                        <button 
+                          @click="openOptionModal('SHEET_SIZE', item)" 
+                          class="p-1 text-gray-400 hover:text-[#1b3b5f] rounded hover:bg-gray-100 transition-colors"
+                          title="Edit"
+                        >
+                          <Edit2 class="w-3.5 h-3.5" />
+                        </button>
+                        <button 
+                          @click="deleteOption(item)" 
+                          class="p-1 text-gray-400 hover:text-red-600 rounded hover:bg-red-50 transition-colors"
+                          title="Delete"
+                        >
+                          <Trash2 class="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- ═══════════════════════════════════════════════════════════ -->
+          <!-- TAB 4: PRODUCT GROUPS / CATEGORIES (132 Brands/Lines)      -->
           <!-- ═══════════════════════════════════════════════════════════ -->
           <div v-else-if="activeTab === 'CATEGORIES'" class="space-y-4">
             <!-- Toolbar -->
@@ -372,7 +472,7 @@
       <div class="relative bg-white rounded-xl shadow-xl w-full max-w-md p-5 border border-gray-200 space-y-4 max-h-[calc(100dvh-2.5rem-env(safe-area-inset-bottom,0px)-env(safe-area-inset-top,0px))] overflow-y-auto">
         <div class="flex items-center justify-between border-b border-gray-100 pb-3">
           <h4 class="text-sm font-bold text-gray-900">
-            {{ editingOption ? 'Edit' : 'Add' }} {{ optionGroup === 'PAYMENT_TERMS' ? 'Payment Term' : 'Unit of Measure' }}
+            {{ editingOption ? 'Edit' : 'Add' }} {{ optionGroup === 'PAYMENT_TERMS' ? 'Payment Term' : optionGroup === 'SHEET_SIZE' ? 'Sheet Size' : 'Unit of Measure' }}
           </h4>
           <button @click="isOptionModalOpen = false" class="text-gray-400 hover:text-gray-600"><X class="w-4 h-4" /></button>
         </div>
@@ -384,20 +484,25 @@
               v-model="optionForm.label" 
               type="text" 
               required
-              :placeholder="optionGroup === 'PAYMENT_TERMS' ? 'e.g. 90 Days' : 'e.g. BUNDLE'" 
+              :placeholder="optionGroup === 'PAYMENT_TERMS' ? 'e.g. 90 Days' : optionGroup === 'SHEET_SIZE' ? 'e.g. 8 x 4 (Std) or 7 x 4' : 'e.g. BUNDLE'" 
               class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#1b3b5f] focus:ring-1 focus:ring-[#1b3b5f] outline-none"
             />
           </div>
 
           <div>
-            <label class="block font-bold text-gray-600 uppercase tracking-wider mb-1">Stored Value / Code *</label>
+            <label class="block font-bold text-gray-600 uppercase tracking-wider mb-1">
+              {{ optionGroup === 'SHEET_SIZE' ? 'Dimensions (Length × Width in ft) *' : 'Stored Value / Code *' }}
+            </label>
             <input 
               v-model="optionForm.value" 
               type="text" 
               required
-              :placeholder="optionGroup === 'PAYMENT_TERMS' ? 'e.g. 90 Days' : 'e.g. BUNDLE'" 
+              :placeholder="optionGroup === 'PAYMENT_TERMS' ? 'e.g. 90 Days' : optionGroup === 'SHEET_SIZE' ? 'e.g. 8x4 or 7x4' : 'e.g. BUNDLE'" 
               class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#1b3b5f] focus:ring-1 focus:ring-[#1b3b5f] outline-none font-mono"
             />
+            <p v-if="optionGroup === 'SHEET_SIZE'" class="text-[10px] text-gray-500 mt-1">
+              Format: Length × Width separated by 'x' (e.g. 8x4, 7x4, 6x3).
+            </p>
           </div>
 
           <div>
@@ -405,7 +510,7 @@
             <input 
               v-model="optionForm.description" 
               type="text" 
-              placeholder="e.g. Special credit terms for project contractors" 
+              :placeholder="optionGroup === 'SHEET_SIZE' ? 'e.g. 32 sq.ft standard board' : 'e.g. Special credit terms for project contractors'" 
               class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#1b3b5f] focus:ring-1 focus:ring-[#1b3b5f] outline-none"
             />
           </div>
@@ -494,7 +599,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { 
-  Database, CreditCard, Ruler, Layers, 
+  Database, CreditCard, Ruler, Layers, Maximize2,
   Search, Plus, Edit2, Trash2, X, Loader2, Folder
 } from 'lucide-vue-next'
 import { useSnackbar } from '~/composables/useSnackbar'
@@ -513,13 +618,14 @@ const emit = defineEmits<{
 const { showSaving, showSaved, showEditing } = useSnackbar()
 const { notifyChange } = useRealtimeSync()
 
-type TabKey = 'PAYMENT_TERMS' | 'PRODUCT_UOM' | 'CATEGORIES'
+type TabKey = 'PAYMENT_TERMS' | 'PRODUCT_UOM' | 'SHEET_SIZE' | 'CATEGORIES'
 const activeTab = ref<TabKey>('PAYMENT_TERMS')
 const searchQuery = ref('')
 
 // Masters Data from API
 const paymentTerms = ref<MasterOptionItem[]>([])
 const productUom = ref<MasterOptionItem[]>([])
+const sheetSizes = ref<MasterOptionItem[]>([])
 const categories = ref<MasterCategoryItem[]>([])
 const isLoading = ref(false)
 
@@ -529,10 +635,12 @@ const fetchMasters = async () => {
     const res = await $fetch<{
       paymentTerms: MasterOptionItem[]
       productUom: MasterOptionItem[]
+      sheetSizes: MasterOptionItem[]
       categories: MasterCategoryItem[]
     }>('/api/masters')
     paymentTerms.value = res.paymentTerms || []
     productUom.value = res.productUom || []
+    sheetSizes.value = res.sheetSizes || []
     categories.value = res.categories || []
   } catch (err: any) {
     console.error('Failed to load masters', err)
@@ -551,6 +659,7 @@ watch(() => props.isOpen, (open) => {
 const tabs = computed(() => [
   { id: 'PAYMENT_TERMS' as TabKey, label: 'Payment Terms', icon: CreditCard, count: paymentTerms.value.length },
   { id: 'PRODUCT_UOM' as TabKey, label: 'Units (UOM)', icon: Ruler, count: productUom.value.length },
+  { id: 'SHEET_SIZE' as TabKey, label: 'Sheet Sizes (Sq.ft)', icon: Maximize2, count: sheetSizes.value.length },
   { id: 'CATEGORIES' as TabKey, label: 'Product Groups', icon: Layers, count: categories.value.length },
 ])
 
@@ -572,6 +681,15 @@ const filteredProductUom = computed(() => {
   })
 })
 
+const filteredSheetSizes = computed(() => {
+  if (!sheetSizes.value) return []
+  return rankAndFilter(sheetSizes.value, searchQuery.value, {
+    primary: i => i.label,
+    secondary: i => i.value,
+    meta: i => i.description
+  })
+})
+
 const filteredCategories = computed(() => {
   if (!categories.value) return []
   return rankAndFilter(categories.value, searchQuery.value, {
@@ -580,9 +698,9 @@ const filteredCategories = computed(() => {
   })
 })
 
-// ─── Option Modal State (Payment Terms & UOM) ────────────────
+// ─── Option Modal State (Payment Terms, UOM & Sheet Sizes) ───
 const isOptionModalOpen = ref(false)
-const optionGroup = ref<'PAYMENT_TERMS' | 'PRODUCT_UOM'>('PAYMENT_TERMS')
+const optionGroup = ref<'PAYMENT_TERMS' | 'PRODUCT_UOM' | 'SHEET_SIZE'>('PAYMENT_TERMS')
 const editingOption = ref<MasterOptionItem | null>(null)
 const isSubmittingOption = ref(false)
 const optionForm = ref({
@@ -592,7 +710,7 @@ const optionForm = ref({
   isDefault: false
 })
 
-const openOptionModal = (group: 'PAYMENT_TERMS' | 'PRODUCT_UOM', item: MasterOptionItem | null = null) => {
+const openOptionModal = (group: 'PAYMENT_TERMS' | 'PRODUCT_UOM' | 'SHEET_SIZE', item: MasterOptionItem | null = null) => {
   optionGroup.value = group
   editingOption.value = item
   if (item) {
@@ -641,7 +759,8 @@ const saveOption = async () => {
           isDefault: optionForm.value.isDefault
         }
       })
-      showSaved(`"${optionForm.value.label}" added to ${optionGroup.value === 'PAYMENT_TERMS' ? 'Payment Terms' : 'Units'}`)
+      const groupName = optionGroup.value === 'PAYMENT_TERMS' ? 'Payment Terms' : optionGroup.value === 'SHEET_SIZE' ? 'Sheet Sizes' : 'Units'
+      showSaved(`"${optionForm.value.label}" added to ${groupName}`)
     }
 
     notifyChange({ type: 'MASTERS_UPDATED', action: 'MASTERS_CHANGED' })
