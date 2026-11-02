@@ -191,7 +191,7 @@
                 <th class="px-5 py-3.5 whitespace-nowrap">Quote No.</th>
                 <th class="px-5 py-3.5">Customer & Destination</th>
                 <th class="px-5 py-3.5 whitespace-nowrap text-center">Items</th>
-                <th class="px-5 py-3.5 whitespace-nowrap text-center">Status</th>
+                <th class="px-5 py-3.5 whitespace-nowrap text-center">Conversion Status</th>
                 <th class="px-5 py-3.5 whitespace-nowrap">Created By</th>
                 <th class="px-5 py-3.5 whitespace-nowrap text-center">Date</th>
                 <th class="px-5 py-3.5 whitespace-nowrap text-right pr-5">Actions</th>
@@ -231,7 +231,7 @@
                 <th class="px-5 py-3.5 whitespace-nowrap">Quote No.</th>
                 <th class="px-5 py-3.5">Customer & Destination</th>
                 <th class="px-5 py-3.5 whitespace-nowrap text-center">Items</th>
-                <th class="px-5 py-3.5 whitespace-nowrap text-center">Status</th>
+                <th class="px-5 py-3.5 whitespace-nowrap text-center">Conversion Status</th>
                 <th class="px-5 py-3.5 whitespace-nowrap">Created By</th>
                 <th class="px-5 py-3.5 whitespace-nowrap text-center">Date</th>
                 <th class="px-5 py-3.5 whitespace-nowrap text-right pr-5">Actions</th>
@@ -317,35 +317,37 @@
                 </td>
 
                 <!-- 7. Actions (Convert, View Slip, Delete) -->
-                <td class="px-5 py-3.5 text-right whitespace-nowrap pr-5" @click.stop>
-                  <div class="flex items-center justify-end gap-1.5">
-                    <!-- Convert Button (Shown if Pending and created by current user or admin) -->
-                    <button
-                      v-if="canConvertQuote(quote)"
-                      type="button"
-                      @click="openConvertModal(quote)"
-                      class="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 active:scale-98 shadow-2xs transition-all flex items-center justify-center gap-1 cursor-pointer whitespace-nowrap"
-                      title="Convert this quotation to a confirmed Sales Order"
-                    >
-                      <ShoppingBag class="w-3.5 h-3.5" />
-                      <span>Convert</span>
-                    </button>
+                <td class="px-5 py-2.5 text-right whitespace-nowrap pr-5" @click.stop>
+                  <div class="flex items-center justify-end gap-2">
+                    <div class="flex flex-col items-stretch gap-1 min-w-[95px]">
+                      <!-- Convert Button (Shown if Pending and created by current user or admin, placed ABOVE View Slip) -->
+                      <button
+                        v-if="canConvertQuote(quote)"
+                        type="button"
+                        @click="openConvertModal(quote)"
+                        class="w-full px-2.5 py-1 rounded-lg text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 active:scale-98 shadow-2xs transition-all flex items-center justify-center gap-1 cursor-pointer whitespace-nowrap"
+                        title="Convert this quotation to a confirmed Sales Order"
+                      >
+                        <ShoppingBag class="w-3 h-3" />
+                        <span>Convert</span>
+                      </button>
 
-                    <button
-                      type="button"
-                      @click="viewQuoteDetails(quote)"
-                      class="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 border border-gray-200 shadow-2xs transition-colors flex items-center justify-center gap-1 cursor-pointer whitespace-nowrap"
-                      title="View & Share Quotation Slip"
-                    >
-                      <span>View Slip</span>
-                      <ChevronRight class="w-3.5 h-3.5 text-gray-400" />
-                    </button>
+                      <button
+                        type="button"
+                        @click="viewQuoteDetails(quote)"
+                        class="w-full px-2.5 py-1 rounded-lg text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 border border-gray-200 shadow-2xs transition-colors flex items-center justify-center gap-1 cursor-pointer whitespace-nowrap"
+                        title="View & Share Quotation Slip"
+                      >
+                        <span>View Slip</span>
+                        <ChevronRight class="w-3.5 h-3.5 text-gray-400" />
+                      </button>
+                    </div>
 
                     <button
                       v-if="canDeleteQuotations"
                       type="button"
                       @click="deleteQuote(quote)"
-                      class="p-1.5 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+                      class="p-1.5 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer self-center"
                       title="Delete Quotation"
                     >
                       <Trash2 class="w-3.5 h-3.5" />

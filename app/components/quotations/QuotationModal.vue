@@ -131,36 +131,10 @@
 
           <!-- Sharing Action Bar -->
           <div class="bg-white rounded-2xl border border-gray-200 p-4 sm:p-5 shadow-2xs space-y-3">
-            <div class="flex items-center justify-between flex-wrap gap-2.5">
-              <h4 class="text-xs font-bold uppercase tracking-wider text-gray-500 flex items-center gap-1.5">
-                <Share2 class="w-3.5 h-3.5 text-[#1b3b5f]" />
-                <span>Share & Export Options</span>
-              </h4>
-
-              <!-- Mode Switch (Branded vs Anonymous Slip) -->
-              <div class="inline-flex items-center bg-gray-100 p-1 rounded-xl border border-gray-200 gap-1 text-xs select-none">
-                <button
-                  type="button"
-                  @click="isAnonymousMode = false"
-                  class="px-2.5 py-1 rounded-lg font-bold transition flex items-center gap-1.5 cursor-pointer text-xs"
-                  :class="!isAnonymousMode ? 'bg-white text-[#1b3b5f] shadow-2xs' : 'text-gray-500 hover:text-gray-800'"
-                  title="Include official Silicon Marketing branding & signatory"
-                >
-                  <CheckCircle2 v-if="!isAnonymousMode" class="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Branded Slip</span>
-                </button>
-                <button
-                  type="button"
-                  @click="isAnonymousMode = true"
-                  class="px-2.5 py-1 rounded-lg font-bold transition flex items-center gap-1.5 cursor-pointer text-xs"
-                  :class="isAnonymousMode ? 'bg-[#1b3b5f] text-white shadow-2xs' : 'text-gray-500 hover:text-gray-800'"
-                  title="Generate neutral slip without company logo or sales rep name"
-                >
-                  <EyeOff v-if="isAnonymousMode" class="w-3.5 h-3.5 text-amber-300" />
-                  <span>Anonymous Mode</span>
-                </button>
-              </div>
-            </div>
+            <h4 class="text-xs font-bold uppercase tracking-wider text-gray-500 flex items-center gap-1.5">
+              <Share2 class="w-3.5 h-3.5 text-[#1b3b5f]" />
+              <span>Share & Export Options</span>
+            </h4>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               <!-- WhatsApp Share -->

@@ -723,31 +723,31 @@ const saveDriverAssignment = async () => {
             </span>
           </div>
 
-          <!-- LINE 2: Driver Info, Destination & Direct 1-Tap Action -->
+          <!-- LINE 3: Driver Info & Destination Address -->
           <div class="flex items-center justify-between gap-2 min-w-0 pt-0.5">
-            <div class="flex items-center gap-1.5 shrink-0 truncate max-w-[55%]">
+            <div class="flex items-center gap-1.5 min-w-0 flex-1">
               <!-- Party Vehicle Badge (Mobile) -->
               <span 
                 v-if="order.vehicleMode === 'PARTY_VEHICLE'"
-                class="text-xs font-semibold text-amber-900 flex items-center gap-1 truncate"
+                class="text-xs font-semibold text-amber-900 flex items-center gap-1 shrink-0"
               >
                 <Car class="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                <span class="truncate">{{ order.deliveryStatus?.driverName || 'Party Vehicle' }}</span>
+                <span>{{ order.deliveryStatus?.driverName || 'Party Vehicle' }}</span>
               </span>
               <!-- Third Party Badge (Mobile) -->
               <span 
                 v-else-if="order.vehicleMode === 'THIRD_PARTY'"
-                class="text-xs font-semibold text-indigo-900 flex items-center gap-1 truncate"
+                class="text-xs font-semibold text-indigo-900 flex items-center gap-1 shrink-0"
               >
                 <Package class="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-                <span class="truncate">{{ order.deliveryStatus?.driverName || 'Porter / Rapido' }}</span>
+                <span>{{ order.deliveryStatus?.driverName || 'Porter / Rapido' }}</span>
               </span>
               <span 
                 v-else-if="order.deliveryDriver || order.deliveryStatus?.driverName" 
-                class="text-xs font-medium text-gray-800 flex items-center gap-1 truncate"
+                class="text-xs font-medium text-gray-800 flex items-center gap-1 shrink-0"
               >
                 <Truck class="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                <span class="truncate">{{ order.deliveryDriver || order.deliveryStatus?.driverName }}</span>
+                <span>{{ order.deliveryDriver || order.deliveryStatus?.driverName }}</span>
               </span>
               <span 
                 v-else 
@@ -787,90 +787,89 @@ const saveDriverAssignment = async () => {
               </div>
             </div>
 
-            <!-- Direct 1-Tap Action Button -->
-            <div class="flex items-center gap-1.5 shrink-0">
-              <!-- A. Direct Handover Actions (Party Vehicle / Third Party Mobile) -->
-              <template v-if="order.vehicleMode === 'PARTY_VEHICLE' || order.vehicleMode === 'THIRD_PARTY'">
-                <span 
-                  v-if="order.deliveryStatus?.status === 'DELIVERED'"
-                  class="px-2 py-0.5 border border-emerald-200 bg-emerald-50 text-emerald-800 text-[10px] font-bold rounded-md flex items-center gap-1"
-                >
-                  <CheckCircle2 class="w-3 h-3 text-emerald-600" />
-                  <span>Handed Over</span>
-                </span>
-                <button 
-                  v-else-if="order.overallStatus !== 'CANCELLED'"
-                  type="button"
-                  @click.stop="openHandoverModal(order)"
-                  class="px-2.5 py-1 text-white text-[11px] font-bold rounded-md active:scale-95 transition-all shadow-xs flex items-center gap-1 cursor-pointer"
-                  :class="order.vehicleMode === 'THIRD_PARTY' ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-amber-600 hover:bg-amber-700'"
-                >
-                  <PackageCheck class="w-3 h-3" />
-                  <span>Hand Over</span>
-                </button>
-              </template>
-
-              <!-- B. Our Fleet Actions (Mobile) -->
-              <template v-else>
-                <!-- Live Tracking if In Transit / Dispatched -->
-                <button 
-                  v-if="order.deliveryStatus?.status === 'DISPATCHED'"
-                  @click.stop="openTrackingModal(order)"
-                  class="px-2.5 py-1 bg-[#1b3b5f] text-white text-[11px] font-semibold rounded-md hover:bg-[#132c49] active:scale-95 transition-all shadow-xs flex items-center gap-1"
-                >
-                  <MapPin class="w-3 h-3" />
-                  <span>Track Live</span>
-                </button>
-
-                <!-- Route Map if Delivered -->
-                <button 
-                  v-else-if="order.deliveryStatus?.status === 'DELIVERED'"
-                  @click.stop="openTrackingModal(order)"
-                  class="px-2.5 py-1 border border-blue-200 bg-blue-50 text-blue-700 text-[11px] font-semibold rounded-md hover:bg-blue-100 transition-colors flex items-center gap-1"
-                >
-                  <MapPin class="w-3 h-3" />
-                  <span>Route</span>
-                </button>
-
-                <!-- Trip Selection / Unassigned Actions -->
-                <template v-else-if="(!order.deliveryDriver && (!order.deliveryStatus || order.deliveryStatus.status === 'WAITING' || order.deliveryStatus.status === 'PENDING')) && order.overallStatus !== 'CANCELLED'">
-                  <!-- Added (in current trip selection) -->
-                  <button
-                    v-if="selectedTripOrderIds?.includes(order.id)"
-                    type="button"
-                    @click.stop="emit('toggleTripOrder', order.id)"
-                    class="px-2.5 py-1 bg-[#1b3b5f] text-white text-[11px] font-bold rounded-md hover:bg-[#132c49] active:scale-95 transition-all shadow-xs flex items-center gap-1 cursor-pointer"
-                  >
-                    <Check class="w-3 h-3" />
-                    <span>Added</span>
-                  </button>
-
-                  <!-- Add to Trip (selection in progress) -->
-                  <button
-                    v-else-if="(selectedTripOrderIds?.length || 0) > 0"
-                    type="button"
-                    @click.stop="emit('toggleTripOrder', order.id)"
-                    class="px-2 py-1 bg-emerald-50 text-emerald-800 border border-emerald-300 rounded-md text-[11px] font-bold active:scale-95 transition-all shadow-xs flex items-center gap-1 cursor-pointer"
-                  >
-                    <Plus class="w-3 h-3 text-emerald-700" />
-                    <span>Add</span>
-                  </button>
-
-                  <!-- Create Trip -->
-                  <button
-                    v-else
-                    type="button"
-                    @click.stop="emit('toggleTripOrder', order.id)"
-                    class="px-2 py-1 bg-[#1b3b5f]/10 text-[#1b3b5f] border border-[#1b3b5f]/30 rounded-md text-[11px] font-bold active:scale-95 transition-all shadow-xs flex items-center gap-1 cursor-pointer"
-                  >
-                    <Plus class="w-3 h-3" />
-                    <span>Trip</span>
-                  </button>
-                </template>
-              </template>
-              
-              <ChevronRight class="w-4 h-4 text-gray-300 shrink-0 -mr-1" />
+            <!-- Route button when delivered or chevron -->
+            <div class="flex items-center gap-1 shrink-0">
+              <button 
+                v-if="order.deliveryStatus?.status === 'DELIVERED'"
+                @click.stop="openTrackingModal(order)"
+                class="px-2 py-0.5 border border-blue-200 bg-blue-50 text-blue-700 text-[10px] font-semibold rounded-md hover:bg-blue-100 transition-colors flex items-center gap-1 cursor-pointer"
+              >
+                <MapPin class="w-3 h-3" />
+                <span>Route</span>
+              </button>
+              <span 
+                v-else-if="(order.vehicleMode === 'PARTY_VEHICLE' || order.vehicleMode === 'THIRD_PARTY') && order.deliveryStatus?.status === 'DELIVERED'"
+                class="px-2 py-0.5 border border-emerald-200 bg-emerald-50 text-emerald-800 text-[10px] font-bold rounded-md flex items-center gap-1"
+              >
+                <CheckCircle2 class="w-3 h-3 text-emerald-600" />
+                <span>Handed Over</span>
+              </span>
+              <ChevronRight v-else class="w-4 h-4 text-gray-300" />
             </div>
+          </div>
+
+          <!-- LINE 4: Handover or +Trip Button (Full Row Length on Mobile) -->
+          <div v-if="order.overallStatus !== 'CANCELLED' && order.deliveryStatus?.status !== 'DELIVERED'" class="pt-0.5">
+            <!-- A. Handover Action (Party Vehicle / Third Party Mobile) -->
+            <button 
+              v-if="order.vehicleMode === 'PARTY_VEHICLE' || order.vehicleMode === 'THIRD_PARTY'"
+              type="button"
+              @click.stop="openHandoverModal(order)"
+              class="w-full py-2 px-3 text-white text-xs font-bold rounded-lg active:scale-[0.99] transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
+              :class="order.vehicleMode === 'THIRD_PARTY' ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-amber-600 hover:bg-amber-700'"
+            >
+              <PackageCheck class="w-3.5 h-3.5" />
+              <span>Hand Over to {{ order.vehicleMode === 'THIRD_PARTY' ? 'Third Party' : 'Party Vehicle' }}</span>
+            </button>
+
+            <!-- B. Our Fleet Actions -->
+            <template v-else>
+              <!-- Track Live (if Dispatched) -->
+              <button 
+                v-if="order.deliveryStatus?.status === 'DISPATCHED'"
+                @click.stop="openTrackingModal(order)"
+                class="w-full py-2 px-3 bg-[#1b3b5f] hover:bg-[#132c49] text-white text-xs font-bold rounded-lg active:scale-[0.99] transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <MapPin class="w-3.5 h-3.5" />
+                <span>Track Live</span>
+              </button>
+
+              <!-- Trip Selection / Unassigned Actions -->
+              <template v-else-if="!order.deliveryDriver && (!order.deliveryStatus || order.deliveryStatus.status === 'WAITING' || order.deliveryStatus.status === 'PENDING')">
+                <!-- Added in Trip -->
+                <button
+                  v-if="selectedTripOrderIds?.includes(order.id)"
+                  type="button"
+                  @click.stop="emit('toggleTripOrder', order.id)"
+                  class="w-full py-2 px-3 bg-[#1b3b5f] text-white text-xs font-bold rounded-lg hover:bg-[#132c49] active:scale-[0.99] transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <Check class="w-3.5 h-3.5" />
+                  <span>Selected in Trip</span>
+                </button>
+
+                <!-- Add to Trip (selection in progress) -->
+                <button
+                  v-else-if="(selectedTripOrderIds?.length || 0) > 0"
+                  type="button"
+                  @click.stop="emit('toggleTripOrder', order.id)"
+                  class="w-full py-2 px-3 bg-emerald-600 text-white text-xs font-bold rounded-lg hover:bg-emerald-700 active:scale-[0.99] transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <Plus class="w-3.5 h-3.5" />
+                  <span>Add to Trip</span>
+                </button>
+
+                <!-- Create Trip (+ Trip button full row length) -->
+                <button
+                  v-else
+                  type="button"
+                  @click.stop="emit('toggleTripOrder', order.id)"
+                  class="w-full py-2 px-3 bg-[#1b3b5f]/10 text-[#1b3b5f] border border-[#1b3b5f]/30 hover:bg-[#1b3b5f]/20 rounded-lg text-xs font-bold active:scale-[0.99] transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <Plus class="w-3.5 h-3.5" />
+                  <span>+ Create Trip</span>
+                </button>
+              </template>
+            </template>
           </div>
         </div>
 

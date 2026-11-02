@@ -107,7 +107,7 @@
             <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl text-[11px] text-gray-600 flex items-start gap-2">
               <Info class="w-4 h-4 text-[#1b3b5f] shrink-0 mt-0.5" />
               <span>
-                <strong>Note:</strong> Sales team members can also flick between Branded and Anonymous mode on individual quotations directly from the quotation slip view.
+                <strong>Note:</strong> This is a global system setting managed exclusively by administrators.
               </span>
             </div>
           </div>
