@@ -15,8 +15,8 @@
       </div>
     </div>
 
-    <!-- 3 Admin Hub Tiles -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6">
+    <!-- 4 Admin Hub Tiles -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
       <!-- 1. Price List Sheets Tile -->
       <div 
         @click="isSheetTabsModalOpen = true"
@@ -103,6 +103,41 @@
         </div>
         <div class="pt-4 mt-4 border-t border-gray-100 flex items-center justify-between text-xs font-bold text-purple-700 group-hover:text-purple-900 relative z-10">
           <span>Manage Team & Access</span>
+          <ChevronRight class="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+        </div>
+      </div>
+
+      <!-- 4. General Settings Tile -->
+      <div 
+        @click="isSettingsModalOpen = true"
+        class="group relative bg-white rounded-2xl border border-gray-200/90 p-6 shadow-xs hover:shadow-md hover:border-amber-400 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer flex flex-col justify-between overflow-hidden"
+      >
+        <div class="absolute -right-6 -bottom-6 w-28 h-28 bg-amber-50/80 rounded-full group-hover:scale-125 transition-transform duration-300 pointer-events-none"></div>
+        <div class="space-y-4 relative z-10">
+          <div class="flex items-center justify-between">
+            <div class="w-12 h-12 rounded-xl bg-amber-50 border border-amber-200/80 text-amber-700 flex items-center justify-center group-hover:scale-110 transition-transform shadow-2xs">
+              <Sliders class="w-6 h-6" />
+            </div>
+            <span 
+              class="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border shadow-2xs"
+              :class="systemSettings.quotationAnonymousMode 
+                ? 'bg-amber-100/90 text-amber-900 border-amber-300' 
+                : 'bg-emerald-100/90 text-emerald-800 border-emerald-300'"
+            >
+              {{ systemSettings.quotationAnonymousMode ? 'Anonymous' : 'Branded' }}
+            </span>
+          </div>
+          <div>
+            <h3 class="text-base sm:text-lg font-bold text-gray-900 group-hover:text-amber-800 transition-colors">
+              General Settings
+            </h3>
+            <p class="text-xs text-gray-500 mt-1.5 leading-relaxed">
+              Global quotation slip preferences, anonymous estimate mode, and system defaults.
+            </p>
+          </div>
+        </div>
+        <div class="pt-4 mt-4 border-t border-gray-100 flex items-center justify-between text-xs font-bold text-amber-700 group-hover:text-amber-900 relative z-10">
+          <span>Configure Settings</span>
           <ChevronRight class="w-4 h-4 group-hover:translate-x-1 transition-transform" />
         </div>
       </div>
@@ -1104,6 +1139,13 @@
     <!-- Google Sheet Price List Tabs Modal -->
     <AdminSheetTabsModal :isOpen="isSheetTabsModalOpen" @close="isSheetTabsModalOpen = false" />
 
+    <!-- General System Settings Modal -->
+    <AdminSettingsModal 
+      :isOpen="isSettingsModalOpen" 
+      @close="isSettingsModalOpen = false" 
+      @saved="(p) => { systemSettings.quotationAnonymousMode = p.quotationAnonymousMode }" 
+    />
+
   </div>
 </template>
 
@@ -1122,10 +1164,12 @@ import {
   Database,
   FileSpreadsheet,
   Users,
-  ChevronRight
+  ChevronRight,
+  Sliders
 } from 'lucide-vue-next'
 import AdminMastersModal from '~/components/dashboard/AdminMastersModal.vue'
 import AdminSheetTabsModal from '~/components/dashboard/AdminSheetTabsModal.vue'
+import AdminSettingsModal from '~/components/dashboard/AdminSettingsModal.vue'
 import { useSnackbar } from '~/composables/useSnackbar'
 import { useGsapAnimation } from '~/composables/useGsapAnimation'
 import CustomSelect from '~/components/ui/CustomSelect.vue'
@@ -1177,6 +1221,8 @@ const isUsersModalOpen = ref(false)
 const isModalOpen = ref(false)
 const isMastersModalOpen = ref(false)
 const isSheetTabsModalOpen = ref(false)
+const isSettingsModalOpen = ref(false)
+const systemSettings = ref<{ quotationAnonymousMode: boolean }>({ quotationAnonymousMode: false })
 const isSaving = ref(false)
 const editingUser = ref<any>(null)
 const loadingStatusUsers = ref<Record<string, boolean>>({})
@@ -1238,8 +1284,20 @@ watch(isUsersModalOpen, (val) => {
   if (val) triggerRowAnimation()
 })
 
+const loadSystemSettings = async () => {
+  try {
+    const res = await $fetch<{ quotationAnonymousMode: boolean }>('/api/settings')
+    if (res) {
+      systemSettings.value.quotationAnonymousMode = Boolean(res.quotationAnonymousMode)
+    }
+  } catch (err) {
+    console.error('Failed to load settings in admin hub:', err)
+  }
+}
+
 onMounted(() => {
   triggerRowAnimation()
+  loadSystemSettings()
 })
 
 // Action Permissions helpers

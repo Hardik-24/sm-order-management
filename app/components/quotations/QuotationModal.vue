@@ -131,10 +131,36 @@
 
           <!-- Sharing Action Bar -->
           <div class="bg-white rounded-2xl border border-gray-200 p-4 sm:p-5 shadow-2xs space-y-3">
-            <h4 class="text-xs font-bold uppercase tracking-wider text-gray-500 flex items-center gap-1.5">
-              <Share2 class="w-3.5 h-3.5 text-[#1b3b5f]" />
-              <span>Share & Export Options</span>
-            </h4>
+            <div class="flex items-center justify-between flex-wrap gap-2.5">
+              <h4 class="text-xs font-bold uppercase tracking-wider text-gray-500 flex items-center gap-1.5">
+                <Share2 class="w-3.5 h-3.5 text-[#1b3b5f]" />
+                <span>Share & Export Options</span>
+              </h4>
+
+              <!-- Mode Switch (Branded vs Anonymous Slip) -->
+              <div class="inline-flex items-center bg-gray-100 p-1 rounded-xl border border-gray-200 gap-1 text-xs select-none">
+                <button
+                  type="button"
+                  @click="isAnonymousMode = false"
+                  class="px-2.5 py-1 rounded-lg font-bold transition flex items-center gap-1.5 cursor-pointer text-xs"
+                  :class="!isAnonymousMode ? 'bg-white text-[#1b3b5f] shadow-2xs' : 'text-gray-500 hover:text-gray-800'"
+                  title="Include official Silicon Marketing branding & signatory"
+                >
+                  <CheckCircle2 v-if="!isAnonymousMode" class="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Branded Slip</span>
+                </button>
+                <button
+                  type="button"
+                  @click="isAnonymousMode = true"
+                  class="px-2.5 py-1 rounded-lg font-bold transition flex items-center gap-1.5 cursor-pointer text-xs"
+                  :class="isAnonymousMode ? 'bg-[#1b3b5f] text-white shadow-2xs' : 'text-gray-500 hover:text-gray-800'"
+                  title="Generate neutral slip without company logo or sales rep name"
+                >
+                  <EyeOff v-if="isAnonymousMode" class="w-3.5 h-3.5 text-amber-300" />
+                  <span>Anonymous Mode</span>
+                </button>
+              </div>
+            </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               <!-- WhatsApp Share -->
@@ -302,17 +328,24 @@
                   >
                     <!-- Inner document padding -->
                     <div class="p-6 sm:p-8 space-y-6 text-gray-900">
-                      <!-- Branded Quotation Card Header -->
+                      <!-- Quotation Card Header -->
                       <div class="h-1.5 w-full bg-gradient-to-r from-[#1b3b5f] via-[#d92546] to-[#1b3b5f] rounded-full"></div>
                       <div class="flex items-center justify-between border-b border-gray-200 pb-5">
-                        <img
-                          :src="logoDataUri || '/images/logo-original.png'"
-                          alt="Silicon Marketing"
-                          class="h-24 w-auto object-contain drop-shadow-xs"
-                        />
+                        <div v-if="!isAnonymousMode">
+                          <img
+                            :src="logoDataUri || '/images/logo-original.png'"
+                            alt="Silicon Marketing"
+                            class="h-24 w-auto object-contain drop-shadow-xs"
+                          />
+                        </div>
+                        <div v-else class="space-y-1">
+                          <span class="inline-block px-3.5 py-1.5 rounded-lg bg-[#1b3b5f] text-white text-xs font-black uppercase tracking-wider shadow-2xs">
+                            PRICE QUOTATION
+                          </span>
+                        </div>
                         <div class="text-right">
-                          <span class="inline-block px-3.5 py-1 rounded-lg bg-[#1b3b5f] text-white text-[11px] font-black uppercase tracking-wider mb-1 shadow-2xs">
-                            PRICE ESTIMATE
+                          <span v-if="!isAnonymousMode" class="inline-block px-3.5 py-1 rounded-lg bg-[#1b3b5f] text-white text-[11px] font-black uppercase tracking-wider mb-1 shadow-2xs">
+                            PRICE QUOTATION
                           </span>
                           <div class="font-mono text-base font-black text-[#1b3b5f]">{{ quoteNumber }}</div>
                           <div class="text-xs text-gray-500 mt-0.5">
@@ -325,9 +358,9 @@
                         </div>
                       </div>
 
-                      <!-- Customer Details Box (Option 3: Customer Details + Issued By) -->
+                      <!-- Customer Details Box -->
                       <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 flex justify-between items-center text-xs gap-4">
-                        <div class="min-w-0">
+                        <div class="min-w-0 flex-1">
                           <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400 block mb-0.5">Customer Details:</span>
                           <div class="text-sm sm:text-base font-black text-[#1b3b5f] truncate">
                             {{ customerName || 'Valued Customer' }}
@@ -345,7 +378,8 @@
                           </div>
                         </div>
 
-                        <div class="text-right border-l border-slate-200 pl-4 sm:pl-6 shrink-0">
+                        <!-- Issued By (Branded Mode Only) -->
+                        <div v-if="!isAnonymousMode" class="text-right border-l border-slate-200 pl-4 sm:pl-6 shrink-0">
                           <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400 block mb-0.5">Issued By:</span>
                           <div class="text-xs sm:text-sm font-black text-[#1b3b5f]">
                             Silicon Marketing
@@ -453,13 +487,17 @@
                     <!-- Footer Signoff pinned to bottom of A4 card -->
                     <div class="px-6 sm:px-8 pb-6 pt-4 border-t border-gray-200 flex justify-between items-end text-[10px] text-gray-500">
                       <div>
-                        <strong class="font-bold block text-gray-700">Silicon Marketing &bull; Price Estimate</strong>
-                        <span class="text-[9px] text-gray-400">Order Workspace Verified</span>
+                        <strong class="font-bold block text-gray-700">
+                          {{ isAnonymousMode ? 'Price Quotation' : 'Silicon Marketing • Price Quotation' }}
+                        </strong>
+                        <span class="text-[9px] text-gray-400">
+                          {{ isAnonymousMode ? `Valid for ${validityDays || 7} days` : 'Order Workspace Verified' }}
+                        </span>
                       </div>
                       <div class="flex flex-col items-center text-center">
                         <div class="h-10 flex items-end justify-center mb-1">
                           <img
-                            v-if="signatureDataUrl"
+                            v-if="!isAnonymousMode && signatureDataUrl"
                             :src="signatureDataUrl"
                             alt="Authorized Signature"
                             class="max-h-10 max-w-[130px] object-contain"
@@ -467,7 +505,7 @@
                         </div>
                         <div class="border-t border-gray-400 w-32 pt-1">
                           <strong class="font-bold text-gray-800 block">Authorized Signatory</strong>
-                          <span class="text-[9px] text-gray-400 block">{{ displayCreatorName }}</span>
+                          <span v-if="!isAnonymousMode" class="text-[9px] text-gray-400 block">{{ displayCreatorName }}</span>
                         </div>
                       </div>
                     </div>
@@ -1179,15 +1217,22 @@
 
         <!-- Header -->
         <div class="flex items-center justify-between border-b border-gray-200 pb-6 mb-6">
-          <img
-            :src="logoDataUri || '/images/logo-original.png'"
-            alt="Silicon Marketing"
-            class="h-24 w-auto object-contain"
-            crossorigin="anonymous"
-          />
+          <div v-if="!isAnonymousMode">
+            <img
+              :src="logoDataUri || '/images/logo-original.png'"
+              alt="Silicon Marketing"
+              class="h-24 w-auto object-contain"
+              crossorigin="anonymous"
+            />
+          </div>
+          <div v-else class="space-y-1">
+            <span class="inline-block px-3.5 py-1.5 rounded-lg bg-[#1b3b5f] text-white text-xs font-black uppercase tracking-wider shadow-2xs">
+              PRICE QUOTATION
+            </span>
+          </div>
           <div class="text-right">
-            <span class="inline-block px-3.5 py-1 rounded-lg bg-[#1b3b5f] text-white text-xs font-black uppercase tracking-widest mb-1.5 shadow-2xs">
-              PRICE ESTIMATE
+            <span v-if="!isAnonymousMode" class="inline-block px-3.5 py-1 rounded-lg bg-[#1b3b5f] text-white text-xs font-black uppercase tracking-widest mb-1.5 shadow-2xs">
+              PRICE QUOTATION
             </span>
             <div class="font-mono text-base font-black text-[#1b3b5f]">{{ quoteNumber }}</div>
             <div class="text-xs text-gray-500 mt-0.5">
@@ -1200,9 +1245,9 @@
           </div>
         </div>
 
-        <!-- Customer Box (Option 3: Customer Details + Issued By) -->
+        <!-- Customer Box -->
         <div class="bg-slate-50/90 p-4 rounded-xl border border-slate-200/80 mb-6 flex justify-between items-center gap-6">
-          <div class="min-w-0">
+          <div class="min-w-0 flex-1">
             <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500 block mb-1">Customer Details:</span>
             <div class="text-base font-black text-[#1b3b5f]">
               {{ customerName || 'Valued Customer' }}
@@ -1220,7 +1265,8 @@
             </div>
           </div>
 
-          <div class="text-right border-l border-slate-200 pl-6 shrink-0">
+          <!-- Issued By (Branded Mode Only) -->
+          <div v-if="!isAnonymousMode" class="text-right border-l border-slate-200 pl-6 shrink-0">
             <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500 block mb-1">Issued By:</span>
             <div class="text-sm font-black text-[#1b3b5f]">
               Silicon Marketing
@@ -1330,12 +1376,14 @@
         <!-- Footer Signoff pinned to bottom of A4 page -->
         <div class="mt-auto pt-6 border-t border-gray-200 flex justify-between items-end text-[10px] text-gray-400">
           <div>
-            <span class="block font-medium">Silicon Marketing &bull; Price Estimate</span>
+            <span class="block font-medium">
+              {{ isAnonymousMode ? 'Price Quotation' : 'Silicon Marketing • Price Quotation' }}
+            </span>
           </div>
           <div class="flex flex-col items-center text-center">
             <div class="h-10 flex items-end justify-center mb-1">
               <img
-                v-if="signatureDataUrl"
+                v-if="!isAnonymousMode && signatureDataUrl"
                 :src="signatureDataUrl"
                 alt="Authorized Signature"
                 class="max-h-10 max-w-[130px] object-contain"
@@ -1343,7 +1391,7 @@
             </div>
             <div class="border-t border-gray-400 w-32 pt-1">
               <span class="font-bold text-gray-700 block">Authorized Signatory</span>
-              <span class="text-[9px] text-gray-400 block">{{ displayCreatorName }}</span>
+              <span v-if="!isAnonymousMode" class="text-[9px] text-gray-400 block">{{ displayCreatorName }}</span>
             </div>
           </div>
         </div>
@@ -1367,15 +1415,22 @@
             <!-- Page 1 Header (Full) -->
             <div v-if="pg.isFirst">
               <div class="flex items-center justify-between border-b border-gray-200 pb-4 mb-4">
-                <img
-                  :src="logoDataUri || '/images/logo-original.png'"
-                  alt="Silicon Marketing"
-                  class="h-20 w-auto object-contain"
-                  crossorigin="anonymous"
-                />
+                <div v-if="!isAnonymousMode">
+                  <img
+                    :src="logoDataUri || '/images/logo-original.png'"
+                    alt="Silicon Marketing"
+                    class="h-20 w-auto object-contain"
+                    crossorigin="anonymous"
+                  />
+                </div>
+                <div v-else class="space-y-1">
+                  <span class="inline-block px-3 py-1 rounded-lg bg-[#1b3b5f] text-white text-xs font-black uppercase tracking-wider shadow-2xs">
+                    PRICE QUOTATION
+                  </span>
+                </div>
                 <div class="text-right">
-                  <span class="inline-block px-3 py-0.5 rounded-lg bg-[#1b3b5f] text-white text-xs font-black uppercase tracking-widest mb-1 shadow-2xs">
-                    PRICE ESTIMATE
+                  <span v-if="!isAnonymousMode" class="inline-block px-3 py-0.5 rounded-lg bg-[#1b3b5f] text-white text-xs font-black uppercase tracking-widest mb-1 shadow-2xs">
+                    PRICE QUOTATION
                   </span>
                   <div class="font-mono text-base font-black text-[#1b3b5f]">{{ quoteNumber }}</div>
                   <div class="text-xs text-gray-500 mt-0.5">
@@ -1390,7 +1445,7 @@
 
               <!-- Customer Box -->
               <div class="bg-slate-50/90 p-3.5 rounded-xl border border-slate-200/80 mb-4 flex justify-between items-center gap-6">
-                <div class="min-w-0">
+                <div class="min-w-0 flex-1">
                   <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500 block mb-0.5">Customer Details:</span>
                   <div class="text-base font-black text-[#1b3b5f]">
                     {{ customerName || 'Valued Customer' }}
@@ -1408,7 +1463,8 @@
                   </div>
                 </div>
 
-                <div class="text-right border-l border-slate-200 pl-5 shrink-0">
+                <!-- Issued By (Branded Mode Only) -->
+                <div v-if="!isAnonymousMode" class="text-right border-l border-slate-200 pl-5 shrink-0">
                   <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500 block mb-0.5">Issued By:</span>
                   <div class="text-sm font-black text-[#1b3b5f]">
                     Silicon Marketing
@@ -1424,7 +1480,7 @@
             <!-- Continuation Header (Page 2+) -->
             <div v-else>
               <div class="flex items-center justify-between border-b border-gray-200 pb-3 mb-3">
-                <div class="flex items-center gap-3">
+                <div v-if="!isAnonymousMode" class="flex items-center gap-3">
                   <img
                     :src="logoDataUri || '/images/logo-original.png'"
                     alt="Silicon Marketing"
@@ -1433,12 +1489,17 @@
                   />
                   <div class="border-l border-gray-200 pl-3">
                     <span class="inline-block px-2 py-0.5 rounded bg-[#1b3b5f] text-white text-[10px] font-black uppercase tracking-wider">
-                      PRICE ESTIMATE &bull; CONTINUATION
+                      PRICE QUOTATION &bull; CONTINUATION
                     </span>
                     <div class="text-[11px] text-gray-500 font-medium mt-0.5">
                       Silicon Marketing Order Management
                     </div>
                   </div>
+                </div>
+                <div v-else>
+                  <span class="inline-block px-2.5 py-0.5 rounded bg-[#1b3b5f] text-white text-[10px] font-black uppercase tracking-wider">
+                    PRICE QUOTATION &bull; CONTINUATION
+                  </span>
                 </div>
 
                 <div class="text-right">
@@ -1460,7 +1521,7 @@
                   <span v-if="customerPlace" class="text-gray-300">&bull;</span>
                   <span v-if="customerPlace" class="text-gray-700">{{ customerPlace }}</span>
                 </div>
-                <div class="text-[11px] text-gray-500">
+                <div v-if="!isAnonymousMode" class="text-[11px] text-gray-500">
                   Rep: <strong class="text-gray-800">{{ displayCreatorName }}</strong>
                 </div>
               </div>
@@ -1567,7 +1628,9 @@
           <!-- Footer Signoff on EVERY page (Strictly pinned to bottom) -->
           <div class="mt-auto pt-3 border-t border-gray-200 flex justify-between items-end text-[10px] text-gray-400">
             <div>
-              <span class="block font-medium">Silicon Marketing &bull; Price Estimate</span>
+              <span class="block font-medium">
+                {{ isAnonymousMode ? 'Price Quotation' : 'Silicon Marketing • Price Quotation' }}
+              </span>
             </div>
             <span class="font-mono font-bold text-gray-600 bg-gray-100 px-3 py-1 rounded-full border border-gray-200/80 mb-1">
               Page {{ pg.pageNum }} of {{ pdfPages.length }}
@@ -1575,7 +1638,7 @@
             <div class="flex flex-col items-center text-center">
               <div class="h-9 flex items-end justify-center mb-0.5">
                 <img
-                  v-if="signatureDataUrl"
+                  v-if="!isAnonymousMode && signatureDataUrl"
                   :src="signatureDataUrl"
                   alt="Authorized Signature"
                   class="max-h-9 max-w-[120px] object-contain"
@@ -1866,7 +1929,8 @@ import {
   Edit3,
   Database,
   UserPlus,
-  ShoppingBag
+  ShoppingBag,
+  EyeOff
 } from 'lucide-vue-next'
 import CustomSelect from '~/components/ui/CustomSelect.vue'
 import { toBlob, toPng, toJpeg } from 'html-to-image'
@@ -1892,6 +1956,18 @@ const { user } = useAuth()
 // State
 const isSuccessView = ref(false)
 const isEditingExisting = ref(false)
+const isAnonymousMode = ref(false)
+
+const loadGlobalSettings = async () => {
+  try {
+    const res = await $fetch<{ quotationAnonymousMode: boolean }>('/api/settings')
+    if (res && res.quotationAnonymousMode !== undefined) {
+      isAnonymousMode.value = Boolean(res.quotationAnonymousMode)
+    }
+  } catch (err) {
+    console.warn('Could not load quotation settings:', err)
+  }
+}
 const displayCreatorName = computed(() => {
   if (isEditingExisting.value && props.initialQuote?.createdByName) {
     return props.initialQuote.createdByName
@@ -2816,6 +2892,7 @@ watch(
   () => props.modelValue,
   (isOpen) => {
     if (isOpen) {
+      loadGlobalSettings()
       setupViewportObserver()
       loadDbCustomers()
     }
@@ -2859,9 +2936,10 @@ const exportQuote = async (action: 'whatsapp' | 'download' | 'pdf' | 'print') =>
       const politeMessageText = 
         `${greeting}\n\n` +
         `Please find the requested quotation (*${quoteNumber.value}*) attached with this message.\n\n` +
-        `Please feel free to reach out to us if you need any clarification or assistance. We look forward to fulfilling your requirements!\n\n` +
-        `Warm regards,\n` +
-        `Silicon Marketing`
+        `Please feel free to reach out if you need any clarification or assistance. We look forward to fulfilling your requirements!\n\n` +
+        (isAnonymousMode.value 
+          ? `Warm regards` 
+          : `Warm regards,\nSilicon Marketing`)
 
       const cleanPhone = (customerPhone.value || '').replace(/[^0-9]/g, '')
 
@@ -3184,6 +3262,7 @@ watch(
 )
 
 onMounted(() => {
+  loadGlobalSettings()
   preloadLogo()
   loadSheetCatalog()
   loadDbCustomers()
