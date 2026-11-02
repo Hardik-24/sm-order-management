@@ -428,27 +428,50 @@
                           <p v-if="displayQuoteNotes" class="font-semibold text-gray-800">&bull; {{ displayQuoteNotes }}</p>
                         </div>
 
-                        <div class="w-5/12 bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2 text-xs">
-                          <div class="flex justify-between items-center text-gray-500">
-                            <span class="font-bold text-gray-700">Total MRP:</span>
-                            <span class="font-mono font-bold text-gray-800 tabular-nums">₹{{ formatSlipNumber(totalMrp) }}</span>
-                          </div>
-                          <div v-if="totalDiscountSaved > 0" class="flex justify-between items-center text-[#1b3b5f] font-black bg-emerald-50 px-2 py-1 rounded border border-emerald-100">
-                            <span>Total Discount:</span>
-                            <span class="font-mono font-black tabular-nums">-₹{{ formatSlipNumber(totalDiscountSaved) }}</span>
-                          </div>
-                          <div class="flex justify-between items-center text-gray-800 font-black">
-                            <span>Subtotal:</span>
-                            <span class="font-mono text-gray-950 font-black tabular-nums">₹{{ formatSlipNumber(subtotal) }}</span>
-                          </div>
-                          <div v-if="taxMode === 'EXTRA'" class="flex justify-between items-center text-gray-600">
-                            <span class="font-bold text-gray-700">GST (18%):</span>
-                            <span class="font-mono font-bold text-gray-800 tabular-nums">+₹{{ formatSlipNumber(gstAmount) }}</span>
-                          </div>
-                          <div class="pt-2 border-t-2 border-slate-200 flex justify-between items-baseline font-black">
-                            <span class="text-xs uppercase font-black text-[#1b3b5f]">Grand Total:</span>
-                            <span class="text-xl sm:text-2xl text-[#1b3b5f] font-mono font-black tracking-tight tabular-nums">₹{{ formatSlipNumber(grandTotal) }}</span>
-                          </div>
+                        <div class="w-5/12 bg-slate-50 p-3.5 rounded-xl border border-slate-200 text-xs">
+                          <table class="w-full border-collapse text-xs">
+                            <tbody>
+                              <!-- Total MRP -->
+                              <tr class="text-gray-600">
+                                <td class="py-1 text-left font-bold pr-2">Total MRP:</td>
+                                <td class="py-1 w-3 text-center font-mono"></td>
+                                <td class="py-1 w-4 text-right font-mono font-bold text-gray-700">₹</td>
+                                <td class="py-1 text-right font-mono font-bold text-gray-800 tabular-nums whitespace-nowrap pl-1">{{ formatSlipNumber(totalMrp) }}</td>
+                              </tr>
+
+                              <!-- Total Discount -->
+                              <tr v-if="totalDiscountSaved > 0" class="text-emerald-700 font-bold">
+                                <td class="py-1 text-left pr-2">Total Discount:</td>
+                                <td class="py-1 w-3 text-center font-mono font-bold text-emerald-600">-</td>
+                                <td class="py-1 w-4 text-right font-mono font-bold text-emerald-600">₹</td>
+                                <td class="py-1 text-right font-mono font-bold tabular-nums whitespace-nowrap pl-1">{{ formatSlipNumber(totalDiscountSaved) }}</td>
+                              </tr>
+
+                              <!-- Subtotal -->
+                              <tr class="border-t border-slate-200 text-gray-900 font-black">
+                                <td class="py-1 text-left pr-2">Subtotal:</td>
+                                <td class="py-1 w-3 text-center font-mono"></td>
+                                <td class="py-1 w-4 text-right font-mono font-black text-gray-950">₹</td>
+                                <td class="py-1 text-right font-mono font-black text-gray-950 tabular-nums whitespace-nowrap pl-1">{{ formatSlipNumber(subtotal) }}</td>
+                              </tr>
+
+                              <!-- GST (18%) -->
+                              <tr v-if="taxMode === 'EXTRA'" class="text-gray-700 font-bold">
+                                <td class="py-1 text-left pr-2">GST (18%):</td>
+                                <td class="py-1 w-3 text-center font-mono font-bold text-sky-600">+</td>
+                                <td class="py-1 w-4 text-right font-mono font-bold text-sky-600">₹</td>
+                                <td class="py-1 text-right font-mono font-bold tabular-nums whitespace-nowrap pl-1">{{ formatSlipNumber(gstAmount) }}</td>
+                              </tr>
+
+                              <!-- Grand Total -->
+                              <tr class="border-t-2 border-b-2 border-slate-300 text-[#1b3b5f] font-black">
+                                <td class="py-1.5 text-left uppercase text-xs tracking-wider pr-2">Grand Total:</td>
+                                <td class="py-1.5 w-3 text-center font-mono"></td>
+                                <td class="py-1.5 w-4 text-right font-mono font-black text-[#1b3b5f]">₹</td>
+                                <td class="py-1.5 text-right font-mono font-black tabular-nums whitespace-nowrap pl-1">{{ formatSlipNumber(grandTotal) }}</td>
+                              </tr>
+                            </tbody>
+                          </table>
                         </div>
                       </div>
 
@@ -1112,27 +1135,50 @@
             </div>
 
             <!-- Grand Total Breakdown -->
-            <div class="md:col-span-5 bg-white rounded-2xl border border-gray-200 p-4 space-y-2 text-xs">
-              <div class="flex justify-between items-center text-gray-500">
-                <span class="font-bold text-gray-700">Total MRP:</span>
-                <span class="font-mono font-bold text-gray-700 tabular-nums">₹{{ formatSlipNumber(totalMrp) }}</span>
-              </div>
-              <div v-if="totalDiscountSaved > 0" class="flex justify-between items-center text-emerald-800 font-bold bg-emerald-50 px-2 py-1 rounded border border-emerald-100">
-                <span>Total Discount:</span>
-                <span class="font-mono font-bold tabular-nums">-₹{{ formatSlipNumber(totalDiscountSaved) }}</span>
-              </div>
-              <div class="flex justify-between items-center text-gray-700 font-bold">
-                <span>Subtotal (After Disc):</span>
-                <span class="font-mono font-bold text-gray-800 tabular-nums">₹{{ formatSlipNumber(subtotal) }}</span>
-              </div>
-              <div v-if="taxMode === 'EXTRA'" class="flex justify-between items-center text-gray-600">
-                <span class="font-bold text-gray-700">GST (18%):</span>
-                <span class="font-mono font-semibold text-gray-700 tabular-nums">+₹{{ formatSlipNumber(gstAmount) }}</span>
-              </div>
-              <div class="pt-2 border-t-2 border-gray-100 flex justify-between items-baseline font-bold">
-                <span class="text-xs uppercase text-[#1b3b5f]">Grand Total:</span>
-                <span class="text-2xl font-mono font-bold text-[#1b3b5f] tabular-nums">₹{{ formatSlipNumber(grandTotal) }}</span>
-              </div>
+            <div class="md:col-span-5 bg-white rounded-2xl border border-gray-200 p-4 text-xs shadow-2xs">
+              <table class="w-full border-collapse text-xs">
+                <tbody>
+                  <!-- Total MRP -->
+                  <tr class="text-gray-600">
+                    <td class="py-1 text-left font-bold pr-2">Total MRP:</td>
+                    <td class="py-1 w-3 text-center font-mono"></td>
+                    <td class="py-1 w-4 text-right font-mono font-bold text-gray-700">₹</td>
+                    <td class="py-1 text-right font-mono font-bold text-gray-800 tabular-nums whitespace-nowrap pl-1">{{ formatSlipNumber(totalMrp) }}</td>
+                  </tr>
+
+                  <!-- Total Discount -->
+                  <tr v-if="totalDiscountSaved > 0" class="text-emerald-700 font-bold">
+                    <td class="py-1 text-left pr-2">Total Discount:</td>
+                    <td class="py-1 w-3 text-center font-mono font-bold text-emerald-600">-</td>
+                    <td class="py-1 w-4 text-right font-mono font-bold text-emerald-600">₹</td>
+                    <td class="py-1 text-right font-mono font-bold tabular-nums whitespace-nowrap pl-1">{{ formatSlipNumber(totalDiscountSaved) }}</td>
+                  </tr>
+
+                  <!-- Subtotal -->
+                  <tr class="border-t border-gray-200 text-gray-900 font-black">
+                    <td class="py-1 text-left pr-2">Subtotal:</td>
+                    <td class="py-1 w-3 text-center font-mono"></td>
+                    <td class="py-1 w-4 text-right font-mono font-black text-gray-950">₹</td>
+                    <td class="py-1 text-right font-mono font-black text-gray-950 tabular-nums whitespace-nowrap pl-1">{{ formatSlipNumber(subtotal) }}</td>
+                  </tr>
+
+                  <!-- GST (18%) -->
+                  <tr v-if="taxMode === 'EXTRA'" class="text-gray-700 font-bold">
+                    <td class="py-1 text-left pr-2">GST (18%):</td>
+                    <td class="py-1 w-3 text-center font-mono font-bold text-sky-600">+</td>
+                    <td class="py-1 w-4 text-right font-mono font-bold text-sky-600">₹</td>
+                    <td class="py-1 text-right font-mono font-bold tabular-nums whitespace-nowrap pl-1">{{ formatSlipNumber(gstAmount) }}</td>
+                  </tr>
+
+                  <!-- Grand Total -->
+                  <tr class="border-t-2 border-b-2 border-gray-300 text-[#1b3b5f] font-black">
+                    <td class="py-1.5 text-left uppercase text-xs tracking-wider pr-2">Grand Total:</td>
+                    <td class="py-1.5 w-3 text-center font-mono"></td>
+                    <td class="py-1.5 w-4 text-right font-mono font-black text-[#1b3b5f]">₹</td>
+                    <td class="py-1.5 text-right font-mono font-black tabular-nums whitespace-nowrap pl-1">{{ formatSlipNumber(grandTotal) }}</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
@@ -1317,27 +1363,50 @@
             <p v-if="displayQuoteNotes" class="font-semibold text-gray-800">&bull; {{ displayQuoteNotes }}</p>
           </div>
 
-          <div class="w-5/12 bg-slate-50/90 p-4 rounded-xl border border-slate-200/80 space-y-2 text-xs">
-            <div class="flex justify-between items-center text-gray-500">
-              <span class="font-bold text-gray-700">Total MRP:</span>
-              <span class="font-mono font-bold text-gray-800 tabular-nums">₹{{ formatSlipNumber(totalMrp) }}</span>
-            </div>
-            <div v-if="totalDiscountSaved > 0" class="flex justify-between items-center text-[#1b3b5f] font-black bg-emerald-50/80 px-2 py-1 rounded border border-emerald-100">
-              <span>Total Discount:</span>
-              <span class="font-mono font-black tabular-nums">-₹{{ formatSlipNumber(totalDiscountSaved) }}</span>
-            </div>
-            <div class="flex justify-between items-center text-gray-800 font-black">
-              <span>Subtotal:</span>
-              <span class="font-mono text-gray-950 font-black tabular-nums">₹{{ formatSlipNumber(subtotal) }}</span>
-            </div>
-            <div v-if="taxMode === 'EXTRA'" class="flex justify-between items-center text-gray-600">
-              <span class="font-bold text-gray-700">GST (18%):</span>
-              <span class="font-mono font-bold text-gray-800 tabular-nums">+₹{{ formatSlipNumber(gstAmount) }}</span>
-            </div>
-            <div class="pt-2 border-t-2 border-slate-200 flex justify-between items-baseline font-black">
-              <span class="text-xs uppercase font-black text-[#1b3b5f]">Grand Total:</span>
-              <span class="text-2xl text-[#1b3b5f] font-mono font-black tracking-tight tabular-nums">₹{{ formatSlipNumber(grandTotal) }}</span>
-            </div>
+          <div class="w-5/12 bg-slate-50/90 p-3.5 rounded-xl border border-slate-200/80 text-xs">
+            <table class="w-full border-collapse text-xs">
+              <tbody>
+                <!-- Total MRP -->
+                <tr class="text-gray-600">
+                  <td class="py-1 text-left font-bold pr-2">Total MRP:</td>
+                  <td class="py-1 w-3 text-center font-mono"></td>
+                  <td class="py-1 w-4 text-right font-mono font-bold text-gray-700">₹</td>
+                  <td class="py-1 text-right font-mono font-bold text-gray-800 tabular-nums whitespace-nowrap pl-1">{{ formatSlipNumber(totalMrp) }}</td>
+                </tr>
+
+                <!-- Total Discount -->
+                <tr v-if="totalDiscountSaved > 0" class="text-emerald-700 font-bold">
+                  <td class="py-1 text-left pr-2">Total Discount:</td>
+                  <td class="py-1 w-3 text-center font-mono font-bold text-emerald-600">-</td>
+                  <td class="py-1 w-4 text-right font-mono font-bold text-emerald-600">₹</td>
+                  <td class="py-1 text-right font-mono font-bold tabular-nums whitespace-nowrap pl-1">{{ formatSlipNumber(totalDiscountSaved) }}</td>
+                </tr>
+
+                <!-- Subtotal -->
+                <tr class="border-t border-slate-200 text-gray-900 font-black">
+                  <td class="py-1 text-left pr-2">Subtotal:</td>
+                  <td class="py-1 w-3 text-center font-mono"></td>
+                  <td class="py-1 w-4 text-right font-mono font-black text-gray-950">₹</td>
+                  <td class="py-1 text-right font-mono font-black text-gray-950 tabular-nums whitespace-nowrap pl-1">{{ formatSlipNumber(subtotal) }}</td>
+                </tr>
+
+                <!-- GST (18%) -->
+                <tr v-if="taxMode === 'EXTRA'" class="text-gray-700 font-bold">
+                  <td class="py-1 text-left pr-2">GST (18%):</td>
+                  <td class="py-1 w-3 text-center font-mono font-bold text-sky-600">+</td>
+                  <td class="py-1 w-4 text-right font-mono font-bold text-sky-600">₹</td>
+                  <td class="py-1 text-right font-mono font-bold tabular-nums whitespace-nowrap pl-1">{{ formatSlipNumber(gstAmount) }}</td>
+                </tr>
+
+                <!-- Grand Total -->
+                <tr class="border-t-2 border-b-2 border-slate-300 text-[#1b3b5f] font-black">
+                  <td class="py-1.5 text-left uppercase text-xs tracking-wider pr-2">Grand Total:</td>
+                  <td class="py-1.5 w-3 text-center font-mono"></td>
+                  <td class="py-1.5 w-4 text-right font-mono font-black text-[#1b3b5f]">₹</td>
+                  <td class="py-1.5 text-right font-mono font-black tabular-nums whitespace-nowrap pl-1">{{ formatSlipNumber(grandTotal) }}</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
 
@@ -1568,27 +1637,50 @@
                   <p v-if="displayQuoteNotes" class="font-semibold text-gray-800">&bull; {{ displayQuoteNotes }}</p>
                 </div>
 
-                <div class="w-5/12 bg-slate-50/90 p-3.5 rounded-xl border border-slate-200/80 space-y-1.5 text-xs">
-                  <div class="flex justify-between items-center text-gray-500">
-                    <span class="font-bold text-gray-700">Total MRP:</span>
-                    <span class="font-mono font-bold text-gray-800 tabular-nums">₹{{ formatSlipNumber(totalMrp) }}</span>
-                  </div>
-                  <div v-if="totalDiscountSaved > 0" class="flex justify-between items-center text-[#1b3b5f] font-black bg-emerald-50/80 px-2 py-0.5 rounded border border-emerald-100">
-                    <span>Total Discount:</span>
-                    <span class="font-mono font-black tabular-nums">-₹{{ formatSlipNumber(totalDiscountSaved) }}</span>
-                  </div>
-                  <div class="flex justify-between items-center text-gray-800 font-black">
-                    <span>Subtotal:</span>
-                    <span class="font-mono text-gray-950 font-black tabular-nums">₹{{ formatSlipNumber(subtotal) }}</span>
-                  </div>
-                  <div v-if="taxMode === 'EXTRA'" class="flex justify-between items-center text-gray-600">
-                    <span class="font-bold text-gray-700">GST (18%):</span>
-                    <span class="font-mono font-bold text-gray-800 tabular-nums">+₹{{ formatSlipNumber(gstAmount) }}</span>
-                  </div>
-                  <div class="pt-1.5 border-t-2 border-slate-200 flex justify-between items-baseline font-black">
-                    <span class="text-xs uppercase font-black text-[#1b3b5f]">Grand Total:</span>
-                    <span class="text-2xl text-[#1b3b5f] font-mono font-black tracking-tight tabular-nums">₹{{ formatSlipNumber(grandTotal) }}</span>
-                  </div>
+                <div class="w-5/12 bg-slate-50/90 p-3.5 rounded-xl border border-slate-200/80 text-xs">
+                  <table class="w-full border-collapse text-xs">
+                    <tbody>
+                      <!-- Total MRP -->
+                      <tr class="text-gray-600">
+                        <td class="py-1 text-left font-bold pr-2">Total MRP:</td>
+                        <td class="py-1 w-3 text-center font-mono"></td>
+                        <td class="py-1 w-4 text-right font-mono font-bold text-gray-700">₹</td>
+                        <td class="py-1 text-right font-mono font-bold text-gray-800 tabular-nums whitespace-nowrap pl-1">{{ formatSlipNumber(totalMrp) }}</td>
+                      </tr>
+
+                      <!-- Total Discount -->
+                      <tr v-if="totalDiscountSaved > 0" class="text-emerald-700 font-bold">
+                        <td class="py-1 text-left pr-2">Total Discount:</td>
+                        <td class="py-1 w-3 text-center font-mono font-bold text-emerald-600">-</td>
+                        <td class="py-1 w-4 text-right font-mono font-bold text-emerald-600">₹</td>
+                        <td class="py-1 text-right font-mono font-bold tabular-nums whitespace-nowrap pl-1">{{ formatSlipNumber(totalDiscountSaved) }}</td>
+                      </tr>
+
+                      <!-- Subtotal -->
+                      <tr class="border-t border-slate-200 text-gray-900 font-black">
+                        <td class="py-1 text-left pr-2">Subtotal:</td>
+                        <td class="py-1 w-3 text-center font-mono"></td>
+                        <td class="py-1 w-4 text-right font-mono font-black text-gray-950">₹</td>
+                        <td class="py-1 text-right font-mono font-black text-gray-950 tabular-nums whitespace-nowrap pl-1">{{ formatSlipNumber(subtotal) }}</td>
+                      </tr>
+
+                      <!-- GST (18%) -->
+                      <tr v-if="taxMode === 'EXTRA'" class="text-gray-700 font-bold">
+                        <td class="py-1 text-left pr-2">GST (18%):</td>
+                        <td class="py-1 w-3 text-center font-mono font-bold text-sky-600">+</td>
+                        <td class="py-1 w-4 text-right font-mono font-bold text-sky-600">₹</td>
+                        <td class="py-1 text-right font-mono font-bold tabular-nums whitespace-nowrap pl-1">{{ formatSlipNumber(gstAmount) }}</td>
+                      </tr>
+
+                      <!-- Grand Total -->
+                      <tr class="border-t-2 border-b-2 border-slate-300 text-[#1b3b5f] font-black">
+                        <td class="py-1.5 text-left uppercase text-xs tracking-wider pr-2">Grand Total:</td>
+                        <td class="py-1.5 w-3 text-center font-mono"></td>
+                        <td class="py-1.5 w-4 text-right font-mono font-black text-[#1b3b5f]">₹</td>
+                        <td class="py-1.5 text-right font-mono font-black tabular-nums whitespace-nowrap pl-1">{{ formatSlipNumber(grandTotal) }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
               </div>
 
