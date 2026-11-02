@@ -67,6 +67,16 @@
           <div class="flex items-center gap-2">
             <button
               type="button"
+              @click="confirmLogoutAllOthers"
+              :disabled="isLoggingOutOthers"
+              class="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-2xs disabled:opacity-50"
+              title="Log out all accounts from all devices except your current session"
+            >
+              <LogOut class="w-3.5 h-3.5" />
+              <span>Log Out All Others</span>
+            </button>
+            <button
+              type="button"
               @click="openPairingModal()"
               class="px-3.5 py-1.5 bg-[#1b3b5f] hover:bg-[#132c49] text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-xs"
             >
@@ -470,7 +480,8 @@ import {
   RefreshCw,
   Loader2,
   Users,
-  Search
+  Search,
+  LogOut
 } from 'lucide-vue-next'
 import { useSnackbar } from '~/composables/useSnackbar'
 import { useDeviceSecurity } from '~/composables/useDeviceSecurity'
@@ -650,6 +661,31 @@ const deleteDevice = async (deviceId: string) => {
     alert(err?.data?.message || 'Failed deleting device')
   } finally {
     actionInProgress.value = null
+  }
+}
+
+const isLoggingOutOthers = ref(false)
+
+const confirmLogoutAllOthers = async () => {
+  const confirmed = window.confirm(
+    'Are you sure you want to log out all other accounts and devices?\n\n' +
+    'This will immediately invalidate all active sessions across other phones and PCs. Only your current admin device will stay authorized.'
+  )
+  if (!confirmed) return
+
+  isLoggingOutOthers.value = true
+  showSaving('Logging out all other devices...')
+  try {
+    const res = await $fetch<{ success: boolean; message: string }>('/api/admin/devices/logout-all-others', {
+      method: 'POST',
+      body: { deviceId: currentDeviceId.value }
+    })
+    showSaved(res.message || 'All other devices logged out')
+    await fetchDevices()
+  } catch (err: any) {
+    alert(err?.data?.message || err?.message || 'Failed to log out other devices')
+  } finally {
+    isLoggingOutOthers.value = false
   }
 }
 

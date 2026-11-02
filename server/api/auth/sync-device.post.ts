@@ -18,14 +18,70 @@ export default defineEventHandler(async (event) => {
   const ipAddress = getClientIp(event)
   const deviceId = String(device.id).trim()
 
-  // 1. If user is ADMIN, auto-approve this current device to guarantee zero lockout
+  // 1. If user is ADMIN:
   if (sessionUser.role === 'ADMIN') {
-    const adminDevice = await prisma.trustedDevice.upsert({
-      where: { deviceId },
-      create: {
+    const adminApprovedCount = await prisma.trustedDevice.count({
+      where: {
+        userId: sessionUser.id,
+        isApproved: true,
+        isBlocked: false
+      }
+    })
+
+    const existing = await prisma.trustedDevice.findUnique({
+      where: { deviceId }
+    })
+
+    // Auto-approve only if Admin has 0 approved devices (first-time bootstrap)
+    // or if this device was already approved!
+    if (adminApprovedCount === 0 || (existing && existing.isApproved && !existing.isBlocked)) {
+      const adminDevice = await prisma.trustedDevice.upsert({
+        where: { deviceId },
+        create: {
+          deviceId,
+          userId: sessionUser.id,
+          deviceName: device.name || 'Primary Admin Device',
+          deviceType: device.type || 'DESKTOP',
+          browser: device.browser,
+          os: device.os,
+          cpuCores: device.cpuCores,
+          gpuRenderer: device.gpuRenderer,
+          screenResolution: device.screenResolution,
+          hardwareHash: device.hardwareHash,
+          ipAddress,
+          isApproved: true,
+          approvedAt: new Date(),
+          approvedByName: 'Primary Admin Auto-Enrolled'
+        },
+        update: {
+          lastUsedAt: new Date(),
+          ipAddress,
+          browser: device.browser,
+          os: device.os
+        }
+      })
+
+      return {
+        success: true,
+        isApproved: true,
+        device: adminDevice
+      }
+    }
+
+    // Otherwise, secondary device for Admin remains pending/unapproved
+    if (existing) {
+      await prisma.trustedDevice.update({
+        where: { id: existing.id },
+        data: { lastUsedAt: new Date(), ipAddress }
+      })
+      return { success: true, isApproved: existing.isApproved, device: existing }
+    }
+
+    const created = await prisma.trustedDevice.create({
+      data: {
         deviceId,
         userId: sessionUser.id,
-        deviceName: device.name || 'Primary Admin Device',
+        deviceName: device.name || 'Admin Secondary Device',
         deviceType: device.type || 'DESKTOP',
         browser: device.browser,
         os: device.os,
@@ -34,25 +90,14 @@ export default defineEventHandler(async (event) => {
         screenResolution: device.screenResolution,
         hardwareHash: device.hardwareHash,
         ipAddress,
-        isApproved: true,
-        approvedAt: new Date(),
-        approvedByName: 'Primary Admin Auto-Enrolled'
-      },
-      update: {
-        isApproved: true,
-        approvedAt: new Date(),
-        approvedByName: 'Primary Admin Auto-Enrolled',
-        lastUsedAt: new Date(),
-        ipAddress,
-        browser: device.browser,
-        os: device.os
+        isApproved: false
       }
     })
 
     return {
       success: true,
-      isApproved: true,
-      device: adminDevice
+      isApproved: false,
+      device: created
     }
   }
 
