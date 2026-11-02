@@ -2,6 +2,14 @@
 export default defineNuxtRouteMiddleware(async (to) => {
   const { user, fetchUser } = useAuth()
 
+  // Always verify live session from server on protected routes
+  if (to.path.startsWith('/dashboard') || to.path.startsWith('/driver')) {
+    await fetchUser()
+    if (!user.value) {
+      return navigateTo(`/login?redirect=${encodeURIComponent(to.fullPath)}`)
+    }
+  }
+
   // If we don't have user data yet, try to fetch from server
   if (!user.value) {
     await fetchUser()

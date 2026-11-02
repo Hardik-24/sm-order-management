@@ -27,23 +27,28 @@ import AccessDenied from '~/components/ui/AccessDenied.vue'
 import { APP_PAGES, getPageKeyFromPath } from '~/utils/permissions'
 import { useDeviceSecurity } from '~/composables/useDeviceSecurity'
 
-const { user, fetchUser, canAccessRoute } = useAuth()
+const { user, fetchUser, canAccessRoute, logout } = useAuth()
 const route = useRoute()
 const { onOrderSync } = useRealtimeSync()
 const { detectDevice } = useDeviceSecurity()
 
-// Auto-sync and authorize current physical device on dashboard load
+// Auto-sync and verify current physical device on dashboard load
 onMounted(async () => {
   try {
     const dev = await detectDevice()
     if (dev?.id) {
-      await $fetch('/api/auth/sync-device', {
+      const res = await $fetch<any>('/api/auth/sync-device', {
         method: 'POST',
         body: { device: dev }
       })
+      if (res && res.isApproved === false) {
+        await logout()
+      }
     }
-  } catch (err) {
-    // Non-blocking background sync
+  } catch (err: any) {
+    if (err?.statusCode === 401 || err?.statusCode === 403 || err?.data?.code === 'DEVICE_NOT_APPROVED') {
+      await logout()
+    }
   }
 })
 

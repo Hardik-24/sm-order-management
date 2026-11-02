@@ -5,14 +5,14 @@ import { getClientIp } from '~~/server/utils/rateLimit'
 export default defineEventHandler(async (event) => {
   const sessionUser = getUserFromEvent(event)
   if (!sessionUser) {
-    return { success: false, message: 'Not authenticated' }
+    throw createError({ statusCode: 401, statusMessage: 'Not authenticated' })
   }
 
   const body = await readBody(event)
   const device = body?.device
 
   if (!device?.id) {
-    return { success: false, message: 'No device ID provided' }
+    throw createError({ statusCode: 400, statusMessage: 'No device ID provided' })
   }
 
   const ipAddress = getClientIp(event)
@@ -74,31 +74,35 @@ export default defineEventHandler(async (event) => {
         where: { id: existing.id },
         data: { lastUsedAt: new Date(), ipAddress }
       })
-      return { success: true, isApproved: existing.isApproved, device: existing }
+    } else {
+      await prisma.trustedDevice.create({
+        data: {
+          deviceId,
+          userId: sessionUser.id,
+          deviceName: device.name || 'Admin Secondary Device',
+          deviceType: device.type || 'DESKTOP',
+          browser: device.browser,
+          os: device.os,
+          cpuCores: device.cpuCores,
+          gpuRenderer: device.gpuRenderer,
+          screenResolution: device.screenResolution,
+          hardwareHash: device.hardwareHash,
+          ipAddress,
+          isApproved: false
+        }
+      })
     }
 
-    const created = await prisma.trustedDevice.create({
+    deleteCookie(event, 'auth_token', { path: '/' })
+    throw createError({
+      statusCode: 403,
+      statusMessage: 'Device Approval Required',
       data: {
+        code: 'DEVICE_NOT_APPROVED',
         deviceId,
-        userId: sessionUser.id,
-        deviceName: device.name || 'Admin Secondary Device',
-        deviceType: device.type || 'DESKTOP',
-        browser: device.browser,
-        os: device.os,
-        cpuCores: device.cpuCores,
-        gpuRenderer: device.gpuRenderer,
-        screenResolution: device.screenResolution,
-        hardwareHash: device.hardwareHash,
-        ipAddress,
-        isApproved: false
+        message: 'This device is pending Admin authorization.'
       }
     })
-
-    return {
-      success: true,
-      isApproved: false,
-      device: created
-    }
   }
 
   // 2. Regular staff member
@@ -114,11 +118,21 @@ export default defineEventHandler(async (event) => {
       })
       return { success: true, isApproved: true, device: existing }
     }
-    return { success: true, isApproved: false, isBlocked: existing.isBlocked, device: existing }
+
+    deleteCookie(event, 'auth_token', { path: '/' })
+    throw createError({
+      statusCode: 403,
+      statusMessage: 'Device Approval Required',
+      data: {
+        code: 'DEVICE_NOT_APPROVED',
+        deviceId,
+        message: 'This device is not authorized. Please ask your administrator to approve this device.'
+      }
+    })
   }
 
   // Register as pending
-  const created = await prisma.trustedDevice.create({
+  await prisma.trustedDevice.create({
     data: {
       deviceId,
       userId: sessionUser.id,
@@ -135,9 +149,14 @@ export default defineEventHandler(async (event) => {
     }
   })
 
-  return {
-    success: true,
-    isApproved: false,
-    device: created
-  }
+  deleteCookie(event, 'auth_token', { path: '/' })
+  throw createError({
+    statusCode: 403,
+    statusMessage: 'Device Approval Required',
+    data: {
+      code: 'DEVICE_NOT_APPROVED',
+      deviceId,
+      message: 'This device is pending Admin authorization.'
+    }
+  })
 })

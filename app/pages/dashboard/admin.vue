@@ -461,14 +461,24 @@
 
               <!-- Actions -->
               <td class="px-6 py-4 text-right">
-                <button 
-                  @click="openModal(u)"
-                  class="inline-flex items-center gap-1.5 text-[#1b3b5f] hover:text-[#132c49] bg-gray-50 hover:bg-[#1b3b5f]/5 px-2.5 py-1 rounded-md border border-gray-200 hover:border-[#1b3b5f]/30 transition-all text-xs font-medium"
-                  title="Edit User & Permissions"
-                >
-                  <Edit2 class="w-3.5 h-3.5" />
-                  <span>Edit</span>
-                </button>
+                <div class="flex items-center justify-end gap-1.5">
+                  <button 
+                    @click="openModal(u)"
+                    class="inline-flex items-center gap-1.5 text-[#1b3b5f] hover:text-[#132c49] bg-gray-50 hover:bg-[#1b3b5f]/5 px-2.5 py-1 rounded-md border border-gray-200 hover:border-[#1b3b5f]/30 transition-all text-xs font-medium cursor-pointer"
+                    title="Edit User & Permissions"
+                  >
+                    <Edit2 class="w-3.5 h-3.5" />
+                    <span>Edit</span>
+                  </button>
+                  <button 
+                    v-if="u.id !== user?.id"
+                    @click="deleteUser(u)"
+                    class="inline-flex items-center gap-1 text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 px-2 py-1 rounded-md border border-red-200 transition-all text-xs font-medium cursor-pointer"
+                    title="Delete User Account"
+                  >
+                    <Trash2 class="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </td>
             </tr>
           </template>
@@ -645,6 +655,14 @@
 
               <!-- Line 4: Action Button -->
               <div class="flex items-center justify-end gap-2 pt-1.5 border-t border-gray-100">
+                <button 
+                  v-if="u.id !== user?.id"
+                  @click="deleteUser(u)"
+                  class="px-2.5 py-1.5 text-xs font-semibold text-red-700 bg-red-50 hover:bg-red-100 rounded-lg transition-colors flex items-center gap-1 cursor-pointer border border-red-200"
+                >
+                  <Trash2 class="w-3 h-3" />
+                  <span>Delete</span>
+                </button>
                 <button 
                   @click="openModal(u)"
                   class="px-3 py-1.5 text-xs font-semibold text-[#1b3b5f] bg-[#1b3b5f]/10 hover:bg-[#1b3b5f]/20 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer"
@@ -1320,7 +1338,8 @@ import {
   ChevronRight,
   Sliders,
   Phone,
-  Truck
+  Truck,
+  Trash2
 } from 'lucide-vue-next'
 import AdminMastersModal from '~/components/dashboard/AdminMastersModal.vue'
 import AdminSheetTabsModal from '~/components/dashboard/AdminSheetTabsModal.vue'
@@ -1691,6 +1710,32 @@ const changeUserRole = async (userToUpdate: any, newRole: string) => {
       users.value = [...users.value]
     }
     showEditing(`Failed: ${e.data?.statusMessage || 'Could not update role'}`)
+  }
+}
+
+const deleteUser = async (userToDelete: any) => {
+  if (userToDelete.id === user.value?.id) {
+    showEditing('You cannot delete your own Administrator account.')
+    return
+  }
+
+  const confirmed = window.confirm(
+    `Are you sure you want to permanently delete user account "${userToDelete.name}" (${userToDelete.email})?\n\n` +
+    'This will remove their login credentials and all enrolled device permissions.'
+  )
+  if (!confirmed) return
+
+  showSaving(`Deleting user ${userToDelete.name}...`)
+  try {
+    const res = await $fetch<{ success: boolean; message: string }>(`/api/users/${userToDelete.id}`, {
+      method: 'DELETE'
+    })
+    showSaved(res.message || 'User deleted successfully')
+    await refreshNuxtData('users')
+  } catch (err: any) {
+    const msg = err?.data?.statusMessage || err?.data?.message || err?.message || 'Failed deleting user'
+    alert(msg)
+    showEditing(msg)
   }
 }
 

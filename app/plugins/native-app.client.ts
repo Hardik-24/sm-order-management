@@ -70,5 +70,15 @@ export default defineNuxtPlugin(() => {
         showEditing('Press back again to exit')
       }
     })
+
+    // 4. Mobile App Foreground Session & Hardware Authorization Verification
+    App.addListener('appStateChange', async ({ isActive }) => {
+      if (isActive) {
+        try {
+          const { fetchUser } = useAuth()
+          await fetchUser()
+        } catch {}
+      }
+    })
   }
 })

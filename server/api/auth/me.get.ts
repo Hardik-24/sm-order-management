@@ -7,7 +7,27 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 401, statusMessage: 'Not authenticated' })
   }
 
-  // 1. Check global session invalidation cutoff
+  const deviceId = getCookie(event, 'sm_flow_hw_device_id') || getHeader(event, 'x-device-id')
+
+  // 1. Hardware device authorization check during active session
+  const lockdownSetting = await prisma.systemSetting.findUnique({
+    where: { key: 'hardware_device_lockdown' }
+  })
+  const isLockdown = !lockdownSetting || lockdownSetting.value !== 'OFF'
+  if (isLockdown && deviceId) {
+    const dev = await prisma.trustedDevice.findUnique({
+      where: { deviceId }
+    })
+    if (!dev || !dev.isApproved || dev.isBlocked) {
+      deleteCookie(event, 'auth_token', { path: '/' })
+      throw createError({
+        statusCode: 401,
+        statusMessage: 'Device not authorized. Please ask your administrator to approve this device.'
+      })
+    }
+  }
+
+  // 2. Check global session invalidation cutoff by device
   const tokenIat = (sessionUser as any)?.iat
   if (tokenIat) {
     const globalCutoffSetting = await prisma.systemSetting.findUnique({
@@ -15,34 +35,15 @@ export default defineEventHandler(async (event) => {
     })
     if (globalCutoffSetting?.value) {
       const minIat = parseInt(globalCutoffSetting.value, 10)
-      const exemptSetting = await prisma.systemSetting.findUnique({
-        where: { key: 'session_exempt_user_id' }
+      const exemptDeviceSetting = await prisma.systemSetting.findUnique({
+        where: { key: 'session_exempt_device_id' }
       })
-      const exemptUserId = exemptSetting?.value
+      const exemptDeviceId = exemptDeviceSetting?.value
 
-      // If user is not exempt and token was issued before the cutoff -> revoke session
-      if (sessionUser.id !== exemptUserId && tokenIat < minIat) {
+      // If this request is NOT coming from the exempt master device, enforce the cutoff!
+      if ((!exemptDeviceId || deviceId !== exemptDeviceId) && tokenIat < minIat) {
+        deleteCookie(event, 'auth_token', { path: '/' })
         throw createError({ statusCode: 401, statusMessage: 'Session expired. Please log in again.' })
-      }
-    }
-  }
-
-  // 2. Hardware device authorization check during active session
-  const lockdownSetting = await prisma.systemSetting.findUnique({
-    where: { key: 'hardware_device_lockdown' }
-  })
-  const isLockdown = !lockdownSetting || lockdownSetting.value !== 'OFF'
-  if (isLockdown) {
-    const deviceIdCookie = getCookie(event, 'sm_flow_hw_device_id')
-    if (deviceIdCookie) {
-      const dev = await prisma.trustedDevice.findUnique({
-        where: { deviceId: deviceIdCookie }
-      })
-      if (dev && (!dev.isApproved || dev.isBlocked)) {
-        throw createError({
-          statusCode: 401,
-          statusMessage: 'Device not authorized. Please ask your administrator to approve this device.'
-        })
       }
     }
   }
@@ -63,6 +64,7 @@ export default defineEventHandler(async (event) => {
   })
 
   if (!dbUser || !dbUser.isActive) {
+    deleteCookie(event, 'auth_token', { path: '/' })
     throw createError({ statusCode: 401, statusMessage: 'User account inactive or not found' })
   }
 
