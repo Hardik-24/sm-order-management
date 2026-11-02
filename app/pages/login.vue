@@ -65,15 +65,24 @@ const handleLogin = async () => {
       } else {
         router.push('/dashboard')
       }
-    } else if (result.code === 'DEVICE_NOT_APPROVED') {
+    } else if (result.code === 'DEVICE_NOT_APPROVED' || result.statusCode === 403 || String(result.error).includes('403')) {
       isDevicePending.value = true
-      pendingDeviceId.value = result.deviceId || dev?.id || ''
+      pendingDeviceId.value = result.deviceId || dev?.id || devicePayload.value?.id || ''
       errorMsg.value = result.error || 'This device requires Admin approval before login.'
     } else {
       errorMsg.value = result.error || 'Invalid credentials'
     }
   } catch (err: any) {
-    errorMsg.value = err?.message || 'Login failed'
+    const errData = err?.data || {}
+    const nested = errData?.data || {}
+    const isForbidden = err?.statusCode === 403 || errData?.statusCode === 403 || String(err?.message).includes('403')
+    if (isForbidden || nested?.code === 'DEVICE_NOT_APPROVED') {
+      isDevicePending.value = true
+      pendingDeviceId.value = nested?.deviceId || errData?.deviceId || devicePayload.value?.id || ''
+      errorMsg.value = nested?.message || 'This device requires Admin approval before login.'
+    } else {
+      errorMsg.value = err?.message || 'Login failed'
+    }
   } finally {
     isLoading.value = false
   }

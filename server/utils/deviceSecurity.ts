@@ -1,7 +1,7 @@
 // Server-side Hardware Device Security & Whitelisting
 // Silicon Marketing OMS (SM Flow)
 
-import { prisma } from './prisma'
+import prisma from './prisma'
 import { createError, type H3Event } from 'h3'
 import { getClientIp } from './rateLimit'
 
@@ -82,7 +82,12 @@ export async function validateAndTrackDevice(
   if (!deviceId) {
     throw createError({
       statusCode: 403,
-      statusMessage: 'Hardware device identification required to sign in to this workspace.'
+      statusMessage: 'Device Approval Required',
+      message: 'Hardware device identification required to sign in to this workspace.',
+      data: {
+        code: 'DEVICE_NOT_APPROVED',
+        message: 'Hardware device identification required to sign in to this workspace.'
+      }
     })
   }
 
@@ -140,7 +145,14 @@ export async function validateAndTrackDevice(
     if (existingDevice.isBlocked) {
       throw createError({
         statusCode: 403,
-        statusMessage: `This device (${existingDevice.deviceName || deviceId}) has been blocked by the Administrator.`
+        statusMessage: 'Device Blocked',
+        message: `This device (${existingDevice.deviceName || deviceId}) has been blocked by the Administrator.`,
+        data: {
+          code: 'DEVICE_BLOCKED',
+          deviceId,
+          deviceName: existingDevice.deviceName,
+          message: `This device (${existingDevice.deviceName || deviceId}) has been blocked by the Administrator.`
+        }
       })
     }
 
@@ -185,6 +197,8 @@ export async function validateAndTrackDevice(
     // Device exists but is not approved
     throw createError({
       statusCode: 403,
+      statusMessage: 'Device Approval Required',
+      message: `Device Pending Approval: Your Device ID is ${deviceId}. Please ask your administrator to approve this device.`,
       data: {
         code: 'DEVICE_NOT_APPROVED',
         deviceId,
@@ -242,6 +256,8 @@ export async function validateAndTrackDevice(
   // Block login until Admin approves
   throw createError({
     statusCode: 403,
+    statusMessage: 'Device Approval Required',
+    message: `Device Pending Approval: Your Device ID is ${deviceId}. Please ask your administrator to approve this device from the Admin Portal.`,
     data: {
       code: 'DEVICE_NOT_APPROVED',
       deviceId,

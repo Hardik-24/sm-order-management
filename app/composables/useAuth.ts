@@ -6,7 +6,7 @@ export const useAuth = () => {
   const isLoggedIn = computed(() => !!user.value)
 
   /** Login with email, password, and hardware device payload */
-  async function login(email: string, password: string, device?: any): Promise<{ success: boolean; error?: string; code?: string; deviceId?: string }> {
+  async function login(email: string, password: string, device?: any): Promise<{ success: boolean; error?: string; code?: string; deviceId?: string; statusCode?: number }> {
     try {
       const data = await $fetch<{ user: SessionUser }>('/api/auth/login', {
         method: 'POST',
@@ -16,11 +16,18 @@ export const useAuth = () => {
       return { success: true }
     } catch (err: any) {
       const errData = err.data || {}
+      const nested = errData.data || {}
+      const isForbidden = err.statusCode === 403 || errData.statusCode === 403
+      const code = nested.code || errData.code || (isForbidden ? 'DEVICE_NOT_APPROVED' : undefined)
+      const deviceId = nested.deviceId || errData.deviceId || device?.id
+      const message = nested.message || errData.message || errData.statusMessage || err.statusMessage || (typeof err.message === 'string' && !err.message.startsWith('[POST]') ? err.message : null) || 'Device authorization required to sign in.'
+
       return {
         success: false,
-        error: errData.message || err.statusMessage || err.message || 'Login failed',
-        code: errData.code,
-        deviceId: errData.deviceId
+        error: message,
+        code,
+        deviceId,
+        statusCode: err.statusCode || errData.statusCode
       }
     }
   }
