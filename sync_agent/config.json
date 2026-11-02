@@ -1,0 +1,10 @@
+{
+  "ServerHost": "Desktop-2pps0fa",
+  "SourceDir": "\\\\Desktop-2pps0fa\\f\\BusyWin\\DATA\\COMP0010",
+  "DestDir": "D:\\BusyWin Data\\SM\\Clone",
+  "ProjectDir": "D:\\App Development\\SM_order_management",
+  "LogFile": "sync_history.log",
+  "IntervalMinutes": 30,
+  "PrimaryPcName": "PRISM",
+  "StartWithWindows": true
+}

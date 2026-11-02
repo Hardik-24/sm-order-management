@@ -118,6 +118,7 @@ model User {
   chatMessages      ChatMessage[]   @relation("UserChatMessages")
   confirmedRequests OrderRequest[]  @relation("ConfirmedByUser")
   quotations        Quotation[]     @relation("QuotationsCreatedBy")
+  trustedDevices    TrustedDevice[] @relation("UserDevices")
 
   @@map("users")
 }
@@ -638,4 +639,37 @@ model BusyVoucher {
   @@index([voucherDate])
   @@index([series])
   @@map("busy_vouchers")
+}
+
+model TrustedDevice {
+  id               String    @id @default(uuid())
+  deviceId         String    @unique
+  userId           String
+  deviceName       String
+  deviceType       String    @default("DESKTOP") // DESKTOP, MOBILE, TABLET
+  browser          String?
+  os               String?
+  cpuCores         Int?
+  gpuRenderer      String?
+  screenResolution String?
+  hardwareHash     String?
+  ipAddress        String?
+  lastUsedAt       DateTime  @default(now())
+  isApproved       Boolean   @default(false)
+  approvedAt       DateTime?
+  approvedById     String?
+  approvedByName   String?
+  isBlocked        Boolean   @default(false)
+  blockedReason    String?
+  pairingCode      String?
+  pairingExpiresAt DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  user             User      @relation("UserDevices", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([deviceId])
+  @@index([pairingCode])
+  @@map("trusted_devices")
 }

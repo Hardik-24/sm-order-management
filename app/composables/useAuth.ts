@@ -5,17 +5,23 @@ export const useAuth = () => {
   const user = useState<SessionUser | null>('auth_user', () => null)
   const isLoggedIn = computed(() => !!user.value)
 
-  /** Login with email and password */
-  async function login(email: string, password: string): Promise<{ success: boolean; error?: string }> {
+  /** Login with email, password, and hardware device payload */
+  async function login(email: string, password: string, device?: any): Promise<{ success: boolean; error?: string; code?: string; deviceId?: string }> {
     try {
       const data = await $fetch<{ user: SessionUser }>('/api/auth/login', {
         method: 'POST',
-        body: { email, password },
+        body: { email, password, device },
       })
       user.value = data.user
       return { success: true }
     } catch (err: any) {
-      return { success: false, error: err.data?.message || 'Login failed' }
+      const errData = err.data || {}
+      return {
+        success: false,
+        error: errData.message || err.statusMessage || err.message || 'Login failed',
+        code: errData.code,
+        deviceId: errData.deviceId
+      }
     }
   }
 

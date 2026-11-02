@@ -2,6 +2,7 @@
 import prisma from '~~/server/utils/prisma'
 import { verifyPassword, createToken } from '~~/server/utils/auth'
 import { enforceRateLimit } from '~~/server/utils/rateLimit'
+import { validateAndTrackDevice } from '~~/server/utils/deviceSecurity'
 
 export default defineEventHandler(async (event) => {
   // 1. Rate Limiting: Max 12 login attempts per 10 minutes per IP
@@ -34,6 +35,9 @@ export default defineEventHandler(async (event) => {
   if (!isValid) {
     throw createError({ statusCode: 401, data: { message: 'Invalid email or password' } })
   }
+
+  // 2. Hardware Device Whitelist & Zero-Trust Lockdown
+  await validateAndTrackDevice(event, user, body?.device)
 
   // Create JWT token
   const sessionUser = {

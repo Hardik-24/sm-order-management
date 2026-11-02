@@ -15,33 +15,33 @@
       </div>
     </div>
 
-    <!-- 4 Admin Hub Tiles -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
+    <!-- 5 Admin Hub Tiles -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 sm:gap-5">
       <!-- 1. Price List Sheets Tile -->
       <div 
         @click="isSheetTabsModalOpen = true"
-        class="group relative bg-white rounded-2xl border border-gray-200/90 p-6 shadow-xs hover:shadow-md hover:border-emerald-400 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer flex flex-col justify-between overflow-hidden"
+        class="group relative bg-white rounded-2xl border border-gray-200/90 p-5 shadow-xs hover:shadow-md hover:border-emerald-400 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer flex flex-col justify-between overflow-hidden"
       >
         <div class="absolute -right-6 -bottom-6 w-28 h-28 bg-emerald-50/80 rounded-full group-hover:scale-125 transition-transform duration-300 pointer-events-none"></div>
-        <div class="space-y-4 relative z-10">
+        <div class="space-y-3.5 relative z-10">
           <div class="flex items-center justify-between">
-            <div class="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-200/80 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform shadow-2xs">
-              <FileSpreadsheet class="w-6 h-6" />
+            <div class="w-11 h-11 rounded-xl bg-emerald-50 border border-emerald-200/80 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform shadow-2xs">
+              <FileSpreadsheet class="w-5 h-5" />
             </div>
-            <span class="text-[10px] font-bold uppercase tracking-wider bg-emerald-100/90 text-emerald-800 px-2.5 py-1 rounded-full border border-emerald-200 shadow-2xs">
-              Sheets Sync
+            <span class="text-[10px] font-bold uppercase tracking-wider bg-emerald-100/90 text-emerald-800 px-2 py-0.5 rounded-full border border-emerald-200 shadow-2xs">
+              Sheets
             </span>
           </div>
           <div>
-            <h3 class="text-base sm:text-lg font-bold text-gray-900 group-hover:text-emerald-700 transition-colors">
+            <h3 class="text-sm sm:text-base font-bold text-gray-900 group-hover:text-emerald-700 transition-colors">
               Price List Sheets
             </h3>
-            <p class="text-xs text-gray-500 mt-1.5 leading-relaxed">
-              Google Sheets price list tabs, category mappings, and live quotation search rules.
+            <p class="text-xs text-gray-500 mt-1 leading-relaxed">
+              Google Sheets price list tabs, category mappings, and live search rules.
             </p>
           </div>
         </div>
-        <div class="pt-4 mt-4 border-t border-gray-100 flex items-center justify-between text-xs font-bold text-emerald-700 group-hover:text-emerald-800 relative z-10">
+        <div class="pt-3 mt-3 border-t border-gray-100 flex items-center justify-between text-xs font-bold text-emerald-700 group-hover:text-emerald-800 relative z-10">
           <span>Configure Sheets</span>
           <ChevronRight class="w-4 h-4 group-hover:translate-x-1 transition-transform" />
         </div>
@@ -50,28 +50,28 @@
       <!-- 2. Dropdown Masters Tile -->
       <div 
         @click="isMastersModalOpen = true"
-        class="group relative bg-white rounded-2xl border border-gray-200/90 p-6 shadow-xs hover:shadow-md hover:border-[#1b3b5f]/40 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer flex flex-col justify-between overflow-hidden"
+        class="group relative bg-white rounded-2xl border border-gray-200/90 p-5 shadow-xs hover:shadow-md hover:border-[#1b3b5f]/40 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer flex flex-col justify-between overflow-hidden"
       >
         <div class="absolute -right-6 -bottom-6 w-28 h-28 bg-sky-50/80 rounded-full group-hover:scale-125 transition-transform duration-300 pointer-events-none"></div>
-        <div class="space-y-4 relative z-10">
+        <div class="space-y-3.5 relative z-10">
           <div class="flex items-center justify-between">
-            <div class="w-12 h-12 rounded-xl bg-[#1b3b5f]/10 border border-[#1b3b5f]/20 text-[#1b3b5f] flex items-center justify-center group-hover:scale-110 transition-transform shadow-2xs">
-              <Database class="w-6 h-6" />
+            <div class="w-11 h-11 rounded-xl bg-[#1b3b5f]/10 border border-[#1b3b5f]/20 text-[#1b3b5f] flex items-center justify-center group-hover:scale-110 transition-transform shadow-2xs">
+              <Database class="w-5 h-5" />
             </div>
-            <span class="text-[10px] font-bold uppercase tracking-wider bg-sky-100/90 text-sky-800 px-2.5 py-1 rounded-full border border-sky-200 shadow-2xs">
+            <span class="text-[10px] font-bold uppercase tracking-wider bg-sky-100/90 text-sky-800 px-2 py-0.5 rounded-full border border-sky-200 shadow-2xs">
               Catalogs
             </span>
           </div>
           <div>
-            <h3 class="text-base sm:text-lg font-bold text-gray-900 group-hover:text-[#1b3b5f] transition-colors">
+            <h3 class="text-sm sm:text-base font-bold text-gray-900 group-hover:text-[#1b3b5f] transition-colors">
               Dropdown Masters
             </h3>
-            <p class="text-xs text-gray-500 mt-1.5 leading-relaxed">
+            <p class="text-xs text-gray-500 mt-1 leading-relaxed">
               Manage vehicle fleets, payment terms, delivery cancellation reasons, and order categories.
             </p>
           </div>
         </div>
-        <div class="pt-4 mt-4 border-t border-gray-100 flex items-center justify-between text-xs font-bold text-[#1b3b5f] group-hover:text-[#132c49] relative z-10">
+        <div class="pt-3 mt-3 border-t border-gray-100 flex items-center justify-between text-xs font-bold text-[#1b3b5f] group-hover:text-[#132c49] relative z-10">
           <span>Manage Masters</span>
           <ChevronRight class="w-4 h-4 group-hover:translate-x-1 transition-transform" />
         </div>
@@ -80,29 +80,29 @@
       <!-- 3. Users & Permissions Tile -->
       <div 
         @click="isUsersModalOpen = true"
-        class="group relative bg-white rounded-2xl border border-gray-200/90 p-6 shadow-xs hover:shadow-md hover:border-purple-300 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer flex flex-col justify-between overflow-hidden"
+        class="group relative bg-white rounded-2xl border border-gray-200/90 p-5 shadow-xs hover:shadow-md hover:border-purple-300 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer flex flex-col justify-between overflow-hidden"
       >
         <div class="absolute -right-6 -bottom-6 w-28 h-28 bg-purple-50/80 rounded-full group-hover:scale-125 transition-transform duration-300 pointer-events-none"></div>
-        <div class="space-y-4 relative z-10">
+        <div class="space-y-3.5 relative z-10">
           <div class="flex items-center justify-between">
-            <div class="w-12 h-12 rounded-xl bg-purple-50 border border-purple-200/80 text-purple-700 flex items-center justify-center group-hover:scale-110 transition-transform shadow-2xs">
-              <Users class="w-6 h-6" />
+            <div class="w-11 h-11 rounded-xl bg-purple-50 border border-purple-200/80 text-purple-700 flex items-center justify-center group-hover:scale-110 transition-transform shadow-2xs">
+              <Users class="w-5 h-5" />
             </div>
-            <span class="text-[10px] font-bold uppercase tracking-wider bg-purple-100/90 text-purple-800 px-2.5 py-1 rounded-full border border-purple-200 shadow-2xs">
+            <span class="text-[10px] font-bold uppercase tracking-wider bg-purple-100/90 text-purple-800 px-2 py-0.5 rounded-full border border-purple-200 shadow-2xs">
               {{ users?.length || 0 }} Accounts
             </span>
           </div>
           <div>
-            <h3 class="text-base sm:text-lg font-bold text-gray-900 group-hover:text-purple-800 transition-colors">
+            <h3 class="text-sm sm:text-base font-bold text-gray-900 group-hover:text-purple-800 transition-colors">
               Users & Permissions
             </h3>
-            <p class="text-xs text-gray-500 mt-1.5 leading-relaxed">
-              System user accounts, operational roles, page access, and granular action permissions.
+            <p class="text-xs text-gray-500 mt-1 leading-relaxed">
+              System user accounts, operational roles, page access, and granular permissions.
             </p>
           </div>
         </div>
-        <div class="pt-4 mt-4 border-t border-gray-100 flex items-center justify-between text-xs font-bold text-purple-700 group-hover:text-purple-900 relative z-10">
-          <span>Manage Team & Access</span>
+        <div class="pt-3 mt-3 border-t border-gray-100 flex items-center justify-between text-xs font-bold text-purple-700 group-hover:text-purple-900 relative z-10">
+          <span>Manage Team</span>
           <ChevronRight class="w-4 h-4 group-hover:translate-x-1 transition-transform" />
         </div>
       </div>
@@ -110,16 +110,16 @@
       <!-- 4. General Settings Tile -->
       <div 
         @click="isSettingsModalOpen = true"
-        class="group relative bg-white rounded-2xl border border-gray-200/90 p-6 shadow-xs hover:shadow-md hover:border-amber-400 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer flex flex-col justify-between overflow-hidden"
+        class="group relative bg-white rounded-2xl border border-gray-200/90 p-5 shadow-xs hover:shadow-md hover:border-amber-400 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer flex flex-col justify-between overflow-hidden"
       >
         <div class="absolute -right-6 -bottom-6 w-28 h-28 bg-amber-50/80 rounded-full group-hover:scale-125 transition-transform duration-300 pointer-events-none"></div>
-        <div class="space-y-4 relative z-10">
+        <div class="space-y-3.5 relative z-10">
           <div class="flex items-center justify-between">
-            <div class="w-12 h-12 rounded-xl bg-amber-50 border border-amber-200/80 text-amber-700 flex items-center justify-center group-hover:scale-110 transition-transform shadow-2xs">
-              <Sliders class="w-6 h-6" />
+            <div class="w-11 h-11 rounded-xl bg-amber-50 border border-amber-200/80 text-amber-700 flex items-center justify-center group-hover:scale-110 transition-transform shadow-2xs">
+              <Sliders class="w-5 h-5" />
             </div>
             <span 
-              class="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border shadow-2xs"
+              class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border shadow-2xs"
               :class="systemSettings.quotationAnonymousMode 
                 ? 'bg-amber-100/90 text-amber-900 border-amber-300' 
                 : 'bg-emerald-100/90 text-emerald-800 border-emerald-300'"
@@ -128,16 +128,46 @@
             </span>
           </div>
           <div>
-            <h3 class="text-base sm:text-lg font-bold text-gray-900 group-hover:text-amber-800 transition-colors">
+            <h3 class="text-sm sm:text-base font-bold text-gray-900 group-hover:text-amber-800 transition-colors">
               General Settings
             </h3>
-            <p class="text-xs text-gray-500 mt-1.5 leading-relaxed">
-              Global quotation slip preferences, anonymous estimate mode, and system defaults.
+            <p class="text-xs text-gray-500 mt-1 leading-relaxed">
+              Quotation slip preferences, anonymous estimate mode, and system defaults.
             </p>
           </div>
         </div>
-        <div class="pt-4 mt-4 border-t border-gray-100 flex items-center justify-between text-xs font-bold text-amber-700 group-hover:text-amber-900 relative z-10">
+        <div class="pt-3 mt-3 border-t border-gray-100 flex items-center justify-between text-xs font-bold text-amber-700 group-hover:text-amber-900 relative z-10">
           <span>Configure Settings</span>
+          <ChevronRight class="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+        </div>
+      </div>
+
+      <!-- 5. Hardware Device Security Tile -->
+      <div 
+        @click="isDevicesModalOpen = true"
+        class="group relative bg-white rounded-2xl border border-gray-200/90 p-5 shadow-xs hover:shadow-md hover:border-indigo-400 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer flex flex-col justify-between overflow-hidden"
+      >
+        <div class="absolute -right-6 -bottom-6 w-28 h-28 bg-indigo-50/80 rounded-full group-hover:scale-125 transition-transform duration-300 pointer-events-none"></div>
+        <div class="space-y-3.5 relative z-10">
+          <div class="flex items-center justify-between">
+            <div class="w-11 h-11 rounded-xl bg-indigo-50 border border-indigo-200/80 text-indigo-700 flex items-center justify-center group-hover:scale-110 transition-transform shadow-2xs">
+              <ShieldCheck class="w-5 h-5" />
+            </div>
+            <span class="text-[10px] font-bold uppercase tracking-wider bg-indigo-100/90 text-indigo-800 px-2 py-0.5 rounded-full border border-indigo-200 shadow-2xs">
+              Hardware
+            </span>
+          </div>
+          <div>
+            <h3 class="text-sm sm:text-base font-bold text-gray-900 group-hover:text-indigo-800 transition-colors">
+              Device Security
+            </h3>
+            <p class="text-xs text-gray-500 mt-1 leading-relaxed">
+              Hardware whitelisting, approved mobile & PC list, pairing codes, and remote kill switch.
+            </p>
+          </div>
+        </div>
+        <div class="pt-3 mt-3 border-t border-gray-100 flex items-center justify-between text-xs font-bold text-indigo-700 group-hover:text-indigo-900 relative z-10">
+          <span>Device Whitelist</span>
           <ChevronRight class="w-4 h-4 group-hover:translate-x-1 transition-transform" />
         </div>
       </div>
@@ -1263,6 +1293,12 @@
       @saved="(p) => { systemSettings.quotationAnonymousMode = p.quotationAnonymousMode }" 
     />
 
+    <!-- Hardware Devices & Whitelist Modal -->
+    <AdminDevicesModal 
+      :isOpen="isDevicesModalOpen" 
+      @close="isDevicesModalOpen = false" 
+    />
+
   </div>
 </template>
 
@@ -1289,6 +1325,7 @@ import {
 import AdminMastersModal from '~/components/dashboard/AdminMastersModal.vue'
 import AdminSheetTabsModal from '~/components/dashboard/AdminSheetTabsModal.vue'
 import AdminSettingsModal from '~/components/dashboard/AdminSettingsModal.vue'
+import AdminDevicesModal from '~/components/dashboard/AdminDevicesModal.vue'
 import { useSnackbar } from '~/composables/useSnackbar'
 import { useGsapAnimation } from '~/composables/useGsapAnimation'
 import CustomSelect from '~/components/ui/CustomSelect.vue'
@@ -1341,6 +1378,7 @@ const isModalOpen = ref(false)
 const isMastersModalOpen = ref(false)
 const isSheetTabsModalOpen = ref(false)
 const isSettingsModalOpen = ref(false)
+const isDevicesModalOpen = ref(false)
 const systemSettings = ref<{ quotationAnonymousMode: boolean }>({ quotationAnonymousMode: false })
 const isSaving = ref(false)
 const editingUser = ref<any>(null)

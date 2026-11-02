@@ -1,7 +1,11 @@
 # =====================================================================
 # Extract Operational Catalog from Local BUSY Clone (Read-Only)
-# Target: D:\BusyWin Data\SM\Clone\db12026.bds
+# Target: db1*.bds in $CloneDir
 # =====================================================================
+param(
+    [string]$CloneDir = "D:\BusyWin Data\SM\Clone",
+    [string]$OutputPath = ""
+)
 
 # Disable Console QuickEdit Mode to prevent accidental mouse clicks from freezing execution
 try {
@@ -26,7 +30,8 @@ public class QuickEditDisabler {
     [QuickEditDisabler]::Disable()
 } catch {}
 
-$cloneDir = "D:\BusyWin Data\SM\Clone"
+if (-not $CloneDir) { $CloneDir = "D:\BusyWin Data\SM\Clone" }
+$cloneDir = $CloneDir
 $dbFile = Get-ChildItem -Path $cloneDir -Filter "db1*.bds" | Select-Object -First 1
 
 if (-not $dbFile) {
@@ -39,8 +44,22 @@ $tmpDb = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), "sm_extract_
 Copy-Item -Path $srcDb -Destination $tmpDb -Force
 
 $conn = New-Object -ComObject ADODB.Connection
+$opened = $false
+foreach ($prov in @("Microsoft.ACE.OLEDB.12.0", "Microsoft.ACE.OLEDB.16.0", "Microsoft.Jet.OLEDB.4.0")) {
+    try {
+        $conn.Open("Provider=$prov;Data Source=$tmpDb;Jet OLEDB:Database Password=ILoveMyINDIA;Mode=Read;")
+        $opened = $true
+        break
+    } catch {
+        # Try next provider
+    }
+}
+if (-not $opened) {
+    Write-Error "Could not connect to database using OLEDB provider. Please verify Microsoft Access Database Engine is installed."
+    exit 1
+}
+
 try {
-    $conn.Open("Provider=Microsoft.ACE.OLEDB.12.0;Data Source=$tmpDb;Jet OLEDB:Database Password=ILoveMyINDIA;Mode=Read;")
 
 # 1. Categories (Item Groups)
 Write-Host "Extracting Categories..."
@@ -56,20 +75,40 @@ Write-Host "  Found $($categories.Count) categories."
 
 # 2. Products with Opening Stock & Daily Movements
 Write-Host "Extracting Products & Stock..."
-$sqlProd = @"
-SELECT m.Code, m.Name, m.Alias, m.PrintName, m.ParentGrp, m.D3 AS SalePrice, m.D4 AS PurPrice, m.HSNCode, m.DeactiveMaster,
-       f.D1 AS OpBal,
-       d.TotalDr, d.TotalCr
-FROM (Master1 m
-      LEFT JOIN (SELECT MasterCode, D1 FROM Folio1 WHERE MasterType = 6) f ON m.Code = f.MasterCode)
-      LEFT JOIN (SELECT MasterCode1, SUM(Dr1) AS TotalDr, SUM(Cr1) AS TotalCr FROM DailySum WHERE MasterType = 6 AND MasterCode2 = 0 GROUP BY MasterCode1) d ON m.Code = d.MasterCode1
-WHERE m.MasterType = 6
-"@
 
-$rsP = $conn.Execute($sqlProd)
+# 2a. Folio1 Opening Balances (Safe Read)
+$folioMap = @{}
+$rsF = $conn.Execute("SELECT MasterCode, D1, MasterType FROM Folio1")
+while ($true) {
+    try { if ($rsF.EOF) { break } } catch { break }
+    if ($rsF.Fields.Item("MasterType").Value -eq 6) {
+        $mc = $rsF.Fields.Item("MasterCode").Value
+        $d1 = $rsF.Fields.Item("D1").Value
+        $folioMap[$mc] = if ($d1 -ne $null -and $d1 -ne [DBNull]::Value) { [double]$d1 } else { 0 }
+    }
+    try { $rsF.MoveNext() } catch { break }
+}
+
+# 2b. DailySum Movements (Safe Read)
+$dailyDrMap = @{}
+$dailyCrMap = @{}
+$rsD = $conn.Execute("SELECT MasterCode1, SUM(Dr1) AS TotalDr, SUM(Cr1) AS TotalCr FROM DailySum WHERE MasterType = 6 AND MasterCode2 = 0 GROUP BY MasterCode1")
+while ($true) {
+    try { if ($rsD.EOF) { break } } catch { break }
+    $mc = $rsD.Fields.Item("MasterCode1").Value
+    $dr = $rsD.Fields.Item("TotalDr").Value
+    $cr = $rsD.Fields.Item("TotalCr").Value
+    $dailyDrMap[$mc] = if ($dr -ne $null -and $dr -ne [DBNull]::Value) { [double]$dr } else { 0 }
+    $dailyCrMap[$mc] = if ($cr -ne $null -and $cr -ne [DBNull]::Value) { [double]$cr } else { 0 }
+    try { $rsD.MoveNext() } catch { break }
+}
+
+# 2c. Master1 Products
+$rsP = $conn.Execute("SELECT Code, Name, Alias, PrintName, ParentGrp, D3 AS SalePrice, D4 AS PurPrice, HSNCode, DeactiveMaster FROM Master1 WHERE MasterType = 6")
 $products = [System.Collections.Generic.List[PSCustomObject]]::new()
 $prodCodeToSku = @{}
-while (-not $rsP.EOF) {
+while ($true) {
+    try { if ($rsP.EOF) { break } } catch { break }
     $code = $rsP.Fields.Item("Code").Value
     $name = $rsP.Fields.Item("Name").Value.ToString().Trim()
     $alias = if ($rsP.Fields.Item("Alias").Value -ne $null) { $rsP.Fields.Item("Alias").Value.ToString().Trim() } else { "" }
@@ -81,13 +120,9 @@ while (-not $rsP.EOF) {
     $hsn = $rsP.Fields.Item("HSNCode").Value
     $deactive = $rsP.Fields.Item("DeactiveMaster").Value
 
-    $op = $rsP.Fields.Item("OpBal").Value
-    $dr = $rsP.Fields.Item("TotalDr").Value
-    $cr = $rsP.Fields.Item("TotalCr").Value
-    
-    $opVal = if ($op -ne $null -and $op -ne [DBNull]::Value) { [double]$op } else { 0 }
-    $drVal = if ($dr -ne $null -and $dr -ne [DBNull]::Value) { [double]$dr } else { 0 }
-    $crVal = if ($cr -ne $null -and $cr -ne [DBNull]::Value) { [double]$cr } else { 0 }
+    $opVal = if ($folioMap.ContainsKey($code)) { $folioMap[$code] } else { 0 }
+    $drVal = if ($dailyDrMap.ContainsKey($code)) { $dailyDrMap[$code] } else { 0 }
+    $crVal = if ($dailyCrMap.ContainsKey($code)) { $dailyCrMap[$code] } else { 0 }
     # NOTE: In BUSY DailySum (MasterType = 6), Cr1 is Inward (Receipts) and Dr1 is Outward (Dispatches/Sales).
     # Closing Stock = Opening Balance + Total Inward (Cr1) - Total Outward (Dr1)
     $closing = [Math]::Round($opVal + $crVal - $drVal, 2)
@@ -108,7 +143,7 @@ while (-not $rsP.EOF) {
         stockDecimal = $closing
         isActive = -not [bool]$deactive
     })
-    $rsP.MoveNext()
+    try { $rsP.MoveNext() } catch { break }
 }
 Write-Host "  Extracted $($products.Count) products."
 
@@ -426,9 +461,13 @@ Write-Host "  Extracted $($vouchers.Count) full vouchers with line items."
 }
 
 # Save to payload JSON
-$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$projectRoot = Split-Path -Parent $scriptDir
-$payloadPath = Join-Path $projectRoot "busy_sync_payload.json"
+if (-not $OutputPath) {
+    $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+    $projectRoot = Split-Path -Parent $scriptDir
+    $payloadPath = Join-Path $projectRoot "busy_sync_payload.json"
+} else {
+    $payloadPath = $OutputPath
+}
 
 $payload = [PSCustomObject]@{
     extractedAt = (Get-Date).ToString("o")

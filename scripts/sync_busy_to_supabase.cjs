@@ -158,12 +158,12 @@ async function runSync() {
     for (let i = 0; i < toInsert.length; i += insertChunkSize) {
       const chunk = toInsert.slice(i, i + insertChunkSize);
       const valuesList = chunk.map(p => 
-        `(gen_random_uuid(), ${esc(p.sku)}, ${esc(p.name)}, '${p.categoryId}'::text, 'PIECE', ${p.price}, ${p.costPrice !== null ? p.costPrice : 'NULL'}, ${p.stock}, ${esc(p.hsnCode)}, NULL, false, ${p.isActive}, NOW(), NOW())`
+        `(gen_random_uuid(), ${esc(p.sku)}, ${esc(p.name)}, '${p.categoryId}'::text, 'PIECE', ${p.price}, ${p.costPrice !== null ? p.costPrice : 'NULL'}, ${p.stock}, ${esc(p.hsnCode)}, NULL, false, true, ${p.isActive}, NOW(), NOW())`
       ).join(',');
 
       await prisma.$executeRawUnsafe(`
         INSERT INTO products (id, sku, name, "categoryId", unit, price, "costPrice", stock, "hsnCode", "taxRate", "hasVariants", "isBusySynced", "isActive", "createdAt", "updatedAt")
-        VALUES ${valuesList.map(v => v.replace(', false,', ', false, true,'))}
+        VALUES ${valuesList}
         ON CONFLICT (sku) DO UPDATE SET
           name = EXCLUDED.name,
           "categoryId" = EXCLUDED."categoryId",
@@ -569,8 +569,12 @@ async function runSync() {
 
 runSync()
   .catch(err => {
-    console.error("SYNC FAILED WITH ERROR:", err);
+    console.error("SYNC FAILED WITH ERROR:", err.message || err);
+    process.exitCode = 1;
   })
   .finally(async () => {
     await prisma.$disconnect();
+    if (process.exitCode && process.exitCode !== 0) {
+      process.exit(process.exitCode);
+    }
   });

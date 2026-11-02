@@ -20,15 +20,32 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, nextTick } from 'vue'
+import { ref, computed, watch, nextTick, onMounted } from 'vue'
 import DashboardSidebar from '~/components/dashboard/DashboardSidebar.vue'
 import DashboardTopbar from '~/components/dashboard/DashboardTopbar.vue'
 import AccessDenied from '~/components/ui/AccessDenied.vue'
 import { APP_PAGES, getPageKeyFromPath } from '~/utils/permissions'
+import { useDeviceSecurity } from '~/composables/useDeviceSecurity'
 
 const { user, fetchUser, canAccessRoute } = useAuth()
 const route = useRoute()
 const { onOrderSync } = useRealtimeSync()
+const { detectDevice } = useDeviceSecurity()
+
+// Auto-sync and authorize current physical device on dashboard load
+onMounted(async () => {
+  try {
+    const dev = await detectDevice()
+    if (dev?.id) {
+      await $fetch('/api/auth/sync-device', {
+        method: 'POST',
+        body: { device: dev }
+      })
+    }
+  } catch (err) {
+    // Non-blocking background sync
+  }
+})
 
 const mainContentRef = ref<HTMLElement | null>(null)
 
