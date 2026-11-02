@@ -98,6 +98,9 @@ model User {
   password  String
   role      UserRole @default(SALES)
   avatar    String?
+  phone     String?
+  vehicleNumber String?
+  vehicleName   String?
   isActive  Boolean  @default(true)
   allowedPages Json? @default("[]")
   actionPermissions Json? @default("{\"canEditOrders\":false,\"canEditOrderStatus\":false,\"canCancelOrders\":false,\"canEditCustomers\":false,\"canEditProducts\":false,\"canDeleteQuotations\":false}")

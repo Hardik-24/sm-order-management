@@ -55,6 +55,9 @@ export default defineEventHandler(async (event) => {
   const data: Record<string, any> = {}
   if (body.name !== undefined) data.name = body.name
   if (body.role !== undefined) data.role = body.role
+  if (body.phone !== undefined) data.phone = body.phone ? String(body.phone).trim() : null
+  if (body.vehicleNumber !== undefined) data.vehicleNumber = body.vehicleNumber ? String(body.vehicleNumber).trim() : null
+  if (body.vehicleName !== undefined) data.vehicleName = body.vehicleName ? String(body.vehicleName).trim() : null
   if (body.isActive !== undefined) data.isActive = body.isActive
   if (body.email !== undefined) data.email = body.email.toLowerCase()
   if (allowedPages !== undefined) data.allowedPages = allowedPages
@@ -73,6 +76,9 @@ export default defineEventHandler(async (event) => {
       email: true,
       name: true,
       role: true,
+      phone: true,
+      vehicleNumber: true,
+      vehicleName: true,
       isActive: true,
       allowedPages: true,
       actionPermissions: true,

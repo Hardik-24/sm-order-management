@@ -204,27 +204,58 @@
             <tr v-if="pending" class="hover:bg-gray-50">
               <td colspan="6" class="px-6 py-8 text-center text-gray-500">Loading users...</td>
             </tr>
-            <tr v-else-if="users?.length === 0" class="hover:bg-gray-50">
+            <tr v-else-if="!users || users.length === 0" class="hover:bg-gray-50">
               <td colspan="6" class="px-6 py-8 text-center text-gray-500">No users found.</td>
             </tr>
-            <tr v-for="u in users" :key="u.id" class="hover:bg-gray-50 transition-colors">
-              <!-- Name -->
-              <td class="px-6 py-4 font-medium text-[#1a1a1a]">
-                <div class="flex items-center gap-3">
-                  <div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 font-medium shrink-0">
-                    {{ u.name.charAt(0) }}
-                  </div>
-                  <div class="flex items-center gap-2 min-w-0">
-                    <span class="truncate">{{ u.name }}</span>
-                    <span 
-                      v-if="u.id === user?.id" 
-                      class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 border border-purple-200 shrink-0"
-                    >
-                      You (Admin)
+            <template v-else v-for="group in groupedUsers" :key="group.role">
+              <!-- Group Header Row (Desktop) -->
+              <tr class="border-y select-none transition-colors" :class="group.info.bg">
+                <td colspan="6" class="px-6 py-2.5">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                      <span class="w-2 h-2 rounded-full" :class="group.info.dot"></span>
+                      <span class="text-xs font-bold uppercase tracking-wider" :class="group.info.color">
+                        {{ group.info.label }}
+                      </span>
+                    </div>
+                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white border border-gray-200/90 text-gray-600 shadow-2xs">
+                      {{ group.users.length }} {{ group.users.length === 1 ? 'account' : 'accounts' }}
                     </span>
                   </div>
-                </div>
-              </td>
+                </td>
+              </tr>
+
+              <tr v-for="u in group.users" :key="u.id" class="hover:bg-gray-50 transition-colors">
+                <!-- Name -->
+                <td class="px-6 py-4 font-medium text-[#1a1a1a]">
+                  <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 font-medium shrink-0">
+                      {{ u.name.charAt(0) }}
+                    </div>
+                    <div class="flex flex-col min-w-0">
+                      <div class="flex items-center gap-2 min-w-0">
+                        <span class="truncate font-bold text-gray-900">{{ u.name }}</span>
+                        <span 
+                          v-if="u.id === user?.id" 
+                          class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 border border-purple-200 shrink-0"
+                        >
+                          You (Admin)
+                        </span>
+                      </div>
+                      <!-- Delivery Driver Phone & Vehicle Pill (Desktop) -->
+                      <div v-if="u.role === 'DELIVERY' && (u.phone || u.vehicleNumber)" class="flex items-center gap-2 text-xs font-medium text-emerald-800 mt-1 flex-wrap">
+                        <span v-if="u.phone" class="inline-flex items-center gap-1 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 text-[11px]">
+                          <Phone class="w-3 h-3 text-emerald-600" />
+                          <span>{{ u.phone }}</span>
+                        </span>
+                        <span v-if="u.vehicleNumber" class="inline-flex items-center gap-1 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 text-[11px]">
+                          <Truck class="w-3 h-3 text-emerald-600" />
+                          <span>{{ u.vehicleNumber }}{{ u.vehicleName ? ` (${u.vehicleName})` : '' }}</span>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </td>
 
               <!-- Email -->
               <td class="px-6 py-4 text-gray-600 font-mono text-xs">{{ u.email }}</td>
@@ -410,7 +441,8 @@
                 </button>
               </td>
             </tr>
-          </tbody>
+          </template>
+        </tbody>
         </table>
       </div>
 
@@ -436,136 +468,163 @@
             No users found.
           </div>
 
-          <div 
-            v-for="u in users" 
-            :key="'mob-usr-' + u.id"
-            class="p-3.5 space-y-2.5 hover:bg-gray-50/70 transition-colors"
-          >
-            <!-- Line 1: Avatar, Name, Role & Status Switch -->
-            <div class="flex items-center justify-between gap-2">
-              <div class="flex items-center gap-2.5 min-w-0">
-                <div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-700 font-bold text-xs shrink-0 border border-gray-200">
-                  {{ u.name.charAt(0) }}
-                </div>
-                <div class="min-w-0">
-                  <div class="flex items-center gap-1.5 flex-wrap">
-                    <span class="text-sm font-bold text-gray-900 truncate">{{ u.name }}</span>
-                    <span 
-                      v-if="u.id === user?.id" 
-                      class="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-purple-100 text-purple-700 border border-purple-200 shrink-0"
-                    >
-                      You
-                    </span>
+          <template v-else v-for="group in groupedUsers" :key="'mob-grp-' + group.role">
+            <!-- Mobile Group Header Banner -->
+            <div class="px-3.5 py-2 flex items-center justify-between border-y select-none" :class="group.info.bg">
+              <div class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full" :class="group.info.dot"></span>
+                <span class="text-xs font-bold uppercase tracking-wider" :class="group.info.color">
+                  {{ group.info.label }}
+                </span>
+              </div>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white border border-gray-200 text-gray-600 shadow-2xs">
+                {{ group.users.length }} {{ group.users.length === 1 ? 'account' : 'accounts' }}
+              </span>
+            </div>
+
+            <div 
+              v-for="u in group.users" 
+              :key="'mob-usr-' + u.id"
+              class="p-3.5 space-y-2.5 hover:bg-gray-50/70 transition-colors"
+            >
+              <!-- Line 1: Avatar, Name, Role & Status Switch -->
+              <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-700 font-bold text-xs shrink-0 border border-gray-200">
+                    {{ u.name.charAt(0) }}
                   </div>
+                  <div class="min-w-0">
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                      <span class="text-sm font-bold text-gray-900 truncate">{{ u.name }}</span>
+                      <span 
+                        v-if="u.id === user?.id" 
+                        class="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-purple-100 text-purple-700 border border-purple-200 shrink-0"
+                      >
+                        You
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Role Badge & Status Switch -->
+                <div class="flex items-center gap-2 shrink-0">
+                  <span class="text-[10px] font-bold px-2 py-0.5 rounded border" :class="getRoleColorClass(u.role)">
+                    {{ u.role }}
+                  </span>
+                  <button 
+                    type="button"
+                    :disabled="loadingStatusUsers[u.id] || u.id === user?.id"
+                    @click.stop="toggleUserStatus(u)"
+                    class="relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-150 ease-in-out focus:outline-none p-0.5 shrink-0"
+                    :class="[
+                      u.id === user?.id ? 'opacity-80 cursor-not-allowed bg-[#1b3b5f]' : (loadingStatusUsers[u.id] ? 'opacity-75 cursor-wait' : 'cursor-pointer'),
+                      u.isActive !== false ? 'bg-[#1b3b5f]' : 'bg-gray-300'
+                    ]"
+                  >
+                    <span 
+                      class="inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition duration-150 ease-in-out"
+                      :class="u.isActive !== false ? 'translate-x-4' : 'translate-x-0'"
+                    />
+                  </button>
                 </div>
               </div>
 
-              <!-- Role Badge & Status Switch -->
-              <div class="flex items-center gap-2 shrink-0">
-                <span class="text-[10px] font-bold px-2 py-0.5 rounded border" :class="getRoleColorClass(u.role)">
-                  {{ u.role }}
+              <!-- Line 2: Email -->
+              <div class="text-xs text-gray-500 font-mono truncate pl-10.5 -mt-1">
+                {{ u.email }}
+              </div>
+
+              <!-- Delivery Driver Phone & Vehicle Pill (Mobile) -->
+              <div v-if="u.role === 'DELIVERY' && (u.phone || u.vehicleNumber)" class="pl-10.5 flex items-center gap-2 text-xs font-medium text-emerald-800 flex-wrap">
+                <span v-if="u.phone" class="inline-flex items-center gap-1 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 text-[11px]">
+                  <Phone class="w-3 h-3 text-emerald-600" />
+                  <span>{{ u.phone }}</span>
                 </span>
-                <button 
-                  type="button"
-                  :disabled="loadingStatusUsers[u.id] || u.id === user?.id"
-                  @click.stop="toggleUserStatus(u)"
-                  class="relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-150 ease-in-out focus:outline-none p-0.5 shrink-0"
-                  :class="[
-                    u.id === user?.id ? 'opacity-80 cursor-not-allowed bg-[#1b3b5f]' : (loadingStatusUsers[u.id] ? 'opacity-75 cursor-wait' : 'cursor-pointer'),
-                    u.isActive !== false ? 'bg-[#1b3b5f]' : 'bg-gray-300'
-                  ]"
-                >
+                <span v-if="u.vehicleNumber" class="inline-flex items-center gap-1 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 text-[11px]">
+                  <Truck class="w-3 h-3 text-emerald-600" />
+                  <span>{{ u.vehicleNumber }}{{ u.vehicleName ? ` (${u.vehicleName})` : '' }}</span>
+                </span>
+              </div>
+
+              <!-- Line 3: Access & Permissions Pills -->
+              <div class="pl-10.5 space-y-1.5">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <div v-if="u.role === 'ADMIN'" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-purple-50 text-purple-700 border border-purple-200">
+                    <ShieldCheck class="w-3 h-3 text-purple-600" />
+                    <span>Full Access (All Modules)</span>
+                  </div>
+                  <div v-else class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-gray-50 text-gray-700 border border-gray-200">
+                    <KeyRound class="w-3 h-3 text-gray-400" />
+                    <span>{{ getEffectiveAllowedPages(u).length }} pages allowed</span>
+                  </div>
+
+                  <!-- Action Permissions Badges -->
                   <span 
-                    class="inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition duration-150 ease-in-out"
-                    :class="u.isActive !== false ? 'translate-x-4' : 'translate-x-0'"
-                  />
+                    v-if="getEffectiveActionPermissions(u).canEditOrders"
+                    class="text-[9px] font-semibold px-1.5 py-0.2 rounded bg-blue-50 text-blue-700 border border-blue-200"
+                  >
+                    Edit Orders
+                  </span>
+                  <span 
+                    v-if="getEffectiveActionPermissions(u).canEditOrderStatus"
+                    class="text-[9px] font-semibold px-1.5 py-0.2 rounded bg-indigo-50 text-indigo-700 border border-indigo-200"
+                  >
+                    Edit Status
+                  </span>
+                  <span 
+                    v-if="getEffectiveActionPermissions(u).canCancelOrders"
+                    class="text-[9px] font-semibold px-1.5 py-0.2 rounded bg-rose-50 text-rose-700 border border-rose-200"
+                  >
+                    Cancel Orders
+                  </span>
+                  <span 
+                    v-if="getEffectiveActionPermissions(u).canEditCustomers"
+                    class="text-[9px] font-semibold px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-700 border border-emerald-200"
+                  >
+                    Edit Customers
+                  </span>
+                  <span 
+                    v-if="getEffectiveActionPermissions(u).canEditProducts"
+                    class="text-[9px] font-semibold px-1.5 py-0.2 rounded bg-amber-50 text-amber-700 border border-amber-200"
+                  >
+                    Edit Products
+                  </span>
+                  <span 
+                    v-if="getEffectiveActionPermissions(u).canDeleteQuotations"
+                    class="text-[9px] font-semibold px-1.5 py-0.2 rounded bg-rose-50 text-rose-700 border border-rose-200"
+                  >
+                    Delete Quotes
+                  </span>
+                  <span 
+                    v-if="getEffectiveActionPermissions(u).canLinkBusyData"
+                    class="text-[9px] font-semibold px-1.5 py-0.2 rounded bg-teal-50 text-teal-700 border border-teal-200"
+                  >
+                    Link Busy Data
+                  </span>
+                  <span 
+                    v-if="u.role === 'SALES'"
+                    class="text-[9px] font-semibold px-1.5 py-0.2 rounded border"
+                    :class="getEffectiveActionPermissions(u).canViewAllCompanyOrders 
+                      ? 'bg-sky-50 text-sky-700 border-sky-200' 
+                      : 'bg-purple-50 text-purple-700 border-purple-200'"
+                  >
+                    {{ getEffectiveActionPermissions(u).canViewAllCompanyOrders ? 'All Company' : 'My Scope' }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- Line 4: Action Button -->
+              <div class="flex items-center justify-end gap-2 pt-1.5 border-t border-gray-100">
+                <button 
+                  @click="openModal(u)"
+                  class="px-3 py-1.5 text-xs font-semibold text-[#1b3b5f] bg-[#1b3b5f]/10 hover:bg-[#1b3b5f]/20 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Edit2 class="w-3 h-3" />
+                  <span>Edit User & Permissions</span>
                 </button>
               </div>
             </div>
-
-            <!-- Line 2: Email -->
-            <div class="text-xs text-gray-500 font-mono truncate pl-10.5 -mt-1">
-              {{ u.email }}
-            </div>
-
-            <!-- Line 3: Access & Permissions Pills -->
-            <div class="pl-10.5 space-y-1.5">
-              <div class="flex items-center gap-1.5 flex-wrap">
-                <div v-if="u.role === 'ADMIN'" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-purple-50 text-purple-700 border border-purple-200">
-                  <ShieldCheck class="w-3 h-3 text-purple-600" />
-                  <span>Full Access (All Modules)</span>
-                </div>
-                <div v-else class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-gray-50 text-gray-700 border border-gray-200">
-                  <KeyRound class="w-3 h-3 text-gray-400" />
-                  <span>{{ getEffectiveAllowedPages(u).length }} pages allowed</span>
-                </div>
-
-                <!-- Action Permissions Badges -->
-                <span 
-                  v-if="getEffectiveActionPermissions(u).canEditOrders"
-                  class="text-[9px] font-semibold px-1.5 py-0.2 rounded bg-blue-50 text-blue-700 border border-blue-200"
-                >
-                  Edit Orders
-                </span>
-                <span 
-                  v-if="getEffectiveActionPermissions(u).canEditOrderStatus"
-                  class="text-[9px] font-semibold px-1.5 py-0.2 rounded bg-indigo-50 text-indigo-700 border border-indigo-200"
-                >
-                  Edit Status
-                </span>
-                <span 
-                  v-if="getEffectiveActionPermissions(u).canCancelOrders"
-                  class="text-[9px] font-semibold px-1.5 py-0.2 rounded bg-rose-50 text-rose-700 border border-rose-200"
-                >
-                  Cancel Orders
-                </span>
-                <span 
-                  v-if="getEffectiveActionPermissions(u).canEditCustomers"
-                  class="text-[9px] font-semibold px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-700 border border-emerald-200"
-                >
-                  Edit Customers
-                </span>
-                <span 
-                  v-if="getEffectiveActionPermissions(u).canEditProducts"
-                  class="text-[9px] font-semibold px-1.5 py-0.2 rounded bg-amber-50 text-amber-700 border border-amber-200"
-                >
-                  Edit Products
-                </span>
-                <span 
-                  v-if="getEffectiveActionPermissions(u).canDeleteQuotations"
-                  class="text-[9px] font-semibold px-1.5 py-0.2 rounded bg-rose-50 text-rose-700 border border-rose-200"
-                >
-                  Delete Quotes
-                </span>
-                <span 
-                  v-if="getEffectiveActionPermissions(u).canLinkBusyData"
-                  class="text-[9px] font-semibold px-1.5 py-0.2 rounded bg-teal-50 text-teal-700 border border-teal-200"
-                >
-                  Link Busy Data
-                </span>
-                <span 
-                  v-if="u.role === 'SALES'"
-                  class="text-[9px] font-semibold px-1.5 py-0.2 rounded border"
-                  :class="getEffectiveActionPermissions(u).canViewAllCompanyOrders 
-                    ? 'bg-sky-50 text-sky-700 border-sky-200' 
-                    : 'bg-purple-50 text-purple-700 border-purple-200'"
-                >
-                  {{ getEffectiveActionPermissions(u).canViewAllCompanyOrders ? 'All Company' : 'My Scope' }}
-                </span>
-              </div>
-            </div>
-
-            <!-- Line 4: Action Button -->
-            <div class="flex items-center justify-end gap-2 pt-1.5 border-t border-gray-100">
-              <button 
-                @click="openModal(u)"
-                class="px-3 py-1.5 text-xs font-semibold text-[#1b3b5f] bg-[#1b3b5f]/10 hover:bg-[#1b3b5f]/20 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer"
-              >
-                <Edit2 class="w-3 h-3" />
-                <span>Edit User & Permissions</span>
-              </button>
-            </div>
-          </div>
+          </template>
         </template>
       </div>
             </div>
@@ -672,6 +731,64 @@
                     placeholder="Select Role"
                     class="w-full"
                   />
+                </div>
+              </div>
+
+              <!-- Dedicated Delivery Fleet & Vehicle Details (Only shown when role is DELIVERY) -->
+              <div 
+                v-if="form.role === 'DELIVERY'" 
+                class="p-4 bg-emerald-50/70 border border-emerald-200/90 rounded-xl space-y-3.5 shadow-2xs transition-all"
+              >
+                <div class="flex items-center gap-2 border-b border-emerald-200/80 pb-2.5">
+                  <div class="w-6 h-6 rounded-md bg-emerald-600 text-white flex items-center justify-center shrink-0">
+                    <Truck class="w-3.5 h-3.5" />
+                  </div>
+                  <div>
+                    <h4 class="text-xs font-bold text-emerald-950 uppercase tracking-wider">
+                      Driver & Vehicle Details (Delivery Fleet)
+                    </h4>
+                    <p class="text-[11px] text-emerald-800/80">
+                      These details automatically prefill whenever this driver is selected for delivery trips
+                    </p>
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div class="space-y-1">
+                    <label class="block text-[10px] font-bold text-emerald-900 uppercase tracking-widest">
+                      Driver Phone No.
+                    </label>
+                    <input 
+                      v-model="form.phone"
+                      type="tel"
+                      placeholder="e.g. 9876543210"
+                      class="w-full px-3 py-2 bg-white border border-emerald-300/80 rounded-lg text-xs font-medium focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 outline-none"
+                    />
+                  </div>
+
+                  <div class="space-y-1">
+                    <label class="block text-[10px] font-bold text-emerald-900 uppercase tracking-widest">
+                      Vehicle Reg. No.
+                    </label>
+                    <input 
+                      v-model="form.vehicleNumber"
+                      type="text"
+                      placeholder="e.g. KA-09-EA-1234"
+                      class="w-full px-3 py-2 bg-white border border-emerald-300/80 rounded-lg text-xs font-bold uppercase focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 outline-none"
+                    />
+                  </div>
+
+                  <div class="space-y-1">
+                    <label class="block text-[10px] font-bold text-emerald-900 uppercase tracking-widest">
+                      Vehicle Name / Model <span class="text-gray-400 font-normal lowercase">(optional)</span>
+                    </label>
+                    <input 
+                      v-model="form.vehicleName"
+                      type="text"
+                      placeholder="e.g. Tata Ace, Bolero"
+                      class="w-full px-3 py-2 bg-white border border-emerald-300/80 rounded-lg text-xs font-medium focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 outline-none"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -1165,7 +1282,9 @@ import {
   FileSpreadsheet,
   Users,
   ChevronRight,
-  Sliders
+  Sliders,
+  Phone,
+  Truck
 } from 'lucide-vue-next'
 import AdminMastersModal from '~/components/dashboard/AdminMastersModal.vue'
 import AdminSheetTabsModal from '~/components/dashboard/AdminSheetTabsModal.vue'
@@ -1234,6 +1353,9 @@ const form = ref<{
   email: string
   password: string
   role: UserRole
+  phone?: string
+  vehicleNumber?: string
+  vehicleName?: string
   isActive: boolean
   allowedPages: string[]
   actionPermissions: UserActionPermissions
@@ -1242,6 +1364,9 @@ const form = ref<{
   email: '',
   password: '',
   role: 'SALES',
+  phone: '',
+  vehicleNumber: '',
+  vehicleName: '',
   isActive: true,
   allowedPages: [],
   actionPermissions: {
@@ -1260,6 +1385,52 @@ const form = ref<{
 const headers = useRequestHeaders(['cookie'])
 const { data: users, pending, refresh } = useFetch<any[]>('/api/users', {
   headers
+})
+
+// Logical Operational Role Grouping Priority
+const ROLE_PRIORITY: Record<string, number> = {
+  ADMIN: 1,
+  SALES: 2,
+  BILLING: 3,
+  PACKING: 4,
+  DELIVERY: 5,
+}
+
+const ROLE_GROUP_INFO: Record<string, { label: string; countSuffix: string; color: string; bg: string; dot: string }> = {
+  ADMIN: { label: 'Administrators', countSuffix: 'Admin', color: 'text-purple-800', bg: 'bg-purple-50/70 border-purple-200/80', dot: 'bg-purple-500' },
+  SALES: { label: 'Sales Team', countSuffix: 'Sales Rep', color: 'text-blue-800', bg: 'bg-blue-50/70 border-blue-200/80', dot: 'bg-blue-500' },
+  BILLING: { label: 'Billing & Invoicing', countSuffix: 'Billing Staff', color: 'text-amber-800', bg: 'bg-amber-50/70 border-amber-200/80', dot: 'bg-amber-500' },
+  PACKING: { label: 'Warehouse & Packing', countSuffix: 'Packer', color: 'text-orange-800', bg: 'bg-orange-50/70 border-orange-200/80', dot: 'bg-orange-500' },
+  DELIVERY: { label: 'Delivery Fleet & Drivers', countSuffix: 'Driver', color: 'text-emerald-800', bg: 'bg-emerald-50/70 border-emerald-200/80', dot: 'bg-emerald-500' },
+}
+
+// Group-wise Ordered Users List
+const sortedUsers = computed(() => {
+  if (!users.value) return []
+  return [...users.value].sort((a, b) => {
+    const priorityA = ROLE_PRIORITY[a.role] || 99
+    const priorityB = ROLE_PRIORITY[b.role] || 99
+    if (priorityA !== priorityB) return priorityA - priorityB
+    return (a.name || '').localeCompare(b.name || '')
+  })
+})
+
+const groupedUsers = computed(() => {
+  const list = sortedUsers.value
+  const groups: { role: string; info: any; users: any[] }[] = []
+  for (const u of list) {
+    let g = groups.find(grp => grp.role === u.role)
+    if (!g) {
+      g = {
+        role: u.role,
+        info: ROLE_GROUP_INFO[u.role] || { label: `${u.role} Team`, countSuffix: 'Member', color: 'text-gray-800', bg: 'bg-gray-100 border-gray-200', dot: 'bg-gray-400' },
+        users: []
+      }
+      groups.push(g)
+    }
+    g.users.push(u)
+  }
+  return groups
 })
 
 const triggerRowAnimation = () => {
@@ -1495,6 +1666,9 @@ const openModal = (u: any = null) => {
       email: u.email,
       password: '',
       role: u.role,
+      phone: u.phone || '',
+      vehicleNumber: u.vehicleNumber || '',
+      vehicleName: u.vehicleName || '',
       isActive: u.isActive !== false,
       allowedPages: u.role === 'ADMIN' ? APP_PAGES.map(p => p.key) : [...effective],
       actionPermissions: u.role === 'ADMIN' 
@@ -1518,6 +1692,9 @@ const openModal = (u: any = null) => {
       email: '',
       password: '',
       role: 'SALES',
+      phone: '',
+      vehicleNumber: '',
+      vehicleName: '',
       isActive: true,
       allowedPages: [...defaultPages],
       actionPermissions: { ...defaultActions }
@@ -1569,6 +1746,9 @@ const saveUser = async () => {
           role: form.value.role,
           email: form.value.email,
           password: form.value.password || undefined,
+          phone: form.value.phone || undefined,
+          vehicleNumber: form.value.vehicleNumber || undefined,
+          vehicleName: form.value.vehicleName || undefined,
           allowedPages: allowedPagesToSave,
           actionPermissions: actionPermissionsToSave,
         }
@@ -1589,6 +1769,9 @@ const saveUser = async () => {
           email: form.value.email,
           password: form.value.password,
           role: form.value.role,
+          phone: form.value.phone || undefined,
+          vehicleNumber: form.value.vehicleNumber || undefined,
+          vehicleName: form.value.vehicleName || undefined,
           allowedPages: allowedPagesToSave,
           actionPermissions: actionPermissionsToSave,
         }

@@ -472,9 +472,15 @@ const loadInitialData = async () => {
 
     // Pre-select first delivery driver if available
     if (availableDrivers.value.length > 0 && !form.value.driverId) {
-      form.value.driverId = availableDrivers.value[0].id
-      form.value.driverName = availableDrivers.value[0].name
-      form.value.driverPhone = availableDrivers.value[0].phone || ''
+      const firstDriver = availableDrivers.value[0]
+      form.value.driverId = firstDriver.id
+      form.value.driverName = firstDriver.name
+      form.value.driverPhone = firstDriver.phone || ''
+      if (firstDriver.vehicleNumber) {
+        form.value.vehicleNumber = firstDriver.vehicleName 
+          ? `${firstDriver.vehicleNumber} (${firstDriver.vehicleName})` 
+          : firstDriver.vehicleNumber
+      }
     }
 
     // Set available orders (excluding Party Vehicle and Third Party orders)
@@ -514,11 +520,18 @@ watch(() => props.isOpen, (open) => {
 })
 
 const driverOptions = computed(() => {
-  return availableDrivers.value.map(d => ({
-    label: `${d.name} (${d.role})`,
-    value: d.id,
-    subtitle: d.phone ? `Phone: ${d.phone}` : undefined
-  }))
+  return availableDrivers.value.map(d => {
+    const details = [
+      d.phone ? `📞 ${d.phone}` : null,
+      d.vehicleNumber ? `🚚 ${d.vehicleNumber}${d.vehicleName ? ` (${d.vehicleName})` : ''}` : null
+    ].filter(Boolean).join(' • ')
+
+    return {
+      label: d.name,
+      value: d.id,
+      subtitle: details || `${d.role} Staff`
+    }
+  })
 })
 
 const onDriverChange = () => {
@@ -526,6 +539,11 @@ const onDriverChange = () => {
   if (d) {
     form.value.driverName = d.name
     form.value.driverPhone = d.phone || ''
+    if (d.vehicleNumber) {
+      form.value.vehicleNumber = d.vehicleName 
+        ? `${d.vehicleNumber} (${d.vehicleName})` 
+        : d.vehicleNumber
+    }
   }
 }
 
