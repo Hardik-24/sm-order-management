@@ -360,9 +360,9 @@ const getPackingProgress = (order: any) => {
             ? 'bg-gray-100/60 active:bg-gray-100/80 text-gray-400 opacity-60 border-l-4 border-l-gray-400' 
             : (order.isUrgent ? 'bg-rose-50/25 active:bg-rose-50/40 border-l-4 border-l-rose-500' : 'hover:bg-gray-50 active:bg-gray-100')"
         >
-          <!-- LINE 1: Identity & Packing Status -->
+          <!-- LINE 1: Order Number, Urgency Badges & Packing Status -->
           <div class="flex items-center justify-between gap-2 min-w-0">
-            <div class="flex items-center gap-1.5 min-w-0">
+            <div class="flex items-center gap-1.5 min-w-0 flex-1">
               <span class="text-xs font-bold text-gray-900 shrink-0">
                 {{ order.orderNumber }}
               </span>
@@ -371,10 +371,6 @@ const getPackingProgress = (order: any) => {
               </span>
               <span v-else-if="order.isUrgent" class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-bold bg-rose-100 text-rose-700 border border-rose-300">
                 ⚡ URGENT
-              </span>
-              <span class="text-gray-300 text-xs shrink-0">&bull;</span>
-              <span class="text-xs font-semibold text-gray-700 truncate" :title="order.customer?.company || order.customer?.name || ''">
-                {{ order.customer?.name || order.customer?.company || 'Walk-in' }}
               </span>
             </div>
             
@@ -396,7 +392,14 @@ const getPackingProgress = (order: any) => {
             </span>
           </div>
 
-          <!-- LINE 2: Progress, Items, Time & Quick Action -->
+          <!-- LINE 2: Customer Name (next line after order no.) -->
+          <div class="min-w-0">
+            <p class="text-xs font-semibold text-gray-800 truncate" :title="order.customer?.company || order.customer?.name || ''">
+              {{ order.customer?.name || order.customer?.company || 'Walk-in' }}
+            </p>
+          </div>
+
+          <!-- LINE 3: Progress, Items, Time & View Action -->
           <div class="flex items-center justify-between gap-2 min-w-0 pt-0.5">
             <div class="flex items-baseline gap-1.5 shrink-0">
               <span 
@@ -414,28 +417,9 @@ const getPackingProgress = (order: any) => {
               </span>
             </div>
 
-            <!-- Direct 1-Tap Action Button -->
-            <div class="flex items-center gap-1.5 shrink-0">
+            <!-- View Button when already packed or cancelled -->
+            <div v-if="order.overallStatus === 'CANCELLED' || order.packingStatus?.status === 'PACKED'" class="flex items-center gap-1.5 shrink-0">
               <button 
-                v-if="order.overallStatus !== 'CANCELLED' && order.packingStatus?.status === 'PENDING'"
-                @click.stop="emit('select', order.id)"
-                class="px-2.5 py-1 bg-[#1b3b5f] text-white text-[11px] font-semibold rounded-md hover:bg-[#132c49] active:scale-95 transition-all shadow-2xs flex items-center gap-1 cursor-pointer"
-              >
-                <Box class="w-3 h-3" />
-                <span>Pack</span>
-              </button>
-
-              <button 
-                v-else-if="order.overallStatus !== 'CANCELLED' && order.packingStatus?.status === 'IN_PROGRESS'"
-                @click.stop="emit('select', order.id)"
-                class="px-2.5 py-1 bg-blue-600 text-white text-[11px] font-semibold rounded-md hover:bg-blue-700 active:scale-95 transition-all shadow-2xs flex items-center gap-1 cursor-pointer"
-              >
-                <PlayCircle class="w-3 h-3" />
-                <span>Continue</span>
-              </button>
-
-              <button 
-                v-else
                 @click.stop="emit('select', order.id)"
                 class="px-2.5 py-1 bg-gray-100 text-gray-700 text-[11px] font-medium rounded-md hover:bg-gray-200 transition-colors flex items-center gap-0.5 cursor-pointer"
               >
@@ -443,6 +427,27 @@ const getPackingProgress = (order: any) => {
                 <ChevronRight class="w-3.5 h-3.5 text-gray-400" />
               </button>
             </div>
+          </div>
+
+          <!-- LINE 4: Pack Button (full row length) -->
+          <div v-if="order.overallStatus !== 'CANCELLED' && order.packingStatus?.status !== 'PACKED'" class="pt-0.5">
+            <button 
+              v-if="order.packingStatus?.status === 'PENDING'"
+              @click.stop="emit('select', order.id)"
+              class="w-full py-2 px-3 bg-[#1b3b5f] text-white text-xs font-bold rounded-lg hover:bg-[#132c49] active:scale-[0.99] transition-all shadow-2xs flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              <Box class="w-3.5 h-3.5" />
+              <span>Pack</span>
+            </button>
+
+            <button 
+              v-else-if="order.packingStatus?.status === 'IN_PROGRESS'"
+              @click.stop="emit('select', order.id)"
+              class="w-full py-2 px-3 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700 active:scale-[0.99] transition-all shadow-2xs flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              <PlayCircle class="w-3.5 h-3.5" />
+              <span>Continue Packing</span>
+            </button>
           </div>
         </div>
 

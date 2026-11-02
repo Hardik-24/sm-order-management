@@ -1,7 +1,7 @@
 <template>
   <div class="h-full w-full flex flex-col bg-white overflow-hidden select-text overscroll-none">
     <!-- Header (WhatsApp style) -->
-    <header class="bg-[#f0f2f5] border-b border-gray-200 px-4 py-3 flex items-center justify-between shrink-0 z-20">
+    <header class="bg-[#f0f2f5] border-b border-gray-200 px-4 py-3 pt-[calc(0.75rem+env(safe-area-inset-top,0px))] flex items-center justify-between shrink-0 z-20">
       <div class="flex items-center gap-3 sm:gap-4">
         <div class="w-10 h-10 rounded-full bg-[#1b3b5f] flex items-center justify-center text-white shrink-0 shadow-sm">
           <MessageSquare class="w-5 h-5" />

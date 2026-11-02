@@ -686,9 +686,9 @@ const saveDriverAssignment = async () => {
                 : 'hover:bg-gray-50 active:bg-gray-100')
           ]"
         >
-          <!-- LINE 1: Identity & Delivery Status -->
+          <!-- LINE 1: Order Number, Urgency Badges & Delivery Status -->
           <div class="flex items-center justify-between gap-2 min-w-0">
-            <div class="flex items-center gap-1.5 min-w-0 flex-wrap">
+            <div class="flex items-center gap-1.5 min-w-0 flex-1">
               <span class="text-xs font-bold text-gray-900 shrink-0">
                 {{ order.orderNumber }}
               </span>
@@ -697,17 +697,6 @@ const saveDriverAssignment = async () => {
               </span>
               <span v-if="order.overallStatus === 'CANCELLED'" class="text-[9px] font-bold text-gray-600 bg-gray-200 px-1 py-0.2 rounded border border-rose-500">
                 CANCELLED
-              </span>
-              <span class="text-gray-300 text-xs shrink-0">•</span>
-              <span class="text-xs font-medium text-gray-700 truncate" :title="order.customer?.name || ''">
-                {{ order.customer?.name || 'Walk-in Customer' }}
-              </span>
-              <span 
-                v-if="order.customer?.privilegeTier" 
-                class="text-[9px] px-1 py-0.2 rounded font-bold uppercase border"
-                :class="getPrivilegeColor(order.customer.privilegeTier)"
-              >
-                {{ order.customer.privilegeTier }}
               </span>
             </div>
             
@@ -718,6 +707,20 @@ const saveDriverAssignment = async () => {
               class="!text-[10px] !py-0.5 !px-2 shrink-0 min-w-[85px] text-center"
             />
             <span v-else class="text-gray-400 text-xs shrink-0">—</span>
+          </div>
+
+          <!-- LINE 2: Customer Name (Consistent next line after Order No.) -->
+          <div class="flex items-center gap-1.5 min-w-0">
+            <p class="text-xs font-semibold text-gray-800 truncate" :title="order.customer?.company || order.customer?.name || ''">
+              {{ order.customer?.name || order.customer?.company || 'Walk-in Customer' }}
+            </p>
+            <span 
+              v-if="order.customer?.privilegeTier" 
+              class="text-[9px] px-1 py-0.2 rounded font-bold uppercase border shrink-0"
+              :class="getPrivilegeColor(order.customer.privilegeTier)"
+            >
+              {{ order.customer.privilegeTier }}
+            </span>
           </div>
 
           <!-- LINE 2: Driver Info, Destination & Direct 1-Tap Action -->

@@ -334,7 +334,7 @@ const getTotalNos = (order: any) => {
             ? 'bg-gray-100/60 active:bg-gray-100/80 text-gray-400 opacity-60 border-l-4 border-l-gray-400' 
             : (order.isUrgent ? 'bg-rose-50/25 active:bg-rose-50/40 border-l-4 border-l-rose-500' : 'hover:bg-gray-50 active:bg-gray-100')"
         >
-          <!-- LINE 1: Identity & Billing Status / Split Action -->
+          <!-- LINE 1: Order Number, Urgency Badges & Billing Status -->
           <div class="flex items-center justify-between gap-2 min-w-0">
             <div class="flex items-center gap-1.5 min-w-0 flex-1">
               <span class="text-xs font-bold text-gray-900 shrink-0">
@@ -349,39 +349,29 @@ const getTotalNos = (order: any) => {
               <span v-if="(order as any).hasUnsyncedBusyItems" class="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-50 text-amber-800 border border-amber-300">
                 ⚠️ Not in Busy
               </span>
-              <span class="text-gray-300 text-xs shrink-0">&bull;</span>
-              <span class="text-xs font-semibold text-gray-700 truncate" :title="order.customer?.company || order.customer?.name || ''">
-                {{ order.customer?.name || order.customer?.company || 'Walk-in' }}
-              </span>
             </div>
             
-            <div class="flex items-center gap-1.5 shrink-0">
-              <!-- Split Button at Top -->
-              <button 
-                v-if="order.billingStatus?.status !== 'GENERATED' && order.overallStatus !== 'CANCELLED' && order.deliveryStatus?.status !== 'DISPATCHED' && order.deliveryStatus?.status !== 'DELIVERED'"
-                @click.stop="emit('split-order', order.id)"
-                class="px-2 py-0.5 border border-gray-200 bg-white text-gray-700 text-[10px] font-semibold rounded hover:bg-gray-100 transition-colors flex items-center gap-1 cursor-pointer"
-                title="Split Order"
-              >
-                <GitFork class="w-2.5 h-2.5 text-[#1b3b5f]" />
-                <span>Split</span>
-              </button>
-
-              <!-- Billing Status Badge -->
-              <span 
-                class="inline-flex items-center justify-center rounded-full font-semibold px-2 py-0.5 text-[10px] shrink-0"
-                :class="[
-                  order.billingStatus?.status === 'GENERATED' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-                  order.billingStatus?.status === 'ON_HOLD' ? 'bg-orange-50 text-orange-700 border border-orange-200' :
-                  'bg-amber-50 text-amber-700 border border-amber-200'
-                ]"
-              >
-                {{ order.billingStatus?.status === 'GENERATED' ? 'Generated' : order.billingStatus?.status === 'ON_HOLD' ? 'On Hold' : 'Awaiting' }}
-              </span>
-            </div>
+            <!-- Billing Status Badge -->
+            <span 
+              class="inline-flex items-center justify-center rounded-full font-semibold px-2 py-0.5 text-[10px] shrink-0"
+              :class="[
+                order.billingStatus?.status === 'GENERATED' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                order.billingStatus?.status === 'ON_HOLD' ? 'bg-orange-50 text-orange-700 border border-orange-200' :
+                'bg-amber-50 text-amber-700 border border-amber-200'
+              ]"
+            >
+              {{ order.billingStatus?.status === 'GENERATED' ? 'Generated' : order.billingStatus?.status === 'ON_HOLD' ? 'On Hold' : 'Awaiting' }}
+            </span>
           </div>
 
-          <!-- LINE 2: Amount, Items, Time & Quick Action (Generate at Bottom) -->
+          <!-- LINE 2: Customer Name (next line after order no.) -->
+          <div class="min-w-0">
+            <p class="text-xs font-semibold text-gray-800 truncate" :title="order.customer?.company || order.customer?.name || ''">
+              {{ order.customer?.name || order.customer?.company || 'Walk-in' }}
+            </p>
+          </div>
+
+          <!-- LINE 3: Amount, Items, Time & Split / View Action -->
           <div class="flex items-center justify-between gap-2 min-w-0 pt-0.5">
             <div class="flex items-baseline gap-1.5 min-w-0">
               <span class="text-xs font-bold text-gray-900 tabular-nums shrink-0">
@@ -396,22 +386,20 @@ const getTotalNos = (order: any) => {
               </span>
             </div>
 
-            <!-- Direct 1-Tap Action Button: Generate / View -->
-            <div class="flex items-center shrink-0">
+            <!-- In place of generate bill button, place the Split button -->
+            <div class="flex items-center gap-1.5 shrink-0">
               <button 
-                v-if="order.billingStatus?.status === 'PENDING' && order.overallStatus !== 'CANCELLED'"
-                @click.stop="emit('generate-invoice', order.id)"
-                class="px-2.5 py-1 text-white text-[11px] font-semibold rounded-md active:scale-95 transition-all shadow-2xs flex items-center gap-1 cursor-pointer"
-                :class="((order as any).hasUnsyncedBusyItems || order.customer?.isBusySynced === false)
-                  ? 'bg-amber-600 hover:bg-amber-700'
-                  : 'bg-[#1b3b5f] hover:bg-[#132c49]'"
+                v-if="order.billingStatus?.status !== 'GENERATED' && order.overallStatus !== 'CANCELLED' && order.deliveryStatus?.status !== 'DISPATCHED' && order.deliveryStatus?.status !== 'DELIVERED'"
+                @click.stop="emit('split-order', order.id)"
+                class="px-2.5 py-1 border border-gray-200 bg-white text-gray-700 text-[11px] font-semibold rounded-md hover:bg-gray-100 transition-colors flex items-center gap-1 cursor-pointer"
+                title="Split this order into multiple orders"
               >
-                <Lock v-if="(order as any).hasUnsyncedBusyItems || order.customer?.isBusySynced === false" class="w-3 h-3" />
-                <IndianRupee v-else class="w-3 h-3" />
-                <span>Generate</span>
+                <GitFork class="w-3 h-3 text-[#1b3b5f]" />
+                <span>Split</span>
               </button>
+
               <button 
-                v-else
+                v-if="order.billingStatus?.status !== 'PENDING' || order.overallStatus === 'CANCELLED'"
                 @click.stop="emit('select', order.id)"
                 class="px-2.5 py-1 border border-gray-200 bg-white text-gray-700 text-[11px] font-medium rounded-md hover:bg-gray-100 transition-colors flex items-center gap-1 cursor-pointer"
               >
@@ -419,6 +407,21 @@ const getTotalNos = (order: any) => {
                 <ChevronRight class="w-3.5 h-3.5 text-gray-400" />
               </button>
             </div>
+          </div>
+
+          <!-- LINE 4: Generate Bill Button (full row length) -->
+          <div v-if="order.billingStatus?.status === 'PENDING' && order.overallStatus !== 'CANCELLED'" class="pt-0.5">
+            <button 
+              @click.stop="emit('generate-invoice', order.id)"
+              class="w-full py-2 px-3 text-white text-xs font-bold rounded-lg active:scale-[0.99] transition-all shadow-2xs flex items-center justify-center gap-1.5 cursor-pointer"
+              :class="((order as any).hasUnsyncedBusyItems || order.customer?.isBusySynced === false)
+                ? 'bg-amber-600 hover:bg-amber-700'
+                : 'bg-[#1b3b5f] hover:bg-[#132c49]'"
+            >
+              <Lock v-if="(order as any).hasUnsyncedBusyItems || order.customer?.isBusySynced === false" class="w-3.5 h-3.5" />
+              <IndianRupee v-else class="w-3.5 h-3.5" />
+              <span>Generate Bill</span>
+            </button>
           </div>
         </div>
 
