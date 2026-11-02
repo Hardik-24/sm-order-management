@@ -394,10 +394,10 @@
                               >
                                 {{ it.quantity }}
                               </td>
-                              <td class="py-2 px-2.5 text-right font-mono font-bold text-gray-700">₹{{ it.mrp.toLocaleString('en-IN') }}</td>
+                              <td class="py-2 px-2.5 text-right font-mono font-bold text-gray-700">₹{{ formatSlipNumber(it.mrp) }}</td>
                               <td class="py-2 px-2 text-center font-bold text-gray-700">{{ it.uom }}</td>
                               <td class="py-2 px-2.5 text-right font-mono font-black text-[#1b3b5f]">₹{{ calculateUnitRate(it).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</td>
-                              <td class="py-2 px-2.5 text-right font-mono font-black text-gray-950 text-xs">₹{{ Math.round(calculateLineTotal(it)).toLocaleString('en-IN') }}</td>
+                              <td class="py-2 px-2.5 text-right font-mono font-black text-gray-950 text-xs">₹{{ formatSlipNumber(calculateLineTotal(it)) }}</td>
                             </tr>
                           </tbody>
                         </table>
@@ -428,26 +428,26 @@
                           <p v-if="displayQuoteNotes" class="font-semibold text-gray-800">&bull; {{ displayQuoteNotes }}</p>
                         </div>
 
-                        <div class="w-5/12 bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-1.5 text-xs">
-                          <div class="flex justify-between text-gray-500">
+                        <div class="w-5/12 bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2 text-xs">
+                          <div class="flex justify-between items-center text-gray-500">
                             <span class="font-bold text-gray-700">Total MRP:</span>
-                            <span class="font-mono font-bold text-gray-800">₹{{ totalMrp.toLocaleString('en-IN') }}</span>
+                            <span class="font-mono font-bold text-gray-800 tabular-nums">₹{{ formatSlipNumber(totalMrp) }}</span>
                           </div>
-                          <div v-if="totalDiscountSaved > 0" class="flex justify-between text-[#1b3b5f] font-black bg-emerald-50 px-2 py-0.5 rounded">
+                          <div v-if="totalDiscountSaved > 0" class="flex justify-between items-center text-[#1b3b5f] font-black bg-emerald-50 px-2 py-1 rounded border border-emerald-100">
                             <span>Total Discount:</span>
-                            <span class="font-mono font-black">-₹{{ totalDiscountSaved.toLocaleString('en-IN') }}</span>
+                            <span class="font-mono font-black tabular-nums">-₹{{ formatSlipNumber(totalDiscountSaved) }}</span>
                           </div>
-                          <div class="flex justify-between text-gray-800 font-black">
+                          <div class="flex justify-between items-center text-gray-800 font-black">
                             <span>Subtotal:</span>
-                            <span class="font-mono text-gray-950 font-black">₹{{ subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}</span>
+                            <span class="font-mono text-gray-950 font-black tabular-nums">₹{{ formatSlipNumber(subtotal) }}</span>
                           </div>
-                          <div v-if="taxMode === 'EXTRA'" class="flex justify-between text-gray-600">
+                          <div v-if="taxMode === 'EXTRA'" class="flex justify-between items-center text-gray-600">
                             <span class="font-bold text-gray-700">GST (18%):</span>
-                            <span class="font-mono font-bold text-gray-800">+₹{{ gstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}</span>
+                            <span class="font-mono font-bold text-gray-800 tabular-nums">+₹{{ formatSlipNumber(gstAmount) }}</span>
                           </div>
                           <div class="pt-2 border-t-2 border-slate-200 flex justify-between items-baseline font-black">
                             <span class="text-xs uppercase font-black text-[#1b3b5f]">Grand Total:</span>
-                            <span class="text-xl sm:text-2xl text-[#1b3b5f] font-mono font-black">₹{{ Math.round(grandTotal).toLocaleString('en-IN') }}</span>
+                            <span class="text-xl sm:text-2xl text-[#1b3b5f] font-mono font-black tracking-tight tabular-nums">₹{{ formatSlipNumber(grandTotal) }}</span>
                           </div>
                         </div>
                       </div>
@@ -1113,25 +1113,25 @@
 
             <!-- Grand Total Breakdown -->
             <div class="md:col-span-5 bg-white rounded-2xl border border-gray-200 p-4 space-y-2 text-xs">
-              <div class="flex justify-between text-gray-500">
-                <span>Total MRP:</span>
-                <span class="font-semibold text-gray-700">₹{{ totalMrp.toLocaleString('en-IN') }}</span>
+              <div class="flex justify-between items-center text-gray-500">
+                <span class="font-bold text-gray-700">Total MRP:</span>
+                <span class="font-mono font-bold text-gray-700 tabular-nums">₹{{ formatSlipNumber(totalMrp) }}</span>
               </div>
-              <div v-if="totalDiscountSaved > 0" class="flex justify-between text-emerald-800 font-semibold bg-emerald-50 px-2 py-1 rounded">
+              <div v-if="totalDiscountSaved > 0" class="flex justify-between items-center text-emerald-800 font-bold bg-emerald-50 px-2 py-1 rounded border border-emerald-100">
                 <span>Total Discount:</span>
-                <span class="font-semibold">-₹{{ totalDiscountSaved.toLocaleString('en-IN') }}</span>
+                <span class="font-mono font-bold tabular-nums">-₹{{ formatSlipNumber(totalDiscountSaved) }}</span>
               </div>
-              <div class="flex justify-between text-gray-700 font-bold">
+              <div class="flex justify-between items-center text-gray-700 font-bold">
                 <span>Subtotal (After Disc):</span>
-                <span class="font-bold text-gray-800">₹{{ subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}</span>
+                <span class="font-mono font-bold text-gray-800 tabular-nums">₹{{ formatSlipNumber(subtotal) }}</span>
               </div>
-              <div v-if="taxMode === 'EXTRA'" class="flex justify-between text-gray-600">
-                <span>GST (18%):</span>
-                <span class="font-semibold text-gray-700">+₹{{ gstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}</span>
+              <div v-if="taxMode === 'EXTRA'" class="flex justify-between items-center text-gray-600">
+                <span class="font-bold text-gray-700">GST (18%):</span>
+                <span class="font-mono font-semibold text-gray-700 tabular-nums">+₹{{ formatSlipNumber(gstAmount) }}</span>
               </div>
               <div class="pt-2 border-t-2 border-gray-100 flex justify-between items-baseline font-bold">
                 <span class="text-xs uppercase text-[#1b3b5f]">Grand Total:</span>
-                <span class="text-2xl font-bold text-[#1b3b5f]">₹{{ Math.round(grandTotal).toLocaleString('en-IN') }}</span>
+                <span class="text-2xl font-mono font-bold text-[#1b3b5f] tabular-nums">₹{{ formatSlipNumber(grandTotal) }}</span>
               </div>
             </div>
           </div>
@@ -1280,13 +1280,13 @@
               >
                 {{ item.quantity }}
               </td>
-              <td class="py-2.5 px-3 text-right font-mono font-bold text-gray-700 text-[11px]">₹{{ item.mrp.toLocaleString('en-IN') }}</td>
+              <td class="py-2.5 px-3 text-right font-mono font-bold text-gray-700 text-[11px]">₹{{ formatSlipNumber(item.mrp) }}</td>
               <td class="py-2.5 px-2 text-center font-bold text-gray-700 text-[10px]">{{ item.uom }}</td>
               <td class="py-2.5 px-3 text-right font-mono font-black text-[#1b3b5f] text-[11px]">
                 ₹{{ calculateUnitRate(item).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
               </td>
               <td class="py-2.5 px-3 text-right font-mono font-black text-gray-950 text-[11.5px]">
-                ₹{{ Math.round(calculateLineTotal(item)).toLocaleString('en-IN') }}
+                ₹{{ formatSlipNumber(calculateLineTotal(item)) }}
               </td>
             </tr>
           </tbody>
@@ -1318,25 +1318,25 @@
           </div>
 
           <div class="w-5/12 bg-slate-50/90 p-4 rounded-xl border border-slate-200/80 space-y-2 text-xs">
-            <div class="flex justify-between text-gray-500">
+            <div class="flex justify-between items-center text-gray-500">
               <span class="font-bold text-gray-700">Total MRP:</span>
-              <span class="font-mono font-bold text-gray-800">₹{{ totalMrp.toLocaleString('en-IN') }}</span>
+              <span class="font-mono font-bold text-gray-800 tabular-nums">₹{{ formatSlipNumber(totalMrp) }}</span>
             </div>
-            <div v-if="totalDiscountSaved > 0" class="flex justify-between text-[#1b3b5f] font-black bg-emerald-50/80 px-2 py-1 rounded border border-emerald-100">
+            <div v-if="totalDiscountSaved > 0" class="flex justify-between items-center text-[#1b3b5f] font-black bg-emerald-50/80 px-2 py-1 rounded border border-emerald-100">
               <span>Total Discount:</span>
-              <span class="font-mono font-black">-₹{{ totalDiscountSaved.toLocaleString('en-IN') }}</span>
+              <span class="font-mono font-black tabular-nums">-₹{{ formatSlipNumber(totalDiscountSaved) }}</span>
             </div>
-            <div class="flex justify-between text-gray-800 font-black">
+            <div class="flex justify-between items-center text-gray-800 font-black">
               <span>Subtotal:</span>
-              <span class="font-mono text-gray-950 font-black">₹{{ subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}</span>
+              <span class="font-mono text-gray-950 font-black tabular-nums">₹{{ formatSlipNumber(subtotal) }}</span>
             </div>
-            <div v-if="taxMode === 'EXTRA'" class="flex justify-between text-gray-600">
+            <div v-if="taxMode === 'EXTRA'" class="flex justify-between items-center text-gray-600">
               <span class="font-bold text-gray-700">GST (18%):</span>
-              <span class="font-mono font-bold text-gray-800">+₹{{ gstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}</span>
+              <span class="font-mono font-bold text-gray-800 tabular-nums">+₹{{ formatSlipNumber(gstAmount) }}</span>
             </div>
             <div class="pt-2 border-t-2 border-slate-200 flex justify-between items-baseline font-black">
-              <span class="text-xs uppercase font-black text-[#1b3b5f]">Total Payable:</span>
-              <span class="text-2xl text-[#1b3b5f] font-mono font-black tracking-tight">₹{{ Math.round(grandTotal).toLocaleString('en-IN') }}</span>
+              <span class="text-xs uppercase font-black text-[#1b3b5f]">Grand Total:</span>
+              <span class="text-2xl text-[#1b3b5f] font-mono font-black tracking-tight tabular-nums">₹{{ formatSlipNumber(grandTotal) }}</span>
             </div>
           </div>
         </div>
@@ -1529,13 +1529,13 @@
                   >
                     {{ item.quantity }}
                   </td>
-                  <td class="py-2 px-3 text-right font-mono font-bold text-gray-700 text-[11px]">₹{{ item.mrp.toLocaleString('en-IN') }}</td>
+                  <td class="py-2 px-3 text-right font-mono font-bold text-gray-700 text-[11px]">₹{{ formatSlipNumber(item.mrp) }}</td>
                   <td class="py-2 px-2 text-center font-bold text-gray-700 text-[10px]">{{ item.uom }}</td>
                   <td class="py-2 px-3 text-right font-mono font-black text-[#1b3b5f] text-[11px]">
                     ₹{{ calculateUnitRate(item).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
                   </td>
                   <td class="py-2 px-3 text-right font-mono font-black text-gray-950 text-[11.5px]">
-                    ₹{{ Math.round(calculateLineTotal(item)).toLocaleString('en-IN') }}
+                    ₹{{ formatSlipNumber(calculateLineTotal(item)) }}
                   </td>
                 </tr>
               </tbody>
@@ -1569,25 +1569,25 @@
                 </div>
 
                 <div class="w-5/12 bg-slate-50/90 p-3.5 rounded-xl border border-slate-200/80 space-y-1.5 text-xs">
-                  <div class="flex justify-between text-gray-500">
+                  <div class="flex justify-between items-center text-gray-500">
                     <span class="font-bold text-gray-700">Total MRP:</span>
-                    <span class="font-mono font-bold text-gray-800">₹{{ totalMrp.toLocaleString('en-IN') }}</span>
+                    <span class="font-mono font-bold text-gray-800 tabular-nums">₹{{ formatSlipNumber(totalMrp) }}</span>
                   </div>
-                  <div v-if="totalDiscountSaved > 0" class="flex justify-between text-[#1b3b5f] font-black bg-emerald-50/80 px-2 py-0.5 rounded border border-emerald-100">
+                  <div v-if="totalDiscountSaved > 0" class="flex justify-between items-center text-[#1b3b5f] font-black bg-emerald-50/80 px-2 py-0.5 rounded border border-emerald-100">
                     <span>Total Discount:</span>
-                    <span class="font-mono font-black">-₹{{ totalDiscountSaved.toLocaleString('en-IN') }}</span>
+                    <span class="font-mono font-black tabular-nums">-₹{{ formatSlipNumber(totalDiscountSaved) }}</span>
                   </div>
-                  <div class="flex justify-between text-gray-800 font-black">
+                  <div class="flex justify-between items-center text-gray-800 font-black">
                     <span>Subtotal:</span>
-                    <span class="font-mono text-gray-950 font-black">₹{{ subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}</span>
+                    <span class="font-mono text-gray-950 font-black tabular-nums">₹{{ formatSlipNumber(subtotal) }}</span>
                   </div>
-                  <div v-if="taxMode === 'EXTRA'" class="flex justify-between text-gray-600">
+                  <div v-if="taxMode === 'EXTRA'" class="flex justify-between items-center text-gray-600">
                     <span class="font-bold text-gray-700">GST (18%):</span>
-                    <span class="font-mono font-bold text-gray-800">+₹{{ gstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}</span>
+                    <span class="font-mono font-bold text-gray-800 tabular-nums">+₹{{ formatSlipNumber(gstAmount) }}</span>
                   </div>
                   <div class="pt-1.5 border-t-2 border-slate-200 flex justify-between items-baseline font-black">
-                    <span class="text-xs uppercase font-black text-[#1b3b5f]">Total Payable:</span>
-                    <span class="text-2xl text-[#1b3b5f] font-mono font-black tracking-tight">₹{{ Math.round(grandTotal).toLocaleString('en-IN') }}</span>
+                    <span class="text-xs uppercase font-black text-[#1b3b5f]">Grand Total:</span>
+                    <span class="text-2xl text-[#1b3b5f] font-mono font-black tracking-tight tabular-nums">₹{{ formatSlipNumber(grandTotal) }}</span>
                   </div>
                 </div>
               </div>
@@ -2529,8 +2529,16 @@ const subtotal = computed(() => {
 
 const totalDiscountSaved = computed(() => {
   const diff = totalMrp.value - subtotal.value
-  return (!diff || isNaN(diff) || diff <= 0) ? 0 : Math.round(diff)
+  return (!diff || isNaN(diff) || diff <= 0) ? 0 : Number(diff.toFixed(2))
 })
+
+const formatSlipNumber = (val: number | string | undefined | null) => {
+  const num = Number(val || 0)
+  return num.toLocaleString('en-IN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })
+}
 
 const overallDiscountPercent = computed(() => {
   if (!totalMrp.value || isNaN(totalMrp.value) || totalMrp.value <= 0) return '0.0'

@@ -1,12 +1,10 @@
 <template>
   <header class="flex min-h-[4rem] h-[calc(4rem+env(safe-area-inset-top,0px))] pt-[env(safe-area-inset-top,0px)] w-full items-center justify-between border-b border-gray-200 bg-white px-4 sm:px-6 transition-all duration-300">
     <!-- Title & Breadcrumb -->
-    <div class="flex items-center gap-4">
-      
-
-      <div class="flex flex-col">
-        <h1 class="text-xl font-semibold text-[#1a1a1a] capitalize">{{ pageTitle }}</h1>
-        <span class="text-[11px] font-medium text-gray-500 uppercase tracking-wide">SM Flow / Workspace</span>
+    <div class="flex items-center gap-3 sm:gap-4 min-w-0">
+      <div class="flex flex-col min-w-0">
+        <h1 class="text-base sm:text-xl font-semibold text-[#1a1a1a] capitalize truncate">{{ pageTitle }}</h1>
+        <span class="text-[10px] sm:text-[11px] font-medium text-gray-500 uppercase tracking-wide truncate">SM Flow / Workspace</span>
       </div>
     </div>
 
@@ -60,16 +58,18 @@
     </div>
 
     <!-- User Section -->
-    <div class="flex items-center gap-4">
-      <!-- BUSY Live Sync Indicator -->
+    <div class="flex items-center gap-2 sm:gap-4 shrink-0">
+      <!-- BUSY Live Sync Indicator (Visible on both Mobile and Desktop) -->
       <div 
         v-if="syncStatusText" 
         @click="fetchSyncStatus"
-        class="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 transition-colors cursor-pointer hover:bg-emerald-100/70"
+        class="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 transition-colors cursor-pointer hover:bg-emerald-100/70 shrink-0 shadow-2xs"
         :title="'BUSY ERP Server: ' + (fullSyncTime || 'Live') + ' • Click to check now'"
       >
-        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-        <span class="text-[11px] font-semibold text-emerald-800 tracking-tight select-none">BUSY: {{ syncStatusText }}</span>
+        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
+        <span class="text-[10px] sm:text-[11px] font-bold text-emerald-800 tracking-tight select-none whitespace-nowrap">
+          <span class="hidden sm:inline">BUSY: </span>{{ syncStatusText }}
+        </span>
       </div>
 
       <!-- Notifications -->
