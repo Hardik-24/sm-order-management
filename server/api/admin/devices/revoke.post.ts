@@ -1,4 +1,4 @@
-import { requireRole } from '~~/server/utils/auth'
+import { requireRole, revokeDeviceSession } from '~~/server/utils/auth'
 import { prisma } from '~~/server/utils/prisma'
 
 export default defineEventHandler(async (event) => {
@@ -12,6 +12,9 @@ export default defineEventHandler(async (event) => {
   if (!deviceId) {
     throw createError({ statusCode: 400, message: 'Device ID is required' })
   }
+
+  // Instantly invalidate in-memory device sessions
+  revokeDeviceSession(deviceId)
 
   if (shouldDelete) {
     await prisma.trustedDevice.delete({

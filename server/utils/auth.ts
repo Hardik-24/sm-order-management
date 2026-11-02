@@ -35,9 +35,28 @@ export function createToken(user: SessionUser): string {
 
 // In-memory revocation tracker for force logging out all devices
 const revokedSessions: Record<string, number> = {}
+// In-memory device revocation tracker for instant device-level API cutoff
+const revokedDevices = new Set<string>()
 
 export function revokeUserSessions(email: string) {
   revokedSessions[email.toLowerCase()] = Math.floor(Date.now() / 1000)
+}
+
+export function revokeDeviceSession(deviceId: string) {
+  if (deviceId) {
+    revokedDevices.add(deviceId.trim())
+  }
+}
+
+export function unrevokeDeviceSession(deviceId: string) {
+  if (deviceId) {
+    revokedDevices.delete(deviceId.trim())
+  }
+}
+
+export function isDeviceRevoked(deviceId: string): boolean {
+  if (!deviceId) return false
+  return revokedDevices.has(deviceId.trim())
 }
 
 /** Verify and decode a JWT token */
@@ -58,6 +77,12 @@ export function verifyToken(token: string): SessionUser | null {
 
 /** Get the current user from the request cookie or Authorization header */
 export function getUserFromEvent(event: H3Event): SessionUser | null {
+  // 0. Check if current requesting physical device has been revoked in this worker
+  const deviceId = getCookie(event, 'sm_flow_hw_device_id') || getHeader(event, 'x-device-id')
+  if (deviceId && isDeviceRevoked(deviceId)) {
+    return null
+  }
+
   // 1. Check for cookie (Web App)
   let token = getCookie(event, 'auth_token')
   

@@ -229,6 +229,30 @@ export async function validateAndTrackDevice(
     }
   }
 
+  // Anti-Flood Protection: Prevent someone from spamming/flooding registration requests
+  if (!approvedViaPairing) {
+    const pendingCount = await prisma.trustedDevice.count({
+      where: {
+        userId: user.id,
+        isApproved: false,
+        isBlocked: false
+      }
+    })
+
+    if (pendingCount >= 5) {
+      throw createError({
+        statusCode: 429,
+        statusMessage: 'Device Registration Limit Reached',
+        message: 'Too many pending device authorization requests for this account (max 5). Please ask your Administrator to approve or clear pending requests first.',
+        data: {
+          code: 'DEVICE_REGISTRATION_LIMIT_REACHED',
+          deviceId,
+          message: 'Too many pending device authorization requests for this account (max 5). Please ask your Administrator to approve or clear pending requests first.'
+        }
+      })
+    }
+  }
+
   // Register the new device as PENDING or APPROVED
   const newDevice = await prisma.trustedDevice.create({
     data: {

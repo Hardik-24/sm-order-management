@@ -1,4 +1,4 @@
-import { requireRole } from '~~/server/utils/auth'
+import { requireRole, unrevokeDeviceSession } from '~~/server/utils/auth'
 import { prisma } from '~~/server/utils/prisma'
 
 export default defineEventHandler(async (event) => {
@@ -9,6 +9,9 @@ export default defineEventHandler(async (event) => {
   if (!deviceId) {
     throw createError({ statusCode: 400, message: 'Device ID is required' })
   }
+
+  // Remove device from in-memory revoked set if present
+  unrevokeDeviceSession(deviceId)
 
   const device = await prisma.trustedDevice.findUnique({
     where: { deviceId }

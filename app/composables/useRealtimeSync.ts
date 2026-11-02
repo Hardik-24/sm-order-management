@@ -84,6 +84,9 @@ function setupRealtimeChannel() {
     sharedChannel.on('broadcast', { event: 'SYNC_CHANGE' }, (payload) => {
       triggerListeners(payload?.payload || { type: 'SYNC_CHANGE' })
     })
+    sharedChannel.on('broadcast', { event: 'DEVICE_CHANGE' }, (payload) => {
+      triggerListeners(payload?.payload || { type: 'DEVICE_CHANGE' })
+    })
 
     // 2. Direct Postgres database changes fallback
     sharedChannel
@@ -131,6 +134,9 @@ function setupRealtimeChannel() {
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'system_settings' }, (payload) => {
         triggerListeners({ type: 'DB_SYSTEM_SETTING_CHANGE', table: 'system_settings', record: payload.new || payload.old })
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'trusted_devices' }, (payload) => {
+        triggerListeners({ type: 'DB_DEVICE_CHANGE', table: 'trusted_devices', record: payload.new || payload.old })
       })
 
     sharedChannel.subscribe((status) => {
@@ -183,6 +189,18 @@ export function useRealtimeSync() {
           sharedChannel.send({
             type: 'broadcast',
             event: 'TRIP_CHANGE',
+            payload,
+          })
+        }
+        if (
+          payload.type?.includes('DEVICE') || 
+          payload.action?.includes('DEVICE') || 
+          payload.type === 'LOGOUT_ALL_OTHERS' || 
+          payload.action === 'LOGOUT_ALL_OTHERS'
+        ) {
+          sharedChannel.send({
+            type: 'broadcast',
+            event: 'DEVICE_CHANGE',
             payload,
           })
         }

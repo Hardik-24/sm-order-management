@@ -108,19 +108,64 @@
             />
           </div>
 
-          <!-- Role Filters -->
+          <!-- Status Filters -->
           <div class="flex items-center gap-1 overflow-x-auto no-scrollbar shrink-0">
+            <button
+              type="button"
+              @click="selectedStatusFilter = 'ALL'"
+              class="px-2.5 py-1 rounded-lg text-[11px] font-semibold transition cursor-pointer whitespace-nowrap"
+              :class="selectedStatusFilter === 'ALL' 
+                ? 'bg-[#1b3b5f] text-white shadow-xs' 
+                : 'text-gray-600 hover:bg-gray-100 bg-transparent'"
+            >
+              All Devices
+            </button>
+            <button
+              type="button"
+              @click="selectedStatusFilter = 'PENDING'"
+              class="px-2.5 py-1 rounded-lg text-[11px] font-semibold transition cursor-pointer whitespace-nowrap flex items-center gap-1.5"
+              :class="selectedStatusFilter === 'PENDING' 
+                ? 'bg-amber-600 text-white shadow-xs' 
+                : (allPendingDevices.length > 0 ? 'bg-amber-50 text-amber-900 border border-amber-200 hover:bg-amber-100' : 'text-gray-600 hover:bg-gray-100 bg-transparent')"
+            >
+              <span v-if="allPendingDevices.length > 0" class="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block"></span>
+              <span>Pending ({{ allPendingDevices.length }})</span>
+            </button>
+            <button
+              type="button"
+              @click="selectedStatusFilter = 'APPROVED'"
+              class="px-2.5 py-1 rounded-lg text-[11px] font-semibold transition cursor-pointer whitespace-nowrap"
+              :class="selectedStatusFilter === 'APPROVED' 
+                ? 'bg-emerald-700 text-white shadow-xs' 
+                : 'text-gray-600 hover:bg-gray-100 bg-transparent'"
+            >
+              Approved ({{ totalApprovedDevicesCount }})
+            </button>
+            <button
+              type="button"
+              @click="selectedStatusFilter = 'BLOCKED'"
+              class="px-2.5 py-1 rounded-lg text-[11px] font-semibold transition cursor-pointer whitespace-nowrap"
+              :class="selectedStatusFilter === 'BLOCKED' 
+                ? 'bg-red-700 text-white shadow-xs' 
+                : 'text-gray-600 hover:bg-gray-100 bg-transparent'"
+            >
+              Blocked ({{ totalBlockedCount }})
+            </button>
+          </div>
+
+          <!-- Role Filters -->
+          <div class="flex items-center gap-1 overflow-x-auto no-scrollbar shrink-0 border-l border-gray-200 pl-2">
             <button
               v-for="role in ['ALL', 'ADMIN', 'SALES', 'BILLING', 'PACKING', 'DELIVERY']"
               :key="role"
               type="button"
               @click="selectedRoleFilter = role"
-              class="px-2.5 py-1 rounded-lg text-[11px] font-semibold transition cursor-pointer whitespace-nowrap"
+              class="px-2 py-0.5 rounded-md text-[10px] font-semibold transition cursor-pointer whitespace-nowrap"
               :class="selectedRoleFilter === role 
-                ? 'bg-[#1b3b5f] text-white shadow-xs' 
-                : 'text-gray-600 hover:bg-gray-100 bg-transparent'"
+                ? 'bg-gray-900 text-white shadow-xs' 
+                : 'text-gray-500 hover:bg-gray-100 bg-transparent'"
             >
-              {{ role === 'ALL' ? 'All Accounts' : role }}
+              {{ role === 'ALL' ? 'All Roles' : role }}
             </button>
           </div>
         </div>
@@ -130,16 +175,28 @@
 
           <!-- 1. PENDING APPROVAL REQUESTS (High Priority Banner if any exist) -->
           <div v-if="allPendingDevices.length > 0" class="bg-amber-50 border border-amber-300 rounded-2xl p-4 sm:p-5 shadow-2xs space-y-3">
-            <div class="flex items-center justify-between">
+            <div class="flex items-center justify-between gap-3 flex-wrap">
               <div class="flex items-center gap-2">
                 <div class="w-3 h-3 rounded-full bg-amber-500 animate-ping"></div>
                 <h4 class="text-xs font-bold uppercase tracking-wider text-amber-950">
                   Pending Authorization Requests ({{ allPendingDevices.length }})
                 </h4>
               </div>
-              <span class="text-[11px] font-bold text-amber-900 bg-amber-200/80 px-2.5 py-0.5 rounded-full">
-                Action Required
-              </span>
+              <div class="flex items-center gap-2">
+                <button
+                  type="button"
+                  @click="clearAllPendingRequests"
+                  :disabled="isClearingPending || allPendingDevices.length === 0"
+                  class="px-2.5 py-1 text-xs font-bold text-red-700 bg-white hover:bg-red-50 rounded-lg border border-red-200 transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-2xs"
+                  title="Discard all pending device authorization requests"
+                >
+                  <Trash2 class="w-3.5 h-3.5" />
+                  <span>Clear All Requests</span>
+                </button>
+                <span class="text-[11px] font-bold text-amber-900 bg-amber-200/80 px-2.5 py-0.5 rounded-full">
+                  Action Required
+                </span>
+              </div>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -189,6 +246,15 @@
                     class="px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-xs font-bold transition cursor-pointer disabled:opacity-50"
                   >
                     Block
+                  </button>
+                  <button
+                    type="button"
+                    @click="discardPendingDevice(dev.deviceId)"
+                    :disabled="actionInProgress === dev.deviceId"
+                    title="Discard / Reject Request"
+                    class="p-1.5 text-gray-400 hover:text-red-700 hover:bg-red-50 rounded-lg border border-gray-200 transition cursor-pointer disabled:opacity-50"
+                  >
+                    <X class="w-4 h-4" />
                   </button>
                 </div>
               </div>
@@ -352,6 +418,15 @@
                       >
                         Block
                       </button>
+                      <button
+                        type="button"
+                        @click="discardPendingDevice(dev.deviceId)"
+                        :disabled="actionInProgress === dev.deviceId"
+                        title="Discard / Reject Request"
+                        class="p-1 text-gray-400 hover:text-red-700 hover:bg-red-50 rounded-lg border border-gray-200 transition cursor-pointer disabled:opacity-50"
+                      >
+                        <X class="w-3.5 h-3.5" />
+                      </button>
                     </template>
 
                     <!-- Approved Device Actions -->
@@ -416,18 +491,94 @@
           Generate a one-time 6-digit code for a staff member. When they enter their login and this code on their new phone or PC, their physical hardware is permanently registered and authorized.
         </p>
 
-        <!-- Select User -->
-        <div class="space-y-1.5">
+        <!-- Select User (Custom Styled Combobox) -->
+        <div class="space-y-1.5 relative">
           <label class="block text-xs font-bold text-gray-700">Select Staff Member</label>
-          <select 
-            v-model="pairingUserId" 
-            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-[#1b3b5f]/20 focus:outline-none"
+          
+          <!-- Custom Trigger Button -->
+          <button
+            type="button"
+            @click="isStaffDropdownOpen = !isStaffDropdownOpen"
+            class="w-full px-3.5 py-2.5 border rounded-xl text-left bg-white transition flex items-center justify-between gap-2 shadow-2xs hover:border-[#1b3b5f]/40 focus:outline-none focus:ring-2 focus:ring-[#1b3b5f]/20 cursor-pointer"
+            :class="isStaffDropdownOpen ? 'border-[#1b3b5f] ring-2 ring-[#1b3b5f]/10' : 'border-gray-200'"
           >
-            <option value="" disabled>Choose staff member...</option>
-            <option v-for="u in usersList" :key="u.id" :value="u.id">
-              {{ u.name }} ({{ u.role }} - {{ u.email }})
-            </option>
-          </select>
+            <div v-if="selectedStaffUser" class="flex items-center gap-2.5 min-w-0">
+              <div class="w-8 h-8 rounded-lg bg-[#1b3b5f]/10 text-[#1b3b5f] font-black text-xs flex items-center justify-center shrink-0 border border-[#1b3b5f]/20">
+                {{ selectedStaffUser.name.charAt(0) }}
+              </div>
+              <div class="min-w-0">
+                <div class="flex items-center gap-1.5">
+                  <span class="text-xs font-bold text-gray-900 truncate">{{ selectedStaffUser.name }}</span>
+                  <span class="text-[9px] font-bold px-1.5 py-0.2 rounded-full border" :class="userRoleColors[selectedStaffUser.role] || 'bg-gray-100 text-gray-700'">
+                    {{ selectedStaffUser.role }}
+                  </span>
+                </div>
+                <span class="text-[10px] text-gray-500 font-mono block truncate">{{ selectedStaffUser.email }}</span>
+              </div>
+            </div>
+            <div v-else class="flex items-center gap-2 text-gray-400 text-xs py-1">
+              <Users class="w-4 h-4 text-gray-400" />
+              <span>Choose staff member...</span>
+            </div>
+            
+            <ChevronDown class="w-4 h-4 text-gray-400 shrink-0 transition-transform duration-200" :class="isStaffDropdownOpen ? 'rotate-180 text-[#1b3b5f]' : ''" />
+          </button>
+
+          <!-- Click catcher backdrop when dropdown open -->
+          <div v-if="isStaffDropdownOpen" class="fixed inset-0 z-40" @click="isStaffDropdownOpen = false"></div>
+
+          <!-- Custom Dropdown Menu -->
+          <div 
+            v-if="isStaffDropdownOpen" 
+            class="absolute left-0 right-0 top-full mt-1.5 bg-white border border-gray-200 rounded-xl shadow-xl z-50 p-2 space-y-2"
+          >
+            <!-- Quick Search Input -->
+            <div class="relative">
+              <Search class="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+              <input 
+                v-model="staffSearchQuery"
+                type="text"
+                placeholder="Search staff name, email, or role..."
+                class="w-full pl-8 pr-2.5 py-1.5 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#1b3b5f] focus:bg-white text-gray-900"
+              />
+            </div>
+
+            <!-- Scrollable Staff Options -->
+            <div class="max-h-52 overflow-y-auto space-y-1 pr-1">
+              <button
+                v-for="u in filteredStaffList"
+                :key="u.id"
+                type="button"
+                @click="selectStaff(u.id)"
+                class="w-full p-2 rounded-lg text-left transition flex items-center justify-between gap-2 cursor-pointer group"
+                :class="pairingUserId === u.id ? 'bg-[#1b3b5f]/10 text-[#1b3b5f]' : 'hover:bg-gray-50 text-gray-700'"
+              >
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div 
+                    class="w-7 h-7 rounded-lg text-xs font-bold flex items-center justify-center shrink-0 border"
+                    :class="pairingUserId === u.id ? 'bg-[#1b3b5f] text-white border-transparent' : 'bg-gray-100 text-gray-700 border-gray-200 group-hover:bg-white'"
+                  >
+                    {{ u.name.charAt(0) }}
+                  </div>
+                  <div class="min-w-0">
+                    <div class="flex items-center gap-1.5">
+                      <span class="text-xs font-bold text-gray-900 truncate">{{ u.name }}</span>
+                      <span class="text-[9px] font-bold px-1.5 py-0.2 rounded-full border" :class="userRoleColors[u.role] || 'bg-gray-100 text-gray-700'">
+                        {{ u.role }}
+                      </span>
+                    </div>
+                    <span class="text-[10px] text-gray-400 font-mono block truncate">{{ u.email }}</span>
+                  </div>
+                </div>
+
+                <Check v-if="pairingUserId === u.id" class="w-4 h-4 text-[#1b3b5f] shrink-0" />
+              </button>
+
+              <div v-if="filteredStaffList.length === 0" class="text-center py-4 text-xs text-gray-400">
+                No staff members match "{{ staffSearchQuery }}"
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Generated Code Display -->
@@ -481,11 +632,14 @@ import {
   Loader2,
   Users,
   Search,
-  LogOut
+  LogOut,
+  Trash2,
+  ChevronDown
 } from 'lucide-vue-next'
 import { useSnackbar } from '~/composables/useSnackbar'
 import { useDeviceSecurity } from '~/composables/useDeviceSecurity'
 import { useAuth } from '~/composables/useAuth'
+import { useRealtimeSync } from '~/composables/useRealtimeSync'
 
 const props = defineProps<{
   isOpen: boolean
@@ -498,6 +652,7 @@ const emit = defineEmits<{
 const { user } = useAuth()
 const { showSaving, showSaved } = useSnackbar()
 const { getPersistentDeviceId } = useDeviceSecurity()
+const { notifyChange } = useRealtimeSync()
 
 const isLoading = ref(false)
 const lockdownMode = ref('ENFORCING')
@@ -510,12 +665,15 @@ const currentUserId = computed(() => user.value?.id || '')
 // Search and Filter State
 const searchQuery = ref('')
 const selectedRoleFilter = ref('ALL')
+const selectedStatusFilter = ref<'ALL' | 'PENDING' | 'APPROVED' | 'BLOCKED'>('ALL')
 
 // Pairing Modal State
 const isPairingModalOpen = ref(false)
 const pairingUserId = ref('')
 const generatedPairingCode = ref('')
 const isGeneratingCode = ref(false)
+const isStaffDropdownOpen = ref(false)
+const staffSearchQuery = ref('')
 
 const userRoleColors: Record<string, string> = {
   ADMIN: 'bg-purple-50 text-purple-800 border-purple-200',
@@ -527,6 +685,29 @@ const userRoleColors: Record<string, string> = {
 
 const allPendingDevices = computed(() => devicesList.value.filter(d => !d.isApproved && !d.isBlocked))
 const totalApprovedDevicesCount = computed(() => devicesList.value.filter(d => d.isApproved && !d.isBlocked).length)
+const totalBlockedCount = computed(() => devicesList.value.filter(d => d.isBlocked).length)
+
+// Selected staff member in pairing modal
+const selectedStaffUser = computed(() => {
+  return usersList.value.find(u => u.id === pairingUserId.value)
+})
+
+const filteredStaffList = computed(() => {
+  const q = staffSearchQuery.value.trim().toLowerCase()
+  if (!q) return usersList.value
+  return usersList.value.filter(u => 
+    (u.name || '').toLowerCase().includes(q) ||
+    (u.email || '').toLowerCase().includes(q) ||
+    (u.role || '').toLowerCase().includes(q)
+  )
+})
+
+const selectStaff = (userId: string) => {
+  pairingUserId.value = userId
+  isStaffDropdownOpen.value = false
+  staffSearchQuery.value = ''
+  generatedPairingCode.value = ''
+}
 
 // Group Devices User-Wise
 const usersWithDevices = computed(() => {
@@ -553,6 +734,14 @@ const filteredUsersWithDevices = computed(() => {
     list = list.filter(u => u.role === selectedRoleFilter.value)
   }
 
+  if (selectedStatusFilter.value === 'PENDING') {
+    list = list.filter(u => u.pendingDevices.length > 0)
+  } else if (selectedStatusFilter.value === 'APPROVED') {
+    list = list.filter(u => u.approvedDevices.length > 0)
+  } else if (selectedStatusFilter.value === 'BLOCKED') {
+    list = list.filter(u => u.blockedDevices.length > 0)
+  }
+
   if (searchQuery.value.trim()) {
     const q = searchQuery.value.trim().toLowerCase()
     list = list.filter(u => {
@@ -568,7 +757,8 @@ const filteredUsersWithDevices = computed(() => {
     })
   }
 
-  return list
+  // Always prioritize users with pending device requests at the top
+  return [...list].sort((a, b) => (b.hasPending ? 1 : 0) - (a.hasPending ? 1 : 0))
 })
 
 onMounted(async () => {
@@ -620,6 +810,11 @@ const approveDevice = async (deviceId: string) => {
       method: 'POST',
       body: { deviceId }
     })
+    notifyChange({
+      type: 'DEVICE_CHANGE',
+      action: 'DEVICE_APPROVED',
+      deviceId
+    })
     showSaved('Device approved successfully')
     await fetchDevices()
   } catch (err: any) {
@@ -638,10 +833,39 @@ const revokeDevice = async (deviceId: string, block = false) => {
       method: 'POST',
       body: { deviceId, block }
     })
+    // High-speed WebSocket broadcast to kick user device instantly
+    notifyChange({
+      type: 'DEVICE_CHANGE',
+      action: block ? 'DEVICE_BLOCKED' : 'DEVICE_REVOKED',
+      deviceId
+    })
     showSaved(block ? 'Device blocked' : 'Device authorization revoked')
     await fetchDevices()
   } catch (err: any) {
     alert(err?.data?.message || 'Failed revoking device')
+  } finally {
+    actionInProgress.value = null
+  }
+}
+
+const discardPendingDevice = async (deviceId: string) => {
+  if (!confirm('Discard and remove this pending authorization request?')) return
+  actionInProgress.value = deviceId
+  showSaving('Discarding request...')
+  try {
+    await $fetch('/api/admin/devices/revoke', {
+      method: 'POST',
+      body: { deviceId, delete: true }
+    })
+    notifyChange({
+      type: 'DEVICE_CHANGE',
+      action: 'DEVICE_DELETED',
+      deviceId
+    })
+    showSaved('Pending request discarded')
+    await fetchDevices()
+  } catch (err: any) {
+    alert(err?.data?.message || 'Failed discarding request')
   } finally {
     actionInProgress.value = null
   }
@@ -655,12 +879,43 @@ const deleteDevice = async (deviceId: string) => {
       method: 'POST',
       body: { deviceId, delete: true }
     })
+    notifyChange({
+      type: 'DEVICE_CHANGE',
+      action: 'DEVICE_DELETED',
+      deviceId
+    })
     showSaved('Device record deleted')
     await fetchDevices()
   } catch (err: any) {
     alert(err?.data?.message || 'Failed deleting device')
   } finally {
     actionInProgress.value = null
+  }
+}
+
+const isClearingPending = ref(false)
+
+const clearAllPendingRequests = async () => {
+  const count = allPendingDevices.value.length
+  if (count === 0) return
+  if (!confirm(`Are you sure you want to discard all ${count} pending authorization requests?`)) return
+
+  isClearingPending.value = true
+  showSaving('Clearing all pending requests...')
+  try {
+    const res = await $fetch<{ success: boolean; count: number; message: string }>('/api/admin/devices/clear-pending', {
+      method: 'POST'
+    })
+    notifyChange({
+      type: 'DEVICE_CHANGE',
+      action: 'DEVICE_PENDING_CLEARED'
+    })
+    showSaved(res.message || `Cleared ${count} pending requests`)
+    await fetchDevices()
+  } catch (err: any) {
+    alert(err?.data?.message || 'Failed clearing pending requests')
+  } finally {
+    isClearingPending.value = false
   }
 }
 
@@ -680,6 +935,11 @@ const confirmLogoutAllOthers = async () => {
       method: 'POST',
       body: { deviceId: currentDeviceId.value }
     })
+    notifyChange({
+      type: 'DEVICE_CHANGE',
+      action: 'LOGOUT_ALL_OTHERS',
+      exemptDeviceId: currentDeviceId.value
+    })
     showSaved(res.message || 'All other devices logged out')
     await fetchDevices()
   } catch (err: any) {
@@ -692,6 +952,8 @@ const confirmLogoutAllOthers = async () => {
 const openPairingModal = (preselectedUserId?: string) => {
   pairingUserId.value = preselectedUserId || ''
   generatedPairingCode.value = ''
+  isStaffDropdownOpen.value = false
+  staffSearchQuery.value = ''
   isPairingModalOpen.value = true
 }
 
