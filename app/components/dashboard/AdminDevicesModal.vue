@@ -5,9 +5,9 @@
       <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="emit('close')"></div>
 
       <!-- Modal Container -->
-      <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[calc(100dvh-2.5rem-env(safe-area-inset-bottom,0px)-env(safe-area-inset-top,0px))] md:max-h-[90vh] overflow-hidden flex flex-col border border-gray-100">
+      <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[calc(100dvh-2.5rem-env(safe-area-inset-bottom,0px)-env(safe-area-inset-top,0px))] md:max-h-[90vh] overflow-hidden flex flex-col border border-gray-100">
         
-        <!-- Modal Header -->
+        <!-- Modal Top Header -->
         <div class="px-4 sm:px-6 py-4 border-b border-gray-200 flex items-center justify-between bg-white shrink-0">
           <div class="flex items-center gap-3 min-w-0">
             <div class="w-10 h-10 rounded-xl bg-[#1b3b5f]/10 text-[#1b3b5f] flex items-center justify-center border border-[#1b3b5f]/20 shrink-0">
@@ -28,7 +28,7 @@
                 </span>
               </div>
               <p class="text-xs text-gray-500 mt-0.5 truncate">
-                Only Admin-approved physical devices and hardware chips are permitted to sign in
+                Organized account-wise • Only Admin-approved physical devices can sign in
               </p>
             </div>
           </div>
@@ -41,7 +41,7 @@
         </div>
 
         <!-- Mode Toggle & Action Banner -->
-        <div class="px-4 sm:px-6 py-3.5 bg-gray-50 border-b border-gray-100 flex items-center justify-between gap-4 flex-wrap shrink-0">
+        <div class="px-4 sm:px-6 py-3 bg-gray-50 border-b border-gray-100 flex items-center justify-between gap-4 flex-wrap shrink-0">
           <div class="flex items-center gap-3">
             <button
               type="button"
@@ -59,7 +59,7 @@
             <div class="text-xs">
               <span class="font-bold text-gray-900 block">Strict Hardware Lockdown</span>
               <span class="text-gray-500 text-[11px]">
-                {{ lockdownMode === 'ENFORCING' ? 'Enforced: Unapproved devices cannot log in.' : 'Warning: Anyone with password can log in from any PC/phone.' }}
+                {{ lockdownMode === 'ENFORCING' ? 'Active: Unapproved devices cannot log in.' : 'Disabled: Any device can log in with password.' }}
               </span>
             </div>
           </div>
@@ -67,7 +67,7 @@
           <div class="flex items-center gap-2">
             <button
               type="button"
-              @click="openPairingModal"
+              @click="openPairingModal()"
               class="px-3.5 py-1.5 bg-[#1b3b5f] hover:bg-[#132c49] text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-xs"
             >
               <KeyRound class="w-3.5 h-3.5" />
@@ -85,157 +85,297 @@
           </div>
         </div>
 
-        <!-- Scrollable Modal Body -->
-        <div class="p-4 sm:p-6 overflow-y-auto flex-1 space-y-6">
+        <!-- Search & Filter Controls -->
+        <div class="px-4 sm:px-6 py-2.5 bg-white border-b border-gray-100 flex items-center justify-between gap-3 flex-wrap shrink-0">
+          <!-- Search Input -->
+          <div class="relative flex-1 min-w-[200px]">
+            <Search class="w-3.5 h-3.5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input 
+              v-model="searchQuery"
+              type="text"
+              placeholder="Search by staff name, email, or device ID..."
+              class="w-full pl-9 pr-3 py-1.5 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1b3b5f]/20 focus:bg-white transition-all text-gray-900"
+            />
+          </div>
 
-          <!-- 1. PENDING APPROVALS SECTION -->
-          <div v-if="pendingDevices.length > 0" class="space-y-3">
-            <div class="flex items-center gap-2">
-              <div class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></div>
-              <h4 class="text-xs font-bold uppercase tracking-wider text-amber-900">
-                Pending Approval Requests ({{ pendingDevices.length }})
-              </h4>
+          <!-- Role Filters -->
+          <div class="flex items-center gap-1 overflow-x-auto no-scrollbar shrink-0">
+            <button
+              v-for="role in ['ALL', 'ADMIN', 'SALES', 'BILLING', 'PACKING', 'DELIVERY']"
+              :key="role"
+              type="button"
+              @click="selectedRoleFilter = role"
+              class="px-2.5 py-1 rounded-lg text-[11px] font-semibold transition cursor-pointer whitespace-nowrap"
+              :class="selectedRoleFilter === role 
+                ? 'bg-[#1b3b5f] text-white shadow-xs' 
+                : 'text-gray-600 hover:bg-gray-100 bg-transparent'"
+            >
+              {{ role === 'ALL' ? 'All Accounts' : role }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Scrollable Modal Body -->
+        <div class="p-4 sm:p-6 overflow-y-auto flex-1 space-y-6 bg-gray-50/50">
+
+          <!-- 1. PENDING APPROVAL REQUESTS (High Priority Banner if any exist) -->
+          <div v-if="allPendingDevices.length > 0" class="bg-amber-50 border border-amber-300 rounded-2xl p-4 sm:p-5 shadow-2xs space-y-3">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <div class="w-3 h-3 rounded-full bg-amber-500 animate-ping"></div>
+                <h4 class="text-xs font-bold uppercase tracking-wider text-amber-950">
+                  Pending Authorization Requests ({{ allPendingDevices.length }})
+                </h4>
+              </div>
+              <span class="text-[11px] font-bold text-amber-900 bg-amber-200/80 px-2.5 py-0.5 rounded-full">
+                Action Required
+              </span>
             </div>
 
-            <div class="space-y-2.5">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div 
-                v-for="dev in pendingDevices" 
+                v-for="dev in allPendingDevices" 
                 :key="dev.id"
-                class="bg-amber-50/70 border border-amber-200/90 rounded-xl p-3.5 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs"
+                class="bg-white border border-amber-200 rounded-xl p-3.5 space-y-2.5 shadow-2xs"
               >
-                <div class="flex items-start gap-3 min-w-0">
-                  <div class="w-9 h-9 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center shrink-0 mt-0.5">
-                    <Smartphone v-if="dev.deviceType === 'MOBILE'" class="w-4 h-4" />
-                    <Tablet v-else-if="dev.deviceType === 'TABLET'" class="w-4 h-4" />
-                    <Monitor v-else class="w-4 h-4" />
-                  </div>
-                  <div class="min-w-0 space-y-0.5">
-                    <div class="flex items-center gap-2 flex-wrap">
-                      <span class="text-sm font-bold text-gray-900">{{ dev.deviceName || 'New Device' }}</span>
-                      <span class="text-[10px] font-mono px-2 py-0.5 bg-amber-200/80 text-amber-900 font-bold rounded">
-                        {{ dev.deviceId }}
-                      </span>
+                <div class="flex items-start justify-between gap-2">
+                  <div class="flex items-center gap-2 min-w-0">
+                    <div class="w-8 h-8 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center shrink-0">
+                      <Smartphone v-if="dev.deviceType === 'MOBILE'" class="w-4 h-4" />
+                      <Tablet v-else-if="dev.deviceType === 'TABLET'" class="w-4 h-4" />
+                      <Monitor v-else class="w-4 h-4" />
                     </div>
-                    <div class="text-xs text-gray-600 flex items-center gap-2 flex-wrap">
-                      <span>User: <strong class="text-gray-900">{{ dev.user?.name || 'Staff' }}</strong> ({{ dev.user?.role }})</span>
-                      <span>•</span>
-                      <span>IP: {{ dev.ipAddress || 'Unknown' }}</span>
-                      <span v-if="dev.cpuCores">• {{ dev.cpuCores }} Cores</span>
-                      <span v-if="dev.screenResolution">• {{ dev.screenResolution }}</span>
+                    <div class="min-w-0">
+                      <span class="text-xs font-bold text-gray-900 truncate block">{{ dev.deviceName || 'New Device' }}</span>
+                      <span class="text-[10px] text-gray-500 font-mono">{{ dev.deviceId }}</span>
                     </div>
                   </div>
+                  <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200 shrink-0">
+                    {{ dev.user?.name || 'Staff' }}
+                  </span>
                 </div>
 
-                <div class="flex items-center gap-2 w-full sm:w-auto shrink-0 pt-2 sm:pt-0 border-t sm:border-0 border-amber-200/50">
+                <div class="text-[11px] text-gray-500 flex items-center gap-2 flex-wrap">
+                  <span>Role: <strong>{{ dev.user?.role }}</strong></span>
+                  <span>•</span>
+                  <span>IP: {{ dev.ipAddress || 'Unknown' }}</span>
+                  <span v-if="dev.cpuCores">• {{ dev.cpuCores }} Cores</span>
+                </div>
+
+                <div class="flex items-center gap-2 pt-1 border-t border-gray-100">
                   <button
                     type="button"
                     @click="approveDevice(dev.deviceId)"
                     :disabled="actionInProgress === dev.deviceId"
-                    class="flex-1 sm:flex-initial px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-xs disabled:opacity-50"
+                    class="flex-1 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer shadow-xs disabled:opacity-50"
                   >
                     <Check class="w-3.5 h-3.5" />
-                    <span>Approve</span>
+                    <span>Approve Access</span>
                   </button>
                   <button
                     type="button"
                     @click="revokeDevice(dev.deviceId, true)"
                     :disabled="actionInProgress === dev.deviceId"
-                    class="flex-1 sm:flex-initial px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                    class="px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-xs font-bold transition cursor-pointer disabled:opacity-50"
                   >
-                    <Ban class="w-3.5 h-3.5" />
-                    <span>Block</span>
+                    Block
                   </button>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- 2. APPROVED DEVICES LIST -->
-          <div class="space-y-3">
-            <div class="flex items-center justify-between">
-              <h4 class="text-xs font-bold uppercase tracking-wider text-gray-500">
-                Authorized Hardware Devices ({{ approvedDevices.length }})
-              </h4>
-              <span class="text-[11px] text-gray-500">
-                1 device per staff member recommended
+          <!-- 2. USER-WISE GROUPED SECTION -->
+          <div class="space-y-4">
+            <div class="flex items-center justify-between text-xs text-gray-500 px-1">
+              <span class="font-bold uppercase tracking-wider">
+                Accounts & Enrolled Hardware ({{ filteredUsersWithDevices.length }} {{ filteredUsersWithDevices.length === 1 ? 'Account' : 'Accounts' }})
+              </span>
+              <span>
+                {{ totalApprovedDevicesCount }} Total Devices Whitelisted
               </span>
             </div>
 
-            <div v-if="approvedDevices.length === 0" class="text-center py-8 bg-gray-50 rounded-xl border border-dashed border-gray-200">
-              <ShieldCheck class="w-8 h-8 text-gray-400 mx-auto mb-2 opacity-50" />
-              <p class="text-xs text-gray-600 font-medium">No approved devices yet.</p>
-              <p class="text-[11px] text-gray-500 mt-0.5">Your current device will be auto-approved on first admin login.</p>
+            <!-- Empty search state -->
+            <div v-if="filteredUsersWithDevices.length === 0" class="text-center py-10 bg-white rounded-2xl border border-dashed border-gray-200">
+              <Users class="w-8 h-8 text-gray-400 mx-auto mb-2 opacity-50" />
+              <p class="text-xs text-gray-600 font-medium">No accounts match your search filter.</p>
+              <button 
+                type="button" 
+                @click="searchQuery = ''; selectedRoleFilter = 'ALL'" 
+                class="text-xs text-[#1b3b5f] font-bold mt-2 hover:underline cursor-pointer"
+              >
+                Clear Filters
+              </button>
             </div>
 
-            <div v-else class="space-y-2">
-              <div 
-                v-for="dev in approvedDevices" 
-                :key="dev.id"
-                class="bg-white border border-gray-200 rounded-xl p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 hover:border-gray-300 transition-all shadow-2xs"
-              >
-                <div class="flex items-start gap-3 min-w-0">
-                  <div class="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 border border-emerald-200 mt-0.5">
-                    <Smartphone v-if="dev.deviceType === 'MOBILE'" class="w-4 h-4" />
-                    <Tablet v-else-if="dev.deviceType === 'TABLET'" class="w-4 h-4" />
-                    <Monitor v-else class="w-4 h-4" />
+            <!-- User Cards -->
+            <div 
+              v-for="u in filteredUsersWithDevices" 
+              :key="u.id"
+              class="bg-white border rounded-2xl p-4 sm:p-5 shadow-2xs space-y-3 transition-all hover:border-gray-300"
+              :class="u.hasPending ? 'border-amber-300 ring-2 ring-amber-300/30' : 'border-gray-200'"
+            >
+              <!-- User Account Header -->
+              <div class="flex items-center justify-between gap-3 flex-wrap border-b border-gray-100 pb-3">
+                <div class="flex items-center gap-3 min-w-0">
+                  <!-- Avatar Initial -->
+                  <div class="w-10 h-10 rounded-full bg-[#1b3b5f]/10 text-[#1b3b5f] font-black text-sm flex items-center justify-center border border-[#1b3b5f]/20 shrink-0">
+                    {{ u.name.charAt(0) }}
                   </div>
-                  <div class="min-w-0 space-y-0.5">
+                  <div class="min-w-0">
                     <div class="flex items-center gap-2 flex-wrap">
-                      <span class="text-sm font-bold text-gray-900">{{ dev.deviceName || 'Authorized Device' }}</span>
-                      <span v-if="dev.deviceId === currentDeviceId" class="text-[10px] font-bold px-2 py-0.5 bg-[#1b3b5f] text-white rounded-full">
-                        This Device (You)
+                      <h5 class="text-sm font-bold text-gray-900 truncate">{{ u.name }}</h5>
+                      <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border" :class="userRoleColors[u.role] || 'bg-gray-100 text-gray-700'">
+                        {{ u.role }}
                       </span>
-                      <span class="text-[10px] font-mono px-2 py-0.5 bg-gray-100 text-gray-600 rounded">
-                        {{ dev.deviceId }}
+                      <span v-if="u.id === currentUserId" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#1b3b5f] text-white">
+                        You (Primary Admin)
+                      </span>
+                      <span v-if="u.hasPending" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300 animate-pulse">
+                        Pending Request
                       </span>
                     </div>
-                    <div class="text-xs text-gray-500 flex items-center gap-2 flex-wrap">
-                      <span>Owner: <strong class="text-gray-800">{{ dev.user?.name || 'Staff' }}</strong> ({{ dev.user?.role }})</span>
-                      <span>•</span>
-                      <span>Last Active: {{ formatDate(dev.lastUsedAt) }}</span>
-                      <span v-if="dev.ipAddress">• {{ dev.ipAddress }}</span>
-                    </div>
+                    <p class="text-xs text-gray-500 font-mono mt-0.5 truncate">{{ u.email }}</p>
                   </div>
                 </div>
 
-                <div class="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                <!-- Right: Device Count & Quick Pair Button -->
+                <div class="flex items-center gap-2">
+                  <span 
+                    class="text-xs font-semibold px-2.5 py-1 rounded-lg border"
+                    :class="u.approvedDevices.length > 0 
+                      ? 'bg-emerald-50 text-emerald-800 border-emerald-200' 
+                      : 'bg-gray-50 text-gray-500 border-gray-200'"
+                  >
+                    {{ u.approvedDevices.length }} {{ u.approvedDevices.length === 1 ? 'Device' : 'Devices' }} Authorized
+                  </span>
                   <button
                     type="button"
-                    @click="revokeDevice(dev.deviceId, false)"
-                    :disabled="actionInProgress === dev.deviceId || dev.deviceId === currentDeviceId"
-                    :title="dev.deviceId === currentDeviceId ? 'Cannot revoke your own active admin session' : 'Revoke device authorization'"
-                    class="px-2.5 py-1 text-xs text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition cursor-pointer disabled:opacity-40"
+                    @click="openPairingModal(u.id)"
+                    class="px-2.5 py-1 text-xs font-bold text-[#1b3b5f] bg-[#1b3b5f]/10 hover:bg-[#1b3b5f]/20 rounded-lg transition flex items-center gap-1 cursor-pointer"
+                    title="Generate pairing code for this account"
                   >
-                    Revoke Access
+                    <KeyRound class="w-3.5 h-3.5" />
+                    <span class="hidden sm:inline">Pair Device</span>
                   </button>
                 </div>
               </div>
-            </div>
-          </div>
 
-          <!-- 3. BLOCKED DEVICES (if any) -->
-          <div v-if="blockedDevices.length > 0" class="space-y-3 pt-2">
-            <h4 class="text-xs font-bold uppercase tracking-wider text-red-700">
-              Blocked Devices ({{ blockedDevices.length }})
-            </h4>
-            <div class="space-y-2">
-              <div 
-                v-for="dev in blockedDevices" 
-                :key="dev.id"
-                class="bg-red-50/50 border border-red-200/80 rounded-xl p-3 flex items-center justify-between gap-3 text-xs"
-              >
-                <div>
-                  <span class="font-bold text-gray-900">{{ dev.deviceName }}</span>
-                  <span class="font-mono text-[10px] text-gray-500 ml-2">{{ dev.deviceId }}</span>
-                  <p class="text-[11px] text-red-600 mt-0.5">{{ dev.blockedReason || 'Blocked by Admin' }}</p>
-                </div>
-                <button
-                  type="button"
-                  @click="deleteDevice(dev.deviceId)"
-                  class="text-xs text-gray-500 hover:text-red-700 px-2 py-1 rounded hover:bg-red-100 transition cursor-pointer"
+              <!-- User's Enrolled Devices -->
+              <div v-if="u.devices.length === 0" class="text-center py-5 bg-gray-50/70 rounded-xl border border-dashed border-gray-200 text-xs text-gray-400">
+                No physical devices enrolled for {{ u.name }} yet.
+              </div>
+
+              <div v-else class="space-y-2">
+                <div 
+                  v-for="dev in u.devices" 
+                  :key="dev.id"
+                  class="rounded-xl p-3 border text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 transition-colors"
+                  :class="[
+                    dev.isBlocked ? 'bg-red-50/40 border-red-200 text-red-900' :
+                    (!dev.isApproved ? 'bg-amber-50/80 border-amber-300 ring-1 ring-amber-300/40' : 'bg-gray-50/60 border-gray-200 hover:bg-gray-50')
+                  ]"
                 >
-                  Delete
-                </button>
+                  <div class="flex items-start gap-3 min-w-0">
+                    <div 
+                      class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 border"
+                      :class="dev.isApproved 
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
+                        : (dev.isBlocked ? 'bg-red-100 text-red-800 border-red-200' : 'bg-amber-100 text-amber-800 border-amber-200')"
+                    >
+                      <Smartphone v-if="dev.deviceType === 'MOBILE'" class="w-4 h-4" />
+                      <Tablet v-else-if="dev.deviceType === 'TABLET'" class="w-4 h-4" />
+                      <Monitor v-else class="w-4 h-4" />
+                    </div>
+
+                    <div class="min-w-0 space-y-0.5">
+                      <div class="flex items-center gap-2 flex-wrap">
+                        <span class="font-bold text-gray-900 text-xs">{{ dev.deviceName || 'Authorized Device' }}</span>
+                        <span v-if="dev.deviceId === currentDeviceId" class="text-[9px] font-bold px-1.5 py-0.2 bg-[#1b3b5f] text-white rounded">
+                          Current Device
+                        </span>
+                        <span 
+                          class="font-mono text-[10px] px-1.5 py-0.5 rounded border"
+                          :class="dev.isApproved 
+                            ? 'bg-white text-gray-600 border-gray-200' 
+                            : 'bg-amber-200 text-amber-900 border-amber-300 font-bold'"
+                        >
+                          {{ dev.deviceId }}
+                        </span>
+                        <span v-if="!dev.isApproved && !dev.isBlocked" class="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 bg-amber-100 text-amber-900 border border-amber-300 rounded">
+                          Pending Approval
+                        </span>
+                        <span v-if="dev.isBlocked" class="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 bg-red-100 text-red-800 border border-red-200 rounded">
+                          Blocked
+                        </span>
+                      </div>
+
+                      <div class="text-[11px] text-gray-500 flex items-center gap-2 flex-wrap">
+                        <span>Last Active: {{ formatDate(dev.lastUsedAt) }}</span>
+                        <span v-if="dev.ipAddress">• IP: {{ dev.ipAddress }}</span>
+                        <span v-if="dev.cpuCores">• {{ dev.cpuCores }} Cores</span>
+                        <span v-if="dev.screenResolution">• {{ dev.screenResolution }}</span>
+                        <span v-if="dev.gpuRenderer" class="truncate max-w-[200px]" :title="dev.gpuRenderer">• {{ dev.gpuRenderer }}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Actions for this device -->
+                  <div class="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                    <!-- Pending Actions -->
+                    <template v-if="!dev.isApproved && !dev.isBlocked">
+                      <button
+                        type="button"
+                        @click="approveDevice(dev.deviceId)"
+                        :disabled="actionInProgress === dev.deviceId"
+                        class="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer shadow-xs disabled:opacity-50"
+                      >
+                        <Check class="w-3.5 h-3.5" />
+                        <span>Approve</span>
+                      </button>
+                      <button
+                        type="button"
+                        @click="revokeDevice(dev.deviceId, true)"
+                        :disabled="actionInProgress === dev.deviceId"
+                        class="px-2.5 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-xs font-bold transition cursor-pointer disabled:opacity-50"
+                      >
+                        Block
+                      </button>
+                    </template>
+
+                    <!-- Approved Device Actions -->
+                    <template v-else-if="dev.isApproved">
+                      <button
+                        type="button"
+                        @click="revokeDevice(dev.deviceId, false)"
+                        :disabled="actionInProgress === dev.deviceId || dev.deviceId === currentDeviceId"
+                        :title="dev.deviceId === currentDeviceId ? 'Cannot revoke your own active admin session' : 'Revoke device authorization'"
+                        class="px-2.5 py-1 text-xs text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition cursor-pointer disabled:opacity-40"
+                      >
+                        Revoke Access
+                      </button>
+                    </template>
+
+                    <!-- Blocked Device Actions -->
+                    <template v-else-if="dev.isBlocked">
+                      <button
+                        type="button"
+                        @click="approveDevice(dev.deviceId)"
+                        class="px-2.5 py-1 text-xs text-emerald-700 hover:bg-emerald-50 rounded-lg transition cursor-pointer font-bold"
+                      >
+                        Unblock
+                      </button>
+                      <button
+                        type="button"
+                        @click="deleteDevice(dev.deviceId)"
+                        class="px-2.5 py-1 text-xs text-gray-400 hover:text-red-700 rounded-lg transition cursor-pointer"
+                      >
+                        Delete
+                      </button>
+                    </template>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -262,7 +402,7 @@
           </button>
         </div>
 
-        <p class="text-xs text-gray-500">
+        <p class="text-xs text-gray-500 leading-relaxed">
           Generate a one-time 6-digit code for a staff member. When they enter their login and this code on their new phone or PC, their physical hardware is permanently registered and authorized.
         </p>
 
@@ -281,9 +421,9 @@
         </div>
 
         <!-- Generated Code Display -->
-        <div v-if="generatedPairingCode" class="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-center space-y-2">
+        <div v-if="generatedPairingCode" class="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-center space-y-2 animate-in fade-in zoom-in-95 duration-200">
           <span class="text-xs text-emerald-800 font-bold uppercase tracking-wider block">One-Time Pairing Code</span>
-          <div class="text-3xl font-mono font-black text-[#1b3b5f] tracking-widest py-1">
+          <div class="text-3xl font-mono font-black text-[#1b3b5f] tracking-widest py-1 select-all">
             {{ generatedPairingCode }}
           </div>
           <p class="text-[11px] text-emerald-700">
@@ -328,10 +468,13 @@ import {
   Ban,
   KeyRound,
   RefreshCw,
-  Loader2
+  Loader2,
+  Users,
+  Search
 } from 'lucide-vue-next'
 import { useSnackbar } from '~/composables/useSnackbar'
 import { useDeviceSecurity } from '~/composables/useDeviceSecurity'
+import { useAuth } from '~/composables/useAuth'
 
 const props = defineProps<{
   isOpen: boolean
@@ -341,6 +484,7 @@ const emit = defineEmits<{
   (e: 'close'): void
 }>()
 
+const { user } = useAuth()
 const { showSaving, showSaved } = useSnackbar()
 const { getPersistentDeviceId } = useDeviceSecurity()
 
@@ -350,6 +494,11 @@ const devicesList = ref<any[]>([])
 const usersList = ref<any[]>([])
 const actionInProgress = ref<string | null>(null)
 const currentDeviceId = ref('')
+const currentUserId = computed(() => user.value?.id || '')
+
+// Search and Filter State
+const searchQuery = ref('')
+const selectedRoleFilter = ref('ALL')
 
 // Pairing Modal State
 const isPairingModalOpen = ref(false)
@@ -357,9 +506,59 @@ const pairingUserId = ref('')
 const generatedPairingCode = ref('')
 const isGeneratingCode = ref(false)
 
-const pendingDevices = computed(() => devicesList.value.filter(d => !d.isApproved && !d.isBlocked))
-const approvedDevices = computed(() => devicesList.value.filter(d => d.isApproved && !d.isBlocked))
-const blockedDevices = computed(() => devicesList.value.filter(d => d.isBlocked))
+const userRoleColors: Record<string, string> = {
+  ADMIN: 'bg-purple-50 text-purple-800 border-purple-200',
+  SALES: 'bg-blue-50 text-blue-800 border-blue-200',
+  BILLING: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+  PACKING: 'bg-amber-50 text-amber-800 border-amber-200',
+  DELIVERY: 'bg-cyan-50 text-cyan-800 border-cyan-200',
+}
+
+const allPendingDevices = computed(() => devicesList.value.filter(d => !d.isApproved && !d.isBlocked))
+const totalApprovedDevicesCount = computed(() => devicesList.value.filter(d => d.isApproved && !d.isBlocked).length)
+
+// Group Devices User-Wise
+const usersWithDevices = computed(() => {
+  return usersList.value.map(u => {
+    const userDevices = devicesList.value.filter(d => d.userId === u.id)
+    const approved = userDevices.filter(d => d.isApproved && !d.isBlocked)
+    const pending = userDevices.filter(d => !d.isApproved && !d.isBlocked)
+    const blocked = userDevices.filter(d => d.isBlocked)
+    return {
+      ...u,
+      devices: userDevices,
+      approvedDevices: approved,
+      pendingDevices: pending,
+      blockedDevices: blocked,
+      hasPending: pending.length > 0
+    }
+  })
+})
+
+const filteredUsersWithDevices = computed(() => {
+  let list = usersWithDevices.value
+
+  if (selectedRoleFilter.value !== 'ALL') {
+    list = list.filter(u => u.role === selectedRoleFilter.value)
+  }
+
+  if (searchQuery.value.trim()) {
+    const q = searchQuery.value.trim().toLowerCase()
+    list = list.filter(u => {
+      const nameMatch = (u.name || '').toLowerCase().includes(q)
+      const emailMatch = (u.email || '').toLowerCase().includes(q)
+      const roleMatch = (u.role || '').toLowerCase().includes(q)
+      const deviceMatch = u.devices.some((d: any) => 
+        (d.deviceName || '').toLowerCase().includes(q) ||
+        (d.deviceId || '').toLowerCase().includes(q) ||
+        (d.ipAddress || '').toLowerCase().includes(q)
+      )
+      return nameMatch || emailMatch || roleMatch || deviceMatch
+    })
+  }
+
+  return list
+})
 
 onMounted(async () => {
   currentDeviceId.value = await getPersistentDeviceId()
@@ -454,8 +653,8 @@ const deleteDevice = async (deviceId: string) => {
   }
 }
 
-const openPairingModal = () => {
-  pairingUserId.value = ''
+const openPairingModal = (preselectedUserId?: string) => {
+  pairingUserId.value = preselectedUserId || ''
   generatedPairingCode.value = ''
   isPairingModalOpen.value = true
 }
