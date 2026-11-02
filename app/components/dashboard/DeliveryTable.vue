@@ -865,7 +865,6 @@ const saveDriverAssignment = async () => {
                   @click.stop="emit('toggleTripOrder', order.id)"
                   class="w-full py-2 px-3 bg-[#1b3b5f]/10 text-[#1b3b5f] border border-[#1b3b5f]/30 hover:bg-[#1b3b5f]/20 rounded-lg text-xs font-bold active:scale-[0.99] transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
                 >
-                  <Plus class="w-3.5 h-3.5" />
                   <span>+ Create Trip</span>
                 </button>
               </template>

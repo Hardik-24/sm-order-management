@@ -201,8 +201,9 @@
                   &bull; Complete slip visible
                 </span>
 
-                <!-- Signature Action Pill -->
+                <!-- Signature Action Pill (Hidden in Anonymous Mode, visible in Branded mode) -->
                 <button
+                  v-if="!isAnonymousMode"
                   type="button"
                   @click="openSignatureModal(false)"
                   class="ml-1 sm:ml-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer border shadow-2xs"

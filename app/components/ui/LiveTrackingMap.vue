@@ -328,8 +328,8 @@ function renderGoogleDirections(maps: any) {
         suppressMarkers: true,
         preserveViewport: true,
         polylineOptions: {
-          strokeColor: '#3b82f6',
-          strokeOpacity: 0.5,
+          strokeColor: '#1b3b5f',
+          strokeOpacity: 0.6,
           strokeWeight: 4,
         }
       })
