@@ -825,11 +825,11 @@ const getCustomerInitials = (name: string) => {
                       <button 
                         type="button" 
                         @click="openRateCalculator(idx)" 
-                        class="text-[9px] text-[#1b3b5f] hover:text-[#0f233a] font-bold flex items-center gap-0.5 bg-blue-50 hover:bg-blue-100 text-blue-900 px-1.5 py-0.2 rounded border border-blue-200 transition-colors cursor-pointer shadow-2xs"
+                        class="text-[9px] bg-[#1b3b5f] hover:bg-[#132c49] text-white font-bold flex items-center gap-1 px-2 py-0.5 rounded shadow-2xs transition-colors cursor-pointer"
                         title="Calculate rate by Sheet Sq.ft (A × B × Rate)"
                       >
-                        <Calculator class="w-2.5 h-2.5 text-blue-700" />
-                        <span>Sq.ft</span>
+                        <Calculator class="w-2.5 h-2.5 text-white" />
+                        <span>Sq.ft Calc</span>
                       </button>
                     </div>
                     <div class="relative flex items-center">
@@ -840,15 +840,15 @@ const getCustomerInitials = (name: string) => {
                         min="0" 
                         step="0.01" 
                         required 
-                        class="w-full pl-6 pr-7 border border-gray-300 rounded-lg shadow-xs p-2 bg-white text-sm font-bold focus:ring-[#1b3b5f] focus:border-[#1b3b5f]" 
+                        class="w-full pl-6 pr-8 border border-gray-300 rounded-lg shadow-xs p-2 bg-white text-sm font-bold focus:ring-[#1b3b5f] focus:border-[#1b3b5f]" 
                       />
                       <button 
                         type="button"
                         @click="openRateCalculator(idx)"
-                        class="absolute right-1 text-gray-400 hover:text-[#1b3b5f] p-1 rounded transition-colors cursor-pointer"
+                        class="absolute right-1 px-1.5 py-1 bg-[#1b3b5f] hover:bg-[#132c49] text-white rounded-md transition-colors cursor-pointer shadow-2xs"
                         title="Sq.ft Sheet Rate Calculator"
                       >
-                        <Calculator class="w-3.5 h-3.5" />
+                        <Calculator class="w-3.5 h-3.5 text-white" />
                       </button>
                     </div>
                   </div>

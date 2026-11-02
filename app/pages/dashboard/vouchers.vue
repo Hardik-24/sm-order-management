@@ -47,7 +47,7 @@
           <div class="flex flex-col justify-center min-w-0">
             <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">Total Sales Invoices</p>
             <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">
-              <OdometerNumber :value="stats?.totalCount || pagination.total || 0" :loading="isLoading" />
+              <OdometerNumber :value="stats != null ? stats.totalCount : (pagination.total || 0)" :loading="isLoading" />
             </h3>
             <p class="text-[11px] sm:text-xs text-gray-500 font-medium truncate">Synced vouchers</p>
           </div>
@@ -851,7 +851,16 @@ async function fetchVouchers(includeStats = true) {
       vouchers.value = res.vouchers || []
       pagination.value = res.pagination || pagination.value
       summary.value = res.summary || summary.value
-      if (res.stats) stats.value = res.stats
+      if (res.stats) {
+        stats.value = { ...res.stats }
+      } else if (res.summary) {
+        stats.value = {
+          totalCount: res.summary.totalCount || 0,
+          totalAmount: res.summary.totalAmount || 0,
+          totalTaxable: res.summary.taxableAmount || 0,
+          totalTax: res.summary.taxAmount || 0
+        }
+      }
       if (res.lastSynced) lastSynced.value = res.lastSynced
 
       // If URL had a specific voucherNo to open

@@ -305,6 +305,9 @@
                       <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border" :class="userRoleColors[u.role] || 'bg-gray-100 text-gray-700'">
                         {{ u.role }}
                       </span>
+                      <span v-if="u.isActive === false" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200">
+                        Inactive Account
+                      </span>
                       <span v-if="u.id === currentUserId" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#1b3b5f] text-white">
                         You (Primary Admin)
                       </span>
@@ -565,6 +568,9 @@
                       <span class="text-xs font-bold text-gray-900 truncate">{{ u.name }}</span>
                       <span class="text-[9px] font-bold px-1.5 py-0.2 rounded-full border" :class="userRoleColors[u.role] || 'bg-gray-100 text-gray-700'">
                         {{ u.role }}
+                      </span>
+                      <span v-if="u.isActive === false" class="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-rose-50 text-rose-700 border border-rose-200">
+                        Inactive
                       </span>
                     </div>
                     <span class="text-[10px] text-gray-400 font-mono block truncate">{{ u.email }}</span>
