@@ -1,5 +1,7 @@
 import { requireRole, getUserFromEvent } from '~~/server/utils/auth'
 import { prisma } from '~~/server/utils/prisma'
+import { sendPushNotification } from '~~/server/utils/firebaseAdmin'
+import { isNotificationEnabled } from '~~/server/utils/notificationSettings'
 
 export default defineEventHandler(async (event) => {
   const user = await getUserFromEvent(event)
@@ -79,6 +81,24 @@ export default defineEventHandler(async (event) => {
       timeline: { include: { performedBy: true }, orderBy: { timestamp: 'desc' } }
     }
   })
+
+  // Non-blocking Push Notification dispatch with await for Serverless container safety
+  if (await isNotificationEnabled('order_approvals')) {
+    try {
+      await sendPushNotification({
+        title: `✅ Order Approved: ${updatedOrder.orderNumber}`,
+        body: `${updatedOrder.customer?.company || updatedOrder.customer?.name || 'Customer'} • Cleared for packing`,
+        topic: 'orders',
+        data: {
+          orderNumber: updatedOrder.orderNumber,
+          orderId: updatedOrder.id,
+          type: 'ORDER_APPROVED'
+        }
+      })
+    } catch (pushErr) {
+      console.warn('[FCM] Order approval push failed:', pushErr)
+    }
+  }
 
   return updatedOrder
 })

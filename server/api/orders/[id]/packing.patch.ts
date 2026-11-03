@@ -1,5 +1,7 @@
 import { requireRole, getUserFromEvent } from '~~/server/utils/auth'
 import { prisma } from '~~/server/utils/prisma'
+import { sendPushNotification } from '~~/server/utils/firebaseAdmin'
+import { isNotificationEnabled } from '~~/server/utils/notificationSettings'
 
 function calculateOverallStatus(billing: string, packing: string, delivery: string) {
   if (delivery === 'DELIVERED') return 'DELIVERED';
@@ -75,6 +77,24 @@ export default defineEventHandler(async (event) => {
       customer: true
     }
   })
+
+  // Non-blocking Push Notification dispatch with await for Serverless container safety
+  if (status === 'PACKED' && await isNotificationEnabled('packing')) {
+    try {
+      await sendPushNotification({
+        title: `📦 Order Packed: ${updatedOrder.orderNumber}`,
+        body: `${updatedOrder.customer?.company || updatedOrder.customer?.name || 'Customer'} • Packed & ready for dispatch`,
+        topic: 'orders',
+        data: {
+          orderNumber: updatedOrder.orderNumber,
+          orderId: updatedOrder.id,
+          type: 'ORDER_PACKED'
+        }
+      })
+    } catch (pushErr) {
+      console.warn('[FCM] Order packed push failed:', pushErr)
+    }
+  }
 
   return updatedOrder
 })

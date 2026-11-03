@@ -1,10 +1,22 @@
 import { prisma } from './prisma'
 
-export type NotificationKey = 'quotations' | 'orders' | 'order_requests' | 'delivery'
+export type NotificationKey = 
+  | 'storefront_requests' 
+  | 'quotations' 
+  | 'orders' 
+  | 'order_approvals' 
+  | 'packing' 
+  | 'delivery'
 
 /**
  * Checks whether an automated push notification type is enabled in SystemSetting.
- * Default values: all default to TRUE.
+ * Evaluates core OMS workflows:
+ * - storefront_requests: default TRUE
+ * - quotations: default TRUE
+ * - orders: default TRUE
+ * - order_approvals: default TRUE
+ * - packing: default FALSE
+ * - delivery: default TRUE
  */
 export async function isNotificationEnabled(key: NotificationKey): Promise<boolean> {
   try {
@@ -13,8 +25,17 @@ export async function isNotificationEnabled(key: NotificationKey): Promise<boole
       where: { key: settingKey }
     })
 
+    // Backwards compatibility check for storefront requests
+    if (!setting && key === 'storefront_requests') {
+      const legacy = await prisma.systemSetting.findUnique({
+        where: { key: 'push_notif_order_requests' }
+      })
+      if (legacy) return legacy.value === 'true'
+    }
+
     if (!setting) {
-      return true
+      // Sensible default for each workflow
+      return ['storefront_requests', 'quotations', 'orders', 'order_approvals', 'delivery'].includes(key)
     }
 
     return setting.value === 'true'

@@ -204,19 +204,50 @@
             <!-- Rules Grid -->
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               
-              <!-- 1. Quotations -->
+              <!-- 1. Storefront Order Requests -->
               <div class="p-3.5 rounded-xl border border-gray-200 bg-gray-50/60 flex items-start justify-between gap-3 transition-colors hover:bg-gray-50">
                 <div class="flex items-start gap-3">
-                  <div class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 mt-0.5">
-                    <FileText class="w-4 h-4" />
+                  <div class="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center shrink-0 mt-0.5">
+                    <Inbox class="w-4 h-4" />
                   </div>
                   <div>
                     <div class="flex items-center gap-1.5">
-                      <span class="text-xs font-bold text-gray-900">New Quotations</span>
+                      <span class="text-xs font-bold text-gray-900">Storefront Order Requests</span>
+                      <span class="text-[9px] font-bold uppercase px-1.5 py-0.2 rounded bg-amber-100 text-amber-800">Storefront</span>
+                    </div>
+                    <p class="text-[11px] text-gray-500 mt-0.5 leading-snug">
+                      Alert team when a customer submits an incoming order or cart inquiry on the digital storefront.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  :aria-checked="notifications.storefrontRequests"
+                  @click="notifications.storefrontRequests = !notifications.storefrontRequests"
+                  class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden mt-1"
+                  :class="notifications.storefrontRequests ? 'bg-[#1b3b5f]' : 'bg-gray-300'"
+                >
+                  <span
+                    class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out"
+                    :class="notifications.storefrontRequests ? 'translate-x-4' : 'translate-x-0'"
+                  />
+                </button>
+              </div>
+
+              <!-- 2. Price Quotations -->
+              <div class="p-3.5 rounded-xl border border-gray-200 bg-gray-50/60 flex items-start justify-between gap-3 transition-colors hover:bg-gray-50">
+                <div class="flex items-start gap-3">
+                  <div class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 mt-0.5">
+                    <Calculator class="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div class="flex items-center gap-1.5">
+                      <span class="text-xs font-bold text-gray-900">Price Quotations</span>
                       <span class="text-[9px] font-bold uppercase px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800">Quotes</span>
                     </div>
                     <p class="text-[11px] text-gray-500 mt-0.5 leading-snug">
-                      Alert team when a customer quotation is saved or emailed.
+                      Alert team when a quotation is drafted, priced, or converted into an order.
                     </p>
                   </div>
                 </div>
@@ -235,19 +266,19 @@
                 </button>
               </div>
 
-              <!-- 2. Orders -->
+              <!-- 3. New Sales Orders -->
               <div class="p-3.5 rounded-xl border border-gray-200 bg-gray-50/60 flex items-start justify-between gap-3 transition-colors hover:bg-gray-50">
                 <div class="flex items-start gap-3">
                   <div class="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center shrink-0 mt-0.5">
-                    <Package class="w-4 h-4" />
+                    <ClipboardList class="w-4 h-4" />
                   </div>
                   <div>
                     <div class="flex items-center gap-1.5">
-                      <span class="text-xs font-bold text-gray-900">New Orders & Approvals</span>
+                      <span class="text-xs font-bold text-gray-900">New Sales Orders</span>
                       <span class="text-[9px] font-bold uppercase px-1.5 py-0.2 rounded bg-blue-100 text-blue-800">Orders</span>
                     </div>
                     <p class="text-[11px] text-gray-500 mt-0.5 leading-snug">
-                      Alert team when an order is created, confirmed, or approved.
+                      Alert team when a new sales order is booked into the system.
                     </p>
                   </div>
                 </div>
@@ -266,50 +297,81 @@
                 </button>
               </div>
 
-              <!-- 3. Order Requests -->
+              <!-- 4. Order Approvals -->
               <div class="p-3.5 rounded-xl border border-gray-200 bg-gray-50/60 flex items-start justify-between gap-3 transition-colors hover:bg-gray-50">
                 <div class="flex items-start gap-3">
                   <div class="w-8 h-8 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center shrink-0 mt-0.5">
-                    <ClipboardList class="w-4 h-4" />
+                    <CheckCheck class="w-4 h-4" />
                   </div>
                   <div>
                     <div class="flex items-center gap-1.5">
-                      <span class="text-xs font-bold text-gray-900">Sales Order Requests</span>
-                      <span class="text-[9px] font-bold uppercase px-1.5 py-0.2 rounded bg-purple-100 text-purple-800">Requests</span>
+                      <span class="text-xs font-bold text-gray-900">Order Approvals</span>
+                      <span class="text-[9px] font-bold uppercase px-1.5 py-0.2 rounded bg-purple-100 text-purple-800">Approvals</span>
                     </div>
                     <p class="text-[11px] text-gray-500 mt-0.5 leading-snug">
-                      Alert admin when a salesperson or client submits an order request.
+                      Alert team when an order is approved or cancelled in the approval queue.
                     </p>
                   </div>
                 </div>
                 <button
                   type="button"
                   role="switch"
-                  :aria-checked="notifications.orderRequests"
-                  @click="notifications.orderRequests = !notifications.orderRequests"
+                  :aria-checked="notifications.orderApprovals"
+                  @click="notifications.orderApprovals = !notifications.orderApprovals"
                   class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden mt-1"
-                  :class="notifications.orderRequests ? 'bg-[#1b3b5f]' : 'bg-gray-300'"
+                  :class="notifications.orderApprovals ? 'bg-[#1b3b5f]' : 'bg-gray-300'"
                 >
                   <span
                     class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out"
-                    :class="notifications.orderRequests ? 'translate-x-4' : 'translate-x-0'"
+                    :class="notifications.orderApprovals ? 'translate-x-4' : 'translate-x-0'"
                   />
                 </button>
               </div>
 
-              <!-- 4. Delivery Updates -->
+              <!-- 5. Warehouse Packing -->
               <div class="p-3.5 rounded-xl border border-gray-200 bg-gray-50/60 flex items-start justify-between gap-3 transition-colors hover:bg-gray-50">
                 <div class="flex items-start gap-3">
-                  <div class="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center shrink-0 mt-0.5">
+                  <div class="w-8 h-8 rounded-lg bg-cyan-100 text-cyan-700 flex items-center justify-center shrink-0 mt-0.5">
+                    <Package class="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div class="flex items-center gap-1.5">
+                      <span class="text-xs font-bold text-gray-900">Warehouse Packing</span>
+                      <span class="text-[9px] font-bold uppercase px-1.5 py-0.2 rounded bg-cyan-100 text-cyan-800">Packing</span>
+                    </div>
+                    <p class="text-[11px] text-gray-500 mt-0.5 leading-snug">
+                      Alert team when warehouse completes packing and marks order ready for dispatch.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  :aria-checked="notifications.packing"
+                  @click="notifications.packing = !notifications.packing"
+                  class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden mt-1"
+                  :class="notifications.packing ? 'bg-[#1b3b5f]' : 'bg-gray-300'"
+                >
+                  <span
+                    class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out"
+                    :class="notifications.packing ? 'translate-x-4' : 'translate-x-0'"
+                  />
+                </button>
+              </div>
+
+              <!-- 6. Delivery & Fleet Trips -->
+              <div class="p-3.5 rounded-xl border border-gray-200 bg-gray-50/60 flex items-start justify-between gap-3 transition-colors hover:bg-gray-50">
+                <div class="flex items-start gap-3">
+                  <div class="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0 mt-0.5">
                     <Truck class="w-4 h-4" />
                   </div>
                   <div>
                     <div class="flex items-center gap-1.5">
-                      <span class="text-xs font-bold text-gray-900">Delivery & Trip Dispatches</span>
-                      <span class="text-[9px] font-bold uppercase px-1.5 py-0.2 rounded bg-amber-100 text-amber-800">Fleet</span>
+                      <span class="text-xs font-bold text-gray-900">Delivery & Fleet Trips</span>
+                      <span class="text-[9px] font-bold uppercase px-1.5 py-0.2 rounded bg-indigo-100 text-indigo-800">Fleet</span>
                     </div>
                     <p class="text-[11px] text-gray-500 mt-0.5 leading-snug">
-                      Alert team on trip dispatch, stop arrival, or marked delivered.
+                      Alert team when a delivery run is dispatched or a driver marks an order delivered.
                     </p>
                   </div>
                 </div>
@@ -439,9 +501,11 @@ import {
   CheckCircle2, 
   AlertCircle, 
   Smartphone,
-  FileText,
-  Package,
+  Inbox,
+  Calculator,
   ClipboardList,
+  CheckCheck,
+  Package,
   Truck
 } from 'lucide-vue-next'
 
@@ -473,11 +537,13 @@ const testResult = ref<{
   devices?: string[]
 } | null>(null)
 
-// Notification Rules State (Strictly Core OMS Operations)
+// Notification Rules State (Core OMS Workflows)
 const notifications = reactive({
+  storefrontRequests: true,
   quotations: true,
   orders: true,
-  orderRequests: true,
+  orderApprovals: true,
+  packing: false,
   delivery: true
 })
 
@@ -502,9 +568,11 @@ const loadNotificationSettings = async () => {
   try {
     const res = await $fetch<any>('/api/settings')
     if (res && res.notifications) {
+      notifications.storefrontRequests = res.notifications.storefrontRequests !== false
       notifications.quotations = res.notifications.quotations !== false
       notifications.orders = res.notifications.orders !== false
-      notifications.orderRequests = res.notifications.orderRequests !== false
+      notifications.orderApprovals = res.notifications.orderApprovals !== false
+      notifications.packing = res.notifications.packing === true
       notifications.delivery = res.notifications.delivery !== false
     }
   } catch (err) {
@@ -557,9 +625,11 @@ const saveNotificationRules = async () => {
       method: 'POST',
       body: {
         notifications: {
+          storefrontRequests: notifications.storefrontRequests,
           quotations: notifications.quotations,
           orders: notifications.orders,
-          orderRequests: notifications.orderRequests,
+          orderApprovals: notifications.orderApprovals,
+          packing: notifications.packing,
           delivery: notifications.delivery
         }
       }

@@ -1,5 +1,7 @@
 import { requireRole } from '~~/server/utils/auth'
 import { prisma } from '~~/server/utils/prisma'
+import { sendPushNotification } from '~~/server/utils/firebaseAdmin'
+import { isNotificationEnabled } from '~~/server/utils/notificationSettings'
 
 export default defineEventHandler(async (event) => {
   const user = requireRole(event, ['ADMIN', 'DELIVERY', 'SALES'])
@@ -115,6 +117,24 @@ export default defineEventHandler(async (event) => {
 
     return newTrip
   })
+
+  // Non-blocking Push Notification dispatch with await for Serverless container safety
+  if (await isNotificationEnabled('delivery')) {
+    try {
+      await sendPushNotification({
+        title: `🚚 Trip Dispatched: ${result.tripNumber}`,
+        body: `Driver: ${result.driverName} • ${result.stops?.length || stops.length} stop(s) scheduled`,
+        topic: 'orders',
+        data: {
+          tripNumber: result.tripNumber,
+          tripId: result.id,
+          type: 'TRIP_DISPATCHED'
+        }
+      })
+    } catch (pushErr) {
+      console.warn('[FCM] Trip dispatch push failed:', pushErr)
+    }
+  }
 
   return {
     success: true,

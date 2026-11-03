@@ -17,25 +17,33 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  // 2. Notification Preferences (Strictly OMS Operations)
+  // 2. Notification Preferences (Strictly Core OMS Operations)
   if (notifications && typeof notifications === 'object') {
-    const keyMap: Record<string, string> = {
-      quotations: 'push_notif_quotations',
-      orders: 'push_notif_orders',
-      orderRequests: 'push_notif_order_requests',
-      delivery: 'push_notif_delivery'
+    const keyMap: Record<string, string[]> = {
+      storefrontRequests: ['push_notif_storefront_requests', 'push_notif_order_requests'],
+      quotations: ['push_notif_quotations'],
+      orders: ['push_notif_orders'],
+      orderApprovals: ['push_notif_order_approvals'],
+      packing: ['push_notif_packing'],
+      delivery: ['push_notif_delivery']
     }
 
-    const updates = Object.entries(keyMap)
-      .filter(([field]) => notifications[field] !== undefined)
-      .map(([field, dbKey]) => {
+    const updates: Promise<any>[] = []
+
+    for (const [field, dbKeys] of Object.entries(keyMap)) {
+      if (notifications[field] !== undefined) {
         const strVal = notifications[field] ? 'true' : 'false'
-        return prisma.systemSetting.upsert({
-          where: { key: dbKey },
-          update: { value: strVal },
-          create: { key: dbKey, value: strVal }
-        })
-      })
+        for (const dbKey of dbKeys) {
+          updates.push(
+            prisma.systemSetting.upsert({
+              where: { key: dbKey },
+              update: { value: strVal },
+              create: { key: dbKey, value: strVal }
+            })
+          )
+        }
+      }
+    }
 
     if (updates.length > 0) {
       await Promise.all(updates)

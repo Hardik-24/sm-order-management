@@ -2,6 +2,8 @@ import { requireRole } from '~~/server/utils/auth'
 import { prisma } from '~~/server/utils/prisma'
 import { startTrip, recordTripPing, completeTrip, getTrip } from '~~/server/utils/driverTrips'
 import { resolveDestinationPin } from '~~/server/utils/customerPins'
+import { sendPushNotification } from '~~/server/utils/firebaseAdmin'
+import { isNotificationEnabled } from '~~/server/utils/notificationSettings'
 
 function calculateOverallStatus(billing: string, packing: string, delivery: string) {
   if (delivery === 'DELIVERED') return 'DELIVERED'
@@ -85,6 +87,24 @@ export default defineEventHandler(async (event) => {
         driverName: user.name
       })
     } catch (ignored) {}
+
+    // Non-blocking Push Notification dispatch with await for Serverless container safety
+    if (await isNotificationEnabled('delivery')) {
+      try {
+        await sendPushNotification({
+          title: `🏁 Order Delivered: ${stop.order.orderNumber}`,
+          body: `${stop.customerName} • Delivered by ${user.name}`,
+          topic: 'orders',
+          data: {
+            orderNumber: stop.order.orderNumber,
+            orderId: stop.orderId,
+            type: 'ORDER_DELIVERED'
+          }
+        })
+      } catch (pushErr) {
+        console.warn('[FCM] Order delivered push failed:', pushErr)
+      }
+    }
 
     // 4. Check if all stops in this Trip are now DELIVERED
     const remainingStops = await prisma.tripStop.count({
