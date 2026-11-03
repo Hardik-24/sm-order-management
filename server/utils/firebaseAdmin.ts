@@ -2,6 +2,7 @@ import { initializeApp, cert, getApps, type App, type ServiceAccount } from 'fir
 import { getMessaging } from 'firebase-admin/messaging'
 import fs from 'node:fs'
 import path from 'node:path'
+import prisma from './prisma'
 
 let firebaseApp: App | null = null
 
@@ -77,64 +78,94 @@ export interface PushNotificationPayload {
 
 /**
  * Sends push notifications to mobile devices via Firebase Cloud Messaging (FCM).
+ * Employs Dual Delivery:
+ * 1. Broadcasts to Topic (e.g. 'orders', 'quotations')
+ * 2. Directly multicasts to active registered device tokens for guaranteed sub-second delivery
  * Non-blocking: Errors are logged but will never throw or interrupt business flow.
  */
 export async function sendPushNotification(payload: PushNotificationPayload): Promise<boolean> {
   const app = initFirebaseAdmin()
   if (!app) return false
 
+  let anySuccess = false
+
   try {
     const messaging = getMessaging(app)
 
-    // A. Send to specific topic (e.g. 'orders', 'quotations', 'all')
+    // A. Broadcast to topic
     if (payload.topic) {
-      const response = await messaging.send({
-        topic: payload.topic,
-        notification: {
-          title: payload.title,
-          body: payload.body
-        },
-        data: payload.data || {},
-        android: {
-          priority: 'high',
+      try {
+        const response = await messaging.send({
+          topic: payload.topic,
           notification: {
-            channelId: 'sm_flow_notifications',
-            sound: 'default',
+            title: payload.title,
+            body: payload.body
+          },
+          data: payload.data || {},
+          android: {
             priority: 'high',
-            defaultVibrateTimings: true
+            notification: {
+              channelId: 'sm_flow_notifications',
+              sound: 'default',
+              priority: 'high',
+              defaultVibrateTimings: true
+            }
           }
-        }
-      })
-      console.log(`[FCM] Notification sent to topic "${payload.topic}":`, response)
-      return true
-    }
-
-    // B. Send to specific device tokens
-    const validTokens = (payload.tokens || []).filter(t => Boolean(t && t.trim()))
-    if (validTokens.length === 0) {
-      return false
-    }
-
-    const response = await messaging.sendEachForMulticast({
-      tokens: validTokens,
-      notification: {
-        title: payload.title,
-        body: payload.body
-      },
-      data: payload.data || {},
-      android: {
-        priority: 'high',
-        notification: {
-          channelId: 'sm_flow_notifications',
-          sound: 'default',
-          priority: 'high',
-          defaultVibrateTimings: true
-        }
+        })
+        console.log(`[FCM] Notification sent to topic "${payload.topic}":`, response)
+        anySuccess = true
+      } catch (topicErr: any) {
+        console.warn(`[FCM] Topic "${payload.topic}" send warning:`, topicErr?.message || topicErr)
       }
-    })
+    }
 
-    console.log(`[FCM] Multicast notification sent: ${response.successCount} success, ${response.failureCount} failed`)
-    return response.successCount > 0
+    // B. Collect explicit or registered device tokens from DB
+    let targetTokens = (payload.tokens || []).filter(t => Boolean(t && t.trim()))
+
+    if (targetTokens.length === 0) {
+      try {
+        const activeDevices = await prisma.trustedDevice.findMany({
+          where: {
+            fcmToken: { not: null },
+            isApproved: true,
+            isBlocked: false
+          },
+          select: { fcmToken: true }
+        })
+        targetTokens = activeDevices.map(d => d.fcmToken!).filter(Boolean)
+      } catch (dbErr) {
+        console.warn('[FCM] Failed to query trusted device tokens:', dbErr)
+      }
+    }
+
+    // C. Multicast direct send to all device tokens for instant arrival
+    if (targetTokens.length > 0) {
+      try {
+        const response = await messaging.sendEachForMulticast({
+          tokens: targetTokens,
+          notification: {
+            title: payload.title,
+            body: payload.body
+          },
+          data: payload.data || {},
+          android: {
+            priority: 'high',
+            notification: {
+              channelId: 'sm_flow_notifications',
+              sound: 'default',
+              priority: 'high',
+              defaultVibrateTimings: true
+            }
+          }
+        })
+        console.log(`[FCM] Direct multicast: ${response.successCount} delivered, ${response.failureCount} failed out of ${targetTokens.length}`)
+        if (response.successCount > 0) anySuccess = true
+      } catch (multiErr: any) {
+        console.warn('[FCM] Direct multicast error:', multiErr?.message || multiErr)
+      }
+    }
+
+    return anySuccess
   } catch (err: any) {
     console.error('[FCM] Error sending push notification:', err?.message || err)
     return false

@@ -14,7 +14,14 @@ export default defineEventHandler(async (event) => {
   const user = getUserFromEvent(event)
 
   try {
-    // 1. Update TrustedDevice if deviceId is provided
+    // 1. Subscribe token to general notification topics immediately
+    await Promise.allSettled([
+      subscribeToTopic(token, 'orders'),
+      subscribeToTopic(token, 'quotations'),
+      subscribeToTopic(token, 'general')
+    ])
+
+    // 2. Update TrustedDevice if deviceId is provided
     if (deviceId) {
       const existing = await prisma.trustedDevice.findUnique({
         where: { deviceId }
@@ -26,9 +33,10 @@ export default defineEventHandler(async (event) => {
           data: {
             fcmToken: token,
             userId: user?.id || existing.userId,
-            lastSeenAt: new Date()
+            lastUsedAt: new Date()
           }
         })
+        console.log(`[Notifications] Attached FCM token to existing device ${deviceId}`)
       } else if (user) {
         // Create trusted device entry if not exists
         await prisma.trustedDevice.create({
@@ -39,28 +47,25 @@ export default defineEventHandler(async (event) => {
             deviceType: 'MOBILE',
             fcmToken: token,
             isApproved: true,
-            lastSeenAt: new Date()
+            lastUsedAt: new Date()
           }
         })
+        console.log(`[Notifications] Created trusted device ${deviceId} with FCM token`)
       }
     } else if (user) {
       // If no deviceId, update user's most recent trusted device
       const recentDevice = await prisma.trustedDevice.findFirst({
         where: { userId: user.id },
-        orderBy: { lastSeenAt: 'desc' }
+        orderBy: { lastUsedAt: 'desc' }
       })
       if (recentDevice) {
         await prisma.trustedDevice.update({
           where: { id: recentDevice.id },
-          data: { fcmToken: token, lastSeenAt: new Date() }
+          data: { fcmToken: token, lastUsedAt: new Date() }
         })
+        console.log(`[Notifications] Attached FCM token to user ${user.id} recent device`)
       }
     }
-
-    // 2. Subscribe token to general notification topics
-    await subscribeToTopic(token, 'orders')
-    await subscribeToTopic(token, 'quotations')
-    await subscribeToTopic(token, 'general')
 
     return { success: true }
   } catch (err: any) {

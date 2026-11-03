@@ -194,7 +194,7 @@ export default defineNuxtPlugin(() => {
       const { PushNotifications } = await import('@capacitor/push-notifications')
       if (!PushNotifications) return
 
-      // Create high-priority notification channel for Android 8+
+      // A. Create high-priority notification channel for Android 8+
       try {
         await PushNotifications.createChannel({
           id: 'sm_flow_notifications',
@@ -209,17 +209,11 @@ export default defineNuxtPlugin(() => {
         console.warn('[FCM] Channel creation skipped:', e)
       }
 
-      // Request push permissions
-      const permResult = await PushNotifications.requestPermissions()
-      if (permResult.receive === 'granted') {
-        await PushNotifications.register()
-      } else {
-        console.warn('[FCM] Push notification permission:', permResult.receive)
-      }
-
-      // Registration event: send token to backend
-      await PushNotifications.addListener('registration', async (token: { value: string }) => {
+      // Helper function to sync token with backend
+      const syncTokenToServer = async (tokenVal: string) => {
+        if (!tokenVal) return
         try {
+          localStorage.setItem('sm_flow_fcm_token', tokenVal)
           let deviceId: string | undefined
           try {
             const { detectDevice } = useDeviceSecurity()
@@ -230,14 +224,20 @@ export default defineNuxtPlugin(() => {
           await $fetch('/api/notifications/register-token', {
             method: 'POST',
             body: {
-              token: token.value,
+              token: tokenVal,
               deviceId
             }
           })
-          console.log('[FCM] Device token registered with backend')
+          console.log('[FCM] Device token synced with server successfully')
         } catch (err) {
           console.error('[FCM] Error saving push token to backend:', err)
         }
+      }
+
+      // B. Attach listeners FIRST before triggering registration
+      await PushNotifications.addListener('registration', async (token: { value: string }) => {
+        console.log('[FCM] Push registration token received:', token.value)
+        await syncTokenToServer(token.value)
       })
 
       // Registration error
@@ -247,6 +247,7 @@ export default defineNuxtPlugin(() => {
 
       // Foreground notification
       await PushNotifications.addListener('pushNotificationReceived', (notification: any) => {
+        console.log('[FCM] Foreground push received:', notification)
         try {
           const { showSuccess } = useSnackbar()
           if (notification.title && notification.body) {
@@ -267,6 +268,24 @@ export default defineNuxtPlugin(() => {
           router.push('/order-requests')
         }
       })
+
+      // C. Request permissions and register
+      let permStatus = await PushNotifications.checkPermissions()
+      if (permStatus.receive === 'prompt' || permStatus.receive === 'prompt-with-rationale') {
+        permStatus = await PushNotifications.requestPermissions()
+      }
+
+      if (permStatus.receive === 'granted') {
+        await PushNotifications.register()
+      } else {
+        console.warn('[FCM] Push notification permission:', permStatus.receive)
+      }
+
+      // If we already have a cached token in localStorage, make sure backend has it
+      const cachedToken = localStorage.getItem('sm_flow_fcm_token')
+      if (cachedToken) {
+        syncTokenToServer(cachedToken)
+      }
     } catch (pushErr) {
       console.warn('[FCM] PushNotifications initialization skipped:', pushErr)
     }
