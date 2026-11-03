@@ -70,12 +70,13 @@ export function resolveMarketingDeviceName(
   if (m.startsWith('SM-F546')) return 'Samsung Galaxy F54 5G'
   if (m.startsWith('SM-')) return `Samsung Galaxy (${rawModel})`
 
-  // 2. Nothing Phone & CMF Series
-  if (m === 'A065' || m.startsWith('A065')) return 'Nothing Phone (2a)'
+  // 2. Nothing Phone & CMF Series (Global & Indian Variants)
+  if (m === 'A142' || m.startsWith('A142') || m === 'A065' || m.startsWith('A065')) return 'Nothing Phone (2a)'
   if (m === 'A065P' || m.startsWith('A065P')) return 'Nothing Phone (2a) Plus'
   if (m === 'A063') return 'Nothing Phone (2)'
   if (m === 'A059') return 'Nothing Phone (1)'
   if (m.startsWith('A015') || m.includes('CMF')) return 'CMF Phone 1 by Nothing'
+  if (m.startsWith('A1') || m.startsWith('A0')) return `Nothing (${rawModel})`
 
   // 3. OnePlus Series
   if (m.startsWith('CPH258')) return 'OnePlus 12'
@@ -120,7 +121,15 @@ export function resolveMarketingDeviceName(
   if (m.startsWith('IPHONE14,5')) return 'iPhone 13'
   if (m.startsWith('IPHONE13,')) return 'iPhone 12 Series'
 
-  // 6. Generic Manufacturer + Model formatting
+  // 6. Generic Brand Prefix Rules (Handles when mobile browser omits manufacturer)
+  if (m.startsWith('SM-')) return `Samsung Galaxy (${rawModel})`
+  if (m.startsWith('CPH') || m.startsWith('PG')) return `OnePlus / Oppo (${rawModel})`
+  if (m.startsWith('V2') || m.startsWith('I2')) return `Vivo / iQOO (${rawModel})`
+  if (m.startsWith('RMX')) return `Realme (${rawModel})`
+  if (m.startsWith('XT')) return `Motorola (${rawModel})`
+  if (/^2[1-5]\d{2}/.test(m)) return `Xiaomi / Redmi (${rawModel})`
+
+  // 7. Generic Manufacturer + Model formatting
   if (mfr && rawModel) {
     const cleanMfr = mfr.charAt(0).toUpperCase() + mfr.slice(1)
     if (rawModel.toLowerCase().startsWith(cleanMfr.toLowerCase())) {
@@ -243,11 +252,30 @@ export const useDeviceSecurity = () => {
     else if (/Macintosh|Mac OS X/i.test(ua)) os = 'macOS'
     else if (/Linux/i.test(ua)) os = 'Linux'
 
+    // Detect if running inside the Silicon OMS Android App / Capacitor container / WebView / PWA
+    const isOMSApp = 
+      typeof window !== 'undefined' && (
+        !!(window as any).Capacitor ||
+        (window as any).isSiliconOMSApp === true ||
+        !!(window as any).AndroidBridge ||
+        ua.includes('SiliconOMSApp') ||
+        /; wv\)/.test(ua) ||
+        (/Version\/[\d.]+/i.test(ua) && /Chrome/i.test(ua) && os === 'Android') ||
+        (typeof window.matchMedia === 'function' && window.matchMedia('(display-mode: standalone)').matches)
+      )
+
     let browser = 'Unknown Browser'
-    if (/Edg/i.test(ua)) browser = 'Edge'
-    else if (/Chrome/i.test(ua) && !/Edg/i.test(ua)) browser = 'Chrome'
-    else if (/Safari/i.test(ua) && !/Chrome/i.test(ua)) browser = 'Safari'
-    else if (/Firefox/i.test(ua)) browser = 'Firefox'
+    if (isOMSApp) {
+      browser = 'SM OMS App'
+    } else if (/Edg/i.test(ua)) {
+      browser = 'Edge'
+    } else if (/Chrome/i.test(ua) && !/Edg/i.test(ua)) {
+      browser = 'Chrome'
+    } else if (/Safari/i.test(ua) && !/Chrome/i.test(ua)) {
+      browser = 'Safari'
+    } else if (/Firefox/i.test(ua)) {
+      browser = 'Firefox'
+    }
 
     let type: 'DESKTOP' | 'MOBILE' | 'TABLET' = 'DESKTOP'
     const isMobile = /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua)

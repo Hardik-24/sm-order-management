@@ -75,12 +75,13 @@ export function resolveMarketingDeviceName(
   if (m.startsWith('SM-F546')) return 'Samsung Galaxy F54 5G'
   if (m.startsWith('SM-')) return `Samsung Galaxy (${rawModel})`
 
-  // 2. Nothing Phone & CMF Series
-  if (m === 'A065' || m.startsWith('A065')) return 'Nothing Phone (2a)'
+  // 2. Nothing Phone & CMF Series (Global & Indian Variants)
+  if (m === 'A142' || m.startsWith('A142') || m === 'A065' || m.startsWith('A065')) return 'Nothing Phone (2a)'
   if (m === 'A065P' || m.startsWith('A065P')) return 'Nothing Phone (2a) Plus'
   if (m === 'A063') return 'Nothing Phone (2)'
   if (m === 'A059') return 'Nothing Phone (1)'
   if (m.startsWith('A015') || m.includes('CMF')) return 'CMF Phone 1 by Nothing'
+  if (m.startsWith('A1') || m.startsWith('A0')) return `Nothing (${rawModel})`
 
   // 3. OnePlus Series
   if (m.startsWith('CPH258')) return 'OnePlus 12'
