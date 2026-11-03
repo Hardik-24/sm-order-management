@@ -328,68 +328,6 @@
                 </button>
               </div>
 
-              <!-- 5. Payment Vouchers -->
-              <div class="p-3.5 rounded-xl border border-gray-200 bg-gray-50/60 flex items-start justify-between gap-3 transition-colors hover:bg-gray-50">
-                <div class="flex items-start gap-3">
-                  <div class="w-8 h-8 rounded-lg bg-teal-100 text-teal-700 flex items-center justify-center shrink-0 mt-0.5">
-                    <Receipt class="w-4 h-4" />
-                  </div>
-                  <div>
-                    <div class="flex items-center gap-1.5">
-                      <span class="text-xs font-bold text-gray-900">Payment Vouchers</span>
-                      <span class="text-[9px] font-bold uppercase px-1.5 py-0.2 rounded bg-teal-100 text-teal-800">Finance</span>
-                    </div>
-                    <p class="text-[11px] text-gray-500 mt-0.5 leading-snug">
-                      Alert on customer payment receipts, credit notes, or vouchers.
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  role="switch"
-                  :aria-checked="notifications.vouchers"
-                  @click="notifications.vouchers = !notifications.vouchers"
-                  class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden mt-1"
-                  :class="notifications.vouchers ? 'bg-[#1b3b5f]' : 'bg-gray-300'"
-                >
-                  <span
-                    class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out"
-                    :class="notifications.vouchers ? 'translate-x-4' : 'translate-x-0'"
-                  />
-                </button>
-              </div>
-
-              <!-- 6. Low Stock Inventory -->
-              <div class="p-3.5 rounded-xl border border-gray-200 bg-gray-50/60 flex items-start justify-between gap-3 transition-colors hover:bg-gray-50">
-                <div class="flex items-start gap-3">
-                  <div class="w-8 h-8 rounded-lg bg-rose-100 text-rose-700 flex items-center justify-center shrink-0 mt-0.5">
-                    <AlertTriangle class="w-4 h-4" />
-                  </div>
-                  <div>
-                    <div class="flex items-center gap-1.5">
-                      <span class="text-xs font-bold text-gray-900">Low Stock Warnings</span>
-                      <span class="text-[9px] font-bold uppercase px-1.5 py-0.2 rounded bg-rose-100 text-rose-800">Stock</span>
-                    </div>
-                    <p class="text-[11px] text-gray-500 mt-0.5 leading-snug">
-                      Alert warehouse when products drop below reorder threshold.
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  role="switch"
-                  :aria-checked="notifications.lowStock"
-                  @click="notifications.lowStock = !notifications.lowStock"
-                  class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden mt-1"
-                  :class="notifications.lowStock ? 'bg-[#1b3b5f]' : 'bg-gray-300'"
-                >
-                  <span
-                    class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out"
-                    :class="notifications.lowStock ? 'translate-x-4' : 'translate-x-0'"
-                  />
-                </button>
-              </div>
-
             </div>
 
             <!-- Save Rules Button -->
@@ -504,9 +442,7 @@ import {
   FileText,
   Package,
   ClipboardList,
-  Truck,
-  Receipt,
-  AlertTriangle
+  Truck
 } from 'lucide-vue-next'
 
 const props = defineProps<{
@@ -537,14 +473,12 @@ const testResult = ref<{
   devices?: string[]
 } | null>(null)
 
-// Notification Rules State
+// Notification Rules State (Strictly Core OMS Operations)
 const notifications = reactive({
   quotations: true,
   orders: true,
   orderRequests: true,
-  delivery: true,
-  vouchers: false,
-  lowStock: false
+  delivery: true
 })
 
 const isSavingRules = ref(false)
@@ -572,8 +506,6 @@ const loadNotificationSettings = async () => {
       notifications.orders = res.notifications.orders !== false
       notifications.orderRequests = res.notifications.orderRequests !== false
       notifications.delivery = res.notifications.delivery !== false
-      notifications.vouchers = res.notifications.vouchers === true
-      notifications.lowStock = res.notifications.lowStock === true
     }
   } catch (err) {
     console.warn('Failed to load notification settings:', err)
@@ -628,9 +560,7 @@ const saveNotificationRules = async () => {
           quotations: notifications.quotations,
           orders: notifications.orders,
           orderRequests: notifications.orderRequests,
-          delivery: notifications.delivery,
-          vouchers: notifications.vouchers,
-          lowStock: notifications.lowStock
+          delivery: notifications.delivery
         }
       }
     })

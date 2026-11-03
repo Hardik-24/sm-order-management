@@ -17,9 +17,7 @@ export default defineEventHandler(async (event) => {
         quotations: map['push_notif_quotations'] !== 'false', // Default true
         orders: map['push_notif_orders'] !== 'false', // Default true
         orderRequests: map['push_notif_order_requests'] !== 'false', // Default true
-        delivery: map['push_notif_delivery'] !== 'false', // Default true
-        vouchers: map['push_notif_vouchers'] === 'true', // Default false
-        lowStock: map['push_notif_low_stock'] === 'true' // Default false
+        delivery: map['push_notif_delivery'] !== 'false' // Default true
       }
     }
   } catch (error: any) {
@@ -30,9 +28,7 @@ export default defineEventHandler(async (event) => {
         quotations: true,
         orders: true,
         orderRequests: true,
-        delivery: true,
-        vouchers: false,
-        lowStock: false
+        delivery: true
       }
     }
   }

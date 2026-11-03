@@ -1,16 +1,10 @@
 import { prisma } from './prisma'
 
-export type NotificationKey = 'quotations' | 'orders' | 'order_requests' | 'delivery' | 'vouchers' | 'low_stock'
+export type NotificationKey = 'quotations' | 'orders' | 'order_requests' | 'delivery'
 
 /**
  * Checks whether an automated push notification type is enabled in SystemSetting.
- * Default values:
- * - quotations: true
- * - orders: true
- * - order_requests: true
- * - delivery: true
- * - vouchers: false
- * - low_stock: false
+ * Default values: all default to TRUE.
  */
 export async function isNotificationEnabled(key: NotificationKey): Promise<boolean> {
   try {
@@ -20,13 +14,12 @@ export async function isNotificationEnabled(key: NotificationKey): Promise<boole
     })
 
     if (!setting) {
-      // Sensible defaults
-      return ['quotations', 'orders', 'order_requests', 'delivery'].includes(key)
+      return true
     }
 
     return setting.value === 'true'
   } catch (err) {
     console.warn(`[isNotificationEnabled] Failed to read setting for ${key}:`, err)
-    return true // Safe fallback so vital notifications are not lost
+    return true
   }
 }

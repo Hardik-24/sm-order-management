@@ -17,15 +17,13 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  // 2. Notification Preferences
+  // 2. Notification Preferences (Strictly OMS Operations)
   if (notifications && typeof notifications === 'object') {
     const keyMap: Record<string, string> = {
       quotations: 'push_notif_quotations',
       orders: 'push_notif_orders',
       orderRequests: 'push_notif_order_requests',
-      delivery: 'push_notif_delivery',
-      vouchers: 'push_notif_vouchers',
-      lowStock: 'push_notif_low_stock'
+      delivery: 'push_notif_delivery'
     }
 
     const updates = Object.entries(keyMap)
