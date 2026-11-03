@@ -187,4 +187,88 @@ export default defineNuxtPlugin(() => {
       }
     })
   }
+
+  // 5. Firebase Cloud Messaging (FCM) Push Notifications
+  ;(async () => {
+    try {
+      const { PushNotifications } = await import('@capacitor/push-notifications')
+      if (!PushNotifications) return
+
+      // Create high-priority notification channel for Android 8+
+      try {
+        await PushNotifications.createChannel({
+          id: 'sm_flow_notifications',
+          name: 'SM Flow Notifications',
+          description: 'Instant alerts for orders, quotations, and dispatch status',
+          importance: 5,
+          visibility: 1,
+          sound: 'default',
+          vibration: true,
+        })
+      } catch (e) {
+        console.warn('[FCM] Channel creation skipped:', e)
+      }
+
+      // Request push permissions
+      const permResult = await PushNotifications.requestPermissions()
+      if (permResult.receive === 'granted') {
+        await PushNotifications.register()
+      } else {
+        console.warn('[FCM] Push notification permission:', permResult.receive)
+      }
+
+      // Registration event: send token to backend
+      await PushNotifications.addListener('registration', async (token: { value: string }) => {
+        try {
+          let deviceId: string | undefined
+          try {
+            const { detectDevice } = useDeviceSecurity()
+            const dev = await detectDevice()
+            deviceId = dev?.id
+          } catch {}
+
+          await $fetch('/api/notifications/register-token', {
+            method: 'POST',
+            body: {
+              token: token.value,
+              deviceId
+            }
+          })
+          console.log('[FCM] Device token registered with backend')
+        } catch (err) {
+          console.error('[FCM] Error saving push token to backend:', err)
+        }
+      })
+
+      // Registration error
+      await PushNotifications.addListener('registrationError', (error: any) => {
+        console.error('[FCM] Push registration error:', error)
+      })
+
+      // Foreground notification
+      await PushNotifications.addListener('pushNotificationReceived', (notification: any) => {
+        try {
+          const { showSuccess } = useSnackbar()
+          if (notification.title && notification.body) {
+            showSuccess(`${notification.title}: ${notification.body}`)
+          }
+        } catch {}
+      })
+
+      // Notification action (tap)
+      await PushNotifications.addListener('pushNotificationActionPerformed', (notificationAction: any) => {
+        const data = notificationAction.notification?.data || {}
+        const router = useRouter()
+        if (data.orderNumber) {
+          router.push(`/orders?search=${encodeURIComponent(data.orderNumber)}`)
+        } else if (data.quoteNumber) {
+          router.push(`/quotations?search=${encodeURIComponent(data.quoteNumber)}`)
+        } else if (data.requestNumber) {
+          router.push('/order-requests')
+        }
+      })
+    } catch (pushErr) {
+      console.warn('[FCM] PushNotifications initialization skipped:', pushErr)
+    }
+  })()
 })

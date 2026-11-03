@@ -1,5 +1,6 @@
 import { requireRole, getUserFromEvent } from '~~/server/utils/auth'
 import { prisma } from '~~/server/utils/prisma'
+import { sendPushNotification } from '~~/server/utils/firebaseAdmin'
 
 export default defineEventHandler(async (event) => {
   const user = await getUserFromEvent(event)
@@ -179,6 +180,18 @@ export default defineEventHandler(async (event) => {
       console.warn('[CreateOrder] Failed to update customer master payment terms on first order:', custErr)
     }
   }
+
+  // Non-blocking Push Notification dispatch
+  sendPushNotification({
+    title: `New Order: ${order.orderNumber}`,
+    body: `${order.customer?.name || 'Customer'} • ₹${order.totalAmount.toLocaleString('en-IN')}`,
+    topic: 'orders',
+    data: {
+      orderNumber: order.orderNumber,
+      orderId: order.id,
+      type: 'ORDER_CREATED'
+    }
+  }).catch((err) => console.warn('[FCM] Order notification failed:', err))
 
   return order
 })

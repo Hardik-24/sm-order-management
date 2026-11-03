@@ -1,6 +1,7 @@
 import { defineEventHandler, readBody, createError } from 'h3'
 import { prisma } from '~~/server/utils/prisma'
 import { enforceRateLimit } from '~~/server/utils/rateLimit'
+import { sendPushNotification } from '~~/server/utils/firebaseAdmin'
 
 export default defineEventHandler(async (event) => {
   enforceRateLimit(event, {
@@ -168,6 +169,18 @@ export default defineEventHandler(async (event) => {
       items: true
     }
   })
+
+  // Non-blocking Push Notification dispatch
+  sendPushNotification({
+    title: `New Order Request: ${orderRequest.requestNumber}`,
+    body: `${orderRequest.customerName} • ₹${Number(orderRequest.totalEstimated || 0).toLocaleString('en-IN')}`,
+    topic: 'orders',
+    data: {
+      requestNumber: orderRequest.requestNumber,
+      orderRequestId: orderRequest.id,
+      type: 'ORDER_REQUEST_CREATED'
+    }
+  }).catch((err) => console.warn('[FCM] Order request notification failed:', err))
 
   return {
     success: true,

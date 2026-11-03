@@ -30,5 +30,6 @@ logs
 
 google-service-account.json
 *service-account*.json
+*firebase-adminsdk*.json
 
 busy_sync_payload.json

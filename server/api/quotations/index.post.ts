@@ -1,6 +1,7 @@
 import { defineEventHandler, readBody } from 'h3'
 import { getPrisma, resetPrisma } from '~~/server/utils/prisma'
 import { requireAuth } from '~~/server/utils/auth'
+import { sendPushNotification } from '~~/server/utils/firebaseAdmin'
 
 export default defineEventHandler(async (event) => {
   const user = requireAuth(event)
@@ -48,6 +49,19 @@ export default defineEventHandler(async (event) => {
 
   try {
     const saved = await saveQuotation(p)
+
+    // Non-blocking Push Notification dispatch
+    sendPushNotification({
+      title: `New Quotation: ${saved.quoteNumber}`,
+      body: `${saved.customerName} • ₹${Number(saved.grandTotal || 0).toLocaleString('en-IN')}`,
+      topic: 'quotations',
+      data: {
+        quoteNumber: saved.quoteNumber,
+        quotationId: saved.id,
+        type: 'QUOTATION_CREATED'
+      }
+    }).catch((err) => console.warn('[FCM] Quotation notification failed:', err))
+
     return {
       success: true,
       quotation: saved
@@ -56,6 +70,19 @@ export default defineEventHandler(async (event) => {
     console.warn('Failed saving quotation, resetting connection and retrying...', err?.message)
     p = resetPrisma()
     const saved = await saveQuotation(p)
+
+    // Non-blocking Push Notification dispatch
+    sendPushNotification({
+      title: `New Quotation: ${saved.quoteNumber}`,
+      body: `${saved.customerName} • ₹${Number(saved.grandTotal || 0).toLocaleString('en-IN')}`,
+      topic: 'quotations',
+      data: {
+        quoteNumber: saved.quoteNumber,
+        quotationId: saved.id,
+        type: 'QUOTATION_CREATED'
+      }
+    }).catch((err) => console.warn('[FCM] Quotation notification failed:', err))
+
     return {
       success: true,
       quotation: saved
