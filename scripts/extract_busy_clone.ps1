@@ -147,14 +147,14 @@ while ($true) {
 }
 Write-Host "  Extracted $($products.Count) products."
 
-# 3. Customers (Debtors & Billed Parties) with Address & GST
-Write-Host "Extracting Customers..."
+# 3. Customers (Sundry Debtors Only) with Address & GST
+Write-Host "Extracting Customers (Sundry Debtors only)..."
 $sqlCust = @"
 SELECT m.Code, m.Name, m.Alias, m.PrintName,
        a.Address1, a.Address2, a.Address3, a.Mobile, a.TelNo, a.WhatsAppNo, a.Email, a.GSTNo, a.PINCode, a.Station
 FROM Master1 m
 LEFT JOIN MasterAddressInfo a ON m.Code = a.MasterCode
-WHERE m.MasterType = 2 AND (m.ParentGrp IN (116, 4101, 7406) OR m.Code IN (SELECT DISTINCT MasterCode1 FROM Tran1 WHERE VchType = 9))
+WHERE m.MasterType = 2 AND m.ParentGrp IN (116, 4101, 7406)
 "@
 
 $rsC = $conn.Execute($sqlCust)
@@ -230,7 +230,7 @@ Write-Host "Extracting Top Billed Customers..."
 $sqlTopCust = @"
 SELECT TOP 15 m.Code, m.Name, COUNT(*) AS BillCount, SUM(t.VchAmtBaseCur) AS TotalBilled
 FROM Tran1 t INNER JOIN Master1 m ON t.MasterCode1 = m.Code
-WHERE t.VchType = 9 AND t.Cancelled = False
+WHERE t.VchType = 9 AND t.Cancelled = False AND m.ParentGrp IN (116, 4101, 7406)
 GROUP BY m.Code, m.Name
 ORDER BY SUM(t.VchAmtBaseCur) DESC
 "@

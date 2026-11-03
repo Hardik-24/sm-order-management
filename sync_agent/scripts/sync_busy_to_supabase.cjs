@@ -17,7 +17,8 @@ async function runSync() {
   console.log("==================================================================");
   const startTime = Date.now();
 
-  const raw = fs.readFileSync('busy_sync_payload.json', 'utf8').replace(/^\uFEFF/, '');
+  const payloadPath = fs.existsSync('busy_sync_payload.json') ? 'busy_sync_payload.json' : 'sync_agent/busy_sync_payload.json';
+  const raw = fs.readFileSync(payloadPath, 'utf8').replace(/^\uFEFF/, '');
   const data = JSON.parse(raw);
   console.log(`Loaded payload extracted at: ${data.extractedAt}`);
   console.log(`- Categories in payload: ${data.categories.length}`);
@@ -196,6 +197,51 @@ async function runSync() {
 
   console.log(`  -> Products sync complete! Updated: ${updatedCount}, Inserted: ${insertedCount}.`);
 
+  // Prune products not present in latest sync payload
+  try {
+    const payloadSkuSet = new Set(data.products.map(p => p.sku.trim()));
+    const allDbProducts = await prisma.product.findMany({ select: { id: true, sku: true } });
+    const staleProducts = allDbProducts.filter(p => !payloadSkuSet.has(p.sku.trim()));
+    if (staleProducts.length > 0) {
+      const staleProdIds = staleProducts.map(p => p.id);
+      const usedOrderItems = await prisma.orderItem.findMany({
+        where: { productId: { in: staleProdIds } },
+        select: { productId: true }
+      });
+      const usedReqItems = await prisma.orderRequestItem.findMany({
+        where: { productId: { in: staleProdIds } },
+        select: { productId: true }
+      });
+      const referencedProdIds = new Set([
+        ...usedOrderItems.map(i => i.productId),
+        ...usedReqItems.map(i => i.productId)
+      ]);
+
+      const safeToDeleteProdIds = staleProdIds.filter(id => !referencedProdIds.has(id));
+      const toDeactivateProdIds = staleProdIds.filter(id => referencedProdIds.has(id));
+
+      if (safeToDeleteProdIds.length > 0) {
+        await prisma.historicalPrice.deleteMany({
+          where: { productId: { in: safeToDeleteProdIds } }
+        });
+        const deleted = await prisma.product.deleteMany({
+          where: { id: { in: safeToDeleteProdIds } }
+        });
+        console.log(`  -> Pruned ${deleted.count} stale/unreferenced products not in latest sync.`);
+      }
+
+      if (toDeactivateProdIds.length > 0) {
+        await prisma.product.updateMany({
+          where: { id: { in: toDeactivateProdIds } },
+          data: { isActive: false, stock: 0 }
+        });
+        console.log(`  -> Deactivated ${toDeactivateProdIds.length} historical products (kept for past order history).`);
+      }
+    }
+  } catch (err) {
+    console.warn('  -> Could not prune stale products:', err.message);
+  }
+
   // -----------------------------------------------------------------------------
   // STEP 3: Customers Sync
   // -----------------------------------------------------------------------------
@@ -314,6 +360,47 @@ async function runSync() {
   }
 
   console.log(`  -> Customers sync complete! Updated: ${custUpdatedCount}, Inserted: ${custInsertedCount}.`);
+
+  // Prune customers not present in latest sync payload (removes suppliers, old seed data, etc.)
+  try {
+    const payloadCustCodeSet = new Set(data.customers.map(c => c.customerCode.trim()));
+    const allDbCustomers = await prisma.customer.findMany({ select: { id: true, customerCode: true } });
+    const staleCustomers = allDbCustomers.filter(c => !c.customerCode || !payloadCustCodeSet.has(c.customerCode.trim()));
+    if (staleCustomers.length > 0) {
+      const staleCustIds = staleCustomers.map(c => c.id);
+      const usedOrders = await prisma.order.findMany({
+        where: { customerId: { in: staleCustIds } },
+        select: { customerId: true }
+      });
+      const referencedCustIds = new Set(usedOrders.map(o => o.customerId));
+
+      const safeToDeleteCustIds = staleCustIds.filter(id => !referencedCustIds.has(id));
+      const toDeactivateCustIds = staleCustIds.filter(id => referencedCustIds.has(id));
+
+      if (safeToDeleteCustIds.length > 0) {
+        await prisma.customerAddress.deleteMany({
+          where: { customerId: { in: safeToDeleteCustIds } }
+        });
+        await prisma.historicalPrice.deleteMany({
+          where: { customerId: { in: safeToDeleteCustIds } }
+        });
+        const deleted = await prisma.customer.deleteMany({
+          where: { id: { in: safeToDeleteCustIds } }
+        });
+        console.log(`  -> Pruned ${deleted.count} stale/supplier/unreferenced customers not in latest sync.`);
+      }
+
+      if (toDeactivateCustIds.length > 0) {
+        await prisma.customer.updateMany({
+          where: { id: { in: toDeactivateCustIds } },
+          data: { isActive: false }
+        });
+        console.log(`  -> Deactivated ${toDeactivateCustIds.length} historical customers (kept for past order history).`);
+      }
+    }
+  } catch (err) {
+    console.warn('  -> Could not prune stale customers:', err.message);
+  }
 
   // -----------------------------------------------------------------------------
   // STEP 4: Historical Prices Sync (Last Billed Rates from BUSY Invoices)

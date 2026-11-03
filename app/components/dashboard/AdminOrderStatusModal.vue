@@ -541,7 +541,7 @@ const submitStatusUpdate = async () => {
             >
               <Loader2 v-if="isSubmitting" class="w-3.5 h-3.5 animate-spin" />
               <Shield v-else class="w-3.5 h-3.5" />
-              <span>Apply Department Statuses</span>
+              <span>Apply Changes</span>
             </button>
           </div>
         </div>
