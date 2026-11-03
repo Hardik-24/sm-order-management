@@ -1665,7 +1665,13 @@ const toggleUserStatus = async (userToToggle: any) => {
     if (users.value) {
       users.value = [...users.value]
     }
-    notifyChange({ type: 'USER_CHANGE', action: 'USER_UPDATED', userId: userToToggle.id })
+    notifyChange({ 
+      type: 'USER_CHANGE', 
+      action: targetState ? 'USER_ACTIVATED' : 'USER_DEACTIVATED', 
+      userId: userToToggle.id,
+      email: userToToggle.email,
+      isActive: targetState
+    })
     showSaved(`${userToToggle.name} is now ${targetState ? 'Active' : 'Inactive'}`)
   } catch (e: any) {
     console.error('Failed to toggle status', e)
@@ -1731,6 +1737,12 @@ const deleteUser = async (userToDelete: any) => {
       method: 'DELETE'
     })
     showSaved(res.message || 'User deleted successfully')
+    notifyChange({
+      type: 'USER_CHANGE',
+      action: 'USER_DELETED',
+      userId: userToDelete.id,
+      email: userToDelete.email
+    })
     await refreshNuxtData('users')
   } catch (err: any) {
     const msg = err?.data?.statusMessage || err?.data?.message || err?.message || 'Failed deleting user'
@@ -1839,8 +1851,10 @@ const saveUser = async () => {
       showSaved(`${form.value.name} updated successfully`)
       notifyChange({ 
         type: 'USER_CHANGE', 
-        action: 'USER_PERMISSIONS_UPDATED', 
+        action: form.value.isActive === false ? 'USER_DEACTIVATED' : 'USER_PERMISSIONS_UPDATED', 
         userId: editingUser.value.id,
+        email: form.value.email,
+        isActive: form.value.isActive,
         allowedPages: allowedPagesToSave,
         actionPermissions: actionPermissionsToSave
       })

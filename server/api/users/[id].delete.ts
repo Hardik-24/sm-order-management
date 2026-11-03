@@ -1,5 +1,5 @@
 // DELETE /api/users/[id] - Admin Delete User Account
-import { requireRole } from '~~/server/utils/auth'
+import { requireRole, revokeUserSessions, revokeDeviceSession } from '~~/server/utils/auth'
 import prisma from '~~/server/utils/prisma'
 
 export default defineEventHandler(async (event) => {
@@ -42,12 +42,26 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  // Delete all trusted devices for this user
+  // 1. Instantly invalidate all JWT sessions for this user in server memory
+  revokeUserSessions(targetUser.email)
+
+  // 2. Fetch and revoke all enrolled hardware devices for this user
+  const userDevices = await prisma.trustedDevice.findMany({
+    where: { userId: id },
+    select: { deviceId: true }
+  })
+  for (const dev of userDevices) {
+    if (dev.deviceId) {
+      revokeDeviceSession(dev.deviceId)
+    }
+  }
+
+  // 3. Delete all trusted devices for this user from database
   await prisma.trustedDevice.deleteMany({
     where: { userId: id }
   })
 
-  // Delete user account
+  // 4. Delete user account
   await prisma.user.delete({
     where: { id }
   })

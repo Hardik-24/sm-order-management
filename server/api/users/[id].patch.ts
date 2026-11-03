@@ -1,5 +1,4 @@
-import { requireRole } from '~~/server/utils/auth'
-import { hashPassword } from '~~/server/utils/auth'
+import { requireRole, hashPassword, revokeUserSessions, revokeDeviceSession } from '~~/server/utils/auth'
 import { prisma } from '~~/server/utils/prisma'
 
 export default defineEventHandler(async (event) => {
@@ -86,6 +85,20 @@ export default defineEventHandler(async (event) => {
       updatedAt: true,
     },
   })
+
+  // If the user account was deactivated, instantly invalidate their JWT sessions and device authorizations
+  if (body.isActive === false) {
+    revokeUserSessions(targetUser.email)
+    const userDevices = await prisma.trustedDevice.findMany({
+      where: { userId: id },
+      select: { deviceId: true }
+    })
+    for (const dev of userDevices) {
+      if (dev.deviceId) {
+        revokeDeviceSession(dev.deviceId)
+      }
+    }
+  }
 
   return user
 })

@@ -50,5 +50,48 @@ export default defineNuxtPlugin(() => {
         console.error('[DeviceSecurity] Error handling logout all others:', err)
       }
     }
+
+    // 3. User Account Deletion or Deactivation Kick
+    const currentUserId = user.value?.id
+    const currentUserEmail = user.value?.email?.toLowerCase()
+
+    if (currentUserId) {
+      const isUserAction =
+        event.type === 'USER_CHANGE' ||
+        event.type === 'DB_USER_CHANGE' ||
+        event.action === 'USER_DELETED' ||
+        event.action === 'USER_DEACTIVATED'
+
+      if (isUserAction) {
+        try {
+          const targetUserId = event.userId || event.record?.id || event.oldRecord?.id
+          const targetEmail = (event.email || event.record?.email || event.oldRecord?.email)?.toLowerCase()
+
+          const matchesCurrentUser =
+            (targetUserId && targetUserId === currentUserId) ||
+            (targetEmail && currentUserEmail && targetEmail === currentUserEmail)
+
+          if (matchesCurrentUser) {
+            // Check if deleted or deactivated
+            const isDeleted =
+              event.action === 'USER_DELETED' ||
+              (event.type === 'DB_USER_CHANGE' && event.eventType === 'DELETE')
+
+            const isDeactivated =
+              event.action === 'USER_DEACTIVATED' ||
+              event.isActive === false ||
+              (event.type === 'DB_USER_CHANGE' && (event.record?.is_active === false || event.record?.isActive === false))
+
+            if (isDeleted || isDeactivated) {
+              console.warn(`[DeviceSecurity] Current user account was ${isDeleted ? 'deleted' : 'deactivated'} remotely. Logging out immediately.`)
+              await logout()
+              return
+            }
+          }
+        } catch (err) {
+          console.error('[DeviceSecurity] Error handling user account revocation:', err)
+        }
+      }
+    }
   })
 })

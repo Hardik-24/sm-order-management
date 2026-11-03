@@ -87,6 +87,9 @@ function setupRealtimeChannel() {
     sharedChannel.on('broadcast', { event: 'DEVICE_CHANGE' }, (payload) => {
       triggerListeners(payload?.payload || { type: 'DEVICE_CHANGE' })
     })
+    sharedChannel.on('broadcast', { event: 'USER_CHANGE' }, (payload) => {
+      triggerListeners(payload?.payload || { type: 'USER_CHANGE' })
+    })
 
     // 2. Direct Postgres database changes fallback
     sharedChannel
@@ -115,7 +118,7 @@ function setupRealtimeChannel() {
         triggerListeners({ type: 'DB_CATEGORY_CHANGE', table: 'categories', record: payload.new || payload.old })
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, (payload) => {
-        triggerListeners({ type: 'DB_USER_CHANGE', table: 'users', record: payload.new || payload.old })
+        triggerListeners({ type: 'DB_USER_CHANGE', table: 'users', eventType: payload.eventType, record: payload.new || payload.old, oldRecord: payload.old, newRecord: payload.new })
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_messages' }, (payload) => {
         triggerListeners({ type: 'DB_CHAT_CHANGE', table: 'chat_messages', record: payload.new || payload.old })
@@ -136,7 +139,7 @@ function setupRealtimeChannel() {
         triggerListeners({ type: 'DB_SYSTEM_SETTING_CHANGE', table: 'system_settings', record: payload.new || payload.old })
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'trusted_devices' }, (payload) => {
-        triggerListeners({ type: 'DB_DEVICE_CHANGE', table: 'trusted_devices', record: payload.new || payload.old })
+        triggerListeners({ type: 'DB_DEVICE_CHANGE', table: 'trusted_devices', eventType: payload.eventType, record: payload.new || payload.old, oldRecord: payload.old, newRecord: payload.new })
       })
 
     sharedChannel.subscribe((status) => {
@@ -201,6 +204,16 @@ export function useRealtimeSync() {
           sharedChannel.send({
             type: 'broadcast',
             event: 'DEVICE_CHANGE',
+            payload,
+          })
+        }
+        if (
+          payload.type?.includes('USER') || 
+          payload.action?.includes('USER')
+        ) {
+          sharedChannel.send({
+            type: 'broadcast',
+            event: 'USER_CHANGE',
             payload,
           })
         }

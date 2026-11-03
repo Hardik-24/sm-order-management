@@ -793,8 +793,11 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
   },
 });
 
+const emit = defineEmits(['logout']);
+
 const fetchAuth = async (url: string, options: any = {}) => {
   const { value: token } = await Preferences.get({ key: 'auth_token' });
+  const { value: devId } = await Preferences.get({ key: 'sm_flow_hw_device_id' });
   if (options.body && typeof options.body === 'object') {
     options.body = JSON.stringify(options.body);
   }
@@ -803,16 +806,23 @@ const fetchAuth = async (url: string, options: any = {}) => {
     headers: {
       'Content-Type': 'application/json',
       ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+      ...(devId ? { 'x-device-id': devId } : {}),
       ...options.headers
     }
   });
+  if (res.status === 401 || res.status === 403) {
+    console.warn('[Dashboard] Unauthorized or remote session revoked (401/403). Logging out immediately.');
+    await logout();
+    throw new Error('Unauthorized or Session Revoked');
+  }
   if (!res.ok) throw new Error('API Error');
   return res.json();
 };
 
 const logout = async () => {
   await Preferences.remove({ key: 'auth_token' });
-  window.location.reload();
+  await Preferences.remove({ key: 'auth_user' });
+  emit('logout');
 };
 
 import { ref, computed, onMounted, onBeforeUnmount, watch, reactive, onUnmounted } from 'vue'
@@ -2040,7 +2050,6 @@ async function handleLogout() {
   }
   stopGpsTracking()
   await logout()
-  window.location.reload()
 }
 
 let driverSyncChannel: BroadcastChannel | null = null
