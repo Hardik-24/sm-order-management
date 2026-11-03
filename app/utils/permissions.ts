@@ -41,6 +41,11 @@ export const DEFAULT_ROLE_PAGES: Record<UserRole, string[]> = {
     'QUOTATIONS', 'APPROVE_ORDERS', 'PACKING', 'BILLING', 'DELIVERY', 'INVENTORY', 'DRIVER_PORTAL',
     'CUSTOMERS', 'PRODUCTS', 'VOUCHERS', 'ADMIN'
   ],
+  SUPERVISOR: [
+    'OVERVIEW', 'ANALYTICS', 'ORDERS', 'CREATE_ORDER', 'ORDER_REQUESTS', 'CHAT',
+    'QUOTATIONS', 'APPROVE_ORDERS', 'PACKING', 'BILLING', 'DELIVERY', 'INVENTORY',
+    'CUSTOMERS', 'PRODUCTS', 'VOUCHERS'
+  ],
   SALES: [
     'OVERVIEW', 'ANALYTICS', 'ORDERS', 'CREATE_ORDER', 'ORDER_REQUESTS', 'CHAT',
     'QUOTATIONS', 'APPROVE_ORDERS', 'CUSTOMERS', 'PRODUCTS', 'VOUCHERS', 'INVENTORY'
@@ -145,6 +150,16 @@ export const DEFAULT_ROLE_ACTION_PERMISSIONS: Record<UserRole, UserActionPermiss
     canCancelOrders: true,
     canEditCustomers: true,
     canEditProducts: true,
+    canDeleteQuotations: true,
+    canViewAllCompanyOrders: true,
+    canLinkBusyData: true,
+  },
+  SUPERVISOR: {
+    canEditOrders: true,
+    canEditOrderStatus: true,
+    canCancelOrders: true,
+    canEditCustomers: true,
+    canEditProducts: false,
     canDeleteQuotations: true,
     canViewAllCompanyOrders: true,
     canLinkBusyData: true,

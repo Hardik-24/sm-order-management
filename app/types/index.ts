@@ -1,6 +1,6 @@
 // Shared TypeScript types for Silicon Marketing OMS
 
-export type UserRole = 'ADMIN' | 'SALES' | 'BILLING' | 'PACKING' | 'DELIVERY'
+export type UserRole = 'ADMIN' | 'SUPERVISOR' | 'SALES' | 'BILLING' | 'PACKING' | 'DELIVERY'
 
 export type OrderStatus = 'CONFIRMED' | 'PROCESSING' | 'READY' | 'DISPATCHED' | 'DELIVERED'
 export type BillingState = 'PENDING' | 'IN_PROGRESS' | 'GENERATED'

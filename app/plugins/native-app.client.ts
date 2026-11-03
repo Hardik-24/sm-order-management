@@ -41,6 +41,22 @@ export default defineNuxtPlugin(() => {
     const { showEditing } = useSnackbar()
 
     /**
+     * Resolves the effective CSS z-index of an element by traversing up to its positioned container.
+     */
+    function getElementZIndex(el: HTMLElement | null): number {
+      let current: HTMLElement | null = el
+      while (current && current !== document.body && current !== document.documentElement) {
+        const style = window.getComputedStyle(current)
+        const z = parseInt(style.zIndex, 10)
+        if (!isNaN(z) && z > 0) {
+          return z
+        }
+        current = current.parentElement
+      }
+      return 0
+    }
+
+    /**
      * Resolves and dismisses the top-most active modal, slide-over drawer, or dialog.
      * Returns true if a modal was found and dismissed.
      */
@@ -54,8 +70,16 @@ export default defineNuxtPlugin(() => {
       })
 
       if (explicitCloseButtons.length > 0) {
-        // Click the last one rendered in DOM (top-most in visual stacking order)
-        const topBtn = explicitCloseButtons[explicitCloseButtons.length - 1]
+        // Sort buttons by their container's effective z-index descending so top-most layered modal closes first
+        explicitCloseButtons.sort((a, b) => {
+          const zA = getElementZIndex(a)
+          const zB = getElementZIndex(b)
+          if (zA !== zB) return zB - zA
+          // If equal z-index, pick the one later in the DOM
+          return 0
+        })
+
+        const topBtn = explicitCloseButtons[0]
         topBtn.click()
         return true
       }
@@ -75,10 +99,10 @@ export default defineNuxtPlugin(() => {
       })
 
       if (overlays.length > 0) {
-        // Sort by z-index descending to ensure top-most layered modal closes first
+        // Sort by effective z-index descending
         overlays.sort((a, b) => {
-          const zA = parseInt(window.getComputedStyle(a).zIndex) || 0
-          const zB = parseInt(window.getComputedStyle(b).zIndex) || 0
+          const zA = getElementZIndex(a)
+          const zB = getElementZIndex(b)
           return zB - zA
         })
 

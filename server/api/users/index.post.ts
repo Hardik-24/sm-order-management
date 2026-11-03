@@ -31,6 +31,17 @@ export default defineEventHandler(async (event) => {
       canViewAllCompanyOrders: true,
       canLinkBusyData: true,
     }
+  } else if (body.role === 'SUPERVISOR' && !actionPermissions) {
+    actionPermissions = {
+      canEditOrders: true,
+      canEditOrderStatus: true,
+      canCancelOrders: true,
+      canEditCustomers: true,
+      canEditProducts: true,
+      canDeleteQuotations: true,
+      canViewAllCompanyOrders: true,
+      canLinkBusyData: true,
+    }
   }
 
   const user = await prisma.user.create({

@@ -45,15 +45,15 @@
       </div>
 
       <!-- OPERATIONS -->
-      <div v-if="(['ADMIN', 'SALES'].includes(user?.role || '') && canAccessRoute('/dashboard/orders/create')) || (['ADMIN', 'SALES'].includes(user?.role || '') && canAccessRoute('/dashboard/approve-orders')) || canAccessRoute('/dashboard/packing') || canAccessRoute('/dashboard/billing') || canAccessRoute('/dashboard/delivery') || canAccessRoute('/dashboard/inventory') || canAccessDriverApp">
+      <div v-if="(['ADMIN', 'SUPERVISOR', 'SALES'].includes(user?.role || '') && canAccessRoute('/dashboard/orders/create')) || (['ADMIN', 'SUPERVISOR', 'SALES'].includes(user?.role || '') && canAccessRoute('/dashboard/approve-orders')) || canAccessRoute('/dashboard/packing') || canAccessRoute('/dashboard/billing') || canAccessRoute('/dashboard/delivery') || canAccessRoute('/dashboard/inventory') || canAccessDriverApp">
         <h3 v-if="!isSidebarCollapsed" class="mb-3 px-3 text-[10px] font-bold uppercase tracking-widest text-gray-500 whitespace-nowrap">OPERATIONS</h3>
         <div v-else class="mb-3 h-3 flex justify-center border-b border-gray-800 mx-2"></div>
         <nav class="flex flex-col gap-1">
-          <NuxtLink v-if="['ADMIN', 'SALES'].includes(user?.role || '') && canAccessRoute('/dashboard/orders/create')" to="/dashboard/orders/create" title="Create Order" class="flex items-center gap-3 rounded-md py-2.5 text-sm transition-colors" :class="[isLinkActive('/dashboard/orders/create') ? 'bg-[#182d47] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50 hover:text-gray-200', isSidebarCollapsed ? 'justify-center px-0' : 'px-3']">
+          <NuxtLink v-if="['ADMIN', 'SUPERVISOR', 'SALES'].includes(user?.role || '') && canAccessRoute('/dashboard/orders/create')" to="/dashboard/orders/create" title="Create Order" class="flex items-center gap-3 rounded-md py-2.5 text-sm transition-colors" :class="[isLinkActive('/dashboard/orders/create') ? 'bg-[#182d47] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50 hover:text-gray-200', isSidebarCollapsed ? 'justify-center px-0' : 'px-3']">
             <PenTool class="shrink-0 w-4 h-4 transition-colors" :class="isLinkActive('/dashboard/orders/create') ? 'text-sky-400' : 'text-gray-400'" />
             <span v-if="!isSidebarCollapsed" class="font-medium whitespace-nowrap">Create Order</span>
           </NuxtLink>
-          <NuxtLink v-if="['ADMIN', 'SALES'].includes(user?.role || '') && canAccessRoute('/dashboard/approve-orders')" to="/dashboard/approve-orders" title="Approve Orders" class="flex items-center gap-3 rounded-md py-2.5 text-sm transition-colors" :class="[isLinkActive('/dashboard/approve-orders') ? 'bg-[#182d47] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50 hover:text-gray-200', isSidebarCollapsed ? 'justify-center px-0' : 'px-3']">
+          <NuxtLink v-if="['ADMIN', 'SUPERVISOR', 'SALES'].includes(user?.role || '') && canAccessRoute('/dashboard/approve-orders')" to="/dashboard/approve-orders" title="Approve Orders" class="flex items-center gap-3 rounded-md py-2.5 text-sm transition-colors" :class="[isLinkActive('/dashboard/approve-orders') ? 'bg-[#182d47] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50 hover:text-gray-200', isSidebarCollapsed ? 'justify-center px-0' : 'px-3']">
             <CheckCheck class="shrink-0 w-4 h-4 transition-colors" :class="isLinkActive('/dashboard/approve-orders') ? 'text-sky-400' : 'text-gray-400'" />
             <span v-if="!isSidebarCollapsed" class="font-medium whitespace-nowrap">Approve Orders</span>
           </NuxtLink>
@@ -152,7 +152,7 @@
           <img :src="'https://ui-avatars.com/api/?name=' + (user?.name || 'Hardik') + '&background=1b3b5f&color=e8e0d4'" alt="Hardik" class="h-9 w-9 rounded-full shrink-0 object-cover" />
           <div v-if="!isSidebarCollapsed" class="flex flex-col overflow-hidden whitespace-nowrap">
             <span class="text-sm font-medium text-gray-200 truncate">{{ user?.name || 'Hardik' }}</span>
-            <span class="text-[10px] text-gray-500 truncate">{{ user?.role === 'ADMIN' ? 'Administrator' : user?.role || 'Administrator' }}</span>
+            <span class="text-[10px] text-gray-500 truncate">{{ user?.role === 'ADMIN' ? 'Administrator' : user?.role === 'SUPERVISOR' ? 'Supervisor' : user?.role || 'Administrator' }}</span>
           </div>
         </div>
       </div>
@@ -211,12 +211,12 @@
       </div>
 
       <!-- OPERATIONS -->
-      <div v-if="(['ADMIN', 'SALES'].includes(user?.role || '') && canAccessRoute('/dashboard/orders/create')) || (['ADMIN', 'SALES'].includes(user?.role || '') && canAccessRoute('/dashboard/approve-orders')) || canAccessRoute('/dashboard/packing') || canAccessRoute('/dashboard/billing') || canAccessRoute('/dashboard/delivery') || canAccessRoute('/dashboard/inventory') || canAccessDriverApp" class="flex flex-col gap-1 mb-6">
+      <div v-if="(['ADMIN', 'SUPERVISOR', 'SALES'].includes(user?.role || '') && canAccessRoute('/dashboard/orders/create')) || (['ADMIN', 'SUPERVISOR', 'SALES'].includes(user?.role || '') && canAccessRoute('/dashboard/approve-orders')) || canAccessRoute('/dashboard/packing') || canAccessRoute('/dashboard/billing') || canAccessRoute('/dashboard/delivery') || canAccessRoute('/dashboard/inventory') || canAccessDriverApp" class="flex flex-col gap-1 mb-6">
         <h3 class="block mb-3 px-3 text-[10px] font-bold uppercase tracking-widest text-gray-500">OPERATIONS</h3>
-        <NuxtLink v-if="['ADMIN', 'SALES'].includes(user?.role || '') && canAccessRoute('/dashboard/orders/create')" to="/dashboard/orders/create" class="flex items-center gap-3 rounded-md py-2.5 px-3 text-sm transition-colors" :class="[isLinkActive('/dashboard/orders/create') ? 'bg-[#182d47] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50']">
+        <NuxtLink v-if="['ADMIN', 'SUPERVISOR', 'SALES'].includes(user?.role || '') && canAccessRoute('/dashboard/orders/create')" to="/dashboard/orders/create" class="flex items-center gap-3 rounded-md py-2.5 px-3 text-sm transition-colors" :class="[isLinkActive('/dashboard/orders/create') ? 'bg-[#182d47] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50']">
           <PenTool class="w-4 h-4 transition-colors" :class="isLinkActive('/dashboard/orders/create') ? 'text-sky-400' : 'text-gray-400'" /> <span class="font-medium">Create Order</span>
         </NuxtLink>
-        <NuxtLink v-if="['ADMIN', 'SALES'].includes(user?.role || '') && canAccessRoute('/dashboard/approve-orders')" to="/dashboard/approve-orders" class="flex items-center gap-3 rounded-md py-2.5 px-3 text-sm transition-colors" :class="[isLinkActive('/dashboard/approve-orders') ? 'bg-[#182d47] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50']">
+        <NuxtLink v-if="['ADMIN', 'SUPERVISOR', 'SALES'].includes(user?.role || '') && canAccessRoute('/dashboard/approve-orders')" to="/dashboard/approve-orders" class="flex items-center gap-3 rounded-md py-2.5 px-3 text-sm transition-colors" :class="[isLinkActive('/dashboard/approve-orders') ? 'bg-[#182d47] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50']">
           <CheckCheck class="w-4 h-4 transition-colors" :class="isLinkActive('/dashboard/approve-orders') ? 'text-sky-400' : 'text-gray-400'" />
           <span class="font-medium">Approve Orders</span>
         </NuxtLink>
@@ -302,8 +302,8 @@
         <NuxtLink v-if="canAccessRoute('/dashboard')" to="/dashboard" title="Home" class="shrink-0" :class="[isLinkActive('/dashboard') ? 'text-sky-400' : 'text-gray-400']"><Home class="w-5 h-5" /></NuxtLink>
 
         <!-- OPERATIONS -->
-        <NuxtLink v-if="['ADMIN', 'SALES'].includes(user?.role || '') && canAccessRoute('/dashboard/orders/create')" to="/dashboard/orders/create" title="Create Order" class="shrink-0" :class="[isLinkActive('/dashboard/orders/create') ? 'text-sky-400' : 'text-gray-400']"><PenTool class="w-5 h-5" /></NuxtLink>
-        <NuxtLink v-if="['ADMIN', 'SALES'].includes(user?.role || '') && canAccessRoute('/dashboard/approve-orders')" to="/dashboard/approve-orders" title="Approve Orders" class="shrink-0" :class="[isLinkActive('/dashboard/approve-orders') ? 'text-sky-400' : 'text-gray-400']">
+        <NuxtLink v-if="['ADMIN', 'SUPERVISOR', 'SALES'].includes(user?.role || '') && canAccessRoute('/dashboard/orders/create')" to="/dashboard/orders/create" title="Create Order" class="shrink-0" :class="[isLinkActive('/dashboard/orders/create') ? 'text-sky-400' : 'text-gray-400']"><PenTool class="w-5 h-5" /></NuxtLink>
+        <NuxtLink v-if="['ADMIN', 'SUPERVISOR', 'SALES'].includes(user?.role || '') && canAccessRoute('/dashboard/approve-orders')" to="/dashboard/approve-orders" title="Approve Orders" class="shrink-0" :class="[isLinkActive('/dashboard/approve-orders') ? 'text-sky-400' : 'text-gray-400']">
           <CheckCheck class="w-5 h-5" />
         </NuxtLink>
         <NuxtLink v-if="canAccessRoute('/dashboard/packing')" to="/dashboard/packing" title="Packing" class="shrink-0" :class="[isLinkActive('/dashboard/packing') ? 'text-sky-400' : 'text-gray-400']"><Package class="w-5 h-5" /></NuxtLink>

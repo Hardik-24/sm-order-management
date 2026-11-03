@@ -149,10 +149,16 @@ export async function requireActionPermission(
     hasPerm = Boolean(perms[permission])
   } else {
     // Default role capabilities
-    if (permission === 'canEditOrders' && dbUser.role === 'SALES') hasPerm = true
-    if (permission === 'canEditCustomers' && dbUser.role === 'SALES') hasPerm = true
+    if (dbUser.role === 'SUPERVISOR') {
+      if (['canEditOrders', 'canEditOrderStatus', 'canCancelOrders', 'canEditCustomers', 'canEditProducts', 'canDeleteQuotations', 'canViewAllCompanyOrders', 'canLinkBusyData'].includes(permission)) {
+        hasPerm = true
+      }
+    }
+    if (permission === 'canEditOrders' && (dbUser.role === 'SALES' || dbUser.role === 'SUPERVISOR')) hasPerm = true
+    if (permission === 'canEditCustomers' && (dbUser.role === 'SALES' || dbUser.role === 'SUPERVISOR')) hasPerm = true
+    if (permission === 'canEditProducts' && dbUser.role === 'SUPERVISOR') hasPerm = true
     if (permission === 'canViewAllCompanyOrders') hasPerm = true
-    if (permission === 'canLinkBusyData' && (dbUser.role === 'BILLING' || dbUser.role === 'ADMIN')) hasPerm = true
+    if (permission === 'canLinkBusyData' && (dbUser.role === 'BILLING' || dbUser.role === 'ADMIN' || dbUser.role === 'SUPERVISOR')) hasPerm = true
   }
 
   if (!hasPerm) {

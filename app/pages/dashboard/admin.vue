@@ -328,7 +328,7 @@
                     class="absolute left-0 mt-1 w-36 bg-white border border-gray-200 rounded-lg shadow-xl z-40 p-1"
                   >
                     <button 
-                      v-for="role in ['ADMIN', 'SALES', 'BILLING', 'PACKING', 'DELIVERY']" 
+                      v-for="role in ['ADMIN', 'SUPERVISOR', 'SALES', 'BILLING', 'PACKING', 'DELIVERY']" 
                       :key="role"
                       type="button"
                       @click="changeUserRole(u, role); activeRoleDropdownUserId = null"
@@ -1381,6 +1381,7 @@ onOrderSync((event) => {
 
 const roleOptions = [
   { label: 'ADMIN - Full System Access', value: 'ADMIN' },
+  { label: 'SUPERVISOR - Operations & Sales Oversight', value: 'SUPERVISOR' },
   { label: 'SALES - Orders & Customers', value: 'SALES' },
   { label: 'BILLING - Invoicing & Finance', value: 'BILLING' },
   { label: 'PACKING - Warehouse & Dispatch', value: 'PACKING' },
@@ -1447,14 +1448,16 @@ const { data: users, pending, refresh } = useFetch<any[]>('/api/users', {
 // Logical Operational Role Grouping Priority
 const ROLE_PRIORITY: Record<string, number> = {
   ADMIN: 1,
-  SALES: 2,
-  BILLING: 3,
-  PACKING: 4,
-  DELIVERY: 5,
+  SUPERVISOR: 2,
+  SALES: 3,
+  BILLING: 4,
+  PACKING: 5,
+  DELIVERY: 6,
 }
 
 const ROLE_GROUP_INFO: Record<string, { label: string; countSuffix: string; color: string; bg: string; dot: string }> = {
   ADMIN: { label: 'Administrators', countSuffix: 'Admin', color: 'text-purple-800', bg: 'bg-purple-50/70 border-purple-200/80', dot: 'bg-purple-500' },
+  SUPERVISOR: { label: 'Supervisors', countSuffix: 'Supervisor', color: 'text-indigo-800', bg: 'bg-indigo-50/70 border-indigo-200/80', dot: 'bg-indigo-500' },
   SALES: { label: 'Sales Team', countSuffix: 'Sales Rep', color: 'text-blue-800', bg: 'bg-blue-50/70 border-blue-200/80', dot: 'bg-blue-500' },
   BILLING: { label: 'Billing & Invoicing', countSuffix: 'Billing Staff', color: 'text-amber-800', bg: 'bg-amber-50/70 border-amber-200/80', dot: 'bg-amber-500' },
   PACKING: { label: 'Warehouse & Packing', countSuffix: 'Packer', color: 'text-orange-800', bg: 'bg-orange-50/70 border-orange-200/80', dot: 'bg-orange-500' },
@@ -1637,6 +1640,7 @@ const onRoleChanged = (newRole: any) => {
 const getRoleColorClass = (role: string) => {
   switch (role) {
     case 'ADMIN': return 'bg-purple-100 text-purple-700 border-purple-200'
+    case 'SUPERVISOR': return 'bg-indigo-100 text-indigo-700 border-indigo-200'
     case 'SALES': return 'bg-blue-100 text-blue-700 border-blue-200'
     case 'BILLING': return 'bg-amber-100 text-amber-700 border-amber-200'
     case 'PACKING': return 'bg-orange-100 text-orange-700 border-orange-200'

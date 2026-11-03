@@ -12,7 +12,7 @@ const { user, hasRole } = useAuth()
 
 const canViewAllCompanyOrders = computed(() => {
   if (!user.value) return false
-  if (user.value.role === 'ADMIN') return true
+  if (user.value.role === 'ADMIN' || user.value.role === 'SUPERVISOR') return true
   const perms = getEffectiveActionPermissions(user.value)
   return perms.canViewAllCompanyOrders ?? true
 })

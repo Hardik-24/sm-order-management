@@ -18,11 +18,11 @@ definePageMeta({
 
 const { user, canAccessRoute } = useAuth()
 const isSales = computed(() => user.value?.role === 'SALES')
-const isAdmin = computed(() => user.value?.role === 'ADMIN')
+const isAdmin = computed(() => user.value?.role === 'ADMIN' || user.value?.role === 'SUPERVISOR')
 
 const canViewAllCompanyOrders = computed(() => {
   if (!user.value) return false
-  if (user.value.role === 'ADMIN') return true
+  if (user.value.role === 'ADMIN' || user.value.role === 'SUPERVISOR') return true
   const perms = getEffectiveActionPermissions(user.value)
   return perms.canViewAllCompanyOrders ?? true
 })
@@ -45,7 +45,7 @@ const scopeSearchQuery = ref('')
 const { data: allUsers } = useFetch<any[]>('/api/users')
 const salesTeam = computed(() => {
   if (!allUsers.value) return []
-  return allUsers.value.filter(u => u.role === 'SALES' || u.role === 'ADMIN')
+  return allUsers.value.filter(u => u.role === 'SALES' || u.role === 'ADMIN' || u.role === 'SUPERVISOR')
 })
 
 const selectedRep = computed(() => {
