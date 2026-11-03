@@ -111,16 +111,19 @@ export function usePushDiagnostics() {
 
       // 1. Create channel
       try {
+        try {
+          await PushNotifications.deleteChannel({ id: 'sm_flow_notifications' })
+        } catch {}
+
         await PushNotifications.createChannel({
-          id: 'sm_flow_notifications',
-          name: 'SM Flow Notifications',
-          description: 'Instant alerts for orders and quotations',
+          id: 'sm_flow_alerts_v2',
+          name: 'SM Flow Alerts',
+          description: 'Instant alerts with sound and vibration for orders and quotations',
           importance: 5,
           visibility: 1,
-          sound: 'default',
           vibration: true
         })
-        addLog('Notification channel configured (Importance: High)', 'info')
+        addLog('Notification channel configured (Importance: High, Sound & Vibrate enabled)', 'info')
       } catch (e: any) {
         addLog(`Channel creation notice: ${e?.message || e}`, 'warn')
       }

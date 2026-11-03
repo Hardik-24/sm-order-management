@@ -215,14 +215,18 @@ export default defineNuxtPlugin(() => {
 
       // A. Create high-priority notification channel for Android 8+
       try {
+        // Delete legacy channel with broken sound configuration
+        try {
+          await PushNotifications.deleteChannel({ id: 'sm_flow_notifications' })
+        } catch {}
+
         await PushNotifications.createChannel({
-          id: 'sm_flow_notifications',
-          name: 'SM Flow Notifications',
-          description: 'Instant alerts for orders, quotations, and dispatch status',
+          id: 'sm_flow_alerts_v2',
+          name: 'SM Flow Alerts',
+          description: 'Instant alerts with sound and vibration for orders, quotations, and dispatch status',
           importance: 5,
           visibility: 1,
-          sound: 'default',
-          vibration: true,
+          vibration: true
         })
       } catch (e) {
         console.warn('[FCM] Channel creation skipped:', e)
@@ -265,12 +269,39 @@ export default defineNuxtPlugin(() => {
       })
 
       // Foreground notification
-      await PushNotifications.addListener('pushNotificationReceived', (notification: any) => {
+      await PushNotifications.addListener('pushNotificationReceived', async (notification: any) => {
         console.log('[FCM] Foreground push received:', notification)
         try {
           const { showSuccess } = useSnackbar()
           if (notification.title && notification.body) {
             showSuccess(`${notification.title}: ${notification.body}`)
+          }
+        } catch {}
+
+        // Native haptic vibration for foreground alert
+        try {
+          const { Haptics, NotificationType } = await import('@capacitor/haptics')
+          if (Haptics) {
+            await Haptics.notification({ type: NotificationType.Success })
+          }
+        } catch {}
+
+        // Audio chime via Web Audio API (works natively inside WebView)
+        try {
+          const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext
+          if (AudioContextClass) {
+            const ctx = new AudioContextClass()
+            const osc = ctx.createOscillator()
+            const gain = ctx.createGain()
+            osc.connect(gain)
+            gain.connect(ctx.destination)
+            osc.type = 'sine'
+            osc.frequency.setValueAtTime(587.33, ctx.currentTime) // D5
+            osc.frequency.setValueAtTime(880, ctx.currentTime + 0.1) // A5
+            gain.gain.setValueAtTime(0.3, ctx.currentTime)
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35)
+            osc.start()
+            osc.stop(ctx.currentTime + 0.35)
           }
         } catch {}
       })

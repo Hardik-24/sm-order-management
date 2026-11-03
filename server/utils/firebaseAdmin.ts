@@ -114,9 +114,9 @@ export async function sendPushNotification(payload: PushNotificationPayload): Pr
           android: {
             priority: 'high',
             notification: {
-              channelId: 'sm_flow_notifications',
-              sound: 'default',
+              channelId: 'sm_flow_alerts_v2',
               priority: 'high',
+              defaultSound: true,
               defaultVibrateTimings: true
             }
           }
@@ -160,9 +160,9 @@ export async function sendPushNotification(payload: PushNotificationPayload): Pr
           android: {
             priority: 'high',
             notification: {
-              channelId: 'sm_flow_notifications',
-              sound: 'default',
+              channelId: 'sm_flow_alerts_v2',
               priority: 'high',
+              defaultSound: true,
               defaultVibrateTimings: true
             }
           }
