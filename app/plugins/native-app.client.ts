@@ -280,9 +280,11 @@ export default defineNuxtPlugin(() => {
 
         // Native haptic vibration for foreground alert
         try {
-          const { Haptics, NotificationType } = await import('@capacitor/haptics')
+          const Haptics = (window as any).Capacitor?.Plugins?.Haptics
           if (Haptics) {
-            await Haptics.notification({ type: NotificationType.Success })
+            await Haptics.notification({ type: 'SUCCESS' })
+          } else if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+            navigator.vibrate([30, 80, 30])
           }
         } catch {}
 
