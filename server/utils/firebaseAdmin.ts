@@ -3,7 +3,7 @@ import { getMessaging } from 'firebase-admin/messaging'
 import fs from 'node:fs'
 import path from 'node:path'
 import prisma from './prisma'
-import { appendDebugLog } from '~~/server/api/notifications/debug-log'
+import { appendDebugLog } from '../api/notifications/debug-log'
 
 let firebaseApp: App | null = null
 
