@@ -1,15 +1,35 @@
 export default defineNuxtPlugin(() => {
   if (typeof window === 'undefined') return
 
-  const capacitor = (window as any).Capacitor
-  if (!capacitor?.isNativePlatform?.()) {
-    return
-  }
+  ;(async () => {
+    // 1. Wait for Capacitor bridge (essential when loading remote URL in Android WebView)
+    const ua = navigator.userAgent || ''
+    const isLikelyApp = ua.includes('SiliconOMSApp') || (window as any).isSiliconOMSApp === true || /; wv\)/.test(ua)
+    
+    let capacitor = (window as any).Capacitor
+    if (!capacitor && isLikelyApp) {
+      const start = Date.now()
+      capacitor = await new Promise((resolve) => {
+        const interval = setInterval(() => {
+          if ((window as any).Capacitor) {
+            clearInterval(interval)
+            resolve((window as any).Capacitor)
+          } else if (Date.now() - start > 4000) {
+            clearInterval(interval)
+            resolve(null)
+          }
+        }, 80)
+      })
+    }
 
-  const Plugins = capacitor.Plugins || {}
-  const StatusBar = Plugins.StatusBar
-  const SplashScreen = Plugins.SplashScreen
-  const App = Plugins.App
+    if (!capacitor?.isNativePlatform?.()) {
+      return
+    }
+
+    const Plugins = capacitor.Plugins || {}
+    const StatusBar = Plugins.StatusBar
+    const SplashScreen = Plugins.SplashScreen
+    const App = Plugins.App
 
   // 1. Native Status Bar Styling
   if (StatusBar) {

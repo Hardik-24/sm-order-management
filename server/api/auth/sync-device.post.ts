@@ -1,6 +1,8 @@
 import { getUserFromEvent } from '~~/server/utils/auth'
 import { prisma } from '~~/server/utils/prisma'
 import { getClientIp } from '~~/server/utils/rateLimit'
+import { subscribeToTopic } from '~~/server/utils/firebaseAdmin'
+import { appendDebugLog } from '~~/server/api/notifications/debug-log'
 
 export default defineEventHandler(async (event) => {
   const sessionUser = getUserFromEvent(event)
@@ -10,6 +12,7 @@ export default defineEventHandler(async (event) => {
 
   const body = await readBody(event)
   const device = body?.device
+  const fcmToken = typeof body?.fcmToken === 'string' ? body.fcmToken.trim() : (typeof device?.fcmToken === 'string' ? device.fcmToken.trim() : null)
 
   if (!device?.id) {
     throw createError({ statusCode: 400, statusMessage: 'No device ID provided' })
@@ -17,6 +20,21 @@ export default defineEventHandler(async (event) => {
 
   const ipAddress = getClientIp(event)
   const deviceId = String(device.id).trim()
+
+  if (fcmToken) {
+    appendDebugLog({
+      deviceId,
+      deviceName: device.name,
+      level: 'info',
+      message: `Received FCM token in sync-device: ${fcmToken.slice(0, 15)}...`,
+      data: { userId: sessionUser.id }
+    })
+    Promise.allSettled([
+      subscribeToTopic(fcmToken, 'orders'),
+      subscribeToTopic(fcmToken, 'quotations'),
+      subscribeToTopic(fcmToken, 'general')
+    ]).catch(() => {})
+  }
 
   // 1. If user is ADMIN:
   if (sessionUser.role === 'ADMIN') {
@@ -49,6 +67,7 @@ export default defineEventHandler(async (event) => {
           screenResolution: device.screenResolution,
           hardwareHash: device.hardwareHash,
           ipAddress,
+          fcmToken: fcmToken || null,
           isApproved: true,
           approvedAt: new Date(),
           approvedByName: 'Primary Admin Auto-Enrolled'
@@ -57,7 +76,8 @@ export default defineEventHandler(async (event) => {
           lastUsedAt: new Date(),
           ipAddress,
           browser: device.browser,
-          os: device.os
+          os: device.os,
+          ...(fcmToken ? { fcmToken } : {})
         }
       })
 
@@ -77,7 +97,8 @@ export default defineEventHandler(async (event) => {
           ipAddress,
           deviceName: device.name && !device.name.startsWith('Unregistered') ? device.name : existing.deviceName,
           browser: device.browser || existing.browser,
-          os: device.os || existing.os
+          os: device.os || existing.os,
+          ...(fcmToken ? { fcmToken } : {})
         }
       })
     } else {
@@ -125,7 +146,8 @@ export default defineEventHandler(async (event) => {
           ipAddress,
           deviceName: device.name && !device.name.startsWith('Unregistered') ? device.name : existing.deviceName,
           browser: device.browser || existing.browser,
-          os: device.os || existing.os
+          os: device.os || existing.os,
+          ...(fcmToken ? { fcmToken } : {})
         }
       })
       return { success: true, isApproved: true, device: existing }

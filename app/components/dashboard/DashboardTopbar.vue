@@ -128,6 +128,17 @@
               </div>
             </div>
           </div>
+
+          <!-- Diagnostics Action Footer -->
+          <div class="p-2 border-t border-gray-100 bg-gray-50/70">
+            <button
+              @click="isPushDiagnosticsOpen = true; showNotifications = false"
+              class="w-full py-1.5 px-3 rounded-lg bg-indigo-50 hover:bg-indigo-100/80 text-indigo-700 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <Sliders class="w-3.5 h-3.5" />
+              <span>Push Notification Diagnostics</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -152,14 +163,21 @@
         </div>
       </div>
     </div>
+
+    <!-- Push Notification Diagnostics Modal -->
+    <PushDiagnosticsModal
+      :isOpen="isPushDiagnosticsOpen"
+      @close="isPushDiagnosticsOpen = false"
+    />
   </header>
 </template>
 
 <script setup lang="ts">
 import { computed, ref, watch, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Search, Menu, FileText, Package, User as UserIcon, X, Bell } from 'lucide-vue-next'
+import { Search, Menu, FileText, Package, User as UserIcon, X, Bell, Sliders } from 'lucide-vue-next'
 import { useDebounceFn, onClickOutside } from '@vueuse/core'
+import PushDiagnosticsModal from '~/components/dashboard/PushDiagnosticsModal.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -169,6 +187,7 @@ const isMobileMenuOpen = useState('mobileMenuOpen', () => false)
 
 // Notifications State
 const showNotifications = ref(false)
+const isPushDiagnosticsOpen = ref(false)
 const isLoadingNotifications = ref(false)
 const notifications = ref<any[]>([])
 const unreadCount = ref(0)

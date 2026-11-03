@@ -37,9 +37,13 @@ onMounted(async () => {
   try {
     const dev = await detectDevice()
     if (dev?.id) {
+      const storedToken = typeof window !== 'undefined' ? localStorage.getItem('sm_flow_fcm_token') : null
       const res = await $fetch<any>('/api/auth/sync-device', {
         method: 'POST',
-        body: { device: dev }
+        body: { 
+          device: dev,
+          fcmToken: storedToken || undefined
+        }
       })
       if (res && res.isApproved === false) {
         await logout()
