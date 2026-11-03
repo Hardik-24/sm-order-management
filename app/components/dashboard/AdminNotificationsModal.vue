@@ -84,7 +84,7 @@
                     class="px-2 py-0.5 rounded-md bg-gray-100 text-gray-800 font-medium text-[11px] flex items-center gap-1 border border-gray-200"
                   >
                     <Smartphone class="w-3 h-3 text-[#1b3b5f]" />
-                    {{ dev.deviceModel }} ({{ dev.user?.name || 'User' }})
+                    {{ dev.deviceName || dev.deviceModel || 'Mobile Device' }} ({{ dev.user?.name || 'User' }})
                   </span>
                 </div>
               </div>
@@ -384,9 +384,9 @@
                   </div>
                   <div class="min-w-0">
                     <div class="flex items-center gap-2">
-                      <span class="font-bold text-gray-900 truncate">{{ device.deviceModel }}</span>
+                      <span class="font-bold text-gray-900 truncate">{{ device.deviceName || device.deviceModel || 'Mobile Device' }}</span>
                       <span class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-indigo-100 text-indigo-800 uppercase">
-                        {{ device.platform }}
+                        {{ device.os || device.platform || 'Android' }}
                       </span>
                     </div>
                     <span class="text-gray-500 text-[11px] block truncate">

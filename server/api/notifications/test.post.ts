@@ -63,8 +63,8 @@ export default defineEventHandler(async (event) => {
   const targetDeviceNames = (targetTokens && targetTokens.length > 0)
     ? activeDevices
         .filter(d => targetTokens!.includes(d.fcmToken!))
-        .map(d => `${d.deviceModel || 'Mobile Device'} (${d.user?.name || 'User'})`)
-    : activeDevices.map(d => `${d.deviceModel || 'Mobile Device'} (${d.user?.name || 'User'})`)
+        .map(d => `${d.deviceName || 'Mobile Device'} (${d.user?.name || 'User'})`)
+    : activeDevices.map(d => `${d.deviceName || 'Mobile Device'} (${d.user?.name || 'User'})`)
 
   return {
     success,
