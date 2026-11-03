@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { TrendingUp, Calendar, Clock, BarChart2 } from 'lucide-vue-next'
-import { formatCurrency } from '~/lib/utils'
+
 
 export interface OrderTrendDay {
   key?: string
@@ -49,10 +49,6 @@ const maxCount = computed(() => {
 // Summary Metrics
 const totalOrders = computed(() => {
   return currentData.value.reduce((acc, d) => acc + (d.count || 0), 0)
-})
-
-const totalValue = computed(() => {
-  return currentData.value.reduce((acc, d) => acc + (d.totalAmount || 0), 0)
 })
 
 const peakItem = computed(() => {
@@ -129,10 +125,15 @@ const getBarHeight = (count: number) => {
       </div>
 
       <div>
-        <span class="text-[10px] uppercase font-bold text-gray-400 tracking-wider block">Total Billed Value</span>
-        <div class="mt-0.5">
-          <span class="text-base sm:text-lg font-bold text-gray-800 tabular-nums truncate block">
-            {{ formatCurrency(totalValue) }}
+        <span class="text-[10px] uppercase font-bold text-gray-400 tracking-wider block">
+          {{ selectedTimeframe === 'today' ? 'Hourly Pace' : 'Daily Average' }}
+        </span>
+        <div class="flex items-baseline gap-1 mt-0.5">
+          <span class="text-base sm:text-lg font-bold text-gray-800 tabular-nums">
+            {{ avgOrders }}
+          </span>
+          <span class="text-[11px] font-semibold text-gray-500">
+            {{ selectedTimeframe === 'today' ? 'orders/hr' : 'orders/day' }}
           </span>
         </div>
       </div>
@@ -166,10 +167,9 @@ const getBarHeight = (count: number) => {
           <!-- Hover Floating Tooltip -->
           <div
             v-if="hoveredIndex === idx"
-            class="absolute -top-12 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-[10px] font-semibold px-2.5 py-1 rounded-lg shadow-lg whitespace-nowrap z-20 pointer-events-none transition-all flex flex-col items-center"
+            class="absolute -top-9 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-[11px] font-semibold px-2.5 py-1 rounded-lg shadow-lg whitespace-nowrap z-20 pointer-events-none transition-all flex flex-col items-center"
           >
             <span>{{ item.count }} {{ item.count === 1 ? 'Order' : 'Orders' }}</span>
-            <span class="text-gray-300 font-normal">{{ formatCurrency(item.totalAmount) }}</span>
             <div class="w-1.5 h-1.5 bg-gray-900 rotate-45 -mb-1"></div>
           </div>
 
@@ -223,10 +223,9 @@ const getBarHeight = (count: number) => {
             <!-- Hover Tooltip -->
             <div
               v-if="hoveredIndex === idx"
-              class="absolute -top-12 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-[10px] font-semibold px-2 py-1 rounded-lg shadow-lg whitespace-nowrap z-20 pointer-events-none"
+              class="absolute -top-9 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-[11px] font-semibold px-2.5 py-1 rounded-lg shadow-lg whitespace-nowrap z-20 pointer-events-none"
             >
-              <div>{{ item.label }}: <strong>{{ item.count }} orders</strong></div>
-              <div class="text-gray-300 font-normal">{{ formatCurrency(item.totalAmount) }}</div>
+              <div>{{ item.label }}: <strong>{{ item.count }} {{ item.count === 1 ? 'order' : 'orders' }}</strong></div>
             </div>
 
             <div class="w-full bg-slate-100/90 rounded-t-xs h-full flex flex-col justify-end overflow-hidden">
