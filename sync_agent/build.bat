@@ -16,7 +16,9 @@ if not exist "%CSC%" (
 )
 
 echo [*] Compiling Program.cs with .NET Framework 4.8...
-"%CSC%" /nologo /target:winexe /optimize+ /platform:anycpu /r:System.dll,System.Core.dll,System.Drawing.dll,System.Windows.Forms.dll,System.Web.Extensions.dll /out:"%OUT_EXE%" Program.cs
+set "ICON_PARAM="
+if exist "app.ico" set "ICON_PARAM=/win32icon:app.ico"
+"%CSC%" /nologo /target:winexe /optimize+ /platform:anycpu %ICON_PARAM% /r:System.dll,System.Core.dll,System.Drawing.dll,System.Windows.Forms.dll,System.Web.Extensions.dll /out:"%OUT_EXE%" Program.cs
 
 if errorlevel 1 (
     echo.
