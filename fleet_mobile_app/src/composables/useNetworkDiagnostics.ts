@@ -173,6 +173,38 @@ export function useNetworkDiagnostics() {
       }, 2500)
       await runDiagnostics()
     })
+
+    // Global fetch interceptor to catch every trip, delivery update, and API call
+    const originalFetch = window.fetch
+    window.fetch = async function (...args) {
+      const url = typeof args[0] === 'string' ? args[0] : (args[0] as Request)?.url || ''
+      const isDiagnostic = 
+        url.includes('/api/health') || 
+        url.includes('generate_204') || 
+        url.includes('1.1.1.1') ||
+        url.includes('cdn-cgi/trace')
+
+      if (!isDiagnostic) {
+        reportRequestStart()
+      }
+
+      try {
+        const response = await originalFetch.apply(this, args)
+        if (!isDiagnostic && [502, 503, 504].includes(response.status)) {
+          runDiagnostics()
+        }
+        return response
+      } catch (err: any) {
+        if (!isDiagnostic) {
+          runDiagnostics()
+        }
+        throw err
+      } finally {
+        if (!isDiagnostic) {
+          reportRequestEnd()
+        }
+      }
+    }
   }
 
   return {
