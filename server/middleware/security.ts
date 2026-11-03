@@ -26,9 +26,12 @@ export default defineEventHandler((event) => {
     securityHeaders['Access-Control-Allow-Origin'] = origin
     securityHeaders['Access-Control-Allow-Credentials'] = 'true'
     securityHeaders['Access-Control-Allow-Methods'] = 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS'
-    securityHeaders['Access-Control-Allow-Headers'] = 'Origin, X-Requested-With, Content-Type, Accept, Authorization'
+    const reqHeaders = getHeader(event, 'access-control-request-headers')
+    securityHeaders['Access-Control-Allow-Headers'] = reqHeaders 
+      ? `${reqHeaders}, Origin, X-Requested-With, Content-Type, Accept, Authorization, x-device-id, x-device-name, x-device-type, x-automated-test`
+      : 'Origin, X-Requested-With, Content-Type, Accept, Authorization, x-device-id, x-device-name, x-device-type, x-automated-test'
     securityHeaders['Access-Control-Expose-Headers'] = 'Content-Length, Content-Range, X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset'
-    securityHeaders['Vary'] = 'Origin'
+    securityHeaders['Vary'] = 'Origin, Access-Control-Request-Headers'
   } else if (!origin) {
     // Standard direct or same-origin request
     securityHeaders['Access-Control-Allow-Methods'] = 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS'

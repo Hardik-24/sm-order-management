@@ -187,8 +187,7 @@ async function handleLogin() {
     const res = await fetch(`${API_URL}/api/auth/login`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        ...(dev?.id ? { 'x-device-id': dev.id } : {})
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
         email: email.value.trim().toLowerCase(),

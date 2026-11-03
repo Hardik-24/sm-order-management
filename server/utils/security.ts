@@ -19,8 +19,18 @@ export function timingSafeCompare(a: string, b: string): boolean {
  */
 export function isAllowedOrigin(event: H3Event): boolean {
   const origin = getHeader(event, 'origin')
-  if (!origin) {
-    // Non-browser clients, mobile apps, or same-origin GET/POST without Origin header
+  if (!origin || origin === 'null' || origin === 'file://') {
+    // Non-browser clients, Capacitor mobile WebViews, or same-origin GET/POST without Origin header
+    return true
+  }
+
+  // Capacitor & Ionic mobile app origins
+  if (
+    origin.startsWith('capacitor://') ||
+    origin.startsWith('ionic://') ||
+    origin.startsWith('http://localhost') ||
+    origin.startsWith('https://localhost')
+  ) {
     return true
   }
 
