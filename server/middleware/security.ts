@@ -8,11 +8,33 @@ export default defineEventHandler((event) => {
   const path = event.path || ''
 
   // 1. Production-Grade HTTP Security Headers (Zero performance overhead)
+  const cspDirectives = [
+    "default-src 'self'",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.vercel-scripts.com https://va.vercel-scripts.com",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "font-src 'self' data: https://fonts.gstatic.com",
+    "img-src 'self' data: blob: https:",
+    "media-src 'self' data: blob:",
+    "worker-src 'self' blob:",
+    "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.google.com https://1.1.1.1 https://*.vercel-insights.com https://va.vercel-scripts.com",
+    "frame-src 'self' about: blob:",
+    "frame-ancestors 'self'",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'"
+  ]
+
+  if (isProd) {
+    cspDirectives.push('upgrade-insecure-requests')
+  }
+
   const securityHeaders: Record<string, string> = {
+    'Content-Security-Policy': cspDirectives.join('; '),
     'X-Content-Type-Options': 'nosniff',
     'X-Frame-Options': 'SAMEORIGIN',
     'Referrer-Policy': 'strict-origin-when-cross-origin',
-    'Permissions-Policy': 'camera=(), microphone=(), payment=(), usb=(), geolocation=(self)',
+    'Permissions-Policy': 'camera=(self), microphone=(), payment=(), usb=(), geolocation=(self)',
+    'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
     'X-DNS-Prefetch-Control': 'on',
     'X-Permitted-Cross-Domain-Policies': 'none'
   }
@@ -38,6 +60,12 @@ export default defineEventHandler((event) => {
   }
 
   setResponseHeaders(event, securityHeaders)
+
+  // Strip technology leakage headers
+  if (event.node?.res?.removeHeader) {
+    event.node.res.removeHeader('x-powered-by')
+    event.node.res.removeHeader('X-Powered-By')
+  }
 
   // 3. Fast-path Preflight OPTIONS response
   if (method === 'OPTIONS') {
