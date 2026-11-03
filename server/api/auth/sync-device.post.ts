@@ -72,7 +72,13 @@ export default defineEventHandler(async (event) => {
     if (existing) {
       await prisma.trustedDevice.update({
         where: { id: existing.id },
-        data: { lastUsedAt: new Date(), ipAddress }
+        data: { 
+          lastUsedAt: new Date(), 
+          ipAddress,
+          deviceName: device.name && !device.name.startsWith('Unregistered') ? device.name : existing.deviceName,
+          browser: device.browser || existing.browser,
+          os: device.os || existing.os
+        }
       })
     } else {
       await prisma.trustedDevice.create({
@@ -114,7 +120,13 @@ export default defineEventHandler(async (event) => {
     if (existing.isApproved && !existing.isBlocked) {
       await prisma.trustedDevice.update({
         where: { id: existing.id },
-        data: { lastUsedAt: new Date(), ipAddress }
+        data: { 
+          lastUsedAt: new Date(), 
+          ipAddress,
+          deviceName: device.name && !device.name.startsWith('Unregistered') ? device.name : existing.deviceName,
+          browser: device.browser || existing.browser,
+          os: device.os || existing.os
+        }
       })
       return { success: true, isApproved: true, device: existing }
     }

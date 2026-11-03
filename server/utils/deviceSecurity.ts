@@ -163,11 +163,28 @@ export async function validateAndTrackDevice(
         data: {
           lastUsedAt: new Date(),
           ipAddress,
+          deviceName: (devicePayload?.name && !devicePayload.name.startsWith('Unregistered'))
+            ? devicePayload.name
+            : existingDevice.deviceName,
           browser: devicePayload?.browser || existingDevice.browser,
           os: devicePayload?.os || existingDevice.os
         }
       })
       return { allowed: true, device: existingDevice }
+    }
+
+    // If pending approval, keep deviceName freshly updated with the phone model
+    if (!existingDevice.isApproved && !existingDevice.isBlocked && devicePayload?.name) {
+      try {
+        await prisma.trustedDevice.update({
+          where: { id: existingDevice.id },
+          data: {
+            deviceName: devicePayload.name,
+            lastUsedAt: new Date(),
+            ipAddress
+          }
+        })
+      } catch {}
     }
 
     // Check if user submitted a valid pairing code

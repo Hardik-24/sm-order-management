@@ -55,6 +55,12 @@
             </div>
           </div>
 
+          <!-- Detected Phone Model Badge -->
+          <div v-if="devicePayload?.name" class="flex items-center gap-1.5 px-2.5 py-1 bg-amber-100/80 border border-amber-300/80 rounded-lg text-[10px] font-bold text-amber-950">
+            <span class="text-amber-800">📱 Device:</span>
+            <span class="truncate font-extrabold">{{ devicePayload.name }}</span>
+          </div>
+
           <!-- Copyable Device ID Box -->
           <div class="flex items-center justify-between bg-white border border-amber-200 rounded-lg px-3 py-2 shadow-2xs">
             <span class="font-mono text-[11px] font-bold text-gray-800 truncate mr-2">{{ pendingDeviceId }}</span>
