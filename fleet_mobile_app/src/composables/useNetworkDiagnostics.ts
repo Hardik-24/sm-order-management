@@ -13,11 +13,77 @@ const diagnosticDetails = ref<string>('')
 const activeRequestCount = ref<number>(0)
 let longRequestTimer: any = null
 let reconnectedTimer: any = null
+let recoveryPollingTimer: any = null
+let isProbingRecovery = false
 let isInitialized = false
 
 const API_URL = 'https://sm-order-management.vercel.app'
 
 export function useNetworkDiagnostics() {
+  /**
+   * Transition to green RECONNECTED banner and schedule automatic dismissal
+   */
+  const triggerReconnected = (message = 'Signal restored! Back online.') => {
+    stopRecoveryPolling()
+    currentStatus.value = 'RECONNECTED'
+    diagnosticDetails.value = message
+
+    if (reconnectedTimer) {
+      clearTimeout(reconnectedTimer)
+    }
+    reconnectedTimer = setTimeout(() => {
+      if (currentStatus.value === 'RECONNECTED') {
+        clearStatus(false)
+      }
+    }, 2500)
+  }
+
+  /**
+   * Stop background auto-recovery heartbeat polling
+   */
+  const stopRecoveryPolling = () => {
+    if (recoveryPollingTimer) {
+      clearInterval(recoveryPollingTimer)
+      recoveryPollingTimer = null
+    }
+    isProbingRecovery = false
+  }
+
+  /**
+   * Background auto-recovery polling: pings server every 3.5s while an error is visible
+   */
+  const startRecoveryPolling = () => {
+    if (typeof window === 'undefined' || recoveryPollingTimer) return
+
+    recoveryPollingTimer = setInterval(async () => {
+      if (!['SERVER_ERROR', 'OFFLINE', 'SERVER_SLOW', 'CLIENT_SLOW'].includes(currentStatus.value)) {
+        stopRecoveryPolling()
+        return
+      }
+
+      if (isProbingRecovery) return
+      isProbingRecovery = true
+
+      try {
+        if (!navigator.onLine) {
+          return
+        }
+
+        const health = await probeAppServer()
+        if (health.serverOk) {
+          const msg = currentStatus.value === 'SERVER_ERROR'
+            ? 'Server connection restored! Back online.'
+            : 'Signal restored! All systems operational.'
+          triggerReconnected(msg)
+        }
+      } catch {
+        // Server still unreachable, continue polling
+      } finally {
+        isProbingRecovery = false
+      }
+    }, 3500)
+  }
+
   const probePublicInternet = async (): Promise<boolean> => {
     if (typeof window === 'undefined') return true
     if (!navigator.onLine) return false
@@ -91,6 +157,7 @@ export function useNetworkDiagnostics() {
     if (!navigator.onLine) {
       currentStatus.value = 'OFFLINE'
       diagnosticDetails.value = 'Phone is offline. Please check your cellular data or WiFi.'
+      startRecoveryPolling()
       return
     }
 
@@ -102,14 +169,19 @@ export function useNetworkDiagnostics() {
     if (!isInternetReachable) {
       currentStatus.value = 'CLIENT_SLOW'
       diagnosticDetails.value = 'Weak mobile network connection detected on your device.'
+      startRecoveryPolling()
     } else if (!serverHealth.serverOk) {
       currentStatus.value = 'SERVER_ERROR'
-      diagnosticDetails.value = 'Cloud server is temporarily unreachable. Retrying...'
+      diagnosticDetails.value = 'Cloud server is temporarily unreachable. Auto-reconnecting...'
+      startRecoveryPolling()
     } else if (!serverHealth.dbOk) {
       currentStatus.value = 'SERVER_SLOW'
       diagnosticDetails.value = 'Mobile internet is working. Cloud server (Supabase) is responding slowly...'
+      startRecoveryPolling()
     } else {
-      if (activeRequestCount.value === 0 && currentStatus.value !== 'IDLE') {
+      if (['SERVER_ERROR', 'OFFLINE', 'SERVER_SLOW', 'CLIENT_SLOW'].includes(currentStatus.value)) {
+        triggerReconnected('Server connection restored! All services operational.')
+      } else if (activeRequestCount.value === 0 && currentStatus.value !== 'IDLE') {
         clearStatus()
       }
     }
@@ -140,6 +212,7 @@ export function useNetworkDiagnostics() {
   }
 
   const clearStatus = (delayed = true) => {
+    stopRecoveryPolling()
     if (delayed) {
       setTimeout(() => {
         if (activeRequestCount.value === 0 && navigator.onLine) {
@@ -160,18 +233,18 @@ export function useNetworkDiagnostics() {
     window.addEventListener('offline', () => {
       currentStatus.value = 'OFFLINE'
       diagnosticDetails.value = 'Phone is offline. Check your cellular signal or WiFi.'
+      startRecoveryPolling()
     })
 
     window.addEventListener('online', async () => {
-      currentStatus.value = 'RECONNECTED'
-      diagnosticDetails.value = 'Signal restored! Back online.'
-      if (reconnectedTimer) clearTimeout(reconnectedTimer)
-      reconnectedTimer = setTimeout(() => {
-        if (currentStatus.value === 'RECONNECTED') {
-          clearStatus(false)
-        }
-      }, 2500)
+      triggerReconnected('Mobile connection restored!')
       await runDiagnostics()
+    })
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && ['SERVER_ERROR', 'OFFLINE', 'SERVER_SLOW', 'CLIENT_SLOW'].includes(currentStatus.value)) {
+        runDiagnostics()
+      }
     })
 
     // Global fetch interceptor to catch every trip, delivery update, and API call

@@ -13,9 +13,75 @@ const diagnosticDetails = ref<string>('')
 const activeRequestCount = ref<number>(0)
 let longRequestTimer: any = null
 let reconnectedTimer: any = null
+let recoveryPollingTimer: any = null
+let isProbingRecovery = false
 let isInitialized = false
 
 export function useNetworkDiagnostics() {
+  /**
+   * Transition to green RECONNECTED banner and schedule automatic dismissal
+   */
+  const triggerReconnected = (message = 'Connection restored! Back online.') => {
+    stopRecoveryPolling()
+    currentStatus.value = 'RECONNECTED'
+    diagnosticDetails.value = message
+
+    if (reconnectedTimer) {
+      clearTimeout(reconnectedTimer)
+    }
+    reconnectedTimer = setTimeout(() => {
+      if (currentStatus.value === 'RECONNECTED') {
+        clearStatus(false)
+      }
+    }, 2500)
+  }
+
+  /**
+   * Stop background auto-recovery heartbeat polling
+   */
+  const stopRecoveryPolling = () => {
+    if (recoveryPollingTimer) {
+      clearInterval(recoveryPollingTimer)
+      recoveryPollingTimer = null
+    }
+    isProbingRecovery = false
+  }
+
+  /**
+   * Background auto-recovery polling: pings server every 3.5s while an error is visible
+   */
+  const startRecoveryPolling = () => {
+    if (typeof window === 'undefined' || recoveryPollingTimer) return
+
+    recoveryPollingTimer = setInterval(async () => {
+      if (!['SERVER_ERROR', 'OFFLINE', 'SERVER_SLOW', 'CLIENT_SLOW'].includes(currentStatus.value)) {
+        stopRecoveryPolling()
+        return
+      }
+
+      if (isProbingRecovery) return
+      isProbingRecovery = true
+
+      try {
+        if (!navigator.onLine) {
+          return
+        }
+
+        const health = await probeAppServer()
+        if (health.serverOk) {
+          const msg = currentStatus.value === 'SERVER_ERROR'
+            ? 'Server connection restored! All systems operational.'
+            : 'Connection restored! Back online.'
+          triggerReconnected(msg)
+        }
+      } catch {
+        // Server still unreachable, continue polling
+      } finally {
+        isProbingRecovery = false
+      }
+    }, 3500)
+  }
+
   /**
    * Probe public internet reachability (tests user's local connection)
    * Uses Google 204 / Cloudflare with a strict 2.2-second timeout
@@ -103,6 +169,7 @@ export function useNetworkDiagnostics() {
     if (!navigator.onLine) {
       currentStatus.value = 'OFFLINE'
       diagnosticDetails.value = 'Your device is offline. Check your WiFi or mobile data.'
+      startRecoveryPolling()
       return
     }
 
@@ -115,15 +182,20 @@ export function useNetworkDiagnostics() {
     if (!isInternetReachable) {
       currentStatus.value = 'CLIENT_SLOW'
       diagnosticDetails.value = 'Slow or unstable internet connection detected on your device.'
+      startRecoveryPolling()
     } else if (!serverHealth.serverOk) {
       currentStatus.value = 'SERVER_ERROR'
-      diagnosticDetails.value = 'Cloud server is temporarily unreachable. Retrying...'
+      diagnosticDetails.value = 'Cloud server is temporarily unreachable. Auto-reconnecting...'
+      startRecoveryPolling()
     } else if (!serverHealth.dbOk) {
       currentStatus.value = 'SERVER_SLOW'
       diagnosticDetails.value = 'Your internet is fine. Cloud database (Supabase) is responding slowly...'
+      startRecoveryPolling()
     } else {
-      // Both are ok, so it might just have been a heavy query that finished
-      if (activeRequestCount.value === 0 && currentStatus.value !== 'IDLE') {
+      // Both are ok!
+      if (['SERVER_ERROR', 'OFFLINE', 'SERVER_SLOW', 'CLIENT_SLOW'].includes(currentStatus.value)) {
+        triggerReconnected('Server connection restored! All systems operational.')
+      } else if (activeRequestCount.value === 0 && currentStatus.value !== 'IDLE') {
         clearStatus()
       }
     }
@@ -162,6 +234,7 @@ export function useNetworkDiagnostics() {
   }
 
   const clearStatus = (delayed = true) => {
+    stopRecoveryPolling()
     if (delayed) {
       setTimeout(() => {
         if (activeRequestCount.value === 0 && navigator.onLine) {
@@ -182,19 +255,20 @@ export function useNetworkDiagnostics() {
     window.addEventListener('offline', () => {
       currentStatus.value = 'OFFLINE'
       diagnosticDetails.value = 'You are offline. Please check your network connection.'
+      startRecoveryPolling()
     })
 
     window.addEventListener('online', async () => {
-      currentStatus.value = 'RECONNECTED'
-      diagnosticDetails.value = 'Connection restored! Back online.'
-      if (reconnectedTimer) clearTimeout(reconnectedTimer)
-      reconnectedTimer = setTimeout(() => {
-        if (currentStatus.value === 'RECONNECTED') {
-          clearStatus(false)
-        }
-      }, 2500)
-      // Re-run diagnostics to confirm
+      triggerReconnected('Network connection restored!')
+      // Re-run diagnostics to confirm backend connectivity
       await runDiagnostics()
+    })
+
+    // Instant probe when returning to tab
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && ['SERVER_ERROR', 'OFFLINE', 'SERVER_SLOW', 'CLIENT_SLOW'].includes(currentStatus.value)) {
+        runDiagnostics()
+      }
     })
   }
 
