@@ -24,6 +24,7 @@
           </div>
           <button 
             @click="$emit('close')" 
+            data-modal-close="true"
             class="p-2 sm:p-2.5 rounded-xl hover:bg-white/10 text-gray-400 hover:text-white transition-colors cursor-pointer shrink-0 ml-2"
             title="Close modal"
           >

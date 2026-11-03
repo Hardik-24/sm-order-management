@@ -18,7 +18,7 @@
               <p class="text-[11px] sm:text-xs text-gray-400 truncate max-w-xs sm:max-w-md">{{ customerName }} • {{ customerCompany || deliveryAddress }}</p>
             </div>
           </div>
-          <button @click="close" class="p-1.5 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition-colors cursor-pointer shrink-0 ml-2">
+          <button @click="close" data-modal-close="true" title="Close" class="p-1.5 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition-colors cursor-pointer shrink-0 ml-2">
             <X class="w-5 h-5" />
           </button>
         </div>

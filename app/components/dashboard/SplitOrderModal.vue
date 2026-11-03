@@ -315,6 +315,8 @@ const confirmSplit = async () => {
           <button 
             @click="closeModal" 
             :disabled="isSubmitting"
+            data-modal-close="true"
+            title="Close"
             class="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-200/60 transition-colors cursor-pointer"
           >
             <X class="w-5 h-5" />

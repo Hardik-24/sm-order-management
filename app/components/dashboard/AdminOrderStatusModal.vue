@@ -216,6 +216,8 @@ const submitStatusUpdate = async () => {
           <button 
             @click="closeModal" 
             :disabled="isSubmitting"
+            data-modal-close="true"
+            title="Close"
             class="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition cursor-pointer"
           >
             <X class="w-5 h-5" />

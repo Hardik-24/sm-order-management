@@ -561,6 +561,7 @@ const submitConversion = async () => {
               @click="closeModal"
               class="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-200/60 transition cursor-pointer"
               title="Close Modal"
+              data-modal-close="true"
             >
               <X class="w-5 h-5" />
             </button>

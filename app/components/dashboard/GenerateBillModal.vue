@@ -14,7 +14,7 @@
           </h2>
           <p class="text-xs sm:text-sm text-gray-500 mt-0.5 sm:mt-1">Order: {{ order?.orderNumber || 'Loading...' }}</p>
         </div>
-        <button @click="closeModal" class="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-200 transition-colors cursor-pointer">
+        <button @click="closeModal" data-modal-close="true" title="Close" class="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-200 transition-colors cursor-pointer">
           <X class="w-5 h-5" />
         </button>
       </div>

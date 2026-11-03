@@ -22,7 +22,7 @@
               </p>
             </div>
           </div>
-          <button @click="emit('close')" class="text-gray-400 hover:text-gray-600 p-1.5 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer shrink-0 ml-2">
+          <button @click="emit('close')" data-modal-close="true" title="Close" class="text-gray-400 hover:text-gray-600 p-1.5 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer shrink-0 ml-2">
             <X class="w-5 h-5" />
           </button>
         </div>

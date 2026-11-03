@@ -32,6 +32,8 @@
           <button 
             type="button" 
             @click="closeModal" 
+            data-modal-close="true"
+            title="Close"
             class="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-200/60 transition-colors cursor-pointer shrink-0 ml-2"
           >
             <X class="w-5 h-5" />
