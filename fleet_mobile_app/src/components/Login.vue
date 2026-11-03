@@ -128,6 +128,7 @@ import {
   Loader2
 } from 'lucide-vue-next'
 import { useDeviceSecurity, type DevicePayload } from '../composables/useDeviceSecurity'
+import { useNetworkDiagnostics } from '../composables/useNetworkDiagnostics'
 
 const props = defineProps<{
   reasonMsg?: string
@@ -151,6 +152,7 @@ const copied = ref(false)
 const devicePayload = ref<DevicePayload | null>(null)
 
 const { detectDevice } = useDeviceSecurity()
+const { reportRequestStart, reportRequestEnd } = useNetworkDiagnostics()
 
 // Live API endpoint
 const API_URL = 'https://sm-order-management.vercel.app'
@@ -176,6 +178,7 @@ function copyDeviceId() {
 async function handleLogin() {
   loading.value = true
   errorMsg.value = ''
+  reportRequestStart()
   
   try {
     const dev = devicePayload.value || (await detectDevice().catch(() => null))
@@ -224,6 +227,7 @@ async function handleLogin() {
     errorMsg.value = err.message || 'An error occurred during sign in'
   } finally {
     loading.value = false
+    reportRequestEnd()
   }
 }
 </script>

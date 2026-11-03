@@ -793,7 +793,10 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
   },
 });
 
+import { useNetworkDiagnostics } from '../composables/useNetworkDiagnostics'
+
 const emit = defineEmits(['logout']);
+const { reportRequestStart, reportRequestEnd } = useNetworkDiagnostics();
 
 const fetchAuth = async (url: string, options: any = {}) => {
   const { value: token } = await Preferences.get({ key: 'auth_token' });
@@ -801,22 +804,28 @@ const fetchAuth = async (url: string, options: any = {}) => {
   if (options.body && typeof options.body === 'object') {
     options.body = JSON.stringify(options.body);
   }
-  const res = await fetch(API_URL + url, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-      ...(devId ? { 'x-device-id': devId } : {}),
-      ...options.headers
+  
+  reportRequestStart();
+  try {
+    const res = await fetch(API_URL + url, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        ...(devId ? { 'x-device-id': devId } : {}),
+        ...options.headers
+      }
+    });
+    if (res.status === 401 || res.status === 403) {
+      console.warn('[Dashboard] Unauthorized or remote session revoked (401/403). Logging out immediately.');
+      await logout();
+      throw new Error('Unauthorized or Session Revoked');
     }
-  });
-  if (res.status === 401 || res.status === 403) {
-    console.warn('[Dashboard] Unauthorized or remote session revoked (401/403). Logging out immediately.');
-    await logout();
-    throw new Error('Unauthorized or Session Revoked');
+    if (!res.ok) throw new Error('API Error');
+    return await res.json();
+  } finally {
+    reportRequestEnd();
   }
-  if (!res.ok) throw new Error('API Error');
-  return res.json();
 };
 
 const logout = async () => {

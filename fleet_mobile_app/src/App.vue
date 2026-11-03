@@ -1,4 +1,5 @@
 <template>
+  <NetworkStatusBanner />
   <Login 
     v-if="!isAuthenticated" 
     :reason-msg="sessionNoticeMsg" 
@@ -20,7 +21,11 @@ import { createClient, type RealtimeChannel } from '@supabase/supabase-js'
 import Login from './components/Login.vue'
 import Dashboard from './components/Dashboard.vue'
 import Snackbar from './components/Snackbar.vue'
+import NetworkStatusBanner from './components/NetworkStatusBanner.vue'
 import { useDeviceSecurity } from './composables/useDeviceSecurity'
+import { useNetworkDiagnostics } from './composables/useNetworkDiagnostics'
+
+const { initGlobalListeners } = useNetworkDiagnostics()
 
 const SUPABASE_URL = 'https://xfzvkqjkbwwdqtxgasrh.supabase.co'
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhmenZrcWprYnd3ZHF0eGdhc3JoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg1Njg1MzYsImV4cCI6MjEwNDE0NDUzNn0.0D6O8IL-2Dg53GIuMoti0yA2seDfj4XVpPj1aarfb4s'
@@ -185,6 +190,7 @@ onMounted(async () => {
 
   await requestPermissionsOnStartup()
   await detectDevice().catch(() => null)
+  initGlobalListeners()
 
   const { value: token } = await Preferences.get({ key: 'auth_token' })
   const { value: userStr } = await Preferences.get({ key: 'auth_user' })
