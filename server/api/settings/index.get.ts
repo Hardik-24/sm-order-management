@@ -12,12 +12,28 @@ export default defineEventHandler(async (event) => {
     }
 
     return {
-      quotationAnonymousMode: map['quotation_anonymous_mode'] === 'true'
+      quotationAnonymousMode: map['quotation_anonymous_mode'] === 'true',
+      notifications: {
+        quotations: map['push_notif_quotations'] !== 'false', // Default true
+        orders: map['push_notif_orders'] !== 'false', // Default true
+        orderRequests: map['push_notif_order_requests'] !== 'false', // Default true
+        delivery: map['push_notif_delivery'] !== 'false', // Default true
+        vouchers: map['push_notif_vouchers'] === 'true', // Default false
+        lowStock: map['push_notif_low_stock'] === 'true' // Default false
+      }
     }
   } catch (error: any) {
     console.error('[Settings GET] Error fetching system settings:', error)
     return {
-      quotationAnonymousMode: false
+      quotationAnonymousMode: false,
+      notifications: {
+        quotations: true,
+        orders: true,
+        orderRequests: true,
+        delivery: true,
+        vouchers: false,
+        lowStock: false
+      }
     }
   }
 })

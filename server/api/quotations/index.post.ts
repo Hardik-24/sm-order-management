@@ -2,6 +2,7 @@ import { defineEventHandler, readBody } from 'h3'
 import { getPrisma, resetPrisma } from '~~/server/utils/prisma'
 import { requireAuth } from '~~/server/utils/auth'
 import { sendPushNotification } from '~~/server/utils/firebaseAdmin'
+import { isNotificationEnabled } from '~~/server/utils/notificationSettings'
 
 export default defineEventHandler(async (event) => {
   const user = requireAuth(event)
@@ -51,19 +52,21 @@ export default defineEventHandler(async (event) => {
     const saved = await saveQuotation(p)
 
     // Non-blocking Push Notification dispatch with await for Serverless container safety
-    try {
-      await sendPushNotification({
-        title: `New Quotation: ${saved.quoteNumber}`,
-        body: `${saved.customerName} • ₹${Number(saved.grandTotal || 0).toLocaleString('en-IN')}`,
-        topic: 'quotations',
-        data: {
-          quoteNumber: saved.quoteNumber,
-          quotationId: saved.id,
-          type: 'QUOTATION_CREATED'
-        }
-      })
-    } catch (pushErr) {
-      console.warn('[FCM] Quotation push failed:', pushErr)
+    if (await isNotificationEnabled('quotations')) {
+      try {
+        await sendPushNotification({
+          title: `New Quotation: ${saved.quoteNumber}`,
+          body: `${saved.customerName} • ₹${Number(saved.grandTotal || 0).toLocaleString('en-IN')}`,
+          topic: 'quotations',
+          data: {
+            quoteNumber: saved.quoteNumber,
+            quotationId: saved.id,
+            type: 'QUOTATION_CREATED'
+          }
+        })
+      } catch (pushErr) {
+        console.warn('[FCM] Quotation push failed:', pushErr)
+      }
     }
 
     return {
@@ -76,19 +79,21 @@ export default defineEventHandler(async (event) => {
     const saved = await saveQuotation(p)
 
     // Non-blocking Push Notification dispatch with await for Serverless container safety
-    try {
-      await sendPushNotification({
-        title: `New Quotation: ${saved.quoteNumber}`,
-        body: `${saved.customerName} • ₹${Number(saved.grandTotal || 0).toLocaleString('en-IN')}`,
-        topic: 'quotations',
-        data: {
-          quoteNumber: saved.quoteNumber,
-          quotationId: saved.id,
-          type: 'QUOTATION_CREATED'
-        }
-      })
-    } catch (pushErr) {
-      console.warn('[FCM] Quotation push failed:', pushErr)
+    if (await isNotificationEnabled('quotations')) {
+      try {
+        await sendPushNotification({
+          title: `New Quotation: ${saved.quoteNumber}`,
+          body: `${saved.customerName} • ₹${Number(saved.grandTotal || 0).toLocaleString('en-IN')}`,
+          topic: 'quotations',
+          data: {
+            quoteNumber: saved.quoteNumber,
+            quotationId: saved.id,
+            type: 'QUOTATION_CREATED'
+          }
+        })
+      } catch (pushErr) {
+        console.warn('[FCM] Quotation push failed:', pushErr)
+      }
     }
 
     return {

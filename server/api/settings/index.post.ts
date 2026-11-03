@@ -5,8 +5,9 @@ export default defineEventHandler(async (event) => {
   await requireRole(event, ['ADMIN'])
 
   const body = await readBody(event)
-  const { quotationAnonymousMode } = body
+  const { quotationAnonymousMode, notifications } = body
 
+  // 1. Quotation Mode
   if (quotationAnonymousMode !== undefined) {
     const strVal = quotationAnonymousMode ? 'true' : 'false'
     await prisma.systemSetting.upsert({
@@ -16,8 +17,36 @@ export default defineEventHandler(async (event) => {
     })
   }
 
+  // 2. Notification Preferences
+  if (notifications && typeof notifications === 'object') {
+    const keyMap: Record<string, string> = {
+      quotations: 'push_notif_quotations',
+      orders: 'push_notif_orders',
+      orderRequests: 'push_notif_order_requests',
+      delivery: 'push_notif_delivery',
+      vouchers: 'push_notif_vouchers',
+      lowStock: 'push_notif_low_stock'
+    }
+
+    const updates = Object.entries(keyMap)
+      .filter(([field]) => notifications[field] !== undefined)
+      .map(([field, dbKey]) => {
+        const strVal = notifications[field] ? 'true' : 'false'
+        return prisma.systemSetting.upsert({
+          where: { key: dbKey },
+          update: { value: strVal },
+          create: { key: dbKey, value: strVal }
+        })
+      })
+
+    if (updates.length > 0) {
+      await Promise.all(updates)
+    }
+  }
+
   return {
     success: true,
-    quotationAnonymousMode: Boolean(quotationAnonymousMode)
+    quotationAnonymousMode: quotationAnonymousMode !== undefined ? Boolean(quotationAnonymousMode) : undefined,
+    notifications
   }
 })

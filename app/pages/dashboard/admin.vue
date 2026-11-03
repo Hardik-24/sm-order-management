@@ -11,12 +11,12 @@
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
       <div>
         <h2 class="text-2xl font-bold text-[#1a1a1a]">Administration Hub</h2>
-        <p class="text-sm text-gray-500 mt-1">Configure pricing sources, master dropdown catalogs, and team access permissions</p>
+        <p class="text-sm text-gray-500 mt-1">Configure pricing sources, master dropdown catalogs, team permissions, and notification alerts</p>
       </div>
     </div>
 
-    <!-- 5 Admin Hub Tiles -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 sm:gap-5">
+    <!-- 6 Admin Hub Tiles -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
       <!-- 1. Price List Sheets Tile -->
       <div 
         @click="isSheetTabsModalOpen = true"
@@ -168,6 +168,41 @@
         </div>
         <div class="pt-3 mt-3 border-t border-gray-100 flex items-center justify-between text-xs font-bold text-indigo-700 group-hover:text-indigo-900 relative z-10">
           <span>Device Whitelist</span>
+          <ChevronRight class="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+        </div>
+      </div>
+
+      <!-- 6. Notification Management Tile -->
+      <div 
+        @click="isNotificationsModalOpen = true"
+        class="group relative bg-white rounded-2xl border border-gray-200/90 p-5 shadow-xs hover:shadow-md hover:border-rose-400 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer flex flex-col justify-between overflow-hidden"
+      >
+        <div class="absolute -right-6 -bottom-6 w-28 h-28 bg-rose-50/80 rounded-full group-hover:scale-125 transition-transform duration-300 pointer-events-none"></div>
+        <div class="space-y-3.5 relative z-10">
+          <div class="flex items-center justify-between">
+            <div class="w-11 h-11 rounded-xl bg-rose-50 border border-rose-200/80 text-rose-700 flex items-center justify-center group-hover:scale-110 transition-transform shadow-2xs">
+              <Bell class="w-5 h-5" />
+            </div>
+            <span 
+              class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border shadow-2xs"
+              :class="activePushDevicesCount > 0 
+                ? 'bg-emerald-100/90 text-emerald-800 border-emerald-300' 
+                : 'bg-gray-100 text-gray-700 border-gray-200'"
+            >
+              {{ activePushDevicesCount > 0 ? `${activePushDevicesCount} Active` : 'Push Hub' }}
+            </span>
+          </div>
+          <div>
+            <h3 class="text-sm sm:text-base font-bold text-gray-900 group-hover:text-rose-800 transition-colors">
+              Notification Management
+            </h3>
+            <p class="text-xs text-gray-500 mt-1 leading-relaxed">
+              Broadcast push alerts, test live mobile delivery, and configure automated notification rules.
+            </p>
+          </div>
+        </div>
+        <div class="pt-3 mt-3 border-t border-gray-100 flex items-center justify-between text-xs font-bold text-rose-700 group-hover:text-rose-900 relative z-10">
+          <span>Manage Notifications</span>
           <ChevronRight class="w-4 h-4 group-hover:translate-x-1 transition-transform" />
         </div>
       </div>
@@ -1317,6 +1352,13 @@
       @close="isDevicesModalOpen = false" 
     />
 
+    <!-- Push Notification Management Modal -->
+    <AdminNotificationsModal
+      :isOpen="isNotificationsModalOpen"
+      @close="isNotificationsModalOpen = false"
+      @saved="fetchActivePushDevices"
+    />
+
   </div>
 </template>
 
@@ -1339,12 +1381,14 @@ import {
   Sliders,
   Phone,
   Truck,
-  Trash2
+  Trash2,
+  Bell
 } from 'lucide-vue-next'
 import AdminMastersModal from '~/components/dashboard/AdminMastersModal.vue'
 import AdminSheetTabsModal from '~/components/dashboard/AdminSheetTabsModal.vue'
 import AdminSettingsModal from '~/components/dashboard/AdminSettingsModal.vue'
 import AdminDevicesModal from '~/components/dashboard/AdminDevicesModal.vue'
+import AdminNotificationsModal from '~/components/dashboard/AdminNotificationsModal.vue'
 import { useSnackbar } from '~/composables/useSnackbar'
 import { useGsapAnimation } from '~/composables/useGsapAnimation'
 import CustomSelect from '~/components/ui/CustomSelect.vue'
@@ -1399,6 +1443,8 @@ const isMastersModalOpen = ref(false)
 const isSheetTabsModalOpen = ref(false)
 const isSettingsModalOpen = ref(false)
 const isDevicesModalOpen = ref(false)
+const isNotificationsModalOpen = ref(false)
+const activePushDevicesCount = ref(0)
 const systemSettings = ref<{ quotationAnonymousMode: boolean }>({ quotationAnonymousMode: false })
 const isSaving = ref(false)
 const editingUser = ref<any>(null)
@@ -1526,9 +1572,21 @@ const loadSystemSettings = async () => {
   }
 }
 
+const fetchActivePushDevices = async () => {
+  try {
+    const res = await $fetch<any>('/api/notifications/active-devices')
+    if (res && res.success) {
+      activePushDevicesCount.value = res.count || 0
+    }
+  } catch (err) {
+    console.warn('Failed to fetch active push devices count:', err)
+  }
+}
+
 onMounted(() => {
   triggerRowAnimation()
   loadSystemSettings()
+  fetchActivePushDevices()
 })
 
 // Action Permissions helpers

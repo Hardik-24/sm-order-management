@@ -1,6 +1,7 @@
 import { requireRole, getUserFromEvent } from '~~/server/utils/auth'
 import { prisma } from '~~/server/utils/prisma'
 import { sendPushNotification } from '~~/server/utils/firebaseAdmin'
+import { isNotificationEnabled } from '~~/server/utils/notificationSettings'
 
 export default defineEventHandler(async (event) => {
   const user = await getUserFromEvent(event)
@@ -182,19 +183,21 @@ export default defineEventHandler(async (event) => {
   }
 
   // Non-blocking Push Notification dispatch with await for Serverless container safety
-  try {
-    await sendPushNotification({
-      title: `New Order: ${order.orderNumber}`,
-      body: `${order.customer?.name || 'Customer'} • ₹${order.totalAmount.toLocaleString('en-IN')}`,
-      topic: 'orders',
-      data: {
-        orderNumber: order.orderNumber,
-        orderId: order.id,
-        type: 'ORDER_CREATED'
-      }
-    })
-  } catch (pushErr) {
-    console.warn('[FCM] Order push failed:', pushErr)
+  if (await isNotificationEnabled('orders')) {
+    try {
+      await sendPushNotification({
+        title: `New Order: ${order.orderNumber}`,
+        body: `${order.customer?.name || 'Customer'} • ₹${order.totalAmount.toLocaleString('en-IN')}`,
+        topic: 'orders',
+        data: {
+          orderNumber: order.orderNumber,
+          orderId: order.id,
+          type: 'ORDER_CREATED'
+        }
+      })
+    } catch (pushErr) {
+      console.warn('[FCM] Order push failed:', pushErr)
+    }
   }
 
   return order

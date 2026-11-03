@@ -2,6 +2,7 @@ import { defineEventHandler, readBody, createError } from 'h3'
 import { prisma } from '~~/server/utils/prisma'
 import { enforceRateLimit } from '~~/server/utils/rateLimit'
 import { sendPushNotification } from '~~/server/utils/firebaseAdmin'
+import { isNotificationEnabled } from '~~/server/utils/notificationSettings'
 
 export default defineEventHandler(async (event) => {
   enforceRateLimit(event, {
@@ -171,19 +172,21 @@ export default defineEventHandler(async (event) => {
   })
 
   // Non-blocking Push Notification dispatch with await for Serverless container safety
-  try {
-    await sendPushNotification({
-      title: `New Order Request: ${orderRequest.requestNumber}`,
-      body: `${orderRequest.customerName} • ₹${Number(orderRequest.totalEstimated || 0).toLocaleString('en-IN')}`,
-      topic: 'orders',
-      data: {
-        requestNumber: orderRequest.requestNumber,
-        orderRequestId: orderRequest.id,
-        type: 'ORDER_REQUEST_CREATED'
-      }
-    })
-  } catch (pushErr) {
-    console.warn('[FCM] Order request push failed:', pushErr)
+  if (await isNotificationEnabled('order_requests')) {
+    try {
+      await sendPushNotification({
+        title: `New Order Request: ${orderRequest.requestNumber}`,
+        body: `${orderRequest.customerName} • ₹${Number(orderRequest.totalEstimated || 0).toLocaleString('en-IN')}`,
+        topic: 'orders',
+        data: {
+          requestNumber: orderRequest.requestNumber,
+          orderRequestId: orderRequest.id,
+          type: 'ORDER_REQUEST_CREATED'
+        }
+      })
+    } catch (pushErr) {
+      console.warn('[FCM] Order request push failed:', pushErr)
+    }
   }
 
   return {
