@@ -209,10 +209,9 @@ export default defineNuxtPlugin(() => {
   }
 
   // 5. Firebase Cloud Messaging (FCM) Push Notifications
-  ;(async () => {
-    try {
-      const { PushNotifications } = await import('@capacitor/push-notifications')
-      if (!PushNotifications) return
+  try {
+    const { PushNotifications } = await import('@capacitor/push-notifications')
+    if (!PushNotifications) return
 
       // A. Create high-priority notification channel for Android 8+
       try {
