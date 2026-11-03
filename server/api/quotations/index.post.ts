@@ -50,17 +50,21 @@ export default defineEventHandler(async (event) => {
   try {
     const saved = await saveQuotation(p)
 
-    // Non-blocking Push Notification dispatch
-    sendPushNotification({
-      title: `New Quotation: ${saved.quoteNumber}`,
-      body: `${saved.customerName} • ₹${Number(saved.grandTotal || 0).toLocaleString('en-IN')}`,
-      topic: 'quotations',
-      data: {
-        quoteNumber: saved.quoteNumber,
-        quotationId: saved.id,
-        type: 'QUOTATION_CREATED'
-      }
-    }).catch((err) => console.warn('[FCM] Quotation notification failed:', err))
+    // Non-blocking Push Notification dispatch with await for Serverless container safety
+    try {
+      await sendPushNotification({
+        title: `New Quotation: ${saved.quoteNumber}`,
+        body: `${saved.customerName} • ₹${Number(saved.grandTotal || 0).toLocaleString('en-IN')}`,
+        topic: 'quotations',
+        data: {
+          quoteNumber: saved.quoteNumber,
+          quotationId: saved.id,
+          type: 'QUOTATION_CREATED'
+        }
+      })
+    } catch (pushErr) {
+      console.warn('[FCM] Quotation push failed:', pushErr)
+    }
 
     return {
       success: true,
@@ -71,17 +75,21 @@ export default defineEventHandler(async (event) => {
     p = resetPrisma()
     const saved = await saveQuotation(p)
 
-    // Non-blocking Push Notification dispatch
-    sendPushNotification({
-      title: `New Quotation: ${saved.quoteNumber}`,
-      body: `${saved.customerName} • ₹${Number(saved.grandTotal || 0).toLocaleString('en-IN')}`,
-      topic: 'quotations',
-      data: {
-        quoteNumber: saved.quoteNumber,
-        quotationId: saved.id,
-        type: 'QUOTATION_CREATED'
-      }
-    }).catch((err) => console.warn('[FCM] Quotation notification failed:', err))
+    // Non-blocking Push Notification dispatch with await for Serverless container safety
+    try {
+      await sendPushNotification({
+        title: `New Quotation: ${saved.quoteNumber}`,
+        body: `${saved.customerName} • ₹${Number(saved.grandTotal || 0).toLocaleString('en-IN')}`,
+        topic: 'quotations',
+        data: {
+          quoteNumber: saved.quoteNumber,
+          quotationId: saved.id,
+          type: 'QUOTATION_CREATED'
+        }
+      })
+    } catch (pushErr) {
+      console.warn('[FCM] Quotation push failed:', pushErr)
+    }
 
     return {
       success: true,

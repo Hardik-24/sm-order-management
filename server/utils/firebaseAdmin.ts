@@ -3,6 +3,7 @@ import { getMessaging } from 'firebase-admin/messaging'
 import fs from 'node:fs'
 import path from 'node:path'
 import prisma from './prisma'
+import { appendDebugLog } from '~~/server/api/notifications/debug-log'
 
 let firebaseApp: App | null = null
 
@@ -85,9 +86,17 @@ export interface PushNotificationPayload {
  */
 export async function sendPushNotification(payload: PushNotificationPayload): Promise<boolean> {
   const app = initFirebaseAdmin()
-  if (!app) return false
+  if (!app) {
+    appendDebugLog({ level: 'error', message: 'Push notification failed: Firebase Admin not initialized' })
+    return false
+  }
 
   let anySuccess = false
+  appendDebugLog({
+    level: 'info',
+    message: `Triggering push: "${payload.title}" (${payload.body})`,
+    data: { topic: payload.topic }
+  })
 
   try {
     const messaging = getMessaging(app)
@@ -159,6 +168,10 @@ export async function sendPushNotification(payload: PushNotificationPayload): Pr
           }
         })
         console.log(`[FCM] Direct multicast: ${response.successCount} delivered, ${response.failureCount} failed out of ${targetTokens.length}`)
+        appendDebugLog({
+          level: response.successCount > 0 ? 'success' : 'warn',
+          message: `Push delivered: ${response.successCount} ok, ${response.failureCount} failed (${payload.title})`
+        })
         if (response.successCount > 0) anySuccess = true
       } catch (multiErr: any) {
         console.warn('[FCM] Direct multicast error:', multiErr?.message || multiErr)

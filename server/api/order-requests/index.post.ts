@@ -170,17 +170,21 @@ export default defineEventHandler(async (event) => {
     }
   })
 
-  // Non-blocking Push Notification dispatch
-  sendPushNotification({
-    title: `New Order Request: ${orderRequest.requestNumber}`,
-    body: `${orderRequest.customerName} • ₹${Number(orderRequest.totalEstimated || 0).toLocaleString('en-IN')}`,
-    topic: 'orders',
-    data: {
-      requestNumber: orderRequest.requestNumber,
-      orderRequestId: orderRequest.id,
-      type: 'ORDER_REQUEST_CREATED'
-    }
-  }).catch((err) => console.warn('[FCM] Order request notification failed:', err))
+  // Non-blocking Push Notification dispatch with await for Serverless container safety
+  try {
+    await sendPushNotification({
+      title: `New Order Request: ${orderRequest.requestNumber}`,
+      body: `${orderRequest.customerName} • ₹${Number(orderRequest.totalEstimated || 0).toLocaleString('en-IN')}`,
+      topic: 'orders',
+      data: {
+        requestNumber: orderRequest.requestNumber,
+        orderRequestId: orderRequest.id,
+        type: 'ORDER_REQUEST_CREATED'
+      }
+    })
+  } catch (pushErr) {
+    console.warn('[FCM] Order request push failed:', pushErr)
+  }
 
   return {
     success: true,
