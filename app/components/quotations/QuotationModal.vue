@@ -3140,14 +3140,34 @@ const exportQuote = async (action: 'whatsapp' | 'download' | 'pdf' | 'print') =>
 
       const fileName = `${quoteNumber.value}-${(customerName.value || 'customer').replace(/\s+/g, '_')}.pdf`
       const clientName = customerName.value?.trim() || ''
-      const greeting = clientName ? `Hello ${clientName},` : 'Hello,'
+      const greeting = clientName ? `Dear ${clientName},` : 'Hello,'
+      const formattedTotal = formatSlipNumber(grandTotal.value)
+      const itemsCount = quoteItems.value.length
+      const itemsWord = itemsCount === 1 ? '1 item' : `${itemsCount} items`
+      const validityText = `${validityDays.value || 7} Days`
+
       const politeMessageText = 
+        `📄 *QUOTATION ESTIMATE* (${quoteNumber.value})\n` +
+        `━━━━━━━━━━━━━━━━━━━━━━\n` +
+        (clientName ? `👤 *Customer:* ${clientName}\n` : '') +
+        (customerPlace.value?.trim() ? `📍 *Location:* ${customerPlace.value.trim()}\n` : '') +
+        `📦 *Scope:* ${itemsWord}\n` +
+        `💰 *Grand Total:* ₹${formattedTotal}\n` +
+        `⏳ *Validity:* ${validityText}\n` +
+        `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
         `${greeting}\n\n` +
-        `Please find the requested quotation (*${quoteNumber.value}*) attached with this message.\n\n` +
-        `Please feel free to reach out if you need any clarification or assistance. We look forward to fulfilling your requirements!\n\n` +
+        `Thank you for your inquiry. Please find your official quotation PDF attached above for your kind review.\n\n` +
+        `Feel free to reach out if you have any questions, need adjustments, or wish to confirm this order. We look forward to fulfilling your requirements!\n\n` +
         (isAnonymousMode.value 
           ? `Warm regards` 
-          : `Warm regards,\nSilicon Marketing`)
+          : `Warm regards,\n*Silicon Marketing*`)
+
+      // Pre-copy message to clipboard so user can instantly paste if WhatsApp document viewer doesn't auto-fill caption
+      if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+        try {
+          await navigator.clipboard.writeText(politeMessageText)
+        } catch {}
+      }
 
       const cleanPhone = (customerPhone.value || '').replace(/[^0-9]/g, '')
 

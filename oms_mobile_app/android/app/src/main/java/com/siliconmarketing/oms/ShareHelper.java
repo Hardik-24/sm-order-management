@@ -86,6 +86,13 @@ public class ShareHelper {
 
         if (message != null && !message.trim().isEmpty()) {
             sendIntent.putExtra(Intent.EXTRA_TEXT, message);
+            try {
+                android.content.ClipboardManager clipboard = (android.content.ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
+                if (clipboard != null) {
+                    ClipData clip = ClipData.newPlainText("Quotation Message", message);
+                    clipboard.setPrimaryClip(clip);
+                }
+            } catch (Exception ignored) {}
         }
 
         // CRITICAL 1: Set ClipData for Android 10+ (API 29+) to grant read URI permissions to EXTRA_STREAM
