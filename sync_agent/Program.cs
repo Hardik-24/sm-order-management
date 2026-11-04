@@ -1233,8 +1233,29 @@ namespace SMFlowSyncAgent
                     string extractScript = GetScriptPath("extract_busy_clone.ps1");
                     string workDir = GetScriptsWorkingDir();
 
+                    // Determine optimal PowerShell engine (Auto-detect 64-bit vs 32-bit OLEDB environment)
+                    string psExe = "powershell.exe";
+                    string sysWow64Ps = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "SysWOW64", "WindowsPowerShell", "v1.0", "powershell.exe");
+
+                    bool has64BitAce = false;
+                    try
+                    {
+                        using (Microsoft.Win32.RegistryKey k = Microsoft.Win32.Registry.ClassesRoot.OpenSubKey("Microsoft.ACE.OLEDB.12.0") ?? 
+                                                              Microsoft.Win32.Registry.ClassesRoot.OpenSubKey("Microsoft.ACE.OLEDB.16.0"))
+                        {
+                            if (k != null) has64BitAce = true;
+                        }
+                    }
+                    catch { }
+
+                    if (!has64BitAce && File.Exists(sysWow64Ps))
+                    {
+                        psExe = sysWow64Ps;
+                        InvokeAction(() => AppendLog("      [i] 32-bit Office/Jet environment detected. Using 32-bit PowerShell engine.", ColorAmber));
+                    }
+
                     ProcessStartInfo psiExt = new ProcessStartInfo();
-                    psiExt.FileName = "powershell.exe";
+                    psiExt.FileName = psExe;
                     psiExt.Arguments = string.Format("-ExecutionPolicy Bypass -File \"{0}\" -CloneDir \"{1}\"", extractScript, config.DestDir);
                     psiExt.WorkingDirectory = workDir;
                     psiExt.UseShellExecute = false;
@@ -1266,6 +1287,44 @@ namespace SMFlowSyncAgent
                         pExt.WaitForExit();
                         extExitCode = pExt.ExitCode;
                     }
+
+                    // Seamless Fallback: If 64-bit failed with an OLEDB driver error, automatically retry in 32-bit PowerShell
+                    if (extExitCode != 0 && psExe != sysWow64Ps && File.Exists(sysWow64Ps))
+                    {
+                        InvokeAction(() => AppendLog("      [!] 64-bit engine failed. Seamlessly retrying with 32-bit engine...", ColorAmber));
+                        firstExtError = null;
+                        ProcessStartInfo psiRetry = new ProcessStartInfo();
+                        psiRetry.FileName = sysWow64Ps;
+                        psiRetry.Arguments = string.Format("-ExecutionPolicy Bypass -File \"{0}\" -CloneDir \"{1}\"", extractScript, config.DestDir);
+                        psiRetry.WorkingDirectory = workDir;
+                        psiRetry.UseShellExecute = false;
+                        psiRetry.CreateNoWindow = true;
+                        psiRetry.RedirectStandardOutput = true;
+                        psiRetry.RedirectStandardError = true;
+
+                        using (Process pRetry = Process.Start(psiRetry))
+                        {
+                            string line;
+                            while ((line = pRetry.StandardOutput.ReadLine()) != null)
+                            {
+                                string l = line;
+                                InvokeAction(() => AppendLog("      " + l, ColorTerminalText));
+                            }
+                            string errLine;
+                            while ((errLine = pRetry.StandardError.ReadLine()) != null)
+                            {
+                                string el = errLine;
+                                if (string.IsNullOrEmpty(firstExtError) && !string.IsNullOrWhiteSpace(el))
+                                {
+                                    firstExtError = el.Trim();
+                                }
+                                InvokeAction(() => AppendLog("      [!] " + el, ColorRose));
+                            }
+                            pRetry.WaitForExit();
+                            extExitCode = pRetry.ExitCode;
+                        }
+                    }
+
                     swExt.Stop();
 
                     if (extExitCode != 0)
