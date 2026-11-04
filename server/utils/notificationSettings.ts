@@ -4,6 +4,7 @@ export type NotificationKey =
   | 'storefront_requests' 
   | 'quotations' 
   | 'orders' 
+  | 'order_edits'
   | 'order_approvals' 
   | 'packing' 
   | 'delivery'
@@ -14,6 +15,7 @@ export type NotificationKey =
  * - storefront_requests: default TRUE
  * - quotations: default TRUE
  * - orders: default TRUE
+ * - order_edits: default TRUE
  * - order_approvals: default TRUE
  * - packing: default FALSE
  * - delivery: default TRUE
@@ -35,7 +37,7 @@ export async function isNotificationEnabled(key: NotificationKey): Promise<boole
 
     if (!setting) {
       // Sensible default for each workflow
-      return ['storefront_requests', 'quotations', 'orders', 'order_approvals', 'delivery'].includes(key)
+      return ['storefront_requests', 'quotations', 'orders', 'order_edits', 'order_approvals', 'delivery'].includes(key)
     }
 
     return setting.value === 'true'

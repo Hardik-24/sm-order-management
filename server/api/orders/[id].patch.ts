@@ -1,5 +1,7 @@
 import { requireActionPermission, getUserFromEvent } from '~~/server/utils/auth'
 import { prisma } from '~~/server/utils/prisma'
+import { isNotificationEnabled } from '~~/server/utils/notificationSettings'
+import { sendPushNotification } from '~~/server/utils/firebaseAdmin'
 
 export default defineEventHandler(async (event) => {
   const user = await getUserFromEvent(event)
@@ -150,6 +152,27 @@ export default defineEventHandler(async (event) => {
       items: { include: { product: true } }
     }
   })
+
+  // Non-blocking Push Notification dispatch when order is edited
+  if (await isNotificationEnabled('order_edits')) {
+    try {
+      const editorName = user?.name || 'Team member'
+      const customerName = order.customer?.name || order.customer?.company || 'Customer'
+      const totalFormatted = order.totalAmount ? `₹${order.totalAmount.toLocaleString('en-IN')}` : ''
+      await sendPushNotification({
+        title: `Order Updated: ${order.orderNumber}`,
+        body: `${customerName}${totalFormatted ? ' • ' + totalFormatted : ''} • Modified by ${editorName}`,
+        topic: 'orders',
+        data: {
+          orderNumber: order.orderNumber,
+          orderId: order.id,
+          type: 'ORDER_EDITED'
+        }
+      })
+    } catch (pushErr) {
+      console.warn('[FCM] Order edit push failed:', pushErr)
+    }
+  }
 
   return order
 })

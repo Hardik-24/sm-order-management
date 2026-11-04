@@ -23,6 +23,7 @@ export default defineEventHandler(async (event) => {
       storefrontRequests: ['push_notif_storefront_requests', 'push_notif_order_requests'],
       quotations: ['push_notif_quotations'],
       orders: ['push_notif_orders'],
+      orderEdits: ['push_notif_order_edits'],
       orderApprovals: ['push_notif_order_approvals'],
       packing: ['push_notif_packing'],
       delivery: ['push_notif_delivery']

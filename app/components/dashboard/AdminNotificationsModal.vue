@@ -297,7 +297,38 @@
                 </button>
               </div>
 
-              <!-- 4. Order Approvals -->
+              <!-- 4. Order Modifications / Edits -->
+              <div class="p-3.5 rounded-xl border border-gray-200 bg-gray-50/60 flex items-start justify-between gap-3 transition-colors hover:bg-gray-50">
+                <div class="flex items-start gap-3">
+                  <div class="w-8 h-8 rounded-lg bg-orange-100 text-orange-700 flex items-center justify-center shrink-0 mt-0.5">
+                    <FileEdit class="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div class="flex items-center gap-1.5">
+                      <span class="text-xs font-bold text-gray-900">Order Modifications</span>
+                      <span class="text-[9px] font-bold uppercase px-1.5 py-0.2 rounded bg-orange-100 text-orange-800">Edits</span>
+                    </div>
+                    <p class="text-[11px] text-gray-500 mt-0.5 leading-snug">
+                      Alert team when an existing order's items, pricing, or details are modified.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  :aria-checked="notifications.orderEdits"
+                  @click="notifications.orderEdits = !notifications.orderEdits"
+                  class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden mt-1"
+                  :class="notifications.orderEdits ? 'bg-[#1b3b5f]' : 'bg-gray-300'"
+                >
+                  <span
+                    class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out"
+                    :class="notifications.orderEdits ? 'translate-x-4' : 'translate-x-0'"
+                  />
+                </button>
+              </div>
+
+              <!-- 5. Order Approvals -->
               <div class="p-3.5 rounded-xl border border-gray-200 bg-gray-50/60 flex items-start justify-between gap-3 transition-colors hover:bg-gray-50">
                 <div class="flex items-start gap-3">
                   <div class="w-8 h-8 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center shrink-0 mt-0.5">
@@ -328,7 +359,7 @@
                 </button>
               </div>
 
-              <!-- 5. Warehouse Packing -->
+              <!-- 6. Warehouse Packing -->
               <div class="p-3.5 rounded-xl border border-gray-200 bg-gray-50/60 flex items-start justify-between gap-3 transition-colors hover:bg-gray-50">
                 <div class="flex items-start gap-3">
                   <div class="w-8 h-8 rounded-lg bg-cyan-100 text-cyan-700 flex items-center justify-center shrink-0 mt-0.5">
@@ -359,7 +390,7 @@
                 </button>
               </div>
 
-              <!-- 6. Delivery & Fleet Trips -->
+              <!-- 7. Delivery & Fleet Trips -->
               <div class="p-3.5 rounded-xl border border-gray-200 bg-gray-50/60 flex items-start justify-between gap-3 transition-colors hover:bg-gray-50">
                 <div class="flex items-start gap-3">
                   <div class="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0 mt-0.5">
@@ -504,6 +535,7 @@ import {
   Inbox,
   Calculator,
   ClipboardList,
+  FileEdit,
   CheckCheck,
   Package,
   Truck
@@ -542,6 +574,7 @@ const notifications = reactive({
   storefrontRequests: true,
   quotations: true,
   orders: true,
+  orderEdits: true,
   orderApprovals: true,
   packing: false,
   delivery: true
@@ -571,6 +604,7 @@ const loadNotificationSettings = async () => {
       notifications.storefrontRequests = res.notifications.storefrontRequests !== false
       notifications.quotations = res.notifications.quotations !== false
       notifications.orders = res.notifications.orders !== false
+      notifications.orderEdits = res.notifications.orderEdits !== false
       notifications.orderApprovals = res.notifications.orderApprovals !== false
       notifications.packing = res.notifications.packing === true
       notifications.delivery = res.notifications.delivery !== false
@@ -628,6 +662,7 @@ const saveNotificationRules = async () => {
           storefrontRequests: notifications.storefrontRequests,
           quotations: notifications.quotations,
           orders: notifications.orders,
+          orderEdits: notifications.orderEdits,
           orderApprovals: notifications.orderApprovals,
           packing: notifications.packing,
           delivery: notifications.delivery

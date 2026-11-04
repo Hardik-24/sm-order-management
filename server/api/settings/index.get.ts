@@ -20,6 +20,7 @@ export default defineEventHandler(async (event) => {
         storefrontRequests: storefrontSetting !== 'false', // Default true
         quotations: map['push_notif_quotations'] !== 'false', // Default true
         orders: map['push_notif_orders'] !== 'false', // Default true
+        orderEdits: map['push_notif_order_edits'] !== 'false', // Default true
         orderApprovals: map['push_notif_order_approvals'] !== 'false', // Default true
         packing: map['push_notif_packing'] === 'true', // Default false
         delivery: map['push_notif_delivery'] !== 'false' // Default true
@@ -33,6 +34,7 @@ export default defineEventHandler(async (event) => {
         storefrontRequests: true,
         quotations: true,
         orders: true,
+        orderEdits: true,
         orderApprovals: true,
         packing: false,
         delivery: true
