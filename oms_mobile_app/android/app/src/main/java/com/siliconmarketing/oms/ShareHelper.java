@@ -58,7 +58,12 @@ public class ShareHelper {
         }
 
         String safeFileName = (fileName != null && !fileName.trim().isEmpty()) ? fileName.trim() : "quotation_slip.png";
-        if (!safeFileName.toLowerCase().endsWith(".png") && !safeFileName.toLowerCase().endsWith(".jpg")) {
+        boolean isPdf = safeFileName.toLowerCase().endsWith(".pdf") || (base64Data != null && base64Data.startsWith("data:application/pdf"));
+        if (isPdf) {
+            if (!safeFileName.toLowerCase().endsWith(".pdf")) {
+                safeFileName += ".pdf";
+            }
+        } else if (!safeFileName.toLowerCase().endsWith(".png") && !safeFileName.toLowerCase().endsWith(".jpg")) {
             safeFileName += ".png";
         }
 
@@ -75,7 +80,7 @@ public class ShareHelper {
         Uri contentUri = FileProvider.getUriForFile(context, authority, imageFile);
 
         Intent sendIntent = new Intent(Intent.ACTION_SEND);
-        String mimeType = safeFileName.toLowerCase().endsWith(".jpg") ? "image/jpeg" : "image/png";
+        String mimeType = isPdf ? "application/pdf" : (safeFileName.toLowerCase().endsWith(".jpg") ? "image/jpeg" : "image/png");
         sendIntent.setType(mimeType);
         sendIntent.putExtra(Intent.EXTRA_STREAM, contentUri);
 

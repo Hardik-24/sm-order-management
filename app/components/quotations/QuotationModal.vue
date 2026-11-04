@@ -143,6 +143,7 @@
                 type="button"
                 @click="exportQuote('whatsapp')"
                 :disabled="isExporting"
+                title="Share crisp high-resolution quotation PDF via WhatsApp"
                 class="py-3 px-4 bg-[#25D366] hover:bg-[#20bd5a] text-white rounded-xl text-xs sm:text-sm font-bold shadow-md transition-all flex items-center justify-center gap-2 active:scale-98 cursor-pointer disabled:opacity-50"
               >
                 <Loader2 v-if="isExporting && exportAction === 'whatsapp'" class="w-4 h-4 animate-spin" />
@@ -3085,7 +3086,59 @@ const exportQuote = async (action: 'whatsapp' | 'download' | 'pdf' | 'print') =>
     }
 
     if (action === 'whatsapp') {
-      const fileName = `${quoteNumber.value}-${(customerName.value || 'customer').replace(/\s+/g, '_')}.png`
+      showSaved('Generating high-resolution quotation PDF for WhatsApp...')
+
+      // 1. Measure real row heights from the mounted off-screen quotationCardRef
+      const tbody = el.querySelector<HTMLElement>('table tbody')
+      const trElements = tbody ? Array.from(tbody.querySelectorAll<HTMLElement>('tr')) : []
+      const rowHeights = trElements.map((tr) => tr.offsetHeight || 38)
+
+      // 2. Compute exact page division so no page ever overflows or cuts a row
+      const pages = paginateQuoteItems(quoteItems.value, rowHeights)
+      pdfPages.value = pages
+
+      // 3. Wait for Vue to render all .pdf-page-container elements into the DOM
+      await nextTick()
+      if (typeof document !== 'undefined' && document.fonts) {
+        await document.fonts.ready
+      }
+      await new Promise((r) => setTimeout(r, 80))
+
+      // 4. Query the generated A4 page containers
+      const pageContainers = pdfPagesContainerRef.value?.querySelectorAll<HTMLElement>('.pdf-page-container')
+      if (!pageContainers || pageContainers.length === 0) {
+        throw new Error('Failed to generate PDF page elements')
+      }
+
+      // 5. Capture each pristine A4 card (JPEG compression yields crystal-sharp text at ~250KB per page)
+      const pageDataUrls: string[] = []
+      for (let i = 0; i < pageContainers.length; i++) {
+        const pageEl = pageContainers[i]
+        const pageDataUrl = await toJpeg(pageEl, {
+          pixelRatio: 2,
+          quality: 0.93,
+          backgroundColor: '#ffffff',
+          cacheBust: true
+        })
+        pageDataUrls.push(pageDataUrl)
+      }
+
+      // Initialize A4 PDF with native stream compression enabled
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'pt',
+        format: 'a4',
+        compress: true
+      })
+      const pdfW = pdf.internal.pageSize.getWidth()
+      const pdfH = pdf.internal.pageSize.getHeight()
+
+      for (let i = 0; i < pageDataUrls.length; i++) {
+        if (i > 0) pdf.addPage()
+        pdf.addImage(pageDataUrls[i], 'JPEG', 0, 0, pdfW, pdfH, undefined, 'FAST')
+      }
+
+      const fileName = `${quoteNumber.value}-${(customerName.value || 'customer').replace(/\s+/g, '_')}.pdf`
       const clientName = customerName.value?.trim() || ''
       const greeting = clientName ? `Hello ${clientName},` : 'Hello,'
       const politeMessageText = 
@@ -3098,7 +3151,7 @@ const exportQuote = async (action: 'whatsapp' | 'download' | 'pdf' | 'print') =>
 
       const cleanPhone = (customerPhone.value || '').replace(/[^0-9]/g, '')
 
-      // 1. Android Capacitor Native Share Bridge (Sends real high-res PNG image + pre-filled caption)
+      // 1. Android Capacitor Native Share Bridge (Sends real uncompressed PDF document + pre-filled caption)
       const isAndroidApp = 
         typeof window !== 'undefined' && (
           (window as any).isSiliconOMSApp === true ||
@@ -3108,62 +3161,42 @@ const exportQuote = async (action: 'whatsapp' | 'download' | 'pdf' | 'print') =>
         )
 
       if (isAndroidApp) {
-        showSaved('Rendering quotation slip...')
-        const dataUrl = await toPng(el, exportOptions)
+        const pdfDataUri = pdf.output('datauristring')
 
         // 1A. Capacitor OMSBridge Plugin
         if ((window as any).Capacitor?.Plugins?.OMSBridge?.shareImage) {
           await (window as any).Capacitor.Plugins.OMSBridge.shareImage({
-            base64Data: dataUrl,
+            base64Data: pdfDataUri,
             fileName,
             message: politeMessageText,
             targetApp: 'whatsapp',
             phoneNumber: cleanPhone
           })
-          showSaved('Opening WhatsApp with quotation slip image...')
+          showSaved('Opening WhatsApp with quotation PDF...')
           return
         }
 
         // 1B. Android Javascript Bridge
         if ((window as any).AndroidBridge?.shareImage) {
-          ;(window as any).AndroidBridge.shareImage(dataUrl, fileName, politeMessageText, 'whatsapp', cleanPhone)
-          showSaved('Opening WhatsApp with quotation slip image...')
+          ;(window as any).AndroidBridge.shareImage(pdfDataUri, fileName, politeMessageText, 'whatsapp', cleanPhone)
+          showSaved('Opening WhatsApp with quotation PDF...')
           return
         }
       }
 
-      // 2. Standard Web Browser (Original Web Share flow)
-      const blob = await toBlob(el, exportOptions)
-      if (!blob) throw new Error('Could not generate quotation image')
-
-      const file = new File([blob], fileName, { type: 'image/png' })
+      // 2. Standard Web Browser (Web Share API for PDF documents)
+      const pdfBlob = pdf.output('blob')
+      const file = new File([pdfBlob], fileName, { type: 'application/pdf' })
 
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        // Omitting title prevents Chrome from adding EXTRA_SUBJECT,
-        // allowing WhatsApp to bind text directly as the image caption instead of a separate message!
         await navigator.share({
           files: [file],
           text: politeMessageText
         })
-        showSaved('Quotation shared successfully!')
+        showSaved('Quotation PDF shared successfully!')
       } else {
-        // Clipboard copy for Desktop Web users (Allows instant Ctrl+V into WhatsApp Web with caption)
-        if (typeof navigator !== 'undefined' && navigator.clipboard && typeof ClipboardItem !== 'undefined') {
-          try {
-            await navigator.clipboard.write([
-              new ClipboardItem({ 'image/png': blob })
-            ])
-          } catch (clipErr) {
-            // Non-critical if clipboard permission denied
-          }
-        }
-
-        const url = URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = fileName
-        a.click()
-        URL.revokeObjectURL(url)
+        // Desktop Browser fallback: save the PDF and launch WhatsApp with pre-filled message
+        pdf.save(fileName)
 
         const formattedPhone = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone
         const textMsg = encodeURIComponent(politeMessageText)
@@ -3172,7 +3205,7 @@ const exportQuote = async (action: 'whatsapp' | 'download' | 'pdf' | 'print') =>
           : `https://api.whatsapp.com/send?text=${textMsg}`
         
         window.open(waUrl, '_blank')
-        showSaved('Quotation slip downloaded & copied! Opening WhatsApp...')
+        showSaved('Quotation PDF downloaded! Opening WhatsApp...')
       }
     } else if (action === 'download') {
       const dataUrl = await toPng(el, exportOptions)
