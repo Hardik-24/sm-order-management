@@ -824,6 +824,7 @@ const getCustomerInitials = (name: string) => {
                       </label>
                       <button 
                         type="button" 
+                        tabindex="-1"
                         @click="openRateCalculator(idx)" 
                         class="text-[9px] bg-[#1b3b5f] hover:bg-[#132c49] text-white font-bold flex items-center gap-1 px-2 py-0.5 rounded shadow-2xs transition-colors cursor-pointer"
                         title="Calculate rate by Sheet Sq.ft (A × B × Rate)"
@@ -844,6 +845,7 @@ const getCustomerInitials = (name: string) => {
                       />
                       <button 
                         type="button"
+                        tabindex="-1"
                         @click="openRateCalculator(idx)"
                         class="absolute right-1 px-1.5 py-1 bg-[#1b3b5f] hover:bg-[#132c49] text-white rounded-md transition-colors cursor-pointer shadow-2xs"
                         title="Sq.ft Sheet Rate Calculator"
@@ -886,7 +888,7 @@ const getCustomerInitials = (name: string) => {
 
                   <!-- Remove (Desktop only) -->
                   <div class="hidden md:flex md:w-auto justify-center pb-0.5">
-                    <button type="button" @click="removeItem(idx)" class="p-2 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg shrink-0 transition-colors cursor-pointer" title="Remove Item">
+                    <button type="button" tabindex="-1" @click="removeItem(idx)" class="p-2 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg shrink-0 transition-colors cursor-pointer" title="Remove Item">
                       <Trash2 class="w-4 h-4" />
                     </button>
                   </div>

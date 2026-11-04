@@ -1061,6 +1061,7 @@ const submitConversion = async () => {
                       <div class="hidden md:flex md:w-auto justify-center pb-0.5">
                         <button
                           type="button"
+                          tabindex="-1"
                           @click="removeItem(idx)"
                           :disabled="form.items.length <= 1"
                           class="p-2 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg shrink-0 transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"

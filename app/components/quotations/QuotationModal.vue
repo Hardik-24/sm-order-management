@@ -50,6 +50,7 @@
               <span>{{ products.length }} Items{{ sheetSyncStatus?.isFallback ? ' (Cached)' : '' }}</span>
               <button
                 type="button"
+                tabindex="-1"
                 @click.stop="loadSheetCatalog(true)"
                 :disabled="isSyncingSheet"
                 title="Re-sync from Google Sheet now"
@@ -625,6 +626,7 @@
                     </span>
                     <button 
                       type="button" 
+                      tabindex="-1"
                       @click="clearCustomerSelection()" 
                       class="text-red-500 hover:text-red-700 hover:underline ml-auto font-medium cursor-pointer"
                     >
@@ -928,6 +930,7 @@
                       >
                         <button
                           type="button"
+                          tabindex="-1"
                           @click="row.quantity = Math.max(1, row.quantity - 1)"
                           class="px-1.5 py-0.5 text-gray-500 hover:bg-gray-100 font-bold"
                         >
@@ -942,6 +945,7 @@
                         />
                         <button
                           type="button"
+                          tabindex="-1"
                           @click="row.quantity = row.quantity + 1"
                           class="px-1.5 py-0.5 text-gray-500 hover:bg-gray-100 font-bold"
                         >
@@ -952,6 +956,7 @@
                       <div class="mt-1 flex items-center justify-center">
                         <button
                           type="button"
+                          tabindex="-1"
                           @click.stop="requestToggleStock(row)"
                           class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold transition-all cursor-pointer border shadow-2xs group select-none"
                           :class="isItemInStock(row) 
@@ -1027,6 +1032,7 @@
                     <td class="py-2.5 px-2 text-center">
                       <button
                         type="button"
+                        tabindex="-1"
                         @click="removeQuoteItem(idx)"
                         class="p-1 rounded text-gray-300 hover:text-rose-600 hover:bg-rose-50 cursor-pointer"
                       >

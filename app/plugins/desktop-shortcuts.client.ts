@@ -139,10 +139,102 @@ export default defineNuxtPlugin(() => {
         }
       }
     }
+
+    // -------------------------------------------------------------------------
+    // 3. TAB FOCUS TRAP: Keep tab navigation trapped predictably inside open modal
+    // -------------------------------------------------------------------------
+    if (e.key === 'Tab') {
+      const modals = getOpenModals()
+      if (modals.length > 0) {
+        const topModal = modals[0]
+
+        // Find all visible, focusable elements inside the top-most modal
+        const focusableSelector = [
+          'a[href]',
+          'button:not([disabled]):not([tabindex="-1"])',
+          'input:not([disabled]):not([type="hidden"]):not([tabindex="-1"])',
+          'select:not([disabled]):not([tabindex="-1"])',
+          'textarea:not([disabled]):not([tabindex="-1"])',
+          '[tabindex="0"]'
+        ].join(', ')
+
+        const focusables = Array.from(topModal.container.querySelectorAll<HTMLElement>(focusableSelector))
+          .filter(el => {
+            const style = window.getComputedStyle(el)
+            return (
+              style.display !== 'none' &&
+              style.visibility !== 'hidden' &&
+              (el.offsetWidth > 0 || el.offsetHeight > 0 || el.getClientRects().length > 0)
+            )
+          })
+
+        if (focusables.length > 0) {
+          const first = focusables[0]
+          const last = focusables[focusables.length - 1]
+          const active = document.activeElement as HTMLElement | null
+
+          if (e.shiftKey) {
+            // Shift + Tab: if on first element or outside modal, loop to last
+            if (active === first || !topModal.container.contains(active)) {
+              e.preventDefault()
+              last.focus()
+              last.scrollIntoView?.({ block: 'nearest', inline: 'nearest' })
+            }
+          } else {
+            // Tab: if on last element or outside modal, loop to first
+            if (active === last || !topModal.container.contains(active)) {
+              e.preventDefault()
+              first.focus()
+              first.scrollIntoView?.({ block: 'nearest', inline: 'nearest' })
+            }
+          }
+        }
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // 4. ENTER KEY ADVANCE IN FORMS & DATA TABLES
+    // -------------------------------------------------------------------------
+    if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      const active = document.activeElement as HTMLInputElement | null
+      if (
+        active &&
+        active.tagName === 'INPUT' &&
+        ['text', 'number', 'tel', 'email'].includes(active.type) &&
+        !active.hasAttribute('data-quick-search') &&
+        !active.getAttribute('placeholder')?.toLowerCase().includes('search')
+      ) {
+        const formContainer = active.closest('form, table, tbody, [data-form-container="true"], .space-y-6, .space-y-4')
+        if (formContainer) {
+          const inputSelector = [
+            'input:not([disabled]):not([type="hidden"]):not([tabindex="-1"])',
+            'select:not([disabled]):not([tabindex="-1"])',
+            'textarea:not([disabled]):not([tabindex="-1"])'
+          ].join(', ')
+
+          const inputs = Array.from(formContainer.querySelectorAll<HTMLElement>(inputSelector))
+            .filter(el => {
+              const style = window.getComputedStyle(el)
+              return style.display !== 'none' && style.visibility !== 'hidden' && (el.offsetWidth > 0 || el.offsetHeight > 0)
+            })
+
+          const idx = inputs.indexOf(active)
+          if (idx !== -1 && idx < inputs.length - 1) {
+            e.preventDefault()
+            const next = inputs[idx + 1]
+            next.focus()
+            if (next.tagName === 'INPUT') {
+              (next as HTMLInputElement).select?.()
+            }
+            next.scrollIntoView?.({ block: 'nearest', inline: 'nearest' })
+          }
+        }
+      }
+    }
   }, true) // Capture phase ensures timely interception
 
   /**
-   * 3. AUTO-FOCUS ON MODAL MOUNT
+   * 5. AUTO-FOCUS ON MODAL MOUNT
    * Automatically focuses search/input when a modal appears
    */
   if (typeof MutationObserver !== 'undefined') {
@@ -175,4 +267,17 @@ export default defineNuxtPlugin(() => {
 
     observer.observe(document.body, { childList: true, subtree: true })
   }
+
+  /**
+   * 6. AUTO-SCROLL FOCUSED ELEMENTS
+   * Smoothly ensures active input is visible within any scroll container
+   */
+  window.addEventListener('focusin', (e) => {
+    const target = e.target as HTMLElement | null
+    if (target && typeof target.scrollIntoView === 'function' && ['INPUT', 'SELECT', 'TEXTAREA'].includes(target.tagName)) {
+      setTimeout(() => {
+        target.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+      }, 50)
+    }
+  }, true)
 })
