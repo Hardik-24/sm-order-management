@@ -3140,7 +3140,6 @@ const exportQuote = async (action: 'whatsapp' | 'download' | 'pdf' | 'print') =>
 
       const fileName = `${quoteNumber.value}-${(customerName.value || 'customer').replace(/\s+/g, '_')}.pdf`
       const clientName = customerName.value?.trim() || ''
-      const greeting = clientName ? `Dear ${clientName},` : 'Hello,'
       const formattedTotal = formatSlipNumber(grandTotal.value)
       const itemsCount = quoteItems.value.length
       const itemsWord = itemsCount === 1 ? '1 item' : `${itemsCount} items`
@@ -3154,15 +3153,9 @@ const exportQuote = async (action: 'whatsapp' | 'download' | 'pdf' | 'print') =>
         `📦 *Scope:* ${itemsWord}\n` +
         `💰 *Grand Total:* ₹${formattedTotal}\n` +
         `⏳ *Validity:* ${validityText}\n` +
-        `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
-        `${greeting}\n\n` +
-        `Thank you for your inquiry. Please find your official quotation PDF attached above for your kind review.\n\n` +
-        `Feel free to reach out if you have any questions, need adjustments, or wish to confirm this order. We look forward to fulfilling your requirements!\n\n` +
-        (isAnonymousMode.value 
-          ? `Warm regards` 
-          : `Warm regards,\n*Silicon Marketing*`)
+        `━━━━━━━━━━━━━━━━━━━━━━`
 
-      // Pre-copy message to clipboard so user can instantly paste if WhatsApp document viewer doesn't auto-fill caption
+      // Pre-copy message to clipboard so user can instantly paste if needed
       if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
         try {
           await navigator.clipboard.writeText(politeMessageText)
