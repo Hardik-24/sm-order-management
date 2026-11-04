@@ -311,12 +311,32 @@ export default defineNuxtPlugin(() => {
       // Notification action (tap)
       await PushNotifications.addListener('pushNotificationActionPerformed', (notificationAction: any) => {
         const data = notificationAction.notification?.data || {}
+        
+        // 1. Direct path/url if present
+        if (data.path && typeof data.path === 'string') {
+          router.push(data.path)
+          return
+        }
+        if (data.url && typeof data.url === 'string' && data.url.startsWith('/')) {
+          router.push(data.url)
+          return
+        }
+
+        // 2. Specific entities (scoped properly under /dashboard)
         if (data.orderNumber) {
-          router.push(`/orders?search=${encodeURIComponent(data.orderNumber)}`)
+          router.push(`/dashboard/orders?search=${encodeURIComponent(data.orderNumber)}`)
         } else if (data.quoteNumber) {
-          router.push(`/quotations?search=${encodeURIComponent(data.quoteNumber)}`)
+          router.push(`/dashboard/quotations?search=${encodeURIComponent(data.quoteNumber)}`)
         } else if (data.requestNumber) {
-          router.push('/order-requests')
+          router.push('/dashboard/order-requests')
+        } else if (data.tripNumber) {
+          router.push('/dashboard/delivery')
+        } else if (data.topic === 'quotations') {
+          router.push('/dashboard/quotations')
+        } else if (data.topic === 'orders') {
+          router.push('/dashboard/orders')
+        } else {
+          router.push('/dashboard')
         }
       })
 

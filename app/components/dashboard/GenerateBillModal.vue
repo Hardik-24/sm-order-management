@@ -45,19 +45,22 @@
                 GSTIN: {{ order.customer.gstNumber }}
               </p>
 
-              <!-- Provisional Lead Gate Action -->
-              <div v-if="order.customer?.isBusySynced === false" class="mt-2.5 p-2 bg-amber-100/90 border border-amber-300 rounded-lg text-amber-950 text-xs flex items-center justify-between gap-2">
-                <span class="text-[11px] font-medium leading-tight">Link a Busy customer before billing.</span>
+              <!-- Customer Link to Busy Gate -->
+              <div v-if="order.customer?.isBusySynced === false" class="mt-3 p-3 bg-amber-100/90 border border-amber-300 rounded-xl text-amber-950 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shadow-2xs">
+                <div class="flex items-center gap-2 min-w-0">
+                  <AlertCircle class="w-4 h-4 text-amber-700 shrink-0" />
+                  <span class="text-xs font-semibold leading-tight">Customer ledger is not linked to Busy.</span>
+                </div>
                 <button
                   v-if="canLinkBusyData"
                   type="button"
                   @click="isLinkModalOpen = true"
-                  class="px-2 py-1 bg-[#1b3b5f] text-white rounded text-[11px] font-bold hover:bg-[#132c49] transition cursor-pointer flex items-center gap-1 shrink-0"
+                  class="w-full sm:w-auto px-3 py-1.5 bg-[#1b3b5f] text-white rounded-lg text-xs font-bold hover:bg-[#132c49] transition cursor-pointer flex items-center justify-center gap-1.5 shrink-0 shadow-xs active:scale-95"
                 >
-                  <Link2 class="w-3 h-3" />
-                  <span>Link Customer</span>
+                  <Link2 class="w-3.5 h-3.5" />
+                  <span>Link Customer Ledger</span>
                 </button>
-                <span v-else class="text-[10px] text-amber-900 font-medium italic">Contact Admin to link</span>
+                <span v-else class="text-[10px] text-amber-900 font-medium italic">Contact Admin to link customer</span>
               </div>
             </div>
             
@@ -127,7 +130,8 @@
                 </button>
               </div>
             </div>
-            <div class="border border-gray-200 rounded-xl overflow-x-auto">
+            <!-- Desktop View: Full Spreadsheet Table -->
+            <div class="hidden md:block border border-gray-200 rounded-xl overflow-x-auto">
               <table class="w-full text-left border-collapse min-w-[850px] text-xs">
                 <thead>
                   <tr class="bg-gray-50 border-b border-gray-200 font-bold text-gray-500 uppercase tracking-widest text-[10px]">
@@ -253,50 +257,212 @@
                 </tbody>
               </table>
             </div>
+
+            <!-- Mobile View: Touch-Friendly Responsive Item Cards -->
+            <div class="md:hidden space-y-3">
+              <div 
+                v-for="(item, index) in editableItems" 
+                :key="item.id" 
+                class="bg-white border rounded-xl p-3.5 space-y-3 shadow-2xs transition"
+                :class="(item.isBusySynced === false || item.product?.isBusySynced === false) ? 'border-amber-300 ring-1 ring-amber-300/40 bg-amber-50/20' : 'border-gray-200'"
+              >
+                <!-- Card Header -->
+                <div class="flex items-start justify-between gap-2">
+                  <div class="min-w-0 flex-1">
+                    <p class="font-bold text-xs text-gray-900 leading-snug break-words">
+                      {{ item.productName || item.product?.name }}
+                    </p>
+                    <p class="text-[11px] font-mono text-gray-500 mt-0.5">
+                      {{ item.sku || item.product?.sku }} <span v-if="item.product?.hsnCode">| HSN: {{ item.product.hsnCode }}</span>
+                    </p>
+                  </div>
+                  <div class="flex flex-col items-end gap-1 shrink-0">
+                    <span 
+                      v-if="item.isTaxInclusive" 
+                      class="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200"
+                    >
+                      Tax Inc.
+                    </span>
+                    <span 
+                      v-if="item.applyLastPrice" 
+                      class="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200"
+                    >
+                      Last Price
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Not in Busy Callout & One-Tap Link Action -->
+                <div 
+                  v-if="item.isBusySynced === false || item.product?.isBusySynced === false"
+                  class="p-2.5 bg-amber-100 border border-amber-300 rounded-lg flex items-center justify-between gap-2 shadow-2xs"
+                >
+                  <div class="flex items-center gap-1.5 min-w-0 text-amber-950">
+                    <AlertCircle class="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                    <span class="text-[11px] font-black uppercase tracking-wide">Not in Busy</span>
+                  </div>
+                  <button
+                    v-if="canLinkBusyData"
+                    type="button"
+                    @click="openLinkProductModal(item)"
+                    class="px-2.5 py-1.5 bg-[#1b3b5f] hover:bg-[#132c49] text-white rounded-lg text-xs font-bold transition flex items-center gap-1 shrink-0 shadow-xs active:scale-95 cursor-pointer"
+                  >
+                    <Link2 class="w-3.5 h-3.5" />
+                    <span>Link to Busy</span>
+                  </button>
+                  <span v-else class="text-[10px] text-amber-900 font-medium italic">Contact Admin to link</span>
+                </div>
+
+                <!-- Quantities 3-Column Strip (Ordered | Packed | Billed) -->
+                <div class="grid grid-cols-3 gap-2 bg-gray-50 p-2.5 rounded-lg border border-gray-200/80 text-center text-xs">
+                  <div>
+                    <span class="block text-[10px] font-bold uppercase text-gray-500">Ordered</span>
+                    <span class="font-bold text-gray-900 text-sm mt-0.5 inline-block">{{ item.quantity }}</span>
+                  </div>
+                  <div>
+                    <span class="block text-[10px] font-bold uppercase text-gray-500">Packed</span>
+                    <div class="mt-0.5">
+                      <span 
+                        v-if="item.packedQuantity === 0" 
+                        class="inline-block text-[10px] font-bold px-1.5 py-0.5 rounded bg-rose-100 text-rose-800"
+                      >
+                        0 (OOS)
+                      </span>
+                      <span 
+                        v-else 
+                        class="font-bold text-sm" 
+                        :class="item.packedQuantity < item.quantity ? 'text-amber-700 font-extrabold' : 'text-emerald-700'"
+                      >
+                        {{ item.packedQuantity }}
+                      </span>
+                      <span v-if="item.packedQuantity < item.quantity && item.packedQuantity > 0" class="block text-[8px] font-bold text-amber-600">
+                        -{{ item.quantity - item.packedQuantity }} short
+                      </span>
+                    </div>
+                  </div>
+                  <div>
+                    <label class="block text-[10px] font-bold uppercase text-[#1b3b5f]">Billed Qty</label>
+                    <input 
+                      type="number" 
+                      min="0"
+                      v-model.number="item.billedQuantity"
+                      class="w-full text-center font-black text-sm border border-gray-300 rounded p-1 bg-white focus:ring-2 focus:ring-[#1b3b5f] mt-0.5" 
+                    />
+                  </div>
+                </div>
+
+                <!-- Pricing & Tax Inputs Row -->
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                  <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Rate (₹)</label>
+                    <input 
+                      type="number" 
+                      v-model.number="item.unitPrice"
+                      class="w-full text-xs font-bold border border-gray-300 rounded p-1.5 bg-white focus:ring-[#1b3b5f]" 
+                    />
+                  </div>
+                  <div class="flex items-center gap-1.5">
+                    <div class="flex-1">
+                      <label class="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Disc %</label>
+                      <input 
+                        type="number" 
+                        v-model.number="item.discount" 
+                        min="0" max="100"
+                        class="w-full text-center text-xs border border-gray-300 rounded p-1.5 bg-white" 
+                      />
+                    </div>
+                    <div class="flex-1">
+                      <label class="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Tax %</label>
+                      <input 
+                        type="number" 
+                        v-model.number="item.taxRate" 
+                        min="0" max="100"
+                        class="w-full text-center text-xs border border-gray-300 rounded p-1.5 bg-white" 
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Item Total Footer -->
+                <div class="flex items-center justify-between pt-2 border-t border-gray-100 text-xs">
+                  <span class="text-gray-500 text-[11px]">GST: ₹{{ calculateTax(item).toFixed(2) }}</span>
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-gray-600 font-medium text-[11px]">Item Total:</span>
+                    <span class="font-black text-sm text-gray-900">₹{{ calculateTotal(item).toFixed(2) }}</span>
+                  </div>
+                </div>
+
+                <div v-if="item.itemNotes" class="text-[10px] text-amber-800 bg-amber-50 p-1.5 rounded border border-amber-200/70">
+                  💬 {{ item.itemNotes }}
+                </div>
+              </div>
+            </div>
           </div>
 
-          <!-- Summary -->
-          <div class="flex justify-end">
-            <div class="w-full sm:w-80 bg-gray-50 rounded-xl p-4 border border-gray-200 space-y-2 text-xs">
-              <div class="flex justify-between items-center text-gray-600">
-                <span>Subtotal (Billed)</span>
-                <span class="font-semibold">₹{{ grandSubtotal.toFixed(2) }}</span>
+          <!-- Summary & Billing Blocked Section -->
+          <div class="space-y-4">
+            <!-- Prominent Billing Blocked Banner (Full Width) -->
+            <div v-if="isBusyBlocked" class="p-3.5 sm:p-4 bg-amber-50 border-2 border-amber-300 rounded-xl text-amber-950 text-xs shadow-2xs space-y-3">
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-lg bg-amber-200 text-amber-900 flex items-center justify-center shrink-0">
+                  <AlertTriangle class="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 class="font-extrabold text-xs text-amber-950 uppercase tracking-wide">Billing Blocked: Busy Synchronization Required</h4>
+                  <p class="text-[11px] text-amber-800 mt-0.5">
+                    Before generating an invoice, all party ledgers and product items must match real Busy records.
+                  </p>
+                </div>
               </div>
-              <div class="flex justify-between items-center text-gray-600">
-                <span>Total Discount</span>
-                <span class="text-rose-600 font-semibold">-₹{{ grandDiscount.toFixed(2) }}</span>
-              </div>
-              <div class="flex justify-between items-center text-gray-600">
-                <span>Total Tax (GST)</span>
-                <span class="font-semibold">₹{{ grandTax.toFixed(2) }}</span>
-              </div>
-              <div class="pt-3 border-t border-gray-200 flex justify-between items-center">
-                <span class="text-xs font-bold text-gray-900 uppercase tracking-widest">Final Bill Amount</span>
-                <span class="text-xl font-black text-[#1b3b5f]">₹{{ grandTotal.toFixed(2) }}</span>
+
+              <!-- Actionable Checklist -->
+              <div class="bg-white/90 rounded-lg p-3 border border-amber-200 space-y-2 text-xs">
+                <div v-if="isCustomerUnsynced" class="flex items-center justify-between gap-2">
+                  <div class="flex items-center gap-2 text-rose-700 font-bold text-xs">
+                    <XCircle class="w-4 h-4 shrink-0 text-rose-600" />
+                    <span>Customer ledger is not linked to Busy</span>
+                  </div>
+                  <button 
+                    v-if="canLinkBusyData"
+                    type="button" 
+                    @click="isLinkModalOpen = true" 
+                    class="px-2.5 py-1 bg-[#1b3b5f] text-white rounded text-[11px] font-bold hover:bg-[#132c49] transition cursor-pointer flex items-center gap-1 shadow-2xs"
+                  >
+                    <Link2 class="w-3 h-3" />
+                    <span>Link Customer</span>
+                  </button>
+                </div>
+
+                <div v-if="hasUnsyncedItems" class="flex items-center justify-between gap-2">
+                  <div class="flex items-center gap-2 text-rose-700 font-bold text-xs">
+                    <XCircle class="w-4 h-4 shrink-0 text-rose-600" />
+                    <span>{{ unsyncedItemsCount }} item(s) not in Busy</span>
+                  </div>
+                  <span class="text-[10px] text-amber-900 font-medium italic">Use "Link to Busy" on item cards above</span>
+                </div>
               </div>
             </div>
 
-            <!-- Prominent Billing Blocked Banner -->
-            <div v-if="isBusyBlocked" class="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-950 text-xs flex items-center justify-between gap-3 shadow-2xs">
-              <div class="flex items-center gap-2.5">
-                <div class="w-6 h-6 rounded-lg bg-amber-100 flex items-center justify-center shrink-0 text-amber-800">
-                  <AlertTriangle class="w-3.5 h-3.5" />
+            <!-- Financial Totals Box -->
+            <div class="flex justify-end">
+              <div class="w-full sm:w-80 bg-gray-50 rounded-xl p-4 border border-gray-200 space-y-2 text-xs">
+                <div class="flex justify-between items-center text-gray-600">
+                  <span>Subtotal (Billed)</span>
+                  <span class="font-semibold">₹{{ grandSubtotal.toFixed(2) }}</span>
                 </div>
-                <div class="font-medium">
-                  <span v-if="isCustomerUnsynced && hasUnsyncedItems">
-                    <strong>Billing blocked:</strong> Please link customer and products with real Busy data first.
-                  </span>
-                  <span v-else-if="isCustomerUnsynced">
-                    <strong>Billing blocked:</strong> Please link customer with real Busy data first.
-                  </span>
-                  <span v-else>
-                    <strong>Billing blocked:</strong> Please link products with real Busy data first.
-                  </span>
+                <div class="flex justify-between items-center text-gray-600">
+                  <span>Total Discount</span>
+                  <span class="text-rose-600 font-semibold">-₹{{ grandDiscount.toFixed(2) }}</span>
+                </div>
+                <div class="flex justify-between items-center text-gray-600">
+                  <span>Total Tax (GST)</span>
+                  <span class="font-semibold">₹{{ grandTax.toFixed(2) }}</span>
+                </div>
+                <div class="pt-3 border-t border-gray-200 flex justify-between items-center">
+                  <span class="text-xs font-bold text-gray-900 uppercase tracking-widest">Final Bill Amount</span>
+                  <span class="text-xl font-black text-[#1b3b5f]">₹{{ grandTotal.toFixed(2) }}</span>
                 </div>
               </div>
-              <span class="text-[10px] font-bold uppercase tracking-wider bg-amber-200 text-amber-900 px-2 py-0.5 rounded border border-amber-300 shrink-0">
-                Action Required
-              </span>
             </div>
           </div>
 
@@ -304,14 +470,14 @@
       </div>
 
       <!-- Footer -->
-      <div class="p-4 border-t border-gray-100 bg-white flex flex-col-reverse sm:flex-row justify-end gap-2.5 sm:gap-3">
-        <button @click="closeModal" class="w-full sm:w-auto text-center px-4 py-2 text-xs font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
+      <div class="p-3.5 sm:p-4 border-t border-gray-100 bg-white flex flex-col-reverse sm:flex-row justify-end gap-2.5 sm:gap-3">
+        <button @click="closeModal" class="w-full sm:w-auto text-center px-4 py-2.5 text-xs font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
           Cancel
         </button>
         <button 
           @click="confirmGenerate" 
           :disabled="isGenerating || (!isBusyBlocked && !invoiceNumber.trim())"
-          class="w-full sm:w-auto justify-center flex items-center gap-2 px-6 py-2 text-xs font-bold rounded-lg transition-colors shadow-sm cursor-pointer"
+          class="w-full sm:w-auto justify-center flex items-center gap-2 px-6 py-2.5 text-xs font-bold rounded-lg transition-colors shadow-sm cursor-pointer"
           :class="isBusyBlocked 
             ? 'bg-amber-600 hover:bg-amber-700 text-white' 
             : 'bg-[#1b3b5f] hover:bg-[#132c49] text-white disabled:opacity-50'"
@@ -319,9 +485,9 @@
           <Loader2 v-if="isGenerating" class="w-4 h-4 animate-spin" />
           <Lock v-else-if="isBusyBlocked" class="w-4 h-4" />
           <Check v-else class="w-4 h-4" />
-          <span v-if="isCustomerUnsynced && hasUnsyncedItems">Link customer & products with real Busy data first</span>
-          <span v-else-if="isCustomerUnsynced">Link customer with real Busy data first</span>
-          <span v-else-if="hasUnsyncedItems">Link products with real Busy data first</span>
+          <span v-if="isCustomerUnsynced && hasUnsyncedItems">Link customer & products in Busy first</span>
+          <span v-else-if="isCustomerUnsynced">Link customer in Busy first</span>
+          <span v-else-if="hasUnsyncedItems">Link {{ unsyncedItemsCount }} product(s) in Busy first</span>
           <span v-else>{{ isGenerating ? 'Generating...' : 'Confirm & Generate Bill' }}</span>
         </button>
       </div>
@@ -349,7 +515,7 @@
 
 <script setup lang="ts">
 import { ref, watch, computed, nextTick } from 'vue'
-import { X, FileText, Loader2, Check, GitFork, AlertTriangle, Link2, AlertCircle, Lock } from 'lucide-vue-next'
+import { X, FileText, Loader2, Check, GitFork, AlertTriangle, Link2, AlertCircle, Lock, XCircle } from 'lucide-vue-next'
 import { useGsapAnimation } from '~/composables/useGsapAnimation'
 import { useAuth } from '~/composables/useAuth'
 import LinkCustomerModal from '~/components/dashboard/LinkCustomerModal.vue'
@@ -513,6 +679,10 @@ const isCustomerUnsynced = computed(() => order.value?.customer?.isBusySynced ==
 
 const hasUnsyncedItems = computed(() => {
   return editableItems.value.some((i: any) => i.isBusySynced === false || i.product?.isBusySynced === false)
+})
+
+const unsyncedItemsCount = computed(() => {
+  return editableItems.value.filter((i: any) => i.isBusySynced === false || i.product?.isBusySynced === false).length
 })
 
 const isBusyBlocked = computed(() => isCustomerUnsynced.value || hasUnsyncedItems.value)

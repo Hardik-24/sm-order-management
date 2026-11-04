@@ -56,6 +56,7 @@ export default defineEventHandler(async (event) => {
     tokens: targetTokens,
     data: {
       type: 'SYSTEM_TEST',
+      topic: targetTopic || target || 'general',
       timestamp: new Date().toISOString()
     }
   })
