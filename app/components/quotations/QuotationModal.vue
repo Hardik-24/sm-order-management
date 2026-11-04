@@ -2575,9 +2575,11 @@ const navigateResults = (dir: number) => {
   if (total === 0) return
   
   if (highlightedIndex.value === -1) {
-    highlightedIndex.value = dir > 0 ? 0 : total - 1
+    highlightedIndex.value = 0
   } else {
-    highlightedIndex.value = (highlightedIndex.value + dir + total) % total
+    // Clamp at ends (no looping)
+    const next = highlightedIndex.value + dir
+    highlightedIndex.value = Math.max(0, Math.min(total - 1, next))
   }
 
   nextTick(() => {
