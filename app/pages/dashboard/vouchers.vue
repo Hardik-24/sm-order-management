@@ -455,8 +455,9 @@
 
               <button
                 @click="closeVoucherDrawer"
+                data-modal-close="true"
                 class="p-1.5 text-gray-400 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
-                title="Close Panel"
+                title="Close Panel (Esc)"
               >
                 <X class="w-5 h-5" />
               </button>
@@ -615,6 +616,7 @@
             <div class="px-5 py-3 border-t border-gray-200/80 bg-gray-50 flex items-center justify-end">
               <button
                 @click="closeVoucherDrawer"
+                data-modal-close="true"
                 class="px-4 py-2 text-xs font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 transition shadow-2xs cursor-pointer"
               >
                 Close
@@ -627,7 +629,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   Receipt,
@@ -877,6 +879,14 @@ async function fetchVouchers(includeStats = true) {
 }
 
 // Drawer handlers
+function onDrawerKeydown(e: KeyboardEvent) {
+  if (e.key === 'Escape') {
+    e.preventDefault()
+    e.stopPropagation()
+    closeVoucherDrawer()
+  }
+}
+
 function openVoucherDrawer(voucher: any) {
   let items = voucher.items
   if (!Array.isArray(items)) {
@@ -889,6 +899,9 @@ function openVoucherDrawer(voucher: any) {
     itemCount: items.length
   }
   isDrawerOpen.value = true
+  if (typeof window !== 'undefined') {
+    window.addEventListener('keydown', onDrawerKeydown, true)
+  }
   nextTick(() => {
     animateModalOpen(drawerPanelRef.value, drawerBackdropRef.value, { duration: 0.28 })
   })
@@ -897,7 +910,16 @@ function openVoucherDrawer(voucher: any) {
 function closeVoucherDrawer() {
   isDrawerOpen.value = false
   selectedVoucher.value = null
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('keydown', onDrawerKeydown, true)
+  }
 }
+
+onUnmounted(() => {
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('keydown', onDrawerKeydown, true)
+  }
+})
 
 function copyVoucherNumber() {
   if (!selectedVoucher.value?.voucherNo) return

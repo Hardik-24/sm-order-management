@@ -2,15 +2,15 @@ export default defineNuxtPlugin(() => {
   if (typeof window === 'undefined') return
 
   /**
-   * Helper to inspect DOM and retrieve all currently visible modal dialogs,
+   * Helper to inspect DOM and retrieve all currently visible modal dialogs and slide-over drawers,
    * sorted from highest z-index (topmost) down to lowest.
    */
   const getOpenModals = () => {
-    const closeButtons = Array.from(document.querySelectorAll<HTMLElement>('[data-modal-close="true"]'))
     const modals: { container: HTMLElement; button: HTMLElement; zIndex: number }[] = []
 
+    // 1. Gather elements explicitly marked with data-modal-close="true"
+    const closeButtons = Array.from(document.querySelectorAll<HTMLElement>('[data-modal-close="true"]'))
     for (const btn of closeButtons) {
-      // Find the closest fixed backdrop, dialog or modal container
       const container = (
         btn.closest('[role="dialog"]') ||
         btn.closest('.fixed.inset-0') ||
@@ -21,7 +21,6 @@ export default defineNuxtPlugin(() => {
 
       if (!container) continue
 
-      // Verify that the container is actually rendered and visible
       const style = window.getComputedStyle(container)
       if (
         style.display === 'none' ||
@@ -32,13 +31,11 @@ export default defineNuxtPlugin(() => {
         continue
       }
 
-      // Check if button itself is hidden or disabled
       const btnStyle = window.getComputedStyle(btn)
       if (btnStyle.display === 'none' || btnStyle.visibility === 'hidden' || (btn as HTMLButtonElement).disabled) {
         continue
       }
 
-      // Compute effective z-index
       let z = parseInt(style.zIndex, 10)
       if (isNaN(z) || z === 0) {
         let cur: HTMLElement | null = container.parentElement
@@ -53,9 +50,59 @@ export default defineNuxtPlugin(() => {
       }
       if (isNaN(z)) z = 100
 
-      // Deduplicate by container (choose the first valid close button found)
       if (!modals.some(m => m.container === container)) {
         modals.push({ container, button: btn, zIndex: z })
+      }
+    }
+
+    // 2. Fallback: Also inspect any visible modal overlays / dialogs / slide-overs directly
+    const allContainers = Array.from(document.querySelectorAll<HTMLElement>(
+      '.fixed.inset-0:not(.pointer-events-none), [role="dialog"], [data-modal-card="true"], [data-modal-container="true"]'
+    ))
+
+    for (const container of allContainers) {
+      if (modals.some(m => m.container === container)) continue
+
+      const style = window.getComputedStyle(container)
+      if (
+        style.display === 'none' ||
+        style.visibility === 'hidden' ||
+        style.opacity === '0' ||
+        (container.offsetWidth === 0 && container.offsetHeight === 0 && !container.getClientRects().length)
+      ) {
+        continue
+      }
+
+      let z = parseInt(style.zIndex, 10)
+      if (isNaN(z) || z === 0) {
+        let cur: HTMLElement | null = container.parentElement
+        while (cur && cur !== document.body) {
+          const pz = parseInt(window.getComputedStyle(cur).zIndex, 10)
+          if (!isNaN(pz) && pz > 0) {
+            z = pz
+            break
+          }
+          cur = cur.parentElement
+        }
+      }
+      if (isNaN(z) || z < 50) continue // Ignore low-level fixed layouts
+
+      // Look for a close button or X icon inside
+      const closeEl = container.querySelector<HTMLElement>(
+        'button[title*="close" i], button[aria-label*="close" i], button .lucide-x, button svg'
+      )
+      const btnToClick = closeEl ? (closeEl.closest('button') || closeEl) : null
+
+      if (btnToClick) {
+        modals.push({ container, button: btnToClick, zIndex: z })
+      } else {
+        // Backdrop fallback
+        const backdrop = container.querySelector<HTMLElement>(
+          '.absolute.inset-0, [class*="backdrop"]'
+        )
+        if (backdrop) {
+          modals.push({ container, button: backdrop, zIndex: z })
+        }
       }
     }
 

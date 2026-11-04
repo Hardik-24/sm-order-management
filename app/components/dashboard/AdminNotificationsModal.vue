@@ -69,29 +69,6 @@
               </button>
             </div>
 
-            <!-- Active Devices Mini Strip -->
-            <div class="bg-white/90 border border-indigo-100 rounded-xl p-3 flex items-center justify-between gap-3 flex-wrap text-xs">
-              <div class="flex items-center gap-2">
-                <span class="relative flex h-2.5 w-2.5">
-                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-                </span>
-                <span class="font-semibold text-gray-700">Connected Devices:</span>
-                <span v-if="activeDevices.length === 0" class="text-gray-400 italic">No devices registered yet</span>
-                <div v-else class="flex items-center gap-1.5 flex-wrap">
-                  <span 
-                    v-for="dev in activeDevices" 
-                    :key="dev.id"
-                    class="px-2 py-0.5 rounded-md bg-gray-100 text-gray-800 font-medium text-[11px] flex items-center gap-1 border border-gray-200"
-                  >
-                    <Smartphone class="w-3 h-3 text-[#1b3b5f]" />
-                    {{ dev.deviceName || dev.deviceModel || 'Mobile Device' }} ({{ dev.user?.name || 'User' }})
-                  </span>
-                </div>
-              </div>
-              <span class="text-[11px] text-gray-400">Google FCM Dual-Channel</span>
-            </div>
-
             <!-- Test Form Inputs -->
             <div class="space-y-3">
               <div>
@@ -437,12 +414,15 @@
               <button
                 type="button"
                 @click="saveNotificationRules"
-                :disabled="isSavingRules"
-                class="px-5 py-2 rounded-xl bg-[#1b3b5f] hover:bg-[#132c49] disabled:opacity-50 text-white font-bold text-xs transition flex items-center gap-2 shadow-xs cursor-pointer ml-auto"
+                :disabled="isSavingRules || !hasRuleChanges"
+                class="px-5 py-2 rounded-xl font-bold text-xs transition flex items-center gap-2 shadow-xs ml-auto"
+                :class="hasRuleChanges && !isSavingRules
+                  ? 'bg-[#1b3b5f] hover:bg-[#132c49] text-white cursor-pointer'
+                  : 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed opacity-70'"
               >
                 <Loader2 v-if="isSavingRules" class="w-3.5 h-3.5 animate-spin" />
                 <Check v-else class="w-3.5 h-3.5" />
-                <span>{{ isSavingRules ? 'Saving Changes...' : 'Save Notification Rules' }}</span>
+                <span>{{ isSavingRules ? 'Saving Changes...' : (hasRuleChanges ? 'Save Notification Rules' : 'No Changes to Save') }}</span>
               </button>
             </div>
           </div>
@@ -583,6 +563,12 @@ const notifications = reactive({
 
 const isSavingRules = ref(false)
 const saveSuccessMsg = ref('')
+const initialNotifications = ref<string>('')
+
+const hasRuleChanges = computed(() => {
+  if (!initialNotifications.value) return false
+  return JSON.stringify(notifications) !== initialNotifications.value
+})
 
 const fetchActiveDevices = async () => {
   try {
@@ -612,6 +598,8 @@ const loadNotificationSettings = async () => {
     }
   } catch (err) {
     console.warn('Failed to load notification settings:', err)
+  } finally {
+    initialNotifications.value = JSON.stringify(notifications)
   }
 }
 
@@ -672,6 +660,7 @@ const saveNotificationRules = async () => {
     })
 
     if (res && res.success) {
+      initialNotifications.value = JSON.stringify(notifications)
       saveSuccessMsg.value = 'Settings saved!'
       emit('saved', notifications)
       setTimeout(() => {
