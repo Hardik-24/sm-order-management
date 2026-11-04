@@ -13,6 +13,8 @@
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
         <item name="android:background">@null</item>
+        <item name="android:statusBarColor">#1c1c1c</item>
+        <item name="android:windowLightStatusBar">false</item>
         <!-- Bottom System Navigation Bar: Seamlessly match bottom menu bar #1c1c1c -->
         <item name="android:navigationBarColor">#1c1c1c</item>
         <item name="android:windowLightNavigationBar">false</item>
@@ -24,5 +26,6 @@
         <item name="android:windowBackground">#1c1c1c</item>
         <item name="android:navigationBarColor">#1c1c1c</item>
         <item name="android:statusBarColor">#1c1c1c</item>
+        <item name="android:windowLightStatusBar">false</item>
     </style>
 </resources>

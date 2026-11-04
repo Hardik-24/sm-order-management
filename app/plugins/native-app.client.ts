@@ -32,61 +32,14 @@ export default defineNuxtPlugin(() => {
     const App = Plugins.App
     const router = useRouter()
 
-    const isOMSApp = () => {
-      if (typeof window === 'undefined') return false
-      const currentUa = navigator.userAgent || ''
-      if ((window as any).isSiliconOMSApp === true || currentUa.includes('SiliconOMSApp')) {
-        return true
-      }
-      const isFleet = currentUa.includes('SMFleet') || window.location.pathname.startsWith('/driver')
-      return !isFleet
-    }
-
-    const updateDynamicStatusBar = async (toPath: string) => {
-      if (!StatusBar || !isOMSApp()) return
-      try {
-        const isDarkPage = toPath.startsWith('/driver')
-        const isLogin = toPath === '/login' || toPath === '/'
-
-        if (isDarkPage) {
-          await StatusBar.setStyle({ style: 'DARK' })
-          await StatusBar.setBackgroundColor({ color: '#1c1c1c' })
-        } else if (isLogin) {
-          // Warm beige background matching login page with dark icons
-          await StatusBar.setStyle({ style: 'LIGHT' })
-          await StatusBar.setBackgroundColor({ color: '#faf8f5' })
-        } else {
-          // Dashboard, Orders, Quotations, Order Requests, Admin, Settings, etc.: seamless white header with dark icons
-          await StatusBar.setStyle({ style: 'LIGHT' })
-          await StatusBar.setBackgroundColor({ color: '#ffffff' })
-        }
-      } catch (e) {
-        console.warn('[StatusBar] Dynamic update skipped:', e)
-      }
-    }
-
-    // 1. Native Status Bar Styling
+    // 1. Native Status Bar Styling: #1c1c1c status bar with crisp white clock & icons
     if (StatusBar) {
       try {
         await StatusBar.setOverlaysWebView({ overlay: false })
+        await StatusBar.setStyle({ style: 'DARK' })
+        await StatusBar.setBackgroundColor({ color: '#1c1c1c' })
       } catch (e) {
-        console.warn('StatusBar overlay configuration skipped:', e)
-      }
-
-      if (isOMSApp()) {
-        router.afterEach((to) => {
-          updateDynamicStatusBar(to.path)
-        })
-        const initialPath = router.currentRoute?.value?.path || window.location.pathname || '/'
-        updateDynamicStatusBar(initialPath)
-      } else {
-        // Fleet app or non-OMS fallback: preserve existing dark status bar
-        try {
-          await StatusBar.setStyle({ style: 'DARK' })
-          await StatusBar.setBackgroundColor({ color: '#1c1c1c' })
-        } catch (e) {
-          console.warn('StatusBar configuration skipped:', e)
-        }
+        console.warn('StatusBar configuration skipped:', e)
       }
     }
 
