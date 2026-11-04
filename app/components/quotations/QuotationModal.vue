@@ -709,6 +709,8 @@
                     @keydown.down.prevent="navigateResults(1)"
                     @keydown.up.prevent="navigateResults(-1)"
                     @keydown.enter.prevent="selectHighlightedOrFirst"
+                    @keydown.tab.prevent="selectHighlightedOrFirst"
+                    @keydown.esc="searchQuery = ''; highlightedIndex = -1"
                     type="text"
                     placeholder="Type Article Number (e.g. 372.38.151, IA120104236) or Description / Brand..."
                     class="w-full bg-transparent text-xs sm:text-sm font-bold text-gray-900 placeholder-gray-400 focus:outline-none"
@@ -732,9 +734,25 @@
 
             <!-- Autocomplete Results Dropdown -->
             <div
+              ref="dropdownContainerRef"
               v-if="searchQuery.trim().length >= 2"
-              class="absolute left-0 right-0 top-full mt-2 bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden divide-y divide-gray-100 max-h-[340px] overflow-y-auto z-50 animate-in fade-in duration-150"
+              class="absolute left-0 right-0 top-full mt-2 bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden divide-y divide-gray-100 max-h-[min(480px,60vh)] overflow-y-auto z-50 animate-in fade-in duration-150 scrollbar-thin scrollbar-thumb-gray-200"
             >
+              <!-- Dropdown Header helper bar -->
+              <div v-if="filteredSearchResults.length > 0" class="sticky top-0 z-10 px-4 py-2 bg-gray-50/95 backdrop-blur-xs border-b border-gray-200 flex items-center justify-between text-[11px] text-gray-500">
+                <span class="font-semibold text-gray-700">
+                  Found {{ filteredSearchResults.length }} matching catalog item{{ filteredSearchResults.length > 1 ? 's' : '' }}
+                </span>
+                <span class="hidden sm:inline-flex items-center gap-1.5 text-[10px] text-gray-400">
+                  <span>Use</span>
+                  <kbd class="px-1 py-0.2 bg-white border border-gray-300 rounded font-mono shadow-2xs">↑</kbd>
+                  <kbd class="px-1 py-0.2 bg-white border border-gray-300 rounded font-mono shadow-2xs">↓</kbd>
+                  <span>to navigate</span>
+                  <kbd class="px-1 py-0.2 bg-white border border-gray-300 rounded font-mono shadow-2xs">Enter ↵</kbd>
+                  <span>to select</span>
+                </span>
+              </div>
+
               <div v-if="filteredSearchResults.length === 0" class="p-6 text-center text-gray-500 text-xs">
                 <PackageSearch class="w-7 h-7 text-gray-300 mx-auto mb-1.5" />
                 <p class="font-bold text-gray-700">No matching article or product found</p>
@@ -744,10 +762,11 @@
               <div
                 v-for="(item, idx) in filteredSearchResults"
                 :key="item.articleNumber"
+                :data-index="idx"
                 @click="addItemToQuote(item)"
                 @mouseenter="highlightedIndex = idx"
                 class="p-3 sm:p-3.5 flex items-center justify-between gap-3 cursor-pointer transition-colors"
-                :class="highlightedIndex === idx ? 'bg-sky-50/70 border-l-4 border-l-[#1b3b5f]' : 'hover:bg-gray-50/80'"
+                :class="highlightedIndex === idx ? 'bg-sky-50/90 border-l-4 border-l-[#1b3b5f]' : 'hover:bg-gray-50/80'"
               >
                 <div class="flex items-center gap-2.5 min-w-0">
                   <span class="w-6 h-6 rounded-md bg-gray-100 text-gray-700 text-[11px] font-bold flex items-center justify-center shrink-0">
@@ -2517,9 +2536,10 @@ watch(
   { deep: true }
 )
 
-// Search
+// Search & Autocomplete
 const searchQuery = ref('')
 const searchInputRef = ref<HTMLInputElement | null>(null)
+const dropdownContainerRef = ref<HTMLElement | null>(null)
 const highlightedIndex = ref(-1)
 
 const filteredSearchResults = computed(() => {
@@ -2528,12 +2548,41 @@ const filteredSearchResults = computed(() => {
   return rankAndFilter(products.value, q, {
     primary: p => [p.articleNumber, p.description],
     secondary: p => p.brand
-  }).slice(0, 15)
+  }).slice(0, 20)
 })
 
+const scrollToHighlightedItem = () => {
+  if (!dropdownContainerRef.value || highlightedIndex.value < 0) return
+  const container = dropdownContainerRef.value
+  const targetEl = container.querySelector<HTMLElement>(`[data-index="${highlightedIndex.value}"]`)
+  if (!targetEl) return
+
+  const containerRect = container.getBoundingClientRect()
+  const targetRect = targetEl.getBoundingClientRect()
+
+  // If item is scrolled above the visible viewport of dropdown
+  if (targetRect.top < containerRect.top) {
+    container.scrollTop -= (containerRect.top - targetRect.top)
+  }
+  // If item is scrolled below the visible viewport of dropdown
+  else if (targetRect.bottom > containerRect.bottom) {
+    container.scrollTop += (targetRect.bottom - containerRect.bottom)
+  }
+}
+
 const navigateResults = (dir: number) => {
-  if (filteredSearchResults.value.length === 0) return
-  highlightedIndex.value = (highlightedIndex.value + dir + filteredSearchResults.value.length) % filteredSearchResults.value.length
+  const total = filteredSearchResults.value.length
+  if (total === 0) return
+  
+  if (highlightedIndex.value === -1) {
+    highlightedIndex.value = dir > 0 ? 0 : total - 1
+  } else {
+    highlightedIndex.value = (highlightedIndex.value + dir + total) % total
+  }
+
+  nextTick(() => {
+    scrollToHighlightedItem()
+  })
 }
 
 const selectHighlightedOrFirst = () => {
@@ -2541,6 +2590,19 @@ const selectHighlightedOrFirst = () => {
   const target = highlightedIndex.value >= 0 ? filteredSearchResults.value[highlightedIndex.value] : filteredSearchResults.value[0]
   if (target) addItemToQuote(target)
 }
+
+watch(searchQuery, (newVal) => {
+  if (newVal.trim().length >= 2) {
+    highlightedIndex.value = 0
+    nextTick(() => {
+      if (dropdownContainerRef.value) {
+        dropdownContainerRef.value.scrollTop = 0
+      }
+    })
+  } else {
+    highlightedIndex.value = -1
+  }
+})
 
 const addItemToQuote = (item: SheetProduct) => {
   const existing = quoteItems.value.find(r => r.articleNumber.toLowerCase() === item.articleNumber.toLowerCase())
@@ -2566,6 +2628,9 @@ const addItemToQuote = (item: SheetProduct) => {
   }
   searchQuery.value = ''
   highlightedIndex.value = -1
+  nextTick(() => {
+    searchInputRef.value?.focus()
+  })
 }
 
 const addCustomItem = () => {
