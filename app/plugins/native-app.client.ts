@@ -30,17 +30,65 @@ export default defineNuxtPlugin(() => {
     const StatusBar = Plugins.StatusBar
     const SplashScreen = Plugins.SplashScreen
     const App = Plugins.App
+    const router = useRouter()
 
-  // 1. Native Status Bar Styling
-  if (StatusBar) {
-    try {
-      StatusBar.setStyle({ style: 'DARK' })
-      StatusBar.setBackgroundColor({ color: '#1c1c1c' })
-      StatusBar.setOverlaysWebView({ overlay: false })
-    } catch (e) {
-      console.warn('StatusBar configuration skipped:', e)
+    const isOMSApp = () => {
+      if (typeof window === 'undefined') return false
+      const currentUa = navigator.userAgent || ''
+      if ((window as any).isSiliconOMSApp === true || currentUa.includes('SiliconOMSApp')) {
+        return true
+      }
+      const isFleet = currentUa.includes('SMFleet') || window.location.pathname.startsWith('/driver')
+      return !isFleet
     }
-  }
+
+    const updateDynamicStatusBar = async (toPath: string) => {
+      if (!StatusBar || !isOMSApp()) return
+      try {
+        const isDarkPage = toPath.startsWith('/driver')
+        const isLogin = toPath === '/login' || toPath === '/'
+
+        if (isDarkPage) {
+          await StatusBar.setStyle({ style: 'DARK' })
+          await StatusBar.setBackgroundColor({ color: '#1c1c1c' })
+        } else if (isLogin) {
+          // Warm beige background matching login page with dark icons
+          await StatusBar.setStyle({ style: 'LIGHT' })
+          await StatusBar.setBackgroundColor({ color: '#faf8f5' })
+        } else {
+          // Dashboard, Orders, Quotations, Order Requests, Admin, Settings, etc.: seamless white header with dark icons
+          await StatusBar.setStyle({ style: 'LIGHT' })
+          await StatusBar.setBackgroundColor({ color: '#ffffff' })
+        }
+      } catch (e) {
+        console.warn('[StatusBar] Dynamic update skipped:', e)
+      }
+    }
+
+    // 1. Native Status Bar Styling
+    if (StatusBar) {
+      try {
+        await StatusBar.setOverlaysWebView({ overlay: false })
+      } catch (e) {
+        console.warn('StatusBar overlay configuration skipped:', e)
+      }
+
+      if (isOMSApp()) {
+        router.afterEach((to) => {
+          updateDynamicStatusBar(to.path)
+        })
+        const initialPath = router.currentRoute?.value?.path || window.location.pathname || '/'
+        updateDynamicStatusBar(initialPath)
+      } else {
+        // Fleet app or non-OMS fallback: preserve existing dark status bar
+        try {
+          await StatusBar.setStyle({ style: 'DARK' })
+          await StatusBar.setBackgroundColor({ color: '#1c1c1c' })
+        } catch (e) {
+          console.warn('StatusBar configuration skipped:', e)
+        }
+      }
+    }
 
   // 2. Hide Native Splash Screen cleanly after Nuxt has hydrated
   if (SplashScreen) {
@@ -56,7 +104,6 @@ export default defineNuxtPlugin(() => {
   // 3. Android Hardware Back Button Navigation Handler
   if (App) {
     let lastBackPress = 0
-    const router = useRouter()
     const route = useRoute()
     const { showEditing } = useSnackbar()
 
@@ -311,7 +358,6 @@ export default defineNuxtPlugin(() => {
       // Notification action (tap)
       await PushNotifications.addListener('pushNotificationActionPerformed', (notificationAction: any) => {
         const data = notificationAction.notification?.data || {}
-        const router = useRouter()
         if (data.orderNumber) {
           router.push(`/orders?search=${encodeURIComponent(data.orderNumber)}`)
         } else if (data.quoteNumber) {

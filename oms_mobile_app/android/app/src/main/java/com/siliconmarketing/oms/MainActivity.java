@@ -26,6 +26,11 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(OMSBridgePlugin.class);
         super.onCreate(savedInstanceState);
 
+        // Bottom System Navigation Bar: Match menu bar #1c1c1c
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+            getWindow().setNavigationBarColor(android.graphics.Color.parseColor("#1c1c1c"));
+        }
+
         Bridge bridgeInstance = this.bridge;
         if (bridgeInstance != null) {
             WebView webView = bridgeInstance.getWebView();
