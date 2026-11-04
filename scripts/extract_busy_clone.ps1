@@ -40,26 +40,30 @@ if (-not $dbFile) {
 }
 
 $srcDb = $dbFile.FullName
-$tmpDb = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), "sm_extract_$([Guid]::NewGuid().ToString('N')).bds")
+# Create temporary snapshot directly inside the Clone folder (same drive as clone, zero C: drive usage)
+$tmpDb = [System.IO.Path]::Combine($cloneDir, "sm_extract_snapshot.bds")
+if (Test-Path $tmpDb) {
+    Remove-Item -Path $tmpDb -Force -ErrorAction SilentlyContinue
+}
 Copy-Item -Path $srcDb -Destination $tmpDb -Force
 
 $conn = New-Object -ComObject ADODB.Connection
 $opened = $false
-foreach ($prov in @("Microsoft.ACE.OLEDB.12.0", "Microsoft.ACE.OLEDB.16.0", "Microsoft.Jet.OLEDB.4.0")) {
-    try {
-        $conn.Open("Provider=$prov;Data Source=$tmpDb;Jet OLEDB:Database Password=ILoveMyINDIA;Mode=Read;")
-        $opened = $true
-        break
-    } catch {
-        # Try next provider
-    }
-}
-if (-not $opened) {
-    Write-Error "Could not connect to database using OLEDB provider. Please verify Microsoft Access Database Engine is installed."
-    exit 1
-}
 
 try {
+    foreach ($prov in @("Microsoft.ACE.OLEDB.12.0", "Microsoft.ACE.OLEDB.16.0", "Microsoft.Jet.OLEDB.4.0")) {
+        try {
+            $conn.Open("Provider=$prov;Data Source=$tmpDb;Jet OLEDB:Database Password=ILoveMyINDIA;Mode=Read;")
+            $opened = $true
+            break
+        } catch {
+            # Try next provider
+        }
+    }
+    if (-not $opened) {
+        Write-Error "Could not connect to database using OLEDB provider. Please verify Microsoft Access Database Engine is installed."
+        exit 1
+    }
 
 # 1. Categories (Item Groups)
 Write-Host "Extracting Categories..."
