@@ -303,14 +303,18 @@ const getItemsTotalQuantity = (order: Order) => {
           <input 
             :value="search"
             @input="e => { emit('update:search', (e.target as HTMLInputElement).value); emit('update:page', 1) }"
+            data-quick-search="true"
             type="text" 
             placeholder="Search orders, customers..."
-            class="block w-full pl-10 pr-9 py-2 border border-gray-300 rounded-lg text-sm bg-white placeholder:text-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f] transition-all shadow-sm"
+            class="block w-full pl-10 pr-14 py-2 border border-gray-300 rounded-lg text-sm bg-white placeholder:text-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f] transition-all shadow-sm"
           />
+          <div v-if="!search" class="hidden sm:flex absolute inset-y-0 right-0 pr-2.5 items-center pointer-events-none">
+            <kbd class="px-1.5 py-0.5 text-[10px] font-mono text-gray-400 bg-gray-100 border border-gray-200 rounded shadow-2xs">Ctrl K</kbd>
+          </div>
           <button 
-            v-if="search"
+            v-else
             @click="{ emit('update:search', ''); emit('update:page', 1) }"
-            class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+            class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
           >
             <X class="h-4 w-4" />
           </button>

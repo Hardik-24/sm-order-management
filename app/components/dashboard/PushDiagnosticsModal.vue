@@ -12,7 +12,7 @@
             <p class="text-xs text-gray-500">Live Firebase and device registration debug panel</p>
           </div>
         </div>
-        <button @click="$emit('close')" class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+        <button @click="$emit('close')" data-modal-close="true" title="Close (Esc)" class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer">
           <X class="w-5 h-5" />
         </button>
       </div>

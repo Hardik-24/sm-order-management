@@ -22,6 +22,8 @@
           <button 
             type="button" 
             @click="closeModal" 
+            data-modal-close="true"
+            title="Close (Esc)"
             class="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition cursor-pointer"
           >
             <X class="w-5 h-5" />

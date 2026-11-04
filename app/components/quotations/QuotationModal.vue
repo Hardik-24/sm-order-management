@@ -706,11 +706,13 @@
                   <input
                     ref="searchInputRef"
                     v-model="searchQuery"
+                    data-autofocus="true"
+                    data-quick-search="true"
                     @keydown.down.prevent="navigateResults(1)"
                     @keydown.up.prevent="navigateResults(-1)"
                     @keydown.enter.prevent="selectHighlightedOrFirst"
                     @keydown.tab.prevent="selectHighlightedOrFirst"
-                    @keydown.esc="searchQuery = ''; highlightedIndex = -1"
+                    @keydown.esc="if (searchQuery) { searchQuery = ''; highlightedIndex = -1; $event.stopPropagation(); } else { closeModal(); }"
                     type="text"
                     placeholder="Type Article Number (e.g. 372.38.151, IA120104236) or Description / Brand..."
                     class="w-full bg-transparent text-xs sm:text-sm font-bold text-gray-900 placeholder-gray-400 focus:outline-none"
@@ -3037,6 +3039,11 @@ watch(
       loadGlobalSettings()
       setupViewportObserver()
       loadDbCustomers()
+      nextTick(() => {
+        if (!isSuccessView.value && searchInputRef.value) {
+          searchInputRef.value.focus()
+        }
+      })
     }
   }
 )

@@ -4,6 +4,9 @@
     <div 
       tabindex="0"
       @click="toggleOpen"
+      @keydown.enter.prevent="toggleOpen"
+      @keydown.space.prevent="toggleOpen"
+      @keydown.down.prevent="toggleOpen"
       class="w-full border rounded-lg focus:outline-none focus:border-[#1b3b5f] focus:ring-2 focus:ring-[#1b3b5f]/20 bg-white text-gray-800 cursor-pointer flex items-center justify-between transition-colors hover:bg-gray-50/80 select-none"
       :class="[
         triggerClass || 'px-3 py-2 text-sm',
@@ -407,6 +410,9 @@ const handleGlobalKeydown = (e: KeyboardEvent) => {
     e.preventDefault()
     selectFocused()
   } else if (e.key === 'Escape') {
+    e.preventDefault()
+    e.stopPropagation()
+    e.stopImmediatePropagation()
     isOpen.value = false
   }
 }
