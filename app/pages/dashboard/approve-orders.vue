@@ -51,10 +51,11 @@ const search = ref('')
 const debouncedSearch = refDebounced(search, 300)
 const startDate = ref('')
 const endDate = ref('')
+const salesPersonId = ref('')
 const activeTab = ref<'PENDING' | 'URGENT' | 'APPROVED' | 'ALL'>('PENDING')
 
 // Reset page on search or date change
-watch([debouncedSearch, startDate, endDate], () => {
+watch([debouncedSearch, startDate, endDate, salesPersonId], () => {
   page.value = 1
 })
 
@@ -81,6 +82,9 @@ const queryObj = computed(() => {
   }
   if (endDate.value) {
     q.endDate = endDate.value
+  }
+  if (salesPersonId.value) {
+    q.salesPersonId = salesPersonId.value
   }
   if (debouncedSearch.value.trim()) {
     q.search = debouncedSearch.value.trim()
@@ -487,6 +491,13 @@ const getTotalNos = (order: any) => {
           <TableFilterButtons
             v-model:startDate="startDate"
             v-model:endDate="endDate"
+            v-model:salesPersonId="salesPersonId"
+            :showOverallStatus="false"
+            :showApprovalStatus="false"
+            :showPackingStatus="false"
+            :showBillingStatus="false"
+            :showDeliveryStatus="false"
+            :showPlacedBy="true"
           />
           <RowsPerPageSelect v-model="limit" />
         </div>

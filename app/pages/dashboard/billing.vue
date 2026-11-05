@@ -21,6 +21,7 @@ const status = ref('')
 const billingStatus = ref('')
 const packingStatus = ref('')
 const deliveryStatus = ref('')
+const salesPersonId = ref('')
 const selectedOrderId = ref<string | null>(null)
 const isPanelOpen = ref(false)
 
@@ -51,6 +52,7 @@ const queryObj = computed(() => {
   if (status.value) q.status = status.value
   if (packingStatus.value) q.packingStatus = packingStatus.value
   if (deliveryStatus.value) q.deliveryStatus = deliveryStatus.value
+  if (salesPersonId.value) q.salesPersonId = salesPersonId.value
   return q
 })
 
@@ -326,6 +328,7 @@ onMounted(() => {
         v-model:billingStatus="billingStatus"
         v-model:packingStatus="packingStatus"
         v-model:deliveryStatus="deliveryStatus"
+        v-model:salesPersonId="salesPersonId"
         @select="handleSelect"
         @generate-invoice="openGenerateModal"
         @split-order="openSplitModal"

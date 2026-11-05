@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, nextTick, onMounted, onUnmounted } from 'vue'
 import { onClickOutside } from '@vueuse/core'
-import { Calendar, Filter, X, ChevronDown, Check } from 'lucide-vue-next'
+import { Calendar, Filter, X, ChevronDown, Check, User as UserIcon, Users, Search } from 'lucide-vue-next'
 
 const props = withDefaults(defineProps<{
   startDate?: string
@@ -11,6 +11,15 @@ const props = withDefaults(defineProps<{
   packingStatus?: string
   deliveryStatus?: string
   isApproved?: string
+  salesPersonId?: string
+  salesPersons?: any[]
+  showOverallStatus?: boolean
+  showApprovalStatus?: boolean
+  showPackingStatus?: boolean
+  showBillingStatus?: boolean
+  showDeliveryStatus?: boolean
+  showPlacedBy?: boolean
+  showDateFilter?: boolean
 }>(), {
   startDate: '',
   endDate: '',
@@ -18,7 +27,16 @@ const props = withDefaults(defineProps<{
   billingStatus: '',
   packingStatus: '',
   deliveryStatus: '',
-  isApproved: ''
+  isApproved: '',
+  salesPersonId: '',
+  salesPersons: undefined,
+  showOverallStatus: true,
+  showApprovalStatus: true,
+  showPackingStatus: true,
+  showBillingStatus: true,
+  showDeliveryStatus: true,
+  showPlacedBy: true,
+  showDateFilter: true
 })
 
 const emit = defineEmits<{
@@ -29,6 +47,7 @@ const emit = defineEmits<{
   (e: 'update:packingStatus', val: string): void
   (e: 'update:deliveryStatus', val: string): void
   (e: 'update:isApproved', val: string): void
+  (e: 'update:salesPersonId', val: string): void
 }>()
 
 const isDatePickerOpen = ref(false)
@@ -119,11 +138,12 @@ onClickOutside(filtersContainerRef, () => {
 
 const activeFilterCount = computed(() => {
   let count = 0
-  if (props.status) count++
-  if (props.billingStatus) count++
-  if (props.packingStatus) count++
-  if (props.deliveryStatus) count++
-  if (props.isApproved !== undefined && props.isApproved !== '') count++
+  if (props.showOverallStatus && props.status) count++
+  if (props.showBillingStatus && props.billingStatus) count++
+  if (props.showPackingStatus && props.packingStatus) count++
+  if (props.showDeliveryStatus && props.deliveryStatus) count++
+  if (props.showApprovalStatus && props.isApproved !== undefined && props.isApproved !== '') count++
+  if (props.showPlacedBy && props.salesPersonId) count++
   return count
 })
 
@@ -133,8 +153,45 @@ const clearFilters = () => {
   emit('update:packingStatus', '')
   emit('update:deliveryStatus', '')
   emit('update:isApproved', '')
+  emit('update:salesPersonId', '')
   activeDropdown.value = null
+  salesPersonSearch.value = ''
   isFiltersOpen.value = false
+}
+
+// Sales Persons list & searching
+const salesPersonSearch = ref('')
+const { data: fetchedUsers } = useFetch<any[]>('/api/users')
+
+const salesPersonsList = computed(() => {
+  if (props.salesPersons && props.salesPersons.length) return props.salesPersons
+  if (!fetchedUsers.value) return []
+  return fetchedUsers.value.filter(u => u.role === 'SALES' || u.role === 'ADMIN' || u.role === 'SUPERVISOR')
+})
+
+const filteredSalesPersonsList = computed(() => {
+  const list = salesPersonsList.value
+  if (!salesPersonSearch.value.trim()) return list
+  const q = salesPersonSearch.value.trim().toLowerCase()
+  return list.filter(u => (u.name || '').toLowerCase().includes(q) || (u.role || '').toLowerCase().includes(q))
+})
+
+const selectedSalesPerson = computed(() => {
+  if (!props.salesPersonId || props.salesPersonId === 'all') return null
+  return salesPersonsList.value.find(u => u.id === props.salesPersonId) || null
+})
+
+const getInitials = (name?: string) => {
+  if (!name) return '?'
+  const parts = name.trim().split(/\s+/)
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+}
+
+const selectSalesPerson = (id: string) => {
+  emit('update:salesPersonId', id)
+  activeDropdown.value = null
+  salesPersonSearch.value = ''
 }
 
 const resetDates = () => {
@@ -327,7 +384,7 @@ const deliveryStatusOptions = [
     </Transition>
 
     <!-- Date Range Filter -->
-    <div class="relative flex-1 sm:flex-initial" ref="dateContainerRef">
+    <div v-if="showDateFilter" class="relative flex-1 sm:flex-initial" ref="dateContainerRef">
       <button 
         ref="dateButtonRef"
         type="button"
@@ -542,12 +599,13 @@ const deliveryStatusOptions = [
           class="p-4 space-y-3.5 overflow-y-auto flex-1 min-h-0 transition-all duration-200" 
           :class="{
             'pb-44': activeDropdown === 'deliveryStatus',
-            'pb-28': activeDropdown === 'billingStatus'
+            'pb-28': activeDropdown === 'billingStatus',
+            'pb-36': activeDropdown === 'salesPerson'
           }"
           @click="onFilterSectionClick"
         >
           <!-- 1. Overall Status -->
-          <div class="space-y-1.5 relative">
+          <div v-if="showOverallStatus" class="space-y-1.5 relative">
             <div class="flex items-center justify-between">
               <label class="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Overall Status</label>
               <button 
@@ -606,8 +664,115 @@ const deliveryStatusOptions = [
             </div>
           </div>
 
+          <!-- Placed By (Sales Person) Filter -->
+          <div v-if="showPlacedBy" class="space-y-1.5 relative">
+            <div class="flex items-center justify-between">
+              <label class="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Placed By (Sales Person)</label>
+              <button 
+                v-if="salesPersonId" 
+                type="button"
+                @click.stop="emit('update:salesPersonId', '')"
+                class="text-[10px] font-semibold text-[#1b3b5f] hover:underline cursor-pointer"
+              >
+                Reset
+              </button>
+            </div>
+            
+            <div class="relative filter-dropdown-menu" :class="{ 'z-20': activeDropdown === 'salesPerson' }">
+              <button
+                type="button"
+                @click.stop="toggleDropdown('salesPerson')"
+                class="w-full px-3.5 py-2.5 rounded-xl border text-sm flex items-center justify-between transition-all duration-150 text-left cursor-pointer"
+                :class="salesPersonId ? 'border-[#1b3b5f] bg-[#1b3b5f]/5 text-gray-900 ring-1 ring-[#1b3b5f]/20 font-medium' : 'border-gray-200 bg-white hover:border-gray-300 text-gray-700 hover:bg-gray-50/50'"
+              >
+                <div class="flex items-center gap-2.5 truncate">
+                  <div 
+                    v-if="selectedSalesPerson"
+                    class="w-5 h-5 rounded-full bg-[#1b3b5f] text-white flex items-center justify-center font-bold text-[9px] shrink-0"
+                  >
+                    {{ getInitials(selectedSalesPerson.name) }}
+                  </div>
+                  <UserIcon v-else class="w-4 h-4 text-gray-400 shrink-0" />
+                  <span class="truncate font-medium text-xs sm:text-sm">
+                    {{ selectedSalesPerson ? selectedSalesPerson.name : 'All Sales Persons' }}
+                  </span>
+                </div>
+                <ChevronDown class="w-4 h-4 text-gray-400 shrink-0 transition-transform duration-200" :class="{ 'rotate-180 text-[#1b3b5f]': activeDropdown === 'salesPerson' }" />
+              </button>
+
+              <!-- Dropdown Menu -->
+              <Transition
+                enter-active-class="transition duration-150 ease-out"
+                enter-from-class="transform opacity-0 -translate-y-1 scale-98"
+                enter-to-class="transform opacity-100 translate-y-0 scale-100"
+                leave-active-class="transition duration-100 ease-in"
+                leave-from-class="transform opacity-100 translate-y-0 scale-100"
+                leave-to-class="transform opacity-0 -translate-y-1 scale-98"
+              >
+                <div 
+                  v-if="activeDropdown === 'salesPerson'"
+                  class="dropdown-menu-salesPerson absolute left-0 right-0 top-full mt-1.5 bg-white border border-gray-200 rounded-xl shadow-xl z-30 py-1 max-h-56 overflow-y-auto divide-y divide-gray-50"
+                >
+                  <!-- Search input inside dropdown -->
+                  <div v-if="salesPersonsList.length > 4" class="p-2 bg-gray-50 border-b border-gray-100 sticky top-0 z-10" @click.stop>
+                    <div class="relative">
+                      <Search class="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-2" />
+                      <input 
+                        v-model="salesPersonSearch" 
+                        type="text" 
+                        placeholder="Search sales person..." 
+                        class="w-full pl-8 pr-2 py-1 text-xs border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-[#1b3b5f]" 
+                      />
+                    </div>
+                  </div>
+
+                  <!-- All Sales Persons option -->
+                  <button
+                    type="button"
+                    @click.stop="selectSalesPerson('')"
+                    class="w-full px-3.5 py-2 text-xs flex items-center justify-between text-left transition-colors cursor-pointer"
+                    :class="!salesPersonId ? 'bg-[#1b3b5f]/10 text-[#1b3b5f] font-semibold' : 'text-gray-700 hover:bg-gray-50'"
+                  >
+                    <div class="flex items-center gap-2.5 truncate">
+                      <div class="w-5 h-5 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center font-bold text-[9px] shrink-0">
+                        <Users class="w-3 h-3" />
+                      </div>
+                      <span class="truncate">All Sales Persons</span>
+                    </div>
+                    <Check v-if="!salesPersonId" class="w-3.5 h-3.5 text-[#1b3b5f] shrink-0 ml-1.5" />
+                  </button>
+
+                  <!-- Filtered Reps List -->
+                  <button
+                    v-for="rep in filteredSalesPersonsList"
+                    :key="rep.id"
+                    type="button"
+                    @click.stop="selectSalesPerson(rep.id)"
+                    class="w-full px-3.5 py-2 text-xs flex items-center justify-between text-left transition-colors cursor-pointer"
+                    :class="salesPersonId === rep.id ? 'bg-[#1b3b5f]/10 text-[#1b3b5f] font-semibold' : 'text-gray-700 hover:bg-gray-50'"
+                  >
+                    <div class="flex items-center gap-2.5 truncate min-w-0">
+                      <div class="w-5 h-5 rounded-full bg-[#1b3b5f]/10 text-[#1b3b5f] flex items-center justify-center font-bold text-[9px] shrink-0">
+                        {{ getInitials(rep.name) }}
+                      </div>
+                      <div class="truncate">
+                        <span class="font-medium truncate block">{{ rep.name }}</span>
+                        <span v-if="rep.role" class="text-[9px] text-gray-400 uppercase tracking-wider block">{{ rep.role }}</span>
+                      </div>
+                    </div>
+                    <Check v-if="salesPersonId === rep.id" class="w-3.5 h-3.5 text-[#1b3b5f] shrink-0 ml-1.5" />
+                  </button>
+
+                  <div v-if="filteredSalesPersonsList.length === 0" class="p-3 text-center text-xs text-gray-400">
+                    No sales person found
+                  </div>
+                </div>
+              </Transition>
+            </div>
+          </div>
+
           <!-- 2. Approval Status -->
-          <div class="space-y-1.5 relative">
+          <div v-if="showApprovalStatus" class="space-y-1.5 relative">
             <div class="flex items-center justify-between">
               <label class="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Approval Status</label>
               <button 
@@ -667,7 +832,7 @@ const deliveryStatusOptions = [
           </div>
 
           <!-- 3. Packing Department -->
-          <div class="space-y-1.5 relative">
+          <div v-if="showPackingStatus" class="space-y-1.5 relative">
             <div class="flex items-center justify-between">
               <label class="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Packing Department</label>
               <button 
@@ -727,7 +892,7 @@ const deliveryStatusOptions = [
           </div>
 
           <!-- 4. Billing Department -->
-          <div class="space-y-1.5 relative">
+          <div v-if="showBillingStatus" class="space-y-1.5 relative">
             <div class="flex items-center justify-between">
               <label class="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Billing Department</label>
               <button 
@@ -787,7 +952,7 @@ const deliveryStatusOptions = [
           </div>
 
           <!-- 5. Delivery Department -->
-          <div class="space-y-1.5 relative">
+          <div v-if="showDeliveryStatus" class="space-y-1.5 relative">
             <div class="flex items-center justify-between">
               <label class="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Delivery Department</label>
               <button 

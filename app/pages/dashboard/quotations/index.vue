@@ -153,8 +153,19 @@
           </button>
         </div>
 
-        <!-- 3. Actions (Refresh button) -->
-        <div class="flex items-center gap-2 w-full sm:w-auto justify-end order-3">
+        <!-- 3. Actions (Filter controls + Refresh button) -->
+        <div class="flex items-center gap-1.5 sm:gap-2.5 w-full sm:w-auto justify-between sm:justify-end flex-nowrap order-3">
+          <TableFilterButtons
+            v-model:startDate="startDate"
+            v-model:endDate="endDate"
+            v-model:salesPersonId="salesPersonId"
+            :showOverallStatus="false"
+            :showApprovalStatus="false"
+            :showPackingStatus="false"
+            :showBillingStatus="false"
+            :showDeliveryStatus="false"
+            :showPlacedBy="true"
+          />
           <button
             type="button"
             @click="fetchQuotations"
@@ -530,6 +541,7 @@ import TableSkeletonRows from '~/components/ui/TableSkeletonRows.vue'
 import { getEffectiveActionPermissions } from '~/utils/permissions'
 import QuotationModal from '~/components/quotations/QuotationModal.vue'
 import ConvertQuotationModal from '~/components/quotations/ConvertQuotationModal.vue'
+import TableFilterButtons from '~/components/dashboard/TableFilterButtons.vue'
 import { rankAndFilter } from '~/utils/search'
 
 definePageMeta({
@@ -570,7 +582,15 @@ watch(quoteScope, () => {
   fetchQuotations()
 })
 
-// State
+// Filters & State
+const startDate = ref('')
+const endDate = ref('')
+const salesPersonId = ref('')
+
+watch([salesPersonId, startDate, endDate], () => {
+  fetchQuotations()
+})
+
 const quotations = ref<any[]>([])
 const isLoading = ref(false)
 const searchQuery = ref('')
@@ -676,9 +696,11 @@ const onQuotationConverted = (order: any) => {
 const fetchQuotations = async () => {
   isLoading.value = true
   try {
-    const res = await $fetch<any>('/api/quotations', {
-      params: { scope: quoteScope.value }
-    })
+    const params: any = { scope: quoteScope.value }
+    if (salesPersonId.value) params.salesPersonId = salesPersonId.value
+    if (startDate.value) params.startDate = startDate.value
+    if (endDate.value) params.endDate = endDate.value
+    const res = await $fetch<any>('/api/quotations', { params })
     if (res?.quotations) {
       quotations.value = res.quotations
     }
@@ -692,7 +714,21 @@ const fetchQuotations = async () => {
 // Filtered Quotations with relevance ranking
 const filteredQuotations = computed(() => {
   if (!quotations.value) return []
-  return rankAndFilter(quotations.value as any[], searchQuery.value, {
+  let list = quotations.value as any[]
+
+  if (salesPersonId.value) {
+    list = list.filter(q => q.createdById === salesPersonId.value)
+  }
+  if (startDate.value) {
+    const s = new Date(`${startDate.value}T00:00:00`).getTime()
+    list = list.filter(q => new Date(q.createdAt).getTime() >= s)
+  }
+  if (endDate.value) {
+    const e = new Date(`${endDate.value}T23:59:59.999`).getTime()
+    list = list.filter(q => new Date(q.createdAt).getTime() <= e)
+  }
+
+  return rankAndFilter(list, searchQuery.value, {
     primary: q => [q.quoteNumber, q.customerName],
     secondary: q => [q.customerPlace, q.createdByName]
   })

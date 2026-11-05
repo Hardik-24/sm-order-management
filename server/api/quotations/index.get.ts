@@ -28,12 +28,41 @@ export default defineEventHandler(async (event) => {
       }
     }
 
-    if (!canViewAllCompany || scope === 'mine') {
+    const salesPersonId = String(query.salesPersonId || query.createdById || '').trim()
+    const startDate = String(query.startDate || '').trim()
+    const endDate = String(query.endDate || '').trim()
+
+    if (canViewAllCompany) {
+      if (salesPersonId && salesPersonId !== 'all' && salesPersonId !== 'mine') {
+        andConditions.push({ createdById: salesPersonId })
+      } else if (salesPersonId === 'mine' || scope === 'mine') {
+        const userCondition: any[] = [{ createdById: user.id }]
+        if (user.name) {
+          userCondition.push({ createdByName: { equals: user.name, mode: 'insensitive' } })
+        }
+        andConditions.push({ OR: userCondition })
+      }
+    } else {
       const userCondition: any[] = [{ createdById: user.id }]
       if (user.name) {
         userCondition.push({ createdByName: { equals: user.name, mode: 'insensitive' } })
       }
       andConditions.push({ OR: userCondition })
+    }
+
+    if (startDate || endDate) {
+      const dateCondition: any = {}
+      if (startDate) {
+        const d = new Date(`${startDate}T00:00:00`)
+        if (!isNaN(d.getTime())) dateCondition.gte = d
+      }
+      if (endDate) {
+        const d = new Date(`${endDate}T23:59:59.999`)
+        if (!isNaN(d.getTime())) dateCondition.lte = d
+      }
+      if (dateCondition.gte || dateCondition.lte) {
+        andConditions.push({ createdAt: dateCondition })
+      }
     }
 
     const whereClause: any = andConditions.length > 0 ? { AND: andConditions } : {}

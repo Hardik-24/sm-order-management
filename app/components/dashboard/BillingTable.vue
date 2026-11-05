@@ -26,6 +26,7 @@ const props = defineProps<{
   billingStatus?: string
   packingStatus?: string
   deliveryStatus?: string
+  salesPersonId?: string
 }>()
 
 const emit = defineEmits<{
@@ -38,6 +39,7 @@ const emit = defineEmits<{
   (e: 'update:billingStatus', val: string): void
   (e: 'update:packingStatus', val: string): void
   (e: 'update:deliveryStatus', val: string): void
+  (e: 'update:salesPersonId', val: string): void
   (e: 'select', id: string): void
   (e: 'generate-invoice', id: string): void
   (e: 'split-order', id: string): void
@@ -132,12 +134,14 @@ const getTotalNos = (order: any) => {
           :billingStatus="billingStatus"
           :packingStatus="packingStatus"
           :deliveryStatus="deliveryStatus"
+          :salesPersonId="salesPersonId"
           @update:startDate="val => emit('update:startDate', val)"
           @update:endDate="val => emit('update:endDate', val)"
           @update:status="val => emit('update:status', val)"
           @update:billingStatus="val => emit('update:billingStatus', val)"
           @update:packingStatus="val => emit('update:packingStatus', val)"
           @update:deliveryStatus="val => emit('update:deliveryStatus', val)"
+          @update:salesPersonId="val => emit('update:salesPersonId', val)"
         />
         <RowsPerPageSelect 
           :modelValue="limit" 

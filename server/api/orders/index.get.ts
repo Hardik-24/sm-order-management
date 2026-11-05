@@ -71,19 +71,19 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  // Salesperson scoping: Admin can select any rep; Sales can toggle All Company vs My Orders
+  // Salesperson scoping: Admin, Supervisors, and users with company view can filter by any rep
   const salesPersonId = (query.salesPersonId as string) || ''
   const scope = (query.scope as string) || ''
   const canViewAllCompany = user.role === 'ADMIN' || (user.actionPermissions?.canViewAllCompanyOrders ?? true)
 
-  if (user.role === 'ADMIN') {
-    if (salesPersonId && salesPersonId !== 'all') {
+  if (canViewAllCompany) {
+    if (salesPersonId && salesPersonId !== 'all' && salesPersonId !== 'mine') {
       andConditions.push({ salesPersonId })
-    }
-  } else if (user.role === 'SALES') {
-    if (!canViewAllCompany || scope === 'mine' || salesPersonId === 'mine' || salesPersonId === user.id) {
+    } else if (salesPersonId === 'mine' || scope === 'mine') {
       andConditions.push({ salesPersonId: user.id })
     }
+  } else {
+    andConditions.push({ salesPersonId: user.id })
   }
   
   if (startDate || endDate) {
@@ -116,7 +116,7 @@ export default defineEventHandler(async (event) => {
       orderBy: { [sortBy]: sortOrder },
       include: {
         customer: { select: { id: true, name: true, company: true, address: true, city: true, latitude: true, longitude: true, landmark: true, privilegeTier: true, isPriorityClient: true, isBusySynced: true, addresses: true } },
-        salesPerson: { select: { name: true } },
+        salesPerson: { select: { id: true, name: true } },
         approvedBy: { select: { name: true } },
         billingStatus: { select: { status: true, invoiceNumber: true, invoiceDate: true, invoicePdfUrl: true } },
         packingStatus: { select: { status: true } },

@@ -19,6 +19,7 @@ const status = ref('')
 const billingStatus = ref('')
 const packingStatus = ref('')
 const deliveryStatus = ref('')
+const salesPersonId = ref('')
 const selectedOrderId = ref<string | null>(null)
 const isPanelOpen = ref(false)
 
@@ -47,6 +48,7 @@ const queryObj = computed(() => {
   if (status.value) q.status = status.value
   if (billingStatus.value) q.billingStatus = billingStatus.value
   if (deliveryStatus.value) q.deliveryStatus = deliveryStatus.value
+  if (salesPersonId.value) q.salesPersonId = salesPersonId.value
   if (startDate.value) q.startDate = startDate.value
   if (endDate.value) q.endDate = endDate.value
   
@@ -290,6 +292,7 @@ onMounted(() => {
         v-model:billingStatus="billingStatus"
         v-model:packingStatus="packingStatus"
         v-model:deliveryStatus="deliveryStatus"
+        v-model:salesPersonId="salesPersonId"
         @select="handleSelect"
       />
     </div>

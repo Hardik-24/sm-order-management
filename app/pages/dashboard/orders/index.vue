@@ -34,13 +34,14 @@ const billingStatus = ref('')
 const packingStatus = ref('')
 const deliveryStatus = ref('')
 const isApproved = ref('')
+const salesPersonId = ref('')
 const startDate = ref('')
 const endDate = ref('')
 const selectedOrderId = ref<string | null>(null)
 const isPanelOpen = ref(false)
 
 // Reset page to 1 whenever any filter or search changes
-watch([debouncedSearch, status, billingStatus, packingStatus, deliveryStatus, isApproved, startDate, endDate, scope], () => {
+watch([debouncedSearch, status, billingStatus, packingStatus, deliveryStatus, isApproved, salesPersonId, startDate, endDate, scope], () => {
   page.value = 1
 })
 
@@ -56,6 +57,7 @@ const queryObj = computed(() => {
   if (packingStatus.value) q.packingStatus = packingStatus.value
   if (deliveryStatus.value) q.deliveryStatus = deliveryStatus.value
   if (isApproved.value !== '') q.isApproved = isApproved.value
+  if (salesPersonId.value) q.salesPersonId = salesPersonId.value
   if (startDate.value) q.startDate = startDate.value
   if (endDate.value) q.endDate = endDate.value
   return q
@@ -128,6 +130,7 @@ onOrderSync((event) => {
       v-model:packingStatus="packingStatus"
       v-model:deliveryStatus="deliveryStatus"
       v-model:isApproved="isApproved"
+      v-model:salesPersonId="salesPersonId"
       v-model:startDate="startDate"
       v-model:endDate="endDate"
       v-model:scope="scope"

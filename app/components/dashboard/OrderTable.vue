@@ -25,6 +25,7 @@ const props = defineProps<{
   packingStatus?: string
   deliveryStatus?: string
   isApproved?: string
+  salesPersonId?: string
   scope?: string
   showScopeToggle?: boolean
 }>()
@@ -40,6 +41,7 @@ const emit = defineEmits<{
   (e: 'update:packingStatus', val: string): void
   (e: 'update:deliveryStatus', val: string): void
   (e: 'update:isApproved', val: string): void
+  (e: 'update:salesPersonId', val: string): void
   (e: 'update:scope', val: string): void
   (e: 'select', orderId: string): void
 }>()
@@ -338,6 +340,7 @@ const getItemsTotalQuantity = (order: Order) => {
             :packingStatus="packingStatus"
             :deliveryStatus="deliveryStatus"
             :isApproved="isApproved"
+            :salesPersonId="salesPersonId"
             @update:startDate="val => { emit('update:startDate', val); emit('update:page', 1) }"
             @update:endDate="val => { emit('update:endDate', val); emit('update:page', 1) }"
             @update:status="val => { emit('update:status', val); emit('update:page', 1) }"
@@ -345,6 +348,7 @@ const getItemsTotalQuantity = (order: Order) => {
             @update:packingStatus="val => { emit('update:packingStatus', val); emit('update:page', 1) }"
             @update:deliveryStatus="val => { emit('update:deliveryStatus', val); emit('update:page', 1) }"
             @update:isApproved="val => { emit('update:isApproved', val); emit('update:page', 1) }"
+            @update:salesPersonId="val => { emit('update:salesPersonId', val); emit('update:page', 1) }"
           />
           <RowsPerPageSelect 
             :modelValue="limit" 

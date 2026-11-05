@@ -104,6 +104,7 @@ const billingStatus = ref('')
 const packingStatus = ref('')
 const deliveryStatus = ref('')
 const isApproved = ref('')
+const tableSalesPersonId = ref('')
 
 const isPanelOpen = ref(false)
 const selectedOrderId = ref<string | null>(null)
@@ -113,7 +114,7 @@ const queryObj = computed(() => {
   const q: any = { 
     page: page.value, 
     limit: limit.value,
-    salesPersonId: effectiveSalesPersonId.value || 'all',
+    salesPersonId: tableSalesPersonId.value || effectiveSalesPersonId.value || 'all',
     scope: isSales.value ? salesScope.value : (adminSelectedSalesPerson.value === 'all' ? 'all' : 'single')
   }
   if (search.value) q.search = search.value
@@ -415,6 +416,7 @@ const handleOrderSelect = (orderId: string) => {
       v-model:packingStatus="packingStatus"
       v-model:deliveryStatus="deliveryStatus"
       v-model:isApproved="isApproved"
+      v-model:salesPersonId="tableSalesPersonId"
       @select="handleOrderSelect"
     />
     </div>
