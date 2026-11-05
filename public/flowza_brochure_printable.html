@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flowza — Business in Motion | Product & Sales Brochure</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #1e3a8a;
+      --primary-accent: #2563eb;
+      --primary-light: #eff6ff;
+      --dark: #0f172a;
+      --dark-card: #1e293b;
+      --slate-muted: #64748b;
+      --border: #e2e8f0;
+      --success: #059669;
+      --success-light: #ecfdf5;
+      --amber: #d97706;
+      --amber-light: #fffbeb;
+      --indigo: #4f46e5;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: #f1f5f9;
+      color: #334155;
+      -webkit-font-smoothing: antialiased;
+      line-height: 1.45;
+    }
+
+    /* Print action bar */
+    .action-bar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: #0f172a;
+      color: white;
+      padding: 12px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .action-btn {
+      background: #2563eb;
+      color: white;
+      border: none;
+      padding: 10px 22px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+    .action-btn:hover {
+      background: #1d4ed8;
+      transform: translateY(-1px);
+    }
+
+    /* A4 Page Layout */
+    .page-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 32px;
+      padding: 32px 0;
+    }
+
+    .a4-page {
+      width: 210mm;
+      height: 297mm;
+      background: white;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+      position: relative;
+      overflow: hidden;
+      padding: 16mm 18mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    /* Typography */
+    h1, h2, h3, .brand-font {
+      font-family: 'Space Grotesk', 'Plus Jakarta Sans', sans-serif;
+    }
+
+    /* Page Header */
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1.5px solid var(--border);
+      padding-bottom: 10px;
+      margin-bottom: 16px;
+    }
+    .brand-logo-lockup {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .brand-mark {
+      width: 34px;
+      height: 34px;
+      background: linear-gradient(135deg, #1e3a8a, #2563eb);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 800;
+      font-size: 18px;
+      letter-spacing: -0.5px;
+    }
+    .brand-title {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: var(--dark);
+      line-height: 1;
+    }
+    .brand-subtitle {
+      font-size: 10px;
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      color: var(--primary-accent);
+      margin-top: 3px;
+    }
+    .header-tagline {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--slate-muted);
+      background: #f8fafc;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+    }
+
+    /* Page Footer */
+    .page-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid var(--border);
+      padding-top: 10px;
+      font-size: 10px;
+      color: var(--slate-muted);
+    }
+
+    /* Badges */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .badge-blue { background: #dbeafe; color: #1e40af; }
+    .badge-green { background: #dcfce7; color: #166534; }
+    .badge-amber { background: #fef3c7; color: #92400e; }
+    .badge-purple { background: #ede9fe; color: #5b21b6; }
+
+    /* Grids */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .grid-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+    }
+
+    /* Cards */
+    .feature-card {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+      position: relative;
+    }
+    .feature-card-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+    .feature-icon-box {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+    .feature-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--dark);
+      line-height: 1.2;
+    }
+    .feature-desc {
+      font-size: 11px;
+      color: #475569;
+      line-height: 1.4;
+      margin-bottom: 6px;
+    }
+    .feature-bullets {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .feature-bullets li {
+      font-size: 10.5px;
+      color: #334155;
+      padding-left: 14px;
+      position: relative;
+      margin-bottom: 3px;
+      line-height: 1.35;
+    }
+    .feature-bullets li::before {
+      content: "•";
+      position: absolute;
+      left: 3px;
+      color: var(--primary-accent);
+      font-weight: bold;
+      font-size: 13px;
+    }
+
+    /* Cover Page Elements */
+    .hero-banner {
+      background: linear-gradient(135deg, #09132c 0%, #172554 100%);
+      color: white;
+      border-radius: 16px;
+      padding: 32px 28px;
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+    .hero-banner::after {
+      content: "";
+      position: absolute;
+      right: -40px;
+      bottom: -40px;
+      width: 220px;
+      height: 220px;
+      background: radial-gradient(circle, rgba(37,99,235,0.25) 0%, rgba(0,0,0,0) 70%);
+      border-radius: 50%;
+    }
+    .hero-title {
+      font-size: 32px;
+      font-weight: 800;
+      line-height: 1.15;
+      letter-spacing: -0.8px;
+      margin: 12px 0 8px 0;
+    }
+    .hero-subtitle {
+      font-size: 14px;
+      color: #93c5fd;
+      font-weight: 400;
+      line-height: 1.45;
+      max-width: 520px;
+    }
+
+    /* Comparison Table */
+    .comp-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 10.5px;
+      margin: 10px 0;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .comp-table th {
+      background: #f1f5f9;
+      color: var(--dark);
+      font-weight: 700;
+      text-align: left;
+      padding: 8px 10px;
+      border-bottom: 1.5px solid var(--border);
+    }
+    .comp-table td {
+      padding: 6.5px 10px;
+      border-bottom: 1px solid #f1f5f9;
+      vertical-align: top;
+    }
+    .comp-table tr:last-child td {
+      border-bottom: none;
+    }
+    .comp-table tr:nth-child(even) {
+      background: #fafafa;
+    }
+    .text-danger { color: #dc2626; font-weight: 600; }
+    .text-success { color: #16a34a; font-weight: 700; }
+
+    /* Print Rules */
+    @media print {
+      body {
+        background: white;
+      }
+      .action-bar {
+        display: none !important;
+      }
+      .page-container {
+        padding: 0 !important;
+        gap: 0 !important;
+      }
+      .a4-page {
+        width: 210mm !important;
+        height: 297mm !important;
+        margin: 0 !important;
+        padding: 14mm 16mm !important;
+        box-shadow: none !important;
+        page-break-after: always;
+        page-break-inside: avoid;
+      }
+      .a4-page:last-child {
+        page-break-after: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Screen Top Bar -->
+  <div class="action-bar">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="font-weight: 800; font-size: 16px; letter-spacing: -0.3px;">FLOWZA</div>
+      <span style="opacity: 0.5;">|</span>
+      <span style="font-size: 13px; color: #94a3b8;">Wholesale Order & Logistics Platform — Official Sales Brochure</span>
+    </div>
+    <button class="action-btn" onclick="window.print()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+      Print / Save as A4 PDF (Ctrl + P)
+    </button>
+  </div>
+
+  <div class="page-container">
+
+    <!-- ==================== PAGE 1: COVER & EXECUTIVE OVERVIEW ==================== -->
+    <div class="a4-page">
+      <div>
+        <div class="page-header">
+          <div class="brand-logo-lockup">
+            <div class="brand-mark">F</div>
+            <div>
+              <div class="brand-title">FLOWZA</div>
+              <div class="brand-subtitle">Business in Motion</div>
+            </div>
+          </div>
+          <div class="header-tagline">Engineered for Busy Accounting Wholesalers</div>
+        </div>
+
+        <!-- Hero Section -->
+        <div class="hero-banner">
+          <span class="badge badge-blue" style="background: rgba(255,255,255,0.15); color: #fff; border: 1px solid rgba(255,255,255,0.25);">
+            Next-Gen B2B Distribution Platform
+          </span>
+          <h1 class="hero-title">Turn Your Busy Accounting Into a Real-Time Cloud Engine</h1>
+          <p class="hero-subtitle">
+            Empower field sales with instant WhatsApp A4 quotes, streamline warehouse picking with smart order splitting, and track every delivery live with 4-digit PIN security.
+          </p>
+        </div>
+
+        <!-- The Big Problem vs The Flowza Solution -->
+        <div style="margin-bottom: 14px;">
+          <h2 style="font-size: 15px; font-weight: 800; color: var(--dark); margin-bottom: 8px;">
+            Why Traditional Busy Accounting Wholesalers Struggle to Scale
+          </h2>
+          <div class="grid-2">
+            <div style="background: #fff1f2; border: 1px solid #fecdd3; border-radius: 8px; padding: 10px 12px;">
+              <div style="font-size: 11.5px; font-weight: 700; color: #9f1239; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+                <span>⚠️</span> Traditional Operations Bottleneck
+              </div>
+              <ul style="font-size: 10.5px; color: #881337; padding-left: 14px; line-height: 1.4;">
+                <li>Field sales text messy WhatsApp notes; out-of-stock items get booked.</li>
+                <li>Office staff waste 2–3 hours manually re-typing quotes & orders.</li>
+                <li>Warehouse packers rely on handwritten paper slips causing mispicks.</li>
+                <li>Zero delivery visibility leads to customer payment disputes and delays.</li>
+              </ul>
+            </div>
+
+            <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 10px 12px;">
+              <div style="font-size: 11.5px; font-weight: 700; color: #166534; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+                <span>⚡</span> The Flowza Advantage
+              </div>
+              <ul style="font-size: 10.5px; color: #14532d; padding-left: 14px; line-height: 1.4;">
+                <li>Zero-Locking Cloud Sync: Live stock & ledgers mirrored from Busy every 30m.</li>
+                <li>1-Click WhatsApp A4 Quotations: Professional multi-page PDFs in 30 seconds.</li>
+                <li>Digital Picking & Partial Order Splitting: Available items ship immediately.</li>
+                <li>Live Driver GPS Fleet Tracking & 4-Digit Customer PIN Proof-of-Delivery.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4 Foundational Pillars -->
+        <h2 style="font-size: 14px; font-weight: 800; color: var(--dark); margin-bottom: 8px;">
+          The 4 Pillars of Flowza Distribution Architecture
+        </h2>
+        <div class="grid-2">
+          <div class="feature-card" style="border-left: 4px solid #2563eb;">
+            <div class="feature-card-header">
+              <div class="feature-icon-box" style="background: #eff6ff; color: #2563eb;">🔄</div>
+              <div>
+                <div class="feature-title">1. Busy Accounting Cloud Sync</div>
+                <div style="font-size: 9.5px; color: #64748b;">Read-Only Snapshot Engine</div>
+              </div>
+            </div>
+            <p class="feature-desc">Connects directly to your local Busy database without slowdowns. Field staff get live prices and stock levels without raw Busy licenses.</p>
+          </div>
+
+          <div class="feature-card" style="border-left: 4px solid #059669;">
+            <div class="feature-card-header">
+              <div class="feature-icon-box" style="background: #ecfdf5; color: #059669;">📄</div>
+              <div>
+                <div class="feature-title">2. Field Sales & WhatsApp A4 Estimates</div>
+                <div style="font-size: 9.5px; color: #64748b;">Sub-Minute Quotation Engine</div>
+              </div>
+            </div>
+            <p class="feature-desc">Generate official multi-page A4 PDFs with tax breakdowns and auto-copied WhatsApp summary cards with 1 tap on mobile.</p>
+          </div>
+
+          <div class="feature-card" style="border-left: 4px solid #d97706;">
+            <div class="feature-card-header">
+              <div class="feature-icon-box" style="background: #fffbeb; color: #d97706;">📦</div>
+              <div>
+                <div class="feature-title">3. Warehouse Picking & Order Splitting</div>
+                <div style="font-size: 9.5px; color: #64748b;">Zero-Mispick Fulfillment Queue</div>
+              </div>
+            </div>
+            <p class="feature-desc">Digital item checklist queue for warehouse staff with instant 1-click order splitting into child orders for back-ordered items.</p>
+          </div>
+
+          <div class="feature-card" style="border-left: 4px solid #7c3aed;">
+            <div class="feature-card-header">
+              <div class="feature-icon-box" style="background: #f5f3ff; color: #7c3aed;">🚚</div>
+              <div>
+                <div class="feature-title">4. Fleet GPS Dispatch & POD PIN</div>
+                <div style="font-size: 9.5px; color: #64748b;">Live Telemetry & Dispute Defense</div>
+              </div>
+            </div>
+            <p class="feature-desc">Real-time driver GPS tracking, turn-by-turn route manifests, and tamper-proof 4-digit customer delivery confirmation PINs.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="page-footer">
+        <div>FLOWZA — Business in Motion</div>
+        <div>Confidential B2B Pitch Deck</div>
+        <div>Page 1 of 4</div>
+      </div>
+    </div>
+
+
+    <!-- ==================== PAGE 2: SALES, QUOTATIONS & WAREHOUSE ==================== -->
+    <div class="a4-page">
+      <div>
+        <div class="page-header">
+          <div class="brand-logo-lockup">
+            <div class="brand-mark">F</div>
+            <div>
+              <div class="brand-title">FLOWZA</div>
+              <div class="brand-subtitle">Core Operations Deep-Dive</div>
+            </div>
+          </div>
+          <div class="header-tagline">Sales Acceleration & Warehouse Excellence</div>
+        </div>
+
+        <h2 style="font-size: 16px; font-weight: 800; color: var(--dark); margin-bottom: 10px;">
+          Frontline Capabilities: From Field Inquiry to Packed Carton
+        </h2>
+
+        <!-- Module 1: Busy Cloud Sync -->
+        <div class="feature-card" style="margin-bottom: 10px; background: #fafafa;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span class="badge badge-blue">Module 01</span>
+              <span style="font-size: 13.5px; font-weight: 800; color: var(--dark);">Automated Zero-Disruption Busy Sync Agent</span>
+            </div>
+            <span class="badge badge-green">30-Min Snapshot Sync</span>
+          </div>
+          <p class="feature-desc" style="margin-bottom: 6px;">
+            A dedicated Windows background service (<code>SMFlowSyncAgent.exe</code>) runs quietly on your Busy server or main workstation. It takes atomic snapshot reads of your Busy database file (<code>.bds</code>) without applying table locks or slowing down office billing clerks.
+          </p>
+          <div class="grid-3">
+            <div style="font-size: 10px; background: white; border: 1px solid var(--border); padding: 6px 8px; border-radius: 6px;">
+              <strong>Master Catalog Sync:</strong> SKUs, descriptions, brand categories, units, and GST tax slabs (0%, 5%, 12%, 18%, 28%).
+            </div>
+            <div style="font-size: 10px; background: white; border: 1px solid var(--border); padding: 6px 8px; border-radius: 6px;">
+              <strong>Live Godown Stock:</strong> Automatically pushes current on-hand warehouse quantities to sales reps' mobile phones.
+            </div>
+            <div style="font-size: 10px; background: white; border: 1px solid var(--border); padding: 6px 8px; border-radius: 6px;">
+              <strong>Party Ledgers & Terms:</strong> Syncs customer billing addresses, GSTIN numbers, outstanding balances, and credit limits.
+            </div>
+          </div>
+        </div>
+
+        <!-- Module 2: WhatsApp Quotes -->
+        <div class="feature-card" style="margin-bottom: 10px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span class="badge badge-green">Module 02</span>
+              <span style="font-size: 13.5px; font-weight: 800; color: var(--dark);">1-Click WhatsApp High-Res Multi-Page A4 Quotations</span>
+            </div>
+            <span class="badge badge-blue">Built-in PDF Engine</span>
+          </div>
+          <p class="feature-desc" style="margin-bottom: 6px;">
+            Replace handwritten rate slips and delayed office typing. Field sales executives can draft, price, and deliver high-resolution PDF quotations directly in front of the customer.
+          </p>
+          <ul class="feature-bullets">
+            <li><strong>Automated PDF Typography:</strong> Generates crisp multi-page A4 estimates with company header, client GSTIN, HSN codes, discounts, and payment terms.</li>
+            <li><strong>WhatsApp 1-Tap Copy:</strong> Simultaneously copies a clean 7-line WhatsApp estimate summary card to the sales rep's clipboard for instant pasting.</li>
+            <li><strong>Customer Pricing Memory:</strong> System instantly remembers and populates the customer's negotiated last-sold prices to prevent margin leakage.</li>
+            <li><strong>1-Tap Conversion:</strong> When the customer approves, 1 tap converts the quote into an active warehouse order.</li>
+          </ul>
+        </div>
+
+        <!-- Module 3 & 4: Orders & Warehouse Splitting -->
+        <div class="grid-2" style="margin-bottom: 10px;">
+          <div class="feature-card">
+            <div class="feature-card-header">
+              <span class="badge badge-amber">Module 03</span>
+              <div class="feature-title">Central Order Intake & Approvals</div>
+            </div>
+            <ul class="feature-bullets">
+              <li><strong>Omnichannel Reception:</strong> Ingests orders from field reps, phone desks, and customer B2B request portals.</li>
+              <li><strong>Urgent Order Flagging:</strong> Red flash badge prioritizes critical rush jobs at the top of warehouse queues.</li>
+              <li><strong>Salesperson Filtering:</strong> Real-time "Placed By" filters across all operational views to track sales team throughput.</li>
+              <li><strong>Granular Line Review:</strong> Approve, modify, or trim line quantities based on stock availability before releasing to packing.</li>
+            </ul>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-card-header">
+              <span class="badge badge-purple">Module 04</span>
+              <div class="feature-title">Warehouse Picking & Order Splitting</div>
+            </div>
+            <ul class="feature-bullets">
+              <li><strong>Interactive Picking Queue:</strong> Mobile/tablet checklist for pickers with live checkbox verification.</li>
+              <li><strong>Packaging Recording:</strong> Log total cartons, bags, wooden boxes, and gross weights before staging.</li>
+              <li><strong>Intelligent Order Splitting:</strong> If partial stock is missing, split an order into <code>-A</code> (ready items) and <code>-B</code> (back-ordered items) in 1 click.</li>
+              <li><strong>No Stock Stalls:</strong> Customers receive available goods immediately while back-orders remain cleanly tracked.</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Visual Workflow Strip -->
+        <div style="background: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 8px; padding: 10px 14px; text-align: center;">
+          <div style="font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 4px;">THE FLOWZA DIGITAL LIFECYCLE</div>
+          <div style="display: flex; justify-content: space-around; align-items: center; font-size: 10px; font-weight: 600; color: var(--dark);">
+            <span>📱 Field Quotation</span>
+            <span>➔</span>
+            <span>✅ Manager Approval</span>
+            <span>➔</span>
+            <span>📦 Digital Picking</span>
+            <span>➔</span>
+            <span>🧾 Pre-Bill Gate</span>
+            <span>➔</span>
+            <span>🚚 GPS Dispatch</span>
+            <span>➔</span>
+            <span>🔒 4-Digit POD</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="page-footer">
+        <div>FLOWZA — Business in Motion</div>
+        <div>Confidential B2B Pitch Deck</div>
+        <div>Page 2 of 4</div>
+      </div>
+    </div>
+
+
+    <!-- ==================== PAGE 3: BILLING, LOGISTICS & SECURITY ==================== -->
+    <div class="a4-page">
+      <div>
+        <div class="page-header">
+          <div class="brand-logo-lockup">
+            <div class="brand-mark">F</div>
+            <div>
+              <div class="brand-title">FLOWZA</div>
+              <div class="brand-subtitle">Logistics & Security Fortress</div>
+            </div>
+          </div>
+          <div class="header-tagline">Billing Integrity, Fleet GPS & Hardware Whitelisting</div>
+        </div>
+
+        <h2 style="font-size: 16px; font-weight: 800; color: var(--dark); margin-bottom: 10px;">
+          Logistics Control, Financial Integrity & Enterprise Security
+        </h2>
+
+        <!-- Module 5: Billing Integrity Gate -->
+        <div class="feature-card" style="margin-bottom: 10px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span class="badge badge-green">Module 05</span>
+              <span style="font-size: 13.5px; font-weight: 800; color: var(--dark);">Pre-Billing Master Integrity Gate</span>
+            </div>
+            <span class="badge badge-amber">Zero Busy Sync Errors</span>
+          </div>
+          <p class="feature-desc">
+            Prevents the #1 cause of accounting chaos: billing unmapped customers or non-standard items. Flowza enforces an automated validation gate before orders can be dispatched.
+          </p>
+          <div class="grid-2">
+            <div style="font-size: 10.5px; background: #f8fafc; border: 1px solid var(--border); padding: 8px 10px; border-radius: 6px;">
+              <strong>1-Click Master Linking:</strong> If a field rep typed a custom item or newly onboarded client, billing staff can link it directly to the official Busy item or party master in an in-modal search.
+            </div>
+            <div style="font-size: 10.5px; background: #f8fafc; border: 1px solid var(--border); padding: 8px 10px; border-radius: 6px;">
+              <strong>Invoice Document Vault:</strong> Record official Busy invoice numbers, attach scanned invoice copies or transport e-waybills, and ensure accounting reconciliation before loading.
+            </div>
+          </div>
+        </div>
+
+        <!-- Module 6 & 7: Logistics Hub & Fleet GPS Tracking -->
+        <div class="grid-2" style="margin-bottom: 10px;">
+          <div class="feature-card">
+            <div class="feature-card-header">
+              <span class="badge badge-blue">Module 06</span>
+              <div class="feature-title">Multi-Order Trip Dispatch Hub</div>
+            </div>
+            <ul class="feature-bullets">
+              <li><strong>Multi-Stop Route Builder:</strong> Bundle 10 to 30 customer deliveries into a single structured driver trip manifest.</li>
+              <li><strong>Drag-and-Drop Sequencing:</strong> Reorder stops by geographical sequence to optimize driver routes and minimize fuel costs.</li>
+              <li><strong>3rd-Party Transport Support:</strong> Record outstation LR Numbers, Transporter Name, and vehicle registration numbers with 1 tap.</li>
+              <li><strong>Dedicated Driver Mode:</strong> Driver mobile screen with direct Google Maps navigation shortcuts and 1-tap customer calling.</li>
+            </ul>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-card-header">
+              <span class="badge badge-purple">Module 07</span>
+              <div class="feature-title">Live GPS Fleet Map & 4-Digit POD</div>
+            </div>
+            <ul class="feature-bullets">
+              <li><strong>Live Vehicle GPS Map:</strong> Real-time tracking of active delivery vehicles with speed, heading, and stationary indicators.</li>
+              <li><strong>Driver Phone Telemetry:</strong> Live battery level and GPS signal quality monitoring to prevent tracking blackouts.</li>
+              <li><strong>4-Digit Delivery PIN Security:</strong> Drivers cannot mark an order delivered without entering the customer's unique 4-digit PIN.</li>
+              <li><strong>Digital Signature & Photo POD:</strong> Capture on-screen customer signatures and unload photo proof at the jobsite.</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Module 8 & 9: Hardware Security & Mobile App -->
+        <div class="grid-2" style="margin-bottom: 10px;">
+          <div class="feature-card" style="border: 1.5px solid #cbd5e1; background: #f8fafc;">
+            <div class="feature-card-header">
+              <span class="badge badge-amber">Module 08</span>
+              <div class="feature-title">Hardware Device Whitelisting & Remote Kill</div>
+            </div>
+            <ul class="feature-bullets">
+              <li><strong>Hardware-Locked Access:</strong> Restrict app login strictly to authorized physical smartphones, tablets, and office PCs.</li>
+              <li><strong>Hardware Fingerprinting:</strong> Auto-identifies phone make & model (Samsung, OnePlus, Pixel, etc.).</li>
+              <li><strong>6-Digit Pairing Codes:</strong> New staff devices generate an approval code verified in seconds by the business owner.</li>
+              <li><strong>Remote Kill Switch:</strong> Instantly revoke device access with 1 click if an employee departs or a phone is lost/stolen.</li>
+            </ul>
+          </div>
+
+          <div class="feature-card" style="border: 1.5px solid #cbd5e1; background: #f8fafc;">
+            <div class="feature-card-header">
+              <span class="badge badge-blue">Module 09</span>
+              <div class="feature-title">Native Android APK & Push Notifications</div>
+            </div>
+            <ul class="feature-bullets">
+              <li><strong>Dedicated Android APK:</strong> High-performance mobile build engineered for wholesale environments and low-connectivity godowns.</li>
+              <li><strong>FCM Push Notifications:</strong> High-priority alerts for new orders, approvals, and dispatch assignments.</li>
+              <li><strong>Deep-Linking:</strong> Tapping an alert immediately opens the specific order, estimate, or delivery stop.</li>
+              <li><strong>Internal Team Chat:</strong> Integrated WhatsApp-style messaging between sales, warehouse, billing, and drivers.</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Security Highlight Callout -->
+        <div style="background: #eff6ff; border-left: 4px solid #2563eb; padding: 8px 12px; border-radius: 4px;">
+          <div style="font-size: 11px; font-weight: 700; color: #1e40af;">Enterprise Role-Based Access Control (RBAC)</div>
+          <div style="font-size: 10px; color: #1e3a8a;">
+            Keep sensitive purchase costs, margins, and proprietary supplier ledgers strictly hidden. Sales reps only see assigned customers and selling rates; warehouse staff only see quantities and packing manifests.
+          </div>
+        </div>
+      </div>
+
+      <div class="page-footer">
+        <div>FLOWZA — Business in Motion</div>
+        <div>Confidential B2B Pitch Deck</div>
+        <div>Page 3 of 4</div>
+      </div>
+    </div>
+
+
+    <!-- ==================== PAGE 4: ROI, VERTICALS & ONBOARDING ==================== -->
+    <div class="a4-page">
+      <div>
+        <div class="page-header">
+          <div class="brand-logo-lockup">
+            <div class="brand-mark">F</div>
+            <div>
+              <div class="brand-title">FLOWZA</div>
+              <div class="brand-subtitle">Commercial ROI & Implementation</div>
+            </div>
+          </div>
+          <div class="header-tagline">Transforming B2B Wholesale Profitability</div>
+        </div>
+
+        <h2 style="font-size: 16px; font-weight: 800; color: var(--dark); margin-bottom: 8px;">
+          Proven Business Impact: Before vs. With Flowza
+        </h2>
+
+        <!-- Head-to-Head Comparison Table -->
+        <table class="comp-table">
+          <thead>
+            <tr>
+              <th style="width: 25%;">Operational Metric</th>
+              <th style="width: 37%;">Traditional Busy Wholesale Setup</th>
+              <th style="width: 38%;">With Flowza ("Business in Motion")</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Field Quotations</strong></td>
+              <td class="text-danger">2 to 4 hours (office typing backlog)</td>
+              <td class="text-success">Under 60 seconds (1-Click WhatsApp A4 PDF)</td>
+            </tr>
+            <tr>
+              <td><strong>Stock Availability</strong></td>
+              <td class="text-danger">Blind selling; phone calls to warehouse</td>
+              <td class="text-success">Real-time mobile stock quantities from Busy</td>
+            </tr>
+            <tr>
+              <td><strong>Warehouse Picking</strong></td>
+              <td class="text-danger">Handwritten paper slips; forgotten items</td>
+              <td class="text-success">Digital checklist queue on warehouse tablets</td>
+            </tr>
+            <tr>
+              <td><strong>Partial Stock Handling</strong></td>
+              <td class="text-danger">Entire order stalled or manual notes lost</td>
+              <td class="text-success">1-Click Order Splitting (-A & -B sub-orders)</td>
+            </tr>
+            <tr>
+              <td><strong>Delivery Tracking</strong></td>
+              <td class="text-danger">Zero visibility; "Driver is on the way"</td>
+              <td class="text-success">Live GPS Fleet Map with speed & battery telemetry</td>
+            </tr>
+            <tr>
+              <td><strong>Delivery Disputes</strong></td>
+              <td class="text-danger">Frequent shortages & delayed payments</td>
+              <td class="text-success">Tamper-Proof 4-Digit Customer PIN & Digital Sign</td>
+            </tr>
+            <tr>
+              <td><strong>Security & Device Control</strong></td>
+              <td class="text-danger">Passwords leaked; accessible anywhere</td>
+              <td class="text-success">Physical Hardware Whitelisting & Instant Kill Switch</td>
+            </tr>
+            <tr>
+              <td><strong>Busy Software License Costs</strong></td>
+              <td class="text-danger">Expensive multi-user licenses for all staff</td>
+              <td class="text-success">1 Busy core powers unlimited Flowza mobile users</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Target Industry Verticals -->
+        <h2 style="font-size: 14px; font-weight: 800; color: var(--dark); margin: 12px 0 6px 0;">
+          Purpose-Built for High-Velocity Wholesale & Distribution
+        </h2>
+        <div class="grid-3" style="margin-bottom: 12px;">
+          <div style="background: #f8fafc; border: 1px solid var(--border); padding: 7px 9px; border-radius: 6px; font-size: 10px;">
+            <strong>🔩 Hardware & Fasteners:</strong> Complex multi-item orders, high SKU volume, box/kg packings.
+          </div>
+          <div style="background: #f8fafc; border: 1px solid var(--border); padding: 7px 9px; border-radius: 6px; font-size: 10px;">
+            <strong>🪵 Plywood & Laminates:</strong> Sheet goods, edge bands, multi-godown stock availability.
+          </div>
+          <div style="background: #f8fafc; border: 1px solid var(--border); padding: 7px 9px; border-radius: 6px; font-size: 10px;">
+            <strong>💡 Electrical & Lighting:</strong> Cables, switchgear, LED fixtures, contractor estimates.
+          </div>
+          <div style="background: #f8fafc; border: 1px solid var(--border); padding: 7px 9px; border-radius: 6px; font-size: 10px;">
+            <strong>🚿 Sanitaryware & Tiles:</strong> Fragile carton shipping, batch verification, transport dispatches.
+          </div>
+          <div style="background: #f8fafc; border: 1px solid var(--border); padding: 7px 9px; border-radius: 6px; font-size: 10px;">
+            <strong>🛒 FMCG & Packaged Goods:</strong> Super-fast daily route dispatches, crate tracking, driver PINs.
+          </div>
+          <div style="background: #f8fafc; border: 1px solid var(--border); padding: 7px 9px; border-radius: 6px; font-size: 10px;">
+            <strong>⚙️ Industrial Supplies:</strong> Bearings, tools, valves, credit limits, e-waybill attachments.
+          </div>
+        </div>
+
+        <!-- 48-Hour Onboarding Box -->
+        <div style="background: linear-gradient(135deg, #1e293b, #0f172a); color: white; border-radius: 10px; padding: 14px 18px; margin-bottom: 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <div style="font-size: 13px; font-weight: 800; color: #60a5fa;">Turnkey Deployment in Under 48 Hours</div>
+            <span class="badge badge-green">Zero Data Migration Friction</span>
+          </div>
+          <p style="font-size: 10.5px; color: #cbd5e1; line-height: 1.4; margin-bottom: 8px;">
+            You do not need to replace Busy Accounting or retrain your accountants. Flowza connects directly to your existing Busy company database. Your master items, customers, pricing, and ledgers sync automatically on Day 1.
+          </p>
+          <div style="display: flex; justify-content: space-between; font-size: 9.5px; color: #94a3b8; border-top: 1px solid #334155; padding-top: 6px;">
+            <span>Step 1: Install Sync Agent on Busy PC</span>
+            <span>➔</span>
+            <span>Step 2: Auto-Mirror Masters to Cloud</span>
+            <span>➔</span>
+            <span>Step 3: Pair Staff Phones & Start Moving</span>
+          </div>
+        </div>
+
+        <!-- Call to Action Banner -->
+        <div style="background: #dbeafe; border: 1.5px solid #bfdbfe; border-radius: 8px; padding: 10px 14px; text-align: center;">
+          <div style="font-size: 13px; font-weight: 800; color: #1e3a8a; margin-bottom: 2px;">
+            Schedule a Live On-Premise or Remote Demonstration
+          </div>
+          <div style="font-size: 10.5px; color: #1d4ed8; font-weight: 500;">
+            See Flowza live in action with your own Busy Accounting catalog and test orders.
+          </div>
+        </div>
+      </div>
+
+      <div class="page-footer">
+        <div>FLOWZA — Business in Motion</div>
+        <div>Confidential B2B Pitch Deck</div>
+        <div>Page 4 of 4</div>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>
