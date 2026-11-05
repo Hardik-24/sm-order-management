@@ -90,7 +90,7 @@ const handleLogin = async () => {
 </script>
 
 <template>
-  <div class="min-h-[100dvh] md:h-[100dvh] w-full flex flex-col md:flex-row bg-[#faf8f5] overflow-y-auto md:overflow-hidden">
+  <div class="min-h-screen min-h-[100dvh] md:h-[100dvh] w-full flex flex-col md:flex-row bg-[#faf8f5] md:overflow-hidden">
     <!-- LEFT HALF -->
     <div class="hidden md:flex relative w-1/2 h-full items-center justify-center overflow-hidden">
       <img src="/images/bg-login.jpg" alt="Background" class="absolute inset-0 w-full h-full object-cover z-0" />
@@ -105,7 +105,7 @@ const handleLogin = async () => {
     </div>
 
     <!-- RIGHT HALF -->
-    <div class="w-full md:w-1/2 flex flex-col items-center justify-start md:justify-center p-6 sm:p-8 lg:p-12 min-h-[100dvh] md:h-full overflow-y-auto overscroll-contain pb-[calc(2rem+env(safe-area-inset-bottom,0px))]">
+    <div class="w-full flex-1 md:w-1/2 flex flex-col items-center justify-start md:justify-center p-6 sm:p-8 lg:p-12 md:h-full md:overflow-y-auto pb-[calc(2rem+env(safe-area-inset-bottom,0px))]">
       <div class="w-full max-w-[360px] my-auto py-4 sm:py-6">
         <!-- Mobile Logo (hidden on desktop) -->
         <div class="flex md:hidden justify-center mb-6 sm:mb-8">
