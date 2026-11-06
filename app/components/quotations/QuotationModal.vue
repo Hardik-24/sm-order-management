@@ -411,7 +411,7 @@
                           <tbody class="divide-y divide-gray-100">
                             <tr v-for="(it, i) in quoteItems" :key="it.id" class="border-b border-gray-100 text-[11px]">
                               <td class="py-2 px-1 text-center text-gray-500 font-mono font-bold">{{ i + 1 }}</td>
-                              <td class="py-2 px-1.5 font-mono font-black text-[#1b3b5f] text-[10.5px] whitespace-nowrap">{{ it.articleNumber }}</td>
+                              <td class="py-2 px-1.5 font-mono font-black text-[#1b3b5f] text-[11px] whitespace-nowrap">{{ it.articleNumber }}</td>
                               <td class="py-2 px-2 font-bold text-gray-950 leading-snug">{{ it.description }}</td>
                               <td class="py-2 px-1 text-center font-black text-[10px] text-gray-800 uppercase">{{ it.brand }}</td>
                               <td
@@ -1419,7 +1419,7 @@
           <tbody class="divide-y divide-gray-100 bg-white">
             <tr v-for="(item, idx) in quoteItems" :key="item.id" class="border-b border-gray-100">
               <td class="py-2 px-1 text-center text-gray-500 font-mono font-bold text-[10px]">{{ idx + 1 }}</td>
-              <td class="py-2 px-1.5 font-mono font-black text-[#1b3b5f] text-[10.5px] whitespace-nowrap">{{ item.articleNumber }}</td>
+              <td class="py-2 px-1.5 font-mono font-black text-[#1b3b5f] text-[11px] whitespace-nowrap">{{ item.articleNumber }}</td>
               <td class="py-2 px-2.5 font-bold text-gray-950 text-[11px] leading-snug">{{ item.description }}</td>
               <td class="py-2 px-1 text-center font-black text-[10px] text-gray-800 uppercase">{{ item.brand }}</td>
               <td
@@ -1701,7 +1701,7 @@
               <tbody class="divide-y divide-gray-100 bg-white">
                 <tr v-for="(item, idx) in pg.items" :key="item.id" class="border-b border-gray-100">
                   <td class="py-2 px-1 text-center text-gray-500 font-mono font-bold text-[10px]">{{ pg.startIndex + idx + 1 }}</td>
-                  <td class="py-2 px-1.5 font-mono font-black text-[#1b3b5f] text-[10.5px] whitespace-nowrap">{{ item.articleNumber }}</td>
+                  <td class="py-2 px-1.5 font-mono font-black text-[#1b3b5f] text-[11px] whitespace-nowrap">{{ item.articleNumber }}</td>
                   <td class="py-2 px-2.5 font-bold text-gray-950 text-[11px] leading-snug">{{ item.description }}</td>
                   <td class="py-2 px-1 text-center font-black text-[10px] text-gray-800 uppercase">{{ item.brand }}</td>
                   <td
