@@ -11,19 +11,28 @@
         <!-- Modal Top Header (Matching GenerateBillModal.vue:9-20) -->
         <div class="px-4 sm:px-5 py-3.5 border-b border-gray-100 bg-gray-50 flex items-center justify-between shrink-0">
           <div class="flex items-center gap-2.5 min-w-0">
-            <div class="w-8 h-8 rounded-lg bg-[#1b3b5f]/10 text-[#1b3b5f] flex items-center justify-center shrink-0">
+            <div
+              class="w-8 h-8 rounded-lg bg-[#1b3b5f]/10 text-[#1b3b5f] items-center justify-center shrink-0"
+              :class="isSuccessView ? 'hidden sm:flex' : 'flex'"
+            >
               <Calculator class="w-4 h-4 text-[#1b3b5f]" />
             </div>
             <div class="min-w-0">
               <div class="flex items-center gap-2">
-                <h2 class="text-base sm:text-lg font-bold text-gray-900 truncate">
+                <h2
+                  class="text-base sm:text-lg font-bold text-gray-900 truncate"
+                  :class="isSuccessView ? 'hidden sm:block' : 'block'"
+                >
                   {{ isSuccessView ? 'Quotation Ready to Share' : (isEditingExisting ? 'View Quotation' : 'New Quotation') }}
                 </h2>
-                <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-gray-200/80 text-gray-700 shrink-0">
+                <span class="text-xs sm:text-[10px] font-bold px-2.5 py-1 sm:py-0.5 rounded-md sm:rounded bg-gray-200/80 text-gray-700 shrink-0">
                   {{ quoteNumber }}
                 </span>
               </div>
-              <p class="text-xs text-gray-500 truncate mt-0.5">
+              <p
+                class="text-xs text-gray-500 truncate mt-0.5"
+                :class="isSuccessView ? 'hidden sm:block' : 'hidden sm:block'"
+              >
                 {{ isSuccessView ? 'Share official quotation via WhatsApp, image or PDF.' : 'Search Google Sheet catalog, review DB inventory, and save quote.' }}
               </p>
             </div>
@@ -198,12 +207,12 @@
                 <span>Download PDF</span>
               </button>
 
-              <!-- Print Quotation -->
+              <!-- Print Quotation (Desktop only) -->
               <button
                 type="button"
                 @click="exportQuote('print')"
                 :disabled="isExporting"
-                class="py-3 px-4 bg-slate-900 hover:bg-black text-white rounded-xl text-xs sm:text-sm font-bold shadow-md transition-all flex items-center justify-center gap-2 active:scale-98 cursor-pointer disabled:opacity-50"
+                class="hidden sm:flex py-3 px-4 bg-slate-900 hover:bg-black text-white rounded-xl text-xs sm:text-sm font-bold shadow-md transition-all items-center justify-center gap-2 active:scale-98 cursor-pointer disabled:opacity-50"
                 title="Print quotation directly to printer or paper"
               >
                 <Loader2 v-if="isExporting && exportAction === 'print'" class="w-4 h-4 animate-spin text-white" />
@@ -220,7 +229,7 @@
               <div class="flex items-center gap-2">
                 <span class="text-xs font-bold text-gray-800">Quotation Preview</span>
                 <span class="text-xs font-mono font-bold text-[#1b3b5f] bg-[#1b3b5f]/10 px-2 py-0.5 rounded-lg border border-[#1b3b5f]/20">
-                  {{ Math.round((currentScale || 1) * 100) }}% {{ zoomMode === 'fit' ? '• Fit to Screen' : '' }}
+                  {{ Math.round((currentScale || 1) * 100) }}%
                 </span>
                 <span v-if="currentScale < 1" class="text-[11px] text-gray-400 hidden sm:inline">
                   &bull; Complete slip visible
@@ -286,14 +295,14 @@
                   <ZoomIn class="w-4 h-4 text-gray-700" />
                 </button>
 
-                <div class="h-4 w-px bg-gray-200 mx-0.5"></div>
+                <div class="hidden sm:block h-4 w-px bg-gray-200 mx-0.5"></div>
 
-                <!-- Quick Print Button -->
+                <!-- Quick Print Button (Desktop only) -->
                 <button
                   type="button"
                   @click="exportQuote('print')"
                   :disabled="isExporting"
-                  class="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-800 transition cursor-pointer disabled:opacity-30 border border-gray-300 flex items-center justify-center shadow-2xs"
+                  class="hidden sm:flex p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-800 transition cursor-pointer disabled:opacity-30 border border-gray-300 items-center justify-center shadow-2xs"
                   title="Print Quotation"
                 >
                   <Loader2 v-if="isExporting && exportAction === 'print'" class="w-4 h-4 animate-spin text-[#1b3b5f]" />
