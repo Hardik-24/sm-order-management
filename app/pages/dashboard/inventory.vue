@@ -90,6 +90,7 @@ const tableRootRef = ref<HTMLElement | null>(null)
 // Pagination state
 const currentPage = ref(1)
 const pageSize = ref(50)
+const activeStockTab = ref<'ALL' | 'IN_STOCK' | 'OUT_OF_STOCK'>('ALL')
 
 watch(currentPage, () => {
   nextTick(() => {
@@ -97,13 +98,36 @@ watch(currentPage, () => {
   })
 })
 
-// Computed filtering with smart relevance ranking and exact-match prioritization
-const filteredProducts = computed(() => {
-  if (!products.value) return []
-  return rankProducts(products.value as any[], searchQuery.value)
+const tabCounts = computed(() => {
+  if (!products.value) return { all: 0, inStock: 0, outOfStock: 0 }
+  const list = products.value as any[]
+  let inStock = 0
+  let outOfStock = 0
+  for (const p of list) {
+    const qty = p.stock !== undefined ? p.stock : (p.stockQuantity || 0)
+    if (qty > 0) inStock++
+    else outOfStock++
+  }
+  return {
+    all: list.length,
+    inStock,
+    outOfStock
+  }
 })
 
-watch(searchQuery, () => {
+// Computed filtering with smart relevance ranking, tab filter, and exact-match prioritization
+const filteredProducts = computed(() => {
+  if (!products.value) return []
+  let list = rankProducts(products.value as any[], searchQuery.value)
+  if (activeStockTab.value === 'IN_STOCK') {
+    list = list.filter((p: any) => (p.stock !== undefined ? p.stock : (p.stockQuantity || 0)) > 0)
+  } else if (activeStockTab.value === 'OUT_OF_STOCK') {
+    list = list.filter((p: any) => (p.stock !== undefined ? p.stock : (p.stockQuantity || 0)) <= 0)
+  }
+  return list
+})
+
+watch([searchQuery, activeStockTab], () => {
   currentPage.value = 1
 })
 
@@ -269,6 +293,31 @@ onUnmounted(() => {
       </div>
     </Teleport>
 
+    <!-- Tab Filters: All items / In stock / Out of stock -->
+    <div class="border-b border-gray-200">
+      <nav class="-mb-px flex gap-6 sm:gap-8 overflow-x-auto no-scrollbar">
+        <button 
+          v-for="tab in (['ALL', 'IN_STOCK', 'OUT_OF_STOCK'] as const)" 
+          :key="tab"
+          @click="activeStockTab = tab; currentPage = 1"
+          class="whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm transition-colors flex items-center gap-2 cursor-pointer"
+          :class="activeStockTab === tab ? 'border-[#1b3b5f] text-[#1b3b5f]' : 'border-transparent text-gray-500 hover:text-gray-900 hover:border-gray-300'"
+        >
+          <span>{{ tab === 'ALL' ? 'All Items' : tab === 'IN_STOCK' ? 'In Stock' : 'Out of Stock' }}</span>
+          <span 
+            class="px-2 py-0.5 rounded-full text-[10px] font-bold transition-colors"
+            :class="[
+              activeStockTab === tab
+                ? (tab === 'OUT_OF_STOCK' ? 'bg-rose-100 text-rose-700' : tab === 'IN_STOCK' ? 'bg-emerald-100 text-emerald-700' : 'bg-[#1b3b5f]/10 text-[#1b3b5f]')
+                : 'bg-gray-100 text-gray-600'
+            ]"
+          >
+            {{ tab === 'ALL' ? tabCounts.all : tab === 'IN_STOCK' ? tabCounts.inStock : tabCounts.outOfStock }}
+          </span>
+        </button>
+      </nav>
+    </div>
+
     <!-- Main Content Card -->
     <div 
       ref="tableRootRef"
@@ -281,7 +330,7 @@ onUnmounted(() => {
           <input 
             v-model="searchQuery"
             type="text" 
-            placeholder="Search items by name, SKU, HSN, group..."
+            placeholder="Search items by name, alias, group..."
             class="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:border-[#1b3b5f] focus:ring-1 focus:ring-[#1b3b5f] bg-white"
           />
         </div>
@@ -331,16 +380,15 @@ onUnmounted(() => {
         <table class="w-full text-left border-collapse table-auto">
           <thead>
             <tr class="bg-gray-50 border-b border-gray-200 text-xs font-medium text-gray-500 uppercase tracking-wider">
-              <th class="px-5 py-3.5 w-44 min-w-[150px] max-w-[180px]">SKU / Code</th>
+              <th class="px-5 py-3.5 w-44 min-w-[150px] max-w-[180px]">Product Alias</th>
               <th class="px-5 py-3.5 min-w-[220px]">Item Name</th>
               <th class="px-5 py-3.5 w-44 min-w-[150px]">Group Name</th>
-              <th class="px-5 py-3.5 w-28 min-w-[100px]">HSN Code</th>
               <th class="px-5 py-3.5 w-28 min-w-[100px] text-right">Stock</th>
               <th class="px-5 py-3.5 w-32 min-w-[120px] text-center">Status</th>
             </tr>
           </thead>
           <tbody ref="tbodyRef" class="divide-y divide-gray-100">
-            <TableSkeletonRows v-if="productsLoading && paginatedProducts.length === 0" :rows="6" :cols="6" />
+            <TableSkeletonRows v-if="productsLoading && paginatedProducts.length === 0" :rows="6" :cols="5" />
 
             <template v-else>
               <tr 
@@ -349,11 +397,16 @@ onUnmounted(() => {
                 @click="openProductDetail(product)"
                 class="hover:bg-[#1b3b5f]/5 cursor-pointer transition-colors group"
               >
-              <!-- SKU / Code: Fixed width, wraps to max 2 lines -->
-              <td class="px-5 py-3 w-44 min-w-[150px] max-w-[180px] text-xs font-mono font-medium text-gray-900 group-hover:text-[#1b3b5f]">
-                <span class="break-words line-clamp-2" :title="product.sku">
+              <!-- Product Alias: Show only if exists and not identical to item name -->
+              <td class="px-5 py-3 w-44 min-w-[150px] max-w-[180px] text-xs font-mono font-medium group-hover:text-[#1b3b5f]">
+                <span 
+                  v-if="product.sku && product.sku !== product.name" 
+                  class="break-words line-clamp-2 text-gray-900" 
+                  :title="product.sku"
+                >
                   {{ product.sku }}
                 </span>
+                <span v-else class="text-gray-400 font-sans">-</span>
               </td>
 
               <!-- Item Name -->
@@ -368,11 +421,6 @@ onUnmounted(() => {
                 <span class="truncate block max-w-[160px]" :title="product.category?.name">
                   {{ product.category?.name || '-' }}
                 </span>
-              </td>
-
-              <!-- HSN Code -->
-              <td class="px-5 py-3 w-28 min-w-[100px] text-xs font-mono text-gray-500 whitespace-nowrap">
-                {{ product.hsnCode || '-' }}
               </td>
 
               <!-- Stock -->
@@ -394,7 +442,7 @@ onUnmounted(() => {
             </tr>
 
             <tr v-if="filteredProducts.length === 0">
-              <td colspan="6" class="px-6 py-12 text-center text-gray-500">
+              <td colspan="5" class="px-6 py-12 text-center text-gray-500">
                 <div class="flex flex-col items-center justify-center">
                   <AlertTriangle class="w-8 h-8 text-gray-400 mb-2" />
                   <p class="text-sm font-medium text-gray-900">No items found</p>
@@ -446,8 +494,8 @@ onUnmounted(() => {
           @click="openProductDetail(product)"
           class="p-3.5 space-y-2 hover:bg-gray-50 active:bg-gray-100 transition-colors cursor-pointer"
         >
-          <!-- Line 1: SKU Tag -->
-          <div class="flex items-center">
+          <!-- Line 1: Product Alias Tag (Only when distinct from item name) -->
+          <div v-if="product.sku && product.sku !== product.name" class="flex items-center">
             <span class="text-xs font-mono font-bold text-gray-900 bg-gray-100 px-2 py-0.5 rounded border border-gray-200">
               {{ product.sku }}
             </span>
@@ -475,14 +523,11 @@ onUnmounted(() => {
             </span>
           </div>
 
-          <!-- Line 2: Item Name & HSN -->
+          <!-- Line 3: Item Name -->
           <div class="min-w-0">
             <h3 class="text-sm font-semibold text-gray-900 leading-snug">
               {{ product.name }}
             </h3>
-            <p v-if="product.hsnCode" class="text-[11px] text-gray-400 font-mono mt-0.5">
-              HSN: {{ product.hsnCode }}
-            </p>
           </div>
 
           <!-- Line 3: Stock Quantity & Detail Arrow -->
@@ -602,14 +647,14 @@ onUnmounted(() => {
 
           <!-- Details Grid -->
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <!-- SKU / Alias -->
+            <!-- Product Alias -->
             <div class="p-3.5 bg-gray-50 rounded-xl border border-gray-100">
               <div class="flex items-center gap-1.5 text-xs text-gray-400 font-medium mb-1">
                 <Hash class="w-3.5 h-3.5" />
-                SKU / Item Code
+                Product Alias
               </div>
               <div class="font-mono text-sm font-semibold text-gray-900 break-all select-all">
-                {{ selectedProduct.sku }}
+                {{ (selectedProduct.sku && selectedProduct.sku !== selectedProduct.name) ? selectedProduct.sku : 'None' }}
               </div>
             </div>
 
@@ -621,17 +666,6 @@ onUnmounted(() => {
               </div>
               <div class="text-sm font-semibold text-gray-900 break-words">
                 {{ selectedProduct.category?.name || 'General' }}
-              </div>
-            </div>
-
-            <!-- HSN Code -->
-            <div class="p-3.5 bg-gray-50 rounded-xl border border-gray-100">
-              <div class="flex items-center gap-1.5 text-xs text-gray-400 font-medium mb-1">
-                <ShieldCheck class="w-3.5 h-3.5" />
-                HSN Code
-              </div>
-              <div class="font-mono text-sm font-semibold text-gray-900">
-                {{ selectedProduct.hsnCode || 'Not Specified' }}
               </div>
             </div>
 

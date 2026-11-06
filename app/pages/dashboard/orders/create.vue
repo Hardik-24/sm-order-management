@@ -753,7 +753,7 @@ const getCustomerInitials = (name: string) => {
                   @update:modelValue="val => { item.productId = val; onProductChange(idx) }"
                   :options="productOptions"
                   searchable
-                  searchPlaceholder="Search product or HSN..."
+                  searchPlaceholder="Search product or alias..."
                   placeholder="Select Product"
                   class="w-full"
                 />

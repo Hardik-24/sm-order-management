@@ -392,13 +392,16 @@ const customerOptions = computed(() => {
 })
 
 const productOptions = computed(() => {
-  return (productsList.value || []).map(p => ({
-    label: `${p.sku} - ${p.name}`,
-    value: p.id,
-    subtitle: p.hsnCode ? `HSN: ${p.hsnCode}` : '',
-    stock: p.stock ?? 0,
-    unit: p.unit || ''
-  }))
+  return (productsList.value || []).map(p => {
+    const hasAlias = p.sku && p.sku !== p.name
+    return {
+      label: hasAlias ? `${p.sku} - ${p.name}` : p.name,
+      value: p.id,
+      subtitle: '',
+      stock: p.stock ?? 0,
+      unit: p.unit || ''
+    }
+  })
 })
 
 const closePanel = () => {

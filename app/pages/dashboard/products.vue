@@ -13,7 +13,7 @@
             <input 
               v-model="searchQuery"
               type="text"
-              placeholder="Search SKU or Name..."
+              placeholder="Search Item Name or Alias..."
               class="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-[#1b3b5f] focus:ring-1 focus:ring-[#1b3b5f] text-sm bg-white"
             />
           </div>
@@ -130,10 +130,9 @@
           <table class="w-full text-left border-collapse table-auto">
             <thead>
               <tr class="bg-gray-50 border-b border-gray-200">
-                <th class="px-5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest w-36 min-w-[130px] max-w-[160px]">SKU</th>
-                <th class="px-5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest min-w-[220px]">Product Name</th>
+                <th class="px-5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest w-36 min-w-[130px] max-w-[160px]">Product Alias</th>
+                <th class="px-5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest min-w-[220px]">Item Name</th>
                 <th class="px-5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest w-40 min-w-[140px]">Group Name</th>
-                <th class="px-5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest w-28 min-w-[100px]">HSN</th>
                 <th class="px-5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest w-28 min-w-[110px] text-right">Price</th>
                 <th class="px-5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest w-24 min-w-[90px] text-right">Stock</th>
                 <th class="px-5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest w-24 min-w-[90px]">Status</th>
@@ -141,10 +140,10 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-200 text-sm">
-                <TableSkeletonRows v-if="productsPending" :rows="6" :cols="canEditProducts ? 8 : 7" />
+                <TableSkeletonRows v-if="productsPending" :rows="6" :cols="canEditProducts ? 7 : 6" />
                 <template v-else>
                   <tr v-if="filteredProducts.length === 0" class="hover:bg-gray-50">
-                    <td colspan="8" class="px-6 py-12 text-center text-gray-500">No products found.</td>
+                    <td :colspan="canEditProducts ? 7 : 6" class="px-6 py-12 text-center text-gray-500">No products found.</td>
                   </tr>
                   <tr 
                     v-for="product in paginatedProducts" 
@@ -153,8 +152,15 @@
                     class="hover:bg-[#1b3b5f]/5 cursor-pointer transition-colors group"
                   >
                 <td class="px-5 py-3 font-mono text-xs text-gray-600 w-36 min-w-[130px] max-w-[160px] group-hover:text-[#1b3b5f]">
-                  <span class="break-words line-clamp-2" :title="product.sku">{{ product.sku }}</span>
-                  <span v-if="product.isBusySynced === false" class="inline-block mt-0.5 text-[9px] font-bold bg-amber-50 text-amber-800 border border-amber-300 px-1.5 py-0.2 rounded">
+                  <span 
+                    v-if="product.sku && product.sku !== product.name" 
+                    class="break-words line-clamp-2 text-gray-900" 
+                    :title="product.sku"
+                  >
+                    {{ product.sku }}
+                  </span>
+                  <span v-else class="text-gray-400 font-sans">-</span>
+                  <span v-if="product.isBusySynced === false" class="inline-block mt-0.5 text-[9px] font-bold bg-amber-50 text-amber-800 border border-amber-300 px-1.5 py-0.2 rounded font-sans">
                     Not in Busy
                   </span>
                 </td>
@@ -164,7 +170,6 @@
                 <td class="px-5 py-3 text-gray-600 w-40 min-w-[140px]">
                   <span class="truncate block max-w-[140px]" :title="getCategoryName(product.categoryId)">{{ getCategoryName(product.categoryId) }}</span>
                 </td>
-                <td class="px-5 py-3 font-mono text-xs text-gray-500 w-28 min-w-[100px]">{{ product.hsnCode || '-' }}</td>
                 <td class="px-5 py-3 text-right w-28 min-w-[110px]">
                   <span v-if="!product.isEditingPrice">₹{{ Number(product.price || 0).toLocaleString('en-IN') }} <span class="text-xs text-gray-400">/ {{ product.unit }}</span></span>
                   <div v-else @click.stop class="flex items-center justify-end gap-1">
@@ -229,12 +234,12 @@
               @click="openProductDetail(product)"
               class="p-3.5 space-y-2 hover:bg-gray-50 active:bg-gray-100 transition-colors cursor-pointer"
             >
-              <!-- Line 1: SKU Tag -->
-              <div class="flex items-center gap-1.5 flex-wrap">
-                <span class="text-xs font-mono font-bold text-gray-900 bg-gray-100 px-2 py-0.5 rounded border border-gray-200">
+              <!-- Line 1: Product Alias Tag (Only when distinct from item name) -->
+              <div v-if="(product.sku && product.sku !== product.name) || product.isBusySynced === false" class="flex items-center gap-1.5 flex-wrap">
+                <span v-if="product.sku && product.sku !== product.name" class="text-xs font-mono font-bold text-gray-900 bg-gray-100 px-2 py-0.5 rounded border border-gray-200">
                   {{ product.sku }}
                 </span>
-                <span v-if="product.isBusySynced === false" class="text-[9px] font-bold text-amber-800 bg-amber-50 px-1.5 py-0.2 rounded border border-amber-300">
+                <span v-if="product.isBusySynced === false" class="text-[9px] font-bold text-amber-800 bg-amber-50 px-1.5 py-0.2 rounded border border-amber-300 font-sans">
                   ⚠️ Not in Busy
                 </span>
               </div>
@@ -253,14 +258,11 @@
                 </span>
               </div>
 
-              <!-- Line 2: Product Name & HSN -->
+              <!-- Line 3: Item Name -->
               <div class="min-w-0">
                 <h3 class="text-sm font-semibold text-gray-900 leading-snug">
                   {{ product.name }}
                 </h3>
-                <p v-if="product.hsnCode" class="text-[11px] text-gray-400 font-mono mt-0.5">
-                  HSN: {{ product.hsnCode }}
-                </p>
               </div>
 
               <!-- Line 3: Price, Stock & Quick Actions -->
@@ -399,14 +401,14 @@
 
           <!-- Details Grid -->
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <!-- SKU -->
+            <!-- Product Alias -->
             <div class="p-3.5 bg-gray-50 rounded-xl border border-gray-100">
               <div class="flex items-center gap-1.5 text-xs text-gray-400 font-medium mb-1">
                 <Hash class="w-3.5 h-3.5" />
-                SKU / Item Code
+                Product Alias
               </div>
               <div class="font-mono text-sm font-semibold text-gray-900 break-all select-all">
-                {{ selectedProduct.sku }}
+                {{ (selectedProduct.sku && selectedProduct.sku !== selectedProduct.name) ? selectedProduct.sku : 'None' }}
               </div>
             </div>
 
@@ -418,17 +420,6 @@
               </div>
               <div class="text-sm font-semibold text-gray-900 break-words">
                 {{ getCategoryName(selectedProduct.categoryId) }}
-              </div>
-            </div>
-
-            <!-- HSN Code -->
-            <div class="p-3.5 bg-gray-50 rounded-xl border border-gray-100">
-              <div class="flex items-center gap-1.5 text-xs text-gray-400 font-medium mb-1">
-                <ShieldCheck class="w-3.5 h-3.5" />
-                HSN Code
-              </div>
-              <div class="font-mono text-sm font-semibold text-gray-900">
-                {{ selectedProduct.hsnCode || 'Not Specified' }}
               </div>
             </div>
 
@@ -674,19 +665,14 @@
             <form id="productForm" @submit.prevent="saveProduct" class="space-y-4">
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div class="space-y-1">
-                  <label class="block text-[10px] font-medium text-gray-500 uppercase tracking-widest">SKU / Item Code *</label>
+                  <label class="block text-[10px] font-medium text-gray-500 uppercase tracking-widest">Product Alias / SKU *</label>
                   <input v-model="productForm.sku" required type="text" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#1b3b5f] focus:ring-1 focus:ring-[#1b3b5f] outline-none text-sm uppercase font-mono" />
                 </div>
 
                 <div class="space-y-1">
-                  <label class="block text-[10px] font-medium text-gray-500 uppercase tracking-widest">HSN Code</label>
-                  <input v-model="productForm.hsnCode" type="text" placeholder="e.g. 44089090" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#1b3b5f] focus:ring-1 focus:ring-[#1b3b5f] outline-none text-sm font-mono" />
+                  <label class="block text-[10px] font-medium text-gray-500 uppercase tracking-widest">Item Name *</label>
+                  <input v-model="productForm.name" required type="text" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#1b3b5f] focus:ring-1 focus:ring-[#1b3b5f] outline-none text-sm" />
                 </div>
-              </div>
-              
-              <div class="space-y-1">
-                <label class="block text-[10px] font-medium text-gray-500 uppercase tracking-widest">Product Name *</label>
-                <input v-model="productForm.name" required type="text" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#1b3b5f] focus:ring-1 focus:ring-[#1b3b5f] outline-none text-sm" />
               </div>
 
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">

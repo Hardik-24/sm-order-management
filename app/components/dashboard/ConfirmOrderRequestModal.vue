@@ -114,13 +114,16 @@ const customerOptions = computed(() => {
 })
 
 const productOptions = computed(() => {
-  return productsList.value.map(p => ({
-    label: `${p.sku} - ${p.name}`,
-    value: p.id,
-    subtitle: p.hsnCode ? `HSN: ${p.hsnCode} | ₹${Number(p.price || 0).toLocaleString('en-IN')}` : `₹${Number(p.price || 0).toLocaleString('en-IN')}`,
-    stock: p.stock ?? 0,
-    unit: p.unit || ''
-  }))
+  return productsList.value.map(p => {
+    const hasAlias = p.sku && p.sku !== p.name
+    return {
+      label: hasAlias ? `${p.sku} - ${p.name}` : p.name,
+      value: p.id,
+      subtitle: `₹${Number(p.price || 0).toLocaleString('en-IN')}`,
+      stock: p.stock ?? 0,
+      unit: p.unit || ''
+    }
+  })
 })
 
 const initForm = async () => {
