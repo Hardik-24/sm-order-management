@@ -396,35 +396,35 @@
                         <table class="w-full text-left border-collapse text-xs">
                           <thead>
                             <tr class="bg-[#1b3b5f] text-white font-extrabold text-[10px] uppercase tracking-wider">
-                              <th class="py-2 px-2 text-center w-6">#</th>
-                              <th class="py-2 px-2.5 w-24">Article No.</th>
-                              <th class="py-2 px-2.5">Product Description</th>
-                              <th class="py-2 px-2 text-center w-12">Brand</th>
-                              <th class="py-2 px-2 text-center w-12">Qty</th>
-                              <th class="py-2 px-2.5 text-right w-18">MRP (₹)</th>
-                              <th v-if="showDiscountColumn" class="py-2 px-2 text-center w-14">Disc %</th>
-                              <th class="py-2 px-2 text-center w-10">UoM</th>
-                              <th class="py-2 px-2.5 text-right w-24">Rate (₹)</th>
-                              <th class="py-2 px-2.5 text-right w-24">Total (₹)</th>
+                              <th class="py-2 px-1 text-center w-5">#</th>
+                              <th class="py-2 px-1.5 w-20">Article No.</th>
+                              <th class="py-2 px-2">Product Description</th>
+                              <th class="py-2 px-1 text-center w-10">Brand</th>
+                              <th class="py-2 px-1 text-center w-9">Qty</th>
+                              <th class="py-2 px-1.5 text-right w-16">MRP (₹)</th>
+                              <th v-if="showDiscountColumn" class="py-2 px-1 text-center w-11">Disc %</th>
+                              <th class="py-2 px-1 text-center w-8">UoM</th>
+                              <th class="py-2 px-1.5 text-right w-20">Rate (₹)</th>
+                              <th class="py-2 px-1.5 text-right w-20">Total (₹)</th>
                             </tr>
                           </thead>
                           <tbody class="divide-y divide-gray-100">
                             <tr v-for="(it, i) in quoteItems" :key="it.id" class="border-b border-gray-100 text-[11px]">
-                              <td class="py-2 px-2 text-center text-gray-500 font-mono font-bold">{{ i + 1 }}</td>
-                              <td class="py-2 px-2.5 font-mono font-black text-[#1b3b5f]">{{ it.articleNumber }}</td>
-                              <td class="py-2 px-2.5 font-bold text-gray-950 leading-snug">{{ it.description }}</td>
-                              <td class="py-2 px-2 text-center font-black text-[10px] text-gray-800 uppercase">{{ it.brand }}</td>
+                              <td class="py-2 px-1 text-center text-gray-500 font-mono font-bold">{{ i + 1 }}</td>
+                              <td class="py-2 px-1.5 font-mono font-black text-[#1b3b5f] text-[10.5px] whitespace-nowrap">{{ it.articleNumber }}</td>
+                              <td class="py-2 px-2 font-bold text-gray-950 leading-snug">{{ it.description }}</td>
+                              <td class="py-2 px-1 text-center font-black text-[10px] text-gray-800 uppercase">{{ it.brand }}</td>
                               <td
-                                class="py-2 px-2 text-center font-black"
+                                class="py-2 px-1 text-center font-black"
                                 :class="isItemInStock(it) ? 'bg-[#e6f4ea] text-[#137333]' : 'bg-[#fff3e0] text-[#d9480f]'"
                               >
                                 {{ it.quantity }}
                               </td>
-                              <td class="py-2 px-2.5 text-right font-mono font-bold text-gray-700">₹{{ formatSlipNumber(it.mrp) }}</td>
-                              <td v-if="showDiscountColumn" class="py-2 px-2 text-center font-mono font-bold text-emerald-700">{{ it.discount ? it.discount + '%' : '-' }}</td>
-                              <td class="py-2 px-2 text-center font-bold text-gray-700">{{ it.uom }}</td>
-                              <td class="py-2 px-2.5 text-right font-mono font-black text-[#1b3b5f]">₹{{ calculateUnitRate(it).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</td>
-                              <td class="py-2 px-2.5 text-right font-mono font-black text-gray-950 text-xs">₹{{ formatSlipNumber(calculateLineTotal(it)) }}</td>
+                              <td class="py-2 px-1.5 text-right font-mono font-bold text-gray-700 whitespace-nowrap">₹{{ formatSlipNumber(it.mrp) }}</td>
+                              <td v-if="showDiscountColumn" class="py-2 px-1 text-center font-mono font-bold text-emerald-700">{{ it.discount ? it.discount + '%' : '-' }}</td>
+                              <td class="py-2 px-1 text-center font-bold text-gray-700 text-[10px]">{{ it.uom }}</td>
+                              <td class="py-2 px-1.5 text-right font-mono font-black text-[#1b3b5f] whitespace-nowrap">₹{{ calculateUnitRate(it).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</td>
+                              <td class="py-2 px-1.5 text-right font-mono font-black text-gray-950 text-xs whitespace-nowrap">₹{{ formatSlipNumber(calculateLineTotal(it)) }}</td>
                             </tr>
                           </tbody>
                         </table>
@@ -1404,37 +1404,37 @@
         <table class="w-full text-left border-collapse text-xs mb-3">
           <thead>
             <tr class="bg-[#1b3b5f] text-white font-extrabold text-[10px] uppercase tracking-wider">
-              <th class="py-2.5 px-2 w-6 text-center">#</th>
-              <th class="py-2.5 px-3 w-28">Article No.</th>
-              <th class="py-2.5 px-3">Product Description</th>
-              <th class="py-2.5 px-2 text-center w-14">Brand</th>
-              <th class="py-2.5 px-2 text-center w-12">Qty</th>
-              <th class="py-2.5 px-3 text-right w-20">MRP (₹)</th>
-              <th v-if="showDiscountColumn" class="py-2.5 px-2 text-center w-14">Disc %</th>
-              <th class="py-2.5 px-2 text-center w-12">UoM</th>
-              <th class="py-2.5 px-3 text-right w-28">Discounted Amount</th>
-              <th class="py-2.5 px-3 text-right w-28">Total Value</th>
+              <th class="py-2 px-1 w-5 text-center">#</th>
+              <th class="py-2 px-1.5 w-20">Article No.</th>
+              <th class="py-2 px-2.5">Product Description</th>
+              <th class="py-2 px-1 text-center w-10">Brand</th>
+              <th class="py-2 px-1 text-center w-9">Qty</th>
+              <th class="py-2 px-1.5 text-right w-16">MRP (₹)</th>
+              <th v-if="showDiscountColumn" class="py-2 px-1 text-center w-11">Disc %</th>
+              <th class="py-2 px-1 text-center w-8">UoM</th>
+              <th class="py-2 px-1.5 text-right w-20">Rate (₹)</th>
+              <th class="py-2 px-1.5 text-right w-20">Total Value</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-100 bg-white">
             <tr v-for="(item, idx) in quoteItems" :key="item.id" class="border-b border-gray-100">
-              <td class="py-2.5 px-2 text-center text-gray-500 font-mono font-bold text-[10px]">{{ idx + 1 }}</td>
-              <td class="py-2.5 px-3 font-mono font-black text-[#1b3b5f] text-[11px]">{{ item.articleNumber }}</td>
-              <td class="py-2.5 px-3 font-bold text-gray-950 text-[11px] leading-tight">{{ item.description }}</td>
-              <td class="py-2.5 px-2 text-center font-black text-[10px] text-gray-800 uppercase">{{ item.brand }}</td>
+              <td class="py-2 px-1 text-center text-gray-500 font-mono font-bold text-[10px]">{{ idx + 1 }}</td>
+              <td class="py-2 px-1.5 font-mono font-black text-[#1b3b5f] text-[10.5px] whitespace-nowrap">{{ item.articleNumber }}</td>
+              <td class="py-2 px-2.5 font-bold text-gray-950 text-[11px] leading-snug">{{ item.description }}</td>
+              <td class="py-2 px-1 text-center font-black text-[10px] text-gray-800 uppercase">{{ item.brand }}</td>
               <td
-                class="py-2.5 px-2 text-center font-black text-[11px]"
+                class="py-2 px-1 text-center font-black text-[11px]"
                 :class="isItemInStock(item) ? 'bg-[#e6f4ea] text-[#137333]' : 'bg-[#fff3e0] text-[#d9480f]'"
               >
                 {{ item.quantity }}
               </td>
-              <td class="py-2.5 px-3 text-right font-mono font-bold text-gray-700 text-[11px]">₹{{ formatSlipNumber(item.mrp) }}</td>
-              <td v-if="showDiscountColumn" class="py-2.5 px-2 text-center font-mono font-bold text-emerald-700 text-[11px]">{{ item.discount ? item.discount + '%' : '-' }}</td>
-              <td class="py-2.5 px-2 text-center font-bold text-gray-700 text-[10px]">{{ item.uom }}</td>
-              <td class="py-2.5 px-3 text-right font-mono font-black text-[#1b3b5f] text-[11px]">
+              <td class="py-2 px-1.5 text-right font-mono font-bold text-gray-700 text-[11px] whitespace-nowrap">₹{{ formatSlipNumber(item.mrp) }}</td>
+              <td v-if="showDiscountColumn" class="py-2 px-1 text-center font-mono font-bold text-emerald-700 text-[11px]">{{ item.discount ? item.discount + '%' : '-' }}</td>
+              <td class="py-2 px-1 text-center font-bold text-gray-700 text-[10px]">{{ item.uom }}</td>
+              <td class="py-2 px-1.5 text-right font-mono font-black text-[#1b3b5f] text-[11px] whitespace-nowrap">
                 ₹{{ calculateUnitRate(item).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
               </td>
-              <td class="py-2.5 px-3 text-right font-mono font-black text-gray-950 text-[11.5px]">
+              <td class="py-2 px-1.5 text-right font-mono font-black text-gray-950 text-[11.5px] whitespace-nowrap">
                 ₹{{ formatSlipNumber(calculateLineTotal(item)) }}
               </td>
             </tr>
@@ -1686,37 +1686,37 @@
             <table class="w-full text-left border-collapse text-xs mb-2">
               <thead>
                 <tr class="bg-[#1b3b5f] text-white font-extrabold text-[10px] uppercase tracking-wider">
-                  <th class="py-2 px-2 w-6 text-center">#</th>
-                  <th class="py-2 px-3 w-28">Article No.</th>
-                  <th class="py-2 px-3">Product Description</th>
-                  <th class="py-2 px-2 text-center w-14">Brand</th>
-                  <th class="py-2 px-2 text-center w-12">Qty</th>
-                  <th class="py-2 px-3 text-right w-20">MRP (₹)</th>
-                  <th v-if="showDiscountColumn" class="py-2 px-2 text-center w-14">Disc %</th>
-                  <th class="py-2 px-2 text-center w-12">UoM</th>
-                  <th class="py-2 px-3 text-right w-28">Discounted Amount</th>
-                  <th class="py-2 px-3 text-right w-28">Total Value</th>
+                  <th class="py-2 px-1 w-5 text-center">#</th>
+                  <th class="py-2 px-1.5 w-20">Article No.</th>
+                  <th class="py-2 px-2.5">Product Description</th>
+                  <th class="py-2 px-1 text-center w-10">Brand</th>
+                  <th class="py-2 px-1 text-center w-9">Qty</th>
+                  <th class="py-2 px-1.5 text-right w-16">MRP (₹)</th>
+                  <th v-if="showDiscountColumn" class="py-2 px-1 text-center w-11">Disc %</th>
+                  <th class="py-2 px-1 text-center w-8">UoM</th>
+                  <th class="py-2 px-1.5 text-right w-20">Rate (₹)</th>
+                  <th class="py-2 px-1.5 text-right w-20">Total Value</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-100 bg-white">
                 <tr v-for="(item, idx) in pg.items" :key="item.id" class="border-b border-gray-100">
-                  <td class="py-2 px-2 text-center text-gray-500 font-mono font-bold text-[10px]">{{ pg.startIndex + idx + 1 }}</td>
-                  <td class="py-2 px-3 font-mono font-black text-[#1b3b5f] text-[11px]">{{ item.articleNumber }}</td>
-                  <td class="py-2 px-3 font-bold text-gray-950 text-[11px] leading-tight">{{ item.description }}</td>
-                  <td class="py-2 px-2 text-center font-black text-[10px] text-gray-800 uppercase">{{ item.brand }}</td>
+                  <td class="py-2 px-1 text-center text-gray-500 font-mono font-bold text-[10px]">{{ pg.startIndex + idx + 1 }}</td>
+                  <td class="py-2 px-1.5 font-mono font-black text-[#1b3b5f] text-[10.5px] whitespace-nowrap">{{ item.articleNumber }}</td>
+                  <td class="py-2 px-2.5 font-bold text-gray-950 text-[11px] leading-snug">{{ item.description }}</td>
+                  <td class="py-2 px-1 text-center font-black text-[10px] text-gray-800 uppercase">{{ item.brand }}</td>
                   <td
-                    class="py-2 px-2 text-center font-black text-[11px]"
+                    class="py-2 px-1 text-center font-black text-[11px]"
                     :class="isItemInStock(item) ? 'bg-[#e6f4ea] text-[#137333]' : 'bg-[#fff3e0] text-[#d9480f]'"
                   >
                     {{ item.quantity }}
                   </td>
-                  <td class="py-2 px-3 text-right font-mono font-bold text-gray-700 text-[11px]">₹{{ formatSlipNumber(item.mrp) }}</td>
-                  <td v-if="showDiscountColumn" class="py-2 px-2 text-center font-mono font-bold text-emerald-700 text-[11px]">{{ item.discount ? item.discount + '%' : '-' }}</td>
-                  <td class="py-2 px-2 text-center font-bold text-gray-700 text-[10px]">{{ item.uom }}</td>
-                  <td class="py-2 px-3 text-right font-mono font-black text-[#1b3b5f] text-[11px]">
+                  <td class="py-2 px-1.5 text-right font-mono font-bold text-gray-700 text-[11px] whitespace-nowrap">₹{{ formatSlipNumber(item.mrp) }}</td>
+                  <td v-if="showDiscountColumn" class="py-2 px-1 text-center font-mono font-bold text-emerald-700 text-[11px]">{{ item.discount ? item.discount + '%' : '-' }}</td>
+                  <td class="py-2 px-1 text-center font-bold text-gray-700 text-[10px]">{{ item.uom }}</td>
+                  <td class="py-2 px-1.5 text-right font-mono font-black text-[#1b3b5f] text-[11px] whitespace-nowrap">
                     ₹{{ calculateUnitRate(item).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
                   </td>
-                  <td class="py-2 px-3 text-right font-mono font-black text-gray-950 text-[11.5px]">
+                  <td class="py-2 px-1.5 text-right font-mono font-black text-gray-950 text-[11.5px] whitespace-nowrap">
                     ₹{{ formatSlipNumber(calculateLineTotal(item)) }}
                   </td>
                 </tr>
