@@ -516,7 +516,7 @@ onUnmounted(() => {
             </h3>
           </div>
 
-          <!-- Right Column: In Stock badge, Quantity right below it, and Details > button below that -->
+          <!-- Right Column: In Stock badge, Quantity right below it -->
           <div class="flex flex-col items-end shrink-0 space-y-1.5 text-right pl-2">
             <!-- In Stock / Out of Stock badge -->
             <span 
@@ -540,12 +540,6 @@ onUnmounted(() => {
               :class="product.stock > 0 ? (product.stock < 10 ? 'text-amber-600' : 'text-gray-900') : 'text-rose-600'"
             >
               {{ product.stock }} <span class="text-xs font-semibold text-gray-500">{{ product.unit || '' }}</span>
-            </div>
-
-            <!-- Details > Button / link right below quantity -->
-            <div class="flex items-center gap-0.5 text-xs text-gray-400 font-medium hover:text-[#1b3b5f] transition-colors">
-              <span>Details</span>
-              <ChevronRight class="w-3.5 h-3.5 text-gray-400" />
             </div>
           </div>
         </div>
