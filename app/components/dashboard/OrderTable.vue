@@ -260,6 +260,19 @@ const getOrderPipeline = (order: Order): { steps: PipelineStep[], summary: strin
   }
 }
 
+const shouldShowCustomerCompany = (customer?: { name?: string | null; company?: string | null } | null) => {
+  if (!customer?.company || !customer?.name) return false
+  const nameNorm = customer.name.trim().toLowerCase()
+  const compNorm = customer.company.trim().toLowerCase()
+  return compNorm.length > 0 && compNorm !== nameNorm
+}
+
+const getCustomerSubtitle = (customer?: any) => {
+  if (!customer) return '—'
+  const company = shouldShowCustomerCompany(customer) ? customer.company.trim() : null
+  return [company, customer.city || customer.phone].filter(Boolean).join(' • ') || '—'
+}
+
 const getItemsTotalQuantity = (order: Order) => {
   if (!order.items || !order.items.length) return '0 nos.'
   const totalUnits = order.items.reduce((sum: number, itm: any) => sum + (Number(itm.quantity) || 0), 0)
@@ -419,8 +432,8 @@ const getItemsTotalQuantity = (order: Order) => {
                   <span class="truncate">{{ order.customer?.name || 'Walk-in Customer' }}</span>
                   <span v-if="(order.customer as any)?.isPriorityClient" class="text-amber-500 font-bold text-xs shrink-0" title="Priority Client">★</span>
                 </div>
-                <p class="text-[11px] text-gray-500 truncate mt-0.5" :title="[order.customer?.company, order.customer?.city || order.customer?.phone].filter(Boolean).join(' • ') || '—'">
-                  {{ [order.customer?.company, order.customer?.city || order.customer?.phone].filter(Boolean).join(' • ') || '—' }}
+                <p class="text-[11px] text-gray-500 truncate mt-0.5" :title="getCustomerSubtitle(order.customer)">
+                  {{ getCustomerSubtitle(order.customer) }}
                 </p>
               </td>
 
@@ -571,7 +584,7 @@ const getItemsTotalQuantity = (order: Order) => {
               {{ order.customer?.name || 'Walk-in Customer' }}
             </span>
             <span v-if="(order.customer as any)?.isPriorityClient" class="text-amber-500 font-bold text-xs shrink-0" title="Priority Client">★</span>
-            <span v-if="order.customer?.company" class="text-gray-400 text-[11px] truncate min-w-0 flex-1">
+            <span v-if="shouldShowCustomerCompany(order.customer)" class="text-gray-400 text-[11px] truncate min-w-0 flex-1">
               ({{ order.customer?.company }})
             </span>
           </div>

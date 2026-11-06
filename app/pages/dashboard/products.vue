@@ -130,9 +130,9 @@
           <table class="w-full text-left border-collapse table-auto">
             <thead>
               <tr class="bg-gray-50 border-b border-gray-200">
-                <th class="px-5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest w-36 min-w-[130px] max-w-[160px]">Product Alias</th>
                 <th class="px-5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest min-w-[220px]">Item Name</th>
                 <th class="px-5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest w-40 min-w-[140px]">Group Name</th>
+                <th class="px-5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest w-36 min-w-[130px] max-w-[160px]">Product Alias</th>
                 <th class="px-5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest w-28 min-w-[110px] text-right">Price</th>
                 <th class="px-5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest w-24 min-w-[90px] text-right">Stock</th>
                 <th class="px-5 py-3 text-[10px] font-medium text-gray-500 uppercase tracking-widest w-24 min-w-[90px]">Status</th>
@@ -151,6 +151,12 @@
                     @click="openProductDetail(product)"
                     class="hover:bg-[#1b3b5f]/5 cursor-pointer transition-colors group"
                   >
+                <td class="px-5 py-3 font-medium text-[#1a1a1a] min-w-[220px] group-hover:text-[#1b3b5f] transition-colors">
+                  <span class="break-words line-clamp-2" :title="product.name">{{ product.name }}</span>
+                </td>
+                <td class="px-5 py-3 text-gray-600 w-40 min-w-[140px]">
+                  <span class="truncate block max-w-[140px]" :title="getCategoryName(product.categoryId)">{{ getCategoryName(product.categoryId) }}</span>
+                </td>
                 <td class="px-5 py-3 font-mono text-xs text-gray-600 w-36 min-w-[130px] max-w-[160px] group-hover:text-[#1b3b5f]">
                   <span 
                     v-if="product.sku && product.sku !== product.name" 
@@ -163,12 +169,6 @@
                   <span v-if="product.isBusySynced === false" class="inline-block mt-0.5 text-[9px] font-bold bg-amber-50 text-amber-800 border border-amber-300 px-1.5 py-0.2 rounded font-sans">
                     Not in Busy
                   </span>
-                </td>
-                <td class="px-5 py-3 font-medium text-[#1a1a1a] min-w-[220px] group-hover:text-[#1b3b5f] transition-colors">
-                  <span class="break-words line-clamp-2" :title="product.name">{{ product.name }}</span>
-                </td>
-                <td class="px-5 py-3 text-gray-600 w-40 min-w-[140px]">
-                  <span class="truncate block max-w-[140px]" :title="getCategoryName(product.categoryId)">{{ getCategoryName(product.categoryId) }}</span>
                 </td>
                 <td class="px-5 py-3 text-right w-28 min-w-[110px]">
                   <span v-if="!product.isEditingPrice">₹{{ Number(product.price || 0).toLocaleString('en-IN') }} <span class="text-xs text-gray-400">/ {{ product.unit }}</span></span>

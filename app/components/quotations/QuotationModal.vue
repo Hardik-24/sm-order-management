@@ -30,6 +30,29 @@
           </div>
 
           <div class="flex items-center gap-2 shrink-0">
+            <!-- Edit Quotation Button in Header (shown in Preview / Success mode) -->
+            <button
+              v-if="isSuccessView"
+              type="button"
+              @click="enterEditMode"
+              class="flex items-center gap-1.5 px-3 py-1.5 bg-[#1b3b5f] hover:bg-[#132c49] active:scale-98 text-white rounded-lg text-xs font-bold transition shadow-xs cursor-pointer"
+              title="Edit Quotation items, customer details, or discounts"
+            >
+              <Edit3 class="w-3.5 h-3.5" />
+              <span>Edit Quotation</span>
+            </button>
+
+            <!-- Back to Preview Button (shown when editing an existing quote) -->
+            <button
+              v-if="!isSuccessView && (isEditingExisting || props.initialQuote)"
+              type="button"
+              @click="isSuccessView = true"
+              class="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 active:scale-98 text-gray-700 rounded-lg text-xs font-bold transition shadow-xs cursor-pointer"
+              title="Return to Quotation Preview"
+            >
+              <span>Back to Preview</span>
+            </button>
+
             <!-- Sheet sync indicator in drafting mode -->
             <div
               v-if="!isSuccessView"
@@ -2216,6 +2239,11 @@ const triggerConversion = () => {
   emit('update:modelValue', false)
 }
 
+const enterEditMode = () => {
+  isSuccessView.value = false
+  isEditingExisting.value = true
+}
+
 // Multi-Page PDF Pagination State & Types
 interface PdfPageData {
   pageNum: number
@@ -2768,7 +2796,9 @@ const addItemToQuote = (item: SheetProduct) => {
   searchQuery.value = ''
   highlightedIndex.value = -1
   nextTick(() => {
-    searchInputRef.value?.focus()
+    if (typeof window !== 'undefined' && window.innerWidth >= 768) {
+      searchInputRef.value?.focus()
+    }
   })
 }
 
@@ -3089,13 +3119,17 @@ const executeSaveQuote = async () => {
       signature: signatureDataUrl.value || null
     }
 
-    const res = await $fetch<any>('/api/quotations', {
-      method: 'POST',
+    const quoteId = props.initialQuote?.id
+    const url = quoteId ? `/api/quotations/${quoteId}` : '/api/quotations'
+    const method = quoteId ? 'PATCH' : 'POST'
+
+    const res = await $fetch<any>(url, {
+      method,
       body: payload
     })
 
     if (res?.success) {
-      showSaved(`Quotation ${quoteNumber.value} saved successfully!`)
+      showSaved(`Quotation ${quoteNumber.value} ${quoteId ? 'updated' : 'saved'} successfully!`)
       emit('created', res.quotation)
       isSuccessView.value = true
     } else {
@@ -3197,7 +3231,9 @@ watch(
       loadDbCustomers()
       nextTick(() => {
         if (!isSuccessView.value && searchInputRef.value) {
-          searchInputRef.value.focus()
+          if (typeof window !== 'undefined' && window.innerWidth >= 768) {
+            searchInputRef.value.focus()
+          }
         }
       })
     }

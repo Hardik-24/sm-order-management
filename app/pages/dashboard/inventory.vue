@@ -380,9 +380,9 @@ onUnmounted(() => {
         <table class="w-full text-left border-collapse table-auto">
           <thead>
             <tr class="bg-gray-50 border-b border-gray-200 text-xs font-medium text-gray-500 uppercase tracking-wider">
-              <th class="px-5 py-3.5 w-44 min-w-[150px] max-w-[180px]">Product Alias</th>
               <th class="px-5 py-3.5 min-w-[220px]">Item Name</th>
               <th class="px-5 py-3.5 w-44 min-w-[150px]">Group Name</th>
+              <th class="px-5 py-3.5 w-44 min-w-[150px] max-w-[180px]">Product Alias</th>
               <th class="px-5 py-3.5 w-28 min-w-[100px] text-right">Stock</th>
               <th class="px-5 py-3.5 w-32 min-w-[120px] text-center">Status</th>
             </tr>
@@ -397,18 +397,6 @@ onUnmounted(() => {
                 @click="openProductDetail(product)"
                 class="hover:bg-[#1b3b5f]/5 cursor-pointer transition-colors group"
               >
-              <!-- Product Alias: Show only if exists and not identical to item name -->
-              <td class="px-5 py-3 w-44 min-w-[150px] max-w-[180px] text-xs font-mono font-medium group-hover:text-[#1b3b5f]">
-                <span 
-                  v-if="product.sku && product.sku !== product.name" 
-                  class="break-words line-clamp-2 text-gray-900" 
-                  :title="product.sku"
-                >
-                  {{ product.sku }}
-                </span>
-                <span v-else class="text-gray-400 font-sans">-</span>
-              </td>
-
               <!-- Item Name -->
               <td class="px-5 py-3 min-w-[220px] text-sm text-gray-800 font-medium">
                 <span class="break-words line-clamp-2 group-hover:text-[#1b3b5f] transition-colors" :title="product.name">
@@ -421,6 +409,18 @@ onUnmounted(() => {
                 <span class="truncate block max-w-[160px]" :title="product.category?.name">
                   {{ product.category?.name || '-' }}
                 </span>
+              </td>
+
+              <!-- Product Alias: Show only if exists and not identical to item name -->
+              <td class="px-5 py-3 w-44 min-w-[150px] max-w-[180px] text-xs font-mono font-medium group-hover:text-[#1b3b5f]">
+                <span 
+                  v-if="product.sku && product.sku !== product.name" 
+                  class="break-words line-clamp-2 text-gray-900" 
+                  :title="product.sku"
+                >
+                  {{ product.sku }}
+                </span>
+                <span v-else class="text-gray-400 font-sans">-</span>
               </td>
 
               <!-- Stock -->
@@ -492,21 +492,33 @@ onUnmounted(() => {
           v-for="product in paginatedProducts" 
           :key="'mob-inv-' + product.id"
           @click="openProductDetail(product)"
-          class="p-3.5 space-y-2 hover:bg-gray-50 active:bg-gray-100 transition-colors cursor-pointer"
+          class="p-3.5 hover:bg-gray-50 active:bg-gray-100 transition-colors cursor-pointer flex items-start justify-between gap-3"
         >
-          <!-- Line 1: Product Alias Tag (Only when distinct from item name) -->
-          <div v-if="product.sku && product.sku !== product.name" class="flex items-center">
-            <span class="text-xs font-mono font-bold text-gray-900 bg-gray-100 px-2 py-0.5 rounded border border-gray-200">
-              {{ product.sku }}
-            </span>
+          <!-- Left Column: Alias, Group, Item Name -->
+          <div class="flex-1 min-w-0 space-y-1">
+            <!-- Product Alias Tag (Only when distinct from item name) -->
+            <div v-if="product.sku && product.sku !== product.name" class="flex items-center">
+              <span class="text-xs font-mono font-bold text-gray-900 bg-gray-100 px-2 py-0.5 rounded border border-gray-200">
+                {{ product.sku }}
+              </span>
+            </div>
+
+            <!-- Category / Group Name -->
+            <div v-if="product.category?.name" class="flex items-center">
+              <span class="text-[10px] font-semibold text-gray-600 bg-gray-50 px-2 py-0.5 rounded border border-gray-200/80">
+                {{ product.category.name }}
+              </span>
+            </div>
+
+            <!-- Item Name -->
+            <h3 class="text-sm font-semibold text-gray-900 leading-snug break-words">
+              {{ product.name }}
+            </h3>
           </div>
 
-          <!-- Line 2: Category Tag and in same line In Stock / Out of Stock badge -->
-          <div class="flex items-center gap-2">
-            <span v-if="product.category?.name" class="text-[10px] font-semibold text-gray-600 bg-gray-50 px-2 py-0.5 rounded border border-gray-200/80">
-              {{ product.category.name }}
-            </span>
-
+          <!-- Right Column: In Stock badge, Quantity right below it, and Details > button below that -->
+          <div class="flex flex-col items-end shrink-0 space-y-1.5 text-right pl-2">
+            <!-- In Stock / Out of Stock badge -->
             <span 
               v-if="product.stock > 0" 
               class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 text-green-800 border border-green-200"
@@ -521,30 +533,19 @@ onUnmounted(() => {
               <XCircle class="w-3 h-3 text-red-600" />
               <span>Out of Stock</span>
             </span>
-          </div>
 
-          <!-- Line 3: Item Name -->
-          <div class="min-w-0">
-            <h3 class="text-sm font-semibold text-gray-900 leading-snug">
-              {{ product.name }}
-            </h3>
-          </div>
-
-          <!-- Line 3: Stock Quantity & Detail Arrow -->
-          <div class="flex items-center justify-between gap-2 pt-1 border-t border-gray-100">
-            <div class="flex items-baseline gap-1.5">
-              <span class="text-[11px] text-gray-500 font-medium">Quantity Available:</span>
-              <span 
-                class="text-sm font-bold tabular-nums"
-                :class="product.stock > 0 ? (product.stock < 10 ? 'text-amber-600' : 'text-gray-900') : 'text-rose-600'"
-              >
-                {{ product.stock }} {{ product.unit || '' }}
-              </span>
+            <!-- Quantity Number & Unit right below the badge -->
+            <div 
+              class="text-sm font-bold tabular-nums"
+              :class="product.stock > 0 ? (product.stock < 10 ? 'text-amber-600' : 'text-gray-900') : 'text-rose-600'"
+            >
+              {{ product.stock }} <span class="text-xs font-semibold text-gray-500">{{ product.unit || '' }}</span>
             </div>
 
-            <div class="flex items-center gap-1 text-xs text-gray-400 font-medium shrink-0">
+            <!-- Details > Button / link right below quantity -->
+            <div class="flex items-center gap-0.5 text-xs text-gray-400 font-medium hover:text-[#1b3b5f] transition-colors">
               <span>Details</span>
-              <ChevronRight class="w-4 h-4 text-gray-400" />
+              <ChevronRight class="w-3.5 h-3.5 text-gray-400" />
             </div>
           </div>
         </div>

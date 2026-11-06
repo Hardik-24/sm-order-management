@@ -1231,11 +1231,11 @@ onMounted(() => {
                 </span>
               </div>
               <div class="flex items-center gap-1.5 min-w-0 text-xs text-gray-500 mt-0.5">
-                <span v-if="order.customer?.company && order.customer?.name" class="font-medium text-gray-700 truncate max-w-[120px] sm:max-w-none">
+                <span v-if="order.customer?.company && order.customer?.name && order.customer.company.trim().toLowerCase() !== order.customer.name.trim().toLowerCase()" class="font-medium text-gray-700 truncate max-w-[120px] sm:max-w-none">
                   {{ order.customer.name }}
                 </span>
                 <span 
-                  v-if="order.customer?.company && order.customer?.name" 
+                  v-if="order.customer?.company && order.customer?.name && order.customer.company.trim().toLowerCase() !== order.customer.name.trim().toLowerCase()" 
                   class="w-1 h-1 rounded-full bg-gray-400 shrink-0 self-center" 
                   aria-hidden="true" 
                 />
@@ -1369,7 +1369,7 @@ onMounted(() => {
                 <div>
                   <span class="block text-[10px] sm:text-[11px] uppercase font-bold text-gray-400 tracking-wider mb-0.5">Customer</span>
                   <span class="font-semibold text-gray-900">{{ order.customer?.name || '—' }}</span>
-                  <span v-if="order.customer?.company" class="block text-xs text-gray-500">{{ order.customer.company }}</span>
+                  <span v-if="order.customer?.company && order.customer.company.trim().toLowerCase() !== (order.customer.name || '').trim().toLowerCase()" class="block text-xs text-gray-500">{{ order.customer.company }}</span>
                 </div>
 
                 <div>

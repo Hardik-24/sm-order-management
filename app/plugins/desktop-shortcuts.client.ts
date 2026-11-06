@@ -281,11 +281,17 @@ export default defineNuxtPlugin(() => {
   }, true) // Capture phase ensures timely interception
 
   /**
-   * 5. AUTO-FOCUS ON MODAL MOUNT
-   * Automatically focuses search/input when a modal appears
+   * 5. AUTO-FOCUS ON MODAL MOUNT (Desktop Only)
+   * Automatically focuses search/input when a modal appears on desktop.
+   * On mobile (< 768px or touch devices), autofocus is disabled to prevent the virtual keyboard from automatically popping up.
    */
   if (typeof MutationObserver !== 'undefined') {
     const observer = new MutationObserver((mutations) => {
+      // Do not auto-focus on mobile to prevent virtual keyboard from opening automatically
+      if (typeof window !== 'undefined' && (window.innerWidth < 768 || ('ontouchstart' in window && window.innerWidth < 1024))) {
+        return
+      }
+
       for (const m of mutations) {
         for (const node of Array.from(m.addedNodes)) {
           if (node.nodeType === Node.ELEMENT_NODE) {
@@ -296,6 +302,10 @@ export default defineNuxtPlugin(() => {
 
             if (isModal) {
               setTimeout(() => {
+                if (typeof window !== 'undefined' && (window.innerWidth < 768 || ('ontouchstart' in window && window.innerWidth < 1024))) {
+                  return
+                }
+
                 const target =
                   el.querySelector<HTMLElement>('[data-autofocus="true"]') ||
                   el.querySelector<HTMLInputElement>('[data-quick-search="true"]') ||
