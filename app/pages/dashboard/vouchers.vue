@@ -383,34 +383,32 @@
       </div>
 
       <!-- Pagination Footer -->
-      <div v-if="pagination.totalPages > 1" class="px-5 py-3 border-t border-gray-200 bg-gray-50/50 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-600">
-        <div class="order-2 sm:order-1 text-center sm:text-left">
-          Page <span class="font-bold text-gray-900">{{ pagination.page }}</span> of
-          <span class="font-bold text-gray-900">{{ pagination.totalPages }}</span>
-          <span class="text-gray-400 ml-1">({{ pagination.total.toLocaleString() }} total)</span>
-        </div>
+      <div v-if="pagination.totalPages > 1" class="p-3 sm:p-4 border-t border-gray-200 bg-white rounded-b-xl flex flex-col sm:flex-row items-center justify-between gap-2.5 sm:gap-4">
+        <p class="text-[11px] sm:text-xs text-gray-500 whitespace-nowrap text-center sm:text-left">
+          Showing <span class="font-medium text-gray-900">{{ pagination.total === 0 ? 0 : (pagination.page - 1) * pageSize + 1 }}</span>
+          to <span class="font-medium text-gray-900">{{ Math.min(pagination.page * pageSize, pagination.total) }}</span>
+          of <span class="font-medium text-gray-900">{{ pagination.total.toLocaleString() }}</span> vouchers
+        </p>
 
-        <div class="order-1 sm:order-2 flex items-center gap-1.5 w-full sm:w-auto justify-between sm:justify-end">
+        <div class="flex items-center justify-center gap-1.5 sm:gap-2">
           <button
             @click="goToPage(pagination.page - 1)"
             :disabled="pagination.page <= 1 || isLoading"
-            class="p-1.5 sm:px-3 sm:py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition font-medium flex items-center justify-center gap-1 shadow-2xs cursor-pointer text-xs"
+            class="p-1.5 sm:px-3 sm:py-1.5 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer flex items-center gap-1"
             title="Previous Page"
           >
-            <ChevronLeft class="w-3.5 h-3.5" />
-            <span class="hidden sm:inline">Prev</span>
+            <ChevronLeft class="w-4 h-4" />
+            <span class="hidden sm:inline">Previous</span>
           </button>
-          <span class="sm:hidden text-xs font-semibold px-2 tabular-nums">
-            {{ pagination.page }} / {{ pagination.totalPages }}
-          </span>
+          <span class="text-xs font-medium text-gray-700 px-1">{{ pagination.page }} / {{ pagination.totalPages }}</span>
           <button
             @click="goToPage(pagination.page + 1)"
             :disabled="pagination.page >= pagination.totalPages || isLoading"
-            class="p-1.5 sm:px-3 sm:py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition font-medium flex items-center justify-center gap-1 shadow-2xs cursor-pointer text-xs"
+            class="p-1.5 sm:px-3 sm:py-1.5 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer flex items-center gap-1"
             title="Next Page"
           >
             <span class="hidden sm:inline">Next</span>
-            <ChevronRight class="w-3.5 h-3.5" />
+            <ChevronRight class="w-4 h-4" />
           </button>
         </div>
       </div>

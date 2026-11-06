@@ -191,6 +191,14 @@
           <span class="font-bold text-gray-900">{{ quotations.length }}</span> quotations
           <span v-if="searchQuery" class="text-sky-600 ml-1 font-semibold">(filtered)</span>
         </div>
+        <div class="flex items-center gap-2">
+          <span>Rows:</span>
+          <RowsPerPageSelect 
+            :modelValue="pageSize" 
+            @update:modelValue="onPageSizeChange"
+            :options="[15, 25, 50, 100, -1]"
+          />
+        </div>
       </div>
 
       <!-- Skeletons when initial loading -->
@@ -250,7 +258,7 @@
             </thead>
             <tbody ref="tbodyRef" class="divide-y divide-gray-100 bg-white">
               <tr
-                v-for="quote in filteredQuotations"
+                v-for="quote in paginatedQuotations"
                 :key="quote.id"
                 @click="viewQuoteDetails(quote)"
                 class="cursor-pointer hover:bg-gray-50/80 transition-colors duration-150 group"
@@ -373,7 +381,7 @@
         <!-- Mobile View (Redesigned: Line 1 Quote No, Line 2 Full Company Name, Line 3 Details, Separate Line for Convert) -->
         <div ref="mobileListRef" class="block md:hidden divide-y divide-gray-100 bg-white">
           <div
-            v-for="quote in filteredQuotations"
+            v-for="quote in paginatedQuotations"
             :key="'mob-' + quote.id"
             @click="viewQuoteDetails(quote)"
             class="px-4 py-3.5 cursor-pointer transition-colors flex flex-col gap-2 hover:bg-gray-50 active:bg-gray-100"
@@ -489,6 +497,39 @@
             </div>
           </div>
         </div>
+
+        <!-- Pagination Footer -->
+        <div v-if="filteredQuotations.length > 0 && pageSize !== -1" class="p-3 sm:p-4 border-t border-gray-200 bg-white rounded-b-xl flex flex-col sm:flex-row items-center justify-between gap-2.5 sm:gap-4">
+          <p class="text-[11px] sm:text-xs text-gray-500 whitespace-nowrap text-center sm:text-left">
+            Showing <span class="font-medium text-gray-900">{{ startIndex }}</span> to <span class="font-medium text-gray-900">{{ endIndex }}</span> of <span class="font-medium text-gray-900">{{ filteredQuotations.length }}</span> quotations
+          </p>
+
+          <div class="flex items-center justify-center gap-1.5 sm:gap-2">
+            <button 
+              @click="currentPage = Math.max(1, currentPage - 1)"
+              :disabled="currentPage === 1"
+              class="p-1.5 sm:px-3 sm:py-1.5 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer flex items-center gap-1"
+              title="Previous Page"
+            >
+              <ChevronLeft class="w-4 h-4" />
+              <span class="hidden sm:inline">Previous</span>
+            </button>
+
+            <span class="text-xs font-medium text-gray-700 px-1">
+              {{ currentPage }} / {{ totalPages }}
+            </span>
+
+            <button 
+              @click="currentPage = Math.min(totalPages, currentPage + 1)"
+              :disabled="currentPage === totalPages"
+              class="p-1.5 sm:px-3 sm:py-1.5 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer flex items-center gap-1"
+              title="Next Page"
+            >
+              <span class="hidden sm:inline">Next</span>
+              <ChevronRight class="w-4 h-4" />
+            </button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -525,6 +566,7 @@ import {
   Loader2,
   Phone,
   MapPin,
+  ChevronLeft,
   ChevronRight,
   AlertCircle,
   Building2,
@@ -542,6 +584,7 @@ import { getEffectiveActionPermissions } from '~/utils/permissions'
 import QuotationModal from '~/components/quotations/QuotationModal.vue'
 import ConvertQuotationModal from '~/components/quotations/ConvertQuotationModal.vue'
 import TableFilterButtons from '~/components/dashboard/TableFilterButtons.vue'
+import RowsPerPageSelect from '~/components/ui/RowsPerPageSelect.vue'
 import { rankAndFilter } from '~/utils/search'
 
 definePageMeta({
@@ -613,7 +656,7 @@ const triggerRowAnimation = () => {
   })
 }
 
-watch([() => filteredQuotations.value, isLoading], () => {
+watch([() => paginatedQuotations.value, isLoading], () => {
   triggerRowAnimation()
 })
 
@@ -732,6 +775,40 @@ const filteredQuotations = computed(() => {
     primary: q => [q.quoteNumber, q.customerName],
     secondary: q => [q.customerPlace, q.createdByName]
   })
+})
+
+// Pagination State
+const pageSize = ref(25)
+const currentPage = ref(1)
+
+const totalPages = computed(() => {
+  if (pageSize.value === -1) return 1
+  return Math.ceil(filteredQuotations.value.length / pageSize.value) || 1
+})
+
+const startIndex = computed(() => {
+  if (filteredQuotations.value.length === 0) return 0
+  return (currentPage.value - 1) * pageSize.value + 1
+})
+
+const endIndex = computed(() => {
+  if (pageSize.value === -1) return filteredQuotations.value.length
+  return Math.min(currentPage.value * pageSize.value, filteredQuotations.value.length)
+})
+
+const paginatedQuotations = computed(() => {
+  if (pageSize.value === -1) return filteredQuotations.value
+  const start = (currentPage.value - 1) * pageSize.value
+  return filteredQuotations.value.slice(start, start + pageSize.value)
+})
+
+const onPageSizeChange = (newSize: number) => {
+  pageSize.value = newSize
+  currentPage.value = 1
+}
+
+watch([searchQuery, quoteScope, salesPersonId, startDate, endDate], () => {
+  currentPage.value = 1
 })
 
 // Stats

@@ -433,7 +433,7 @@
                               <td v-if="showDiscountColumn" class="py-2 px-1 text-center font-mono font-bold text-emerald-700">{{ it.discount ? it.discount + '%' : '-' }}</td>
                               <td class="py-2 px-1 text-center font-bold text-gray-700 text-[10px]">{{ it.uom }}</td>
                               <td class="py-2 px-1.5 text-right font-mono font-black text-[#1b3b5f] whitespace-nowrap">₹{{ calculateUnitRate(it).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</td>
-                              <td class="py-2 px-1.5 text-right font-mono font-black text-gray-950 text-xs whitespace-nowrap">₹{{ formatSlipNumber(calculateLineTotal(it)) }}</td>
+                              <td class="py-2 px-1.5 text-right font-mono font-black text-gray-950 whitespace-nowrap">₹{{ formatSlipNumber(calculateLineTotal(it)) }}</td>
                             </tr>
                           </tbody>
                         </table>

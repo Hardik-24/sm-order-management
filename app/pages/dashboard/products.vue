@@ -303,34 +303,34 @@
         </div>
 
         <!-- Pagination Footer -->
-        <div v-if="filteredProducts.length > 0 && pageSize !== -1" class="p-4 border-t border-gray-100 bg-gray-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div class="text-xs text-gray-500">
+        <div v-if="filteredProducts.length > 0 && pageSize !== -1" class="p-3 sm:p-4 border-t border-gray-200 bg-white rounded-b-xl flex flex-col sm:flex-row items-center justify-between gap-2.5 sm:gap-4">
+          <p class="text-[11px] sm:text-xs text-gray-500 whitespace-nowrap text-center sm:text-left">
             Showing <span class="font-medium text-gray-900">{{ startIndex }}</span> to <span class="font-medium text-gray-900">{{ endIndex }}</span> of <span class="font-medium text-gray-900">{{ filteredProducts.length }}</span> products
-          </div>
+          </p>
 
-          <div class="flex items-center gap-2">
+          <div class="flex items-center justify-center gap-1.5 sm:gap-2">
             <button 
               @click="currentPage = Math.max(1, currentPage - 1)"
               :disabled="currentPage === 1"
-              class="p-1.5 sm:px-2.5 sm:py-1.5 border border-gray-300 rounded text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 transition-colors cursor-pointer"
+              class="p-1.5 sm:px-3 sm:py-1.5 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer flex items-center gap-1"
               title="Previous Page"
             >
-              <ChevronLeft class="w-3.5 h-3.5" />
+              <ChevronLeft class="w-4 h-4" />
               <span class="hidden sm:inline">Previous</span>
             </button>
 
-            <span class="text-xs text-gray-600 px-1 sm:px-2">
-              Page <span class="font-semibold text-gray-900">{{ currentPage }}</span> of <span class="font-semibold text-gray-900">{{ totalPages }}</span>
+            <span class="text-xs font-medium text-gray-700 px-1">
+              {{ currentPage }} / {{ totalPages }}
             </span>
 
             <button 
               @click="currentPage = Math.min(totalPages, currentPage + 1)"
               :disabled="currentPage === totalPages"
-              class="p-1.5 sm:px-2.5 sm:py-1.5 border border-gray-300 rounded text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 transition-colors cursor-pointer"
+              class="p-1.5 sm:px-3 sm:py-1.5 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer flex items-center gap-1"
               title="Next Page"
             >
               <span class="hidden sm:inline">Next</span>
-              <ChevronRight class="w-3.5 h-3.5" />
+              <ChevronRight class="w-4 h-4" />
             </button>
           </div>
         </div>
