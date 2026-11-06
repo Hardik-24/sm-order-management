@@ -591,47 +591,47 @@ const getItemsTotalQuantity = (order: Order) => {
             <!-- Pipeline Status Icons + Chevron -->
             <div class="flex items-center gap-1.5 shrink-0">
               <!-- Sidebar Operational Icons Indicator Group -->
-              <div class="flex items-center gap-1.5 bg-gray-50 border border-gray-200/80 rounded-full px-2 py-0.5" title="Pipeline Status (Approval • Packing • Billing • Delivery)">
+              <div class="flex items-center gap-2 bg-gray-50/90 border border-gray-200/90 rounded-full px-2.5 py-1 shadow-2xs" title="Pipeline Status (Approval • Packing • Billing • Delivery)">
                 <!-- Approval Icon -->
                 <div 
-                  class="flex items-center gap-0.5" 
+                  class="flex items-center gap-1" 
                   :title="getApprovalDot(order).label"
                 >
-                  <span class="w-1.5 h-1.5 rounded-full" :class="getApprovalDot(order).bg"></span>
-                  <CheckCheck class="w-2.5 h-2.5" :class="getApprovalDot(order).text" />
+                  <span class="w-2 h-2 rounded-full shrink-0" :class="getApprovalDot(order).bg"></span>
+                  <CheckCheck class="w-3.5 h-3.5 shrink-0" :class="getApprovalDot(order).text" />
                 </div>
 
-                <span class="text-gray-200 text-[9px] leading-none">|</span>
+                <span class="text-gray-300 text-[10px] leading-none select-none">|</span>
 
                 <!-- Packing Icon -->
                 <div 
-                  class="flex items-center gap-0.5" 
+                  class="flex items-center gap-1" 
                   :title="getPackingDot(order).label"
                 >
-                  <span class="w-1.5 h-1.5 rounded-full" :class="getPackingDot(order).bg"></span>
-                  <Package class="w-2.5 h-2.5" :class="getPackingDot(order).text" />
+                  <span class="w-2 h-2 rounded-full shrink-0" :class="getPackingDot(order).bg"></span>
+                  <Package class="w-3.5 h-3.5 shrink-0" :class="getPackingDot(order).text" />
                 </div>
 
-                <span class="text-gray-200 text-[9px] leading-none">|</span>
+                <span class="text-gray-300 text-[10px] leading-none select-none">|</span>
 
                 <!-- Billing Icon -->
                 <div 
-                  class="flex items-center gap-0.5" 
+                  class="flex items-center gap-1" 
                   :title="getBillingDot(order).label"
                 >
-                  <span class="w-1.5 h-1.5 rounded-full" :class="getBillingDot(order).bg"></span>
-                  <IndianRupee class="w-2.5 h-2.5" :class="getBillingDot(order).text" />
+                  <span class="w-2 h-2 rounded-full shrink-0" :class="getBillingDot(order).bg"></span>
+                  <IndianRupee class="w-3.5 h-3.5 shrink-0" :class="getBillingDot(order).text" />
                 </div>
 
-                <span class="text-gray-200 text-[9px] leading-none">|</span>
+                <span class="text-gray-300 text-[10px] leading-none select-none">|</span>
 
                 <!-- Delivery Icon -->
                 <div 
-                  class="flex items-center gap-0.5" 
+                  class="flex items-center gap-1" 
                   :title="getDeliveryDot(order).label"
                 >
-                  <span class="w-1.5 h-1.5 rounded-full" :class="getDeliveryDot(order).bg"></span>
-                  <Truck class="w-2.5 h-2.5" :class="getDeliveryDot(order).text" />
+                  <span class="w-2 h-2 rounded-full shrink-0" :class="getDeliveryDot(order).bg"></span>
+                  <Truck class="w-3.5 h-3.5 shrink-0" :class="getDeliveryDot(order).text" />
                 </div>
               </div>
 

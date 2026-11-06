@@ -39,10 +39,10 @@ export default defineEventHandler(async (event) => {
         subtotal: Number(body.subtotal) || 0,
         discountAmount: Number(body.discountAmount) || 0,
         gstAmount: Number(body.gstAmount) || 0,
-        grandTotal: Number(body.grandTotal) || 0,
-        createdById: user?.id || null,
-        createdByName: user?.name || body.createdByName || 'Sales Staff',
-        createdByRole: user?.role || 'SALES',
+        grandTotal: Math.round(Number(body.grandTotal) || 0),
+        createdById: body.createdById || user?.id || null,
+        createdByName: body.createdByName || user?.name || 'Sales Staff',
+        createdByRole: body.createdByRole || user?.role || 'SALES',
         signature: body.signature ? String(body.signature) : null
       }
     })

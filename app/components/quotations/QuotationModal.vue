@@ -379,6 +379,7 @@
                               <th class="py-2 px-2 text-center w-12">Brand</th>
                               <th class="py-2 px-2 text-center w-12">Qty</th>
                               <th class="py-2 px-2.5 text-right w-18">MRP (₹)</th>
+                              <th v-if="showDiscountColumn" class="py-2 px-2 text-center w-14">Disc %</th>
                               <th class="py-2 px-2 text-center w-10">UoM</th>
                               <th class="py-2 px-2.5 text-right w-24">Rate (₹)</th>
                               <th class="py-2 px-2.5 text-right w-24">Total (₹)</th>
@@ -397,6 +398,7 @@
                                 {{ it.quantity }}
                               </td>
                               <td class="py-2 px-2.5 text-right font-mono font-bold text-gray-700">₹{{ formatSlipNumber(it.mrp) }}</td>
+                              <td v-if="showDiscountColumn" class="py-2 px-2 text-center font-mono font-bold text-emerald-700">{{ it.discount ? it.discount + '%' : '-' }}</td>
                               <td class="py-2 px-2 text-center font-bold text-gray-700">{{ it.uom }}</td>
                               <td class="py-2 px-2.5 text-right font-mono font-black text-[#1b3b5f]">₹{{ calculateUnitRate(it).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</td>
                               <td class="py-2 px-2.5 text-right font-mono font-black text-gray-950 text-xs">₹{{ formatSlipNumber(calculateLineTotal(it)) }}</td>
@@ -463,6 +465,14 @@
                                 <td class="py-1 w-3 text-center font-mono font-bold text-sky-600">+</td>
                                 <td class="py-1 w-4 text-right font-mono font-bold text-sky-600">₹</td>
                                 <td class="py-1 text-right font-mono font-bold tabular-nums whitespace-nowrap pl-1">{{ formatSlipNumber(gstAmount) }}</td>
+                              </tr>
+
+                              <!-- Round Off -->
+                              <tr v-if="roundOffAmount !== 0" class="text-gray-600 font-medium text-[11px]">
+                                <td class="py-1 text-left pr-2">Round Off:</td>
+                                <td class="py-1 w-3 text-center font-mono">{{ roundOffAmount > 0 ? '+' : '-' }}</td>
+                                <td class="py-1 w-4 text-right font-mono">₹</td>
+                                <td class="py-1 text-right font-mono tabular-nums whitespace-nowrap pl-1">{{ Math.abs(roundOffAmount).toFixed(2) }}</td>
                               </tr>
 
                               <!-- Grand Total -->
@@ -651,7 +661,7 @@
               </div>
 
               <!-- Place / City -->
-              <div class="sm:col-span-3">
+              <div class="sm:col-span-4">
                 <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Place / City</label>
                 <input
                   v-model="customerPlace"
@@ -662,7 +672,7 @@
               </div>
 
               <!-- WhatsApp / Phone -->
-              <div class="sm:col-span-2">
+              <div class="sm:col-span-3">
                 <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Phone Number</label>
                 <div class="relative">
                   <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-[11px] font-bold">+91</span>
@@ -675,8 +685,25 @@
                 </div>
               </div>
 
+              <!-- Row 2: Quotation By (Sales Rep) -->
+              <div class="sm:col-span-5">
+                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">
+                  Quotation By (Sales Rep)
+                </label>
+                <CustomSelect
+                  :modelValue="selectedCreatorId"
+                  @update:modelValue="onCreatorSelect"
+                  :options="userOptions"
+                  searchable
+                  searchPlaceholder="Search employee..."
+                  placeholder="Select Sales Rep / Employee"
+                  class="w-full text-xs"
+                  triggerClass="px-3 py-2 text-xs font-medium"
+                />
+              </div>
+
               <!-- Validity (Days) -->
-              <div class="sm:col-span-2">
+              <div class="sm:col-span-3">
                 <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Validity (Days)</label>
                 <div class="relative">
                   <input
@@ -691,6 +718,21 @@
                     days
                   </span>
                 </div>
+              </div>
+
+              <!-- Show Disc % in Slip -->
+              <div class="sm:col-span-4 flex items-end">
+                <label class="w-full flex items-center gap-2.5 px-3 py-2 bg-white border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition h-[38px] select-none">
+                  <input
+                    v-model="showDiscountColumn"
+                    type="checkbox"
+                    class="w-4 h-4 rounded text-[#1b3b5f] focus:ring-[#1b3b5f] border-gray-300 cursor-pointer"
+                  />
+                  <div class="flex items-center gap-1.5 text-xs font-bold text-gray-700">
+                    <Percent class="w-3.5 h-3.5 text-[#1b3b5f]" />
+                    <span>Show Disc % in Slip</span>
+                  </div>
+                </label>
               </div>
             </div>
           </div>
@@ -1198,6 +1240,14 @@
                     <td class="py-1 text-right font-mono font-bold tabular-nums whitespace-nowrap pl-1">{{ formatSlipNumber(gstAmount) }}</td>
                   </tr>
 
+                  <!-- Round Off -->
+                  <tr v-if="roundOffAmount !== 0" class="text-gray-600 font-medium text-[11px]">
+                    <td class="py-1 text-left pr-2">Round Off:</td>
+                    <td class="py-1 w-3 text-center font-mono">{{ roundOffAmount > 0 ? '+' : '-' }}</td>
+                    <td class="py-1 w-4 text-right font-mono">₹</td>
+                    <td class="py-1 text-right font-mono tabular-nums whitespace-nowrap pl-1">{{ Math.abs(roundOffAmount).toFixed(2) }}</td>
+                  </tr>
+
                   <!-- Grand Total -->
                   <tr class="border-t-2 border-b-2 border-gray-300 text-[#1b3b5f] font-black">
                     <td class="py-1.5 text-left uppercase text-xs tracking-wider pr-2">Grand Total:</td>
@@ -1337,6 +1387,7 @@
               <th class="py-2.5 px-2 text-center w-14">Brand</th>
               <th class="py-2.5 px-2 text-center w-12">Qty</th>
               <th class="py-2.5 px-3 text-right w-20">MRP (₹)</th>
+              <th v-if="showDiscountColumn" class="py-2.5 px-2 text-center w-14">Disc %</th>
               <th class="py-2.5 px-2 text-center w-12">UoM</th>
               <th class="py-2.5 px-3 text-right w-28">Discounted Amount</th>
               <th class="py-2.5 px-3 text-right w-28">Total Value</th>
@@ -1355,6 +1406,7 @@
                 {{ item.quantity }}
               </td>
               <td class="py-2.5 px-3 text-right font-mono font-bold text-gray-700 text-[11px]">₹{{ formatSlipNumber(item.mrp) }}</td>
+              <td v-if="showDiscountColumn" class="py-2.5 px-2 text-center font-mono font-bold text-emerald-700 text-[11px]">{{ item.discount ? item.discount + '%' : '-' }}</td>
               <td class="py-2.5 px-2 text-center font-bold text-gray-700 text-[10px]">{{ item.uom }}</td>
               <td class="py-2.5 px-3 text-right font-mono font-black text-[#1b3b5f] text-[11px]">
                 ₹{{ calculateUnitRate(item).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
@@ -1424,6 +1476,14 @@
                   <td class="py-1 w-3 text-center font-mono font-bold text-sky-600">+</td>
                   <td class="py-1 w-4 text-right font-mono font-bold text-sky-600">₹</td>
                   <td class="py-1 text-right font-mono font-bold tabular-nums whitespace-nowrap pl-1">{{ formatSlipNumber(gstAmount) }}</td>
+                </tr>
+
+                <!-- Round Off -->
+                <tr v-if="roundOffAmount !== 0" class="text-gray-600 font-medium text-[11px]">
+                  <td class="py-1 text-left pr-2">Round Off:</td>
+                  <td class="py-1 w-3 text-center font-mono">{{ roundOffAmount > 0 ? '+' : '-' }}</td>
+                  <td class="py-1 w-4 text-right font-mono">₹</td>
+                  <td class="py-1 text-right font-mono tabular-nums whitespace-nowrap pl-1">{{ Math.abs(roundOffAmount).toFixed(2) }}</td>
                 </tr>
 
                 <!-- Grand Total -->
@@ -1609,6 +1669,7 @@
                   <th class="py-2 px-2 text-center w-14">Brand</th>
                   <th class="py-2 px-2 text-center w-12">Qty</th>
                   <th class="py-2 px-3 text-right w-20">MRP (₹)</th>
+                  <th v-if="showDiscountColumn" class="py-2 px-2 text-center w-14">Disc %</th>
                   <th class="py-2 px-2 text-center w-12">UoM</th>
                   <th class="py-2 px-3 text-right w-28">Discounted Amount</th>
                   <th class="py-2 px-3 text-right w-28">Total Value</th>
@@ -1627,6 +1688,7 @@
                     {{ item.quantity }}
                   </td>
                   <td class="py-2 px-3 text-right font-mono font-bold text-gray-700 text-[11px]">₹{{ formatSlipNumber(item.mrp) }}</td>
+                  <td v-if="showDiscountColumn" class="py-2 px-2 text-center font-mono font-bold text-emerald-700 text-[11px]">{{ item.discount ? item.discount + '%' : '-' }}</td>
                   <td class="py-2 px-2 text-center font-bold text-gray-700 text-[10px]">{{ item.uom }}</td>
                   <td class="py-2 px-3 text-right font-mono font-black text-[#1b3b5f] text-[11px]">
                     ₹{{ calculateUnitRate(item).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
@@ -1698,6 +1760,14 @@
                         <td class="py-1 w-3 text-center font-mono font-bold text-sky-600">+</td>
                         <td class="py-1 w-4 text-right font-mono font-bold text-sky-600">₹</td>
                         <td class="py-1 text-right font-mono font-bold tabular-nums whitespace-nowrap pl-1">{{ formatSlipNumber(gstAmount) }}</td>
+                      </tr>
+
+                      <!-- Round Off -->
+                      <tr v-if="roundOffAmount !== 0" class="text-gray-600 font-medium text-[11px]">
+                        <td class="py-1 text-left pr-2">Round Off:</td>
+                        <td class="py-1 w-3 text-center font-mono">{{ roundOffAmount > 0 ? '+' : '-' }}</td>
+                        <td class="py-1 w-4 text-right font-mono">₹</td>
+                        <td class="py-1 text-right font-mono tabular-nums whitespace-nowrap pl-1">{{ Math.abs(roundOffAmount).toFixed(2) }}</td>
                       </tr>
 
                       <!-- Grand Total -->
@@ -2025,7 +2095,9 @@ import {
   Database,
   UserPlus,
   ShoppingBag,
-  EyeOff
+  EyeOff,
+  ChevronDown,
+  Percent
 } from 'lucide-vue-next'
 import CustomSelect from '~/components/ui/CustomSelect.vue'
 import { toBlob, toPng, toJpeg } from 'html-to-image'
@@ -2053,6 +2125,61 @@ const isSuccessView = ref(false)
 const isEditingExisting = ref(false)
 const isAnonymousMode = ref(false)
 
+// Employees / Created By On Behalf Of
+const dbUsers = ref<any[]>([])
+const isLoadingUsers = ref(false)
+const selectedCreatorId = ref<string>('')
+const selectedCreatorName = ref<string>('')
+const selectedCreatorRole = ref<string>('')
+const showDiscountColumn = ref<boolean>(false)
+
+const loadDbUsers = async () => {
+  if (dbUsers.value.length > 0) return
+  isLoadingUsers.value = true
+  try {
+    const data = await $fetch<any[]>('/api/users')
+    dbUsers.value = (data || []).filter((u: any) => u.isActive !== false)
+    if (!selectedCreatorId.value && user.value?.id) {
+      const match = dbUsers.value.find(u => u.id === user.value?.id)
+      if (match) {
+        selectedCreatorId.value = match.id
+        selectedCreatorName.value = match.name
+        selectedCreatorRole.value = match.role
+      }
+    }
+  } catch (err) {
+    console.warn('Could not load users for quotation:', err)
+  } finally {
+    isLoadingUsers.value = false
+  }
+}
+
+const onCreatorSelect = (userId: string) => {
+  selectedCreatorId.value = userId
+  const found = dbUsers.value.find(u => u.id === userId)
+  if (found) {
+    selectedCreatorName.value = found.name
+    selectedCreatorRole.value = found.role
+  }
+}
+
+const userOptions = computed(() => {
+  if (!dbUsers.value || dbUsers.value.length === 0) {
+    if (user.value?.id) {
+      return [{
+        label: `${user.value.name} (${user.value.role || 'Staff'})`,
+        value: user.value.id
+      }]
+    }
+    return []
+  }
+  return dbUsers.value.map(u => ({
+    label: `${u.name} (${u.role || 'Staff'})`,
+    value: u.id,
+    sublabel: u.email
+  }))
+})
+
 const loadGlobalSettings = async () => {
   try {
     const res = await $fetch<{ quotationAnonymousMode: boolean }>('/api/settings')
@@ -2064,6 +2191,7 @@ const loadGlobalSettings = async () => {
   }
 }
 const displayCreatorName = computed(() => {
+  if (selectedCreatorName.value) return selectedCreatorName.value
   if (isEditingExisting.value && props.initialQuote?.createdByName) {
     return props.initialQuote.createdByName
   }
@@ -2719,11 +2847,19 @@ const gstAmount = computed(() => {
   return subtotal.value * 0.18
 })
 
-const grandTotal = computed(() => {
+const rawGrandTotal = computed(() => {
   if (taxMode.value === 'EXTRA') {
     return subtotal.value + gstAmount.value
   }
   return subtotal.value
+})
+
+const grandTotal = computed(() => {
+  return Math.round(rawGrandTotal.value)
+})
+
+const roundOffAmount = computed(() => {
+  return Number((grandTotal.value - rawGrandTotal.value).toFixed(2))
 })
 
 const displayQuoteNotes = computed(() => {
@@ -2939,14 +3075,17 @@ const executeSaveQuote = async () => {
       validityDays: Number(validityDays.value) || 7,
       taxMode: taxMode.value,
       quoteNotes: quoteNotes.value.trim() || null,
-      items: quoteItems.value,
+      showDiscountColumn: showDiscountColumn.value,
+      items: quoteItems.value.map(it => ({ ...it, showDiscountColumn: showDiscountColumn.value })),
       totalItems: quoteItems.value.length,
       totalMrp: totalMrp.value,
       subtotal: subtotal.value,
       discountAmount: totalDiscountSaved.value,
       gstAmount: gstAmount.value,
       grandTotal: grandTotal.value,
-      createdByName: user.value?.name || 'Sales Staff',
+      createdById: selectedCreatorId.value || user.value?.id || null,
+      createdByName: displayCreatorName.value,
+      createdByRole: selectedCreatorRole.value || user.value?.role || 'SALES',
       signature: signatureDataUrl.value || null
     }
 
@@ -2986,6 +3125,11 @@ const resetForNewQuote = () => {
   quoteItems.value = []
   signatureDataUrl.value = null
   hasDrawnSignature.value = false
+  showDiscountColumn.value = false
+  selectedCreatorId.value = user.value?.id || ''
+  const match = dbUsers.value.find(u => u.id === selectedCreatorId.value)
+  selectedCreatorName.value = match?.name || user.value?.name || ''
+  selectedCreatorRole.value = match?.role || user.value?.role || 'SALES'
 }
 
 // Watch initialQuote prop to open existing quotes in success/view mode
@@ -2999,6 +3143,10 @@ watch(
       customerName.value = newQuote.customerName || ''
       customerPlace.value = newQuote.customerPlace || ''
       customerPhone.value = newQuote.customerPhone || ''
+      selectedCreatorId.value = newQuote.createdById || ''
+      selectedCreatorName.value = newQuote.createdByName || ''
+      selectedCreatorRole.value = newQuote.createdByRole || ''
+      showDiscountColumn.value = Boolean(newQuote.showDiscountColumn ?? newQuote.items?.[0]?.showDiscountColumn)
       
       const match = dbCustomers.value.find(c => c.name.toLowerCase() === (newQuote.customerName || '').trim().toLowerCase())
       if (match) {
@@ -3044,6 +3192,7 @@ watch(
   (isOpen) => {
     if (isOpen) {
       loadGlobalSettings()
+      loadDbUsers()
       setupViewportObserver()
       loadDbCustomers()
       nextTick(() => {
@@ -3464,6 +3613,7 @@ watch(
 
 onMounted(() => {
   loadGlobalSettings()
+  loadDbUsers()
   preloadLogo()
   loadSheetCatalog()
   loadDbCustomers()

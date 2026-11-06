@@ -464,9 +464,15 @@
                   <span>Total Tax (GST)</span>
                   <span class="font-semibold">₹{{ grandTax.toFixed(2) }}</span>
                 </div>
+                <div v-if="roundOffAmount !== 0" class="flex justify-between items-center text-gray-600">
+                  <span>Round Off</span>
+                  <span :class="roundOffAmount >= 0 ? 'text-gray-900 font-semibold' : 'text-rose-600 font-semibold'">
+                    {{ roundOffAmount >= 0 ? '+' : '' }}₹{{ roundOffAmount.toFixed(2) }}
+                  </span>
+                </div>
                 <div class="pt-3 border-t border-gray-200 flex justify-between items-center">
                   <span class="text-xs font-bold text-gray-900 uppercase tracking-widest">Final Bill Amount</span>
-                  <span class="text-xl font-black text-[#1b3b5f]">₹{{ grandTotal.toFixed(2) }}</span>
+                  <span class="text-xl font-black text-[#1b3b5f]">₹{{ grandTotal.toLocaleString('en-IN') }}</span>
                 </div>
               </div>
             </div>
@@ -677,8 +683,16 @@ const grandTax = computed(() => {
   return editableItems.value.reduce((sum, item) => sum + calculateTax(item), 0)
 })
 
-const grandTotal = computed(() => {
+const rawGrandTotal = computed(() => {
   return editableItems.value.reduce((sum, item) => sum + calculateTotal(item), 0)
+})
+
+const grandTotal = computed(() => {
+  return Math.round(rawGrandTotal.value)
+})
+
+const roundOffAmount = computed(() => {
+  return Number((grandTotal.value - rawGrandTotal.value).toFixed(2))
 })
 
 const isCustomerUnsynced = computed(() => order.value?.customer?.isBusySynced === false)
