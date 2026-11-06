@@ -555,22 +555,24 @@ onUnmounted(() => {
           <button 
             @click="currentPage = Math.max(1, currentPage - 1)"
             :disabled="currentPage === 1"
-            class="px-2.5 py-1.5 border border-gray-300 rounded text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 transition-colors"
+            class="p-1.5 sm:px-2.5 sm:py-1.5 border border-gray-300 rounded text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 transition-colors cursor-pointer"
+            title="Previous Page"
           >
             <ChevronLeft class="w-3.5 h-3.5" />
-            Previous
+            <span class="hidden sm:inline">Previous</span>
           </button>
 
-          <span class="text-xs text-gray-600 px-2">
+          <span class="text-xs text-gray-600 px-1 sm:px-2">
             Page <span class="font-semibold text-gray-900">{{ currentPage }}</span> of <span class="font-semibold text-gray-900">{{ totalPages }}</span>
           </span>
 
           <button 
             @click="currentPage = Math.min(totalPages, currentPage + 1)"
             :disabled="currentPage === totalPages"
-            class="px-2.5 py-1.5 border border-gray-300 rounded text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 transition-colors"
+            class="p-1.5 sm:px-2.5 sm:py-1.5 border border-gray-300 rounded text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 transition-colors cursor-pointer"
+            title="Next Page"
           >
-            Next
+            <span class="hidden sm:inline">Next</span>
             <ChevronRight class="w-3.5 h-3.5" />
           </button>
         </div>

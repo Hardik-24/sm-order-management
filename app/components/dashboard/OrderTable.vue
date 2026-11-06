@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Search, Filter, MoreHorizontal, ChevronRight, Check, Calendar, X, ArrowRight, Clock, Package, Truck, IndianRupee, CheckCheck, Building2, User as UserIcon, AlertCircle } from 'lucide-vue-next'
+import { Search, Filter, MoreHorizontal, ChevronLeft, ChevronRight, Check, Calendar, X, ArrowRight, Clock, Package, Truck, IndianRupee, CheckCheck, Building2, User as UserIcon, AlertCircle } from 'lucide-vue-next'
 import { formatTime, getDisplayStatus, getOverallColor, getStatusColor } from '~~/app/lib/utils'
 import CustomSelect from '~/components/ui/CustomSelect.vue'
 import TableFilterButtons from '~/components/dashboard/TableFilterButtons.vue'
@@ -662,28 +662,32 @@ const getItemsTotalQuantity = (order: Order) => {
     </div>
 
     <!-- Pagination Bottom -->
-    <div class="p-4 border-t border-gray-200 bg-white rounded-b-xl flex items-center justify-between gap-4">
-      <p class="text-xs text-gray-500 whitespace-nowrap">
+    <div class="p-3 sm:p-4 border-t border-gray-200 bg-white rounded-b-xl flex flex-col sm:flex-row items-center justify-between gap-2.5 sm:gap-4">
+      <p class="text-[11px] sm:text-xs text-gray-500 whitespace-nowrap text-center sm:text-left">
         Showing <span class="font-medium text-gray-900">{{ orders.length ? (limit === -1 ? 1 : (page - 1) * limit + 1) : 0 }}</span>
         to <span class="font-medium text-gray-900">{{ limit === -1 ? total : Math.min(page * limit, total) }}</span>
         of <span class="font-medium text-gray-900">{{ total }}</span> orders
       </p>
 
-      <div class="flex items-center justify-center gap-2">
+      <div class="flex items-center justify-center gap-1.5 sm:gap-2">
         <button
           :disabled="page <= 1"
           @click="emit('update:page', Math.max(1, page - 1))"
-          class="px-3 py-1.5 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+          class="p-1.5 sm:px-3 sm:py-1.5 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 cursor-pointer"
+          title="Previous Page"
         >
-          Previous
+          <ChevronLeft class="w-4 h-4" />
+          <span class="hidden sm:inline">Previous</span>
         </button>
         <span class="text-xs font-medium text-gray-700 px-1">{{ page }} / {{ limit === -1 ? 1 : (Math.ceil(total / limit) || 1) }}</span>
         <button
           :disabled="limit === -1 || page * limit >= total"
           @click="emit('update:page', page + 1)"
-          class="px-3 py-1.5 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+          class="p-1.5 sm:px-3 sm:py-1.5 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 cursor-pointer"
+          title="Next Page"
         >
-          Next
+          <span class="hidden sm:inline">Next</span>
+          <ChevronRight class="w-4 h-4" />
         </button>
       </div>
     </div>

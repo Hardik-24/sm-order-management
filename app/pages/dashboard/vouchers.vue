@@ -394,9 +394,11 @@
           <button
             @click="goToPage(pagination.page - 1)"
             :disabled="pagination.page <= 1 || isLoading"
-            class="px-3 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition font-medium flex items-center justify-center gap-1 shadow-2xs cursor-pointer text-xs"
+            class="p-1.5 sm:px-3 sm:py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition font-medium flex items-center justify-center gap-1 shadow-2xs cursor-pointer text-xs"
+            title="Previous Page"
           >
-            <ChevronLeft class="w-3.5 h-3.5" /> Prev
+            <ChevronLeft class="w-3.5 h-3.5" />
+            <span class="hidden sm:inline">Prev</span>
           </button>
           <span class="sm:hidden text-xs font-semibold px-2 tabular-nums">
             {{ pagination.page }} / {{ pagination.totalPages }}
@@ -404,9 +406,11 @@
           <button
             @click="goToPage(pagination.page + 1)"
             :disabled="pagination.page >= pagination.totalPages || isLoading"
-            class="px-3 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition font-medium flex items-center justify-center gap-1 shadow-2xs cursor-pointer text-xs"
+            class="p-1.5 sm:px-3 sm:py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition font-medium flex items-center justify-center gap-1 shadow-2xs cursor-pointer text-xs"
+            title="Next Page"
           >
-            Next <ChevronRight class="w-3.5 h-3.5" />
+            <span class="hidden sm:inline">Next</span>
+            <ChevronRight class="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
