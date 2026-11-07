@@ -333,7 +333,7 @@
                       width: '794px'
                     }"
                     class="absolute left-0 top-0 shadow-2xl rounded-2xl overflow-hidden bg-white min-h-[1123px] flex flex-col justify-between text-left antialiased"
-                    style="-webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: geometricPrecision;"
+                    style="-webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: geometricPrecision; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; font-family: 'Inter', system-ui, -apple-system, sans-serif;"
                   >
                     <!-- Inner document padding -->
                     <div class="p-6 sm:p-8 space-y-6 text-gray-900">
@@ -421,7 +421,7 @@
                             <tr v-for="(it, i) in quoteItems" :key="it.id" class="border-b border-gray-100 text-[11px]">
                               <td class="py-2 px-1 text-center text-gray-500 font-bold tabular-nums">{{ i + 1 }}</td>
                               <td class="py-2 px-1.5 font-black text-[#1b3b5f] text-[11px] whitespace-nowrap tabular-nums">{{ it.articleNumber }}</td>
-                              <td class="py-2 px-2 font-bold text-gray-950 leading-snug">{{ it.description }}</td>
+                              <td class="py-2 px-2 font-bold text-gray-950 leading-[15px] break-words">{{ it.description }}</td>
                               <td class="py-2 px-1 text-center font-black text-[10px] text-gray-800 uppercase">{{ it.brand }}</td>
                               <td
                                 class="py-2 px-1 text-center font-black tabular-nums"
@@ -1340,7 +1340,7 @@
       <div
         ref="quotationCardRef"
         class="w-[794px] min-h-[1123px] bg-white text-gray-900 p-8 rounded-none border border-gray-200 font-sans shadow-none flex flex-col justify-between antialiased"
-        style="-webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: geometricPrecision; image-rendering: -webkit-optimize-contrast;"
+        style="-webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: geometricPrecision; image-rendering: -webkit-optimize-contrast; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; font-family: 'Inter', system-ui, -apple-system, sans-serif;"
       >
         <div class="space-y-6">
           <!-- Top Ribbon -->
@@ -1429,7 +1429,7 @@
             <tr v-for="(item, idx) in quoteItems" :key="item.id" class="border-b border-gray-100 text-[11px]">
               <td class="py-2 px-1 text-center text-gray-500 font-bold text-[10px] tabular-nums">{{ idx + 1 }}</td>
               <td class="py-2 px-1.5 font-black text-[#1b3b5f] text-[11px] whitespace-nowrap tabular-nums">{{ item.articleNumber }}</td>
-              <td class="py-2 px-2 font-bold text-gray-950 text-[11px] leading-snug">{{ item.description }}</td>
+              <td class="py-2 px-2 font-bold text-gray-950 text-[11px] leading-[15px] break-words">{{ item.description }}</td>
               <td class="py-2 px-1 text-center font-black text-[10px] text-gray-800 uppercase">{{ item.brand }}</td>
               <td
                 class="py-2 px-1 text-center font-black text-[11px] tabular-nums"
@@ -1569,7 +1569,7 @@
           v-for="pg in pdfPages"
           :key="pg.pageNum"
           class="pdf-page-container w-[794px] h-[1123px] bg-white text-gray-900 p-8 rounded-none border border-gray-200 font-sans shadow-none flex flex-col justify-between antialiased box-border overflow-hidden"
-          style="-webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: geometricPrecision;"
+          style="-webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: geometricPrecision; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; font-family: 'Inter', system-ui, -apple-system, sans-serif;"
         >
           <!-- Page Body -->
           <div class="space-y-4">
@@ -1711,7 +1711,7 @@
                 <tr v-for="(item, idx) in pg.items" :key="item.id" class="border-b border-gray-100 text-[11px]">
                   <td class="py-2 px-1 text-center text-gray-500 font-bold text-[10px] tabular-nums">{{ pg.startIndex + idx + 1 }}</td>
                   <td class="py-2 px-1.5 font-black text-[#1b3b5f] text-[11px] whitespace-nowrap tabular-nums">{{ item.articleNumber }}</td>
-                  <td class="py-2 px-2 font-bold text-gray-950 text-[11px] leading-snug">{{ item.description }}</td>
+                  <td class="py-2 px-2 font-bold text-gray-950 text-[11px] leading-[15px] break-words">{{ item.description }}</td>
                   <td class="py-2 px-1 text-center font-black text-[10px] text-gray-800 uppercase">{{ item.brand }}</td>
                   <td
                     class="py-2 px-1 text-center font-black text-[11px] tabular-nums"
@@ -2262,22 +2262,49 @@ interface PdfPageData {
 const pdfPages = ref<PdfPageData[]>([])
 const pdfPagesContainerRef = ref<HTMLElement | null>(null)
 
+/**
+ * Computes a deterministic height (in px) for a quotation table row.
+ * Eliminates platform/browser measurement differences between Android, iOS, and PC.
+ */
+function getDeterministicRowHeight(item: any): number {
+  const desc = String(item?.description || item?.productName || item?.product?.name || '').trim()
+  const linesByBreak = desc.split(/\r?\n/)
+  let totalVisualLines = 0
+  for (const line of linesByBreak) {
+    // In our ~254px-298px column with 11px Inter, ~42 characters fit per line
+    const visual = Math.max(1, Math.ceil(line.length / 42))
+    totalVisualLines += visual
+  }
+  const lines = Math.max(1, totalVisualLines)
+  // Base row height (py-2 is 16px vertical padding + 1px border) = 17px
+  // Plus exact line-height of 15px per line
+  // 1 line  = 19 + 15 = 34px
+  // 2 lines = 19 + 30 = 49px
+  // 3 lines = 19 + 45 = 64px
+  // 4 lines = 19 + 60 = 79px
+  return 19 + lines * 15
+}
+
 function paginateQuoteItems(
   items: any[],
-  rowHeights: number[]
+  rowHeights?: number[]
 ): PdfPageData[] {
   if (items.length === 0) {
     return [{ pageNum: 1, items: [], startIndex: 0, isFirst: true, isLast: true }]
   }
 
-  // 1123px total A4 height - 64px padding (p-8) - 40px footer = 1019px usable
-  const USABLE_H = 1015
-  const P1_HEADER_H = 285      // Page 1 ribbon + large header + customer box
-  const CONT_HEADER_H = 165    // Page 2+ ribbon + compact header + customer bar
-  const TOTALS_H = 270         // Availability legend + terms + totals box + nondisclosure
-  const BUFFER = 25            // Generous safety margin against font/subpixel variations
+  // 1123px total A4 height - 64px padding (p-8) - 49px footer = 1010px usable
+  const USABLE_H = 1010
+  const P1_HEADER_H = 275      // Page 1 ribbon + large header + customer box + table thead
+  const CONT_HEADER_H = 175    // Page 2+ ribbon + compact header + customer bar + table thead
+  const TOTALS_H = 215         // Availability legend + terms + totals box + nondisclosure
+  const BUFFER = 15            // Generous safety margin against font/subpixel variations
 
-  const totalRowsH = rowHeights.reduce((sum, h) => sum + (h || 38), 0)
+  const heights = (rowHeights && rowHeights.length === items.length)
+    ? rowHeights
+    : items.map(getDeterministicRowHeight)
+
+  const totalRowsH = heights.reduce((sum, h) => sum + (h || 34), 0)
 
   // Case 1: All items + Totals fit comfortably on 1 single page
   if (P1_HEADER_H + totalRowsH + TOTALS_H + BUFFER <= USABLE_H) {
@@ -2302,7 +2329,7 @@ function paginateQuoteItems(
     // Check if ALL remaining items can fit on this page WITH the totals block
     let remainingRowsH = 0
     for (let k = currentIndex; k < items.length; k++) {
-      remainingRowsH += (rowHeights[k] || 38)
+      remainingRowsH += (heights[k] || 34)
     }
 
     if (headerH + remainingRowsH + TOTALS_H + BUFFER <= USABLE_H) {
@@ -2323,17 +2350,19 @@ function paginateQuoteItems(
 
     while (
       currentIndex + countOnThisPage < items.length &&
-      currentRowsH + (rowHeights[currentIndex + countOnThisPage] || 38) <= maxAvailableRowsH
+      currentRowsH + (heights[currentIndex + countOnThisPage] || 34) <= maxAvailableRowsH
     ) {
-      currentRowsH += (rowHeights[currentIndex + countOnThisPage] || 38)
+      currentRowsH += (heights[currentIndex + countOnThisPage] || 34)
       countOnThisPage++
     }
 
     if (countOnThisPage === 0) countOnThisPage = 1
 
     // If this would consume ALL items, but we know totals didn't fit,
-    // push at least 1 item to the next page so the final page has items with the totals
-    if (currentIndex + countOnThisPage === items.length && countOnThisPage > 1) {
+    // push at least 1 or 2 items to the next page so the final page has items with the totals
+    if (currentIndex + countOnThisPage === items.length && countOnThisPage > 2) {
+      countOnThisPage = Math.max(1, countOnThisPage - 2)
+    } else if (currentIndex + countOnThisPage === items.length && countOnThisPage > 1) {
       countOnThisPage--
     }
 
@@ -3280,10 +3309,8 @@ const exportQuote = async (action: 'whatsapp' | 'download' | 'pdf' | 'print') =>
     if (action === 'whatsapp') {
       showSaved('Generating high-resolution quotation PDF for WhatsApp...')
 
-      // 1. Measure real row heights from the mounted off-screen quotationCardRef
-      const tbody = el.querySelector<HTMLElement>('table tbody')
-      const trElements = tbody ? Array.from(tbody.querySelectorAll<HTMLElement>('tr')) : []
-      const rowHeights = trElements.map((tr) => tr.offsetHeight || 38)
+      // 1. Calculate deterministic row heights (identical across Android, iOS, Windows, and Mac)
+      const rowHeights = quoteItems.value.map(getDeterministicRowHeight)
 
       // 2. Compute exact page division so no page ever overflows or cuts a row
       const pages = paginateQuoteItems(quoteItems.value, rowHeights)
@@ -3294,7 +3321,7 @@ const exportQuote = async (action: 'whatsapp' | 'download' | 'pdf' | 'print') =>
       if (typeof document !== 'undefined' && document.fonts) {
         await document.fonts.ready
       }
-      await new Promise((r) => setTimeout(r, 80))
+      await new Promise((r) => setTimeout(r, 100))
 
       // 4. Query the generated A4 page containers
       const pageContainers = pdfPagesContainerRef.value?.querySelectorAll<HTMLElement>('.pdf-page-container')
@@ -3439,10 +3466,8 @@ const exportQuote = async (action: 'whatsapp' | 'download' | 'pdf' | 'print') =>
       showSaved('Quotation image saved to your downloads!')
     } else if (action === 'pdf' || action === 'print') {
       // ── Dedicated Multi-Page PDF & Print Generation ─────────────────────────
-      // 1. Measure real row heights from the mounted off-screen quotationCardRef
-      const tbody = el.querySelector<HTMLElement>('table tbody')
-      const trElements = tbody ? Array.from(tbody.querySelectorAll<HTMLElement>('tr')) : []
-      const rowHeights = trElements.map((tr) => tr.offsetHeight || 38)
+      // 1. Calculate deterministic row heights (identical across Android, iOS, Windows, and Mac)
+      const rowHeights = quoteItems.value.map(getDeterministicRowHeight)
 
       // 2. Compute exact page division so no page ever overflows or cuts a row
       const pages = paginateQuoteItems(quoteItems.value, rowHeights)
@@ -3454,7 +3479,7 @@ const exportQuote = async (action: 'whatsapp' | 'download' | 'pdf' | 'print') =>
         await document.fonts.ready
       }
       // Small pause to guarantee font rendering and layout settle
-      await new Promise((r) => setTimeout(r, 80))
+      await new Promise((r) => setTimeout(r, 100))
 
       // 4. Query the generated A4 page containers
       const pageContainers = pdfPagesContainerRef.value?.querySelectorAll<HTMLElement>('.pdf-page-container')
