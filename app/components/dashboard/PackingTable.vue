@@ -244,8 +244,8 @@ const getPackingProgress = (order: any) => {
                   </span>
                   <span v-if="order.customer?.isPriorityClient" class="text-amber-500 font-bold text-xs shrink-0" title="Priority Client">★</span>
                 </div>
-                <p class="text-[11px] text-gray-500 truncate mt-0.5" :title="[order.customer?.company, order.customer?.city || order.customer?.phone].filter(Boolean).join(' • ') || '—'">
-                  {{ [order.customer?.company, order.customer?.city || order.customer?.phone].filter(Boolean).join(' • ') || '—' }}
+                <p class="text-[11px] text-gray-500 truncate mt-0.5" :title="[order.customer?.phone, order.customer?.city].filter(Boolean).join(' • ') || '—'">
+                  {{ [order.customer?.phone, order.customer?.city].filter(Boolean).join(' • ') || '—' }}
                 </p>
               </td>
 

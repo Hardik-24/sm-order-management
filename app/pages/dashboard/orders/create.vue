@@ -1086,7 +1086,7 @@ const getCustomerInitials = (name: string) => {
 
     <!-- ── Rate Calculator Modal (A × B × Rate per Sq.ft) ────────────────────── -->
     <Teleport to="body">
-      <div v-if="isRateCalcOpen" class="fixed inset-0 z-[300] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs">
+      <div v-if="isRateCalcOpen" data-modal-container class="fixed inset-0 z-[310] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-4 sm:p-5 border border-gray-100 space-y-3 animate-in fade-in zoom-in-95 duration-150">
           <!-- Modal Header -->
           <div class="flex items-center justify-between border-b border-gray-100 pb-2.5">
@@ -1102,6 +1102,8 @@ const getCustomerInitials = (name: string) => {
             <button 
               type="button" 
               @click="isRateCalcOpen = false" 
+              data-modal-close="true"
+              aria-label="Close"
               class="text-gray-400 hover:text-gray-600 p-1.5 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
             >
               <X class="w-4 h-4" />
@@ -1132,9 +1134,6 @@ const getCustomerInitials = (name: string) => {
           <div class="p-2.5 sm:p-3 bg-slate-50/90 rounded-xl border border-gray-200/90 space-y-2">
             <div class="flex items-center justify-between">
               <span class="text-[11px] font-bold text-gray-700 uppercase tracking-wider">Sheet Dimensions</span>
-              <span class="text-xs font-mono font-bold text-[#1b3b5f] bg-white px-2 py-0.5 rounded-md border border-gray-200 shadow-2xs">
-                Area: <strong class="font-black text-[#1b3b5f]">{{ calcLength }} × {{ calcWidth }} = {{ calcSqftArea }} sq.ft</strong>
-              </span>
             </div>
 
             <div class="flex items-center gap-2">
@@ -1199,6 +1198,7 @@ const getCustomerInitials = (name: string) => {
             <button
               type="button"
               @click="isRateCalcOpen = false"
+              data-modal-close="true"
               class="px-3.5 py-1.5 border border-gray-300 text-gray-700 rounded-xl text-xs font-bold hover:bg-gray-50 transition cursor-pointer"
             >
               Cancel

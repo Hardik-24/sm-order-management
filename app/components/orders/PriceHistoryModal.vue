@@ -2,6 +2,7 @@
   <Teleport to="body">
     <div
       v-if="modelValue"
+      data-modal-container
       class="fixed inset-0 z-[320] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150"
       @click.self="close"
     >
@@ -35,6 +36,8 @@
           <button
             type="button"
             @click="close"
+            data-modal-close="true"
+            aria-label="Close"
             class="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors shrink-0 cursor-pointer"
           >
             <X class="w-4 h-4" />
@@ -177,6 +180,7 @@
           <button
             type="button"
             @click="close"
+            data-modal-close="true"
             class="px-4 py-1.5 border border-gray-300 text-gray-700 rounded-xl font-bold hover:bg-white transition cursor-pointer"
           >
             Close

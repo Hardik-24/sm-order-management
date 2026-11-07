@@ -269,8 +269,7 @@ const shouldShowCustomerCompany = (customer?: { name?: string | null; company?: 
 
 const getCustomerSubtitle = (customer?: any) => {
   if (!customer) return '—'
-  const company = shouldShowCustomerCompany(customer) ? customer.company.trim() : null
-  return [company, customer.city || customer.phone].filter(Boolean).join(' • ') || '—'
+  return [customer.phone, customer.city].filter(Boolean).join(' • ') || '—'
 }
 
 const getItemsTotalQuantity = (order: Order) => {

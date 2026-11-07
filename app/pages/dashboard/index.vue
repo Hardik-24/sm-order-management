@@ -5,7 +5,6 @@ import { formatDate } from '~/lib/utils'
 
 import StatCards from '~/components/dashboard/StatCards.vue'
 import OrderVolumeChart from '~/components/dashboard/OrderVolumeChart.vue'
-import NeedsAttention from '~/components/dashboard/NeedsAttention.vue'
 import OrderTable from '~/components/dashboard/OrderTable.vue'
 
 import OrderDetailPanel from '~/components/dashboard/OrderDetailPanel.vue'
@@ -353,14 +352,9 @@ const handleOrderSelect = (orderId: string) => {
     <StatCards :stats="dashboardData" :isLoading="dashboardPending" />
   </div>
 
-  <!-- Order Velocity Chart / Analysis (Mobile: #5 at bottom, Desktop: Row 3 left 3-cols) -->
-  <div class="col-span-1 lg:col-span-3 order-5 lg:order-3">
+  <!-- Order Velocity Chart / Analysis (Mobile: #5 at bottom, Desktop: Row 3 full-width) -->
+  <div class="col-span-1 lg:col-span-5 order-5 lg:order-3">
     <OrderVolumeChart :trends="dashboardData?.orderTrends" :isLoading="dashboardPending" />
-  </div>
-
-  <!-- Needs Attention (Mobile: #3 right after recent orders, Desktop: Row 3 right 2-cols) -->
-  <div class="col-span-1 lg:col-span-2 order-3 lg:order-4">
-    <NeedsAttention :items="dashboardData?.needsAttention || []" />
   </div>
 
   <!-- Recent Orders Table (Mobile: #2 right under header, Desktop: Row 4 full-width) -->

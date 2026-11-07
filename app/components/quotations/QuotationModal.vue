@@ -520,8 +520,8 @@
                       </div>
 
                       <!-- Nondisclosure Obligations Notice -->
-                      <div class="pt-3 border-t border-gray-100 text-[9px] text-gray-400 leading-relaxed">
-                        <strong class="font-black text-gray-600 uppercase tracking-wider">Nondisclosure obligations:</strong>
+                      <div class="pt-3 border-t border-gray-200 text-[9px] text-black leading-relaxed">
+                        <strong class="font-bold text-black uppercase tracking-wider">Nondisclosure obligations:</strong>
                         In general, recipients of confidential information are subject to an affirmative duty to keep the information confidential, and not to disclose it to third parties except as expressly permitted by the agreement.
                       </div>
                     </div>
@@ -1523,8 +1523,8 @@
         </div>
 
         <!-- Nondisclosure Obligations Notice -->
-        <div class="pt-3 border-t border-gray-100 text-[9px] text-gray-400 leading-relaxed">
-          <span class="font-bold text-gray-500 uppercase tracking-wider">Nondisclosure obligations:</span>
+        <div class="pt-3 border-t border-gray-200 text-[9px] text-black leading-relaxed">
+          <span class="font-bold text-black uppercase tracking-wider">Nondisclosure obligations:</span>
           In general, recipients of confidential information are subject to an affirmative duty to keep the information confidential, and not to disclose it to third parties except as expressly permitted by the agreement.
         </div>
         </div>
@@ -1807,8 +1807,8 @@
               </div>
 
               <!-- Nondisclosure Obligations Notice -->
-              <div class="pt-2 border-t border-gray-100 text-[9px] text-gray-400 leading-relaxed">
-                <span class="font-bold text-gray-500 uppercase tracking-wider">Nondisclosure obligations:</span>
+              <div class="pt-2 border-t border-gray-200 text-[9px] text-black leading-relaxed">
+                <span class="font-bold text-black uppercase tracking-wider">Nondisclosure obligations:</span>
                 In general, recipients of confidential information are subject to an affirmative duty to keep the information confidential, and not to disclose it to third parties except as expressly permitted by the agreement.
               </div>
             </div>

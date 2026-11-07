@@ -71,6 +71,15 @@ export default defineNuxtPlugin(() => {
         if (!isNaN(z) && z > 0) {
           return z
         }
+        // Backup check for Tailwind z-[...] or z-... class on the element
+        const classStr = current.className || ''
+        if (typeof classStr === 'string') {
+          const match = classStr.match(/\bz-\[(\d+)\]/) || classStr.match(/\bz-(\d+)\b/)
+          if (match && match[1]) {
+            const classZ = parseInt(match[1], 10)
+            if (!isNaN(classZ) && classZ > 0) return classZ
+          }
+        }
         current = current.parentElement
       }
       return 0
@@ -81,30 +90,17 @@ export default defineNuxtPlugin(() => {
      * Returns true if a modal was found and dismissed.
      */
     function tryCloseTopmostModal(): boolean {
-      // 1. Direct search for explicitly tagged close buttons
+      // 1. Gather visible explicit close buttons
       const explicitCloseButtons = Array.from(
         document.querySelectorAll<HTMLElement>('[data-modal-close="true"], [data-modal-close], .modal-close-btn')
       ).filter(btn => {
+        const style = window.getComputedStyle(btn)
+        if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') return false
         const rect = btn.getBoundingClientRect()
         return rect.width > 0 && rect.height > 0
       })
 
-      if (explicitCloseButtons.length > 0) {
-        // Sort buttons by their container's effective z-index descending so top-most layered modal closes first
-        explicitCloseButtons.sort((a, b) => {
-          const zA = getElementZIndex(a)
-          const zB = getElementZIndex(b)
-          if (zA !== zB) return zB - zA
-          // If equal z-index, pick the one later in the DOM
-          return 0
-        })
-
-        const topBtn = explicitCloseButtons[0]
-        topBtn.click()
-        return true
-      }
-
-      // 2. Scan all visible full-screen overlays, slide-overs, and modal containers
+      // 2. Gather visible modal overlays / dialog containers
       const overlays = Array.from(
         document.querySelectorAll<HTMLElement>(
           '[data-modal-container], [role="dialog"], [aria-modal="true"], div.fixed.inset-0, div.fixed.inset-x-0'
@@ -118,17 +114,70 @@ export default defineNuxtPlugin(() => {
         return rect.width > 0 && rect.height > 0
       })
 
+      // Determine top explicit close button and its effective z-index
+      let topExplicitBtn: HTMLElement | null = null
+      let topExplicitZ = -1
+
+      if (explicitCloseButtons.length > 0) {
+        explicitCloseButtons.sort((a, b) => {
+          const zA = getElementZIndex(a)
+          const zB = getElementZIndex(b)
+          if (zA !== zB) return zB - zA
+          // If equal z-index, later in DOM comes first
+          return 0
+        })
+        topExplicitBtn = explicitCloseButtons[0]
+        topExplicitZ = getElementZIndex(topExplicitBtn)
+      }
+
+      // Determine top overlay and its effective z-index
+      let topOverlay: HTMLElement | null = null
+      let topOverlayZ = -1
+
       if (overlays.length > 0) {
-        // Sort by effective z-index descending
         overlays.sort((a, b) => {
           const zA = getElementZIndex(a)
           const zB = getElementZIndex(b)
           return zB - zA
         })
+        topOverlay = overlays[0]
+        topOverlayZ = getElementZIndex(topOverlay)
+      }
 
-        const topOverlay = overlays[0]
+      // If an overlay is top-most (strictly higher z-index than explicit close button), close that overlay
+      if (topOverlay && topOverlayZ > topExplicitZ) {
+        const candidateBtn = topOverlay.querySelector<HTMLElement>(
+          '[data-modal-close="true"], [data-modal-close], .modal-close-btn, button[title*="close" i], button[title*="cancel" i], button[aria-label*="close" i], button[aria-label*="cancel" i]'
+        ) || Array.from(topOverlay.querySelectorAll<HTMLElement>('button')).find(btn => {
+          if (btn.querySelector('svg.lucide-x, svg[data-lucide="x"]')) return true
+          const svg = btn.querySelector('svg')
+          if (svg && (svg.innerHTML.includes('18 6 6 18') || svg.innerHTML.includes('M18 6'))) return true
+          const text = (btn.textContent || '').trim().toLowerCase()
+          return text === 'close' || text === 'cancel' || text === 'dismiss' || text === 'go back'
+        })
 
-        // Find candidate close button inside topOverlay
+        if (candidateBtn) {
+          candidateBtn.click()
+          return true
+        }
+
+        const backdrop = topOverlay.querySelector<HTMLElement>(
+          '[data-modal-backdrop], .modal-backdrop, [class*="bg-black"], [class*="backdrop-blur"]'
+        )
+        if (backdrop && typeof backdrop.click === 'function') {
+          backdrop.click()
+          return true
+        }
+      }
+
+      // Otherwise if we have an explicit close button with equal or higher z-index, click it
+      if (topExplicitBtn) {
+        topExplicitBtn.click()
+        return true
+      }
+
+      // Fallback: if topOverlay exists
+      if (topOverlay) {
         const candidateBtn = topOverlay.querySelector<HTMLElement>(
           'button[title*="close" i], button[title*="cancel" i], button[aria-label*="close" i], button[aria-label*="cancel" i]'
         ) || Array.from(topOverlay.querySelectorAll<HTMLElement>('button')).find(btn => {
@@ -144,7 +193,6 @@ export default defineNuxtPlugin(() => {
           return true
         }
 
-        // Fallback: backdrop click inside topOverlay
         const backdrop = topOverlay.querySelector<HTMLElement>(
           '[data-modal-backdrop], .modal-backdrop, [class*="bg-black"], [class*="backdrop-blur"]'
         )
