@@ -274,6 +274,35 @@ const onTaxInclusiveToggle = (item: any) => {
   }
 }
 
+// ── Price History Modal State ────────────────────────────────────────────────
+const isPriceHistoryOpen = ref(false)
+const priceHistoryTargetIndex = ref<number | null>(null)
+const priceHistoryProductId = ref<string | null>(null)
+const priceHistoryProductName = ref<string>('')
+const priceHistoryProductSku = ref<string>('')
+
+const openPriceHistoryModal = (item: any, idx: number) => {
+  if (!item.productId) return
+  priceHistoryTargetIndex.value = idx
+  priceHistoryProductId.value = item.productId
+  const p = (products.value as any[])?.find((prod: any) => prod.id === item.productId)
+  priceHistoryProductName.value = p?.name || item.name || 'Product'
+  priceHistoryProductSku.value = p?.sku || ''
+  isPriceHistoryOpen.value = true
+}
+
+const onApplyPriceHistory = (data: { rate: number; isTaxInclusive?: boolean; voucherNo?: string }) => {
+  if (priceHistoryTargetIndex.value !== null && form.value.items[priceHistoryTargetIndex.value]) {
+    const item = form.value.items[priceHistoryTargetIndex.value]
+    item.unitPrice = data.rate
+    if (data.isTaxInclusive !== undefined) {
+      item.isTaxInclusive = data.isTaxInclusive
+    }
+    item.applyLastPrice = true
+    showSaved(`Applied historical rate ₹${data.rate.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`)
+  }
+}
+
 const calculateItemTotals = (item: { quantity: number; unitPrice: number; taxRate?: number; isTaxInclusive?: boolean }) => {
   const qty = Number(item.quantity || 0)
   const rate = Number(item.unitPrice || 0)
@@ -911,15 +940,17 @@ const getCustomerInitials = (name: string) => {
                 <span v-else class="text-[10px] text-gray-500">(+{{ item.taxRate ?? 0 }}% Tax)</span>
               </label>
 
-              <!-- Last Billed Price Interactive Pill (UNTOUCHED) -->
+              <!-- Last Billed Price Interactive Pill with Full History Modal on Click -->
               <div v-if="form.customerId && item.productId" class="flex items-center">
                 <!-- If Price History Exists -->
                 <div 
                   v-if="historicalPricesMap[item.productId]" 
-                  class="inline-flex items-center gap-2 px-2.5 py-1 rounded-lg text-xs transition border"
+                  @click="openPriceHistoryModal(item, idx)"
+                  class="inline-flex items-center gap-2 px-2.5 py-1 rounded-lg text-xs transition border cursor-pointer hover:shadow-xs select-none"
                   :class="item.applyLastPrice 
                     ? 'bg-emerald-50 text-emerald-900 border-emerald-300 shadow-xs ring-1 ring-emerald-400/30' 
                     : 'bg-amber-50/90 text-amber-900 border-amber-200 hover:bg-amber-100/80'"
+                  title="Click to view complete price history for Current Party & All Parties"
                 >
                   <span class="w-1.5 h-1.5 rounded-full shrink-0" :class="item.applyLastPrice ? 'bg-emerald-600' : 'bg-amber-500'"></span>
                   <span>
@@ -932,9 +963,13 @@ const getCustomerInitials = (name: string) => {
                     </span>
                   </span>
 
+                  <span class="text-[10px] text-sky-700 font-bold hover:underline flex items-center gap-0.5 ml-0.5">
+                    History &rarr;
+                  </span>
+
                   <button
                     type="button"
-                    @click="applyHistoricalPrice(item, historicalPricesMap[item.productId])"
+                    @click.stop="applyHistoricalPrice(item, historicalPricesMap[item.productId])"
                     class="ml-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase transition cursor-pointer select-none"
                     :class="item.applyLastPrice 
                       ? 'bg-emerald-600 text-white shadow-xs' 
@@ -1172,5 +1207,16 @@ const getCustomerInitials = (name: string) => {
         </div>
       </div>
     </Teleport>
+
+    <!-- ── Price History Modal (Current Party & All Parties) ──────────── -->
+    <PriceHistoryModal
+      v-model="isPriceHistoryOpen"
+      :product-id="priceHistoryProductId"
+      :product-name="priceHistoryProductName"
+      :product-sku="priceHistoryProductSku"
+      :customer-id="form.customerId"
+      :customer-name="selectedCustomer?.name"
+      @apply-price="onApplyPriceHistory"
+    />
   </div>
 </template>

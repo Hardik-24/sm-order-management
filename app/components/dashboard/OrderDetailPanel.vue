@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, computed, nextTick } from 'vue'
-import { X, MoreHorizontal, Lock, Edit, Package, PackageCheck, Truck, Check, Box, Plus, Trash2, MapPin, AlertCircle, AlertTriangle, Ban, CheckCheck, CheckCircle2, Zap, User, IndianRupee, Clock, Building2, Phone, FileText, Calendar, Copy, ChevronRight, Car, GitFork, SlidersHorizontal, Loader2, Save, Link2, UserCheck } from 'lucide-vue-next'
+import { X, MoreHorizontal, Lock, Edit, Package, PackageCheck, Truck, Check, Box, Plus, Trash2, MapPin, AlertCircle, AlertTriangle, Ban, CheckCheck, CheckCircle2, Zap, User, IndianRupee, Clock, Building2, Phone, FileText, Calendar, Copy, ChevronRight, Car, GitFork, SlidersHorizontal, Loader2, Save, Link2, UserCheck, Calculator } from 'lucide-vue-next'
 import StatusBadge from '~/components/ui/StatusBadge.vue'
 import GenerateBillModal from '~/components/dashboard/GenerateBillModal.vue'
 import SetDeliveryPinModal from '~/components/dashboard/SetDeliveryPinModal.vue'
@@ -54,7 +54,7 @@ const onAdminStatusUpdated = (updatedOrder: any) => {
 }
 
 const { showEditing, showSaving, showSaved, showError, hide } = useSnackbar()
-const { paymentTermsOptions } = useMasters()
+const { paymentTermsOptions, sheetSizesOptions } = useMasters()
 const { notifyChange, onOrderSync } = useRealtimeSync()
 const { animateStagger, animateModalOpen, initContext } = useGsapAnimation()
 const itemsTbodyRef = ref<HTMLElement | null>(null)
@@ -802,7 +802,168 @@ const openEditModal = async () => {
   editForm.value = newForm
   initialFormState.value = JSON.stringify(newForm)
   isEditLoading.value = false
+
+  // Fetch price history for existing items
+  if (newForm.customerId) {
+    const pIds = newForm.items.map((it: any) => it.productId).filter(Boolean)
+    if (pIds.length > 0) {
+      fetchEditHistoricalPricesForList(newForm.customerId, pIds)
+    }
+  }
 }
+
+// ── Historical Prices Lookup in Edit Order Modal ──────────────────────────────
+const editHistoricalPricesMap = ref<Record<string, any>>({})
+const editLoadingPrices = ref<Record<string, boolean>>({})
+
+const fetchEditHistoricalPrice = async (customerId: string, productId: string) => {
+  if (!customerId || !productId) return
+  editLoadingPrices.value[productId] = true
+  try {
+    const res = await $fetch<any>(`/api/customers/${customerId}/last-prices`, {
+      method: 'POST',
+      body: { productIds: [productId] }
+    })
+    if (res.prices && res.prices[productId]) {
+      editHistoricalPricesMap.value[productId] = res.prices[productId]
+    } else {
+      editHistoricalPricesMap.value[productId] = null
+    }
+  } catch (err) {
+    console.error('Failed to fetch historical price in edit modal:', err)
+  } finally {
+    editLoadingPrices.value[productId] = false
+  }
+}
+
+const fetchEditHistoricalPricesForList = async (customerId: string, productIds: string[]) => {
+  const missing = productIds.filter(pId => pId && editHistoricalPricesMap.value[pId] === undefined)
+  if (!customerId || missing.length === 0) return
+  for (const id of missing) {
+    editLoadingPrices.value[id] = true
+  }
+  try {
+    const res = await $fetch<any>(`/api/customers/${customerId}/last-prices`, {
+      method: 'POST',
+      body: { productIds: missing }
+    })
+    if (res.prices) {
+      for (const pId of missing) {
+        editHistoricalPricesMap.value[pId] = res.prices[pId] || null
+      }
+    }
+  } catch (err) {
+    console.error('Failed to fetch historical prices list in edit modal:', err)
+  } finally {
+    for (const id of missing) {
+      editLoadingPrices.value[id] = false
+    }
+  }
+}
+
+const applyEditHistoricalPrice = (item: any, hp: any) => {
+  if (!hp) return
+  if (item.isTaxInclusive) {
+    item.unitPrice = Number(hp.unitPrice)
+  } else {
+    item.unitPrice = Number(hp.basePrice)
+  }
+  if (hp.taxRate !== undefined && hp.taxRate !== null) {
+    item.taxRate = Number(hp.taxRate)
+  }
+  item.applyLastPrice = true
+}
+
+const onEditTaxInclusiveToggle = (item: any) => {
+  const hp = editHistoricalPricesMap.value[item.productId]
+  if (item.applyLastPrice && hp) {
+    if (item.isTaxInclusive) {
+      item.unitPrice = Number(hp.unitPrice)
+    } else {
+      item.unitPrice = Number(hp.basePrice)
+    }
+  }
+}
+
+// ── Rate Calculator State (A × B × Rate per sq.ft) ──────────────────────────
+const isEditRateCalcOpen = ref(false)
+const editCalcItemIndex = ref<number | null>(null)
+const editCalcLength = ref<number>(8)
+const editCalcWidth = ref<number>(4)
+const editCalcSqftRate = ref<number>(0)
+
+const setEditCalcSize = (l: number, w: number) => {
+  editCalcLength.value = l
+  editCalcWidth.value = w
+}
+
+const editCalcSqftArea = computed(() => {
+  const l = Number(editCalcLength.value || 0)
+  const w = Number(editCalcWidth.value || 0)
+  return Number((l * w).toFixed(3))
+})
+
+const editCalcTotalRate = computed(() => {
+  const area = editCalcSqftArea.value
+  const rate = Number(editCalcSqftRate.value || 0)
+  return Number((area * rate).toFixed(2))
+})
+
+const openEditRateCalculator = (idx: number) => {
+  editCalcItemIndex.value = idx
+  const defaultSize = (sheetSizesOptions.value || []).find((s: any) => s.isDefault) || (sheetSizesOptions.value || [])[0]
+  editCalcLength.value = defaultSize?.length || 8
+  editCalcWidth.value = defaultSize?.width || 4
+  const currentItem = editForm.value.items[idx]
+  const currentArea = editCalcLength.value * editCalcWidth.value
+  if (currentItem && currentItem.unitPrice > 0) {
+    editCalcSqftRate.value = currentArea > 0 ? Number((currentItem.unitPrice / currentArea).toFixed(2)) : 0
+  } else {
+    editCalcSqftRate.value = 0
+  }
+  isEditRateCalcOpen.value = true
+}
+
+const applyEditCalculatedRate = () => {
+  if (editCalcItemIndex.value !== null && editForm.value.items[editCalcItemIndex.value]) {
+    editForm.value.items[editCalcItemIndex.value].unitPrice = editCalcTotalRate.value
+    showSaved(`Applied rate ₹${editCalcTotalRate.value.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`)
+  }
+  isEditRateCalcOpen.value = false
+}
+
+// ── Price History Modal State in Edit Order Modal ────────────────────────────
+const isEditPriceHistoryOpen = ref(false)
+const editPriceHistoryTargetIndex = ref<number | null>(null)
+const editPriceHistoryProductId = ref<string | null>(null)
+const editPriceHistoryProductName = ref<string>('')
+const editPriceHistoryProductSku = ref<string>('')
+
+const openEditPriceHistoryModal = (item: any, idx: number) => {
+  if (!item.productId) return
+  editPriceHistoryTargetIndex.value = idx
+  editPriceHistoryProductId.value = item.productId
+  const p = productsList.value.find((prod: any) => prod.id === item.productId)
+  editPriceHistoryProductName.value = p?.name || item.name || 'Product'
+  editPriceHistoryProductSku.value = p?.sku || ''
+  isEditPriceHistoryOpen.value = true
+}
+
+const onApplyEditPriceHistory = (data: { rate: number; isTaxInclusive?: boolean; voucherNo?: string }) => {
+  if (editPriceHistoryTargetIndex.value !== null && editForm.value.items[editPriceHistoryTargetIndex.value]) {
+    const item = editForm.value.items[editPriceHistoryTargetIndex.value]
+    item.unitPrice = data.rate
+    if (data.isTaxInclusive !== undefined) {
+      item.isTaxInclusive = data.isTaxInclusive
+    }
+    item.applyLastPrice = true
+    showSaved(`Applied historical rate ₹${data.rate.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`)
+  }
+}
+
+const selectedEditCustomerName = computed(() => {
+  return customersList.value.find((c: any) => c.id === editForm.value.customerId)?.name || order.value?.customer?.name || ''
+})
 
 const addEditItem = () => {
   editForm.value.items.push({ 
@@ -826,11 +987,17 @@ const onEditCustomerChange = () => {
     const fullAddress = [c.address, c.city, c.state].filter(Boolean).join(', ')
     editForm.value.deliveryAddress = `${fullAddress}${c.pincode ? ' - ' + c.pincode : ''}`
     editForm.value.paymentTerms = c.paymentTerms || 'Net 30'
+    editHistoricalPricesMap.value = {}
+    const pIds = editForm.value.items.map((it: any) => it.productId).filter(Boolean)
+    if (pIds.length > 0) {
+      fetchEditHistoricalPricesForList(c.id, pIds)
+    }
   }
 }
 
 const onEditProductChange = (idx: number) => {
   const item = editForm.value.items[idx]
+  item.applyLastPrice = false
   const product = productsList.value.find(p => p.id === item.productId)
   if (product) {
     item.unitPrice = Number(product.price)
@@ -838,6 +1005,10 @@ const onEditProductChange = (idx: number) => {
     item.taxRate = product.taxRate !== null && product.taxRate !== undefined && !isNaN(Number(product.taxRate))
       ? Number(product.taxRate)
       : 18
+
+    if (editForm.value.customerId && item.productId) {
+      fetchEditHistoricalPrice(editForm.value.customerId, item.productId)
+    }
   }
 }
 
@@ -2428,19 +2599,111 @@ onMounted(() => {
                     class="w-full"
                   />
                 </div>
-                <div>
-                  <label class="block text-[10px] sm:text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Transport Mode</label>
-                  <CustomSelect 
-                    :modelValue="editForm.vehicleMode"
-                    @update:modelValue="val => editForm.vehicleMode = val"
-                    :options="[
-                      { label: '🚚 Our Delivery Fleet', value: 'OUR_FLEET' },
-                      { label: '🚗 Party Vehicle / Customer Pickup', value: 'PARTY_VEHICLE' },
-                      { label: '📦 Third Party (Porter / Rapido)', value: 'THIRD_PARTY' }
-                    ]"
-                    placeholder="Select Transport Mode"
-                    class="w-full"
-                  />
+                <!-- Transport / Vehicle Selection Mode Tiles -->
+                <div class="col-span-1 sm:col-span-2">
+                  <label class="block text-[10px] sm:text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 flex items-center justify-between">
+                    <span>Transport & Delivery Vehicle *</span>
+                    <span class="text-[11px] font-semibold" :class="editForm.vehicleMode === 'OUR_FLEET' ? 'text-[#1b3b5f]' : (editForm.vehicleMode === 'THIRD_PARTY' ? 'text-indigo-700' : 'text-amber-700')">
+                      {{ editForm.vehicleMode === 'OUR_FLEET' ? '✓ Company Fleet Dispatch' : (editForm.vehicleMode === 'THIRD_PARTY' ? '📦 Third Party (Porter/Rapido Handover)' : '🚗 Party Transport (Direct Handover)') }}
+                    </span>
+                  </label>
+
+                  <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <!-- Option 1: Our Fleet -->
+                    <div
+                      @click="editForm.vehicleMode = 'OUR_FLEET'"
+                      class="p-3 sm:p-4 rounded-xl border-2 cursor-pointer transition-all flex items-start gap-3 select-none"
+                      :class="editForm.vehicleMode === 'OUR_FLEET'
+                        ? 'border-[#1b3b5f] bg-emerald-50/50 shadow-xs ring-1 ring-[#1b3b5f]/20'
+                        : 'border-gray-200 bg-white hover:border-gray-300 text-gray-600'"
+                    >
+                      <div
+                        class="p-2 sm:p-2.5 rounded-lg shrink-0 mt-0.5 transition-colors"
+                        :class="editForm.vehicleMode === 'OUR_FLEET' ? 'bg-[#1b3b5f] text-white shadow-xs' : 'bg-gray-100 text-gray-500'"
+                      >
+                        <Truck class="w-4 h-4" />
+                      </div>
+                      <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between">
+                          <span class="text-xs font-bold text-gray-900">Our Vehicle (Fleet)</span>
+                          <span v-if="editForm.vehicleMode === 'OUR_FLEET'" class="w-2 h-2 rounded-full bg-[#1b3b5f]"></span>
+                        </div>
+                        <p class="text-[11px] text-gray-500 mt-1 leading-relaxed">
+                          Bundled into fleet trips with GPS tracking.
+                        </p>
+                      </div>
+                    </div>
+
+                    <!-- Option 2: Party Vehicle -->
+                    <div
+                      @click="editForm.vehicleMode = 'PARTY_VEHICLE'"
+                      class="p-3 sm:p-4 rounded-xl border-2 cursor-pointer transition-all flex items-start gap-3 select-none"
+                      :class="editForm.vehicleMode === 'PARTY_VEHICLE'
+                        ? 'border-amber-600 bg-amber-50/60 shadow-xs ring-1 ring-amber-500/20'
+                        : 'border-gray-200 bg-white hover:border-gray-300 text-gray-600'"
+                    >
+                      <div
+                        class="p-2 sm:p-2.5 rounded-lg shrink-0 mt-0.5 transition-colors"
+                        :class="editForm.vehicleMode === 'PARTY_VEHICLE' ? 'bg-amber-600 text-white shadow-xs' : 'bg-gray-100 text-gray-500'"
+                      >
+                        <Car class="w-4 h-4" />
+                      </div>
+                      <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between">
+                          <span class="text-xs font-bold text-gray-900">Party Vehicle</span>
+                          <span v-if="editForm.vehicleMode === 'PARTY_VEHICLE'" class="w-2 h-2 rounded-full bg-amber-600"></span>
+                        </div>
+                        <p class="text-[11px] text-gray-500 mt-1 leading-relaxed">
+                          Customer sends own vehicle. Direct Handover.
+                        </p>
+                      </div>
+                    </div>
+
+                    <!-- Option 3: Third Party -->
+                    <div
+                      @click="editForm.vehicleMode = 'THIRD_PARTY'"
+                      class="p-3 sm:p-4 rounded-xl border-2 cursor-pointer transition-all flex items-start gap-3 select-none"
+                      :class="editForm.vehicleMode === 'THIRD_PARTY'
+                        ? 'border-indigo-600 bg-indigo-50/60 shadow-xs ring-1 ring-indigo-500/20'
+                        : 'border-gray-200 bg-white hover:border-gray-300 text-gray-600'"
+                    >
+                      <div
+                        class="p-2 sm:p-2.5 rounded-lg shrink-0 mt-0.5 transition-colors"
+                        :class="editForm.vehicleMode === 'THIRD_PARTY' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-gray-100 text-gray-500'"
+                      >
+                        <Package class="w-4 h-4" />
+                      </div>
+                      <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between">
+                          <span class="text-xs font-bold text-gray-900">Third Party</span>
+                          <span v-if="editForm.vehicleMode === 'THIRD_PARTY'" class="w-2 h-2 rounded-full bg-indigo-600"></span>
+                        </div>
+                        <p class="text-[11px] text-gray-500 mt-1 leading-relaxed">
+                          Porter, Rapido or hired transport handover.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Notice banners -->
+                  <div
+                    v-if="editForm.vehicleMode === 'PARTY_VEHICLE'"
+                    class="mt-2.5 p-3 bg-amber-50/80 border border-amber-200/90 rounded-lg flex items-start gap-2 text-xs text-amber-900"
+                  >
+                    <AlertCircle class="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                    <div class="leading-relaxed">
+                      <strong>Party Vehicle Pickup:</strong> Excluded from Trip Creation. Staff marks as <strong>"Handed Over"</strong> upon pickup.
+                    </div>
+                  </div>
+                  <div
+                    v-else-if="editForm.vehicleMode === 'THIRD_PARTY'"
+                    class="mt-2.5 p-3 bg-indigo-50/80 border border-indigo-200/90 rounded-lg flex items-start gap-2 text-xs text-indigo-900"
+                  >
+                    <Package class="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
+                    <div class="leading-relaxed">
+                      <strong>Third Party Delivery:</strong> Excluded from fleet trips. Staff marks as <strong>"Handed Over"</strong> upon vehicle arrival.
+                    </div>
+                  </div>
                 </div>
                 <div class="col-span-1 sm:col-span-2">
                   <label class="block text-[10px] sm:text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Delivery Address</label>
@@ -2485,15 +2748,43 @@ onMounted(() => {
                       <input type="number" v-model.number="item.quantity" min="1" required class="w-full border border-gray-300 rounded-lg shadow-xs p-2 bg-white text-sm font-bold focus:ring-[#1b3b5f] focus:border-[#1b3b5f]" />
                     </div>
 
-                    <!-- Unit Price -->
-                    <div class="w-full md:w-28 shrink-0">
-                      <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1.5 flex items-center gap-1">
-                        <IndianRupee class="w-3 h-3 text-gray-500" />
-                        <span>Rate *</span>
-                      </label>
+                    <!-- Unit Price with Sq.ft Sheet Rate Calculator -->
+                    <div class="w-full md:w-32 shrink-0">
+                      <div class="flex items-center justify-between mb-1.5">
+                        <label class="block text-[10px] uppercase font-bold text-gray-500 flex items-center gap-1 truncate">
+                          <IndianRupee class="w-3 h-3 text-gray-400 shrink-0" />
+                          <span>Rate *</span>
+                        </label>
+                        <button 
+                          type="button" 
+                          tabindex="-1"
+                          @click="openEditRateCalculator(idx)" 
+                          class="text-[9px] bg-[#1b3b5f] hover:bg-[#132c49] text-white font-bold flex items-center gap-1 px-2 py-0.5 rounded shadow-2xs transition-colors cursor-pointer"
+                          title="Calculate rate by Sheet Sq.ft (A × B × Rate)"
+                        >
+                          <Calculator class="w-2.5 h-2.5 text-white" />
+                          <span>Sq.ft Calc</span>
+                        </button>
+                      </div>
                       <div class="relative flex items-center">
-                        <IndianRupee class="absolute left-2.5 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
-                        <input type="number" v-model.number="item.unitPrice" min="0" step="0.01" required class="w-full pl-7 border border-gray-300 rounded-lg shadow-xs p-2 bg-white text-sm font-bold focus:ring-[#1b3b5f] focus:border-[#1b3b5f]" />
+                        <IndianRupee class="absolute left-2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+                        <input 
+                          type="number" 
+                          v-model.number="item.unitPrice" 
+                          min="0" 
+                          step="0.01" 
+                          required 
+                          class="w-full pl-6 pr-8 border border-gray-300 rounded-lg shadow-xs p-2 bg-white text-sm font-bold focus:ring-[#1b3b5f] focus:border-[#1b3b5f]" 
+                        />
+                        <button 
+                          type="button"
+                          tabindex="-1"
+                          @click="openEditRateCalculator(idx)"
+                          class="absolute right-1 px-1.5 py-1 bg-[#1b3b5f] hover:bg-[#132c49] text-white rounded-md transition-colors cursor-pointer shadow-2xs"
+                          title="Sq.ft Sheet Rate Calculator"
+                        >
+                          <Calculator class="w-3.5 h-3.5 text-white" />
+                        </button>
                       </div>
                     </div>
 
@@ -2524,19 +2815,69 @@ onMounted(() => {
                     </button>
                   </div>
 
-                  <!-- Item-Level Options & Notes -->
-                  <div class="flex flex-wrap items-center gap-4 pt-2 border-t border-gray-200/60 text-xs">
+                  <!-- Item-Level Options & Notes (Identical to Create Order) -->
+                  <div class="flex flex-wrap items-center gap-3 sm:gap-4 pt-2.5 border-t border-gray-200/60 text-xs">
                     <!-- Tax Inclusive Toggle -->
                     <label class="flex items-center gap-2 cursor-pointer select-none">
-                      <input type="checkbox" v-model="item.isTaxInclusive" class="w-3.5 h-3.5 rounded text-[#1b3b5f] focus:ring-[#1b3b5f]" />
+                      <input 
+                        type="checkbox" 
+                        v-model="item.isTaxInclusive" 
+                        @change="onEditTaxInclusiveToggle(item)"
+                        class="w-3.5 h-3.5 rounded text-[#1b3b5f] focus:ring-[#1b3b5f]" 
+                      />
                       <span class="text-gray-700 font-medium">Tax Inclusive Rate</span>
+                      <span v-if="item.isTaxInclusive" class="text-[10px] text-blue-600 font-semibold">(Tax incl.)</span>
+                      <span v-else class="text-[10px] text-gray-500">(+{{ item.taxRate ?? 0 }}% Tax)</span>
                     </label>
 
-                    <!-- Apply Last Price Checkbox -->
-                    <label class="flex items-center gap-2 cursor-pointer select-none">
-                      <input type="checkbox" v-model="item.applyLastPrice" class="w-3.5 h-3.5 rounded text-[#1b3b5f] focus:ring-[#1b3b5f]" />
-                      <span class="text-gray-700 font-medium">Apply Last Price</span>
-                    </label>
+                    <!-- Last Billed Price Interactive Pill with History Modal Trigger -->
+                    <div v-if="editForm.customerId && item.productId" class="flex items-center">
+                      <div 
+                        v-if="editHistoricalPricesMap[item.productId]" 
+                        @click="openEditPriceHistoryModal(item, idx)"
+                        class="inline-flex items-center gap-2 px-2.5 py-1 rounded-lg text-xs transition border cursor-pointer hover:shadow-xs select-none"
+                        :class="item.applyLastPrice 
+                          ? 'bg-emerald-50 text-emerald-900 border-emerald-300 shadow-xs ring-1 ring-emerald-400/30' 
+                          : 'bg-amber-50/90 text-amber-900 border-amber-200 hover:bg-amber-100/80'"
+                        title="Click to view complete price history for Current Party & All Parties"
+                      >
+                        <span class="w-1.5 h-1.5 rounded-full shrink-0" :class="item.applyLastPrice ? 'bg-emerald-600' : 'bg-amber-500'"></span>
+                        <span>
+                          Last Billed: 
+                          <strong class="font-bold text-gray-900">
+                            {{ formatCurrency(item.isTaxInclusive ? editHistoricalPricesMap[item.productId].unitPrice : editHistoricalPricesMap[item.productId].basePrice) }}
+                          </strong>
+                          <span class="text-[10px] text-gray-500 ml-1">
+                            ({{ item.isTaxInclusive ? 'Incl. Tax' : '+Tax' }} • {{ editHistoricalPricesMap[item.productId].daysAgo }}d ago)
+                          </span>
+                        </span>
+
+                        <span class="text-[10px] text-sky-700 font-bold hover:underline flex items-center gap-0.5 ml-0.5">
+                          History &rarr;
+                        </span>
+
+                        <button
+                          type="button"
+                          @click.stop="applyEditHistoricalPrice(item, editHistoricalPricesMap[item.productId])"
+                          class="ml-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase transition cursor-pointer select-none"
+                          :class="item.applyLastPrice 
+                            ? 'bg-emerald-600 text-white shadow-xs' 
+                            : 'bg-amber-200 text-amber-900 hover:bg-amber-300'"
+                          :title="`Voucher ${editHistoricalPricesMap[item.productId].voucherNo} on ${formatDate(editHistoricalPricesMap[item.productId].voucherDate)}`"
+                        >
+                          {{ item.applyLastPrice ? '✓ Applied' : 'Apply' }}
+                        </button>
+                      </div>
+
+                      <div v-else-if="editLoadingPrices[item.productId]" class="text-[11px] text-gray-400 flex items-center gap-1.5 italic">
+                        <Loader2 class="w-3 h-3 animate-spin text-gray-400" />
+                        <span>Checking price history...</span>
+                      </div>
+
+                      <div v-else-if="editHistoricalPricesMap[item.productId] === null" class="text-[11px] text-gray-400 italic">
+                        First time ordering this item
+                      </div>
+                    </div>
 
                     <!-- Item Notes Input -->
                     <div class="flex-1 min-w-[200px]">
@@ -2642,6 +2983,147 @@ onMounted(() => {
       :item="selectedItemForLinking"
       @close="isLinkItemModalOpen = false"
       @linked="handleItemLinked"
+    />
+
+    <!-- ── Rate Calculator Modal for Edit Order (A × B × Rate per Sq.ft) ─────────── -->
+    <Teleport to="body">
+      <div v-if="isEditRateCalcOpen" class="fixed inset-0 z-[310] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 border border-gray-100 space-y-4 animate-in fade-in zoom-in-95 duration-150">
+          <!-- Modal Header -->
+          <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+            <div class="flex items-center gap-2.5">
+              <div class="w-9 h-9 rounded-xl bg-[#1b3b5f]/10 text-[#1b3b5f] flex items-center justify-center border border-[#1b3b5f]/20">
+                <Calculator class="w-5 h-5 text-[#1b3b5f]" />
+              </div>
+              <div>
+                <h4 class="text-base font-bold text-gray-900">Sq.ft Sheet Rate Calculator</h4>
+                <p class="text-xs text-gray-500">Calculate unit rate: Size (A × B) × Sq.ft Rate</p>
+              </div>
+            </div>
+            <button 
+              type="button" 
+              @click="isEditRateCalcOpen = false" 
+              class="text-gray-400 hover:text-gray-600 p-1.5 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+            >
+              <X class="w-5 h-5" />
+            </button>
+          </div>
+
+          <!-- Quick Size Presets -->
+          <div v-if="sheetSizesOptions && sheetSizesOptions.length > 0" class="space-y-1.5">
+            <label class="block text-[11px] font-bold text-gray-600 uppercase tracking-wider">Quick Sheet Sizes</label>
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <button
+                v-for="qs in sheetSizesOptions"
+                :key="qs.label"
+                type="button"
+                @click="setEditCalcSize(qs.length, qs.width)"
+                class="px-2.5 py-1 rounded-lg text-xs font-bold border transition-colors cursor-pointer flex items-center gap-1"
+                :class="editCalcLength === qs.length && editCalcWidth === qs.width
+                  ? 'bg-[#1b3b5f] text-white border-[#1b3b5f] shadow-xs'
+                  : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'"
+              >
+                <span>{{ qs.label }}</span>
+                <span v-if="qs.isDefault" class="text-[9px] opacity-75">★</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Dimensions Inputs (A × B) -->
+          <div class="grid grid-cols-2 gap-3 items-end">
+            <div>
+              <label class="block text-xs font-bold text-gray-700 mb-1">Dimension A (Length ft)</label>
+              <input
+                type="number"
+                v-model.number="editCalcLength"
+                min="0.1"
+                step="0.1"
+                class="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm font-bold text-gray-900 focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f] bg-white shadow-2xs"
+                placeholder="8"
+              />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-gray-700 mb-1">Dimension B (Width ft)</label>
+              <input
+                type="number"
+                v-model.number="editCalcWidth"
+                min="0.1"
+                step="0.1"
+                class="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm font-bold text-gray-900 focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f] bg-white shadow-2xs"
+                placeholder="4"
+              />
+            </div>
+          </div>
+
+          <!-- Calculated Sqft Area Badge -->
+          <div class="p-2.5 bg-gray-50 rounded-xl border border-gray-200/80 flex items-center justify-between text-xs">
+            <span class="text-gray-600 font-medium">Total Sheet Area:</span>
+            <span class="font-mono font-bold text-gray-900 bg-white px-2.5 py-0.5 rounded-lg border border-gray-200 shadow-2xs">
+              {{ editCalcLength }} ft × {{ editCalcWidth }} ft = <strong class="text-[#1b3b5f] font-black">{{ editCalcSqftArea }} sq.ft</strong>
+            </span>
+          </div>
+
+          <!-- Rate per Sqft Input -->
+          <div class="space-y-1.5">
+            <label class="block text-xs font-bold text-gray-700">Rate per Sq.ft (₹) *</label>
+            <div class="relative flex items-center">
+              <IndianRupee class="absolute left-3 w-4 h-4 text-gray-400 pointer-events-none" />
+              <input
+                type="number"
+                v-model.number="editCalcSqftRate"
+                min="0"
+                step="0.01"
+                class="w-full pl-8 pr-3 py-2.5 border border-gray-300 rounded-xl text-base font-black text-gray-900 focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f] bg-white shadow-2xs"
+                placeholder="e.g. 75.00"
+                autofocus
+                @keyup.enter="applyEditCalculatedRate"
+              />
+            </div>
+          </div>
+
+          <!-- Live Calculated Preview Box -->
+          <div class="p-4 bg-emerald-50/80 border border-emerald-200 rounded-xl space-y-1 text-center">
+            <span class="text-[10px] font-bold text-emerald-800 uppercase tracking-wider block">Calculated Total Sheet Rate</span>
+            <div class="text-3xl font-mono font-black text-[#1b3b5f] py-0.5">
+              ₹{{ editCalcTotalRate.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
+            </div>
+            <p class="text-[11px] text-emerald-700 font-medium">
+              {{ editCalcSqftArea }} sq.ft × ₹{{ Number(editCalcSqftRate || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }} / sq.ft
+            </p>
+          </div>
+
+          <!-- Modal Action Buttons -->
+          <div class="flex items-center justify-end gap-2.5 pt-1">
+            <button
+              type="button"
+              @click="isEditRateCalcOpen = false"
+              class="px-4 py-2 border border-gray-300 text-gray-700 rounded-xl text-xs font-bold hover:bg-gray-50 transition cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              @click="applyEditCalculatedRate"
+              :disabled="editCalcTotalRate <= 0"
+              class="px-5 py-2 bg-[#1b3b5f] hover:bg-[#132c49] text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-sm disabled:opacity-50"
+            >
+              <Check class="w-4 h-4" />
+              <span>Apply Rate (₹{{ editCalcTotalRate.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }})</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- ── Price History Modal for Edit Order ────────────────────────────────────── -->
+    <PriceHistoryModal
+      v-model="isEditPriceHistoryOpen"
+      :product-id="editPriceHistoryProductId"
+      :product-name="editPriceHistoryProductName"
+      :product-sku="editPriceHistoryProductSku"
+      :customer-id="editForm.customerId"
+      :customer-name="selectedEditCustomerName"
+      @apply-price="onApplyEditPriceHistory"
     />
   </Teleport>
 </template>
