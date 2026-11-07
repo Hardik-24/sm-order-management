@@ -2274,7 +2274,7 @@ function paginateQuoteItems(
   const USABLE_H = 1015
   const P1_HEADER_H = 285      // Page 1 ribbon + large header + customer box
   const CONT_HEADER_H = 165    // Page 2+ ribbon + compact header + customer bar
-  const TOTALS_H = 270         // Availability legend + terms + totals box + nondisclosure
+  const TOTALS_H = 215         // Availability legend + terms + totals box + nondisclosure
   const BUFFER = 25            // Generous safety margin against font/subpixel variations
 
   const totalRowsH = rowHeights.reduce((sum, h) => sum + (h || 38), 0)
