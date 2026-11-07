@@ -4,7 +4,7 @@ import {
   Search, X, FileText, CheckCircle2, AlertCircle, ChevronLeft, ChevronRight, 
   Ban, Zap, IndianRupee, Clock, CheckCheck, GitFork, Lock 
 } from 'lucide-vue-next'
-import { formatCurrency, formatDateTime, formatDate, formatTime } from '~~/app/lib/utils'
+import { formatCurrency, formatDateTime, formatDate, formatTime, formatCustomerContact } from '~~/app/lib/utils'
 import RowsPerPageSelect from '~/components/ui/RowsPerPageSelect.vue'
 import TableFilterButtons from '~/components/dashboard/TableFilterButtons.vue'
 import FloatingHorizontalScrollbar from '~/components/ui/FloatingHorizontalScrollbar.vue'
@@ -228,8 +228,8 @@ const getTotalNos = (order: any) => {
                   </span>
                   <span v-if="order.customer?.isPriorityClient" class="text-amber-500 font-bold text-xs shrink-0" title="Priority Client">★</span>
                 </div>
-                <p class="text-[11px] text-gray-500 truncate mt-0.5" :title="[order.customer?.phone, order.customer?.city].filter(Boolean).join(' • ') || '—'">
-                  {{ [order.customer?.phone, order.customer?.city].filter(Boolean).join(' • ') || '—' }}
+                <p class="text-[11px] text-gray-500 truncate mt-0.5" :title="formatCustomerContact(order.customer)">
+                  {{ formatCustomerContact(order.customer) }}
                 </p>
               </td>
 

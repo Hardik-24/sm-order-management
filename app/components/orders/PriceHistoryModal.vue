@@ -135,15 +135,12 @@
               <div class="flex items-center gap-1.5 text-[10px] text-gray-500 mt-0.5 flex-wrap">
                 <span class="font-medium">
                   Vch:
-                  <NuxtLink
+                  <span
                     v-if="row.voucherNo"
-                    :to="`/dashboard/vouchers?search=${encodeURIComponent(row.voucherNo)}`"
-                    target="_blank"
-                    class="font-bold text-sky-700 hover:text-sky-900 font-mono underline hover:no-underline ml-0.5"
-                    title="View invoice in vouchers page"
+                    class="font-bold text-gray-800 font-mono ml-0.5"
                   >
                     {{ row.voucherNo }}
-                  </NuxtLink>
+                  </span>
                   <span v-else class="font-mono text-gray-400">N/A</span>
                 </span>
                 <span class="text-gray-300">&bull;</span>

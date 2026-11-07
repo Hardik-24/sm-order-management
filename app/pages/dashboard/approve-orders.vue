@@ -28,7 +28,7 @@ import {
   Award,
   Ban
 } from 'lucide-vue-next'
-import { formatCurrency, formatDateTime } from '~/lib/utils'
+import { formatCurrency, formatDateTime, formatCustomerContact } from '~/lib/utils'
 import { useGsapAnimation } from '~/composables/useGsapAnimation'
 import { useRealtimeSync } from '~/composables/useRealtimeSync'
 import { useSnackbar } from '~/composables/useSnackbar'
@@ -573,8 +573,8 @@ const getTotalNos = (order: any) => {
                   </span>
                   <span v-if="order.customer?.isPriorityClient" class="text-amber-500 font-bold text-xs shrink-0" title="Priority Client">★</span>
                 </div>
-                <p class="text-[11px] text-gray-500 truncate mt-0.5" :title="[order.customer?.phone, order.customer?.city].filter(Boolean).join(' • ') || '—'">
-                  {{ [order.customer?.phone, order.customer?.city].filter(Boolean).join(' • ') || '—' }}
+                <p class="text-[11px] text-gray-500 truncate mt-0.5" :title="formatCustomerContact(order.customer)">
+                  {{ formatCustomerContact(order.customer) }}
                 </p>
               </td>
 

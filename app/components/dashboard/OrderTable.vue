@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Search, Filter, MoreHorizontal, ChevronLeft, ChevronRight, Check, Calendar, X, ArrowRight, Clock, Package, Truck, IndianRupee, CheckCheck, Building2, User as UserIcon, AlertCircle } from 'lucide-vue-next'
-import { formatTime, getDisplayStatus, getOverallColor, getStatusColor } from '~~/app/lib/utils'
+import { formatTime, getDisplayStatus, getOverallColor, getStatusColor, formatCustomerContact } from '~~/app/lib/utils'
 import CustomSelect from '~/components/ui/CustomSelect.vue'
 import TableFilterButtons from '~/components/dashboard/TableFilterButtons.vue'
 import RowsPerPageSelect from '~/components/ui/RowsPerPageSelect.vue'
@@ -268,8 +268,7 @@ const shouldShowCustomerCompany = (customer?: { name?: string | null; company?: 
 }
 
 const getCustomerSubtitle = (customer?: any) => {
-  if (!customer) return '—'
-  return [customer.phone, customer.city].filter(Boolean).join(' • ') || '—'
+  return formatCustomerContact(customer)
 }
 
 const getItemsTotalQuantity = (order: Order) => {

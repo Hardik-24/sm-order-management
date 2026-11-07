@@ -10,6 +10,7 @@ import FloatingHorizontalScrollbar from '~/components/ui/FloatingHorizontalScrol
 import LoadingTopBar from '~/components/ui/LoadingTopBar.vue'
 import TableSkeletonRows from '~/components/ui/TableSkeletonRows.vue'
 import { useGsapAnimation } from '~/composables/useGsapAnimation'
+import { formatCustomerContact } from '~/lib/utils'
 import type { Order } from '~/types'
 
 const props = defineProps<{
@@ -244,8 +245,8 @@ const getPackingProgress = (order: any) => {
                   </span>
                   <span v-if="order.customer?.isPriorityClient" class="text-amber-500 font-bold text-xs shrink-0" title="Priority Client">★</span>
                 </div>
-                <p class="text-[11px] text-gray-500 truncate mt-0.5" :title="[order.customer?.phone, order.customer?.city].filter(Boolean).join(' • ') || '—'">
-                  {{ [order.customer?.phone, order.customer?.city].filter(Boolean).join(' • ') || '—' }}
+                <p class="text-[11px] text-gray-500 truncate mt-0.5" :title="formatCustomerContact(order.customer)">
+                  {{ formatCustomerContact(order.customer) }}
                 </p>
               </td>
 

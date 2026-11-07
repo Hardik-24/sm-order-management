@@ -168,3 +168,28 @@ export function getOverallColor(order: any): string {
   // Brand New Order: Bright Blue to indicate fresh work to be started
   return 'bg-blue-100 text-blue-700 border-blue-200'
 }
+
+/** Extract and format primary contact number and city: "Phone • City" */
+export function formatCustomerContact(customer?: any): string {
+  if (!customer) return '—'
+
+  // Extract clean primary phone
+  let cleanPhone = ''
+  const rawPhone = customer.phone || customer.alternatePhone
+  if (rawPhone && typeof rawPhone === 'string') {
+    const parts = rawPhone.split(/[,;\/\n]+/).map((p: string) => p.trim()).filter(Boolean)
+    for (const part of parts) {
+      const digitsOnly = part.replace(/\D/g, '')
+      // Reject placeholder zeroes (like 0000000000) or strings with fewer than 5 digits
+      if (digitsOnly.length >= 5 && !/^0+$/.test(digitsOnly)) {
+        cleanPhone = part
+        break
+      }
+    }
+  }
+
+  // Extract city
+  const city = customer.city?.trim() || customer.addresses?.[0]?.city?.trim() || ''
+
+  return [cleanPhone, city].filter(Boolean).join(' • ') || '—'
+}
