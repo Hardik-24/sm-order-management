@@ -356,7 +356,7 @@
                           <span v-if="!isAnonymousMode" class="inline-block px-3.5 py-1 rounded-lg bg-[#1b3b5f] text-white text-[11px] font-black uppercase tracking-wider mb-1 shadow-2xs">
                             PRICE QUOTATION
                           </span>
-                          <div class="font-mono text-base font-black text-[#1b3b5f]">{{ quoteNumber }}</div>
+                          <div class="text-base font-black text-[#1b3b5f] tabular-nums">{{ quoteNumber }}</div>
                           <div class="text-xs text-gray-500 mt-0.5">
                             <span class="text-gray-400 font-medium">Date:</span>
                             <strong class="font-bold text-gray-800 ml-1">{{ formatDisplayDate(new Date()) }}</strong>
@@ -375,7 +375,7 @@
                             {{ customerName || 'Valued Customer' }}
                           </div>
                           <div class="flex items-center gap-2.5 text-xs text-gray-600 mt-1 flex-wrap">
-                            <span v-if="customerPhone" class="inline-flex items-center gap-1.5 font-mono">
+                            <span v-if="customerPhone" class="inline-flex items-center gap-1.5 tabular-nums">
                               <Phone class="w-3.5 h-3.5 text-[#1b3b5f]" />
                               <strong class="font-bold text-gray-800">+91 {{ customerPhone }}</strong>
                             </span>
@@ -419,21 +419,21 @@
                           </thead>
                           <tbody class="divide-y divide-gray-100">
                             <tr v-for="(it, i) in quoteItems" :key="it.id" class="border-b border-gray-100 text-[11px]">
-                              <td class="py-2 px-1 text-center text-gray-500 font-mono font-bold">{{ i + 1 }}</td>
-                              <td class="py-2 px-1.5 font-mono font-black text-[#1b3b5f] text-[11px] whitespace-nowrap">{{ it.articleNumber }}</td>
+                              <td class="py-2 px-1 text-center text-gray-500 font-bold tabular-nums">{{ i + 1 }}</td>
+                              <td class="py-2 px-1.5 font-black text-[#1b3b5f] text-[11px] whitespace-nowrap tabular-nums">{{ it.articleNumber }}</td>
                               <td class="py-2 px-2 font-bold text-gray-950 leading-snug">{{ it.description }}</td>
                               <td class="py-2 px-1 text-center font-black text-[10px] text-gray-800 uppercase">{{ it.brand }}</td>
                               <td
-                                class="py-2 px-1 text-center font-black"
+                                class="py-2 px-1 text-center font-black tabular-nums"
                                 :class="isItemInStock(it) ? 'bg-[#e6f4ea] text-[#137333]' : 'bg-[#fff3e0] text-[#d9480f]'"
                               >
                                 {{ it.quantity }}
                               </td>
-                              <td class="py-2 px-1.5 text-right font-mono font-bold text-gray-700 whitespace-nowrap">₹{{ formatSlipNumber(it.mrp) }}</td>
-                              <td v-if="showDiscountColumn" class="py-2 px-1 text-center font-mono font-bold text-emerald-700">{{ it.discount ? it.discount + '%' : '-' }}</td>
+                              <td class="py-2 px-1.5 text-right font-bold text-gray-700 whitespace-nowrap tabular-nums">₹{{ formatSlipNumber(it.mrp) }}</td>
+                              <td v-if="showDiscountColumn" class="py-2 px-1 text-center font-bold text-emerald-700 tabular-nums">{{ it.discount ? it.discount + '%' : '-' }}</td>
                               <td class="py-2 px-1 text-center font-bold text-gray-700 text-[10px]">{{ it.uom }}</td>
-                              <td class="py-2 px-1.5 text-right font-mono font-black text-[#1b3b5f] whitespace-nowrap">₹{{ calculateUnitRate(it).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</td>
-                              <td class="py-2 px-1.5 text-right font-mono font-black text-gray-950 whitespace-nowrap">₹{{ formatSlipNumber(calculateLineTotal(it)) }}</td>
+                              <td class="py-2 px-1.5 text-right font-black text-[#1b3b5f] whitespace-nowrap tabular-nums">₹{{ calculateUnitRate(it).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</td>
+                              <td class="py-2 px-1.5 text-right font-black text-gray-950 whitespace-nowrap tabular-nums">₹{{ formatSlipNumber(calculateLineTotal(it)) }}</td>
                             </tr>
                           </tbody>
                         </table>
@@ -470,49 +470,49 @@
                               <!-- Total MRP -->
                               <tr class="text-gray-600">
                                 <td class="py-1 text-left font-bold pr-2">Total MRP:</td>
-                                <td class="py-1 w-3 text-center font-mono"></td>
-                                <td class="py-1 w-4 text-right font-mono font-bold text-gray-700">₹</td>
-                                <td class="py-1 text-right font-mono font-bold text-gray-800 tabular-nums whitespace-nowrap pl-1">{{ formatSlipNumber(totalMrp) }}</td>
+                                <td class="py-1 w-3 text-center"></td>
+                                <td class="py-1 w-4 text-right font-bold text-gray-700">₹</td>
+                                <td class="py-1 text-right font-bold text-gray-800 tabular-nums whitespace-nowrap pl-1">{{ formatSlipNumber(totalMrp) }}</td>
                               </tr>
 
                               <!-- Total Discount -->
                               <tr v-if="totalDiscountSaved > 0" class="text-emerald-700 font-bold">
                                 <td class="py-1 text-left pr-2">Total Discount:</td>
-                                <td class="py-1 w-3 text-center font-mono font-bold text-emerald-600">-</td>
-                                <td class="py-1 w-4 text-right font-mono font-bold text-emerald-600">₹</td>
-                                <td class="py-1 text-right font-mono font-bold tabular-nums whitespace-nowrap pl-1">{{ formatSlipNumber(totalDiscountSaved) }}</td>
+                                <td class="py-1 w-3 text-center font-bold text-emerald-600">-</td>
+                                <td class="py-1 w-4 text-right font-bold text-emerald-600">₹</td>
+                                <td class="py-1 text-right font-bold tabular-nums whitespace-nowrap pl-1">{{ formatSlipNumber(totalDiscountSaved) }}</td>
                               </tr>
 
                               <!-- Subtotal -->
                               <tr class="border-t border-slate-200 text-gray-900 font-black">
                                 <td class="py-1 text-left pr-2">Subtotal:</td>
-                                <td class="py-1 w-3 text-center font-mono"></td>
-                                <td class="py-1 w-4 text-right font-mono font-black text-gray-950">₹</td>
-                                <td class="py-1 text-right font-mono font-black text-gray-950 tabular-nums whitespace-nowrap pl-1">{{ formatSlipNumber(subtotal) }}</td>
+                                <td class="py-1 w-3 text-center"></td>
+                                <td class="py-1 w-4 text-right font-black text-gray-950">₹</td>
+                                <td class="py-1 text-right font-black text-gray-950 tabular-nums whitespace-nowrap pl-1">{{ formatSlipNumber(subtotal) }}</td>
                               </tr>
 
                               <!-- GST (18%) -->
                               <tr v-if="taxMode === 'EXTRA'" class="text-gray-700 font-bold">
                                 <td class="py-1 text-left pr-2">GST (18%):</td>
-                                <td class="py-1 w-3 text-center font-mono font-bold text-sky-600">+</td>
-                                <td class="py-1 w-4 text-right font-mono font-bold text-sky-600">₹</td>
-                                <td class="py-1 text-right font-mono font-bold tabular-nums whitespace-nowrap pl-1">{{ formatSlipNumber(gstAmount) }}</td>
+                                <td class="py-1 w-3 text-center font-bold text-sky-600">+</td>
+                                <td class="py-1 w-4 text-right font-bold text-sky-600">₹</td>
+                                <td class="py-1 text-right font-bold tabular-nums whitespace-nowrap pl-1">{{ formatSlipNumber(gstAmount) }}</td>
                               </tr>
 
                               <!-- Round Off -->
                               <tr v-if="roundOffAmount !== 0" class="text-gray-600 font-medium text-[11px]">
                                 <td class="py-1 text-left pr-2">Round Off:</td>
-                                <td class="py-1 w-3 text-center font-mono">{{ roundOffAmount > 0 ? '+' : '-' }}</td>
-                                <td class="py-1 w-4 text-right font-mono">₹</td>
-                                <td class="py-1 text-right font-mono tabular-nums whitespace-nowrap pl-1">{{ Math.abs(roundOffAmount).toFixed(2) }}</td>
+                                <td class="py-1 w-3 text-center">{{ roundOffAmount > 0 ? '+' : '-' }}</td>
+                                <td class="py-1 w-4 text-right font-medium">₹</td>
+                                <td class="py-1 text-right font-medium tabular-nums whitespace-nowrap pl-1">{{ Math.abs(roundOffAmount).toFixed(2) }}</td>
                               </tr>
 
                               <!-- Grand Total -->
                               <tr class="border-t-2 border-b-2 border-slate-300 text-[#1b3b5f] font-black">
                                 <td class="py-1.5 text-left uppercase text-xs tracking-wider pr-2">Grand Total:</td>
-                                <td class="py-1.5 w-3 text-center font-mono"></td>
-                                <td class="py-1.5 w-4 text-right font-mono font-black text-[#1b3b5f]">₹</td>
-                                <td class="py-1.5 text-right font-mono font-black tabular-nums whitespace-nowrap pl-1">{{ formatSlipNumber(grandTotal) }}</td>
+                                <td class="py-1.5 w-3 text-center"></td>
+                                <td class="py-1.5 w-4 text-right font-black text-[#1b3b5f]">₹</td>
+                                <td class="py-1.5 text-right font-black tabular-nums whitespace-nowrap pl-1">{{ formatSlipNumber(grandTotal) }}</td>
                               </tr>
                             </tbody>
                           </table>
@@ -1365,7 +1365,7 @@
             <span v-if="!isAnonymousMode" class="inline-block px-3.5 py-1 rounded-lg bg-[#1b3b5f] text-white text-xs font-black uppercase tracking-widest mb-1.5 shadow-2xs">
               PRICE QUOTATION
             </span>
-            <div class="font-mono text-base font-black text-[#1b3b5f]">{{ quoteNumber }}</div>
+            <div class="text-base font-black text-[#1b3b5f] tabular-nums">{{ quoteNumber }}</div>
             <div class="text-xs text-gray-500 mt-0.5">
               <span class="text-gray-400 font-medium">Date:</span>
               <strong class="font-bold text-gray-800 ml-1">{{ formatDisplayDate(new Date()) }}</strong>
@@ -1384,7 +1384,7 @@
               {{ customerName || 'Valued Customer' }}
             </div>
             <div class="flex items-center gap-3 text-xs text-gray-600 mt-1.5 flex-wrap">
-              <span v-if="customerPhone" class="inline-flex items-center gap-1.5 font-mono">
+              <span v-if="customerPhone" class="inline-flex items-center gap-1.5 tabular-nums">
                 <Phone class="w-3.5 h-3.5 text-[#1b3b5f]" />
                 <strong class="font-bold text-gray-800">+91 {{ customerPhone }}</strong>
               </span>
@@ -1415,35 +1415,35 @@
             <tr class="bg-[#1b3b5f] text-white font-extrabold text-[10px] uppercase tracking-wider">
               <th class="py-2 px-1 w-5 text-center">#</th>
               <th class="py-2 px-1.5 w-20">Article No.</th>
-              <th class="py-2 px-2.5">Product Description</th>
+              <th class="py-2 px-2">Product Description</th>
               <th class="py-2 px-1 text-center w-10">Brand</th>
               <th class="py-2 px-1 text-center w-9">Qty</th>
               <th class="py-2 px-1.5 text-right w-16">MRP (₹)</th>
               <th v-if="showDiscountColumn" class="py-2 px-1 text-center w-11">Disc %</th>
               <th class="py-2 px-1 text-center w-8">UoM</th>
               <th class="py-2 px-1.5 text-right w-20">Rate (₹)</th>
-              <th class="py-2 px-1.5 text-right w-20">Total Value</th>
+              <th class="py-2 px-1.5 text-right w-20">Total (₹)</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-100 bg-white">
-            <tr v-for="(item, idx) in quoteItems" :key="item.id" class="border-b border-gray-100">
-              <td class="py-2 px-1 text-center text-gray-500 font-mono font-bold text-[10px]">{{ idx + 1 }}</td>
-              <td class="py-2 px-1.5 font-mono font-black text-[#1b3b5f] text-[11px] whitespace-nowrap">{{ item.articleNumber }}</td>
-              <td class="py-2 px-2.5 font-bold text-gray-950 text-[11px] leading-snug">{{ item.description }}</td>
+            <tr v-for="(item, idx) in quoteItems" :key="item.id" class="border-b border-gray-100 text-[11px]">
+              <td class="py-2 px-1 text-center text-gray-500 font-bold text-[10px] tabular-nums">{{ idx + 1 }}</td>
+              <td class="py-2 px-1.5 font-black text-[#1b3b5f] text-[11px] whitespace-nowrap tabular-nums">{{ item.articleNumber }}</td>
+              <td class="py-2 px-2 font-bold text-gray-950 text-[11px] leading-snug">{{ item.description }}</td>
               <td class="py-2 px-1 text-center font-black text-[10px] text-gray-800 uppercase">{{ item.brand }}</td>
               <td
-                class="py-2 px-1 text-center font-black text-[11px]"
+                class="py-2 px-1 text-center font-black text-[11px] tabular-nums"
                 :class="isItemInStock(item) ? 'bg-[#e6f4ea] text-[#137333]' : 'bg-[#fff3e0] text-[#d9480f]'"
               >
                 {{ item.quantity }}
               </td>
-              <td class="py-2 px-1.5 text-right font-mono font-bold text-gray-700 text-[11px] whitespace-nowrap">₹{{ formatSlipNumber(item.mrp) }}</td>
-              <td v-if="showDiscountColumn" class="py-2 px-1 text-center font-mono font-bold text-emerald-700 text-[11px]">{{ item.discount ? item.discount + '%' : '-' }}</td>
+              <td class="py-2 px-1.5 text-right font-bold text-gray-700 text-[11px] whitespace-nowrap tabular-nums">₹{{ formatSlipNumber(item.mrp) }}</td>
+              <td v-if="showDiscountColumn" class="py-2 px-1 text-center font-bold text-emerald-700 text-[11px] tabular-nums">{{ item.discount ? item.discount + '%' : '-' }}</td>
               <td class="py-2 px-1 text-center font-bold text-gray-700 text-[10px]">{{ item.uom }}</td>
-              <td class="py-2 px-1.5 text-right font-mono font-black text-[#1b3b5f] text-[11px] whitespace-nowrap">
+              <td class="py-2 px-1.5 text-right font-black text-[#1b3b5f] text-[11px] whitespace-nowrap tabular-nums">
                 ₹{{ calculateUnitRate(item).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
               </td>
-              <td class="py-2 px-1.5 text-right font-mono font-black text-gray-950 text-[11.5px] whitespace-nowrap">
+              <td class="py-2 px-1.5 text-right font-black text-gray-950 text-[11px] whitespace-nowrap tabular-nums">
                 ₹{{ formatSlipNumber(calculateLineTotal(item)) }}
               </td>
             </tr>
@@ -1481,49 +1481,49 @@
                 <!-- Total MRP -->
                 <tr class="text-gray-600">
                   <td class="py-1 text-left font-bold pr-2">Total MRP:</td>
-                  <td class="py-1 w-3 text-center font-mono"></td>
-                  <td class="py-1 w-4 text-right font-mono font-bold text-gray-700">₹</td>
-                  <td class="py-1 text-right font-mono font-bold text-gray-800 tabular-nums whitespace-nowrap pl-1">{{ formatSlipNumber(totalMrp) }}</td>
+                  <td class="py-1 w-3 text-center"></td>
+                  <td class="py-1 w-4 text-right font-bold text-gray-700">₹</td>
+                  <td class="py-1 text-right font-bold text-gray-800 tabular-nums whitespace-nowrap pl-1">{{ formatSlipNumber(totalMrp) }}</td>
                 </tr>
 
                 <!-- Total Discount -->
                 <tr v-if="totalDiscountSaved > 0" class="text-emerald-700 font-bold">
                   <td class="py-1 text-left pr-2">Total Discount:</td>
-                  <td class="py-1 w-3 text-center font-mono font-bold text-emerald-600">-</td>
-                  <td class="py-1 w-4 text-right font-mono font-bold text-emerald-600">₹</td>
-                  <td class="py-1 text-right font-mono font-bold tabular-nums whitespace-nowrap pl-1">{{ formatSlipNumber(totalDiscountSaved) }}</td>
+                  <td class="py-1 w-3 text-center font-bold text-emerald-600">-</td>
+                  <td class="py-1 w-4 text-right font-bold text-emerald-600">₹</td>
+                  <td class="py-1 text-right font-bold tabular-nums whitespace-nowrap pl-1">{{ formatSlipNumber(totalDiscountSaved) }}</td>
                 </tr>
 
                 <!-- Subtotal -->
                 <tr class="border-t border-slate-200 text-gray-900 font-black">
                   <td class="py-1 text-left pr-2">Subtotal:</td>
-                  <td class="py-1 w-3 text-center font-mono"></td>
-                  <td class="py-1 w-4 text-right font-mono font-black text-gray-950">₹</td>
-                  <td class="py-1 text-right font-mono font-black text-gray-950 tabular-nums whitespace-nowrap pl-1">{{ formatSlipNumber(subtotal) }}</td>
+                  <td class="py-1 w-3 text-center"></td>
+                  <td class="py-1 w-4 text-right font-black text-gray-950">₹</td>
+                  <td class="py-1 text-right font-black text-gray-950 tabular-nums whitespace-nowrap pl-1">{{ formatSlipNumber(subtotal) }}</td>
                 </tr>
 
                 <!-- GST (18%) -->
                 <tr v-if="taxMode === 'EXTRA'" class="text-gray-700 font-bold">
                   <td class="py-1 text-left pr-2">GST (18%):</td>
-                  <td class="py-1 w-3 text-center font-mono font-bold text-sky-600">+</td>
-                  <td class="py-1 w-4 text-right font-mono font-bold text-sky-600">₹</td>
-                  <td class="py-1 text-right font-mono font-bold tabular-nums whitespace-nowrap pl-1">{{ formatSlipNumber(gstAmount) }}</td>
+                  <td class="py-1 w-3 text-center font-bold text-sky-600">+</td>
+                  <td class="py-1 w-4 text-right font-bold text-sky-600">₹</td>
+                  <td class="py-1 text-right font-bold tabular-nums whitespace-nowrap pl-1">{{ formatSlipNumber(gstAmount) }}</td>
                 </tr>
 
                 <!-- Round Off -->
                 <tr v-if="roundOffAmount !== 0" class="text-gray-600 font-medium text-[11px]">
                   <td class="py-1 text-left pr-2">Round Off:</td>
-                  <td class="py-1 w-3 text-center font-mono">{{ roundOffAmount > 0 ? '+' : '-' }}</td>
-                  <td class="py-1 w-4 text-right font-mono">₹</td>
-                  <td class="py-1 text-right font-mono tabular-nums whitespace-nowrap pl-1">{{ Math.abs(roundOffAmount).toFixed(2) }}</td>
+                  <td class="py-1 w-3 text-center">{{ roundOffAmount > 0 ? '+' : '-' }}</td>
+                  <td class="py-1 w-4 text-right font-medium">₹</td>
+                  <td class="py-1 text-right font-medium tabular-nums whitespace-nowrap pl-1">{{ Math.abs(roundOffAmount).toFixed(2) }}</td>
                 </tr>
 
                 <!-- Grand Total -->
                 <tr class="border-t-2 border-b-2 border-slate-300 text-[#1b3b5f] font-black">
                   <td class="py-1.5 text-left uppercase text-xs tracking-wider pr-2">Grand Total:</td>
-                  <td class="py-1.5 w-3 text-center font-mono"></td>
-                  <td class="py-1.5 w-4 text-right font-mono font-black text-[#1b3b5f]">₹</td>
-                  <td class="py-1.5 text-right font-mono font-black tabular-nums whitespace-nowrap pl-1">{{ formatSlipNumber(grandTotal) }}</td>
+                  <td class="py-1.5 w-3 text-center"></td>
+                  <td class="py-1.5 w-4 text-right font-black text-[#1b3b5f]">₹</td>
+                  <td class="py-1.5 text-right font-black tabular-nums whitespace-nowrap pl-1">{{ formatSlipNumber(grandTotal) }}</td>
                 </tr>
               </tbody>
             </table>
@@ -1596,7 +1596,7 @@
                   <span v-if="!isAnonymousMode" class="inline-block px-3 py-0.5 rounded-lg bg-[#1b3b5f] text-white text-xs font-black uppercase tracking-widest mb-1 shadow-2xs">
                     PRICE QUOTATION
                   </span>
-                  <div class="font-mono text-base font-black text-[#1b3b5f]">{{ quoteNumber }}</div>
+                  <div class="text-base font-black text-[#1b3b5f] tabular-nums">{{ quoteNumber }}</div>
                   <div class="text-xs text-gray-500 mt-0.5">
                     <span class="text-gray-400 font-medium">Date:</span>
                     <strong class="font-bold text-gray-800 ml-1">{{ formatDisplayDate(new Date()) }}</strong>
@@ -1615,7 +1615,7 @@
                     {{ customerName || 'Valued Customer' }}
                   </div>
                   <div class="flex items-center gap-3 text-xs text-gray-600 mt-1 flex-wrap">
-                    <span v-if="customerPhone" class="inline-flex items-center gap-1 font-mono">
+                    <span v-if="customerPhone" class="inline-flex items-center gap-1 tabular-nums">
                       <Phone class="w-3.5 h-3.5 text-[#1b3b5f]" />
                       <strong class="font-bold text-gray-800">+91 {{ customerPhone }}</strong>
                     </span>
@@ -1667,7 +1667,7 @@
                 </div>
 
                 <div class="text-right">
-                  <div class="font-mono text-sm font-black text-[#1b3b5f]">{{ quoteNumber }}</div>
+                  <div class="text-sm font-black text-[#1b3b5f] tabular-nums">{{ quoteNumber }}</div>
                   <div class="text-[11px] text-gray-500">
                     <span class="text-gray-400 font-medium">Date:</span>
                     <strong class="font-bold text-gray-800 ml-1">{{ formatDisplayDate(new Date()) }}</strong>
@@ -1681,7 +1681,7 @@
                   <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Customer:</span>
                   <strong class="text-[#1b3b5f] font-bold">{{ customerName || 'Valued Customer' }}</strong>
                   <span v-if="customerPhone" class="text-gray-300">&bull;</span>
-                  <span v-if="customerPhone" class="font-mono text-gray-700">+91 {{ customerPhone }}</span>
+                  <span v-if="customerPhone" class="text-gray-700 tabular-nums">+91 {{ customerPhone }}</span>
                   <span v-if="customerPlace" class="text-gray-300">&bull;</span>
                   <span v-if="customerPlace" class="text-gray-700">{{ customerPlace }}</span>
                 </div>
@@ -1697,35 +1697,35 @@
                 <tr class="bg-[#1b3b5f] text-white font-extrabold text-[10px] uppercase tracking-wider">
                   <th class="py-2 px-1 w-5 text-center">#</th>
                   <th class="py-2 px-1.5 w-20">Article No.</th>
-                  <th class="py-2 px-2.5">Product Description</th>
+                  <th class="py-2 px-2">Product Description</th>
                   <th class="py-2 px-1 text-center w-10">Brand</th>
                   <th class="py-2 px-1 text-center w-9">Qty</th>
                   <th class="py-2 px-1.5 text-right w-16">MRP (₹)</th>
                   <th v-if="showDiscountColumn" class="py-2 px-1 text-center w-11">Disc %</th>
                   <th class="py-2 px-1 text-center w-8">UoM</th>
                   <th class="py-2 px-1.5 text-right w-20">Rate (₹)</th>
-                  <th class="py-2 px-1.5 text-right w-20">Total Value</th>
+                  <th class="py-2 px-1.5 text-right w-20">Total (₹)</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-100 bg-white">
-                <tr v-for="(item, idx) in pg.items" :key="item.id" class="border-b border-gray-100">
-                  <td class="py-2 px-1 text-center text-gray-500 font-mono font-bold text-[10px]">{{ pg.startIndex + idx + 1 }}</td>
-                  <td class="py-2 px-1.5 font-mono font-black text-[#1b3b5f] text-[11px] whitespace-nowrap">{{ item.articleNumber }}</td>
-                  <td class="py-2 px-2.5 font-bold text-gray-950 text-[11px] leading-snug">{{ item.description }}</td>
+                <tr v-for="(item, idx) in pg.items" :key="item.id" class="border-b border-gray-100 text-[11px]">
+                  <td class="py-2 px-1 text-center text-gray-500 font-bold text-[10px] tabular-nums">{{ pg.startIndex + idx + 1 }}</td>
+                  <td class="py-2 px-1.5 font-black text-[#1b3b5f] text-[11px] whitespace-nowrap tabular-nums">{{ item.articleNumber }}</td>
+                  <td class="py-2 px-2 font-bold text-gray-950 text-[11px] leading-snug">{{ item.description }}</td>
                   <td class="py-2 px-1 text-center font-black text-[10px] text-gray-800 uppercase">{{ item.brand }}</td>
                   <td
-                    class="py-2 px-1 text-center font-black text-[11px]"
+                    class="py-2 px-1 text-center font-black text-[11px] tabular-nums"
                     :class="isItemInStock(item) ? 'bg-[#e6f4ea] text-[#137333]' : 'bg-[#fff3e0] text-[#d9480f]'"
                   >
                     {{ item.quantity }}
                   </td>
-                  <td class="py-2 px-1.5 text-right font-mono font-bold text-gray-700 text-[11px] whitespace-nowrap">₹{{ formatSlipNumber(item.mrp) }}</td>
-                  <td v-if="showDiscountColumn" class="py-2 px-1 text-center font-mono font-bold text-emerald-700 text-[11px]">{{ item.discount ? item.discount + '%' : '-' }}</td>
+                  <td class="py-2 px-1.5 text-right font-bold text-gray-700 text-[11px] whitespace-nowrap tabular-nums">₹{{ formatSlipNumber(item.mrp) }}</td>
+                  <td v-if="showDiscountColumn" class="py-2 px-1 text-center font-bold text-emerald-700 text-[11px] tabular-nums">{{ item.discount ? item.discount + '%' : '-' }}</td>
                   <td class="py-2 px-1 text-center font-bold text-gray-700 text-[10px]">{{ item.uom }}</td>
-                  <td class="py-2 px-1.5 text-right font-mono font-black text-[#1b3b5f] text-[11px] whitespace-nowrap">
+                  <td class="py-2 px-1.5 text-right font-black text-[#1b3b5f] text-[11px] whitespace-nowrap tabular-nums">
                     ₹{{ calculateUnitRate(item).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
                   </td>
-                  <td class="py-2 px-1.5 text-right font-mono font-black text-gray-950 text-[11.5px] whitespace-nowrap">
+                  <td class="py-2 px-1.5 text-right font-black text-gray-950 text-[11px] whitespace-nowrap tabular-nums">
                     ₹{{ formatSlipNumber(calculateLineTotal(item)) }}
                   </td>
                 </tr>
@@ -1765,49 +1765,49 @@
                       <!-- Total MRP -->
                       <tr class="text-gray-600">
                         <td class="py-1 text-left font-bold pr-2">Total MRP:</td>
-                        <td class="py-1 w-3 text-center font-mono"></td>
-                        <td class="py-1 w-4 text-right font-mono font-bold text-gray-700">₹</td>
-                        <td class="py-1 text-right font-mono font-bold text-gray-800 tabular-nums whitespace-nowrap pl-1">{{ formatSlipNumber(totalMrp) }}</td>
+                        <td class="py-1 w-3 text-center"></td>
+                        <td class="py-1 w-4 text-right font-bold text-gray-700">₹</td>
+                        <td class="py-1 text-right font-bold text-gray-800 tabular-nums whitespace-nowrap pl-1">{{ formatSlipNumber(totalMrp) }}</td>
                       </tr>
 
                       <!-- Total Discount -->
                       <tr v-if="totalDiscountSaved > 0" class="text-emerald-700 font-bold">
                         <td class="py-1 text-left pr-2">Total Discount:</td>
-                        <td class="py-1 w-3 text-center font-mono font-bold text-emerald-600">-</td>
-                        <td class="py-1 w-4 text-right font-mono font-bold text-emerald-600">₹</td>
-                        <td class="py-1 text-right font-mono font-bold tabular-nums whitespace-nowrap pl-1">{{ formatSlipNumber(totalDiscountSaved) }}</td>
+                        <td class="py-1 w-3 text-center font-bold text-emerald-600">-</td>
+                        <td class="py-1 w-4 text-right font-bold text-emerald-600">₹</td>
+                        <td class="py-1 text-right font-bold tabular-nums whitespace-nowrap pl-1">{{ formatSlipNumber(totalDiscountSaved) }}</td>
                       </tr>
 
                       <!-- Subtotal -->
                       <tr class="border-t border-slate-200 text-gray-900 font-black">
                         <td class="py-1 text-left pr-2">Subtotal:</td>
-                        <td class="py-1 w-3 text-center font-mono"></td>
-                        <td class="py-1 w-4 text-right font-mono font-black text-gray-950">₹</td>
-                        <td class="py-1 text-right font-mono font-black text-gray-950 tabular-nums whitespace-nowrap pl-1">{{ formatSlipNumber(subtotal) }}</td>
+                        <td class="py-1 w-3 text-center"></td>
+                        <td class="py-1 w-4 text-right font-black text-gray-950">₹</td>
+                        <td class="py-1 text-right font-black text-gray-950 tabular-nums whitespace-nowrap pl-1">{{ formatSlipNumber(subtotal) }}</td>
                       </tr>
 
                       <!-- GST (18%) -->
                       <tr v-if="taxMode === 'EXTRA'" class="text-gray-700 font-bold">
                         <td class="py-1 text-left pr-2">GST (18%):</td>
-                        <td class="py-1 w-3 text-center font-mono font-bold text-sky-600">+</td>
-                        <td class="py-1 w-4 text-right font-mono font-bold text-sky-600">₹</td>
-                        <td class="py-1 text-right font-mono font-bold tabular-nums whitespace-nowrap pl-1">{{ formatSlipNumber(gstAmount) }}</td>
+                        <td class="py-1 w-3 text-center font-bold text-sky-600">+</td>
+                        <td class="py-1 w-4 text-right font-bold text-sky-600">₹</td>
+                        <td class="py-1 text-right font-bold tabular-nums whitespace-nowrap pl-1">{{ formatSlipNumber(gstAmount) }}</td>
                       </tr>
 
                       <!-- Round Off -->
                       <tr v-if="roundOffAmount !== 0" class="text-gray-600 font-medium text-[11px]">
                         <td class="py-1 text-left pr-2">Round Off:</td>
-                        <td class="py-1 w-3 text-center font-mono">{{ roundOffAmount > 0 ? '+' : '-' }}</td>
-                        <td class="py-1 w-4 text-right font-mono">₹</td>
-                        <td class="py-1 text-right font-mono tabular-nums whitespace-nowrap pl-1">{{ Math.abs(roundOffAmount).toFixed(2) }}</td>
+                        <td class="py-1 w-3 text-center">{{ roundOffAmount > 0 ? '+' : '-' }}</td>
+                        <td class="py-1 w-4 text-right font-medium">₹</td>
+                        <td class="py-1 text-right font-medium tabular-nums whitespace-nowrap pl-1">{{ Math.abs(roundOffAmount).toFixed(2) }}</td>
                       </tr>
 
                       <!-- Grand Total -->
                       <tr class="border-t-2 border-b-2 border-slate-300 text-[#1b3b5f] font-black">
                         <td class="py-1.5 text-left uppercase text-xs tracking-wider pr-2">Grand Total:</td>
-                        <td class="py-1.5 w-3 text-center font-mono"></td>
-                        <td class="py-1.5 w-4 text-right font-mono font-black text-[#1b3b5f]">₹</td>
-                        <td class="py-1.5 text-right font-mono font-black tabular-nums whitespace-nowrap pl-1">{{ formatSlipNumber(grandTotal) }}</td>
+                        <td class="py-1.5 w-3 text-center"></td>
+                        <td class="py-1.5 w-4 text-right font-black text-[#1b3b5f]">₹</td>
+                        <td class="py-1.5 text-right font-black tabular-nums whitespace-nowrap pl-1">{{ formatSlipNumber(grandTotal) }}</td>
                       </tr>
                     </tbody>
                   </table>
@@ -1829,7 +1829,7 @@
                 {{ isAnonymousMode ? 'Price Quotation' : 'Silicon Marketing • Price Quotation' }}
               </span>
             </div>
-            <span class="font-mono font-bold text-gray-600 bg-gray-100 px-3 py-1 rounded-full border border-gray-200/80 mb-1">
+            <span class="font-bold text-gray-600 bg-gray-100 px-3 py-1 rounded-full border border-gray-200/80 mb-1 tabular-nums">
               Page {{ pg.pageNum }} of {{ pdfPages.length }}
             </span>
             <div class="flex flex-col items-center text-center">
