@@ -156,9 +156,9 @@
           </div>
         </div>
       </div>
-      <button @click="logout" title="Logout" class="flex w-full items-center gap-3 rounded-lg py-2.5 text-sm text-gray-400 transition-colors hover:bg-gray-800/50 hover:text-gray-200" :class="isSidebarCollapsed ? 'justify-center px-0' : 'px-4'">
-        <LogOut class="shrink-0 w-4 h-4" />
-        <span v-if="!isSidebarCollapsed" class="font-medium whitespace-nowrap">Logout</span>
+      <button @click="logout" title="Logout" class="flex w-full items-center gap-3 rounded-lg py-2.5 text-sm text-red-400 transition-colors hover:bg-red-500/10 hover:text-red-300 cursor-pointer" :class="isSidebarCollapsed ? 'justify-center px-0' : 'px-4'">
+        <LogOut class="shrink-0 w-4 h-4 text-red-400" />
+        <span v-if="!isSidebarCollapsed" class="font-medium whitespace-nowrap text-red-400">Logout</span>
       </button>
     </div>
   </aside>
@@ -287,9 +287,9 @@
       </div>
 
       <div class="mt-2 pt-4 border-t border-gray-800">
-        <button @click="logout" class="flex w-full items-center gap-3 rounded-lg py-2.5 px-3 text-sm text-gray-400 transition-colors hover:bg-gray-800/50 hover:text-gray-200">
-          <LogOut class="w-4 h-4" />
-          <span class="font-medium whitespace-nowrap">Logout</span>
+        <button @click="logout" class="flex w-full items-center gap-3 rounded-lg py-2.5 px-3 text-sm text-red-400 transition-colors hover:bg-red-500/10 hover:text-red-300 cursor-pointer">
+          <LogOut class="w-4 h-4 text-red-400" />
+          <span class="font-medium whitespace-nowrap text-red-400">Logout</span>
         </button>
       </div>
     </div>
