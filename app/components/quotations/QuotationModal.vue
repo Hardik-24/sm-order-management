@@ -1829,9 +1829,7 @@
                 {{ isAnonymousMode ? 'Price Quotation' : 'Silicon Marketing • Price Quotation' }}
               </span>
             </div>
-            <span class="font-bold text-gray-600 bg-gray-100 px-3 py-1 rounded-full border border-gray-200/80 mb-1 tabular-nums">
-              Page {{ pg.pageNum }} of {{ pdfPages.length }}
-            </span>
+            <span class="inline-flex items-center justify-center font-bold text-gray-600 bg-gray-100 px-3.5 py-1.5 rounded-full border border-gray-200/80 mb-1 tabular-nums whitespace-nowrap shrink-0 leading-none">Page&nbsp;{{ pg.pageNum }}&nbsp;of&nbsp;{{ pdfPages.length }}</span>
             <div class="flex flex-col items-center text-center">
               <div class="h-9 flex items-end justify-center mb-0.5">
                 <img
