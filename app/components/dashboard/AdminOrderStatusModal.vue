@@ -25,12 +25,13 @@ const { notifyChange } = useRealtimeSync()
 // Form state
 const isSubmitting = ref(false)
 const isApproved = ref(false)
-const billingStatus = ref<string>('PENDING')
-const invoiceNumber = ref('')
-const billingHoldReason = ref('')
 
 const packingStatus = ref<string>('PENDING')
 const packingHoldReason = ref('')
+
+const billingStatus = ref<string>('PENDING')
+const invoiceNumber = ref('')
+const billingHoldReason = ref('')
 
 const deliveryStatus = ref<string>('WAITING')
 const deliveryHoldReason = ref('')
@@ -44,12 +45,13 @@ const notes = ref('')
 const initForm = () => {
   if (!props.order) return
   isApproved.value = Boolean(props.order.isApproved)
-  billingStatus.value = props.order.billingStatus?.status || 'PENDING'
-  invoiceNumber.value = props.order.billingStatus?.invoiceNumber || ''
-  billingHoldReason.value = props.order.billingStatus?.holdReason || ''
 
   packingStatus.value = props.order.packingStatus?.status || 'PENDING'
   packingHoldReason.value = props.order.packingStatus?.holdReason || ''
+
+  billingStatus.value = props.order.billingStatus?.status || 'PENDING'
+  invoiceNumber.value = props.order.billingStatus?.invoiceNumber || ''
+  billingHoldReason.value = props.order.billingStatus?.holdReason || ''
 
   deliveryStatus.value = props.order.deliveryStatus?.status || 'WAITING'
   deliveryHoldReason.value = props.order.deliveryStatus?.holdReason || ''
@@ -67,18 +69,18 @@ watch(() => [props.isOpen, props.order], ([open]) => {
 }, { immediate: true })
 
 // Status options
-const billingOptions = [
-  { value: 'PENDING', label: 'Pending', desc: 'Awaiting Invoice', badgeClass: 'bg-amber-50 text-amber-700 border-amber-200' },
-  { value: 'GENERATED', label: 'Generated', desc: 'Invoice Issued', badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-  { value: 'ON_HOLD', label: 'On Hold', desc: 'Billing Blocked', badgeClass: 'bg-orange-50 text-orange-700 border-orange-200' },
-  { value: 'ERROR', label: 'Error', desc: 'Flagged Issue', badgeClass: 'bg-rose-50 text-rose-700 border-rose-200' }
-]
-
 const packingOptions = [
   { value: 'PENDING', label: 'Pending', desc: 'Queued for Packing', badgeClass: 'bg-amber-50 text-amber-700 border-amber-200' },
   { value: 'IN_PROGRESS', label: 'In Progress', desc: 'Packing Underway', badgeClass: 'bg-blue-50 text-blue-700 border-blue-200' },
   { value: 'PACKED', label: 'Packed', desc: 'Fully Packed & Boxed', badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
   { value: 'ON_HOLD', label: 'On Hold', desc: 'Inventory Shortage', badgeClass: 'bg-orange-50 text-orange-700 border-orange-200' }
+]
+
+const billingOptions = [
+  { value: 'PENDING', label: 'Pending', desc: 'Awaiting Invoice', badgeClass: 'bg-amber-50 text-amber-700 border-amber-200' },
+  { value: 'GENERATED', label: 'Generated', desc: 'Invoice Issued', badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  { value: 'ON_HOLD', label: 'On Hold', desc: 'Billing Blocked', badgeClass: 'bg-orange-50 text-orange-700 border-orange-200' },
+  { value: 'ERROR', label: 'Error', desc: 'Flagged Issue', badgeClass: 'bg-rose-50 text-rose-700 border-rose-200' }
 ]
 
 const deliveryOptions = [
@@ -116,9 +118,9 @@ const changedCount = computed(() => {
   if (!props.order) return 0
   let count = 0
   if (isApproved.value !== Boolean(props.order.isApproved)) count++
+  if (packingStatus.value !== (props.order.packingStatus?.status || 'PENDING')) count++
   if (billingStatus.value !== (props.order.billingStatus?.status || 'PENDING')) count++
   if (invoiceNumber.value.trim() !== (props.order.billingStatus?.invoiceNumber || '')) count++
-  if (packingStatus.value !== (props.order.packingStatus?.status || 'PENDING')) count++
   if (deliveryStatus.value !== (props.order.deliveryStatus?.status || 'WAITING')) count++
   if (driverName.value.trim() !== (props.order.deliveryStatus?.driverName || '')) count++
   if (!autoCalculateOverall.value && overallStatus.value !== props.order.overallStatus) count++
@@ -145,11 +147,11 @@ const submitStatusUpdate = async () => {
   try {
     const payload = {
       isApproved: isApproved.value,
+      packingStatus: packingStatus.value,
+      packingHoldReason: packingStatus.value === 'ON_HOLD' ? packingHoldReason.value.trim() : undefined,
       billingStatus: billingStatus.value,
       invoiceNumber: billingStatus.value === 'GENERATED' ? invoiceNumber.value.trim() : undefined,
       billingHoldReason: billingStatus.value === 'ON_HOLD' ? billingHoldReason.value.trim() : undefined,
-      packingStatus: packingStatus.value,
-      packingHoldReason: packingStatus.value === 'ON_HOLD' ? packingHoldReason.value.trim() : undefined,
       deliveryStatus: deliveryStatus.value,
       deliveryHoldReason: deliveryStatus.value === 'ON_HOLD' ? deliveryHoldReason.value.trim() : undefined,
       driverName: ['DELIVERED', 'DISPATCHED', 'ASSIGNED'].includes(deliveryStatus.value) ? driverName.value.trim() : undefined,
@@ -278,7 +280,53 @@ const submitStatusUpdate = async () => {
             </div>
           </div>
 
-          <!-- 2. Billing Department -->
+          <!-- 2. Packing Desk -->
+          <div class="bg-gray-50/70 rounded-xl p-4 border border-gray-200/80 space-y-3">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <div class="p-1.5 rounded-lg bg-orange-50 text-orange-700 border border-orange-100">
+                  <Package class="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 class="text-xs font-bold text-gray-900 uppercase tracking-wider">2. Packing & Fulfillment</h3>
+                  <p class="text-[11px] text-gray-500">Warehouse physical staging, bundle verification & boxing</p>
+                </div>
+              </div>
+
+              <span class="text-xs font-mono font-bold text-gray-500">
+                Current: {{ order?.packingStatus?.status || 'PENDING' }}
+              </span>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+              <button
+                v-for="opt in packingOptions"
+                :key="opt.value"
+                type="button"
+                @click="packingStatus = opt.value"
+                class="px-3 py-2 rounded-lg text-left border transition cursor-pointer"
+                :class="packingStatus === opt.value ? 'bg-[#1b3b5f] text-white border-[#1b3b5f] shadow-xs' : 'bg-white text-gray-800 border-gray-200 hover:bg-gray-50'"
+              >
+                <div class="font-bold text-xs">{{ opt.label }}</div>
+                <div class="text-[10px] opacity-80 mt-0.5">{{ opt.desc }}</div>
+              </button>
+            </div>
+
+            <!-- Optional Hold Reason if On Hold -->
+            <div v-if="packingStatus === 'ON_HOLD'" class="pt-2 border-t border-gray-200/60">
+              <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
+                Packing Hold Reason
+              </label>
+              <input 
+                type="text" 
+                v-model="packingHoldReason" 
+                placeholder="e.g. Awaiting 18mm MDF arrival from central warehouse" 
+                class="w-full text-xs border border-gray-300 rounded-lg p-2 bg-white focus:ring-[#1b3b5f] focus:border-[#1b3b5f]" 
+              />
+            </div>
+          </div>
+
+          <!-- 3. Billing Department -->
           <div class="bg-gray-50/70 rounded-xl p-4 border border-gray-200/80 space-y-3">
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-2">
@@ -286,7 +334,7 @@ const submitStatusUpdate = async () => {
                   <Receipt class="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 class="text-xs font-bold text-gray-900 uppercase tracking-wider">2. Billing & Invoicing</h3>
+                  <h3 class="text-xs font-bold text-gray-900 uppercase tracking-wider">3. Billing & Invoicing</h3>
                   <p class="text-[11px] text-gray-500">Controls GST invoice generation and billing gate</p>
                 </div>
               </div>
@@ -332,52 +380,6 @@ const submitStatusUpdate = async () => {
                 type="text" 
                 v-model="billingHoldReason" 
                 placeholder="e.g. Rate clarification requested by client" 
-                class="w-full text-xs border border-gray-300 rounded-lg p-2 bg-white focus:ring-[#1b3b5f] focus:border-[#1b3b5f]" 
-              />
-            </div>
-          </div>
-
-          <!-- 3. Packing Desk -->
-          <div class="bg-gray-50/70 rounded-xl p-4 border border-gray-200/80 space-y-3">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-2">
-                <div class="p-1.5 rounded-lg bg-orange-50 text-orange-700 border border-orange-100">
-                  <Package class="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 class="text-xs font-bold text-gray-900 uppercase tracking-wider">3. Packing & Fulfillment</h3>
-                  <p class="text-[11px] text-gray-500">Warehouse physical staging, bundle verification & boxing</p>
-                </div>
-              </div>
-
-              <span class="text-xs font-mono font-bold text-gray-500">
-                Current: {{ order?.packingStatus?.status || 'PENDING' }}
-              </span>
-            </div>
-
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
-              <button
-                v-for="opt in packingOptions"
-                :key="opt.value"
-                type="button"
-                @click="packingStatus = opt.value"
-                class="px-3 py-2 rounded-lg text-left border transition cursor-pointer"
-                :class="packingStatus === opt.value ? 'bg-[#1b3b5f] text-white border-[#1b3b5f] shadow-xs' : 'bg-white text-gray-800 border-gray-200 hover:bg-gray-50'"
-              >
-                <div class="font-bold text-xs">{{ opt.label }}</div>
-                <div class="text-[10px] opacity-80 mt-0.5">{{ opt.desc }}</div>
-              </button>
-            </div>
-
-            <!-- Optional Hold Reason if On Hold -->
-            <div v-if="packingStatus === 'ON_HOLD'" class="pt-2 border-t border-gray-200/60">
-              <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
-                Packing Hold Reason
-              </label>
-              <input 
-                type="text" 
-                v-model="packingHoldReason" 
-                placeholder="e.g. Awaiting 18mm MDF arrival from central warehouse" 
                 class="w-full text-xs border border-gray-300 rounded-lg p-2 bg-white focus:ring-[#1b3b5f] focus:border-[#1b3b5f]" 
               />
             </div>
