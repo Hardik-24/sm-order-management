@@ -233,7 +233,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { History, X, UserCheck, Users, Search, Loader2, FileText, Check } from 'lucide-vue-next'
-import { formatCurrency } from '~/utils/formatters'
+import { formatCurrency } from '~/lib/utils'
 
 const props = defineProps<{
   modelValue: boolean
