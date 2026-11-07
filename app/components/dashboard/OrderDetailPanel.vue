@@ -965,6 +965,11 @@ const selectedEditCustomerName = computed(() => {
   return customersList.value.find((c: any) => c.id === editForm.value.customerId)?.name || order.value?.customer?.name || ''
 })
 
+const getEditSelectedProduct = (prodId?: string) => {
+  if (!prodId) return null
+  return productsList.value.find((p: any) => p.id === prodId)
+}
+
 const addEditItem = () => {
   editForm.value.items.push({ 
     productId: '', 
@@ -1879,11 +1884,11 @@ onMounted(() => {
                 >
                   <div class="min-w-0 flex-1">
                     <div class="flex items-center gap-1.5 flex-wrap">
-                      <span class="font-mono font-bold text-[11px] text-gray-800 bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200 shrink-0">
-                        {{ uItem.product?.sku || uItem.sku || 'NO-SKU' }}
-                      </span>
-                      <span class="font-semibold text-gray-900 truncate text-xs" :title="uItem.product?.name || uItem.productName || ''">
+                      <span class="font-bold text-gray-900 truncate text-xs" :title="uItem.product?.name || uItem.productName || ''">
                         {{ uItem.product?.name || uItem.productName || 'Unnamed Item' }}
+                      </span>
+                      <span class="font-mono text-[10px] text-gray-500 bg-gray-100 px-1.5 py-0.2 rounded border border-gray-200 shrink-0">
+                        {{ uItem.product?.sku || uItem.sku || 'NO-SKU' }}
                       </span>
                       <span class="text-[10px] text-gray-500 font-medium shrink-0">
                         &bull; {{ uItem.approvedQuantity ?? uItem.quantity }} {{ uItem.unit || 'PCS' }}
@@ -1958,17 +1963,22 @@ onMounted(() => {
                         }"
                       >
                         <td class="px-3.5 py-3">
+                          <!-- Line 1: Item Name Full Name -->
                           <div 
-                            class="font-mono font-bold text-xs sm:text-sm text-gray-900"
-                            :class="context === 'packing' ? 'break-words' : 'truncate max-w-[150px] sm:max-w-[180px]'"
+                            class="font-semibold text-xs sm:text-sm text-gray-900 leading-snug"
+                            :class="context === 'packing' ? 'break-words whitespace-normal' : 'truncate max-w-[160px] sm:max-w-[240px]'"
+                            :title="item.product?.name || item.name || ''"
+                          >
+                            {{ item.product?.name || item.name || 'Unnamed Item' }}
+                          </div>
+                          <!-- Line 2: Alias / SKU in Next Line -->
+                          <div 
+                            v-if="item.product?.sku"
+                            class="font-mono text-[11px] sm:text-xs text-gray-500 mt-0.5"
+                            :class="context === 'packing' ? 'break-words' : 'truncate max-w-[160px] sm:max-w-[180px]'"
+                            :title="item.product?.sku"
                           >
                             {{ item.product?.sku }}
-                          </div>
-                          <div 
-                            class="text-[11px] sm:text-xs text-gray-600 mt-0.5 leading-snug"
-                            :class="context === 'packing' ? 'break-words whitespace-normal' : 'truncate max-w-[150px] sm:max-w-[180px]'"
-                          >
-                            {{ item.product?.name }}
                           </div>
                           <div class="flex flex-wrap items-center gap-1 mt-1.5">
                             <!-- Not in Busy Badge, Link Button & Copy Button -->
@@ -2740,6 +2750,40 @@ onMounted(() => {
                         placeholder="Select Product"
                         class="w-full"
                       />
+
+                      <!-- Product Badges: Stock, Category, UoM -->
+                      <div v-if="getEditSelectedProduct(item.productId)" class="mt-2 flex flex-wrap items-center gap-1.5">
+                        <span 
+                          class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-semibold border shadow-2xs"
+                          :class="[
+                            Number(getEditSelectedProduct(item.productId)?.stock ?? 0) <= 0 
+                              ? 'bg-rose-50 text-rose-700 border-rose-200' 
+                              : Number(getEditSelectedProduct(item.productId)?.stock ?? 0) < 10 
+                                ? 'bg-amber-50 text-amber-700 border-amber-200' 
+                                : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                          ]"
+                        >
+                          <span 
+                            class="w-1.5 h-1.5 rounded-full"
+                            :class="[
+                              Number(getEditSelectedProduct(item.productId)?.stock ?? 0) <= 0 
+                                ? 'bg-rose-500' 
+                                : Number(getEditSelectedProduct(item.productId)?.stock ?? 0) < 10 
+                                  ? 'bg-amber-500' 
+                                  : 'bg-emerald-500'
+                            ]"
+                          ></span>
+                          <span>Stock: <strong class="font-bold">{{ getEditSelectedProduct(item.productId)?.stock ?? 0 }}</strong> {{ getEditSelectedProduct(item.productId)?.unit || 'units' }}</span>
+                        </span>
+
+                        <span v-if="getEditSelectedProduct(item.productId)?.category?.name" class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-gray-100 text-gray-600 border border-gray-200">
+                          {{ getEditSelectedProduct(item.productId)?.category?.name }}
+                        </span>
+
+                        <span v-if="getEditSelectedProduct(item.productId)?.unit" class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200 uppercase tracking-wide">
+                          {{ getEditSelectedProduct(item.productId)?.unit }}
+                        </span>
+                      </div>
                     </div>
 
                     <!-- Qty -->
@@ -2853,7 +2897,8 @@ onMounted(() => {
                         </span>
 
                         <span class="text-[10px] text-sky-700 font-bold hover:underline flex items-center gap-0.5 ml-0.5">
-                          History &rarr;
+                          <span>History</span>
+                          <ChevronRight class="w-3 h-3 text-sky-700" />
                         </span>
 
                         <button
@@ -2987,17 +3032,17 @@ onMounted(() => {
 
     <!-- ── Rate Calculator Modal for Edit Order (A × B × Rate per Sq.ft) ─────────── -->
     <Teleport to="body">
-      <div v-if="isEditRateCalcOpen" class="fixed inset-0 z-[310] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 border border-gray-100 space-y-4 animate-in fade-in zoom-in-95 duration-150">
+      <div v-if="isEditRateCalcOpen" class="fixed inset-0 z-[310] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-4 sm:p-5 border border-gray-100 space-y-3 animate-in fade-in zoom-in-95 duration-150">
           <!-- Modal Header -->
-          <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+          <div class="flex items-center justify-between border-b border-gray-100 pb-2.5">
             <div class="flex items-center gap-2.5">
-              <div class="w-9 h-9 rounded-xl bg-[#1b3b5f]/10 text-[#1b3b5f] flex items-center justify-center border border-[#1b3b5f]/20">
-                <Calculator class="w-5 h-5 text-[#1b3b5f]" />
+              <div class="w-8 h-8 rounded-xl bg-[#1b3b5f]/10 text-[#1b3b5f] flex items-center justify-center border border-[#1b3b5f]/20">
+                <Calculator class="w-4 h-4 text-[#1b3b5f]" />
               </div>
               <div>
-                <h4 class="text-base font-bold text-gray-900">Sq.ft Sheet Rate Calculator</h4>
-                <p class="text-xs text-gray-500">Calculate unit rate: Size (A × B) × Sq.ft Rate</p>
+                <h4 class="text-sm sm:text-base font-bold text-gray-900">Sq.ft Sheet Rate Calculator</h4>
+                <p class="text-[11px] text-gray-500">Calculate unit rate: Size (A × B) × Sq.ft Rate</p>
               </div>
             </div>
             <button 
@@ -3005,13 +3050,13 @@ onMounted(() => {
               @click="isEditRateCalcOpen = false" 
               class="text-gray-400 hover:text-gray-600 p-1.5 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
             >
-              <X class="w-5 h-5" />
+              <X class="w-4 h-4" />
             </button>
           </div>
 
           <!-- Quick Size Presets -->
-          <div v-if="sheetSizesOptions && sheetSizesOptions.length > 0" class="space-y-1.5">
-            <label class="block text-[11px] font-bold text-gray-600 uppercase tracking-wider">Quick Sheet Sizes</label>
+          <div v-if="sheetSizesOptions && sheetSizesOptions.length > 0" class="space-y-1">
+            <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">Quick Sheet Sizes</label>
             <div class="flex items-center gap-1.5 flex-wrap">
               <button
                 v-for="qs in sheetSizesOptions"
@@ -3029,43 +3074,47 @@ onMounted(() => {
             </div>
           </div>
 
-          <!-- Dimensions Inputs (A × B) -->
-          <div class="grid grid-cols-2 gap-3 items-end">
-            <div>
-              <label class="block text-xs font-bold text-gray-700 mb-1">Dimension A (Length ft)</label>
-              <input
-                type="number"
-                v-model.number="editCalcLength"
-                min="0.1"
-                step="0.1"
-                class="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm font-bold text-gray-900 focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f] bg-white shadow-2xs"
-                placeholder="8"
-              />
+          <!-- Dimensions & Area (Inline Compact Group) -->
+          <div class="p-2.5 sm:p-3 bg-slate-50/90 rounded-xl border border-gray-200/90 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-bold text-gray-700 uppercase tracking-wider">Sheet Dimensions</span>
+              <span class="text-xs font-mono font-bold text-[#1b3b5f] bg-white px-2 py-0.5 rounded-md border border-gray-200 shadow-2xs">
+                Area: <strong class="font-black text-[#1b3b5f]">{{ editCalcLength }} × {{ editCalcWidth }} = {{ editCalcSqftArea }} sq.ft</strong>
+              </span>
             </div>
-            <div>
-              <label class="block text-xs font-bold text-gray-700 mb-1">Dimension B (Width ft)</label>
-              <input
-                type="number"
-                v-model.number="editCalcWidth"
-                min="0.1"
-                step="0.1"
-                class="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm font-bold text-gray-900 focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f] bg-white shadow-2xs"
-                placeholder="4"
-              />
+
+            <div class="flex items-center gap-2">
+              <div class="relative flex-1">
+                <input
+                  type="number"
+                  v-model.number="editCalcLength"
+                  min="0.1"
+                  step="0.1"
+                  class="w-full pl-3 pr-7 py-1.5 border border-gray-300 rounded-lg text-sm font-bold text-gray-900 bg-white shadow-2xs focus:ring-[#1b3b5f] focus:border-[#1b3b5f]"
+                  placeholder="Length"
+                />
+                <span class="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-gray-400 pointer-events-none">ft</span>
+              </div>
+
+              <span class="text-gray-400 font-bold text-xs shrink-0">×</span>
+
+              <div class="relative flex-1">
+                <input
+                  type="number"
+                  v-model.number="editCalcWidth"
+                  min="0.1"
+                  step="0.1"
+                  class="w-full pl-3 pr-7 py-1.5 border border-gray-300 rounded-lg text-sm font-bold text-gray-900 bg-white shadow-2xs focus:ring-[#1b3b5f] focus:border-[#1b3b5f]"
+                  placeholder="Width"
+                />
+                <span class="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-gray-400 pointer-events-none">ft</span>
+              </div>
             </div>
           </div>
 
-          <!-- Calculated Sqft Area Badge -->
-          <div class="p-2.5 bg-gray-50 rounded-xl border border-gray-200/80 flex items-center justify-between text-xs">
-            <span class="text-gray-600 font-medium">Total Sheet Area:</span>
-            <span class="font-mono font-bold text-gray-900 bg-white px-2.5 py-0.5 rounded-lg border border-gray-200 shadow-2xs">
-              {{ editCalcLength }} ft × {{ editCalcWidth }} ft = <strong class="text-[#1b3b5f] font-black">{{ editCalcSqftArea }} sq.ft</strong>
-            </span>
-          </div>
-
-          <!-- Rate per Sqft Input -->
-          <div class="space-y-1.5">
-            <label class="block text-xs font-bold text-gray-700">Rate per Sq.ft (₹) *</label>
+          <!-- Rate per Sqft Input (No autofocus on mobile) -->
+          <div class="space-y-1">
+            <label class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider">Rate per Sq.ft (₹) *</label>
             <div class="relative flex items-center">
               <IndianRupee class="absolute left-3 w-4 h-4 text-gray-400 pointer-events-none" />
               <input
@@ -3073,31 +3122,30 @@ onMounted(() => {
                 v-model.number="editCalcSqftRate"
                 min="0"
                 step="0.01"
-                class="w-full pl-8 pr-3 py-2.5 border border-gray-300 rounded-xl text-base font-black text-gray-900 focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f] bg-white shadow-2xs"
+                class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-xl text-base font-black text-gray-900 focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f] bg-white shadow-2xs"
                 placeholder="e.g. 75.00"
-                autofocus
                 @keyup.enter="applyEditCalculatedRate"
               />
             </div>
           </div>
 
           <!-- Live Calculated Preview Box -->
-          <div class="p-4 bg-emerald-50/80 border border-emerald-200 rounded-xl space-y-1 text-center">
+          <div class="p-3 bg-emerald-50/80 border border-emerald-200/90 rounded-xl text-center space-y-0.5">
             <span class="text-[10px] font-bold text-emerald-800 uppercase tracking-wider block">Calculated Total Sheet Rate</span>
-            <div class="text-3xl font-mono font-black text-[#1b3b5f] py-0.5">
+            <div class="text-2xl font-mono font-black text-[#1b3b5f]">
               ₹{{ editCalcTotalRate.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
             </div>
-            <p class="text-[11px] text-emerald-700 font-medium">
+            <p class="text-[10px] text-emerald-700 font-medium">
               {{ editCalcSqftArea }} sq.ft × ₹{{ Number(editCalcSqftRate || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }} / sq.ft
             </p>
           </div>
 
           <!-- Modal Action Buttons -->
-          <div class="flex items-center justify-end gap-2.5 pt-1">
+          <div class="flex items-center justify-end gap-2 pt-1">
             <button
               type="button"
               @click="isEditRateCalcOpen = false"
-              class="px-4 py-2 border border-gray-300 text-gray-700 rounded-xl text-xs font-bold hover:bg-gray-50 transition cursor-pointer"
+              class="px-3.5 py-1.5 border border-gray-300 text-gray-700 rounded-xl text-xs font-bold hover:bg-gray-50 transition cursor-pointer"
             >
               Cancel
             </button>
@@ -3105,9 +3153,9 @@ onMounted(() => {
               type="button"
               @click="applyEditCalculatedRate"
               :disabled="editCalcTotalRate <= 0"
-              class="px-5 py-2 bg-[#1b3b5f] hover:bg-[#132c49] text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-sm disabled:opacity-50"
+              class="px-4 py-1.5 bg-[#1b3b5f] hover:bg-[#132c49] text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-sm disabled:opacity-50"
             >
-              <Check class="w-4 h-4" />
+              <Check class="w-3.5 h-3.5" />
               <span>Apply Rate (₹{{ editCalcTotalRate.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }})</span>
             </button>
           </div>

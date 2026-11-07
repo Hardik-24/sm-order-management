@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { X, Plus, Trash2, Zap, MapPin, UserCheck, ShieldAlert, Award, FileText, IndianRupee, Truck, Car, AlertCircle, Package, PackageSearch, Loader2, Clock, Crown, Check, Tag, Calculator } from 'lucide-vue-next'
+import { X, Plus, Trash2, Zap, MapPin, UserCheck, ShieldAlert, Award, FileText, IndianRupee, Truck, Car, AlertCircle, Package, PackageSearch, Loader2, Clock, Crown, Check, Tag, Calculator, ChevronRight } from 'lucide-vue-next'
 import { formatCurrency, formatDate } from '~/lib/utils'
 import CustomSelect from '~/components/ui/CustomSelect.vue'
 import { useSnackbar } from '~/composables/useSnackbar'
@@ -832,6 +832,11 @@ const getCustomerInitials = (name: string) => {
                   <span v-if="getSelectedProduct(item.productId)?.category?.name" class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-gray-100 text-gray-600 border border-gray-200">
                     {{ getSelectedProduct(item.productId)?.category?.name }}
                   </span>
+
+                  <!-- UoM Badge -->
+                  <span v-if="getSelectedProduct(item.productId)?.unit" class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200 uppercase tracking-wide" title="Unit of Measurement (UoM)">
+                    {{ getSelectedProduct(item.productId)?.unit }}
+                  </span>
                 </div>
               </div>
 
@@ -964,7 +969,8 @@ const getCustomerInitials = (name: string) => {
                   </span>
 
                   <span class="text-[10px] text-sky-700 font-bold hover:underline flex items-center gap-0.5 ml-0.5">
-                    History &rarr;
+                    <span>History</span>
+                    <ChevronRight class="w-3 h-3 text-sky-700" />
                   </span>
 
                   <button
@@ -1080,17 +1086,17 @@ const getCustomerInitials = (name: string) => {
 
     <!-- ── Rate Calculator Modal (A × B × Rate per Sq.ft) ────────────────────── -->
     <Teleport to="body">
-      <div v-if="isRateCalcOpen" class="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 border border-gray-100 space-y-4 animate-in fade-in zoom-in-95 duration-150">
+      <div v-if="isRateCalcOpen" class="fixed inset-0 z-[300] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-4 sm:p-5 border border-gray-100 space-y-3 animate-in fade-in zoom-in-95 duration-150">
           <!-- Modal Header -->
-          <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+          <div class="flex items-center justify-between border-b border-gray-100 pb-2.5">
             <div class="flex items-center gap-2.5">
-              <div class="w-9 h-9 rounded-xl bg-[#1b3b5f]/10 text-[#1b3b5f] flex items-center justify-center border border-[#1b3b5f]/20">
-                <Calculator class="w-5 h-5 text-[#1b3b5f]" />
+              <div class="w-8 h-8 rounded-xl bg-[#1b3b5f]/10 text-[#1b3b5f] flex items-center justify-center border border-[#1b3b5f]/20">
+                <Calculator class="w-4 h-4 text-[#1b3b5f]" />
               </div>
               <div>
-                <h4 class="text-base font-bold text-gray-900">Sq.ft Sheet Rate Calculator</h4>
-                <p class="text-xs text-gray-500">Calculate unit rate: Size (A × B) × Sq.ft Rate</p>
+                <h4 class="text-sm sm:text-base font-bold text-gray-900">Sq.ft Sheet Rate Calculator</h4>
+                <p class="text-[11px] text-gray-500">Calculate unit rate: Size (A × B) × Sq.ft Rate</p>
               </div>
             </div>
             <button 
@@ -1098,13 +1104,13 @@ const getCustomerInitials = (name: string) => {
               @click="isRateCalcOpen = false" 
               class="text-gray-400 hover:text-gray-600 p-1.5 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
             >
-              <X class="w-5 h-5" />
+              <X class="w-4 h-4" />
             </button>
           </div>
 
           <!-- Quick Size Presets -->
-          <div v-if="sheetSizesOptions.length > 0" class="space-y-1.5">
-            <label class="block text-[11px] font-bold text-gray-600 uppercase tracking-wider">Quick Sheet Sizes</label>
+          <div v-if="sheetSizesOptions.length > 0" class="space-y-1">
+            <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">Quick Sheet Sizes</label>
             <div class="flex items-center gap-1.5 flex-wrap">
               <button
                 v-for="qs in sheetSizesOptions"
@@ -1122,43 +1128,47 @@ const getCustomerInitials = (name: string) => {
             </div>
           </div>
 
-          <!-- Dimensions Inputs (A × B) -->
-          <div class="grid grid-cols-2 gap-3 items-end">
-            <div>
-              <label class="block text-xs font-bold text-gray-700 mb-1">Dimension A (Length ft)</label>
-              <input
-                type="number"
-                v-model.number="calcLength"
-                min="0.1"
-                step="0.1"
-                class="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm font-bold text-gray-900 focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f] bg-white shadow-2xs"
-                placeholder="8"
-              />
+          <!-- Dimensions & Area (Inline Compact Group) -->
+          <div class="p-2.5 sm:p-3 bg-slate-50/90 rounded-xl border border-gray-200/90 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-bold text-gray-700 uppercase tracking-wider">Sheet Dimensions</span>
+              <span class="text-xs font-mono font-bold text-[#1b3b5f] bg-white px-2 py-0.5 rounded-md border border-gray-200 shadow-2xs">
+                Area: <strong class="font-black text-[#1b3b5f]">{{ calcLength }} × {{ calcWidth }} = {{ calcSqftArea }} sq.ft</strong>
+              </span>
             </div>
-            <div>
-              <label class="block text-xs font-bold text-gray-700 mb-1">Dimension B (Width ft)</label>
-              <input
-                type="number"
-                v-model.number="calcWidth"
-                min="0.1"
-                step="0.1"
-                class="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm font-bold text-gray-900 focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f] bg-white shadow-2xs"
-                placeholder="4"
-              />
+
+            <div class="flex items-center gap-2">
+              <div class="relative flex-1">
+                <input
+                  type="number"
+                  v-model.number="calcLength"
+                  min="0.1"
+                  step="0.1"
+                  class="w-full pl-3 pr-7 py-1.5 border border-gray-300 rounded-lg text-sm font-bold text-gray-900 bg-white shadow-2xs focus:ring-[#1b3b5f] focus:border-[#1b3b5f]"
+                  placeholder="Length"
+                />
+                <span class="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-gray-400 pointer-events-none">ft</span>
+              </div>
+
+              <span class="text-gray-400 font-bold text-xs shrink-0">×</span>
+
+              <div class="relative flex-1">
+                <input
+                  type="number"
+                  v-model.number="calcWidth"
+                  min="0.1"
+                  step="0.1"
+                  class="w-full pl-3 pr-7 py-1.5 border border-gray-300 rounded-lg text-sm font-bold text-gray-900 bg-white shadow-2xs focus:ring-[#1b3b5f] focus:border-[#1b3b5f]"
+                  placeholder="Width"
+                />
+                <span class="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-gray-400 pointer-events-none">ft</span>
+              </div>
             </div>
           </div>
 
-          <!-- Calculated Sqft Area Badge -->
-          <div class="p-2.5 bg-gray-50 rounded-xl border border-gray-200/80 flex items-center justify-between text-xs">
-            <span class="text-gray-600 font-medium">Total Sheet Area:</span>
-            <span class="font-mono font-bold text-gray-900 bg-white px-2.5 py-0.5 rounded-lg border border-gray-200 shadow-2xs">
-              {{ calcLength }} ft × {{ calcWidth }} ft = <strong class="text-[#1b3b5f] font-black">{{ calcSqftArea }} sq.ft</strong>
-            </span>
-          </div>
-
-          <!-- Rate per Sqft Input -->
-          <div class="space-y-1.5">
-            <label class="block text-xs font-bold text-gray-700">Rate per Sq.ft (₹) *</label>
+          <!-- Rate per Sqft Input (No autofocus on mobile) -->
+          <div class="space-y-1">
+            <label class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider">Rate per Sq.ft (₹) *</label>
             <div class="relative flex items-center">
               <IndianRupee class="absolute left-3 w-4 h-4 text-gray-400 pointer-events-none" />
               <input
@@ -1166,31 +1176,30 @@ const getCustomerInitials = (name: string) => {
                 v-model.number="calcSqftRate"
                 min="0"
                 step="0.01"
-                class="w-full pl-8 pr-3 py-2.5 border border-gray-300 rounded-xl text-base font-black text-gray-900 focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f] bg-white shadow-2xs"
+                class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-xl text-base font-black text-gray-900 focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f] bg-white shadow-2xs"
                 placeholder="e.g. 75.00"
-                autofocus
                 @keyup.enter="applyCalculatedRate"
               />
             </div>
           </div>
 
           <!-- Live Calculated Preview Box -->
-          <div class="p-4 bg-emerald-50/80 border border-emerald-200 rounded-xl space-y-1 text-center">
+          <div class="p-3 bg-emerald-50/80 border border-emerald-200/90 rounded-xl text-center space-y-0.5">
             <span class="text-[10px] font-bold text-emerald-800 uppercase tracking-wider block">Calculated Total Sheet Rate</span>
-            <div class="text-3xl font-mono font-black text-[#1b3b5f] py-0.5">
+            <div class="text-2xl font-mono font-black text-[#1b3b5f]">
               ₹{{ calcTotalRate.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
             </div>
-            <p class="text-[11px] text-emerald-700 font-medium">
+            <p class="text-[10px] text-emerald-700 font-medium">
               {{ calcSqftArea }} sq.ft × ₹{{ Number(calcSqftRate || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }} / sq.ft
             </p>
           </div>
 
           <!-- Modal Action Buttons -->
-          <div class="flex items-center justify-end gap-2.5 pt-1">
+          <div class="flex items-center justify-end gap-2 pt-1">
             <button
               type="button"
               @click="isRateCalcOpen = false"
-              class="px-4 py-2 border border-gray-300 text-gray-700 rounded-xl text-xs font-bold hover:bg-gray-50 transition cursor-pointer"
+              class="px-3.5 py-1.5 border border-gray-300 text-gray-700 rounded-xl text-xs font-bold hover:bg-gray-50 transition cursor-pointer"
             >
               Cancel
             </button>
@@ -1198,9 +1207,9 @@ const getCustomerInitials = (name: string) => {
               type="button"
               @click="applyCalculatedRate"
               :disabled="calcTotalRate <= 0"
-              class="px-5 py-2 bg-[#1b3b5f] hover:bg-[#132c49] text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-sm disabled:opacity-50"
+              class="px-4 py-1.5 bg-[#1b3b5f] hover:bg-[#132c49] text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-sm disabled:opacity-50"
             >
-              <Check class="w-4 h-4" />
+              <Check class="w-3.5 h-3.5" />
               <span>Apply Rate (₹{{ calcTotalRate.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }})</span>
             </button>
           </div>

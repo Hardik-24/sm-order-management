@@ -1152,7 +1152,7 @@
               <!-- GST Mode Radios -->
               <div>
                 <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">GST Calculation</label>
-                <div class="grid grid-cols-3 gap-2">
+                <div class="grid grid-cols-2 gap-2">
                   <label
                     class="p-2.5 rounded-xl border cursor-pointer select-none transition text-center text-xs font-bold"
                     :class="taxMode === 'EXTRA' ? 'bg-[#1b3b5f]/10 border-[#1b3b5f] text-[#1b3b5f]' : 'border-gray-200 text-gray-600 hover:bg-gray-50'"
@@ -1167,14 +1167,6 @@
                   >
                     <input type="radio" v-model="taxMode" value="INCLUSIVE" class="hidden" />
                     <span>GST Inclusive</span>
-                  </label>
-
-                  <label
-                    class="p-2.5 rounded-xl border cursor-pointer select-none transition text-center text-xs font-bold"
-                    :class="taxMode === 'NONE' ? 'bg-[#1b3b5f]/10 border-[#1b3b5f] text-[#1b3b5f]' : 'border-gray-200 text-gray-600 hover:bg-gray-50'"
-                  >
-                    <input type="radio" v-model="taxMode" value="NONE" class="hidden" />
-                    <span>No Tax (Net)</span>
                   </label>
                 </div>
               </div>
