@@ -2,7 +2,7 @@
 import { ref, computed, nextTick, watch, onMounted } from 'vue'
 import { onClickOutside } from '@vueuse/core'
 import { Filter, Search, MoreHorizontal, Calendar, X, MapPin, Share2, Loader2, UserPlus, Truck, Check, CheckCircle2, ChevronLeft, ChevronRight, Zap, Plus, Car, PackageCheck, Package } from 'lucide-vue-next'
-import { formatDate } from '~~/app/lib/utils'
+import { formatDate, formatCustomerContact } from '~~/app/lib/utils'
 import CustomSelect from '~/components/ui/CustomSelect.vue'
 import TableFilterButtons from '~/components/dashboard/TableFilterButtons.vue'
 import RowsPerPageSelect from '~/components/ui/RowsPerPageSelect.vue'
@@ -713,18 +713,23 @@ const saveDriverAssignment = async () => {
             <span v-else class="text-gray-400 text-xs shrink-0">—</span>
           </div>
 
-          <!-- LINE 2: Customer Name (Consistent next line after Order No.) -->
-          <div class="flex items-center gap-1.5 min-w-0">
-            <p class="text-xs font-semibold text-gray-800 truncate" :title="order.customer?.company || order.customer?.name || ''">
-              {{ order.customer?.name || order.customer?.company || 'Walk-in Customer' }}
+          <!-- LINE 2: Customer Name & Contact Subtitle -->
+          <div class="min-w-0">
+            <div class="flex items-center gap-1.5 min-w-0">
+              <p class="text-xs font-semibold text-gray-800 truncate" :title="order.customer?.company || order.customer?.name || ''">
+                {{ order.customer?.name || order.customer?.company || 'Walk-in Customer' }}
+              </p>
+              <span 
+                v-if="order.customer?.privilegeTier" 
+                class="text-[9px] px-1 py-0.2 rounded font-bold uppercase border shrink-0"
+                :class="getPrivilegeColor(order.customer.privilegeTier)"
+              >
+                {{ order.customer.privilegeTier }}
+              </span>
+            </div>
+            <p v-if="formatCustomerContact(order.customer) !== '—'" class="text-[11px] text-gray-500 truncate mt-0.5" :title="formatCustomerContact(order.customer)">
+              {{ formatCustomerContact(order.customer) }}
             </p>
-            <span 
-              v-if="order.customer?.privilegeTier" 
-              class="text-[9px] px-1 py-0.2 rounded font-bold uppercase border shrink-0"
-              :class="getPrivilegeColor(order.customer.privilegeTier)"
-            >
-              {{ order.customer.privilegeTier }}
-            </span>
           </div>
 
           <!-- LINE 3: Driver Info & Destination Address -->

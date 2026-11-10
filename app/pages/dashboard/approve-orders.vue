@@ -703,8 +703,8 @@ const getTotalNos = (order: any) => {
                 </span>
                 <span v-if="order.customer?.isPriorityClient" class="text-amber-500 font-bold text-xs shrink-0" title="Priority Client">★</span>
               </div>
-              <p class="text-[11px] text-gray-500 truncate mt-0.5">
-                {{ [order.customer?.company, order.customer?.city || order.customer?.phone].filter(Boolean).join(' • ') || '—' }}
+              <p v-if="formatCustomerContact(order.customer) !== '—'" class="text-[11px] text-gray-500 truncate mt-0.5" :title="formatCustomerContact(order.customer)">
+                {{ formatCustomerContact(order.customer) }}
               </p>
             </div>
 

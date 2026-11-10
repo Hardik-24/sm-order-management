@@ -368,10 +368,13 @@ const getTotalNos = (order: any) => {
             </span>
           </div>
 
-          <!-- LINE 2: Customer Name (next line after order no.) -->
+          <!-- LINE 2: Customer Name & Contact Subtitle -->
           <div class="min-w-0">
             <p class="text-xs font-semibold text-gray-800 truncate" :title="order.customer?.company || order.customer?.name || ''">
               {{ order.customer?.name || order.customer?.company || 'Walk-in' }}
+            </p>
+            <p v-if="formatCustomerContact(order.customer) !== '—'" class="text-[11px] text-gray-500 truncate mt-0.5" :title="formatCustomerContact(order.customer)">
+              {{ formatCustomerContact(order.customer) }}
             </p>
           </div>
 

@@ -576,15 +576,20 @@ const getItemsTotalQuantity = (order: Order) => {
             />
           </div>
 
-          <!-- LINE 2: Customer Name & Details -->
-          <div class="flex items-center gap-1.5 min-w-0 text-xs">
-            <span class="font-semibold text-gray-800 shrink-0" :title="order.customer?.name || ''">
-              {{ order.customer?.name || 'Walk-in Customer' }}
-            </span>
-            <span v-if="(order.customer as any)?.isPriorityClient" class="text-amber-500 font-bold text-xs shrink-0" title="Priority Client">★</span>
-            <span v-if="shouldShowCustomerCompany(order.customer)" class="text-gray-400 text-[11px] truncate min-w-0 flex-1">
-              ({{ order.customer?.company }})
-            </span>
+          <!-- LINE 2: Customer Name & Contact Subtitle -->
+          <div class="min-w-0">
+            <div class="flex items-center gap-1.5 min-w-0 text-xs">
+              <span class="font-semibold text-gray-800 shrink-0" :title="order.customer?.name || ''">
+                {{ order.customer?.name || 'Walk-in Customer' }}
+              </span>
+              <span v-if="(order.customer as any)?.isPriorityClient" class="text-amber-500 font-bold text-xs shrink-0" title="Priority Client">★</span>
+              <span v-if="shouldShowCustomerCompany(order.customer)" class="text-gray-400 text-[11px] truncate min-w-0 flex-1">
+                ({{ order.customer?.company }})
+              </span>
+            </div>
+            <p v-if="formatCustomerContact(order.customer) !== '—'" class="text-[11px] text-gray-500 truncate mt-0.5" :title="formatCustomerContact(order.customer)">
+              {{ formatCustomerContact(order.customer) }}
+            </p>
           </div>
 
           <!-- LINE 3: Items, Time & Pipeline Dots -->
