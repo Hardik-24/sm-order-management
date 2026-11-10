@@ -51,19 +51,22 @@ export default defineEventHandler(async (event) => {
   try {
     const saved = await saveQuotation(p)
 
-    // Non-blocking Push Notification dispatch with await for Serverless container safety
+    // Non-blocking Push Notification dispatch scoped strictly to the creator's logged-in devices
     if (await isNotificationEnabled('quotations')) {
       try {
-        await sendPushNotification({
-          title: `New Quotation: ${saved.quoteNumber}`,
-          body: `${saved.customerName} • ₹${Number(saved.grandTotal || 0).toLocaleString('en-IN')}`,
-          topic: 'quotations',
-          data: {
-            quoteNumber: saved.quoteNumber,
-            quotationId: saved.id,
-            type: 'QUOTATION_CREATED'
-          }
-        })
+        const creatorId = saved.createdById || body.createdById || user?.id
+        if (creatorId) {
+          await sendPushNotification({
+            title: `New Quotation: ${saved.quoteNumber}`,
+            body: `${saved.customerName} • ₹${Number(saved.grandTotal || 0).toLocaleString('en-IN')}`,
+            userId: creatorId,
+            data: {
+              quoteNumber: saved.quoteNumber,
+              quotationId: saved.id,
+              type: 'QUOTATION_CREATED'
+            }
+          })
+        }
       } catch (pushErr) {
         console.warn('[FCM] Quotation push failed:', pushErr)
       }
@@ -78,19 +81,22 @@ export default defineEventHandler(async (event) => {
     p = resetPrisma()
     const saved = await saveQuotation(p)
 
-    // Non-blocking Push Notification dispatch with await for Serverless container safety
+    // Non-blocking Push Notification dispatch scoped strictly to the creator's logged-in devices
     if (await isNotificationEnabled('quotations')) {
       try {
-        await sendPushNotification({
-          title: `New Quotation: ${saved.quoteNumber}`,
-          body: `${saved.customerName} • ₹${Number(saved.grandTotal || 0).toLocaleString('en-IN')}`,
-          topic: 'quotations',
-          data: {
-            quoteNumber: saved.quoteNumber,
-            quotationId: saved.id,
-            type: 'QUOTATION_CREATED'
-          }
-        })
+        const creatorId = saved.createdById || body.createdById || user?.id
+        if (creatorId) {
+          await sendPushNotification({
+            title: `New Quotation: ${saved.quoteNumber}`,
+            body: `${saved.customerName} • ₹${Number(saved.grandTotal || 0).toLocaleString('en-IN')}`,
+            userId: creatorId,
+            data: {
+              quoteNumber: saved.quoteNumber,
+              quotationId: saved.id,
+              type: 'QUOTATION_CREATED'
+            }
+          })
+        }
       } catch (pushErr) {
         console.warn('[FCM] Quotation push failed:', pushErr)
       }

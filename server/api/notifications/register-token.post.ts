@@ -17,7 +17,6 @@ export default defineEventHandler(async (event) => {
     // 1. Subscribe token to general notification topics immediately
     await Promise.allSettled([
       subscribeToTopic(token, 'orders'),
-      subscribeToTopic(token, 'quotations'),
       subscribeToTopic(token, 'general')
     ])
 

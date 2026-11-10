@@ -1,9 +1,11 @@
 import { defineEventHandler, readBody, getRouterParam, createError } from 'h3'
 import { getPrisma, resetPrisma } from '~~/server/utils/prisma'
 import { requireAuth } from '~~/server/utils/auth'
+import { sendPushNotification } from '~~/server/utils/firebaseAdmin'
+import { isNotificationEnabled } from '~~/server/utils/notificationSettings'
 
 export default defineEventHandler(async (event) => {
-  requireAuth(event)
+  const user = requireAuth(event)
   const id = getRouterParam(event, 'id')
   if (!id) {
     throw createError({ statusCode: 400, statusMessage: 'Quotation ID required' })
@@ -63,11 +65,43 @@ export default defineEventHandler(async (event) => {
     data.createdByRole = body.createdByRole
   }
 
+  const notifyQuotationEdit = async (quote: any, prismaClient: typeof p) => {
+    if (await isNotificationEnabled('quotations')) {
+      try {
+        let creatorId = quote.createdById || body.createdById
+        if (!creatorId && quote.createdByName) {
+          const match = await prismaClient.user.findFirst({
+            where: { name: { equals: quote.createdByName, mode: 'insensitive' } },
+            select: { id: true }
+          })
+          if (match) creatorId = match.id
+        }
+        if (!creatorId) creatorId = user?.id
+
+        if (creatorId) {
+          await sendPushNotification({
+            title: `Quotation Updated: ${quote.quoteNumber}`,
+            body: `${quote.customerName} • ₹${Number(quote.grandTotal || 0).toLocaleString('en-IN')}`,
+            userId: creatorId,
+            data: {
+              quoteNumber: quote.quoteNumber,
+              quotationId: quote.id,
+              type: 'QUOTATION_UPDATED'
+            }
+          })
+        }
+      } catch (pushErr) {
+        console.warn('[FCM] Quotation edit push failed:', pushErr)
+      }
+    }
+  }
+
   try {
     const updated = await p.quotation.update({
       where: { id },
       data
     })
+    await notifyQuotationEdit(updated, p)
     return { success: true, quotation: updated }
   } catch (err: any) {
     p = resetPrisma()
@@ -75,6 +109,7 @@ export default defineEventHandler(async (event) => {
       where: { id },
       data
     })
+    await notifyQuotationEdit(updated, p)
     return { success: true, quotation: updated }
   }
 })

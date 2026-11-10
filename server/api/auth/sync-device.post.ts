@@ -31,7 +31,6 @@ export default defineEventHandler(async (event) => {
     })
     Promise.allSettled([
       subscribeToTopic(fcmToken, 'orders'),
-      subscribeToTopic(fcmToken, 'quotations'),
       subscribeToTopic(fcmToken, 'general')
     ]).catch(() => {})
   }

@@ -75,12 +75,13 @@ export interface PushNotificationPayload {
   data?: Record<string, string>
   topic?: string
   tokens?: string[]
+  userId?: string
 }
 
 /**
  * Sends push notifications to mobile devices via Firebase Cloud Messaging (FCM).
  * Employs Dual Delivery:
- * 1. Broadcasts to Topic (e.g. 'orders', 'quotations')
+ * 1. Broadcasts to Topic (e.g. 'orders') if specified and not scoped to a specific user
  * 2. Directly multicasts to active registered device tokens for guaranteed sub-second delivery
  * Non-blocking: Errors are logged but will never throw or interrupt business flow.
  */
@@ -95,14 +96,14 @@ export async function sendPushNotification(payload: PushNotificationPayload): Pr
   appendDebugLog({
     level: 'info',
     message: `Triggering push: "${payload.title}" (${payload.body})`,
-    data: { topic: payload.topic }
+    data: { topic: payload.topic, userId: payload.userId, tokenCount: String(payload.tokens?.length || 0) }
   })
 
   try {
     const messaging = getMessaging(app)
 
-    // A. Broadcast to topic
-    if (payload.topic) {
+    // A. Broadcast to topic (Only if topic is specified and NO specific userId is targeted)
+    if (payload.topic && !payload.userId) {
       try {
         const response = await messaging.send({
           topic: payload.topic,
@@ -128,10 +129,30 @@ export async function sendPushNotification(payload: PushNotificationPayload): Pr
       }
     }
 
-    // B. Collect explicit or registered device tokens from DB
-    let targetTokens = (payload.tokens || []).filter(t => Boolean(t && t.trim()))
+    // B. Collect explicit or targeted device tokens from DB
+    let targetTokens: string[] = []
 
-    if (targetTokens.length === 0) {
+    if (payload.tokens !== undefined) {
+      // Caller explicitly provided a tokens array: strictly respect it (never fallback to all devices)
+      targetTokens = payload.tokens.filter(t => Boolean(t && t.trim()))
+    } else if (payload.userId) {
+      // Caller specified a target user: find only devices logged in with that specific user ID
+      try {
+        const userDevices = await prisma.trustedDevice.findMany({
+          where: {
+            userId: payload.userId,
+            fcmToken: { not: null },
+            isApproved: true,
+            isBlocked: false
+          },
+          select: { fcmToken: true }
+        })
+        targetTokens = userDevices.map(d => d.fcmToken!).filter(Boolean)
+      } catch (dbErr) {
+        console.warn('[FCM] Failed to query user device tokens for user ' + payload.userId + ':', dbErr)
+      }
+    } else if (!payload.topic) {
+      // Only fallback to all active devices if NO topic, NO tokens, and NO userId was provided (general broadcast)
       try {
         const activeDevices = await prisma.trustedDevice.findMany({
           where: {
