@@ -3217,65 +3217,74 @@ const resetForNewQuote = () => {
   selectedCreatorRole.value = match?.role || user.value?.role || 'SALES'
 }
 
+const loadQuoteIntoState = (newQuote: any) => {
+  if (newQuote) {
+    isSuccessView.value = true
+    isEditingExisting.value = true
+    quoteNumber.value = newQuote.quoteNumber
+    customerName.value = newQuote.customerName || ''
+    customerPlace.value = newQuote.customerPlace || ''
+    customerPhone.value = newQuote.customerPhone || ''
+    selectedCreatorId.value = newQuote.createdById || ''
+    selectedCreatorName.value = newQuote.createdByName || ''
+    selectedCreatorRole.value = newQuote.createdByRole || ''
+    showDiscountColumn.value = Boolean(newQuote.showDiscountColumn ?? newQuote.items?.[0]?.showDiscountColumn)
+    
+    const match = dbCustomers.value.find(c => c.name.toLowerCase() === (newQuote.customerName || '').trim().toLowerCase())
+    if (match) {
+      selectedCustomerId.value = match.id
+      isManualCustomer.value = false
+    } else {
+      selectedCustomerId.value = ''
+      isManualCustomer.value = true
+    }
+    signatureDataUrl.value = newQuote.signature || null
+    hasDrawnSignature.value = Boolean(newQuote.signature)
+    validityDays.value = newQuote.validityDays || 7
+    const rawNotes = newQuote.quoteNotes || ''
+    quoteNotes.value = rawNotes.replace(/(?:^|\n|•\s*)\s*ex[- ]?godown\s+mys(?:ore|uru)[^\n.]*\.?/gi, '').trim()
+    taxMode.value = (newQuote.taxMode as any) || 'EXTRA'
+    const rawItems = Array.isArray(newQuote.items) ? newQuote.items : []
+    quoteItems.value = rawItems.map((it: any, idx: number) => ({
+      id: it.id || `${it.articleNumber || 'ITEM'}-${idx}`,
+      articleNumber: it.articleNumber || '—',
+      description: it.description || '',
+      brand: it.brand || '—',
+      quantity: Number(it.quantity) || 1,
+      mrp: Number(it.mrp) || 0,
+      uom: it.uom || 'PC',
+      discount: Number(it.discount) || 0,
+      moq: Number(it.moq) || 1,
+      gstRate: it.gstRate !== undefined && it.gstRate !== null && !isNaN(Number(it.gstRate)) ? Number(it.gstRate) : 18,
+      stock: it.stock || '',
+      inStock: it.inStock,
+      manualStockOverride: it.manualStockOverride !== undefined ? it.manualStockOverride : (it.inStock !== undefined ? it.inStock : null)
+    }))
+    setupViewportObserver()
+  } else {
+    resetForNewQuote()
+  }
+}
+
 // Watch initialQuote prop to open existing quotes in success/view mode
 watch(
   () => props.initialQuote,
   (newQuote) => {
-    if (newQuote) {
-      isSuccessView.value = true
-      isEditingExisting.value = true
-      quoteNumber.value = newQuote.quoteNumber
-      customerName.value = newQuote.customerName || ''
-      customerPlace.value = newQuote.customerPlace || ''
-      customerPhone.value = newQuote.customerPhone || ''
-      selectedCreatorId.value = newQuote.createdById || ''
-      selectedCreatorName.value = newQuote.createdByName || ''
-      selectedCreatorRole.value = newQuote.createdByRole || ''
-      showDiscountColumn.value = Boolean(newQuote.showDiscountColumn ?? newQuote.items?.[0]?.showDiscountColumn)
-      
-      const match = dbCustomers.value.find(c => c.name.toLowerCase() === (newQuote.customerName || '').trim().toLowerCase())
-      if (match) {
-        selectedCustomerId.value = match.id
-        isManualCustomer.value = false
-      } else {
-        selectedCustomerId.value = ''
-        isManualCustomer.value = true
-      }
-      signatureDataUrl.value = newQuote.signature || null
-      hasDrawnSignature.value = Boolean(newQuote.signature)
-      validityDays.value = newQuote.validityDays || 7
-      const rawNotes = newQuote.quoteNotes || ''
-      quoteNotes.value = rawNotes.replace(/(?:^|\n|•\s*)\s*ex[- ]?godown\s+mys(?:ore|uru)[^\n.]*\.?/gi, '').trim()
-      taxMode.value = (newQuote.taxMode as any) || 'EXTRA'
-      const rawItems = Array.isArray(newQuote.items) ? newQuote.items : []
-      quoteItems.value = rawItems.map((it: any, idx: number) => ({
-        id: it.id || `${it.articleNumber || 'ITEM'}-${idx}`,
-        articleNumber: it.articleNumber || '—',
-        description: it.description || '',
-        brand: it.brand || '—',
-        quantity: Number(it.quantity) || 1,
-        mrp: Number(it.mrp) || 0,
-        uom: it.uom || 'PC',
-        discount: Number(it.discount) || 0,
-        moq: Number(it.moq) || 1,
-        gstRate: it.gstRate !== undefined && it.gstRate !== null && !isNaN(Number(it.gstRate)) ? Number(it.gstRate) : 18,
-        stock: it.stock || '',
-        inStock: it.inStock,
-        manualStockOverride: it.manualStockOverride !== undefined ? it.manualStockOverride : (it.inStock !== undefined ? it.inStock : null)
-      }))
-      setupViewportObserver()
-    } else {
-      resetForNewQuote()
-    }
+    loadQuoteIntoState(newQuote)
   },
   { immediate: true }
 )
 
-// Watch modelValue prop when modal is opened
+// Watch modelValue prop when modal is opened or closed
 watch(
   () => props.modelValue,
   (isOpen) => {
     if (isOpen) {
+      if (props.initialQuote) {
+        loadQuoteIntoState(props.initialQuote)
+      } else {
+        resetForNewQuote()
+      }
       loadGlobalSettings()
       loadDbUsers()
       setupViewportObserver()
@@ -3287,11 +3296,18 @@ watch(
           }
         }
       })
+    } else {
+      if (props.initialQuote) {
+        isSuccessView.value = true
+      }
     }
   }
 )
 
 const closeModal = () => {
+  if (props.initialQuote) {
+    isSuccessView.value = true
+  }
   emit('update:modelValue', false)
 }
 

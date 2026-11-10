@@ -704,6 +704,12 @@ const formatLastSynced = (iso?: string | null) => {
 const isModalOpen = ref(false)
 const selectedQuote = ref<any | null>(null)
 
+watch(isModalOpen, (isOpen) => {
+  if (!isOpen) {
+    selectedQuote.value = null
+  }
+})
+
 // Convert Modal State
 const isConvertModalOpen = ref(false)
 const selectedQuoteForConversion = ref<any | null>(null)
