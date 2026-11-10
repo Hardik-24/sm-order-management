@@ -167,7 +167,9 @@ export default defineEventHandler(async (event) => {
 
       const taxRate = it.taxRate !== undefined && it.taxRate !== null && !isNaN(Number(it.taxRate))
         ? Number(it.taxRate)
-        : (product.taxRate !== null && product.taxRate !== undefined ? Number(product.taxRate) : 18)
+        : (it.gstRate !== undefined && it.gstRate !== null && !isNaN(Number(it.gstRate))
+          ? Number(it.gstRate)
+          : (product.taxRate !== null && product.taxRate !== undefined ? Number(product.taxRate) : 18))
 
       const isTaxInclusive = body.taxMode === 'INCLUSIVE' || quotation.taxMode === 'INCLUSIVE' || Boolean(it.isTaxInclusive)
 

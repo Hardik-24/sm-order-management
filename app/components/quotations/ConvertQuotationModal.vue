@@ -279,7 +279,9 @@ const initForm = async () => {
 
     const taxRate = it.taxRate !== undefined && !isNaN(Number(it.taxRate))
       ? Number(it.taxRate)
-      : (found?.taxRate !== null && found?.taxRate !== undefined ? Number(found.taxRate) : 18)
+      : (it.gstRate !== undefined && !isNaN(Number(it.gstRate))
+        ? Number(it.gstRate)
+        : (found?.taxRate !== null && found?.taxRate !== undefined ? Number(found.taxRate) : 18))
 
     return {
       productId: found?.id || undefined,

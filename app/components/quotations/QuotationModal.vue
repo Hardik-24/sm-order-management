@@ -491,9 +491,9 @@
                                 <td class="py-1 text-right font-black text-gray-950 tabular-nums whitespace-nowrap pl-1">{{ formatSlipNumber(subtotal) }}</td>
                               </tr>
 
-                              <!-- GST (18%) -->
+                              <!-- GST -->
                               <tr v-if="taxMode === 'EXTRA'" class="text-gray-700 font-bold">
-                                <td class="py-1 text-left pr-2">GST (18%):</td>
+                                <td class="py-1 text-left pr-2">GST:</td>
                                 <td class="py-1 w-3 text-center font-bold text-sky-600">+</td>
                                 <td class="py-1 w-4 text-right font-bold text-sky-600">₹</td>
                                 <td class="py-1 text-right font-bold tabular-nums whitespace-nowrap pl-1">{{ formatSlipNumber(gstAmount) }}</td>
@@ -935,7 +935,7 @@
 
             <!-- Table of Items -->
             <div v-else class="overflow-x-auto">
-              <table class="w-full text-left border-collapse min-w-[760px] text-xs">
+              <table class="w-full text-left border-collapse min-w-[830px] text-xs">
                 <thead>
                   <tr class="bg-gray-50/90 border-b border-gray-200 text-[10px] font-bold text-gray-500 uppercase tracking-wider">
                     <th class="py-2.5 px-2 w-7 text-center">#</th>
@@ -946,6 +946,7 @@
                     <th class="py-2.5 px-2.5 w-20 text-right">MRP (₹)</th>
                     <th class="py-2.5 px-2 w-12 text-center">UoM</th>
                     <th class="py-2.5 px-2.5 w-20 text-center bg-amber-50/40 border-x border-amber-100">Disc %</th>
+                    <th class="py-2.5 px-2.5 w-20 text-center bg-sky-50/40 border-r border-sky-100" title="Tax bracket per item. Prefilled from Sheets.">GST %</th>
                     <th class="py-2.5 px-3 w-24 text-right bg-emerald-50/30">Net Rate (₹)</th>
                     <th class="py-2.5 px-3 w-28 text-right">Total (₹)</th>
                     <th class="py-2.5 px-2 w-8 text-center"></th>
@@ -1094,6 +1095,22 @@
                       </div>
                     </td>
 
+                    <!-- GST % (Tax Bracket) -->
+                    <td class="py-2.5 px-2.5 bg-sky-50/20 border-r border-sky-100/60 text-center">
+                      <div class="inline-flex items-center gap-0.5 justify-center">
+                        <input
+                          v-model.number="row.gstRate"
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.5"
+                          placeholder="18"
+                          class="w-12 text-center font-bold text-xs border border-sky-300 rounded-lg py-0.5 bg-white text-sky-950 focus:ring-1 focus:ring-sky-500 outline-none"
+                        />
+                        <span class="text-[10px] text-sky-700 font-bold">%</span>
+                      </div>
+                    </td>
+
                     <!-- Net Rate -->
                     <td class="py-2.5 px-3 text-right bg-emerald-50/20 font-bold text-emerald-900">
                       ₹{{ calculateUnitRate(row).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
@@ -1158,7 +1175,7 @@
                     :class="taxMode === 'EXTRA' ? 'bg-[#1b3b5f]/10 border-[#1b3b5f] text-[#1b3b5f]' : 'border-gray-200 text-gray-600 hover:bg-gray-50'"
                   >
                     <input type="radio" v-model="taxMode" value="EXTRA" class="hidden" />
-                    <span>+18% GST Extra</span>
+                    <span>+ GST Extra</span>
                   </label>
 
                   <label
@@ -1168,6 +1185,22 @@
                     <input type="radio" v-model="taxMode" value="INCLUSIVE" class="hidden" />
                     <span>GST Inclusive</span>
                   </label>
+                </div>
+
+                <!-- Quick Apply Tax Bracket to All Items -->
+                <div v-if="quoteItems.length > 0" class="mt-2.5 flex items-center gap-1.5 flex-wrap">
+                  <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Set all items:</span>
+                  <button
+                    v-for="rate in [0, 5, 12, 18, 28]"
+                    :key="rate"
+                    type="button"
+                    @click="applyGstRateToAll(rate)"
+                    class="px-2 py-0.5 rounded-md text-[10px] font-bold border transition-colors cursor-pointer"
+                    :class="isAllGstRate(rate) ? 'bg-sky-100 text-sky-800 border-sky-300 font-extrabold shadow-2xs' : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'"
+                    :title="`Set tax bracket for all items to ${rate}%`"
+                  >
+                    {{ rate }}%
+                  </button>
                 </div>
               </div>
 
@@ -1256,9 +1289,9 @@
                     <td class="py-1 text-right font-mono font-black text-gray-950 tabular-nums whitespace-nowrap pl-1">{{ formatSlipNumber(subtotal) }}</td>
                   </tr>
 
-                  <!-- GST (18%) -->
+                  <!-- GST -->
                   <tr v-if="taxMode === 'EXTRA'" class="text-gray-700 font-bold">
-                    <td class="py-1 text-left pr-2">GST (18%):</td>
+                    <td class="py-1 text-left pr-2">GST:</td>
                     <td class="py-1 w-3 text-center font-mono font-bold text-sky-600">+</td>
                     <td class="py-1 w-4 text-right font-mono font-bold text-sky-600">₹</td>
                     <td class="py-1 text-right font-mono font-bold tabular-nums whitespace-nowrap pl-1">{{ formatSlipNumber(gstAmount) }}</td>
@@ -1494,9 +1527,9 @@
                   <td class="py-1 text-right font-black text-gray-950 tabular-nums whitespace-nowrap pl-1">{{ formatSlipNumber(subtotal) }}</td>
                 </tr>
 
-                <!-- GST (18%) -->
+                <!-- GST -->
                 <tr v-if="taxMode === 'EXTRA'" class="text-gray-700 font-bold">
-                  <td class="py-1 text-left pr-2">GST (18%):</td>
+                  <td class="py-1 text-left pr-2">GST:</td>
                   <td class="py-1 w-3 text-center font-bold text-sky-600">+</td>
                   <td class="py-1 w-4 text-right font-bold text-sky-600">₹</td>
                   <td class="py-1 text-right font-bold tabular-nums whitespace-nowrap pl-1">{{ formatSlipNumber(gstAmount) }}</td>
@@ -1778,9 +1811,9 @@
                         <td class="py-1 text-right font-black text-gray-950 tabular-nums whitespace-nowrap pl-1">{{ formatSlipNumber(subtotal) }}</td>
                       </tr>
 
-                      <!-- GST (18%) -->
+                      <!-- GST -->
                       <tr v-if="taxMode === 'EXTRA'" class="text-gray-700 font-bold">
-                        <td class="py-1 text-left pr-2">GST (18%):</td>
+                        <td class="py-1 text-left pr-2">GST:</td>
                         <td class="py-1 w-3 text-center font-bold text-sky-600">+</td>
                         <td class="py-1 w-4 text-right font-bold text-sky-600">₹</td>
                         <td class="py-1 text-right font-bold tabular-nums whitespace-nowrap pl-1">{{ formatSlipNumber(gstAmount) }}</td>
@@ -2786,7 +2819,7 @@ const addItemToQuote = (item: SheetProduct) => {
       uom: item.uom || 'PC',
       discount: item.defaultDiscount || 0,
       moq: item.moq || 1,
-      gstRate: item.gstRate || 18,
+      gstRate: item.gstRate !== undefined && item.gstRate !== null && !isNaN(Number(item.gstRate)) ? Number(item.gstRate) : 18,
       stock: item.stock || item.flag || '',
       sourceTab: item.sourceTab
     })
@@ -2811,8 +2844,21 @@ const addCustomItem = () => {
     mrp: 1000,
     uom: 'PC',
     discount: 0,
+    gstRate: 18,
     isCustom: true
   })
+}
+
+const applyGstRateToAll = (rate: number) => {
+  quoteItems.value.forEach(row => {
+    row.gstRate = rate
+  })
+  showSaved(`Applied ${rate}% GST to all items`)
+}
+
+const isAllGstRate = (rate: number) => {
+  if (quoteItems.value.length === 0) return false
+  return quoteItems.value.every(row => Number(row.gstRate) === rate)
 }
 
 const removeQuoteItem = (idx: number) => {
@@ -2873,7 +2919,13 @@ const overallDiscountPercent = computed(() => {
 
 const gstAmount = computed(() => {
   if (taxMode.value !== 'EXTRA') return 0
-  return subtotal.value * 0.18
+  return quoteItems.value.reduce((acc, it) => {
+    const lineTotal = calculateLineTotal(it)
+    const rate = it.gstRate !== undefined && it.gstRate !== null && !isNaN(Number(it.gstRate))
+      ? Number(it.gstRate)
+      : 18
+    return acc + (lineTotal * (rate / 100))
+  }, 0)
 })
 
 const rawGrandTotal = computed(() => {
@@ -3206,7 +3258,7 @@ watch(
         uom: it.uom || 'PC',
         discount: Number(it.discount) || 0,
         moq: Number(it.moq) || 1,
-        gstRate: Number(it.gstRate) || 18,
+        gstRate: it.gstRate !== undefined && it.gstRate !== null && !isNaN(Number(it.gstRate)) ? Number(it.gstRate) : 18,
         stock: it.stock || '',
         inStock: it.inStock,
         manualStockOverride: it.manualStockOverride !== undefined ? it.manualStockOverride : (it.inStock !== undefined ? it.inStock : null)
