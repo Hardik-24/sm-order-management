@@ -45,26 +45,42 @@
         </div>
 
         <!-- Controls: Tabs & In-Modal Search -->
-        <div class="px-3 sm:px-4 py-2 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 border-b border-gray-100 shrink-0 bg-slate-50/50">
-          <!-- Tabs -->
-          <div class="inline-flex p-0.5 bg-gray-200/80 rounded-lg text-xs font-bold shrink-0">
+        <div class="px-3 sm:px-4 py-2.5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 border-b border-gray-100 shrink-0 bg-slate-50/50">
+          <!-- Separate Pill Tabs -->
+          <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <button
               type="button"
               @click="activeTab = 'current_party'"
-              class="px-2.5 py-1 rounded-md transition-all flex items-center gap-1.5 cursor-pointer select-none text-[11px]"
-              :class="activeTab === 'current_party' ? 'bg-white text-gray-900 shadow-2xs' : 'text-gray-500 hover:text-gray-700'"
+              class="px-3 py-1.5 rounded-full text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer select-none border"
+              :class="activeTab === 'current_party' 
+                ? 'bg-[#1b3b5f] text-white border-[#1b3b5f] shadow-xs' 
+                : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:text-gray-900 hover:border-gray-300'"
             >
-              <UserCheck class="w-3 h-3 text-[#1b3b5f]" />
-              <span>Current Party ({{ currentPartyList.length }})</span>
+              <UserCheck class="w-3.5 h-3.5" :class="activeTab === 'current_party' ? 'text-white' : 'text-[#1b3b5f]'" />
+              <span>Current Party</span>
+              <span 
+                class="text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold"
+                :class="activeTab === 'current_party' ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-700'"
+              >
+                {{ currentPartyList.length }}
+              </span>
             </button>
             <button
               type="button"
               @click="activeTab = 'all_parties'"
-              class="px-2.5 py-1 rounded-md transition-all flex items-center gap-1.5 cursor-pointer select-none text-[11px]"
-              :class="activeTab === 'all_parties' ? 'bg-white text-gray-900 shadow-2xs' : 'text-gray-500 hover:text-gray-700'"
+              class="px-3 py-1.5 rounded-full text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer select-none border"
+              :class="activeTab === 'all_parties' 
+                ? 'bg-[#1b3b5f] text-white border-[#1b3b5f] shadow-xs' 
+                : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:text-gray-900 hover:border-gray-300'"
             >
-              <Users class="w-3 h-3 text-gray-500" />
-              <span>All Parties ({{ allPartiesList.length }})</span>
+              <Users class="w-3.5 h-3.5" :class="activeTab === 'all_parties' ? 'text-white' : 'text-gray-500'" />
+              <span>All Parties</span>
+              <span 
+                class="text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold"
+                :class="activeTab === 'all_parties' ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-700'"
+              >
+                {{ allPartiesList.length }}
+              </span>
             </button>
           </div>
 
@@ -75,7 +91,7 @@
               v-model="searchQuery"
               type="text"
               placeholder="Search voucher or party..."
-              class="w-full pl-8 pr-3 py-1 text-xs bg-white border border-gray-200 rounded-lg outline-none focus:border-[#1b3b5f] transition-all"
+              class="w-full pl-8 pr-3 py-1.5 text-xs bg-white border border-gray-200 rounded-lg outline-none focus:border-[#1b3b5f] transition-all"
             />
           </div>
         </div>
