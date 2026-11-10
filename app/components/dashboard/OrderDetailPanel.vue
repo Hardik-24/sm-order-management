@@ -1120,6 +1120,7 @@ onMounted(() => {
     :orderId="order?.id || null"
     @close="isGenerateModalOpen = false"
     @generated="handleBillGenerated"
+    @openSplit="orderId => emit('split-order', orderId)"
   />
 
   <!-- Admin Department Status Override Modal -->
@@ -1402,7 +1403,7 @@ onMounted(() => {
                 <span v-if="order.customer?.isBusySynced === false" class="text-[9px] font-black uppercase tracking-wider bg-amber-100 text-amber-900 px-1.5 py-0.5 rounded border border-amber-300 shadow-2xs">
                   Not in Busy
                 </span>
-                <span v-else-if="order.customer?.customerCode" class="text-[9px] font-mono font-bold bg-gray-100 text-emerald-800 px-1.5 py-0.2 rounded border border-gray-200">
+                <span v-else-if="order.customer?.customerCode" class="hidden sm:inline-flex text-[9px] font-mono font-bold bg-gray-100 text-emerald-800 px-1.5 py-0.2 rounded border border-gray-200">
                   {{ order.customer.customerCode }}
                 </span>
               </div>
@@ -1884,11 +1885,11 @@ onMounted(() => {
                 >
                   <div class="min-w-0 flex-1">
                     <div class="flex items-center gap-1.5 flex-wrap">
-                      <span class="font-bold text-gray-900 truncate text-xs" :title="uItem.product?.name || uItem.productName || ''">
+                      <span class="font-bold text-gray-900 break-words whitespace-normal text-xs" :title="uItem.product?.name || uItem.productName || ''">
                         {{ uItem.product?.name || uItem.productName || 'Unnamed Item' }}
                       </span>
-                      <span class="font-mono text-[10px] text-gray-500 bg-gray-100 px-1.5 py-0.2 rounded border border-gray-200 shrink-0">
-                        {{ uItem.product?.sku || uItem.sku || 'NO-SKU' }}
+                      <span v-if="(uItem.product?.sku || uItem.sku) && (uItem.product?.sku || uItem.sku).trim().toLowerCase() !== (uItem.product?.name || uItem.productName || '').trim().toLowerCase()" class="font-mono text-[10px] text-gray-500 bg-gray-100 px-1.5 py-0.2 rounded border border-gray-200 shrink-0 truncate max-w-[160px]">
+                        {{ uItem.product?.sku || uItem.sku }}
                       </span>
                       <span class="text-[10px] text-gray-500 font-medium shrink-0">
                         &bull; {{ uItem.approvedQuantity ?? uItem.quantity }} {{ uItem.unit || 'PCS' }}
@@ -1963,22 +1964,20 @@ onMounted(() => {
                         }"
                       >
                         <td class="px-3.5 py-3">
-                          <!-- Line 1: Item Name Full Name -->
+                          <!-- Line 1: Item Name Full Name (wraps to next line, never truncated) -->
                           <div 
-                            class="font-semibold text-xs sm:text-sm text-gray-900 leading-snug"
-                            :class="context === 'packing' ? 'break-words whitespace-normal' : 'truncate max-w-[160px] sm:max-w-[240px]'"
+                            class="font-semibold text-xs sm:text-sm text-gray-900 leading-snug break-words whitespace-normal"
                             :title="item.product?.name || item.name || ''"
                           >
                             {{ item.product?.name || item.name || 'Unnamed Item' }}
                           </div>
-                          <!-- Line 2: Alias / SKU in Next Line -->
+                          <!-- Line 2: Alias / SKU in Next Line (hidden if same as product name, truncate allowed) -->
                           <div 
-                            v-if="item.product?.sku"
-                            class="font-mono text-[11px] sm:text-xs text-gray-500 mt-0.5"
-                            :class="context === 'packing' ? 'break-words' : 'truncate max-w-[160px] sm:max-w-[180px]'"
-                            :title="item.product?.sku"
+                            v-if="(item.product?.sku || item.sku) && (item.product?.sku || item.sku).trim().toLowerCase() !== (item.product?.name || item.name || '').trim().toLowerCase()"
+                            class="font-mono text-[11px] sm:text-xs text-gray-500 mt-0.5 truncate max-w-[180px] sm:max-w-xs"
+                            :title="item.product?.sku || item.sku"
                           >
-                            {{ item.product?.sku }}
+                            {{ item.product?.sku || item.sku }}
                           </div>
                           <div class="flex flex-wrap items-center gap-1 mt-1.5">
                             <!-- Not in Busy Badge, Link Button & Copy Button -->

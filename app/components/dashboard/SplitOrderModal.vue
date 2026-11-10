@@ -283,7 +283,7 @@ const confirmSplit = async () => {
 
 <template>
   <Teleport to="body">
-    <div v-if="isOpen" class="fixed inset-0 z-[350] flex items-center justify-center p-2 sm:p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[calc(1rem+env(safe-area-inset-top,0px))] overflow-y-auto">
+    <div v-if="isOpen" data-modal-container class="fixed inset-0 z-[370] flex items-center justify-center p-2 sm:p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[calc(1rem+env(safe-area-inset-top,0px))] overflow-y-auto">
       <!-- Backdrop -->
       <div class="absolute inset-0 bg-black/60 backdrop-blur-xs transition-opacity" @click="closeModal"></div>
 
@@ -683,6 +683,7 @@ const confirmSplit = async () => {
             <button 
               type="button" 
               @click="closeModal" 
+              data-modal-close="true"
               :disabled="isSubmitting"
               class="px-4 py-2 text-xs font-semibold text-gray-700 bg-white hover:bg-gray-100 border border-gray-300 rounded-lg transition cursor-pointer"
             >

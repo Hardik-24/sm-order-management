@@ -124,7 +124,7 @@ export default defineNuxtPlugin(() => {
           const zB = getElementZIndex(b)
           if (zA !== zB) return zB - zA
           // If equal z-index, later in DOM comes first
-          return 0
+          return (b.compareDocumentPosition(a) & Node.DOCUMENT_POSITION_FOLLOWING) ? -1 : 1
         })
         topExplicitBtn = explicitCloseButtons[0]
         topExplicitZ = getElementZIndex(topExplicitBtn)
@@ -138,7 +138,9 @@ export default defineNuxtPlugin(() => {
         overlays.sort((a, b) => {
           const zA = getElementZIndex(a)
           const zB = getElementZIndex(b)
-          return zB - zA
+          if (zA !== zB) return zB - zA
+          // If equal z-index, later in DOM comes first
+          return (b.compareDocumentPosition(a) & Node.DOCUMENT_POSITION_FOLLOWING) ? -1 : 1
         })
         topOverlay = overlays[0]
         topOverlayZ = getElementZIndex(topOverlay)
@@ -205,16 +207,25 @@ export default defineNuxtPlugin(() => {
       return false
     }
 
+    let lastModalDismissTime = 0
+
     App.addListener('backButton', () => {
+      const now = Date.now()
+      if (now - lastModalDismissTime < 350) {
+        return // Debounce rapid back presses / double events from Android hardware
+      }
+
       // Priority 1: Close mobile navigation drawer if expanded
       const mobileMenuState = useState<boolean>('mobileMenuOpen')
       if (mobileMenuState.value) {
         mobileMenuState.value = false
+        lastModalDismissTime = now
         return
       }
 
       // Priority 2: Dismiss top-most active modal, drawer, or dialog
       if (tryCloseTopmostModal()) {
+        lastModalDismissTime = now
         return
       }
 
@@ -236,7 +247,6 @@ export default defineNuxtPlugin(() => {
       }
 
       // Priority 5: Double-tap back within 2 seconds to exit app (only on root /dashboard or /login)
-      const now = Date.now()
       if (now - lastBackPress < 2000) {
         App.exitApp()
       } else {

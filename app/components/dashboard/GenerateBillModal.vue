@@ -1,6 +1,6 @@
 <template>
   <Teleport to="body">
-    <div v-if="isOpen" class="fixed inset-0 z-[350] flex items-center justify-center p-2 sm:p-4 md:p-6 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[calc(1rem+env(safe-area-inset-top,0px))] overflow-y-auto">
+    <div v-if="isOpen" data-modal-container class="fixed inset-0 z-[350] flex items-center justify-center p-2 sm:p-4 md:p-6 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[calc(1rem+env(safe-area-inset-top,0px))] overflow-y-auto">
       <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="closeModal"></div>
       
       <div ref="modalCardRef" class="relative bg-white rounded-xl shadow-2xl w-full max-w-5xl flex flex-col max-h-[calc(100dvh-2.5rem-env(safe-area-inset-bottom,0px)-env(safe-area-inset-top,0px))] md:max-h-[90vh] overflow-hidden">
@@ -34,7 +34,7 @@
                 <span v-if="order.customer?.isBusySynced === false" class="text-[9px] font-black uppercase tracking-wider bg-amber-100 text-amber-900 px-1.5 py-0.5 rounded border border-amber-300">
                   Not in Busy
                 </span>
-                <span v-else-if="order.customer?.customerCode" class="text-[9px] font-mono font-bold bg-white text-emerald-800 px-1.5 py-0.5 rounded border border-emerald-300">
+                <span v-else-if="order.customer?.customerCode" class="hidden sm:inline-block text-[9px] font-mono font-bold bg-white text-emerald-800 px-1.5 py-0.5 rounded border border-emerald-300">
                   {{ order.customer.customerCode }}
                 </span>
               </div>
@@ -121,7 +121,7 @@
                 </span>
                 <button 
                   type="button" 
-                  @click="emit('openSplit', order.id); closeModal()"
+                  @click="emit('openSplit', order.id)"
                   class="text-xs font-bold text-[#1b3b5f] hover:underline flex items-center gap-1 cursor-pointer"
                   title="Split unbilled or shortage quantities into a separate order"
                 >
@@ -483,7 +483,7 @@
 
       <!-- Footer -->
       <div class="p-3.5 sm:p-4 border-t border-gray-100 bg-white flex flex-col-reverse sm:flex-row justify-end gap-2.5 sm:gap-3">
-        <button @click="closeModal" class="w-full sm:w-auto text-center px-4 py-2.5 text-xs font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
+        <button @click="closeModal" data-modal-close="true" class="w-full sm:w-auto text-center px-4 py-2.5 text-xs font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
           Cancel
         </button>
         <button 

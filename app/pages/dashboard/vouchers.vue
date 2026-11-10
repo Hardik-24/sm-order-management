@@ -476,8 +476,8 @@
                     </h3>
                   </div>
                   <div class="flex items-center gap-1.5 min-w-0 text-xs text-gray-500 mt-0.5">
-                    <span v-if="selectedVoucher?.customerCode" class="font-mono text-gray-700">{{ selectedVoucher.customerCode }}</span>
-                    <span v-if="selectedVoucher?.customerCode" class="w-1 h-1 rounded-full bg-gray-400 shrink-0 self-center" />
+                    <span v-if="selectedVoucher?.customerCode" class="hidden sm:inline font-mono text-gray-700">{{ selectedVoucher.customerCode }}</span>
+                    <span v-if="selectedVoucher?.customerCode" class="hidden sm:inline-block w-1 h-1 rounded-full bg-gray-400 shrink-0 self-center" />
                     <span class="whitespace-nowrap shrink-0">Billed on {{ formatDate(selectedVoucher?.voucherDate) }}</span>
                   </div>
                 </div>
@@ -555,11 +555,11 @@
                       >
                         <!-- Product (Matching OrderDetailPanel.vue:1578-1606) -->
                         <td class="px-3.5 py-2.5">
-                          <div class="font-mono font-bold text-xs text-gray-900 truncate max-w-[160px] sm:max-w-[200px]" :title="item.name">
+                          <div class="font-mono font-bold text-xs text-gray-900 break-words whitespace-normal" :title="item.name">
                             {{ item.name }}
                           </div>
                           <div class="flex items-center gap-1.5 text-[11px] text-gray-500 mt-0.5 flex-wrap">
-                            <span v-if="item.sku" class="font-mono">SKU: {{ item.sku }}</span>
+                            <span v-if="item.sku && item.sku.trim().toLowerCase() !== (item.name || '').trim().toLowerCase()" class="font-mono truncate max-w-[160px]">SKU: {{ item.sku }}</span>
                             <span v-if="item.hsn" class="font-mono bg-gray-100 px-1 py-0.2 rounded text-[10px] text-gray-700">HSN: {{ item.hsn }}</span>
                             <span v-if="item.taxRate" class="font-mono text-emerald-700 text-[10px]">GST {{ item.taxRate }}%</span>
                           </div>
