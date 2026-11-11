@@ -1242,6 +1242,31 @@ const getCustomerInitials = (name: string) => {
           </div>
         </div>
 
+        <!-- Bottom Add Item Actions (Below last item added in list) -->
+        <div v-if="form.items.length > 0" class="flex items-center justify-between pt-2 pb-1 flex-wrap gap-2.5 border-t border-gray-100">
+          <div class="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              @click="addItem(false)"
+              class="px-3.5 py-2 bg-[#1b3b5f] hover:bg-[#132c49] text-white rounded-xl text-xs font-bold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer active:scale-95"
+            >
+              <Plus class="w-3.5 h-3.5" />
+              <span>Add Product</span>
+            </button>
+            <button
+              type="button"
+              @click="addItem(true)"
+              class="px-3.5 py-2 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-xl text-xs font-bold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer active:scale-95"
+            >
+              <Plus class="w-3.5 h-3.5 text-amber-700" />
+              <span>Custom Item (Not in Busy)</span>
+            </button>
+          </div>
+          <span class="text-xs text-gray-500 font-medium">
+            {{ form.items.length }} {{ form.items.length === 1 ? 'item' : 'items' }} added
+          </span>
+        </div>
+
         <!-- Order Totals & Tax Summary -->
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end pt-5 border-t border-gray-200 mt-6 gap-4">
           <div class="text-xs text-gray-500 space-y-1">

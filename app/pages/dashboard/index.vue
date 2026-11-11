@@ -352,13 +352,8 @@ const handleOrderSelect = (orderId: string) => {
     <StatCards :stats="dashboardData" :isLoading="dashboardPending" />
   </div>
 
-  <!-- Order Velocity Chart / Analysis (Mobile: #5 at bottom, Desktop: Row 3 full-width) -->
-  <div class="col-span-1 lg:col-span-5 order-5 lg:order-3">
-    <OrderVolumeChart :trends="dashboardData?.orderTrends" :isLoading="dashboardPending" />
-  </div>
-
-  <!-- Recent Orders Table (Mobile: #2 right under header, Desktop: Row 4 full-width) -->
-  <div class="col-span-1 lg:col-span-5 order-2 lg:order-5">
+  <!-- Recent Orders Table (Mobile: #2 right under header, Desktop: Row 3 right after stat cards) -->
+  <div class="col-span-1 lg:col-span-5 order-2 lg:order-3">
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
       <div>
         <h2 class="text-lg font-bold text-gray-900">Recent Orders</h2>
@@ -414,6 +409,11 @@ const handleOrderSelect = (orderId: string) => {
       @select="handleOrderSelect"
     />
     </div>
+  </div>
+
+  <!-- Order Velocity Chart / Analysis (Mobile: #5 at bottom, Desktop: Row 4 at bottom) -->
+  <div class="col-span-1 lg:col-span-5 order-5 lg:order-4">
+    <OrderVolumeChart :trends="dashboardData?.orderTrends" :isLoading="dashboardPending" />
   </div>
 
   <!-- Slide-out Order Detail Panel -->

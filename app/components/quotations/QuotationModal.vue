@@ -1155,6 +1155,33 @@
                   <span>No return or exchange once order is processed</span>
                 </div>
               </div>
+
+              <!-- Bottom Add Item Actions (Below last item added in quotation) -->
+              <div v-if="quoteItems.length > 0" class="px-4 py-3 bg-white border-t border-gray-200 flex flex-wrap items-center justify-between gap-3">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <button
+                    type="button"
+                    @click="focusSearchInput"
+                    class="px-3.5 py-1.5 bg-[#1b3b5f] hover:bg-[#132c49] text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-2xs cursor-pointer active:scale-95"
+                    title="Jump to search bar to find and add products from Google Sheets"
+                  >
+                    <Search class="w-3.5 h-3.5" />
+                    <span>Add Item (Search Catalog)</span>
+                  </button>
+                  <button
+                    type="button"
+                    @click="addCustomItem"
+                    class="px-3.5 py-1.5 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-2xs cursor-pointer active:scale-95"
+                    title="Add a custom manual material item"
+                  >
+                    <Plus class="w-3.5 h-3.5 text-[#1b3b5f]" />
+                    <span>+ Custom Item</span>
+                  </button>
+                </div>
+                <span class="text-xs text-gray-500 font-medium">
+                  {{ quoteItems.length }} {{ quoteItems.length === 1 ? 'item' : 'items' }} in quotation
+                </span>
+              </div>
             </div>
           </div>
 
@@ -2832,6 +2859,13 @@ const addItemToQuote = (item: SheetProduct) => {
       searchInputRef.value?.focus()
     }
   })
+}
+
+const focusSearchInput = () => {
+  if (searchInputRef.value) {
+    searchInputRef.value.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    searchInputRef.value.focus()
+  }
 }
 
 const addCustomItem = () => {

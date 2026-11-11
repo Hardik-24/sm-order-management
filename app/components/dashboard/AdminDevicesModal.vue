@@ -98,9 +98,9 @@
         </div>
 
         <!-- Search & Filter Controls -->
-        <div class="px-4 sm:px-6 py-2.5 bg-white border-b border-gray-100 flex items-center justify-between gap-3 flex-wrap shrink-0">
+        <div class="px-3 sm:px-6 py-2.5 bg-white border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-2.5 sm:gap-3 shrink-0">
           <!-- Search Input -->
-          <div class="relative flex-1 min-w-[200px]">
+          <div class="relative w-full md:flex-1 md:min-w-[200px]">
             <Search class="w-3.5 h-3.5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input 
               v-model="searchQuery"
@@ -110,65 +110,68 @@
             />
           </div>
 
-          <!-- Status Filters -->
-          <div class="flex items-center gap-1 overflow-x-auto no-scrollbar shrink-0">
-            <button
-              type="button"
-              @click="selectedStatusFilter = 'ALL'"
-              class="px-2.5 py-1 rounded-lg text-[11px] font-semibold transition cursor-pointer whitespace-nowrap"
-              :class="selectedStatusFilter === 'ALL' 
-                ? 'bg-[#1b3b5f] text-white shadow-xs' 
-                : 'text-gray-600 hover:bg-gray-100 bg-transparent'"
-            >
-              All Devices
-            </button>
-            <button
-              type="button"
-              @click="selectedStatusFilter = 'PENDING'"
-              class="px-2.5 py-1 rounded-lg text-[11px] font-semibold transition cursor-pointer whitespace-nowrap flex items-center gap-1.5"
-              :class="selectedStatusFilter === 'PENDING' 
-                ? 'bg-amber-600 text-white shadow-xs' 
-                : (allPendingDevices.length > 0 ? 'bg-amber-50 text-amber-900 border border-amber-200 hover:bg-amber-100' : 'text-gray-600 hover:bg-gray-100 bg-transparent')"
-            >
-              <span v-if="allPendingDevices.length > 0" class="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block"></span>
-              <span>Pending ({{ allPendingDevices.length }})</span>
-            </button>
-            <button
-              type="button"
-              @click="selectedStatusFilter = 'APPROVED'"
-              class="px-2.5 py-1 rounded-lg text-[11px] font-semibold transition cursor-pointer whitespace-nowrap"
-              :class="selectedStatusFilter === 'APPROVED' 
-                ? 'bg-emerald-700 text-white shadow-xs' 
-                : 'text-gray-600 hover:bg-gray-100 bg-transparent'"
-            >
-              Approved ({{ totalApprovedDevicesCount }})
-            </button>
-            <button
-              type="button"
-              @click="selectedStatusFilter = 'BLOCKED'"
-              class="px-2.5 py-1 rounded-lg text-[11px] font-semibold transition cursor-pointer whitespace-nowrap"
-              :class="selectedStatusFilter === 'BLOCKED' 
-                ? 'bg-red-700 text-white shadow-xs' 
-                : 'text-gray-600 hover:bg-gray-100 bg-transparent'"
-            >
-              Blocked ({{ totalBlockedCount }})
-            </button>
-          </div>
+          <!-- Filter Bars (Horizontally scrollable on small screens) -->
+          <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full md:w-auto overflow-hidden">
+            <!-- Status Filters (Scrollable on small screens) -->
+            <div class="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5 w-full sm:w-auto shrink-0 touch-pan-x">
+              <button
+                type="button"
+                @click="selectedStatusFilter = 'ALL'"
+                class="px-2.5 py-1 rounded-lg text-[11px] font-semibold transition cursor-pointer whitespace-nowrap shrink-0"
+                :class="selectedStatusFilter === 'ALL' 
+                  ? 'bg-[#1b3b5f] text-white shadow-xs' 
+                  : 'text-gray-600 hover:bg-gray-100 bg-transparent'"
+              >
+                All Devices
+              </button>
+              <button
+                type="button"
+                @click="selectedStatusFilter = 'PENDING'"
+                class="px-2.5 py-1 rounded-lg text-[11px] font-semibold transition cursor-pointer whitespace-nowrap flex items-center gap-1.5 shrink-0"
+                :class="selectedStatusFilter === 'PENDING' 
+                  ? 'bg-amber-600 text-white shadow-xs' 
+                  : (allPendingDevices.length > 0 ? 'bg-amber-50 text-amber-900 border border-amber-200 hover:bg-amber-100' : 'text-gray-600 hover:bg-gray-100 bg-transparent')"
+              >
+                <span v-if="allPendingDevices.length > 0" class="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block"></span>
+                <span>Pending ({{ allPendingDevices.length }})</span>
+              </button>
+              <button
+                type="button"
+                @click="selectedStatusFilter = 'APPROVED'"
+                class="px-2.5 py-1 rounded-lg text-[11px] font-semibold transition cursor-pointer whitespace-nowrap shrink-0"
+                :class="selectedStatusFilter === 'APPROVED' 
+                  ? 'bg-emerald-700 text-white shadow-xs' 
+                  : 'text-gray-600 hover:bg-gray-100 bg-transparent'"
+              >
+                Approved ({{ totalApprovedDevicesCount }})
+              </button>
+              <button
+                type="button"
+                @click="selectedStatusFilter = 'BLOCKED'"
+                class="px-2.5 py-1 rounded-lg text-[11px] font-semibold transition cursor-pointer whitespace-nowrap shrink-0"
+                :class="selectedStatusFilter === 'BLOCKED' 
+                  ? 'bg-red-700 text-white shadow-xs' 
+                  : 'text-gray-600 hover:bg-gray-100 bg-transparent'"
+              >
+                Blocked ({{ totalBlockedCount }})
+              </button>
+            </div>
 
-          <!-- Role Filters -->
-          <div class="flex items-center gap-1 overflow-x-auto no-scrollbar shrink-0 border-l border-gray-200 pl-2">
-            <button
-              v-for="role in ['ALL', 'ADMIN', 'SALES', 'BILLING', 'PACKING', 'DELIVERY']"
-              :key="role"
-              type="button"
-              @click="selectedRoleFilter = role"
-              class="px-2 py-0.5 rounded-md text-[10px] font-semibold transition cursor-pointer whitespace-nowrap"
-              :class="selectedRoleFilter === role 
-                ? 'bg-gray-900 text-white shadow-xs' 
-                : 'text-gray-500 hover:bg-gray-100 bg-transparent'"
-            >
-              {{ role === 'ALL' ? 'All Roles' : role }}
-            </button>
+            <!-- Role Filters (Scrollable on small screens) -->
+            <div class="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5 w-full sm:w-auto shrink-0 sm:border-l sm:border-gray-200 sm:pl-2.5 touch-pan-x">
+              <button
+                v-for="role in ['ALL', 'ADMIN', 'SALES', 'BILLING', 'PACKING', 'DELIVERY']"
+                :key="role"
+                type="button"
+                @click="selectedRoleFilter = role"
+                class="px-2 py-0.5 rounded-md text-[10px] font-semibold transition cursor-pointer whitespace-nowrap shrink-0"
+                :class="selectedRoleFilter === role 
+                  ? 'bg-gray-900 text-white shadow-xs' 
+                  : 'text-gray-500 hover:bg-gray-100 bg-transparent'"
+              >
+                {{ role === 'ALL' ? 'All Roles' : role }}
+              </button>
+            </div>
           </div>
         </div>
 
