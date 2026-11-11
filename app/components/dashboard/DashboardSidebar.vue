@@ -165,175 +165,472 @@
 
   
   <!-- Mobile Bottom Navigation -->
-  <aside class="flex md:hidden flex-col bg-[#1c1c1c] text-white w-full z-[200] fixed bottom-0 inset-x-0 shadow-[0_-4px_20px_rgba(0,0,0,0.4)] border-t border-gray-800 pb-[env(safe-area-inset-bottom,0px)]">
-    <!-- Backdrop when menu is open -->
-    <div
-      v-if="isMobileMenuOpen"
-      class="fixed inset-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] bg-black/60 backdrop-blur-xs z-[205]"
-      @click="isMobileMenuOpen = false"
-    ></div>
-
-    <!-- Expanded Menu Content (Opens upwards above the bottom navigation bar) -->
-    <div
-      v-if="isMobileMenuOpen"
-      ref="mobileMenuContentRef"
-      @click="onMobileNavContainerClick"
-      class="absolute bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] inset-x-0 bg-[#1c1c1c] border-t border-gray-800 shadow-2xl flex flex-col p-4 max-h-[calc(100dvh-5.5rem-env(safe-area-inset-bottom,0px))] overflow-y-auto z-[210] rounded-t-2xl"
+  <aside class="flex md:hidden flex-col bg-[#1c1c1c] text-white w-full z-[200] fixed bottom-0 inset-x-0 shadow-[0_-4px_20px_rgba(0,0,0,0.5)] border-t border-gray-800 pb-[env(safe-area-inset-bottom,0px)]">
+    <!-- Backdrop when category sheet is open -->
+    <Transition
+      enter-active-class="transition-opacity duration-200 ease-out"
+      enter-from-class="opacity-0"
+      enter-to-class="opacity-100"
+      leave-active-class="transition-opacity duration-150 ease-in"
+      leave-from-class="opacity-100"
+      leave-to-class="opacity-0"
     >
-      
-      <!-- Brand in Mobile Expanded Header -->
-      <div class="flex items-center justify-between pb-3 mb-3 border-b border-gray-800/80">
-        <span ref="mobileLogoRef" class="text-sm tracking-widest uppercase flex items-center gap-1.5 select-none">
-          <span class="brand-silicon font-light text-gray-400">SILICON</span> 
-          <span class="brand-marketing font-bold text-gray-100">MARKETING</span>
-        </span>
-        <button @click.stop="isMobileMenuOpen = false" class="text-gray-400 hover:text-white p-1 rounded-lg">
-          <X class="w-5 h-5" />
-        </button>
-      </div>
-      <div class="flex flex-col gap-1 mb-4">
-        <div class="flex items-center gap-3 rounded-md py-2 px-3 text-sm bg-[#242424] border border-gray-800">
-          <div class="relative flex h-3 w-3 shrink-0">
-            <span v-if="dbStatus === 'connecting'" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
-            <span class="relative inline-flex rounded-full h-3 w-3" :class="dbStatus === 'connected' ? 'bg-green-500' : dbStatus === 'error' ? 'bg-red-500' : 'bg-yellow-500'"></span>
+      <div
+        v-if="activeMobileSheet !== null"
+        class="fixed inset-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] bg-black/60 backdrop-blur-xs z-[205]"
+        @click="closeMobileSheet"
+      />
+    </Transition>
+
+    <!-- Slide-up Category Sheet (Opens upwards above the bottom navigation bar) -->
+    <Transition
+      enter-active-class="transition-transform duration-250 ease-out"
+      enter-from-class="translate-y-full"
+      enter-to-class="translate-y-0"
+      leave-active-class="transition-transform duration-200 ease-in"
+      leave-from-class="translate-y-0"
+      leave-to-class="translate-y-full"
+    >
+      <div
+        v-if="activeMobileSheet !== null"
+        class="absolute bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] inset-x-0 bg-[#1c1c1c] border-t border-gray-800 shadow-2xl flex flex-col max-h-[calc(78dvh-3.5rem)] overflow-y-auto z-[210] rounded-t-2xl pb-4 overscroll-contain"
+      >
+        <!-- Drag indicator bar -->
+        <div class="w-10 h-1 bg-gray-700/80 rounded-full mx-auto mt-2.5 mb-1 shrink-0"></div>
+
+        <!-- 1. OPERATIONS SHEET -->
+        <div v-if="activeMobileSheet === 'operations'" class="flex flex-col">
+          <!-- Header -->
+          <div class="flex items-center justify-between px-4 py-2 border-b border-gray-800/80">
+            <div class="flex items-center gap-2.5">
+              <div class="w-7 h-7 rounded-lg bg-sky-500/10 text-sky-400 flex items-center justify-center shrink-0">
+                <Layers class="w-4 h-4" />
+              </div>
+              <div>
+                <h3 class="text-sm font-bold text-gray-100 leading-none">Operations</h3>
+                <p class="text-[10px] text-gray-400 mt-1 leading-none">Order fulfillment & processing</p>
+              </div>
+            </div>
+            <button @click="closeMobileSheet" class="text-gray-400 hover:text-white p-1 rounded-lg">
+              <X class="w-5 h-5" />
+            </button>
           </div>
-          <span class="font-medium text-gray-400">
-            {{ dbStatus === 'connected' ? 'DB Connected' : dbStatus === 'error' ? 'DB Disconnected' : 'Connecting...' }}
-          </span>
+
+          <!-- Grid items -->
+          <div class="grid grid-cols-2 gap-2 p-3">
+            <NuxtLink
+              v-if="['ADMIN', 'SUPERVISOR', 'SALES'].includes(user?.role || '') && canAccessRoute('/dashboard/orders/create')"
+              to="/dashboard/orders/create"
+              @click="onSheetItemClick"
+              class="flex items-start gap-2.5 p-2.5 rounded-xl bg-[#242424] hover:bg-[#2a2a2a] border border-gray-800/80 transition-all active:scale-[0.98]"
+              :class="{ 'ring-1 ring-sky-500/60 bg-[#182d47]/50 border-sky-500/40': isLinkActive('/dashboard/orders/create') }"
+            >
+              <div class="w-8 h-8 rounded-lg bg-sky-500/10 text-sky-400 flex items-center justify-center shrink-0">
+                <PenTool class="w-4 h-4" />
+              </div>
+              <div class="flex flex-col min-w-0">
+                <span class="text-xs font-semibold text-gray-100 truncate">Create Order</span>
+                <span class="text-[10px] text-gray-400 truncate">New entry</span>
+              </div>
+            </NuxtLink>
+
+            <NuxtLink
+              v-if="['ADMIN', 'SUPERVISOR', 'SALES'].includes(user?.role || '') && canAccessRoute('/dashboard/approve-orders')"
+              to="/dashboard/approve-orders"
+              @click="onSheetItemClick"
+              class="flex items-start gap-2.5 p-2.5 rounded-xl bg-[#242424] hover:bg-[#2a2a2a] border border-gray-800/80 transition-all active:scale-[0.98] relative"
+              :class="{ 'ring-1 ring-sky-500/60 bg-[#182d47]/50 border-sky-500/40': isLinkActive('/dashboard/approve-orders') }"
+            >
+              <div class="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center shrink-0">
+                <CheckCheck class="w-4 h-4" />
+              </div>
+              <div class="flex flex-col min-w-0">
+                <div class="flex items-center gap-1.5">
+                  <span class="text-xs font-semibold text-gray-100 truncate">Approve</span>
+                  <span v-if="pendingApprovalCount > 0" class="bg-amber-500/20 text-amber-300 text-[9px] font-bold px-1.5 py-0.2 rounded-full border border-amber-500/30">
+                    {{ pendingApprovalCount }}
+                  </span>
+                </div>
+                <span class="text-[10px] text-gray-400 truncate">Pending orders</span>
+              </div>
+            </NuxtLink>
+
+            <NuxtLink
+              v-if="canAccessRoute('/dashboard/packing')"
+              to="/dashboard/packing"
+              @click="onSheetItemClick"
+              class="flex items-start gap-2.5 p-2.5 rounded-xl bg-[#242424] hover:bg-[#2a2a2a] border border-gray-800/80 transition-all active:scale-[0.98]"
+              :class="{ 'ring-1 ring-sky-500/60 bg-[#182d47]/50 border-sky-500/40': isLinkActive('/dashboard/packing') }"
+            >
+              <div class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center shrink-0">
+                <Package class="w-4 h-4" />
+              </div>
+              <div class="flex flex-col min-w-0">
+                <span class="text-xs font-semibold text-gray-100 truncate">Packing</span>
+                <span class="text-[10px] text-gray-400 truncate">Pick & pack</span>
+              </div>
+            </NuxtLink>
+
+            <NuxtLink
+              v-if="canAccessRoute('/dashboard/billing')"
+              to="/dashboard/billing"
+              @click="onSheetItemClick"
+              class="flex items-start gap-2.5 p-2.5 rounded-xl bg-[#242424] hover:bg-[#2a2a2a] border border-gray-800/80 transition-all active:scale-[0.98]"
+              :class="{ 'ring-1 ring-sky-500/60 bg-[#182d47]/50 border-sky-500/40': isLinkActive('/dashboard/billing') }"
+            >
+              <div class="w-8 h-8 rounded-lg bg-green-500/10 text-green-400 flex items-center justify-center shrink-0">
+                <IndianRupee class="w-4 h-4" />
+              </div>
+              <div class="flex flex-col min-w-0">
+                <span class="text-xs font-semibold text-gray-100 truncate">Billing</span>
+                <span class="text-[10px] text-gray-400 truncate">Invoicing & GST</span>
+              </div>
+            </NuxtLink>
+
+            <NuxtLink
+              v-if="canAccessRoute('/dashboard/delivery')"
+              to="/dashboard/delivery"
+              @click="onSheetItemClick"
+              class="flex items-start gap-2.5 p-2.5 rounded-xl bg-[#242424] hover:bg-[#2a2a2a] border border-gray-800/80 transition-all active:scale-[0.98]"
+              :class="{ 'ring-1 ring-sky-500/60 bg-[#182d47]/50 border-sky-500/40': isLinkActive('/dashboard/delivery') }"
+            >
+              <div class="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center shrink-0">
+                <Truck class="w-4 h-4" />
+              </div>
+              <div class="flex flex-col min-w-0">
+                <span class="text-xs font-semibold text-gray-100 truncate">Delivery</span>
+                <span class="text-[10px] text-gray-400 truncate">Dispatch tracking</span>
+              </div>
+            </NuxtLink>
+
+            <NuxtLink
+              v-if="canAccessRoute('/dashboard/inventory')"
+              to="/dashboard/inventory"
+              @click="onSheetItemClick"
+              class="flex items-start gap-2.5 p-2.5 rounded-xl bg-[#242424] hover:bg-[#2a2a2a] border border-gray-800/80 transition-all active:scale-[0.98]"
+              :class="{ 'ring-1 ring-sky-500/60 bg-[#182d47]/50 border-sky-500/40': isLinkActive('/dashboard/inventory') }"
+            >
+              <div class="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center shrink-0">
+                <Boxes class="w-4 h-4" />
+              </div>
+              <div class="flex flex-col min-w-0">
+                <span class="text-xs font-semibold text-gray-100 truncate">Inventory</span>
+                <span class="text-[10px] text-gray-400 truncate">Stock levels</span>
+              </div>
+            </NuxtLink>
+
+            <NuxtLink
+              v-if="canAccessDriverApp"
+              to="/driver"
+              target="_blank"
+              @click="onSheetItemClick"
+              class="col-span-2 flex items-center justify-between p-2.5 rounded-xl bg-[#242424] hover:bg-[#2a2a2a] border border-gray-800/80 transition-all active:scale-[0.98]"
+            >
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-lg bg-cyan-500/10 text-cyan-400 flex items-center justify-center shrink-0">
+                  <Navigation class="w-4 h-4" />
+                </div>
+                <div class="flex flex-col min-w-0">
+                  <span class="text-xs font-semibold text-gray-100">Driver Portal</span>
+                  <span class="text-[10px] text-gray-400">Launch driver tracking app</span>
+                </div>
+              </div>
+              <ExternalLink class="w-4 h-4 text-cyan-400 mr-1" />
+            </NuxtLink>
+          </div>
+        </div>
+
+        <!-- 2. DATA SHEET -->
+        <div v-if="activeMobileSheet === 'data'" class="flex flex-col">
+          <!-- Header -->
+          <div class="flex items-center justify-between px-4 py-2 border-b border-gray-800/80">
+            <div class="flex items-center gap-2.5">
+              <div class="w-7 h-7 rounded-lg bg-sky-500/10 text-sky-400 flex items-center justify-center shrink-0">
+                <BarChart3 class="w-4 h-4" />
+              </div>
+              <div>
+                <h3 class="text-sm font-bold text-gray-100 leading-none">Data & Reports</h3>
+                <p class="text-[10px] text-gray-400 mt-1 leading-none">Analytics, records & catalog</p>
+              </div>
+            </div>
+            <button @click="closeMobileSheet" class="text-gray-400 hover:text-white p-1 rounded-lg">
+              <X class="w-5 h-5" />
+            </button>
+          </div>
+
+          <!-- Grid items -->
+          <div class="grid grid-cols-2 gap-2 p-3">
+            <NuxtLink
+              v-if="canAccessRoute('/dashboard/analytics')"
+              to="/dashboard/analytics"
+              @click="onSheetItemClick"
+              class="flex items-start gap-2.5 p-2.5 rounded-xl bg-[#242424] hover:bg-[#2a2a2a] border border-gray-800/80 transition-all active:scale-[0.98]"
+              :class="{ 'ring-1 ring-sky-500/60 bg-[#182d47]/50 border-sky-500/40': isLinkActive('/dashboard/analytics') }"
+            >
+              <div class="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center shrink-0">
+                <BarChart3 class="w-4 h-4" />
+              </div>
+              <div class="flex flex-col min-w-0">
+                <span class="text-xs font-semibold text-gray-100 truncate">Analytics</span>
+                <span class="text-[10px] text-gray-400 truncate">Sales metrics</span>
+              </div>
+            </NuxtLink>
+
+            <NuxtLink
+              v-if="canAccessRoute('/dashboard/order-requests')"
+              to="/dashboard/order-requests"
+              @click="onSheetItemClick"
+              class="flex items-start gap-2.5 p-2.5 rounded-xl bg-[#242424] hover:bg-[#2a2a2a] border border-gray-800/80 transition-all active:scale-[0.98] relative"
+              :class="{ 'ring-1 ring-sky-500/60 bg-[#182d47]/50 border-sky-500/40': isLinkActive('/dashboard/order-requests') }"
+            >
+              <div class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center shrink-0">
+                <Inbox class="w-4 h-4" />
+              </div>
+              <div class="flex flex-col min-w-0">
+                <div class="flex items-center gap-1.5">
+                  <span class="text-xs font-semibold text-gray-100 truncate">Requests</span>
+                  <span v-if="pendingRequestsCount > 0" class="bg-amber-500/20 text-amber-300 text-[9px] font-bold px-1.5 py-0.2 rounded-full border border-amber-500/30">
+                    {{ pendingRequestsCount }}
+                  </span>
+                </div>
+                <span class="text-[10px] text-gray-400 truncate">Customer drafts</span>
+              </div>
+            </NuxtLink>
+
+            <NuxtLink
+              v-if="canAccessRoute('/dashboard/quotations')"
+              to="/dashboard/quotations"
+              @click="onSheetItemClick"
+              class="flex items-start gap-2.5 p-2.5 rounded-xl bg-[#242424] hover:bg-[#2a2a2a] border border-gray-800/80 transition-all active:scale-[0.98]"
+              :class="{ 'ring-1 ring-sky-500/60 bg-[#182d47]/50 border-sky-500/40': isLinkActive('/dashboard/quotations') }"
+            >
+              <div class="w-8 h-8 rounded-lg bg-sky-500/10 text-sky-400 flex items-center justify-center shrink-0">
+                <Calculator class="w-4 h-4" />
+              </div>
+              <div class="flex flex-col min-w-0">
+                <span class="text-xs font-semibold text-gray-100 truncate">Quotations</span>
+                <span class="text-[10px] text-gray-400 truncate">Estimates & rates</span>
+              </div>
+            </NuxtLink>
+
+            <NuxtLink
+              v-if="canAccessRoute('/dashboard/chat')"
+              to="/dashboard/chat"
+              @click="onSheetItemClick"
+              class="flex items-start gap-2.5 p-2.5 rounded-xl bg-[#242424] hover:bg-[#2a2a2a] border border-gray-800/80 transition-all active:scale-[0.98]"
+              :class="{ 'ring-1 ring-sky-500/60 bg-[#182d47]/50 border-sky-500/40': isLinkActive('/dashboard/chat') }"
+            >
+              <div class="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center shrink-0">
+                <MessageSquare class="w-4 h-4" />
+              </div>
+              <div class="flex flex-col min-w-0">
+                <span class="text-xs font-semibold text-gray-100 truncate">Team Chat</span>
+                <span class="text-[10px] text-gray-400 truncate">Staff messaging</span>
+              </div>
+            </NuxtLink>
+
+            <NuxtLink
+              v-if="canAccessRoute('/dashboard/customers')"
+              to="/dashboard/customers"
+              @click="onSheetItemClick"
+              class="flex items-start gap-2.5 p-2.5 rounded-xl bg-[#242424] hover:bg-[#2a2a2a] border border-gray-800/80 transition-all active:scale-[0.98]"
+              :class="{ 'ring-1 ring-sky-500/60 bg-[#182d47]/50 border-sky-500/40': isLinkActive('/dashboard/customers') }"
+            >
+              <div class="w-8 h-8 rounded-lg bg-teal-500/10 text-teal-400 flex items-center justify-center shrink-0">
+                <User class="w-4 h-4" />
+              </div>
+              <div class="flex flex-col min-w-0">
+                <span class="text-xs font-semibold text-gray-100 truncate">Customers</span>
+                <span class="text-[10px] text-gray-400 truncate">Client directory</span>
+              </div>
+            </NuxtLink>
+
+            <NuxtLink
+              v-if="canAccessRoute('/dashboard/products')"
+              to="/dashboard/products"
+              @click="onSheetItemClick"
+              class="flex items-start gap-2.5 p-2.5 rounded-xl bg-[#242424] hover:bg-[#2a2a2a] border border-gray-800/80 transition-all active:scale-[0.98]"
+              :class="{ 'ring-1 ring-sky-500/60 bg-[#182d47]/50 border-sky-500/40': isLinkActive('/dashboard/products') }"
+            >
+              <div class="w-8 h-8 rounded-lg bg-orange-500/10 text-orange-400 flex items-center justify-center shrink-0">
+                <Box class="w-4 h-4" />
+              </div>
+              <div class="flex flex-col min-w-0">
+                <span class="text-xs font-semibold text-gray-100 truncate">Products</span>
+                <span class="text-[10px] text-gray-400 truncate">Items & catalog</span>
+              </div>
+            </NuxtLink>
+
+            <NuxtLink
+              v-if="canAccessRoute('/dashboard/vouchers')"
+              to="/dashboard/vouchers"
+              @click="onSheetItemClick"
+              class="col-span-2 flex items-center justify-between p-2.5 rounded-xl bg-[#242424] hover:bg-[#2a2a2a] border border-gray-800/80 transition-all active:scale-[0.98]"
+              :class="{ 'ring-1 ring-sky-500/60 bg-[#182d47]/50 border-sky-500/40': isLinkActive('/dashboard/vouchers') }"
+            >
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center shrink-0">
+                  <Receipt class="w-4 h-4" />
+                </div>
+                <div class="flex flex-col min-w-0">
+                  <span class="text-xs font-semibold text-gray-100">BUSY Vouchers</span>
+                  <span class="text-[10px] text-gray-400">Accounting sync status</span>
+                </div>
+              </div>
+              <ChevronRight class="w-4 h-4 text-gray-500" />
+            </NuxtLink>
+          </div>
+        </div>
+
+        <!-- 3. SETTINGS & ACCOUNT SHEET -->
+        <div v-if="activeMobileSheet === 'more'" class="flex flex-col">
+          <!-- Header -->
+          <div class="flex items-center justify-between px-4 py-2 border-b border-gray-800/80">
+            <div class="flex items-center gap-2.5">
+              <div class="w-7 h-7 rounded-lg bg-sky-500/10 text-sky-400 flex items-center justify-center shrink-0">
+                <Settings class="w-4 h-4" />
+              </div>
+              <div>
+                <h3 class="text-sm font-bold text-gray-100 leading-none">Settings & Account</h3>
+                <p class="text-[10px] text-gray-400 mt-1 leading-none">System info & user profile</p>
+              </div>
+            </div>
+            <button @click="closeMobileSheet" class="text-gray-400 hover:text-white p-1 rounded-lg">
+              <X class="w-5 h-5" />
+            </button>
+          </div>
+
+          <div class="flex flex-col p-3 gap-2.5">
+            <!-- Profile Card -->
+            <div class="flex items-center justify-between p-3 rounded-xl bg-[#242424] border border-gray-800/80">
+              <div class="flex items-center gap-3 min-w-0">
+                <img
+                  :src="'https://ui-avatars.com/api/?name=' + (user?.name || 'User') + '&background=1b3b5f&color=e8e0d4'"
+                  alt="User"
+                  class="h-10 w-10 rounded-full shrink-0 object-cover border border-gray-700"
+                />
+                <div class="flex flex-col min-w-0">
+                  <span class="text-sm font-semibold text-gray-100 truncate">{{ user?.name || 'User' }}</span>
+                  <span class="text-[10px] text-gray-400 truncate">{{ user?.role === 'ADMIN' ? 'Administrator' : user?.role === 'SUPERVISOR' ? 'Supervisor' : user?.role || 'Staff' }}</span>
+                </div>
+              </div>
+              <div class="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-[#1a1a1a] border border-gray-800 shrink-0">
+                <div class="relative flex h-2 w-2 shrink-0">
+                  <span v-if="dbStatus === 'connecting'" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-2 w-2" :class="dbStatus === 'connected' ? 'bg-green-500' : dbStatus === 'error' ? 'bg-red-500' : 'bg-yellow-500'"></span>
+                </div>
+                <span class="text-[10px] font-medium text-gray-400">
+                  {{ dbStatus === 'connected' ? 'Connected' : dbStatus === 'error' ? 'Offline' : 'Syncing' }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Admin link -->
+            <NuxtLink
+              v-if="user?.role === 'ADMIN' && canAccessRoute('/dashboard/admin')"
+              to="/dashboard/admin"
+              @click="onSheetItemClick"
+              class="flex items-center justify-between p-3 rounded-xl bg-[#242424] hover:bg-[#2a2a2a] border border-gray-800/80 transition-colors"
+              :class="{ 'ring-1 ring-sky-500/60 bg-[#182d47]/50 border-sky-500/40': isLinkActive('/dashboard/admin') }"
+            >
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-sky-500/10 text-sky-400 flex items-center justify-center shrink-0">
+                  <Settings class="w-4 h-4" />
+                </div>
+                <div class="flex flex-col">
+                  <span class="text-xs font-semibold text-gray-100">Admin Control Panel</span>
+                  <span class="text-[10px] text-gray-400">Permissions, users & system</span>
+                </div>
+              </div>
+              <ChevronRight class="w-4 h-4 text-gray-500" />
+            </NuxtLink>
+
+            <!-- Logout button -->
+            <button
+              @click="logout"
+              type="button"
+              class="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 font-medium text-xs transition-colors cursor-pointer active:scale-[0.99] mt-0.5"
+            >
+              <LogOut class="w-4 h-4" />
+              <span>Sign Out</span>
+            </button>
+          </div>
         </div>
       </div>
+    </Transition>
 
-      <!-- HOME -->
-      <div v-if="canAccessRoute('/dashboard')" class="flex flex-col gap-1 mb-6">
-        <NuxtLink to="/dashboard" class="flex items-center gap-3 rounded-md py-2.5 px-3 text-sm transition-colors" :class="[isLinkActive('/dashboard') ? 'bg-[#182d47] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50']">
-          <Home class="w-4 h-4 transition-colors" :class="isLinkActive('/dashboard') ? 'text-sky-400' : 'text-gray-400'" /> <span class="font-medium">Home</span>
-        </NuxtLink>
-      </div>
+    <!-- 5 Fixed Navigation Tabs (Zero horizontal scroll, always accessible) -->
+    <div class="grid grid-cols-5 h-14 w-full items-stretch relative z-[215] bg-[#1c1c1c] select-none">
+      <!-- 1. OPERATIONS -->
+      <button
+        type="button"
+        @click="toggleMobileSheet('operations')"
+        class="flex flex-col items-center justify-center relative py-1 transition-all active:scale-95 cursor-pointer"
+        :class="[activeMobileSheet === 'operations' || (isOperationsActive && !activeMobileSheet) ? 'text-sky-400 font-semibold' : 'text-gray-400 hover:text-gray-200']"
+      >
+        <div class="relative">
+          <Layers class="w-5 h-5 transition-transform" :class="{ 'scale-110': activeMobileSheet === 'operations' }" />
+          <span v-if="pendingApprovalCount > 0" class="absolute -top-1 -right-1.5 w-2 h-2 rounded-full bg-amber-400 ring-2 ring-[#1c1c1c]"></span>
+        </div>
+        <span class="text-[10px] tracking-tight mt-1 leading-none">Operations</span>
+      </button>
 
-      <!-- OPERATIONS -->
-      <div v-if="(['ADMIN', 'SUPERVISOR', 'SALES'].includes(user?.role || '') && canAccessRoute('/dashboard/orders/create')) || (['ADMIN', 'SUPERVISOR', 'SALES'].includes(user?.role || '') && canAccessRoute('/dashboard/approve-orders')) || canAccessRoute('/dashboard/packing') || canAccessRoute('/dashboard/billing') || canAccessRoute('/dashboard/delivery') || canAccessRoute('/dashboard/inventory') || canAccessDriverApp" class="flex flex-col gap-1 mb-6">
-        <h3 class="block mb-3 px-3 text-[10px] font-bold uppercase tracking-widest text-gray-500">OPERATIONS</h3>
-        <NuxtLink v-if="['ADMIN', 'SUPERVISOR', 'SALES'].includes(user?.role || '') && canAccessRoute('/dashboard/orders/create')" to="/dashboard/orders/create" class="flex items-center gap-3 rounded-md py-2.5 px-3 text-sm transition-colors" :class="[isLinkActive('/dashboard/orders/create') ? 'bg-[#182d47] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50']">
-          <PenTool class="w-4 h-4 transition-colors" :class="isLinkActive('/dashboard/orders/create') ? 'text-sky-400' : 'text-gray-400'" /> <span class="font-medium">Create Order</span>
-        </NuxtLink>
-        <NuxtLink v-if="['ADMIN', 'SUPERVISOR', 'SALES'].includes(user?.role || '') && canAccessRoute('/dashboard/approve-orders')" to="/dashboard/approve-orders" class="flex items-center gap-3 rounded-md py-2.5 px-3 text-sm transition-colors" :class="[isLinkActive('/dashboard/approve-orders') ? 'bg-[#182d47] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50']">
-          <CheckCheck class="w-4 h-4 transition-colors" :class="isLinkActive('/dashboard/approve-orders') ? 'text-sky-400' : 'text-gray-400'" />
-          <span class="font-medium">Approve Orders</span>
-        </NuxtLink>
-        <NuxtLink v-if="canAccessRoute('/dashboard/packing')" to="/dashboard/packing" class="flex items-center gap-3 rounded-md py-2.5 px-3 text-sm transition-colors" :class="[isLinkActive('/dashboard/packing') ? 'bg-[#182d47] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50']">
-          <Package class="w-4 h-4 transition-colors" :class="isLinkActive('/dashboard/packing') ? 'text-sky-400' : 'text-gray-400'" /> <span class="font-medium">Packing</span>
-        </NuxtLink>
-        <NuxtLink v-if="canAccessRoute('/dashboard/billing')" to="/dashboard/billing" class="flex items-center gap-3 rounded-md py-2.5 px-3 text-sm transition-colors" :class="[isLinkActive('/dashboard/billing') ? 'bg-[#182d47] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50']">
-          <IndianRupee class="w-4 h-4 transition-colors" :class="isLinkActive('/dashboard/billing') ? 'text-sky-400' : 'text-gray-400'" /> <span class="font-medium">Billing</span>
-        </NuxtLink>
-        <NuxtLink v-if="canAccessRoute('/dashboard/delivery')" to="/dashboard/delivery" class="flex items-center gap-3 rounded-md py-2.5 px-3 text-sm transition-colors" :class="[isLinkActive('/dashboard/delivery') ? 'bg-[#182d47] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50']">
-          <Truck class="w-4 h-4 transition-colors" :class="isLinkActive('/dashboard/delivery') ? 'text-sky-400' : 'text-gray-400'" /> <span class="font-medium">Delivery</span>
-        </NuxtLink>
-        <NuxtLink v-if="canAccessRoute('/dashboard/inventory')" to="/dashboard/inventory" class="flex items-center gap-3 rounded-md py-2.5 px-3 text-sm transition-colors" :class="[isLinkActive('/dashboard/inventory') ? 'bg-[#182d47] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50']">
-          <Boxes class="w-4 h-4 transition-colors" :class="isLinkActive('/dashboard/inventory') ? 'text-sky-400' : 'text-gray-400'" /> <span class="font-medium">Inventory</span>
-        </NuxtLink>
-        <NuxtLink v-if="canAccessDriverApp" to="/driver" target="_blank" class="flex items-center gap-3 rounded-md py-2.5 px-3 text-sm transition-colors text-sky-400 hover:bg-gray-800/50">
-          <Navigation class="w-4 h-4" /> <span class="font-medium text-xs">Driver App ↗</span>
-        </NuxtLink>
-      </div>
+      <!-- 2. ORDERS -->
+      <NuxtLink
+        to="/dashboard/orders"
+        @click="onDirectTabClick"
+        class="flex flex-col items-center justify-center relative py-1 transition-all active:scale-95"
+        :class="[isOrdersActive && !activeMobileSheet ? 'text-sky-400 font-semibold' : 'text-gray-400 hover:text-gray-200']"
+      >
+        <ClipboardList class="w-5 h-5 transition-transform" :class="{ 'scale-110': isOrdersActive && !activeMobileSheet }" />
+        <span class="text-[10px] tracking-tight mt-1 leading-none">Orders</span>
+      </NuxtLink>
 
-      <!-- DASHBOARD -->
-      <div v-if="canAccessRoute('/dashboard') || canAccessRoute('/dashboard/analytics') || canAccessRoute('/dashboard/orders') || canAccessRoute('/dashboard/order-requests') || canAccessRoute('/dashboard/quotations') || canAccessRoute('/dashboard/chat')" class="flex flex-col gap-1 mb-6">
-        <h3 class="block mb-3 px-3 text-[10px] font-bold uppercase tracking-widest text-gray-500">DASHBOARD</h3>
-        <NuxtLink v-if="canAccessRoute('/dashboard')" to="/dashboard" class="flex items-center gap-3 rounded-md py-2.5 px-3 text-sm transition-colors" :class="[isLinkActive('/dashboard') ? 'bg-[#182d47] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50']">
-          <LayoutDashboard class="w-4 h-4 transition-colors" :class="isLinkActive('/dashboard') ? 'text-sky-400' : 'text-gray-400'" /> <span class="font-medium">Overview</span>
-        </NuxtLink>
-        <NuxtLink v-if="canAccessRoute('/dashboard/analytics')" to="/dashboard/analytics" class="flex items-center gap-3 rounded-md py-2.5 px-3 text-sm transition-colors" :class="[isLinkActive('/dashboard/analytics') ? 'bg-[#182d47] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50']">
-          <BarChart3 class="w-4 h-4 transition-colors" :class="isLinkActive('/dashboard/analytics') ? 'text-sky-400' : 'text-gray-400'" /> <span class="font-medium">Analytics</span>
-        </NuxtLink>
-        <NuxtLink v-if="canAccessRoute('/dashboard/orders')" to="/dashboard/orders" class="flex items-center gap-3 rounded-md py-2.5 px-3 text-sm transition-colors" :class="[isLinkActive('/dashboard/orders') ? 'bg-[#182d47] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50']">
-          <ClipboardList class="w-4 h-4 transition-colors" :class="isLinkActive('/dashboard/orders') ? 'text-sky-400' : 'text-gray-400'" /> <span class="font-medium">Orders</span>
-        </NuxtLink>
-        <NuxtLink v-if="canAccessRoute('/dashboard/order-requests')" to="/dashboard/order-requests" class="flex items-center justify-between rounded-md py-2.5 px-3 text-sm transition-colors" :class="[isLinkActive('/dashboard/order-requests') ? 'bg-[#182d47] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50']">
-          <div class="flex items-center gap-3">
-            <Inbox class="w-4 h-4 transition-colors" :class="isLinkActive('/dashboard/order-requests') ? 'text-sky-400' : 'text-gray-400'" /> <span class="font-medium">Order Requests</span>
-          </div>
-          <span v-if="pendingRequestsCount > 0" class="bg-amber-500/20 text-amber-300 text-[10px] font-bold px-2 py-0.5 rounded-full border border-amber-500/30">
-            {{ pendingRequestsCount }}
-          </span>
-        </NuxtLink>
-        <NuxtLink v-if="canAccessRoute('/dashboard/quotations')" to="/dashboard/quotations" class="flex items-center gap-3 rounded-md py-2.5 px-3 text-sm transition-colors" :class="[isLinkActive('/dashboard/quotations') ? 'bg-[#182d47] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50']">
-          <Calculator class="w-4 h-4 transition-colors" :class="isLinkActive('/dashboard/quotations') ? 'text-sky-400' : 'text-gray-400'" /> <span class="font-medium">Quotations</span>
-        </NuxtLink>
-        <NuxtLink v-if="canAccessRoute('/dashboard/chat')" to="/dashboard/chat" class="flex items-center gap-3 rounded-md py-2.5 px-3 text-sm transition-colors" :class="[isLinkActive('/dashboard/chat') ? 'bg-[#182d47] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50']">
-          <MessageSquare class="w-4 h-4 transition-colors" :class="isLinkActive('/dashboard/chat') ? 'text-sky-400' : 'text-gray-400'" /> <span class="font-medium">Team Chat</span>
-        </NuxtLink>
-      </div>
+      <!-- 3. HOME (Center Anchor) -->
+      <NuxtLink
+        to="/dashboard"
+        @click="onDirectTabClick"
+        class="flex flex-col items-center justify-center relative py-1 transition-all active:scale-95 group"
+        :class="[isHomeActive && !activeMobileSheet ? 'text-sky-400 font-semibold' : 'text-gray-400 hover:text-gray-200']"
+      >
+        <div
+          class="w-10 h-7 rounded-xl flex items-center justify-center transition-all"
+          :class="[isHomeActive && !activeMobileSheet ? 'bg-sky-500/15 border border-sky-500/30 text-sky-400' : 'bg-transparent text-gray-400 group-hover:text-gray-200']"
+        >
+          <Home class="w-5 h-5" />
+        </div>
+        <span class="text-[10px] tracking-tight mt-0.5 leading-none">Home</span>
+      </NuxtLink>
 
-      <!-- DATA -->
-      <div v-if="canAccessRoute('/dashboard/customers') || canAccessRoute('/dashboard/products') || canAccessRoute('/dashboard/vouchers')" class="flex flex-col gap-1 mb-6">
-        <h3 class="block mb-3 px-3 text-[10px] font-bold uppercase tracking-widest text-gray-500">DATA</h3>
-        <NuxtLink v-if="canAccessRoute('/dashboard/customers')" to="/dashboard/customers" class="flex items-center gap-3 rounded-md py-2.5 px-3 text-sm transition-colors" :class="[isLinkActive('/dashboard/customers') ? 'bg-[#182d47] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50']">
-          <User class="w-4 h-4 transition-colors" :class="isLinkActive('/dashboard/customers') ? 'text-sky-400' : 'text-gray-400'" /> <span class="font-medium">Customers</span>
-        </NuxtLink>
-        <NuxtLink v-if="canAccessRoute('/dashboard/products')" to="/dashboard/products" class="flex items-center gap-3 rounded-md py-2.5 px-3 text-sm transition-colors" :class="[isLinkActive('/dashboard/products') ? 'bg-[#182d47] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50']">
-          <Box class="w-4 h-4 transition-colors" :class="isLinkActive('/dashboard/products') ? 'text-sky-400' : 'text-gray-400'" /> <span class="font-medium">Products</span>
-        </NuxtLink>
-        <NuxtLink v-if="canAccessRoute('/dashboard/vouchers')" to="/dashboard/vouchers" class="flex items-center gap-3 rounded-md py-2.5 px-3 text-sm transition-colors" :class="[isLinkActive('/dashboard/vouchers') ? 'bg-[#182d47] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50']">
-          <Receipt class="w-4 h-4 transition-colors" :class="isLinkActive('/dashboard/vouchers') ? 'text-sky-400' : 'text-gray-400'" /> <span class="font-medium">BUSY Vouchers</span>
-        </NuxtLink>
-      </div>
-      
-      <div v-if="user?.role === 'ADMIN' && canAccessRoute('/dashboard/admin')" class="flex flex-col gap-1 mb-4">
-        <h3 class="block mb-3 px-3 text-[10px] font-bold uppercase tracking-widest text-gray-500">ADMINISTRATION</h3>
-        <NuxtLink to="/dashboard/admin" class="flex items-center gap-3 rounded-md py-2.5 px-3 text-sm transition-colors" :class="[isLinkActive('/dashboard/admin') ? 'bg-[#182d47] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50']">
-          <Settings class="w-4 h-4 transition-colors" :class="isLinkActive('/dashboard/admin') ? 'text-sky-400' : 'text-gray-400'" /> <span class="font-medium">Admin</span>
-        </NuxtLink>
-      </div>
+      <!-- 4. DATA -->
+      <button
+        type="button"
+        @click="toggleMobileSheet('data')"
+        class="flex flex-col items-center justify-center relative py-1 transition-all active:scale-95 cursor-pointer"
+        :class="[activeMobileSheet === 'data' || (isDataActive && !activeMobileSheet) ? 'text-sky-400 font-semibold' : 'text-gray-400 hover:text-gray-200']"
+      >
+        <div class="relative">
+          <BarChart3 class="w-5 h-5 transition-transform" :class="{ 'scale-110': activeMobileSheet === 'data' }" />
+          <span v-if="pendingRequestsCount > 0" class="absolute -top-1 -right-1.5 w-2 h-2 rounded-full bg-amber-400 ring-2 ring-[#1c1c1c]"></span>
+        </div>
+        <span class="text-[10px] tracking-tight mt-1 leading-none">Data</span>
+      </button>
 
-      <div class="mt-2 pt-4 border-t border-gray-800">
-        <button @click="logout" class="flex w-full items-center gap-3 rounded-lg py-2.5 px-3 text-sm text-red-400 transition-colors hover:bg-red-500/10 hover:text-red-300 cursor-pointer">
-          <LogOut class="w-4 h-4 text-red-400" />
-          <span class="font-medium whitespace-nowrap text-red-400">Logout</span>
-        </button>
-      </div>
-    </div>
-
-    <!-- Horizontal Scroll Icons + Toggle Button Bar (Always visible at bottom) -->
-    <div class="flex items-center w-full h-14 relative z-[215] bg-[#1c1c1c]" @click="onBottomBarClick">
-      <!-- Scrollable Icons Area -->
-      <div class="flex-1 flex flex-row items-center overflow-x-auto no-scrollbar px-3 gap-6 h-full">
-        <!-- HOME -->
-        <NuxtLink v-if="canAccessRoute('/dashboard')" to="/dashboard" title="Home" class="shrink-0" :class="[isLinkActive('/dashboard') ? 'text-sky-400' : 'text-gray-400']"><Home class="w-5 h-5" /></NuxtLink>
-
-        <!-- OPERATIONS -->
-        <NuxtLink v-if="['ADMIN', 'SUPERVISOR', 'SALES'].includes(user?.role || '') && canAccessRoute('/dashboard/orders/create')" to="/dashboard/orders/create" title="Create Order" class="shrink-0" :class="[isLinkActive('/dashboard/orders/create') ? 'text-sky-400' : 'text-gray-400']"><PenTool class="w-5 h-5" /></NuxtLink>
-        <NuxtLink v-if="['ADMIN', 'SUPERVISOR', 'SALES'].includes(user?.role || '') && canAccessRoute('/dashboard/approve-orders')" to="/dashboard/approve-orders" title="Approve Orders" class="shrink-0" :class="[isLinkActive('/dashboard/approve-orders') ? 'text-sky-400' : 'text-gray-400']">
-          <CheckCheck class="w-5 h-5" />
-        </NuxtLink>
-        <NuxtLink v-if="canAccessRoute('/dashboard/packing')" to="/dashboard/packing" title="Packing" class="shrink-0" :class="[isLinkActive('/dashboard/packing') ? 'text-sky-400' : 'text-gray-400']"><Package class="w-5 h-5" /></NuxtLink>
-        <NuxtLink v-if="canAccessRoute('/dashboard/billing')" to="/dashboard/billing" title="Billing" class="shrink-0" :class="[isLinkActive('/dashboard/billing') ? 'text-sky-400' : 'text-gray-400']"><IndianRupee class="w-5 h-5" /></NuxtLink>
-        <NuxtLink v-if="canAccessRoute('/dashboard/delivery')" to="/dashboard/delivery" title="Delivery" class="shrink-0" :class="[isLinkActive('/dashboard/delivery') ? 'text-sky-400' : 'text-gray-400']"><Truck class="w-5 h-5" /></NuxtLink>
-        <NuxtLink v-if="canAccessRoute('/dashboard/inventory')" to="/dashboard/inventory" title="Inventory" class="shrink-0" :class="[isLinkActive('/dashboard/inventory') ? 'text-sky-400' : 'text-gray-400']"><Boxes class="w-5 h-5" /></NuxtLink>
-
-        <!-- DASHBOARD -->
-        <NuxtLink v-if="canAccessRoute('/dashboard/analytics')" to="/dashboard/analytics" title="Analytics" class="shrink-0" :class="[isLinkActive('/dashboard/analytics') ? 'text-sky-400' : 'text-gray-400']"><BarChart3 class="w-5 h-5" /></NuxtLink>
-        <NuxtLink v-if="canAccessRoute('/dashboard/orders')" to="/dashboard/orders" title="Orders" class="shrink-0" :class="[isLinkActive('/dashboard/orders') ? 'text-sky-400' : 'text-gray-400']"><ClipboardList class="w-5 h-5" /></NuxtLink>
-        <NuxtLink v-if="canAccessRoute('/dashboard/order-requests')" to="/dashboard/order-requests" title="Order Requests" class="relative shrink-0" :class="[isLinkActive('/dashboard/order-requests') ? 'text-sky-400' : 'text-gray-400']">
-          <Inbox class="w-5 h-5" />
-          <span v-if="pendingRequestsCount > 0" class="absolute -top-1.5 -right-1.5 w-2 h-2 rounded-full bg-amber-400 ring-2 ring-[#1c1c1c]"></span>
-        </NuxtLink>
-        <NuxtLink v-if="canAccessRoute('/dashboard/quotations')" to="/dashboard/quotations" title="Quotations" class="shrink-0" :class="[isLinkActive('/dashboard/quotations') ? 'text-sky-400' : 'text-gray-400']"><Calculator class="w-5 h-5" /></NuxtLink>
-        <NuxtLink v-if="canAccessRoute('/dashboard/chat')" to="/dashboard/chat" title="Team Chat" class="shrink-0" :class="[isLinkActive('/dashboard/chat') ? 'text-sky-400' : 'text-gray-400']"><MessageSquare class="w-5 h-5" /></NuxtLink>
-
-        <!-- DATA -->
-        <NuxtLink v-if="canAccessRoute('/dashboard/customers')" to="/dashboard/customers" title="Customers" class="shrink-0" :class="[isLinkActive('/dashboard/customers') ? 'text-sky-400' : 'text-gray-400']"><User class="w-5 h-5" /></NuxtLink>
-        <NuxtLink v-if="canAccessRoute('/dashboard/products')" to="/dashboard/products" title="Products" class="shrink-0" :class="[isLinkActive('/dashboard/products') ? 'text-sky-400' : 'text-gray-400']"><Box class="w-5 h-5" /></NuxtLink>
-        <NuxtLink v-if="canAccessRoute('/dashboard/vouchers')" to="/dashboard/vouchers" title="BUSY Vouchers" class="shrink-0" :class="[isLinkActive('/dashboard/vouchers') ? 'text-sky-400' : 'text-gray-400']"><Receipt class="w-5 h-5" /></NuxtLink>
-
-        <!-- ADMINISTRATION -->
-        <NuxtLink v-if="user?.role === 'ADMIN' && canAccessRoute('/dashboard/admin')" to="/dashboard/admin" title="Admin" class="shrink-0" :class="[isLinkActive('/dashboard/admin') ? 'text-sky-400' : 'text-gray-400']"><Settings class="w-5 h-5" /></NuxtLink>
-      </div>
-
-      <!-- Toggle Expand Button -->
-      <button @click="isMobileMenuOpen = !isMobileMenuOpen" class="h-full px-4 flex items-center justify-center bg-[#141414] border-l border-gray-800 text-gray-400 hover:text-white shrink-0 shadow-[-4px_0_10px_rgba(0,0,0,0.5)] cursor-pointer">
-        <Menu v-if="!isMobileMenuOpen" class="w-5 h-5" />
-        <X v-else class="w-5 h-5" />
+      <!-- 5. SETTINGS / MORE -->
+      <button
+        type="button"
+        @click="toggleMobileSheet('more')"
+        class="flex flex-col items-center justify-center relative py-1 transition-all active:scale-95 cursor-pointer"
+        :class="[activeMobileSheet === 'more' || (isMoreActive && !activeMobileSheet) ? 'text-sky-400 font-semibold' : 'text-gray-400 hover:text-gray-200']"
+      >
+        <div class="relative">
+          <Settings class="w-5 h-5 transition-transform" :class="{ 'scale-110': activeMobileSheet === 'more' }" />
+          <span
+            v-if="dbStatus === 'error'"
+            class="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-red-400 ring-2 ring-[#1c1c1c]"
+          ></span>
+        </div>
+        <span class="text-[10px] tracking-tight mt-1 leading-none">Settings</span>
       </button>
     </div>
   </aside>
@@ -365,7 +662,10 @@ import {
   Inbox,
   CheckCheck,
   Calculator,
-  Receipt
+  Receipt,
+  Layers,
+  ChevronRight,
+  ExternalLink
 } from 'lucide-vue-next'
 import { useRoute } from 'vue-router'
 import { watch, ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
@@ -375,6 +675,78 @@ const route = useRoute()
 const { user, logout, canAccessRoute } = useAuth()
 const isSidebarCollapsed = useState('sidebarCollapsed', () => false)
 const isMobileMenuOpen = useState('mobileMenuOpen', () => false)
+
+type MobileSheetType = 'operations' | 'data' | 'more' | null
+const activeMobileSheet = ref<MobileSheetType>(null)
+
+watch(activeMobileSheet, (val) => {
+  isMobileMenuOpen.value = val !== null
+})
+
+watch(isMobileMenuOpen, (open) => {
+  if (!open) {
+    activeMobileSheet.value = null
+  }
+})
+
+const toggleMobileSheet = (sheet: 'operations' | 'data' | 'more') => {
+  activeMobileSheet.value = activeMobileSheet.value === sheet ? null : sheet
+}
+
+const closeMobileSheet = () => {
+  activeMobileSheet.value = null
+}
+
+const onDirectTabClick = () => {
+  activeMobileSheet.value = null
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('close-order-panel'))
+  }
+  scrollToTop()
+}
+
+const onSheetItemClick = () => {
+  activeMobileSheet.value = null
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('close-order-panel'))
+  }
+  scrollToTop()
+}
+
+const isHomeActive = computed(() => route.path === '/dashboard')
+
+const isOrdersActive = computed(() => {
+  return route.path.startsWith('/dashboard/orders') && route.path !== '/dashboard/orders/create'
+})
+
+const isOperationsActive = computed(() => {
+  const opsRoutes = [
+    '/dashboard/orders/create',
+    '/dashboard/approve-orders',
+    '/dashboard/packing',
+    '/dashboard/billing',
+    '/dashboard/delivery',
+    '/dashboard/inventory'
+  ]
+  return opsRoutes.some(p => route.path.startsWith(p)) || route.path.startsWith('/driver')
+})
+
+const isDataActive = computed(() => {
+  const dataRoutes = [
+    '/dashboard/analytics',
+    '/dashboard/order-requests',
+    '/dashboard/quotations',
+    '/dashboard/chat',
+    '/dashboard/customers',
+    '/dashboard/products',
+    '/dashboard/vouchers'
+  ]
+  return dataRoutes.some(p => route.path.startsWith(p))
+})
+
+const isMoreActive = computed(() => {
+  return route.path.startsWith('/dashboard/admin')
+})
 
 const canAccessDriverApp = computed(() => {
   return canAccessRoute('/driver')
@@ -388,10 +760,8 @@ const isLinkActive = (path: string) => {
 }
 
 const logoTextRef = ref<HTMLElement | null>(null)
-const mobileLogoRef = ref<HTMLElement | null>(null)
 const navContainerRef = ref<HTMLElement | null>(null)
 const profileCardRef = ref<HTMLElement | null>(null)
-const mobileMenuContentRef = ref<HTMLElement | null>(null)
 
 let gsapCtx: gsap.Context | null = null
 
@@ -513,24 +883,6 @@ const animateProfileSection = () => {
   }
 }
 
-/**
- * Mobile menu expand animation
- */
-const animateMobileMenu = () => {
-  if (!mobileMenuContentRef.value) return
-  const links = mobileMenuContentRef.value.querySelectorAll('nav a, h3, div')
-  gsap.fromTo(mobileMenuContentRef.value,
-    { opacity: 0, y: 15 },
-    { opacity: 1, y: 0, duration: 0.25, ease: 'power2.out' }
-  )
-  if (links.length) {
-    gsap.fromTo(links,
-      { opacity: 0, x: -8 },
-      { opacity: 1, x: 0, duration: 0.3, stagger: 0.018, ease: 'power2.out', clearProps: 'transform,opacity' }
-    )
-  }
-}
-
 onMounted(() => {
   checkDb()
   fetchPendingRequestsCount()
@@ -562,16 +914,6 @@ watch(isSidebarCollapsed, (collapsed) => {
   }
 })
 
-// Trigger mobile menu animation
-watch(isMobileMenuOpen, (open) => {
-  if (open) {
-    nextTick(() => {
-      animateBrandText(mobileLogoRef.value)
-      animateMobileMenu()
-    })
-  }
-})
-
 const scrollToTop = () => {
   if (typeof window !== 'undefined') {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
@@ -584,30 +926,17 @@ const scrollToTop = () => {
   }
 }
 
-const onBottomBarClick = (e: MouseEvent) => {
-  const target = e.target as HTMLElement
-  if (target && target.closest('a')) {
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('close-order-panel'))
-    }
-    scrollToTop()
+const scrollToTopAndClose = () => {
+  activeMobileSheet.value = null
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('close-order-panel'))
   }
-}
-
-// Auto-collapse mobile menu on any link/button click and reset scroll
-const onMobileNavContainerClick = (e: MouseEvent) => {
-  const target = e.target as HTMLElement
-  if (target && (target.closest('a') || target.closest('button'))) {
-    isMobileMenuOpen.value = false
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('close-order-panel'))
-    }
-    scrollToTop()
-  }
+  scrollToTop()
 }
 
 watch(() => route.path, () => {
+  activeMobileSheet.value = null
   isMobileMenuOpen.value = false
-}, { immediate: true })
+})
 </script>
 
