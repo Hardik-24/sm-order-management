@@ -373,11 +373,12 @@ import {
   Calculator,
   Receipt
 } from 'lucide-vue-next'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { watch, ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import gsap from 'gsap'
 
 const route = useRoute()
+const router = useRouter()
 const { user, logout, canAccessRoute } = useAuth()
 const isSidebarCollapsed = useState('sidebarCollapsed', () => false)
 const isMobileMenuOpen = useState('mobileMenuOpen', () => false)
@@ -425,6 +426,7 @@ const restoreMobileNavScroll = () => {
 }
 
 let gsapCtx: gsap.Context | null = null
+let unsubscribeAfterEach: (() => void) | null = null
 
 const dbStatus = ref<'connecting' | 'connected' | 'error'>('connecting')
 let pollInterval: ReturnType<typeof setInterval>
@@ -581,12 +583,25 @@ onMounted(() => {
     restoreMobileNavScroll()
     setTimeout(restoreMobileNavScroll, 50)
   })
+
+  // afterEach fires AFTER Vue Router has finished focus management (the real cause of the jump).
+  // By restoring scrollLeft here we override the browser's native scrollIntoView on the active link.
+  unsubscribeAfterEach = router.afterEach(() => {
+    nextTick(() => {
+      restoreMobileNavScroll()
+      // Double-fire: some browsers (iOS Safari) defer scrollIntoView to the next paint frame
+      requestAnimationFrame(() => {
+        restoreMobileNavScroll()
+      })
+    })
+  })
 })
 
 onUnmounted(() => {
   if (pollInterval) clearInterval(pollInterval)
   if (unsubscribeSync) unsubscribeSync()
   if (lockTimer) clearTimeout(lockTimer)
+  if (unsubscribeAfterEach) unsubscribeAfterEach()
   gsapCtx?.revert()
 })
 
