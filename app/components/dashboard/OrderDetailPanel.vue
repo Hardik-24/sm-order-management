@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, computed, nextTick } from 'vue'
-import { X, MoreHorizontal, Lock, Edit, Package, PackageCheck, Truck, Check, Box, Plus, Trash2, MapPin, AlertCircle, AlertTriangle, Ban, CheckCheck, CheckCircle2, Zap, User, IndianRupee, Clock, Building2, Phone, FileText, Calendar, Copy, ChevronRight, Car, GitFork, SlidersHorizontal, Loader2, Save, Link2, UserCheck, Calculator } from 'lucide-vue-next'
+import { X, MoreHorizontal, Lock, Edit, Package, PackageCheck, PackageX, Truck, Check, Box, Plus, Trash2, MapPin, AlertCircle, AlertTriangle, Ban, CheckCheck, CheckCircle2, Zap, User, IndianRupee, Clock, Building2, Phone, FileText, Calendar, Copy, ChevronRight, Car, GitFork, SlidersHorizontal, Loader2, Save, Link2, UserCheck, Calculator } from 'lucide-vue-next'
 import StatusBadge from '~/components/ui/StatusBadge.vue'
 import GenerateBillModal from '~/components/dashboard/GenerateBillModal.vue'
 import SetDeliveryPinModal from '~/components/dashboard/SetDeliveryPinModal.vue'
@@ -86,6 +86,24 @@ const activeTab = ref<'DETAILS' | 'TIMELINE' | 'NOTES'>('DETAILS')
 const isBillGenerated = computed(() => {
   return order.value?.billingStatus?.status === 'GENERATED' || Boolean(order.value?.billingStatus?.invoiceNumber)
 })
+
+const isItemOutOfStock = (item: any): boolean => {
+  if (!item) return false
+  const stock = item.product?.stock !== undefined && item.product?.stock !== null
+    ? Number(item.product.stock)
+    : (item.stock !== undefined && item.stock !== null ? Number(item.stock) : null)
+
+  if (stock === null) return false
+  const qty = Number(item.approvedQuantity ?? item.quantity ?? 1)
+  return stock <= 0 || stock < qty
+}
+
+const outOfStockItems = computed(() => {
+  if (!order.value?.items) return []
+  return order.value.items.filter((i: any) => isItemOutOfStock(i))
+})
+
+const hasOutOfStockItems = computed(() => outOfStockItems.value.length > 0)
 
 const canCancelOrder = computed(() => {
   if (!order.value) return false
@@ -1330,6 +1348,14 @@ onMounted(() => {
               <Zap class="w-3 h-3 text-rose-600 fill-rose-600" />
               <span>Urgent</span>
             </span>
+            <span 
+              v-if="hasOutOfStockItems && order.overallStatus !== 'CANCELLED'" 
+              class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-100 text-orange-900 border border-orange-300 uppercase tracking-wider shadow-2xs" 
+              :title="`${outOfStockItems.length} item(s) are not in stock or have insufficient inventory.`"
+            >
+              <PackageX class="w-3 h-3 text-orange-700 shrink-0" />
+              <span>Not in Stock ({{ outOfStockItems.length }})</span>
+            </span>
           </div>
 
           <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
@@ -1923,6 +1949,26 @@ onMounted(() => {
               </div>
             </div>
 
+            <!-- Advisory Banner: Out of Stock Items -->
+            <div v-if="hasOutOfStockItems && order.overallStatus !== 'CANCELLED'" class="p-3 sm:p-3.5 bg-orange-50/90 border border-orange-200/90 rounded-xl space-y-1.5 text-xs text-orange-950 shadow-2xs">
+              <div class="flex items-start gap-2.5">
+                <div class="w-6 h-6 rounded-lg bg-orange-200/80 flex items-center justify-center shrink-0 text-orange-800 mt-0.5">
+                  <PackageX class="w-3.5 h-3.5" />
+                </div>
+                <div class="min-w-0 flex-1">
+                  <div class="font-bold text-orange-950 flex items-center gap-1.5 flex-wrap">
+                    <span>Order Contains Items Not in Stock</span>
+                    <span class="text-[10px] font-bold bg-orange-200 text-orange-900 px-1.5 py-0.2 rounded">
+                      {{ outOfStockItems.length }} {{ outOfStockItems.length === 1 ? 'item' : 'items' }}
+                    </span>
+                  </div>
+                  <p class="text-[11px] text-orange-800 mt-0.5 leading-relaxed">
+                    {{ outOfStockItems.length === 1 ? 'An item in this order is currently out of stock or has insufficient quantity in inventory.' : 'Some items in this order are currently out of stock or have insufficient quantity in inventory.' }}
+                  </p>
+                </div>
+              </div>
+            </div>
+
             <!-- D. Line Items Table -->
             <div>
               <div class="flex items-center justify-between mb-2.5">
@@ -1981,6 +2027,16 @@ onMounted(() => {
                             {{ item.product?.sku || item.sku }}
                           </div>
                           <div class="flex flex-wrap items-center gap-1 mt-1.5">
+                            <!-- Out of Stock Badge -->
+                            <span 
+                              v-if="isItemOutOfStock(item)" 
+                              class="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider bg-orange-100 text-orange-950 px-1.5 py-0.5 rounded border border-orange-300 shadow-2xs"
+                              :title="item.product?.stock !== undefined ? `Not in Stock: Available ${item.product.stock} • Ordered: ${item.approvedQuantity ?? item.quantity}` : 'Not in Stock'"
+                            >
+                              <PackageX class="w-2.5 h-2.5 text-orange-700 shrink-0" />
+                              Not in Stock
+                            </span>
+
                             <!-- Not in Busy Badge, Link Button & Copy Button -->
                             <div v-if="(item as any)?.isBusySynced === false || item.product?.isBusySynced === false" class="inline-flex items-center gap-1 flex-wrap">
                               <span 

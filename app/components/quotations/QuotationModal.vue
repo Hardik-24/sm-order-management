@@ -1175,7 +1175,7 @@
                     title="Add a custom manual material item"
                   >
                     <Plus class="w-3.5 h-3.5 text-[#1b3b5f]" />
-                    <span>+ Custom Item</span>
+                    <span>Custom Item</span>
                   </button>
                 </div>
                 <span class="text-xs text-gray-500 font-medium">
