@@ -403,20 +403,55 @@ const mobileIconsScrollRef = ref<HTMLElement | null>(null)
 
 // Persist mobile bottom nav horizontal scroll position across page visits and layout mounts
 const savedMobileNavScroll = useState('mobileBottomNavScrollLeft', () => 0)
-let isClickLocked = false
-let lockTimer: any = null
+let isEnforcing = false
+let enforceRafId: number | null = null
 
 const onMobileIconsScroll = () => {
-  if (isClickLocked) return
+  // Only track genuine user scrolls, not our enforced ones
+  if (isEnforcing) return
   if (mobileIconsScrollRef.value) {
     savedMobileNavScroll.value = mobileIconsScrollRef.value.scrollLeft
   }
 }
 
 const onMobileIconsPointerDown = () => {
+  // Capture position on finger-down as a reliable snapshot
   if (mobileIconsScrollRef.value) {
     savedMobileNavScroll.value = mobileIconsScrollRef.value.scrollLeft
   }
+}
+
+/**
+ * Brute-force enforce the saved scrollLeft for ~300ms using a rAF loop.
+ * This beats every source of scroll reset (Vue Router focus, page transitions,
+ * layout swaps, v-if re-renders) because we overwrite 60x/sec for the entire window.
+ */
+const enforceScrollPosition = () => {
+  // Cancel any previous enforcement
+  if (enforceRafId !== null) {
+    cancelAnimationFrame(enforceRafId)
+    enforceRafId = null
+  }
+  
+  const target = savedMobileNavScroll.value
+  isEnforcing = true
+  const startTime = performance.now()
+  const DURATION = 350 // ms - long enough to cover all reflows and transitions
+  
+  const tick = () => {
+    if (mobileIconsScrollRef.value) {
+      mobileIconsScrollRef.value.scrollLeft = target
+    }
+    if (performance.now() - startTime < DURATION) {
+      enforceRafId = requestAnimationFrame(tick)
+    } else {
+      // Done enforcing, resume normal scroll tracking
+      isEnforcing = false
+      enforceRafId = null
+    }
+  }
+  
+  enforceRafId = requestAnimationFrame(tick)
 }
 
 const restoreMobileNavScroll = () => {
@@ -578,29 +613,21 @@ onMounted(() => {
     })
   })
 
-  // Restore horizontal scroll position on mount
+  // Restore horizontal scroll position on mount using enforcement loop
   nextTick(() => {
-    restoreMobileNavScroll()
-    setTimeout(restoreMobileNavScroll, 50)
+    enforceScrollPosition()
   })
 
-  // afterEach fires AFTER Vue Router has finished focus management (the real cause of the jump).
-  // By restoring scrollLeft here we override the browser's native scrollIntoView on the active link.
+  // afterEach fires AFTER Vue Router focus management — start enforcement loop to override all resets
   unsubscribeAfterEach = router.afterEach(() => {
-    nextTick(() => {
-      restoreMobileNavScroll()
-      // Double-fire: some browsers (iOS Safari) defer scrollIntoView to the next paint frame
-      requestAnimationFrame(() => {
-        restoreMobileNavScroll()
-      })
-    })
+    enforceScrollPosition()
   })
 })
 
 onUnmounted(() => {
   if (pollInterval) clearInterval(pollInterval)
   if (unsubscribeSync) unsubscribeSync()
-  if (lockTimer) clearTimeout(lockTimer)
+  if (enforceRafId !== null) cancelAnimationFrame(enforceRafId)
   if (unsubscribeAfterEach) unsubscribeAfterEach()
   gsapCtx?.revert()
 })
@@ -641,25 +668,13 @@ const onBottomBarClick = (e: MouseEvent) => {
   const target = e.target as HTMLElement
   const link = target?.closest('a') as HTMLElement | null
   if (link) {
-    // 1. Immediately remove focus to prevent browser native auto-scroll / scrollIntoView
+    // Immediately remove focus to prevent browser native auto-scroll
     link.blur()
 
-    // 2. Lock current horizontal scroll position so the bar stays completely motionless
+    // Snapshot current position and start enforcement loop
     if (mobileIconsScrollRef.value) {
-      const lockPos = savedMobileNavScroll.value || mobileIconsScrollRef.value.scrollLeft
-      savedMobileNavScroll.value = lockPos
-      isClickLocked = true
-      clearTimeout(lockTimer)
-      lockTimer = setTimeout(() => {
-        isClickLocked = false
-      }, 350)
-
-      mobileIconsScrollRef.value.scrollLeft = lockPos
-      requestAnimationFrame(() => {
-        if (mobileIconsScrollRef.value) {
-          mobileIconsScrollRef.value.scrollLeft = lockPos
-        }
-      })
+      savedMobileNavScroll.value = mobileIconsScrollRef.value.scrollLeft
+      enforceScrollPosition()
     }
 
     if (typeof window !== 'undefined') {
@@ -678,18 +693,13 @@ const onMobileNavContainerClick = (e: MouseEvent) => {
       window.dispatchEvent(new CustomEvent('close-order-panel'))
     }
     scrollToTop()
-    nextTick(() => {
-      restoreMobileNavScroll()
-    })
+    enforceScrollPosition()
   }
 }
 
 watch(() => route.path, () => {
   isMobileMenuOpen.value = false
-  nextTick(() => {
-    restoreMobileNavScroll()
-    setTimeout(restoreMobileNavScroll, 50)
-  })
+  enforceScrollPosition()
 }, { immediate: true })
 </script>
 
