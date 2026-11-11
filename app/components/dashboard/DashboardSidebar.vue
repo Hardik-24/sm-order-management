@@ -165,7 +165,7 @@
 
   
   <!-- Mobile Bottom Navigation -->
-  <aside class="flex md:hidden flex-col bg-[#1c1c1c] text-white w-full z-[200] fixed bottom-0 inset-x-0 shadow-[0_-4px_20px_rgba(0,0,0,0.5)] border-t border-gray-800 pb-[env(safe-area-inset-bottom,0px)]">
+  <aside class="flex md:hidden flex-col bg-[#1c1c1c] text-white w-full z-[400] fixed bottom-0 inset-x-0 shadow-[0_-4px_20px_rgba(0,0,0,0.5)] border-t border-gray-800 pb-[env(safe-area-inset-bottom,0px)]">
     <!-- Backdrop when category sheet is open -->
     <Transition
       enter-active-class="transition-opacity duration-200 ease-out"
@@ -230,12 +230,12 @@
               </div>
               <div class="flex flex-col min-w-0">
                 <div class="flex items-center gap-1.5">
-                  <span class="text-xs font-semibold text-gray-100 truncate">Approve Orders</span>
+                  <span class="text-xs font-semibold text-gray-100 leading-tight">Approve Orders</span>
                   <span v-if="pendingApprovalCount > 0" class="bg-amber-500/20 text-amber-300 text-[9px] font-bold px-1.5 py-0.2 rounded-full border border-amber-500/30">
                     {{ pendingApprovalCount }}
                   </span>
                 </div>
-                <span class="text-[10px] text-gray-400 truncate">Review pending orders</span>
+                <span class="text-[10px] text-gray-400 leading-tight mt-0.5">Review pending orders</span>
               </div>
             </NuxtLink>
 
@@ -250,8 +250,8 @@
                 <Package class="w-4 h-4" />
               </div>
               <div class="flex flex-col min-w-0">
-                <span class="text-xs font-semibold text-gray-100 truncate">Packing</span>
-                <span class="text-[10px] text-gray-400 truncate">Pick & pack items</span>
+                <span class="text-xs font-semibold text-gray-100 leading-tight">Packing</span>
+                <span class="text-[10px] text-gray-400 leading-tight mt-0.5">Pick & pack items</span>
               </div>
             </NuxtLink>
 
@@ -266,8 +266,8 @@
                 <IndianRupee class="w-4 h-4" />
               </div>
               <div class="flex flex-col min-w-0">
-                <span class="text-xs font-semibold text-gray-100 truncate">Billing</span>
-                <span class="text-[10px] text-gray-400 truncate">Invoicing & GST</span>
+                <span class="text-xs font-semibold text-gray-100 leading-tight">Billing</span>
+                <span class="text-[10px] text-gray-400 leading-tight mt-0.5">Invoicing & GST</span>
               </div>
             </NuxtLink>
 
@@ -282,8 +282,8 @@
                 <Truck class="w-4 h-4" />
               </div>
               <div class="flex flex-col min-w-0">
-                <span class="text-xs font-semibold text-gray-100 truncate">Delivery</span>
-                <span class="text-[10px] text-gray-400 truncate">Dispatch & transit</span>
+                <span class="text-xs font-semibold text-gray-100 leading-tight">Delivery</span>
+                <span class="text-[10px] text-gray-400 leading-tight mt-0.5">Dispatch & transit</span>
               </div>
             </NuxtLink>
 
@@ -399,8 +399,8 @@
                 <ClipboardList class="w-4 h-4" />
               </div>
               <div class="flex flex-col min-w-0">
-                <span class="text-xs font-semibold text-gray-100 truncate">Orders</span>
-                <span class="text-[10px] text-gray-400 truncate">Sales orders</span>
+                <span class="text-xs font-semibold text-gray-100 leading-tight">Orders</span>
+                <span class="text-[10px] text-gray-400 leading-tight mt-0.5">Sales orders</span>
               </div>
             </NuxtLink>
 
@@ -415,8 +415,8 @@
                 <Boxes class="w-4 h-4" />
               </div>
               <div class="flex flex-col min-w-0">
-                <span class="text-xs font-semibold text-gray-100 truncate">Inventory</span>
-                <span class="text-[10px] text-gray-400 truncate">Stock levels</span>
+                <span class="text-xs font-semibold text-gray-100 leading-tight">Inventory</span>
+                <span class="text-[10px] text-gray-400 leading-tight mt-0.5">Stock levels</span>
               </div>
             </NuxtLink>
 
@@ -431,8 +431,8 @@
                 <BarChart3 class="w-4 h-4" />
               </div>
               <div class="flex flex-col min-w-0">
-                <span class="text-xs font-semibold text-gray-100 truncate">Analytics</span>
-                <span class="text-[10px] text-gray-400 truncate">Sales metrics</span>
+                <span class="text-xs font-semibold text-gray-100 leading-tight">Analytics</span>
+                <span class="text-[10px] text-gray-400 leading-tight mt-0.5">Sales metrics</span>
               </div>
             </NuxtLink>
 
@@ -448,12 +448,12 @@
               </div>
               <div class="flex flex-col min-w-0">
                 <div class="flex items-center gap-1.5">
-                  <span class="text-xs font-semibold text-gray-100 truncate">Order Requests</span>
+                  <span class="text-xs font-semibold text-gray-100 leading-tight">Order Requests</span>
                   <span v-if="pendingRequestsCount > 0" class="bg-amber-500/20 text-amber-300 text-[9px] font-bold px-1.5 py-0.2 rounded-full border border-amber-500/30">
                     {{ pendingRequestsCount }}
                   </span>
                 </div>
-                <span class="text-[10px] text-gray-400 truncate">Customer drafts</span>
+                <span class="text-[10px] text-gray-400 leading-tight mt-0.5">Customer drafts</span>
               </div>
             </NuxtLink>
 
@@ -468,8 +468,8 @@
                 <Calculator class="w-4 h-4" />
               </div>
               <div class="flex flex-col min-w-0">
-                <span class="text-xs font-semibold text-gray-100 truncate">Quotations</span>
-                <span class="text-[10px] text-gray-400 truncate">Estimates & rates</span>
+                <span class="text-xs font-semibold text-gray-100 leading-tight">Quotations</span>
+                <span class="text-[10px] text-gray-400 leading-tight mt-0.5">Estimates & rates</span>
               </div>
             </NuxtLink>
 
@@ -484,8 +484,8 @@
                 <User class="w-4 h-4" />
               </div>
               <div class="flex flex-col min-w-0">
-                <span class="text-xs font-semibold text-gray-100 truncate">Customers</span>
-                <span class="text-[10px] text-gray-400 truncate">Client directory</span>
+                <span class="text-xs font-semibold text-gray-100 leading-tight">Customers</span>
+                <span class="text-[10px] text-gray-400 leading-tight mt-0.5">Client directory</span>
               </div>
             </NuxtLink>
 
@@ -500,8 +500,8 @@
                 <Box class="w-4 h-4" />
               </div>
               <div class="flex flex-col min-w-0">
-                <span class="text-xs font-semibold text-gray-100 truncate">Products</span>
-                <span class="text-[10px] text-gray-400 truncate">Items & catalog</span>
+                <span class="text-xs font-semibold text-gray-100 leading-tight">Products</span>
+                <span class="text-[10px] text-gray-400 leading-tight mt-0.5">Items & catalog</span>
               </div>
             </NuxtLink>
 
@@ -516,8 +516,8 @@
                 <MessageSquare class="w-4 h-4" />
               </div>
               <div class="flex flex-col min-w-0">
-                <span class="text-xs font-semibold text-gray-100 truncate">Team Chat</span>
-                <span class="text-[10px] text-gray-400 truncate">Staff messaging</span>
+                <span class="text-xs font-semibold text-gray-100 leading-tight">Team Chat</span>
+                <span class="text-[10px] text-gray-400 leading-tight mt-0.5">Staff messaging</span>
               </div>
             </NuxtLink>
 
@@ -571,7 +571,7 @@
                 />
                 <div class="flex flex-col min-w-0">
                   <span class="text-sm font-semibold text-gray-100 truncate">{{ user?.name || 'User' }}</span>
-                  <span class="text-[10px] text-gray-400 truncate">{{ user?.role === 'ADMIN' ? 'Administrator' : user?.role === 'SUPERVISOR' ? 'Supervisor' : user?.role || 'Staff' }}</span>
+                  <span class="text-[10px] text-gray-400 leading-tight mt-0.5">{{ user?.role === 'ADMIN' ? 'Administrator' : user?.role === 'SUPERVISOR' ? 'Supervisor' : user?.role || 'Staff' }}</span>
                 </div>
               </div>
               <div class="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-[#1a1a1a] border border-gray-800 shrink-0">
