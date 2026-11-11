@@ -554,6 +554,10 @@ const getTotalNos = (order: any) => {
                   <span v-else-if="order.isUrgent" class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-bold bg-rose-100 text-rose-700 border border-rose-300">
                     ⚡ URGENT
                   </span>
+                  <span v-if="(order as any).hasUnsyncedBusyItems || order.customer?.isBusySynced === false" class="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-50 text-amber-800 border border-amber-300" title="Contains customer or product not yet in Busy">
+                    <AlertTriangle class="w-2.5 h-2.5 text-amber-600" />
+                    Not in Busy
+                  </span>
                 </div>
                 <p class="text-[11px] text-gray-400 mt-0.5 tabular-nums">
                   {{ formatDateTime(order.createdAt) }}
@@ -665,6 +669,9 @@ const getTotalNos = (order: any) => {
               </span>
               <span v-else-if="order.isUrgent" class="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold bg-rose-100 text-rose-700 border border-rose-300">
                 ⚡ URGENT
+              </span>
+              <span v-if="(order as any).hasUnsyncedBusyItems || order.customer?.isBusySynced === false" class="text-[9px] font-bold text-amber-800 bg-amber-50 px-1.5 py-0.2 rounded border border-amber-300">
+                ⚠️ Not in Busy
               </span>
               <span class="text-gray-300 text-xs">•</span>
               <span class="text-[10px] text-gray-400 tabular-nums">

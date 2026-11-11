@@ -414,7 +414,7 @@ const getItemsTotalQuantity = (order: Order) => {
                   <span v-else-if="(order as any).isUrgent" class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-bold bg-rose-100 text-rose-700 border border-rose-300 animate-pulse">
                     ⚡ URGENT
                   </span>
-                  <span v-if="(order as any).hasUnsyncedBusyItems" class="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-50 text-amber-800 border border-amber-300" title="Contains new catalog product not yet in Busy">
+                  <span v-if="(order as any).hasUnsyncedBusyItems || order.customer?.isBusySynced === false" class="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-50 text-amber-800 border border-amber-300" title="Contains customer or product not yet in Busy">
                     <AlertCircle class="w-2.5 h-2.5 text-amber-600" />
                     Not in Busy
                   </span>
@@ -562,7 +562,7 @@ const getItemsTotalQuantity = (order: Order) => {
               <span v-else-if="(order as any).isUrgent" class="text-[9px] font-bold text-rose-600 bg-rose-50 px-1.5 py-0.2 rounded border border-rose-200 animate-pulse">
                 ⚡ URGENT
               </span>
-              <span v-if="(order as any).hasUnsyncedBusyItems" class="text-[9px] font-bold text-amber-800 bg-amber-50 px-1.5 py-0.2 rounded border border-amber-300">
+              <span v-if="(order as any).hasUnsyncedBusyItems || order.customer?.isBusySynced === false" class="text-[9px] font-bold text-amber-800 bg-amber-50 px-1.5 py-0.2 rounded border border-amber-300">
                 ⚠️ Not in Busy
               </span>
             </div>

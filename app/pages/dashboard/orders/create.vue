@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { X, Plus, Trash2, Zap, MapPin, UserCheck, ShieldAlert, Award, FileText, IndianRupee, Truck, Car, AlertCircle, Package, PackageSearch, Loader2, Clock, Crown, Check, Tag, Calculator, ChevronRight } from 'lucide-vue-next'
+import { X, Plus, Trash2, Zap, MapPin, UserCheck, ShieldAlert, Award, FileText, IndianRupee, Truck, Car, AlertCircle, Package, PackageSearch, Loader2, Clock, Crown, Check, Tag, Calculator, ChevronRight, Database } from 'lucide-vue-next'
 import { formatCurrency, formatDate } from '~/lib/utils'
 import CustomSelect from '~/components/ui/CustomSelect.vue'
 import { useSnackbar } from '~/composables/useSnackbar'
@@ -20,6 +20,27 @@ const { animateModalOpen, initContext } = useGsapAnimation()
 const customerBannerRef = ref<HTMLElement | null>(null)
 const itemsContainerRef = ref<HTMLElement | null>(null)
 
+// Custom Customer State (Not in Busy)
+const isCustomCustomer = ref(false)
+const customCustomer = ref({
+  name: '',
+  phone: '',
+  city: ''
+})
+
+const toggleCustomCustomer = () => {
+  isCustomCustomer.value = !isCustomCustomer.value
+  if (isCustomCustomer.value) {
+    form.value.customerId = ''
+    form.value.deliveryAddressId = ''
+    if (!form.value.paymentTerms) {
+      form.value.paymentTerms = '30 Days'
+    }
+  } else {
+    customCustomer.value = { name: '', phone: '', city: '' }
+  }
+}
+
 const form = ref({
   customerId: '',
   deliveryAddressId: '',
@@ -31,6 +52,9 @@ const form = ref({
   items: [] as Array<{ 
     productId: string
     productSku?: string
+    isCustom?: boolean
+    customProductName?: string
+    customSku?: string
     quantity: number
     unitPrice: number
     taxRate: number
@@ -101,6 +125,7 @@ const productOptions = computed(() => {
 })
 
 const isFirstOrderForCustomer = computed(() => {
+  if (isCustomCustomer.value) return true
   if (!selectedCustomer.value) return false
   const count = selectedCustomer.value.orderCount ?? selectedCustomer.value._count?.orders ?? 0
   return count === 0
@@ -146,9 +171,13 @@ const onAddressSelect = (addrId: string) => {
   }
 }
 
-const addItem = () => {
+const addItem = (isCustom = false) => {
   form.value.items.push({ 
     productId: '', 
+    productSku: '',
+    isCustom,
+    customProductName: '',
+    customSku: '',
     quantity: 1, 
     unitPrice: 0,
     taxRate: 18,
@@ -230,6 +259,7 @@ watch(() => form.value.customerId, (newCustId) => {
 
 const onProductChange = (index: number) => {
   const item = form.value.items[index]
+  if (item.isCustom) return
   item.applyLastPrice = false
   const p = (products.value as any[])?.find((p: any) => p.id === item.productId)
   if (p) {
@@ -282,7 +312,7 @@ const priceHistoryProductName = ref<string>('')
 const priceHistoryProductSku = ref<string>('')
 
 const openPriceHistoryModal = (item: any, idx: number) => {
-  if (!item.productId) return
+  if (item.isCustom || !item.productId) return
   priceHistoryTargetIndex.value = idx
   priceHistoryProductId.value = item.productId
   const p = (products.value as any[])?.find((prod: any) => prod.id === item.productId)
@@ -408,10 +438,18 @@ const totalAmount = computed(() => {
 })
 
 const submitOrder = async () => {
-  if (!form.value.customerId) {
-    alert('Please select a customer')
-    return
+  if (isCustomCustomer.value) {
+    if (!customCustomer.value.name.trim()) {
+      alert('Please enter a custom customer / party name')
+      return
+    }
+  } else {
+    if (!form.value.customerId) {
+      alert('Please select a customer')
+      return
+    }
   }
+
   if (!form.value.paymentTerms) {
     alert('Please select payment terms for this order')
     return
@@ -421,11 +459,36 @@ const submitOrder = async () => {
     return
   }
 
+  for (let i = 0; i < form.value.items.length; i++) {
+    const item = form.value.items[i]
+    if (item.isCustom) {
+      if (!item.customProductName || !item.customProductName.trim()) {
+        alert(`Please enter a product name for custom item #${i + 1}`)
+        return
+      }
+    } else {
+      if (!item.productId) {
+        alert(`Please select a catalog product for item #${i + 1}`)
+        return
+      }
+    }
+    if (!item.quantity || item.quantity <= 0) {
+      alert(`Quantity for item #${i + 1} must be at least 1`)
+      return
+    }
+  }
+
   showSaving()
   try {
+    const payload = {
+      ...form.value,
+      isCustomCustomer: isCustomCustomer.value,
+      customCustomer: isCustomCustomer.value ? customCustomer.value : undefined
+    }
+
     const res = await $fetch<any>('/api/orders', {
       method: 'POST',
-      body: form.value
+      body: payload
     })
     const { notifyChange } = useRealtimeSync()
     notifyChange({ orderId: res?.id, action: 'ORDER_CREATED' })
@@ -493,72 +556,139 @@ const getCustomerInitials = (name: string) => {
         </h3>
         
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-          <!-- Customer Picker -->
+          <!-- Customer Picker / Custom Customer Entry -->
           <div class="md:col-span-2">
-            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Customer *</label>
-            <CustomSelect 
-              :modelValue="form.customerId"
-              @update:modelValue="val => { form.customerId = val; onCustomerChange() }"
-              :options="customerOptions"
-              searchable
-              searchPlaceholder="Search customers by name, company, city..."
-              placeholder="Select Customer"
-              class="w-full"
-            />
+            <div class="flex items-center justify-between mb-2">
+              <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider">Customer *</label>
+              <button 
+                type="button"
+                @click="toggleCustomCustomer"
+                class="text-xs font-bold text-[#1b3b5f] hover:text-[#132c49] flex items-center gap-1 hover:underline cursor-pointer"
+              >
+                <component :is="isCustomCustomer ? Database : Plus" class="w-3.5 h-3.5 text-[#1b3b5f]" />
+                <span>{{ isCustomCustomer ? 'Choose from Database' : '+ Custom Customer (Not in Busy)' }}</span>
+              </button>
+            </div>
 
-            <!-- Selected Customer Info Banner (Enhanced & Mobile-Optimized) -->
-            <div v-if="selectedCustomer" ref="customerBannerRef" class="mt-3.5 p-3.5 sm:p-5 bg-gradient-to-r from-slate-50 via-white to-sky-50/20 rounded-2xl border border-gray-200 shadow-2xs transition-all">
-              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <!-- Left: Avatar, Name, Company, Code, & Badges -->
-                <div class="flex items-start sm:items-center gap-3 sm:gap-3.5 min-w-0">
-                  <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-[#1b3b5f] text-white flex items-center justify-center font-black text-sm sm:text-base shadow-xs shrink-0 tracking-wider">
-                    {{ getCustomerInitials(selectedCustomer.name) }}
-                  </div>
-                  <div class="min-w-0 flex-1">
-                    <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                      <h4 class="text-sm sm:text-base font-extrabold text-gray-900 tracking-tight leading-snug">
-                        {{ selectedCustomer.name }}
-                      </h4>
-                      <div class="flex items-center gap-1.5 flex-wrap">
-                        <span 
-                          class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg font-extrabold text-[10px] uppercase tracking-wider border shadow-2xs"
-                          :class="getPrivilegeBadgeStyle(selectedCustomer.privilegeTier || 'BRONZE')"
-                        >
-                          <Award class="w-3 h-3" />
-                          <span>{{ selectedCustomer.privilegeTier || 'BRONZE' }}</span>
-                        </span>
+            <!-- Mode A: Database Customer Picker -->
+            <div v-if="!isCustomCustomer">
+              <CustomSelect 
+                :modelValue="form.customerId"
+                @update:modelValue="val => { form.customerId = val; onCustomerChange() }"
+                :options="customerOptions"
+                searchable
+                searchPlaceholder="Search customers by name, company, city..."
+                placeholder="Select Customer"
+                class="w-full"
+              />
 
-                        <span v-if="selectedCustomer.isPriorityClient" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg font-extrabold text-[10px] uppercase tracking-wider bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-xs">
-                          <Crown class="w-3 h-3" />
-                          <span>Priority</span>
-                        </span>
+              <!-- Selected Customer Info Banner (Enhanced & Mobile-Optimized) -->
+              <div v-if="selectedCustomer" ref="customerBannerRef" class="mt-3.5 p-3.5 sm:p-5 bg-gradient-to-r from-slate-50 via-white to-sky-50/20 rounded-2xl border border-gray-200 shadow-2xs transition-all">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <!-- Left: Avatar, Name, Company, Code, & Badges -->
+                  <div class="flex items-start sm:items-center gap-3 sm:gap-3.5 min-w-0">
+                    <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-[#1b3b5f] text-white flex items-center justify-center font-black text-sm sm:text-base shadow-xs shrink-0 tracking-wider">
+                      {{ getCustomerInitials(selectedCustomer.name) }}
+                    </div>
+                    <div class="min-w-0 flex-1">
+                      <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                        <h4 class="text-sm sm:text-base font-extrabold text-gray-900 tracking-tight leading-snug">
+                          {{ selectedCustomer.name }}
+                        </h4>
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                          <span 
+                            class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg font-extrabold text-[10px] uppercase tracking-wider border shadow-2xs"
+                            :class="getPrivilegeBadgeStyle(selectedCustomer.privilegeTier || 'BRONZE')"
+                          >
+                            <Award class="w-3 h-3" />
+                            <span>{{ selectedCustomer.privilegeTier || 'BRONZE' }}</span>
+                          </span>
 
-                        <span v-if="selectedCustomer.customerCode" class="px-1.5 py-0.2 rounded text-[10px] font-mono font-bold bg-gray-100 text-gray-600 border border-gray-200">
-                          {{ selectedCustomer.customerCode }}
+                          <span v-if="selectedCustomer.isPriorityClient" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg font-extrabold text-[10px] uppercase tracking-wider bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-xs">
+                            <Crown class="w-3 h-3" />
+                            <span>Priority</span>
+                          </span>
+
+                          <span v-if="selectedCustomer.customerCode" class="px-1.5 py-0.2 rounded text-[10px] font-mono font-bold bg-gray-100 text-gray-600 border border-gray-200">
+                            {{ selectedCustomer.customerCode }}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div class="flex items-center gap-2 text-xs text-gray-500 font-medium mt-1 flex-wrap">
+                        <span v-if="selectedCustomer.company && selectedCustomer.company !== selectedCustomer.name" class="text-gray-700 font-semibold">{{ selectedCustomer.company }}</span>
+                        <span v-if="selectedCustomer.company && selectedCustomer.company !== selectedCustomer.name && (selectedCustomer.city || selectedCustomer.phone)">•</span>
+                        <span v-if="selectedCustomer.city" class="flex items-center gap-1 text-gray-600">
+                          <MapPin class="w-3 h-3 text-gray-400 shrink-0" />
+                          {{ selectedCustomer.city }}
                         </span>
+                        <span v-if="selectedCustomer.phone" class="text-gray-500 font-mono">{{ selectedCustomer.phone }}</span>
                       </div>
                     </div>
+                  </div>
+                </div>
 
-                    <div class="flex items-center gap-2 text-xs text-gray-500 font-medium mt-1 flex-wrap">
-                      <span v-if="selectedCustomer.company && selectedCustomer.company !== selectedCustomer.name" class="text-gray-700 font-semibold">{{ selectedCustomer.company }}</span>
-                      <span v-if="selectedCustomer.company && selectedCustomer.company !== selectedCustomer.name && (selectedCustomer.city || selectedCustomer.phone)">•</span>
-                      <span v-if="selectedCustomer.city" class="flex items-center gap-1 text-gray-600">
-                        <MapPin class="w-3 h-3 text-gray-400 shrink-0" />
-                        {{ selectedCustomer.city }}
-                      </span>
-                      <span v-if="selectedCustomer.phone" class="text-gray-500 font-mono">{{ selectedCustomer.phone }}</span>
-                    </div>
+                <!-- Bottom Meta Row: Account Manager -->
+                <div v-if="selectedCustomer.customerManager" class="mt-2.5 pt-2.5 border-t border-gray-100 flex flex-wrap items-center justify-between gap-2 text-xs">
+                  <div class="flex items-center gap-1.5 text-gray-600 bg-white px-2.5 py-1 rounded-lg border border-gray-200 shadow-2xs text-[11px]">
+                    <UserCheck class="w-3.5 h-3.5 text-[#1b3b5f]" />
+                    <span>Account Manager: <strong class="text-gray-900 font-bold">{{ selectedCustomer.customerManager.name }}</strong></span>
                   </div>
                 </div>
               </div>
+            </div>
 
-              <!-- Bottom Meta Row: Account Manager -->
-              <div v-if="selectedCustomer.customerManager" class="mt-2.5 pt-2.5 border-t border-gray-100 flex flex-wrap items-center justify-between gap-2 text-xs">
-                <div class="flex items-center gap-1.5 text-gray-600 bg-white px-2.5 py-1 rounded-lg border border-gray-200 shadow-2xs text-[11px]">
-                  <UserCheck class="w-3.5 h-3.5 text-[#1b3b5f]" />
-                  <span>Account Manager: <strong class="text-gray-900 font-bold">{{ selectedCustomer.customerManager.name }}</strong></span>
+            <!-- Mode B: Custom Customer Input (Not in Busy) -->
+            <div v-else class="p-4 sm:p-5 bg-amber-50/60 border border-amber-200/90 rounded-2xl space-y-3.5 shadow-2xs">
+              <div class="flex items-center justify-between">
+                <span class="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-900 px-2.5 py-1 rounded-lg border border-amber-300 shadow-2xs">
+                  <AlertCircle class="w-3.5 h-3.5 text-amber-700" />
+                  <span>Custom Customer &bull; Not in Busy</span>
+                </span>
+                <button 
+                  type="button" 
+                  @click="toggleCustomCustomer" 
+                  class="text-xs font-bold text-gray-500 hover:text-gray-800 hover:underline cursor-pointer"
+                >
+                  Cancel
+                </button>
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-gray-700 mb-1">Customer / Party Name *</label>
+                <input 
+                  type="text" 
+                  v-model="customCustomer.name" 
+                  required
+                  placeholder="e.g. Royal Interiors / Rajesh Patel" 
+                  class="w-full border border-amber-300 rounded-lg p-2.5 bg-white text-sm font-bold text-gray-900 focus:ring-amber-500 focus:border-amber-500 shadow-2xs"
+                />
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-bold text-gray-700 mb-1">Phone Number (Optional)</label>
+                  <input 
+                    type="tel" 
+                    v-model="customCustomer.phone" 
+                    placeholder="e.g. 9876543210" 
+                    class="w-full border border-gray-300 rounded-lg p-2.5 bg-white text-sm font-medium text-gray-900 focus:ring-[#1b3b5f] focus:border-[#1b3b5f]"
+                  />
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-gray-700 mb-1">Place / City (Optional)</label>
+                  <input 
+                    type="text" 
+                    v-model="customCustomer.city" 
+                    placeholder="e.g. Mysuru / Bengaluru" 
+                    class="w-full border border-gray-300 rounded-lg p-2.5 bg-white text-sm font-medium text-gray-900 focus:ring-[#1b3b5f] focus:border-[#1b3b5f]"
+                  />
                 </div>
               </div>
+
+              <p class="text-[11px] text-amber-800 leading-relaxed font-medium">
+                💡 Creates a provisional customer record tagged with <strong>Not in Busy</strong>. The order can be processed and tracked immediately; billing staff will link it to an official Busy customer ledger before generating the invoice.
+              </p>
             </div>
           </div>
           
@@ -739,11 +869,16 @@ const getCustomerInitials = (name: string) => {
 
       <!-- Section 2: Items -->
       <div class="bg-white p-4 sm:p-6 rounded-xl border border-gray-200 shadow-sm space-y-4">
-        <div class="flex items-center justify-between border-b border-gray-100 pb-2 mb-4">
+        <div class="flex items-center justify-between border-b border-gray-100 pb-2 mb-4 flex-wrap gap-2">
           <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider">Order Items</h3>
-          <button type="button" @click="addItem" class="text-xs font-bold text-[#1b3b5f] flex items-center gap-1 hover:underline cursor-pointer">
-            <Plus class="w-3.5 h-3.5" /> Add Product
-          </button>
+          <div class="flex items-center gap-2">
+            <button type="button" @click="addItem(false)" class="text-xs font-bold text-[#1b3b5f] flex items-center gap-1 hover:underline cursor-pointer">
+              <Plus class="w-3.5 h-3.5" /> Add Product
+            </button>
+            <button type="button" @click="addItem(true)" class="text-xs font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-300 px-2.5 py-1 rounded-lg flex items-center gap-1 transition-colors cursor-pointer shadow-2xs">
+              <Plus class="w-3.5 h-3.5 text-amber-700" /> Custom Item (Not in Busy)
+            </button>
+          </div>
         </div>
 
         <div ref="itemsContainerRef" class="space-y-4">
@@ -755,7 +890,7 @@ const getCustomerInitials = (name: string) => {
                   #{{ idx + 1 }} Item
                 </span>
                 <span 
-                  v-if="getSelectedProduct(item.productId)?.isBusySynced === false"
+                  v-if="item.isCustom || getSelectedProduct(item.productId)?.isBusySynced === false"
                   class="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider bg-amber-100 text-amber-900 px-1.5 py-0.5 rounded border border-amber-300 shadow-2xs"
                 >
                   <AlertCircle class="w-2.5 h-2.5 text-amber-700 shrink-0" />
@@ -774,9 +909,56 @@ const getCustomerInitials = (name: string) => {
             </div>
 
             <div class="flex flex-col md:flex-row md:items-start gap-3 md:gap-4">
-              <!-- Product Select -->
-              <div class="flex-1 w-full min-w-0">
-                <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1.5">Product *</label>
+              <!-- Product Select / Custom Item Entry -->
+              <div v-if="item.isCustom" class="flex-1 w-full min-w-0 space-y-2">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-1.5">
+                    <label class="block text-[10px] uppercase font-bold text-amber-800">Custom Item Name *</label>
+                    <span class="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider bg-amber-100 text-amber-900 px-1.5 py-0.2 rounded border border-amber-300 shadow-2xs">
+                      <AlertCircle class="w-2.5 h-2.5 text-amber-700 shrink-0" />
+                      Not in Busy
+                    </span>
+                  </div>
+                  <button 
+                    type="button" 
+                    @click="item.isCustom = false; item.productId = ''" 
+                    class="text-[10px] font-bold text-[#1b3b5f] hover:underline cursor-pointer flex items-center gap-1"
+                  >
+                    <Database class="w-3 h-3" />
+                    <span>Choose from Catalog</span>
+                  </button>
+                </div>
+                <input 
+                  type="text" 
+                  v-model="item.customProductName" 
+                  required
+                  placeholder="e.g. Custom Profile Handle 200mm / Labour Charges" 
+                  class="w-full border border-amber-300 rounded-lg p-2.5 bg-amber-50/30 text-sm font-semibold text-gray-900 focus:ring-amber-500 focus:border-amber-500 shadow-2xs"
+                />
+                <div class="flex items-center gap-2 text-[11px] text-gray-500">
+                  <span>SKU / Code:</span>
+                  <input 
+                    type="text" 
+                    v-model="item.customSku" 
+                    placeholder="Auto-generated if empty" 
+                    class="font-mono text-xs border border-gray-200 rounded px-2 py-0.5 w-48 bg-white text-gray-800"
+                  />
+                </div>
+              </div>
+
+              <!-- Catalog Product Select -->
+              <div v-else class="flex-1 w-full min-w-0">
+                <div class="flex items-center justify-between mb-1.5">
+                  <label class="block text-[10px] uppercase font-bold text-gray-500">Product *</label>
+                  <button 
+                    type="button" 
+                    @click="item.isCustom = true; item.productId = ''; item.customProductName = ''" 
+                    class="text-[10px] font-bold text-amber-700 hover:text-amber-900 flex items-center gap-0.5 hover:underline cursor-pointer"
+                  >
+                    <Plus class="w-3 h-3" />
+                    <span>Custom Item (Not in Busy)</span>
+                  </button>
+                </div>
                 <CustomSelect 
                   :modelValue="item.productId"
                   @update:modelValue="val => { item.productId = val; onProductChange(idx) }"
@@ -946,7 +1128,7 @@ const getCustomerInitials = (name: string) => {
               </label>
 
               <!-- Last Billed Price Interactive Pill with Full History Modal on Click -->
-              <div v-if="form.customerId && item.productId" class="flex items-center">
+              <div v-if="form.customerId && item.productId && !item.isCustom" class="flex items-center">
                 <!-- If Price History Exists -->
                 <div 
                   v-if="historicalPricesMap[item.productId]" 
@@ -1029,14 +1211,24 @@ const getCustomerInitials = (name: string) => {
             <p class="text-xs text-gray-500 mt-1 max-w-xs">
               Click below to select products and build your order.
             </p>
-            <button
-              type="button"
-              @click="addItem"
-              class="mt-4 px-4 py-2 bg-[#1b3b5f] hover:bg-[#132c49] text-white rounded-xl text-xs font-bold shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer"
-            >
-              <Plus class="w-3.5 h-3.5" />
-              <span>Add Product</span>
-            </button>
+            <div class="mt-4 flex items-center gap-2.5 flex-wrap justify-center">
+              <button
+                type="button"
+                @click="addItem(false)"
+                class="px-4 py-2 bg-[#1b3b5f] hover:bg-[#132c49] text-white rounded-xl text-xs font-bold shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <Plus class="w-3.5 h-3.5" />
+                <span>Add Product</span>
+              </button>
+              <button
+                type="button"
+                @click="addItem(true)"
+                class="px-4 py-2 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-xl text-xs font-bold shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <Plus class="w-3.5 h-3.5 text-amber-700" />
+                <span>Custom Item (Not in Busy)</span>
+              </button>
+            </div>
           </div>
         </div>
 

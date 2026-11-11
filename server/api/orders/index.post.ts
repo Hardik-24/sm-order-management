@@ -20,16 +20,10 @@ export default defineEventHandler(async (event) => {
     notes, 
     isUrgent = false,
     vehicleMode = 'OUR_FLEET',
-    items 
+    items,
+    isCustomCustomer,
+    customCustomer
   } = body
-
-  if (!customerId) {
-    throw createError({ statusCode: 400, message: 'Customer ID is required' })
-  }
-
-  if (!items || !Array.isArray(items) || items.length === 0) {
-    throw createError({ statusCode: 400, message: 'Order must contain at least one item' })
-  }
 
   let resolvedDeliveryAddress = deliveryAddress
   if (deliveryAddressId && (!resolvedDeliveryAddress || resolvedDeliveryAddress.trim() === '')) {
@@ -39,12 +33,122 @@ export default defineEventHandler(async (event) => {
     }
   }
 
+  // 1. Resolve or Create Customer (Supports custom customer not in Busy)
+  let resolvedCustomerId = customerId
+
+  if (isCustomCustomer || (!resolvedCustomerId && customCustomer?.name)) {
+    const custName = String(customCustomer?.name || '').trim()
+    if (!custName) {
+      throw createError({ statusCode: 400, message: 'Custom customer name is required' })
+    }
+
+    let existingCustomer = null
+    const phone = customCustomer?.phone ? String(customCustomer.phone).trim() : null
+    if (phone && phone !== 'N/A') {
+      existingCustomer = await prisma.customer.findFirst({
+        where: { phone }
+      })
+    }
+
+    if (!existingCustomer) {
+      existingCustomer = await prisma.customer.findFirst({
+        where: {
+          OR: [
+            { company: { equals: custName, mode: 'insensitive' } },
+            { name: { equals: custName, mode: 'insensitive' } }
+          ]
+        }
+      })
+    }
+
+    if (existingCustomer) {
+      resolvedCustomerId = existingCustomer.id
+    } else {
+      const city = customCustomer?.city ? String(customCustomer.city).trim() : 'Mysuru'
+      const newCustomer = await prisma.customer.create({
+        data: {
+          name: custName,
+          company: custName,
+          phone: phone || 'N/A',
+          address: resolvedDeliveryAddress || city || 'Address to be verified',
+          city: city,
+          state: 'Karnataka',
+          paymentTerms: paymentTerms || '30 Days',
+          isBusySynced: false
+        }
+      })
+      resolvedCustomerId = newCustomer.id
+    }
+  }
+
+  if (!resolvedCustomerId) {
+    throw createError({ statusCode: 400, message: 'Customer is required' })
+  }
+
+  if (!items || !Array.isArray(items) || items.length === 0) {
+    throw createError({ statusCode: 400, message: 'Order must contain at least one item' })
+  }
+
+  let defaultCategory: any = null
+  const getDefaultCategory = async () => {
+    if (!defaultCategory) {
+      defaultCategory = await prisma.category.findFirst()
+      if (!defaultCategory) {
+        defaultCategory = await prisma.category.create({
+          data: { name: 'Hardware', code: 'HW' }
+        })
+      }
+    }
+    return defaultCategory
+  }
+
   let totalAmount = 0
   const orderItemsData = []
 
   for (const item of items) {
-    const product = await prisma.product.findUnique({ where: { id: item.productId } })
-    if (!product) throw createError({ statusCode: 404, message: `Product ${item.productId} not found` })
+    let product: any = null
+    let isItemBusySynced = true
+
+    if (item.productId) {
+      product = await prisma.product.findUnique({ where: { id: item.productId } })
+    }
+
+    // Custom product not yet in Busy
+    if (item.isCustom || !product) {
+      const customName = String(item.customProductName || item.name || '').trim()
+      if (!customName) {
+        throw createError({ statusCode: 400, message: 'Item name is required for all items' })
+      }
+
+      const cat = await getDefaultCategory()
+      const finalSku = item.customSku && String(item.customSku).trim()
+        ? String(item.customSku).trim()
+        : `SKU-${Date.now().toString().slice(-6)}-${Math.floor(Math.random() * 1000)}`
+
+      const unitPrice = item.unitPrice !== undefined && item.unitPrice !== null && !isNaN(Number(item.unitPrice))
+        ? Number(item.unitPrice)
+        : 0
+
+      const itemTaxRate = item.taxRate !== undefined && item.taxRate !== null && !isNaN(Number(item.taxRate))
+        ? Number(item.taxRate)
+        : 18
+
+      product = await prisma.product.create({
+        data: {
+          name: customName,
+          sku: finalSku,
+          categoryId: cat.id,
+          unit: item.unit || 'PIECE',
+          price: unitPrice,
+          stock: 0,
+          taxRate: itemTaxRate,
+          isBusySynced: false
+        }
+      })
+      isItemBusySynced = false
+    } else if (product.isBusySynced === false) {
+      isItemBusySynced = false
+    }
     
     const unitPrice = item.unitPrice !== undefined && item.unitPrice !== null && !isNaN(Number(item.unitPrice))
       ? Number(item.unitPrice)
@@ -87,7 +191,7 @@ export default defineEventHandler(async (event) => {
       isTaxInclusive: isTaxInclusive,
       applyLastPrice: Boolean(item.applyLastPrice),
       itemNotes: item.itemNotes ? String(item.itemNotes) : null,
-      isBusySynced: product.isBusySynced ?? true
+      isBusySynced: isItemBusySynced
     })
   }
 
@@ -99,7 +203,7 @@ export default defineEventHandler(async (event) => {
 
   // 0. Check if this is the customer's very first order
   const priorOrdersCount = await prisma.order.count({
-    where: { customerId }
+    where: { customerId: resolvedCustomerId }
   })
 
   // 1. Find all existing orders for this year to determine true maximum sequence number
@@ -129,7 +233,7 @@ export default defineEventHandler(async (event) => {
       order = await prisma.order.create({
         data: {
           orderNumber,
-          customerId,
+          customerId: resolvedCustomerId,
           salesPersonId: user.id,
           deliveryAddress: resolvedDeliveryAddress,
           deliveryAddressId: deliveryAddressId || null,
@@ -174,7 +278,7 @@ export default defineEventHandler(async (event) => {
   if (priorOrdersCount === 0 && paymentTerms && String(paymentTerms).trim()) {
     try {
       await prisma.customer.update({
-        where: { id: customerId },
+        where: { id: resolvedCustomerId },
         data: { paymentTerms: String(paymentTerms).trim() }
       })
     } catch (custErr) {
