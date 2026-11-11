@@ -1356,21 +1356,7 @@
           </button>
 
           <div class="flex items-center gap-2.5 sm:gap-3">
-            <!-- Add / Edit Signature Button in Draft View -->
-            <button
-              v-if="!isSuccessView"
-              type="button"
-              @click="openSignatureModal(false)"
-              class="px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold border transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
-              :class="signatureDataUrl ? 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100' : 'bg-white hover:bg-gray-50 text-gray-700 border-gray-300'"
-              title="Add or edit your digital signature on this estimate"
-            >
-              <CheckCircle2 v-if="signatureDataUrl" class="w-4 h-4 text-emerald-600" />
-              <PenTool v-else class="w-4 h-4 text-[#1b3b5f]" />
-              <span>{{ signatureDataUrl ? 'Signed' : 'Add Signature' }}</span>
-            </button>
-
-            <!-- In Draft View: Primary Action is SAVE & GENERATE -->
+            <!-- In Draft View: Primary Action is CREATE QUOTATION -->
             <button
               v-if="!isSuccessView"
               type="button"
@@ -1380,7 +1366,7 @@
             >
               <Loader2 v-if="isSaving" class="w-4 h-4 animate-spin" />
               <CheckCircle2 v-else class="w-4 h-4" />
-              <span>Save & Generate Quotation</span>
+              <span>Create Quotation</span>
             </button>
           </div>
         </div>
