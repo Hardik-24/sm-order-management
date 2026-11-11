@@ -40,9 +40,12 @@ export default defineEventHandler(async (event) => {
         discountAmount: Number(body.discountAmount) || 0,
         gstAmount: Number(body.gstAmount) || 0,
         grandTotal: Math.round(Number(body.grandTotal) || 0),
-        createdById: body.createdById || user?.id || null,
-        createdByName: body.createdByName || user?.name || 'Sales Staff',
-        createdByRole: body.createdByRole || user?.role || 'SALES',
+        createdById: user?.id || body.createdById || null,
+        createdByName: user?.name || body.createdByName || 'Sales Staff',
+        createdByRole: user?.role || body.createdByRole || 'SALES',
+        requestedById: body.requestedById || user?.id || null,
+        requestedByName: body.requestedByName || user?.name || 'Sales Staff',
+        requestedByRole: body.requestedByRole || user?.role || 'SALES',
         signature: body.signature ? String(body.signature) : null
       }
     })

@@ -213,6 +213,9 @@ export interface Quotation {
   createdById?: string | null
   createdByName?: string | null
   createdByRole?: string | null
+  requestedById?: string | null
+  requestedByName?: string | null
+  requestedByRole?: string | null
   signature?: string | null
   status: 'PENDING' | 'CONVERTED' | string
   convertedOrderId?: string | null

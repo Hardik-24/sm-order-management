@@ -395,7 +395,7 @@
                           </div>
                           <div class="text-[11px] text-gray-500 mt-0.5 flex items-center justify-end gap-1">
                             <span class="text-gray-400 font-medium">Rep:</span>
-                            <strong class="font-black text-gray-800">{{ displayCreatorName }}</strong>
+                            <strong class="font-black text-gray-800">{{ displayRequestedByName }}</strong>
                           </div>
                         </div>
                       </div>
@@ -547,7 +547,7 @@
                         </div>
                         <div class="border-t border-gray-400 w-32 pt-1">
                           <strong class="font-bold text-gray-800 block">Authorized Signatory</strong>
-                          <span v-if="!isAnonymousMode" class="text-[9px] text-gray-400 block">{{ displayCreatorName }}</span>
+                          <span v-if="!isAnonymousMode" class="text-[9px] text-gray-400 block">{{ displayRequestedByName }}</span>
                         </div>
                       </div>
                     </div>
@@ -717,25 +717,39 @@
                 </div>
               </div>
 
-              <!-- Row 2: Quotation By (Sales Rep) -->
-              <div class="sm:col-span-5">
-                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">
-                  Quotation By (Sales Rep)
+              <!-- Row 2: Created By (Uneditable) & Requested By (Sales Rep Dropdown) -->
+              <div class="sm:col-span-6">
+                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1 flex items-center justify-between">
+                  <span>Created By</span>
+                  <span class="text-[9px] text-gray-400 font-normal lowercase">(uneditable)</span>
+                </label>
+                <input
+                  :value="displayCreatorName"
+                  disabled
+                  class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-semibold text-gray-600 cursor-not-allowed select-none shadow-2xs"
+                  title="Prefilled with the account creating this quotation"
+                />
+              </div>
+
+              <div class="sm:col-span-6">
+                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1 flex items-center justify-between">
+                  <span>Requested By (Sales Rep)</span>
+                  <span class="text-[9px] text-sky-600 font-semibold lowercase">shown on slip</span>
                 </label>
                 <CustomSelect
-                  :modelValue="selectedCreatorId"
-                  @update:modelValue="onCreatorSelect"
+                  :modelValue="selectedRequestedById"
+                  @update:modelValue="onRequestedBySelect"
                   :options="userOptions"
                   searchable
-                  searchPlaceholder="Search employee..."
-                  placeholder="Select Sales Rep / Employee"
+                  searchPlaceholder="Search sales rep..."
+                  placeholder="Select Sales Rep / Requester"
                   class="w-full text-xs"
                   triggerClass="px-3 py-2 text-xs font-medium"
                 />
               </div>
 
-              <!-- Validity (Days) -->
-              <div class="sm:col-span-3">
+              <!-- Row 3: Validity (Days) & Show Disc % in Slip -->
+              <div class="sm:col-span-4">
                 <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Validity (Days)</label>
                 <div class="relative">
                   <input
@@ -752,8 +766,7 @@
                 </div>
               </div>
 
-              <!-- Show Disc % in Slip -->
-              <div class="sm:col-span-4 flex items-end">
+              <div class="sm:col-span-8 flex items-end">
                 <label class="w-full flex items-center gap-2.5 px-3 py-2 bg-white border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition h-[38px] select-none">
                   <input
                     v-model="showDiscountColumn"
@@ -1250,7 +1263,7 @@
                   </div>
                   <div class="min-w-0">
                     <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Authorized Signatory</div>
-                    <div class="text-xs font-bold text-gray-800 truncate">{{ displayCreatorName }}</div>
+                    <div class="text-xs font-bold text-gray-800 truncate">{{ displayRequestedByName }}</div>
                   </div>
                 </div>
 
@@ -1442,7 +1455,7 @@
             </div>
             <div class="text-xs text-gray-500 mt-1 flex items-center justify-end gap-1">
               <span class="text-gray-400 font-medium">Rep:</span>
-              <strong class="font-black text-gray-800">{{ displayCreatorName }}</strong>
+              <strong class="font-black text-gray-800">{{ displayRequestedByName }}</strong>
             </div>
           </div>
         </div>
@@ -1593,7 +1606,7 @@
             </div>
             <div class="border-t border-gray-400 w-32 pt-1">
               <span class="font-bold text-gray-700 block">Authorized Signatory</span>
-              <span v-if="!isAnonymousMode" class="text-[9px] text-gray-400 block">{{ displayCreatorName }}</span>
+              <span v-if="!isAnonymousMode" class="text-[9px] text-gray-400 block">{{ displayRequestedByName }}</span>
             </div>
           </div>
         </div>
@@ -1673,7 +1686,7 @@
                   </div>
                   <div class="text-xs text-gray-500 mt-0.5 flex items-center justify-end gap-1">
                     <span class="text-gray-400 font-medium">Rep:</span>
-                    <strong class="font-black text-gray-800">{{ displayCreatorName }}</strong>
+                    <strong class="font-black text-gray-800">{{ displayRequestedByName }}</strong>
                   </div>
                 </div>
               </div>
@@ -1724,7 +1737,7 @@
                   <span v-if="customerPlace" class="text-gray-700">{{ customerPlace }}</span>
                 </div>
                 <div v-if="!isAnonymousMode" class="text-[11px] text-gray-500">
-                  Rep: <strong class="text-gray-800">{{ displayCreatorName }}</strong>
+                  Rep: <strong class="text-gray-800">{{ displayRequestedByName }}</strong>
                 </div>
               </div>
             </div>
@@ -2021,7 +2034,7 @@
 
         <!-- Signer Info Badge -->
         <div class="bg-slate-50 border border-slate-200/80 rounded-xl px-3.5 py-2 flex items-center justify-between text-xs">
-          <span class="text-gray-500">Signing as: <strong class="text-[#1b3b5f] font-bold">{{ displayCreatorName }}</strong></span>
+          <span class="text-gray-500">Signing as: <strong class="text-[#1b3b5f] font-bold">{{ displayRequestedByName }}</strong></span>
           <span class="text-[11px] font-bold text-gray-500 tabular-nums">{{ quoteNumber }}</span>
         </div>
 
@@ -2193,12 +2206,12 @@ const isSuccessView = ref(false)
 const isEditingExisting = ref(false)
 const isAnonymousMode = ref(false)
 
-// Employees / Created By On Behalf Of
+// Employees / Requested By
 const dbUsers = ref<any[]>([])
 const isLoadingUsers = ref(false)
-const selectedCreatorId = ref<string>('')
-const selectedCreatorName = ref<string>('')
-const selectedCreatorRole = ref<string>('')
+const selectedRequestedById = ref<string>('')
+const selectedRequestedByName = ref<string>('')
+const selectedRequestedRole = ref<string>('')
 const showDiscountColumn = ref<boolean>(false)
 
 const loadDbUsers = async () => {
@@ -2207,12 +2220,12 @@ const loadDbUsers = async () => {
   try {
     const data = await $fetch<any[]>('/api/users')
     dbUsers.value = (data || []).filter((u: any) => u.isActive !== false)
-    if (!selectedCreatorId.value && user.value?.id) {
+    if (!selectedRequestedById.value && user.value?.id) {
       const match = dbUsers.value.find(u => u.id === user.value?.id)
       if (match) {
-        selectedCreatorId.value = match.id
-        selectedCreatorName.value = match.name
-        selectedCreatorRole.value = match.role
+        selectedRequestedById.value = match.id
+        selectedRequestedByName.value = match.name
+        selectedRequestedRole.value = match.role
       }
     }
   } catch (err) {
@@ -2222,12 +2235,12 @@ const loadDbUsers = async () => {
   }
 }
 
-const onCreatorSelect = (userId: string) => {
-  selectedCreatorId.value = userId
+const onRequestedBySelect = (userId: string) => {
+  selectedRequestedById.value = userId
   const found = dbUsers.value.find(u => u.id === userId)
   if (found) {
-    selectedCreatorName.value = found.name
-    selectedCreatorRole.value = found.role
+    selectedRequestedByName.value = found.name
+    selectedRequestedRole.value = found.role
   }
 }
 
@@ -2259,9 +2272,15 @@ const loadGlobalSettings = async () => {
   }
 }
 const displayCreatorName = computed(() => {
-  if (selectedCreatorName.value) return selectedCreatorName.value
   if (isEditingExisting.value && props.initialQuote?.createdByName) {
     return props.initialQuote.createdByName
+  }
+  return user.value?.name || 'Sales Staff'
+})
+const displayRequestedByName = computed(() => {
+  if (selectedRequestedByName.value) return selectedRequestedByName.value
+  if (isEditingExisting.value && (props.initialQuote?.requestedByName || props.initialQuote?.createdByName)) {
+    return props.initialQuote.requestedByName || props.initialQuote.createdByName
   }
   return user.value?.name || 'Sales Staff'
 })
@@ -2276,6 +2295,8 @@ const canConvertCurrentQuote = computed(() => {
   if (user.value.role === 'ADMIN') return true
   if (props.initialQuote.createdById && props.initialQuote.createdById === user.value.id) return true
   if (props.initialQuote.createdByName && user.value.name && props.initialQuote.createdByName.toLowerCase() === user.value.name.toLowerCase()) return true
+  if (props.initialQuote.requestedById && props.initialQuote.requestedById === user.value.id) return true
+  if (props.initialQuote.requestedByName && user.value.name && props.initialQuote.requestedByName.toLowerCase() === user.value.name.toLowerCase()) return true
   return false
 })
 
@@ -3184,9 +3205,12 @@ const executeSaveQuote = async () => {
       discountAmount: totalDiscountSaved.value,
       gstAmount: gstAmount.value,
       grandTotal: grandTotal.value,
-      createdById: selectedCreatorId.value || user.value?.id || null,
+      createdById: isEditingExisting.value ? (props.initialQuote?.createdById || user.value?.id || null) : (user.value?.id || null),
       createdByName: displayCreatorName.value,
-      createdByRole: selectedCreatorRole.value || user.value?.role || 'SALES',
+      createdByRole: isEditingExisting.value ? (props.initialQuote?.createdByRole || user.value?.role || 'SALES') : (user.value?.role || 'SALES'),
+      requestedById: selectedRequestedById.value || user.value?.id || null,
+      requestedByName: displayRequestedByName.value,
+      requestedByRole: selectedRequestedRole.value || user.value?.role || 'SALES',
       signature: signatureDataUrl.value || null
     }
 
@@ -3231,10 +3255,10 @@ const resetForNewQuote = () => {
   signatureDataUrl.value = null
   hasDrawnSignature.value = false
   showDiscountColumn.value = false
-  selectedCreatorId.value = user.value?.id || ''
-  const match = dbUsers.value.find(u => u.id === selectedCreatorId.value)
-  selectedCreatorName.value = match?.name || user.value?.name || ''
-  selectedCreatorRole.value = match?.role || user.value?.role || 'SALES'
+  selectedRequestedById.value = user.value?.id || ''
+  const match = dbUsers.value.find(u => u.id === selectedRequestedById.value)
+  selectedRequestedByName.value = match?.name || user.value?.name || ''
+  selectedRequestedRole.value = match?.role || user.value?.role || 'SALES'
 }
 
 const loadQuoteIntoState = (newQuote: any) => {
@@ -3245,9 +3269,9 @@ const loadQuoteIntoState = (newQuote: any) => {
     customerName.value = newQuote.customerName || ''
     customerPlace.value = newQuote.customerPlace || ''
     customerPhone.value = newQuote.customerPhone || ''
-    selectedCreatorId.value = newQuote.createdById || ''
-    selectedCreatorName.value = newQuote.createdByName || ''
-    selectedCreatorRole.value = newQuote.createdByRole || ''
+    selectedRequestedById.value = newQuote.requestedById || newQuote.createdById || ''
+    selectedRequestedByName.value = newQuote.requestedByName || newQuote.createdByName || ''
+    selectedRequestedRole.value = newQuote.requestedByRole || newQuote.createdByRole || ''
     showDiscountColumn.value = Boolean(newQuote.showDiscountColumn ?? newQuote.items?.[0]?.showDiscountColumn)
     
     const match = dbCustomers.value.find(c => c.name.toLowerCase() === (newQuote.customerName || '').trim().toLowerCase())

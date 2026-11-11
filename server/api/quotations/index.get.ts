@@ -21,7 +21,8 @@ export default defineEventHandler(async (event) => {
         { quoteNumber: { contains: token, mode: 'insensitive' } },
         { customerName: { contains: token, mode: 'insensitive' } },
         { customerPlace: { contains: token, mode: 'insensitive' } },
-        { createdByName: { contains: token, mode: 'insensitive' } }
+        { createdByName: { contains: token, mode: 'insensitive' } },
+        { requestedByName: { contains: token, mode: 'insensitive' } }
       ])
       if (multiTokenFilter?.AND) {
         andConditions.push(...multiTokenFilter.AND)
@@ -34,18 +35,31 @@ export default defineEventHandler(async (event) => {
 
     if (canViewAllCompany) {
       if (salesPersonId && salesPersonId !== 'all' && salesPersonId !== 'mine') {
-        andConditions.push({ createdById: salesPersonId })
+        andConditions.push({
+          OR: [
+            { requestedById: salesPersonId },
+            { createdById: salesPersonId }
+          ]
+        })
       } else if (salesPersonId === 'mine' || scope === 'mine') {
-        const userCondition: any[] = [{ createdById: user.id }]
+        const userCondition: any[] = [
+          { createdById: user.id },
+          { requestedById: user.id }
+        ]
         if (user.name) {
           userCondition.push({ createdByName: { equals: user.name, mode: 'insensitive' } })
+          userCondition.push({ requestedByName: { equals: user.name, mode: 'insensitive' } })
         }
         andConditions.push({ OR: userCondition })
       }
     } else {
-      const userCondition: any[] = [{ createdById: user.id }]
+      const userCondition: any[] = [
+        { createdById: user.id },
+        { requestedById: user.id }
+      ]
       if (user.name) {
         userCondition.push({ createdByName: { equals: user.name, mode: 'insensitive' } })
+        userCondition.push({ requestedByName: { equals: user.name, mode: 'insensitive' } })
       }
       andConditions.push({ OR: userCondition })
     }

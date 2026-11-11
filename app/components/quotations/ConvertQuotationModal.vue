@@ -717,8 +717,8 @@ const submitConversion = async () => {
 
               <!-- Placed By (Matching create.vue:488-492) -->
               <div>
-                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Order Created By</label>
-                <input :value="user?.name || quotation?.createdByName || 'Sales Staff'" disabled class="w-full text-sm border border-gray-200 bg-gray-50 rounded-lg p-2.5 text-gray-500 cursor-not-allowed" />
+                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Order Sales Rep</label>
+                <input :value="quotation?.requestedByName || quotation?.createdByName || user?.name || 'Sales Staff'" disabled class="w-full text-sm border border-gray-200 bg-gray-50 rounded-lg p-2.5 text-gray-500 cursor-not-allowed" />
               </div>
 
               <!-- Payment Terms (Matching create.vue:494-517) -->

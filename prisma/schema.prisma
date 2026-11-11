@@ -119,6 +119,7 @@ model User {
   chatMessages      ChatMessage[]   @relation("UserChatMessages")
   confirmedRequests OrderRequest[]  @relation("ConfirmedByUser")
   quotations        Quotation[]     @relation("QuotationsCreatedBy")
+  quotationsRequested Quotation[]   @relation("QuotationsRequestedBy")
   trustedDevices    TrustedDevice[] @relation("UserDevices")
 
   @@map("users")
@@ -574,6 +575,9 @@ model Quotation {
   createdById     String?
   createdByName   String?
   createdByRole   String?
+  requestedById   String?
+  requestedByName String?
+  requestedByRole String?
   signature       String?  @db.Text
   status          String   @default("PENDING")
   convertedOrderId String?
@@ -583,10 +587,13 @@ model Quotation {
   updatedAt       DateTime @updatedAt
 
   createdBy       User?    @relation("QuotationsCreatedBy", fields: [createdById], references: [id])
+  requestedBy     User?    @relation("QuotationsRequestedBy", fields: [requestedById], references: [id])
 
   @@index([customerName])
   @@index([createdAt])
   @@index([status])
+  @@index([createdById])
+  @@index([requestedById])
   @@map("quotations")
 }
 

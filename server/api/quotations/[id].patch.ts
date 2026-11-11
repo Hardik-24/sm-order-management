@@ -55,14 +55,14 @@ export default defineEventHandler(async (event) => {
   if (body.grandTotal !== undefined) {
     data.grandTotal = Math.round(Number(body.grandTotal) || 0)
   }
-  if (body.createdById !== undefined) {
-    data.createdById = body.createdById || null
+  if (body.requestedById !== undefined) {
+    data.requestedById = body.requestedById || null
   }
-  if (body.createdByName !== undefined) {
-    data.createdByName = body.createdByName
+  if (body.requestedByName !== undefined) {
+    data.requestedByName = body.requestedByName
   }
-  if (body.createdByRole !== undefined) {
-    data.createdByRole = body.createdByRole
+  if (body.requestedByRole !== undefined) {
+    data.requestedByRole = body.requestedByRole
   }
 
   const notifyQuotationEdit = async (quote: any, prismaClient: typeof p) => {

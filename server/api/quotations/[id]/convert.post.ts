@@ -31,14 +31,16 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    // 2. Permission check: Only admin or the creator can convert
+    // 2. Permission check: Only admin, the creator, or the requested sales rep can convert
     const isCreator = quotation.createdById === user.id ||
       (quotation.createdByName && user.name && quotation.createdByName.toLowerCase() === user.name.toLowerCase())
+    const isRequester = quotation.requestedById === user.id ||
+      (quotation.requestedByName && user.name && quotation.requestedByName.toLowerCase() === user.name.toLowerCase())
 
-    if (user.role !== 'ADMIN' && !isCreator) {
+    if (user.role !== 'ADMIN' && !isCreator && !isRequester) {
       throw createError({
         statusCode: 403,
-        message: 'Only the quotation creator or an administrator can convert this quotation to a sales order.'
+        message: 'Only the quotation creator, the requested sales representative, or an administrator can convert this quotation to a sales order.'
       })
     }
 
@@ -247,7 +249,7 @@ export default defineEventHandler(async (event) => {
           data: {
             orderNumber,
             customerId,
-            salesPersonId: quotation.createdById || user.id,
+            salesPersonId: quotation.requestedById || quotation.createdById || user.id,
             deliveryAddress: resolvedDeliveryAddress,
             deliveryAddressId: body.deliveryAddressId || null,
             vehicleMode: (body.vehicleMode === 'PARTY_VEHICLE' || body.vehicleMode === 'THIRD_PARTY')

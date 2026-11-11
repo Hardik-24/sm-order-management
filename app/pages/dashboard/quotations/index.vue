@@ -211,7 +211,7 @@
                 <th class="px-5 py-3.5">Customer & Destination</th>
                 <th class="px-5 py-3.5 whitespace-nowrap text-center">Items</th>
                 <th class="px-5 py-3.5 whitespace-nowrap text-center">Conversion Status</th>
-                <th class="px-5 py-3.5 whitespace-nowrap">Created By</th>
+                <th class="px-5 py-3.5 whitespace-nowrap">Requested / Created By</th>
                 <th class="px-5 py-3.5 whitespace-nowrap text-center">Date</th>
                 <th class="px-5 py-3.5 whitespace-nowrap text-right pr-5">Actions</th>
               </tr>
@@ -251,7 +251,7 @@
                 <th class="px-5 py-3.5">Customer & Destination</th>
                 <th class="px-5 py-3.5 whitespace-nowrap text-center">Items</th>
                 <th class="px-5 py-3.5 whitespace-nowrap text-center">Conversion Status</th>
-                <th class="px-5 py-3.5 whitespace-nowrap">Created By</th>
+                <th class="px-5 py-3.5 whitespace-nowrap">Requested / Created By</th>
                 <th class="px-5 py-3.5 whitespace-nowrap text-center">Date</th>
                 <th class="px-5 py-3.5 whitespace-nowrap text-right pr-5">Actions</th>
               </tr>
@@ -318,14 +318,19 @@
                   </span>
                 </td>
 
-                <!-- 5. Created By -->
+                <!-- 5. Requested / Created By -->
                 <td class="px-5 py-3.5 whitespace-nowrap">
-                  <div class="text-xs font-semibold text-gray-800 truncate">
-                    {{ quote.createdByName || 'Sales Staff' }}
+                  <div class="text-xs font-semibold text-gray-800 truncate" :title="quote.requestedByName || quote.createdByName">
+                    {{ quote.requestedByName || quote.createdByName || 'Sales Staff' }}
                   </div>
-                  <p class="text-[11px] text-gray-400 uppercase font-medium tracking-wider">
-                    {{ quote.createdByRole || 'STAFF' }}
-                  </p>
+                  <div class="text-[11px] text-gray-400">
+                    <span v-if="quote.requestedByName && quote.createdByName && quote.requestedByName.toLowerCase() !== quote.createdByName.toLowerCase()">
+                      By {{ quote.createdByName }}
+                    </span>
+                    <span v-else class="uppercase font-medium tracking-wider">
+                      {{ quote.requestedByRole || quote.createdByRole || 'STAFF' }}
+                    </span>
+                  </div>
                 </td>
 
                 <!-- 6. Date -->
@@ -442,8 +447,13 @@
                   {{ Array.isArray(quote.items) ? quote.items.length : (quote.totalItems || 0) }} items
                 </span>
                 <span class="text-gray-300 text-[10px]">&bull;</span>
-                <span class="text-[11px] text-gray-400 truncate">
-                  By {{ quote.createdByName || 'Staff' }}
+                <span class="text-[11px] text-gray-500 truncate">
+                  <template v-if="quote.requestedByName && quote.createdByName && quote.requestedByName.toLowerCase() !== quote.createdByName.toLowerCase()">
+                    For {{ quote.requestedByName }} <span class="text-gray-400 font-normal">(by {{ quote.createdByName }})</span>
+                  </template>
+                  <template v-else>
+                    By {{ quote.requestedByName || quote.createdByName || 'Staff' }}
+                  </template>
                 </span>
               </div>
 
@@ -721,6 +731,8 @@ const canConvertQuote = (quote: any) => {
   if (user.value.role === 'ADMIN') return true
   if (quote.createdById && quote.createdById === user.value.id) return true
   if (quote.createdByName && user.value.name && quote.createdByName.toLowerCase() === user.value.name.toLowerCase()) return true
+  if (quote.requestedById && quote.requestedById === user.value.id) return true
+  if (quote.requestedByName && user.value.name && quote.requestedByName.toLowerCase() === user.value.name.toLowerCase()) return true
   return false
 }
 
@@ -767,7 +779,7 @@ const filteredQuotations = computed(() => {
   let list = quotations.value as any[]
 
   if (salesPersonId.value) {
-    list = list.filter(q => q.createdById === salesPersonId.value)
+    list = list.filter(q => q.requestedById === salesPersonId.value || q.createdById === salesPersonId.value)
   }
   if (startDate.value) {
     const s = new Date(`${startDate.value}T00:00:00`).getTime()
@@ -780,7 +792,7 @@ const filteredQuotations = computed(() => {
 
   return rankAndFilter(list, searchQuery.value, {
     primary: q => [q.quoteNumber, q.customerName],
-    secondary: q => [q.customerPlace, q.createdByName]
+    secondary: q => [q.customerPlace, q.createdByName, q.requestedByName]
   })
 })
 
