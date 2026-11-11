@@ -46,6 +46,10 @@ export default defineEventHandler(async (event) => {
           include: {
             product: true
           }
+        },
+        timeline: {
+          include: { performedBy: { select: { id: true, name: true } } },
+          orderBy: { timestamp: 'desc' }
         }
       }
     })
@@ -53,8 +57,8 @@ export default defineEventHandler(async (event) => {
     await tx.orderTimeline.create({
       data: {
         orderId: id,
-        status: ord.overallStatus,
-        notes: `Customer updated from provisional lead "${oldCustomerName}" to verified Busy customer "${targetCustomer.name}" (${targetCustomer.customerCode || targetCustomer.company || 'Linked'}) by ${user.name || 'Billing Staff'}`,
+        action: 'Customer Linked to Busy',
+        description: `Customer updated from provisional lead "${oldCustomerName}" to verified Busy customer "${targetCustomer.name}" (${targetCustomer.customerCode || targetCustomer.company || 'Linked'}) by ${user.name || 'Billing Staff'}`,
         performedById: user.id
       }
     })
