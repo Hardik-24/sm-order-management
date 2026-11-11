@@ -40,6 +40,7 @@ const handleItemLinked = (updatedOrder: any) => {
   }
   emit('updated', updatedOrder)
   showSaved('Item linked to Busy product successfully!')
+  notifyChange({ orderId: order.value?.id, action: 'ORDER_UPDATED' })
 }
 
 const openAdminStatusModal = () => {
