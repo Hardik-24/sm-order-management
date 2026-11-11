@@ -240,7 +240,7 @@ onUnmounted(() => {
     <Teleport to="body">
       <div 
         v-if="isSyncing || syncStatusData?.syncRequested" 
-        class="fixed inset-0 z-[300] flex items-center justify-center p-3 sm:p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[calc(1rem+env(safe-area-inset-top,0px))] animate-in fade-in duration-200 overflow-y-auto"
+        class="fixed inset-0 z-[500] flex items-center justify-center p-3 sm:p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[calc(1rem+env(safe-area-inset-top,0px))] animate-in fade-in duration-200 overflow-y-auto"
       >
         <!-- Dark Backdrop -->
         <div class="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity"></div>
@@ -583,7 +583,7 @@ onUnmounted(() => {
     <Teleport to="body">
       <div 
         v-if="isDetailModalOpen && selectedProduct" 
-        class="fixed inset-0 z-[300] flex items-center justify-center p-2 sm:p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[calc(1rem+env(safe-area-inset-top,0px))] overflow-y-auto"
+        class="fixed inset-0 z-[500] flex items-center justify-center p-2 sm:p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[calc(1rem+env(safe-area-inset-top,0px))] overflow-y-auto"
       >
       <!-- Backdrop -->
       <div 

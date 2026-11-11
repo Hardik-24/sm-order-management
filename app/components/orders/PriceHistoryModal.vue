@@ -3,7 +3,7 @@
     <div
       v-if="modelValue"
       data-modal-container
-      class="fixed inset-0 z-[320] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150"
+      class="fixed inset-0 z-[500] flex items-center justify-center p-3 sm:p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[calc(1rem+env(safe-area-inset-top,0px))] bg-black/60 backdrop-blur-xs animate-in fade-in duration-150"
       @click.self="close"
     >
       <div

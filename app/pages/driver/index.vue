@@ -528,8 +528,9 @@
     </footer>
 
     <!-- Red Full-Screen Alert Modal on HOLD (Dismissible, No Audio, Vibration Only) -->
-    <div v-if="showHoldModal" class="fixed inset-0 z-50 bg-red-600 text-white flex flex-col justify-between p-6 sm:p-8">
-      <div class="flex items-center justify-between w-full">
+    <Teleport to="body">
+      <div v-if="showHoldModal" class="fixed inset-0 z-[500] bg-red-600 text-white flex flex-col justify-between p-6 sm:p-8 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] pt-[calc(1.5rem+env(safe-area-inset-top,0px))]">
+        <div class="flex items-center justify-between w-full">
         <span class="text-xs font-mono bg-red-700/90 px-2.5 py-1 rounded text-red-100 font-bold">
           🚨 DISPATCH WARNING
         </span>
@@ -584,9 +585,11 @@
         </button>
       </div>
     </div>
+    </Teleport>
 
     <!-- Route Snapshot Modal -->
-    <div v-if="selectedSnapshotTrip" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <Teleport to="body">
+      <div v-if="selectedSnapshotTrip" class="fixed inset-0 z-[500] bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[calc(1rem+env(safe-area-inset-top,0px))]">
       <div class="bg-white w-full max-w-md rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
         <div class="p-4 bg-[#1b3b5f] text-white flex items-center justify-between">
           <div>
@@ -633,10 +636,12 @@
         </div>
       </div>
     </div>
+    </Teleport>
 
     <!-- Next Delivery Prompt Modal (Shown after a stop is delivered) -->
-    <div v-if="showNextDeliveryModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-      <div class="bg-white rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl border border-gray-100">
+    <Teleport to="body">
+      <div v-if="showNextDeliveryModal" class="fixed inset-0 z-[500] bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[calc(1rem+env(safe-area-inset-top,0px))]">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl border border-gray-100">
         <div class="text-center space-y-2">
           <div class="w-12 h-12 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto shadow-inner">
             <CheckCircle2 class="w-6 h-6" />
@@ -684,6 +689,7 @@
         </div>
       </div>
     </div>
+    </Teleport>
   </div>
 </template>
 

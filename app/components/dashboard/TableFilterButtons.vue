@@ -378,7 +378,7 @@ const deliveryStatusOptions = [
     <Transition name="fade">
       <div 
         v-if="isDatePickerOpen || isFiltersOpen" 
-        class="fixed inset-0 bg-black/40 backdrop-blur-[1px] z-[90] sm:hidden" 
+        class="fixed inset-0 bg-black/40 backdrop-blur-[1px] z-[450] sm:hidden" 
         @click="closeAll"
       />
     </Transition>
@@ -400,7 +400,7 @@ const deliveryStatusOptions = [
       <!-- Date Popover Content -->
       <div 
         v-if="isDatePickerOpen" 
-        class="fixed sm:absolute inset-x-4 top-1/2 -translate-y-1/2 sm:translate-y-0 sm:inset-x-auto bg-white border border-gray-200 shadow-2xl rounded-xl z-[100] w-auto sm:w-80 flex flex-col transform translate-z-0"
+        class="fixed sm:absolute inset-x-4 top-1/2 -translate-y-1/2 sm:translate-y-0 sm:inset-x-auto bg-white border border-gray-200 shadow-2xl rounded-xl z-[460] w-auto sm:w-80 flex flex-col transform translate-z-0"
         :class="[
           dateOpenUpward ? 'sm:bottom-full sm:mb-2 sm:top-auto' : 'sm:top-full sm:mt-2 sm:bottom-auto',
           dateAlignLeft ? 'sm:left-0 sm:right-auto' : 'sm:right-0 sm:left-auto'
@@ -574,7 +574,7 @@ const deliveryStatusOptions = [
       <!-- Filters Popover Content -->
       <div 
         v-if="isFiltersOpen" 
-        class="fixed sm:absolute inset-x-4 top-1/2 -translate-y-1/2 sm:translate-y-0 sm:inset-x-auto bg-white border border-gray-200 shadow-2xl rounded-xl z-[100] w-auto sm:w-80 flex flex-col transform translate-z-0"
+        class="fixed sm:absolute inset-x-4 top-1/2 -translate-y-1/2 sm:translate-y-0 sm:inset-x-auto bg-white border border-gray-200 shadow-2xl rounded-xl z-[460] w-auto sm:w-80 flex flex-col transform translate-z-0"
         :class="[
           filtersOpenUpward ? 'sm:bottom-full sm:mb-2 sm:top-auto' : 'sm:top-full sm:mt-2 sm:bottom-auto',
           filtersAlignLeft ? 'sm:left-0 sm:right-auto' : 'sm:right-0 sm:left-auto'

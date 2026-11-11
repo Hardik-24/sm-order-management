@@ -418,7 +418,7 @@
     <Teleport to="body">
       <div
         v-if="isDrawerOpen"
-        class="fixed inset-0 z-[150] overflow-hidden"
+        class="fixed inset-0 z-[500] overflow-hidden"
         @keydown.escape="closeVoucherDrawer"
       >
         <!-- Backdrop -->
@@ -615,7 +615,7 @@
             </div>
 
             <!-- Drawer Footer (Matching OrderDetailPanel.vue footer) -->
-            <div class="px-5 py-3 border-t border-gray-200/80 bg-gray-50 flex items-center justify-end">
+            <div class="px-5 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] border-t border-gray-200/80 bg-gray-50 flex items-center justify-end">
               <button
                 @click="closeVoucherDrawer"
                 data-modal-close="true"

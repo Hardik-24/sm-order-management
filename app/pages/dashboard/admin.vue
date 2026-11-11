@@ -210,7 +210,7 @@
 
     <!-- Users & Permissions Modal -->
     <Teleport to="body">
-      <div v-if="isUsersModalOpen" class="fixed inset-0 z-[300] flex items-center justify-center p-2 sm:p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[calc(1rem+env(safe-area-inset-top,0px))] overflow-y-auto">
+      <div v-if="isUsersModalOpen" class="fixed inset-0 z-[500] flex items-center justify-center p-2 sm:p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[calc(1rem+env(safe-area-inset-top,0px))] overflow-y-auto">
         <!-- Backdrop -->
         <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="isUsersModalOpen = false"></div>
 
@@ -718,7 +718,7 @@
 
     <!-- Edit / Add User Modal with Page Access Fields -->
     <Teleport to="body">
-      <div v-if="isModalOpen" class="fixed inset-0 z-[350] flex items-center justify-center p-2 sm:p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[calc(1rem+env(safe-area-inset-top,0px))] overflow-y-auto">
+      <div v-if="isModalOpen" class="fixed inset-0 z-[550] flex items-center justify-center p-2 sm:p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[calc(1rem+env(safe-area-inset-top,0px))] overflow-y-auto">
         <!-- Backdrop -->
         <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="closeModal"></div>
         

@@ -639,7 +639,7 @@ onMounted(() => {
     <Teleport to="body">
       <div 
         v-if="isDrawerOpen" 
-        class="fixed inset-0 z-[220] flex justify-end"
+        class="fixed inset-0 z-[500] flex justify-end"
       >
         <!-- Backdrop -->
         <div 
@@ -940,7 +940,7 @@ onMounted(() => {
           <!-- Drawer Footer Actions -->
           <div 
             v-if="selectedRequest?.status === 'PENDING' || hasRole('ADMIN')"
-            class="p-4 border-t border-gray-200 bg-white flex items-center justify-between gap-3 shrink-0"
+            class="p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] border-t border-gray-200 bg-white flex items-center justify-between gap-3 shrink-0"
           >
             <div class="flex items-center gap-2">
               <button 
@@ -979,7 +979,7 @@ onMounted(() => {
       <!-- Decline Confirmation Prompt Modal -->
       <div 
         v-if="showDeclineModal" 
-        class="fixed inset-0 z-[350] flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs"
+        class="fixed inset-0 z-[550] flex items-center justify-center p-3 sm:p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[calc(1rem+env(safe-area-inset-top,0px))] bg-black/50 backdrop-blur-xs"
       >
         <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
           <!-- Header -->
@@ -1040,7 +1040,7 @@ onMounted(() => {
       <!-- Delete Confirmation Prompt Modal -->
       <div 
         v-if="showDeleteConfirm" 
-        class="fixed inset-0 z-[350] flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs"
+        class="fixed inset-0 z-[550] flex items-center justify-center p-3 sm:p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[calc(1rem+env(safe-area-inset-top,0px))] bg-black/50 backdrop-blur-xs"
       >
         <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
           <!-- Header -->

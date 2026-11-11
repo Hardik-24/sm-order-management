@@ -81,7 +81,7 @@ const getTextColorClass = (statusType: string | undefined) => {
 
   <!-- All Alerts Modal -->
   <Teleport to="body">
-    <div v-if="isModalOpen" class="fixed inset-0 z-[300] flex items-center justify-center p-2 sm:p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[calc(1rem+env(safe-area-inset-top,0px))] overflow-y-auto">
+    <div v-if="isModalOpen" class="fixed inset-0 z-[500] flex items-center justify-center p-2 sm:p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[calc(1rem+env(safe-area-inset-top,0px))] overflow-y-auto">
       <!-- Backdrop -->
       <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" @click="isModalOpen = false"></div>
       

@@ -1,6 +1,6 @@
 <template>
   <Teleport to="body">
-    <div v-if="isOpen" class="fixed inset-0 z-[300] flex items-center justify-center p-2 sm:p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[calc(1rem+env(safe-area-inset-top,0px))] overflow-y-auto">
+    <div v-if="isOpen" class="fixed inset-0 z-[500] flex items-center justify-center p-2 sm:p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[calc(1rem+env(safe-area-inset-top,0px))] overflow-y-auto">
       <!-- Backdrop -->
       <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="emit('close')"></div>
 
@@ -481,7 +481,7 @@
 
   <!-- ── Temporary Pairing Code Generator Modal ────────────────────────────── -->
   <Teleport to="body">
-    <div v-if="isPairingModalOpen" class="fixed inset-0 z-[350] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+    <div v-if="isPairingModalOpen" class="fixed inset-0 z-[550] flex items-center justify-center p-3 sm:p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[calc(1rem+env(safe-area-inset-top,0px))] bg-black/60 backdrop-blur-xs">
       <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 border border-gray-100 space-y-4">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">

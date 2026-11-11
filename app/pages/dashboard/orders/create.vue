@@ -1314,8 +1314,8 @@ const getCustomerInitials = (name: string) => {
 
     <!-- ── Rate Calculator Modal (A × B × Rate per Sq.ft) ────────────────────── -->
     <Teleport to="body">
-      <div v-if="isRateCalcOpen" data-modal-container class="fixed inset-0 z-[310] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-4 sm:p-5 border border-gray-100 space-y-3 animate-in fade-in zoom-in-95 duration-150">
+      <div v-if="isRateCalcOpen" data-modal-container class="fixed inset-0 z-[500] flex items-center justify-center p-3 sm:p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[calc(1rem+env(safe-area-inset-top,0px))] bg-black/60 backdrop-blur-xs overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-4 sm:p-5 border border-gray-100 space-y-3 animate-in fade-in zoom-in-95 duration-150 max-h-[calc(100dvh-2.5rem-env(safe-area-inset-bottom,0px)-env(safe-area-inset-top,0px))] overflow-y-auto">
           <!-- Modal Header -->
           <div class="flex items-center justify-between border-b border-gray-100 pb-2.5">
             <div class="flex items-center gap-2.5">
