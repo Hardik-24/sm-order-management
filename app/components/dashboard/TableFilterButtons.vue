@@ -378,7 +378,7 @@ const deliveryStatusOptions = [
     <Transition name="fade">
       <div 
         v-if="isDatePickerOpen || isFiltersOpen" 
-        class="fixed inset-0 bg-black/40 backdrop-blur-[1px] z-[450] sm:hidden" 
+        class="fixed inset-x-0 top-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] bg-black/40 backdrop-blur-[1px] z-[450] sm:hidden" 
         @click="closeAll"
       />
     </Transition>

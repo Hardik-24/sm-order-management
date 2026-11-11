@@ -1,11 +1,11 @@
 <template>
   <Teleport to="body">
-    <div v-if="isOpen" class="fixed inset-0 z-[500] flex items-center justify-center p-2 sm:p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[calc(1rem+env(safe-area-inset-top,0px))] overflow-y-auto">
+    <div v-if="isOpen" class="fixed inset-x-0 top-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] md:bottom-0 md:inset-0 z-[500] flex items-center justify-center p-2 sm:p-4 pt-[calc(1rem+env(safe-area-inset-top,0px))] overflow-y-auto">
       <!-- Backdrop -->
       <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="emit('close')"></div>
 
       <!-- Modal Container -->
-      <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[calc(100dvh-2.5rem-env(safe-area-inset-bottom,0px)-env(safe-area-inset-top,0px))] md:max-h-[92vh] overflow-hidden flex flex-col border border-gray-100">
+      <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[calc(100dvh-3.5rem-env(safe-area-inset-bottom,0px)-2rem)] md:max-h-[92vh] overflow-hidden flex flex-col border border-gray-100">
         
         <!-- Modal Header -->
         <div class="px-4 sm:px-6 py-3.5 sm:py-4 border-b border-gray-200 flex items-center justify-between bg-white shrink-0">
@@ -467,9 +467,9 @@
   <!-- SUB-MODAL: ADD / EDIT OPTION (Payment Term / Product UOM)   -->
   <!-- ═══════════════════════════════════════════════════════════ -->
   <Teleport to="body">
-    <div v-if="isOptionModalOpen" class="fixed inset-0 z-[550] flex items-center justify-center p-3 sm:p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[calc(1rem+env(safe-area-inset-top,0px))]">
+    <div v-if="isOptionModalOpen" class="fixed inset-x-0 top-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] md:bottom-0 md:inset-0 z-[550] flex items-center justify-center p-3 sm:p-4 pt-[calc(1rem+env(safe-area-inset-top,0px))]">
       <div class="absolute inset-0 bg-black/50 backdrop-blur-xs" @click="isOptionModalOpen = false"></div>
-      <div class="relative bg-white rounded-xl shadow-xl w-full max-w-md p-5 border border-gray-200 space-y-4 max-h-[calc(100dvh-2.5rem-env(safe-area-inset-bottom,0px)-env(safe-area-inset-top,0px))] overflow-y-auto">
+      <div class="relative bg-white rounded-xl shadow-xl w-full max-w-md p-5 border border-gray-200 space-y-4 max-h-[calc(100dvh-3.5rem-env(safe-area-inset-bottom,0px)-2rem)] overflow-y-auto">
         <div class="flex items-center justify-between border-b border-gray-100 pb-3">
           <h4 class="text-sm font-bold text-gray-900">
             {{ editingOption ? 'Edit' : 'Add' }} {{ optionGroup === 'PAYMENT_TERMS' ? 'Payment Term' : optionGroup === 'SHEET_SIZE' ? 'Sheet Size' : 'Unit of Measure' }}
@@ -547,9 +547,9 @@
   <!-- SUB-MODAL: ADD / EDIT CATEGORY                             -->
   <!-- ═══════════════════════════════════════════════════════════ -->
   <Teleport to="body">
-    <div v-if="isCategoryModalOpen" class="fixed inset-0 z-[550] flex items-center justify-center p-3 sm:p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[calc(1rem+env(safe-area-inset-top,0px))]">
+    <div v-if="isCategoryModalOpen" class="fixed inset-x-0 top-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] md:bottom-0 md:inset-0 z-[550] flex items-center justify-center p-3 sm:p-4 pt-[calc(1rem+env(safe-area-inset-top,0px))]">
       <div class="absolute inset-0 bg-black/50 backdrop-blur-xs" @click="isCategoryModalOpen = false"></div>
-      <div class="relative bg-white rounded-xl shadow-xl w-full max-w-md p-5 border border-gray-200 space-y-4 max-h-[calc(100dvh-2.5rem-env(safe-area-inset-bottom,0px)-env(safe-area-inset-top,0px))] overflow-y-auto">
+      <div class="relative bg-white rounded-xl shadow-xl w-full max-w-md p-5 border border-gray-200 space-y-4 max-h-[calc(100dvh-3.5rem-env(safe-area-inset-bottom,0px)-2rem)] overflow-y-auto">
         <div class="flex items-center justify-between border-b border-gray-100 pb-3">
           <h4 class="text-sm font-bold text-gray-900">
             {{ editingCategory ? 'Edit Product Group' : 'Add New Product Group' }}

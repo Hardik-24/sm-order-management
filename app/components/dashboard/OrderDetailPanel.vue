@@ -1305,7 +1305,7 @@ onMounted(() => {
   </Teleport>
 
   <Teleport to="body">
-    <div v-if="isOpen" class="fixed inset-0 z-[500] overflow-hidden pointer-events-none flex justify-end" data-modal-container="order-detail-panel">
+    <div v-if="isOpen" class="fixed inset-x-0 top-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] md:bottom-0 md:inset-0 z-[500] overflow-hidden pointer-events-none flex justify-end" data-modal-container="order-detail-panel">
       <div class="absolute inset-0 bg-black/30 backdrop-blur-[2px] pointer-events-auto transition-opacity" @click="closePanel" data-modal-backdrop="true"></div>
       
       <div 
@@ -2568,10 +2568,10 @@ onMounted(() => {
 
   <!-- Edit Order Modal -->
   <Teleport to="body">
-    <div v-if="isEditModalOpen" data-modal-container class="fixed inset-0 z-[550] flex items-center justify-center p-2 sm:p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[calc(1rem+env(safe-area-inset-top,0px))] overflow-y-auto">
+    <div v-if="isEditModalOpen" data-modal-container class="fixed inset-x-0 top-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] md:bottom-0 md:inset-0 z-[550] flex items-center justify-center p-2 sm:p-4 pt-[calc(1rem+env(safe-area-inset-top,0px))] overflow-y-auto">
       <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" @click="isEditModalOpen = false; hide()"></div>
       
-      <div ref="editModalCardRef" class="relative bg-[#faf8f5] w-full max-w-4xl rounded-xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[calc(100vh-4.5rem)] md:max-h-[92vh] overflow-hidden transform transition-all border border-gray-200">
+      <div ref="editModalCardRef" class="relative bg-[#faf8f5] w-full max-w-4xl rounded-xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[calc(100dvh-3.5rem-env(safe-area-inset-bottom,0px)-2rem)] md:max-h-[92vh] overflow-hidden transform transition-all border border-gray-200">
         <div class="px-4 py-3 sm:px-6 sm:py-4 border-b border-gray-200 bg-white flex items-center justify-between shrink-0">
           <h2 class="text-base sm:text-lg font-bold text-gray-900 truncate">Edit Order: {{ order?.orderNumber }}</h2>
           <div class="flex items-center gap-3">
@@ -3088,7 +3088,7 @@ onMounted(() => {
 
     <!-- ── Rate Calculator Modal for Edit Order (A × B × Rate per Sq.ft) ─────────── -->
     <Teleport to="body">
-      <div v-if="isEditRateCalcOpen" data-modal-container class="fixed inset-0 z-[560] flex items-center justify-center p-3 sm:p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[calc(1rem+env(safe-area-inset-top,0px))] bg-black/60 backdrop-blur-xs">
+      <div v-if="isEditRateCalcOpen" data-modal-container class="fixed inset-x-0 top-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] md:bottom-0 md:inset-0 z-[560] flex items-center justify-center p-3 sm:p-4 pt-[calc(1rem+env(safe-area-inset-top,0px))] bg-black/60 backdrop-blur-xs">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-4 sm:p-5 border border-gray-100 space-y-3 animate-in fade-in zoom-in-95 duration-150">
           <!-- Modal Header -->
           <div class="flex items-center justify-between border-b border-gray-100 pb-2.5">

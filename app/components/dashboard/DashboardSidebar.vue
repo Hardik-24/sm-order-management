@@ -834,6 +834,9 @@ const toggleMobileSheet = (sheet: 'operations' | 'create' | 'data' | 'more') => 
   if (sheet === 'create' && !hasCreateAccess.value) return
   if (sheet === 'data' && !hasDataReportsAccess.value) return
   if (sheet === 'more' && !hasSettingsAccess.value) return
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('close-order-panel'))
+  }
   activeMobileSheet.value = activeMobileSheet.value === sheet ? null : sheet
 }
 

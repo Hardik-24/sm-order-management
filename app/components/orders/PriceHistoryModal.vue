@@ -3,11 +3,11 @@
     <div
       v-if="modelValue"
       data-modal-container
-      class="fixed inset-0 z-[500] flex items-center justify-center p-3 sm:p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[calc(1rem+env(safe-area-inset-top,0px))] bg-black/60 backdrop-blur-xs animate-in fade-in duration-150"
+      class="fixed inset-x-0 top-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] md:bottom-0 md:inset-0 z-[500] flex items-center justify-center p-3 sm:p-4 pt-[calc(1rem+env(safe-area-inset-top,0px))] bg-black/60 backdrop-blur-xs animate-in fade-in duration-150"
       @click.self="close"
     >
       <div
-        class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl border border-gray-100 flex flex-col max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-150"
+        class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl border border-gray-100 flex flex-col max-h-[calc(100dvh-3.5rem-env(safe-area-inset-bottom,0px)-2rem)] md:max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-150"
       >
         <!-- Modal Header -->
         <div class="p-3 sm:p-4 border-b border-gray-100 flex items-start justify-between gap-3 bg-white shrink-0">

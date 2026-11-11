@@ -639,11 +639,11 @@ onMounted(() => {
     <Teleport to="body">
       <div 
         v-if="isDrawerOpen" 
-        class="fixed inset-0 z-[500] flex justify-end"
+        class="fixed inset-x-0 top-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] md:bottom-0 md:inset-0 z-[500] flex justify-end"
       >
         <!-- Backdrop -->
         <div 
-          class="fixed inset-0 bg-black/40 backdrop-blur-xs transition-opacity"
+          class="absolute inset-0 bg-black/40 backdrop-blur-xs transition-opacity"
           @click="closeDrawer"
         ></div>
 

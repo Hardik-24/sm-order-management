@@ -210,12 +210,12 @@
 
     <!-- Users & Permissions Modal -->
     <Teleport to="body">
-      <div v-if="isUsersModalOpen" class="fixed inset-0 z-[500] flex items-center justify-center p-2 sm:p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[calc(1rem+env(safe-area-inset-top,0px))] overflow-y-auto">
+      <div v-if="isUsersModalOpen" class="fixed inset-x-0 top-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] md:bottom-0 md:inset-0 z-[500] flex items-center justify-center p-2 sm:p-4 pt-[calc(1rem+env(safe-area-inset-top,0px))] overflow-y-auto">
         <!-- Backdrop -->
         <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="isUsersModalOpen = false"></div>
 
         <!-- Modal Container -->
-        <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[calc(100dvh-2.5rem-env(safe-area-inset-bottom,0px)-env(safe-area-inset-top,0px))] md:max-h-[92vh] overflow-hidden flex flex-col border border-gray-100">
+        <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[calc(100dvh-3.5rem-env(safe-area-inset-bottom,0px)-2rem)] md:max-h-[92vh] overflow-hidden flex flex-col border border-gray-100">
           <!-- Header with + Add User Button -->
           <div class="px-4 sm:px-6 py-3.5 sm:py-4 border-b border-gray-200 flex items-center justify-between bg-white shrink-0">
             <div class="flex items-center gap-2.5 sm:gap-3 min-w-0">
@@ -718,12 +718,12 @@
 
     <!-- Edit / Add User Modal with Page Access Fields -->
     <Teleport to="body">
-      <div v-if="isModalOpen" class="fixed inset-0 z-[550] flex items-center justify-center p-2 sm:p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[calc(1rem+env(safe-area-inset-top,0px))] overflow-y-auto">
+      <div v-if="isModalOpen" class="fixed inset-x-0 top-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] md:bottom-0 md:inset-0 z-[550] flex items-center justify-center p-2 sm:p-4 pt-[calc(1rem+env(safe-area-inset-top,0px))] overflow-y-auto">
         <!-- Backdrop -->
         <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="closeModal"></div>
         
         <!-- Modal Dialog -->
-        <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[calc(100dvh-2.5rem-env(safe-area-inset-bottom,0px)-env(safe-area-inset-top,0px))] md:max-h-[92vh] overflow-hidden flex flex-col border border-gray-100">
+        <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[calc(100dvh-3.5rem-env(safe-area-inset-bottom,0px)-2rem)] md:max-h-[92vh] overflow-hidden flex flex-col border border-gray-100">
           <!-- Header -->
           <div class="px-4 sm:px-6 py-3.5 sm:py-4 border-b border-gray-200 flex items-center justify-between bg-white shrink-0">
             <div class="min-w-0">

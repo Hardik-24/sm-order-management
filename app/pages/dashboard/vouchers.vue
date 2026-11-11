@@ -418,7 +418,7 @@
     <Teleport to="body">
       <div
         v-if="isDrawerOpen"
-        class="fixed inset-0 z-[500] overflow-hidden"
+        class="fixed inset-x-0 top-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] md:bottom-0 md:inset-0 z-[500] overflow-hidden"
         @keydown.escape="closeVoucherDrawer"
       >
         <!-- Backdrop -->
@@ -429,7 +429,7 @@
         ></div>
 
         <!-- Slide-over Panel (Matching OrderDetailPanel.vue:1036 standard width: sm:max-w-[500px] md:max-w-[540px]) -->
-        <div class="fixed inset-y-0 right-0 max-w-full flex w-full justify-end">
+        <div class="absolute inset-y-0 right-0 max-w-full flex w-full justify-end">
           <div ref="drawerPanelRef" class="w-full sm:max-w-[500px] md:max-w-[540px] bg-white shadow-2xl border-l border-gray-200/80 flex flex-col h-full overflow-hidden">
             <!-- 1. Drawer Header (Matching OrderDetailPanel.vue:1043-1110) -->
             <div class="px-5 sm:px-6 py-3.5 border-b border-gray-200/80 flex items-center justify-between bg-white flex-shrink-0 z-10">

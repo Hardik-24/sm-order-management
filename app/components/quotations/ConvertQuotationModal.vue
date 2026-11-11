@@ -525,13 +525,13 @@ const submitConversion = async () => {
   <Teleport to="body">
     <div
       v-if="modelValue"
-      class="fixed inset-0 z-[500] flex items-center justify-center p-2 sm:p-4 md:p-6 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[calc(1rem+env(safe-area-inset-top,0px))] overflow-y-auto"
+      class="fixed inset-x-0 top-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] md:bottom-0 md:inset-0 z-[500] flex items-center justify-center p-2 sm:p-4 md:p-6 pt-[calc(1rem+env(safe-area-inset-top,0px))] overflow-y-auto"
     >
       <!-- Backdrop -->
-      <div class="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity" @click="closeModal"></div>
+      <div class="absolute inset-0 bg-black/60 backdrop-blur-xs transition-opacity" @click="closeModal"></div>
 
       <!-- Modal Card (max-w-4xl matching create.vue max-w-4xl) -->
-      <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[calc(100dvh-2.5rem-env(safe-area-inset-bottom,0px)-env(safe-area-inset-top,0px))] md:max-h-[92vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[calc(100dvh-3.5rem-env(safe-area-inset-bottom,0px)-2rem)] md:max-h-[92vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         
         <!-- Header (Matching create.vue title + urgent toggle bar) -->
         <div class="flex items-center justify-between p-4 sm:p-5 border-b border-gray-100 bg-gray-50/90 shrink-0">
