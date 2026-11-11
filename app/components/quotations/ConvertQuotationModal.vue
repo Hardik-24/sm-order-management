@@ -19,7 +19,8 @@ import {
   CheckCircle2,
   ShoppingBag,
   PackageSearch,
-  UserPlus
+  UserPlus,
+  RotateCw
 } from 'lucide-vue-next'
 import { formatCurrency } from '~/lib/utils'
 import CustomSelect from '~/components/ui/CustomSelect.vue'
@@ -52,8 +53,8 @@ const customersList = ref<any[]>([])
 const productsList = ref<any[]>([])
 const isLoadingData = ref(false)
 
-const loadData = async () => {
-  if (customersList.value.length && productsList.value.length) return
+const loadData = async (force = false) => {
+  if (!force && customersList.value.length && productsList.value.length) return
   isLoadingData.value = true
   try {
     const [cResult, pResult] = await Promise.allSettled([
@@ -71,6 +72,10 @@ const loadData = async () => {
   } finally {
     isLoadingData.value = false
   }
+}
+
+const refreshData = () => {
+  loadData(true)
 }
 
 interface ConvertItemRow {
@@ -220,7 +225,7 @@ const productOptions = computed(() => {
 })
 
 const initForm = async () => {
-  await loadData()
+  await loadData(true)
   errorMessage.value = ''
 
   const q = props.quotation
@@ -557,6 +562,17 @@ const submitConversion = async () => {
               <span class="hidden sm:inline">Urgent Order</span>
               <span class="sm:hidden">Urgent</span>
             </label>
+
+            <button 
+              type="button" 
+              @click="refreshData" 
+              :disabled="isLoadingData"
+              title="Refresh products and customers from Busy"
+              class="p-2 text-gray-500 hover:text-[#1b3b5f] hover:bg-white rounded-lg border border-gray-200 transition cursor-pointer shadow-2xs flex items-center gap-1 text-xs font-semibold"
+            >
+              <RotateCw class="w-4 h-4" :class="{ 'animate-spin': isLoadingData }" />
+              <span class="hidden sm:inline">Refresh Catalog</span>
+            </button>
 
             <button
               type="button"

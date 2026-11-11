@@ -19,15 +19,27 @@
               </p>
             </div>
           </div>
-          <button 
-            type="button" 
-            @click="closeModal" 
-            data-modal-close="true"
-            title="Close (Esc)"
-            class="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition cursor-pointer"
-          >
-            <X class="w-5 h-5" />
-          </button>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button 
+              type="button" 
+              @click="refreshCustomers" 
+              :disabled="isLoadingCustomers"
+              title="Refresh customer accounts from Busy"
+              class="p-2 text-gray-500 hover:text-[#1b3b5f] hover:bg-white rounded-lg border border-gray-200 transition cursor-pointer shadow-2xs flex items-center gap-1 text-xs font-semibold"
+            >
+              <RotateCw class="w-4 h-4" :class="{ 'animate-spin': isLoadingCustomers }" />
+              <span class="hidden sm:inline">Refresh Customers</span>
+            </button>
+            <button 
+              type="button" 
+              @click="closeModal" 
+              data-modal-close="true"
+              title="Close (Esc)"
+              class="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition cursor-pointer"
+            >
+              <X class="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         <!-- Body -->
@@ -131,7 +143,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { X, Link2, Info, CheckCircle2, Loader2 } from 'lucide-vue-next'
+import { X, Link2, Info, CheckCircle2, Loader2, RotateCw } from 'lucide-vue-next'
 import CustomSelect from '~/components/ui/CustomSelect.vue'
 import { useSnackbar } from '~/composables/useSnackbar'
 import { useRealtimeSync } from '~/composables/useRealtimeSync'
@@ -151,8 +163,8 @@ const isLoadingCustomers = ref(false)
 const selectedCustomerId = ref('')
 const isSubmitting = ref(false)
 
-const loadCustomers = async () => {
-  if (customersList.value.length) return
+const loadCustomers = async (force = false) => {
+  if (!force && customersList.value.length) return
   isLoadingCustomers.value = true
   try {
     const data = await $fetch<any[]>('/api/customers')
@@ -164,10 +176,14 @@ const loadCustomers = async () => {
   }
 }
 
+const refreshCustomers = () => {
+  loadCustomers(true)
+}
+
 watch(() => props.isOpen, (open) => {
   if (open) {
     selectedCustomerId.value = ''
-    loadCustomers()
+    loadCustomers(true)
   }
 })
 

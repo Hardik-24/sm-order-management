@@ -19,15 +19,27 @@
               </p>
             </div>
           </div>
-          <button 
-            type="button" 
-            @click="closeModal" 
-            data-modal-close="true"
-            title="Close (Esc)"
-            class="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition cursor-pointer"
-          >
-            <X class="w-5 h-5" />
-          </button>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button 
+              type="button" 
+              @click="refreshProducts" 
+              :disabled="isLoadingProducts"
+              title="Refresh product catalog from Busy"
+              class="p-2 text-gray-500 hover:text-[#1b3b5f] hover:bg-white rounded-lg border border-gray-200 transition cursor-pointer shadow-2xs flex items-center gap-1 text-xs font-semibold"
+            >
+              <RotateCw class="w-4 h-4" :class="{ 'animate-spin': isLoadingProducts }" />
+              <span class="hidden sm:inline">Refresh Catalog</span>
+            </button>
+            <button 
+              type="button" 
+              @click="closeModal" 
+              data-modal-close="true"
+              title="Close (Esc)"
+              class="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition cursor-pointer"
+            >
+              <X class="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         <!-- Body -->
@@ -144,7 +156,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { Link2, X, AlertCircle, Info, CheckCircle2, Loader2 } from 'lucide-vue-next'
+import { Link2, X, AlertCircle, Info, CheckCircle2, Loader2, RotateCw } from 'lucide-vue-next'
 import CustomSelect from '~/components/ui/CustomSelect.vue'
 
 const props = defineProps<{
@@ -165,8 +177,8 @@ const isLoadingProducts = ref(false)
 const isSubmitting = ref(false)
 const errorMessage = ref('')
 
-const fetchProducts = async () => {
-  if (productsList.value.length > 0) return
+const fetchProducts = async (force = false) => {
+  if (!force && productsList.value.length > 0) return
   isLoadingProducts.value = true
   try {
     const data = await $fetch<any[]>('/api/products')
@@ -178,11 +190,15 @@ const fetchProducts = async () => {
   }
 }
 
+const refreshProducts = () => {
+  fetchProducts(true)
+}
+
 watch(() => props.isOpen, (open) => {
   if (open) {
     errorMessage.value = ''
     selectedProductId.value = ''
-    fetchProducts()
+    fetchProducts(true)
   }
 })
 

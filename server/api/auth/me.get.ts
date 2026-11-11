@@ -1,4 +1,4 @@
-import { getUserFromEvent } from '~~/server/utils/auth'
+import { getUserFromEvent, createToken } from '~~/server/utils/auth'
 import { prisma } from '~~/server/utils/prisma'
 
 export default defineEventHandler(async (event) => {
@@ -66,6 +66,26 @@ export default defineEventHandler(async (event) => {
   if (!dbUser || !dbUser.isActive) {
     deleteCookie(event, 'auth_token', { path: '/' })
     throw createError({ statusCode: 401, statusMessage: 'User account inactive or not found' })
+  }
+
+  // Auto-refresh auth_token cookie if user name or role was updated in DB
+  if (dbUser.name !== sessionUser.name || dbUser.role !== sessionUser.role) {
+    const refreshedToken = createToken({
+      id: dbUser.id,
+      name: dbUser.name,
+      email: dbUser.email,
+      role: dbUser.role,
+      avatar: dbUser.avatar,
+      allowedPages: (dbUser.allowedPages as any) || [],
+      actionPermissions: (dbUser.actionPermissions as any) || null
+    })
+    setCookie(event, 'auth_token', refreshedToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7,
+      path: '/'
+    })
   }
 
   return {

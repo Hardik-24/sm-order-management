@@ -91,10 +91,18 @@ export default defineEventHandler(async (event) => {
     // Non-blocking Push Notification dispatch with await for Serverless container safety
     if (await isNotificationEnabled('delivery')) {
       try {
+        let driverName = user.name || 'Driver'
+        if (user.id) {
+          const liveUser = await prisma.user.findUnique({
+            where: { id: user.id },
+            select: { name: true }
+          })
+          if (liveUser?.name) driverName = liveUser.name
+        }
         const relatedUserIds = [stop.order?.salesPersonId, user.id].filter(Boolean) as string[]
         await sendPushNotification({
           title: `🏁 Order Delivered: ${stop.order.orderNumber}`,
-          body: `${stop.customerName} • Delivered by ${user.name}`,
+          body: `${stop.customerName} • Delivered by ${driverName}`,
           userIds: relatedUserIds,
           data: {
             orderNumber: stop.order.orderNumber,

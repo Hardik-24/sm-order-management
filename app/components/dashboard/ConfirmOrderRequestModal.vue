@@ -13,7 +13,8 @@ import {
   MapPin, 
   Package,
   Check,
-  IndianRupee
+  IndianRupee,
+  RotateCw
 } from 'lucide-vue-next'
 import { formatCurrency } from '~/lib/utils'
 import CustomSelect from '~/components/ui/CustomSelect.vue'
@@ -42,8 +43,8 @@ const customersList = ref<any[]>([])
 const productsList = ref<any[]>([])
 const isLoadingData = ref(false)
 
-const loadData = async () => {
-  if (customersList.value.length && productsList.value.length) return
+const loadData = async (force = false) => {
+  if (!force && customersList.value.length && productsList.value.length) return
   isLoadingData.value = true
   try {
     const [cData, pData] = await Promise.all([
@@ -57,6 +58,10 @@ const loadData = async () => {
   } finally {
     isLoadingData.value = false
   }
+}
+
+const refreshData = () => {
+  loadData(true)
 }
 
 const form = ref({
@@ -127,7 +132,7 @@ const productOptions = computed(() => {
 })
 
 const initForm = async () => {
-  await loadData()
+  await loadData(true)
   errorMessage.value = ''
   
   const req = props.orderRequest
@@ -306,15 +311,27 @@ const submitConversion = async () => {
               </p>
             </div>
           </div>
-          <button 
-            type="button"
-            @click="closeModal" 
-            data-modal-close="true"
-            title="Close (Esc)"
-            class="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-200/60 transition cursor-pointer shrink-0 ml-2"
-          >
-            <X class="w-5 h-5" />
-          </button>
+          <div class="flex items-center gap-1.5 shrink-0 ml-2">
+            <button 
+              type="button" 
+              @click="refreshData" 
+              :disabled="isLoadingData"
+              title="Refresh products and customers from Busy"
+              class="p-2 text-gray-500 hover:text-[#1b3b5f] hover:bg-white rounded-lg border border-gray-200 transition cursor-pointer shadow-2xs flex items-center gap-1 text-xs font-semibold"
+            >
+              <RotateCw class="w-4 h-4" :class="{ 'animate-spin': isLoadingData }" />
+              <span class="hidden sm:inline">Refresh Catalog</span>
+            </button>
+            <button 
+              type="button"
+              @click="closeModal" 
+              data-modal-close="true"
+              title="Close (Esc)"
+              class="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-200/60 transition cursor-pointer"
+            >
+              <X class="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         <!-- Scrollable Form Body -->

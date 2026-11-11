@@ -156,7 +156,14 @@ export default defineEventHandler(async (event) => {
   // Non-blocking Push Notification dispatch when order is edited
   if (await isNotificationEnabled('order_edits')) {
     try {
-      const editorName = user?.name || 'Team member'
+      let editorName = user?.name || 'Team member'
+      if (user?.id) {
+        const liveUser = await prisma.user.findUnique({
+          where: { id: user.id },
+          select: { name: true }
+        })
+        if (liveUser?.name) editorName = liveUser.name
+      }
       const customerName = order.customer?.name || order.customer?.company || 'Customer'
       const totalFormatted = order.totalAmount ? `₹${order.totalAmount.toLocaleString('en-IN')}` : ''
       const relatedUserIds = [order.salesPersonId, (order.packingStatus as any)?.assignedToId].filter(Boolean) as string[]

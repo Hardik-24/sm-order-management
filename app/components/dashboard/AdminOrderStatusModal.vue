@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import { 
   X, Check, Shield, AlertTriangle, AlertCircle, 
   Receipt, Package, Truck, SlidersHorizontal, 
@@ -21,6 +21,8 @@ const emit = defineEmits<{
 
 const { showSaved } = useSnackbar()
 const { notifyChange } = useRealtimeSync()
+
+const scrollContainerRef = ref<HTMLElement | null>(null)
 
 // Form state
 const isSubmitting = ref(false)
@@ -62,9 +64,35 @@ const initForm = () => {
   notes.value = ''
 }
 
+const selectBillingStatus = (val: string) => {
+  billingStatus.value = val
+  if (val === 'GENERATED') {
+    if (!invoiceNumber.value || !invoiceNumber.value.trim()) {
+      invoiceNumber.value = 'SMG'
+    } else if (!invoiceNumber.value.toUpperCase().startsWith('SMG')) {
+      invoiceNumber.value = 'SMG' + invoiceNumber.value
+    }
+  }
+}
+
+watch(billingStatus, (val) => {
+  if (val === 'GENERATED') {
+    if (!invoiceNumber.value || !invoiceNumber.value.trim()) {
+      invoiceNumber.value = 'SMG'
+    } else if (!invoiceNumber.value.toUpperCase().startsWith('SMG')) {
+      invoiceNumber.value = 'SMG' + invoiceNumber.value
+    }
+  }
+})
+
 watch(() => [props.isOpen, props.order], ([open]) => {
   if (open) {
     initForm()
+    nextTick(() => {
+      if (scrollContainerRef.value) {
+        scrollContainerRef.value.scrollTop = 0
+      }
+    })
   }
 }, { immediate: true })
 
@@ -235,7 +263,7 @@ const submitStatusUpdate = async () => {
         </div>
 
         <!-- Scrollable Body -->
-        <div class="p-6 overflow-y-auto space-y-6">
+        <div ref="scrollContainerRef" class="p-6 overflow-y-auto space-y-6">
           
           <!-- 1. Approval Desk -->
           <div class="bg-gray-50/70 rounded-xl p-4 border border-gray-200/80 space-y-3">
@@ -349,7 +377,7 @@ const submitStatusUpdate = async () => {
                 v-for="opt in billingOptions"
                 :key="opt.value"
                 type="button"
-                @click="billingStatus = opt.value"
+                @click="selectBillingStatus(opt.value)"
                 class="px-3 py-2 rounded-lg text-left border transition cursor-pointer"
                 :class="billingStatus === opt.value ? 'bg-[#1b3b5f] text-white border-[#1b3b5f] shadow-xs' : 'bg-white text-gray-800 border-gray-200 hover:bg-gray-50'"
               >
@@ -366,7 +394,7 @@ const submitStatusUpdate = async () => {
               <input 
                 type="text" 
                 v-model="invoiceNumber" 
-                placeholder="e.g. INV-2026-1045" 
+                placeholder="e.g. SMG1045" 
                 class="w-full text-xs font-mono border border-gray-300 rounded-lg p-2 bg-white focus:ring-[#1b3b5f] focus:border-[#1b3b5f]" 
               />
             </div>
