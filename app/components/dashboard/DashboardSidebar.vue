@@ -297,43 +297,37 @@
     <!-- Horizontal Scroll Icons + Toggle Button Bar (Always visible at bottom) -->
     <div class="flex items-center w-full h-14 relative z-[215] bg-[#1c1c1c]" @click="onBottomBarClick">
       <!-- Scrollable Icons Area -->
-      <div 
-        ref="mobileIconsScrollRef"
-        @scroll.passive="onMobileIconsScroll"
-        @pointerdown.passive="onMobileIconsPointerDown"
-        class="flex-1 flex flex-row items-center overflow-x-auto no-scrollbar px-3 gap-6 h-full overscroll-x-contain select-none"
-        style="scroll-behavior: auto !important; -webkit-overflow-scrolling: touch;"
-      >
+      <div class="flex-1 flex flex-row items-center overflow-x-auto no-scrollbar px-3 gap-6 h-full">
         <!-- HOME -->
-        <NuxtLink v-if="canAccessRoute('/dashboard')" to="/dashboard" title="Home" tabindex="-1" class="shrink-0" :class="[isLinkActive('/dashboard') ? 'text-sky-400' : 'text-gray-400']"><Home class="w-5 h-5" /></NuxtLink>
+        <NuxtLink v-if="canAccessRoute('/dashboard')" to="/dashboard" title="Home" class="shrink-0" :class="[isLinkActive('/dashboard') ? 'text-sky-400' : 'text-gray-400']"><Home class="w-5 h-5" /></NuxtLink>
 
         <!-- OPERATIONS -->
-        <NuxtLink v-if="['ADMIN', 'SUPERVISOR', 'SALES'].includes(user?.role || '') && canAccessRoute('/dashboard/orders/create')" to="/dashboard/orders/create" title="Create Order" tabindex="-1" class="shrink-0" :class="[isLinkActive('/dashboard/orders/create') ? 'text-sky-400' : 'text-gray-400']"><PenTool class="w-5 h-5" /></NuxtLink>
-        <NuxtLink v-if="['ADMIN', 'SUPERVISOR', 'SALES'].includes(user?.role || '') && canAccessRoute('/dashboard/approve-orders')" to="/dashboard/approve-orders" title="Approve Orders" tabindex="-1" class="shrink-0" :class="[isLinkActive('/dashboard/approve-orders') ? 'text-sky-400' : 'text-gray-400']">
+        <NuxtLink v-if="['ADMIN', 'SUPERVISOR', 'SALES'].includes(user?.role || '') && canAccessRoute('/dashboard/orders/create')" to="/dashboard/orders/create" title="Create Order" class="shrink-0" :class="[isLinkActive('/dashboard/orders/create') ? 'text-sky-400' : 'text-gray-400']"><PenTool class="w-5 h-5" /></NuxtLink>
+        <NuxtLink v-if="['ADMIN', 'SUPERVISOR', 'SALES'].includes(user?.role || '') && canAccessRoute('/dashboard/approve-orders')" to="/dashboard/approve-orders" title="Approve Orders" class="shrink-0" :class="[isLinkActive('/dashboard/approve-orders') ? 'text-sky-400' : 'text-gray-400']">
           <CheckCheck class="w-5 h-5" />
         </NuxtLink>
-        <NuxtLink v-if="canAccessRoute('/dashboard/packing')" to="/dashboard/packing" title="Packing" tabindex="-1" class="shrink-0" :class="[isLinkActive('/dashboard/packing') ? 'text-sky-400' : 'text-gray-400']"><Package class="w-5 h-5" /></NuxtLink>
-        <NuxtLink v-if="canAccessRoute('/dashboard/billing')" to="/dashboard/billing" title="Billing" tabindex="-1" class="shrink-0" :class="[isLinkActive('/dashboard/billing') ? 'text-sky-400' : 'text-gray-400']"><IndianRupee class="w-5 h-5" /></NuxtLink>
-        <NuxtLink v-if="canAccessRoute('/dashboard/delivery')" to="/dashboard/delivery" title="Delivery" tabindex="-1" class="shrink-0" :class="[isLinkActive('/dashboard/delivery') ? 'text-sky-400' : 'text-gray-400']"><Truck class="w-5 h-5" /></NuxtLink>
-        <NuxtLink v-if="canAccessRoute('/dashboard/inventory')" to="/dashboard/inventory" title="Inventory" tabindex="-1" class="shrink-0" :class="[isLinkActive('/dashboard/inventory') ? 'text-sky-400' : 'text-gray-400']"><Boxes class="w-5 h-5" /></NuxtLink>
+        <NuxtLink v-if="canAccessRoute('/dashboard/packing')" to="/dashboard/packing" title="Packing" class="shrink-0" :class="[isLinkActive('/dashboard/packing') ? 'text-sky-400' : 'text-gray-400']"><Package class="w-5 h-5" /></NuxtLink>
+        <NuxtLink v-if="canAccessRoute('/dashboard/billing')" to="/dashboard/billing" title="Billing" class="shrink-0" :class="[isLinkActive('/dashboard/billing') ? 'text-sky-400' : 'text-gray-400']"><IndianRupee class="w-5 h-5" /></NuxtLink>
+        <NuxtLink v-if="canAccessRoute('/dashboard/delivery')" to="/dashboard/delivery" title="Delivery" class="shrink-0" :class="[isLinkActive('/dashboard/delivery') ? 'text-sky-400' : 'text-gray-400']"><Truck class="w-5 h-5" /></NuxtLink>
+        <NuxtLink v-if="canAccessRoute('/dashboard/inventory')" to="/dashboard/inventory" title="Inventory" class="shrink-0" :class="[isLinkActive('/dashboard/inventory') ? 'text-sky-400' : 'text-gray-400']"><Boxes class="w-5 h-5" /></NuxtLink>
 
         <!-- DASHBOARD -->
-        <NuxtLink v-if="canAccessRoute('/dashboard/analytics')" to="/dashboard/analytics" title="Analytics" tabindex="-1" class="shrink-0" :class="[isLinkActive('/dashboard/analytics') ? 'text-sky-400' : 'text-gray-400']"><BarChart3 class="w-5 h-5" /></NuxtLink>
-        <NuxtLink v-if="canAccessRoute('/dashboard/orders')" to="/dashboard/orders" title="Orders" tabindex="-1" class="shrink-0" :class="[isLinkActive('/dashboard/orders') ? 'text-sky-400' : 'text-gray-400']"><ClipboardList class="w-5 h-5" /></NuxtLink>
-        <NuxtLink v-if="canAccessRoute('/dashboard/order-requests')" to="/dashboard/order-requests" title="Order Requests" tabindex="-1" class="relative shrink-0" :class="[isLinkActive('/dashboard/order-requests') ? 'text-sky-400' : 'text-gray-400']">
+        <NuxtLink v-if="canAccessRoute('/dashboard/analytics')" to="/dashboard/analytics" title="Analytics" class="shrink-0" :class="[isLinkActive('/dashboard/analytics') ? 'text-sky-400' : 'text-gray-400']"><BarChart3 class="w-5 h-5" /></NuxtLink>
+        <NuxtLink v-if="canAccessRoute('/dashboard/orders')" to="/dashboard/orders" title="Orders" class="shrink-0" :class="[isLinkActive('/dashboard/orders') ? 'text-sky-400' : 'text-gray-400']"><ClipboardList class="w-5 h-5" /></NuxtLink>
+        <NuxtLink v-if="canAccessRoute('/dashboard/order-requests')" to="/dashboard/order-requests" title="Order Requests" class="relative shrink-0" :class="[isLinkActive('/dashboard/order-requests') ? 'text-sky-400' : 'text-gray-400']">
           <Inbox class="w-5 h-5" />
           <span v-if="pendingRequestsCount > 0" class="absolute -top-1.5 -right-1.5 w-2 h-2 rounded-full bg-amber-400 ring-2 ring-[#1c1c1c]"></span>
         </NuxtLink>
-        <NuxtLink v-if="canAccessRoute('/dashboard/quotations')" to="/dashboard/quotations" title="Quotations" tabindex="-1" class="shrink-0" :class="[isLinkActive('/dashboard/quotations') ? 'text-sky-400' : 'text-gray-400']"><Calculator class="w-5 h-5" /></NuxtLink>
-        <NuxtLink v-if="canAccessRoute('/dashboard/chat')" to="/dashboard/chat" title="Team Chat" tabindex="-1" class="shrink-0" :class="[isLinkActive('/dashboard/chat') ? 'text-sky-400' : 'text-gray-400']"><MessageSquare class="w-5 h-5" /></NuxtLink>
+        <NuxtLink v-if="canAccessRoute('/dashboard/quotations')" to="/dashboard/quotations" title="Quotations" class="shrink-0" :class="[isLinkActive('/dashboard/quotations') ? 'text-sky-400' : 'text-gray-400']"><Calculator class="w-5 h-5" /></NuxtLink>
+        <NuxtLink v-if="canAccessRoute('/dashboard/chat')" to="/dashboard/chat" title="Team Chat" class="shrink-0" :class="[isLinkActive('/dashboard/chat') ? 'text-sky-400' : 'text-gray-400']"><MessageSquare class="w-5 h-5" /></NuxtLink>
 
         <!-- DATA -->
-        <NuxtLink v-if="canAccessRoute('/dashboard/customers')" to="/dashboard/customers" title="Customers" tabindex="-1" class="shrink-0" :class="[isLinkActive('/dashboard/customers') ? 'text-sky-400' : 'text-gray-400']"><User class="w-5 h-5" /></NuxtLink>
-        <NuxtLink v-if="canAccessRoute('/dashboard/products')" to="/dashboard/products" title="Products" tabindex="-1" class="shrink-0" :class="[isLinkActive('/dashboard/products') ? 'text-sky-400' : 'text-gray-400']"><Box class="w-5 h-5" /></NuxtLink>
-        <NuxtLink v-if="canAccessRoute('/dashboard/vouchers')" to="/dashboard/vouchers" title="BUSY Vouchers" tabindex="-1" class="shrink-0" :class="[isLinkActive('/dashboard/vouchers') ? 'text-sky-400' : 'text-gray-400']"><Receipt class="w-5 h-5" /></NuxtLink>
+        <NuxtLink v-if="canAccessRoute('/dashboard/customers')" to="/dashboard/customers" title="Customers" class="shrink-0" :class="[isLinkActive('/dashboard/customers') ? 'text-sky-400' : 'text-gray-400']"><User class="w-5 h-5" /></NuxtLink>
+        <NuxtLink v-if="canAccessRoute('/dashboard/products')" to="/dashboard/products" title="Products" class="shrink-0" :class="[isLinkActive('/dashboard/products') ? 'text-sky-400' : 'text-gray-400']"><Box class="w-5 h-5" /></NuxtLink>
+        <NuxtLink v-if="canAccessRoute('/dashboard/vouchers')" to="/dashboard/vouchers" title="BUSY Vouchers" class="shrink-0" :class="[isLinkActive('/dashboard/vouchers') ? 'text-sky-400' : 'text-gray-400']"><Receipt class="w-5 h-5" /></NuxtLink>
 
         <!-- ADMINISTRATION -->
-        <NuxtLink v-if="user?.role === 'ADMIN' && canAccessRoute('/dashboard/admin')" to="/dashboard/admin" title="Admin" tabindex="-1" class="shrink-0" :class="[isLinkActive('/dashboard/admin') ? 'text-sky-400' : 'text-gray-400']"><Settings class="w-5 h-5" /></NuxtLink>
+        <NuxtLink v-if="user?.role === 'ADMIN' && canAccessRoute('/dashboard/admin')" to="/dashboard/admin" title="Admin" class="shrink-0" :class="[isLinkActive('/dashboard/admin') ? 'text-sky-400' : 'text-gray-400']"><Settings class="w-5 h-5" /></NuxtLink>
       </div>
 
       <!-- Toggle Expand Button -->
@@ -373,12 +367,11 @@ import {
   Calculator,
   Receipt
 } from 'lucide-vue-next'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { watch, ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import gsap from 'gsap'
 
 const route = useRoute()
-const router = useRouter()
 const { user, logout, canAccessRoute } = useAuth()
 const isSidebarCollapsed = useState('sidebarCollapsed', () => false)
 const isMobileMenuOpen = useState('mobileMenuOpen', () => false)
@@ -399,69 +392,8 @@ const mobileLogoRef = ref<HTMLElement | null>(null)
 const navContainerRef = ref<HTMLElement | null>(null)
 const profileCardRef = ref<HTMLElement | null>(null)
 const mobileMenuContentRef = ref<HTMLElement | null>(null)
-const mobileIconsScrollRef = ref<HTMLElement | null>(null)
-
-// Persist mobile bottom nav horizontal scroll position across page visits and layout mounts
-const savedMobileNavScroll = useState('mobileBottomNavScrollLeft', () => 0)
-let isEnforcing = false
-let enforceRafId: number | null = null
-
-const onMobileIconsScroll = () => {
-  // Only track genuine user scrolls, not our enforced ones
-  if (isEnforcing) return
-  if (mobileIconsScrollRef.value) {
-    savedMobileNavScroll.value = mobileIconsScrollRef.value.scrollLeft
-  }
-}
-
-const onMobileIconsPointerDown = () => {
-  // Capture position on finger-down as a reliable snapshot
-  if (mobileIconsScrollRef.value) {
-    savedMobileNavScroll.value = mobileIconsScrollRef.value.scrollLeft
-  }
-}
-
-/**
- * Brute-force enforce the saved scrollLeft for ~300ms using a rAF loop.
- * This beats every source of scroll reset (Vue Router focus, page transitions,
- * layout swaps, v-if re-renders) because we overwrite 60x/sec for the entire window.
- */
-const enforceScrollPosition = () => {
-  // Cancel any previous enforcement
-  if (enforceRafId !== null) {
-    cancelAnimationFrame(enforceRafId)
-    enforceRafId = null
-  }
-  
-  const target = savedMobileNavScroll.value
-  isEnforcing = true
-  const startTime = performance.now()
-  const DURATION = 350 // ms - long enough to cover all reflows and transitions
-  
-  const tick = () => {
-    if (mobileIconsScrollRef.value) {
-      mobileIconsScrollRef.value.scrollLeft = target
-    }
-    if (performance.now() - startTime < DURATION) {
-      enforceRafId = requestAnimationFrame(tick)
-    } else {
-      // Done enforcing, resume normal scroll tracking
-      isEnforcing = false
-      enforceRafId = null
-    }
-  }
-  
-  enforceRafId = requestAnimationFrame(tick)
-}
-
-const restoreMobileNavScroll = () => {
-  if (mobileIconsScrollRef.value && savedMobileNavScroll.value !== undefined) {
-    mobileIconsScrollRef.value.scrollLeft = savedMobileNavScroll.value
-  }
-}
 
 let gsapCtx: gsap.Context | null = null
-let unsubscribeAfterEach: (() => void) | null = null
 
 const dbStatus = ref<'connecting' | 'connected' | 'error'>('connecting')
 let pollInterval: ReturnType<typeof setInterval>
@@ -612,23 +544,11 @@ onMounted(() => {
       animateProfileSection()
     })
   })
-
-  // Restore horizontal scroll position on mount using enforcement loop
-  nextTick(() => {
-    enforceScrollPosition()
-  })
-
-  // afterEach fires AFTER Vue Router focus management — start enforcement loop to override all resets
-  unsubscribeAfterEach = router.afterEach(() => {
-    enforceScrollPosition()
-  })
 })
 
 onUnmounted(() => {
   if (pollInterval) clearInterval(pollInterval)
   if (unsubscribeSync) unsubscribeSync()
-  if (enforceRafId !== null) cancelAnimationFrame(enforceRafId)
-  if (unsubscribeAfterEach) unsubscribeAfterEach()
   gsapCtx?.revert()
 })
 
@@ -666,17 +586,7 @@ const scrollToTop = () => {
 
 const onBottomBarClick = (e: MouseEvent) => {
   const target = e.target as HTMLElement
-  const link = target?.closest('a') as HTMLElement | null
-  if (link) {
-    // Immediately remove focus to prevent browser native auto-scroll
-    link.blur()
-
-    // Snapshot current position and start enforcement loop
-    if (mobileIconsScrollRef.value) {
-      savedMobileNavScroll.value = mobileIconsScrollRef.value.scrollLeft
-      enforceScrollPosition()
-    }
-
+  if (target && target.closest('a')) {
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('close-order-panel'))
     }
@@ -693,13 +603,11 @@ const onMobileNavContainerClick = (e: MouseEvent) => {
       window.dispatchEvent(new CustomEvent('close-order-panel'))
     }
     scrollToTop()
-    enforceScrollPosition()
   }
 }
 
 watch(() => route.path, () => {
   isMobileMenuOpen.value = false
-  enforceScrollPosition()
 }, { immediate: true })
 </script>
 
