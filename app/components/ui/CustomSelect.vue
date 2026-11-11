@@ -58,9 +58,15 @@
               <Search class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
               <input 
                 ref="searchInput"
-                v-model="searchQuery"
+                :value="searchQuery"
+                @input="searchQuery = ($event.target as HTMLInputElement).value"
+                @compositionend="searchQuery = ($event.target as HTMLInputElement).value"
                 type="text"
                 :placeholder="searchPlaceholder"
+                autocomplete="off"
+                autocorrect="off"
+                autocapitalize="off"
+                spellcheck="false"
                 class="w-full pl-8 pr-3 py-1.5 border border-gray-200 rounded-md text-sm focus:outline-none focus:border-[#1b3b5f] focus:ring-1 focus:ring-[#1b3b5f] bg-white text-gray-900"
                 @click.stop
               />
