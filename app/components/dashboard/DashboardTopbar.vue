@@ -134,19 +134,19 @@
       <!-- Profile -->
       <div class="flex items-center gap-3">
         <div class="flex flex-col text-right hidden sm:flex">
-          <span class="text-sm font-semibold text-[#1a1a1a]">{{ user?.name || 'Hardik' }}</span>
-          <span class="text-[10px] text-gray-500 uppercase font-medium tracking-wide">{{ user?.role === 'ADMIN' ? 'Administrator' : user?.role || 'Administrator' }}</span>
+          <span class="text-sm font-semibold text-[#1a1a1a]">{{ user?.name || 'User' }}</span>
+          <span class="text-[10px] text-gray-500 uppercase font-medium tracking-wide">{{ user?.role === 'ADMIN' ? 'Administrator' : user?.role || 'Staff' }}</span>
         </div>
         
         <div class="relative group cursor-pointer">
-          <img :src="'https://ui-avatars.com/api/?name=' + (user?.name || 'Hardik') + '&background=1b3b5f&color=e8e0d4'" alt="Profile" class="h-10 w-10 rounded-full object-cover shadow-sm border border-gray-100 transition-transform group-hover:scale-105" />
+          <img :src="'https://ui-avatars.com/api/?name=' + (user?.name || 'User') + '&background=1b3b5f&color=e8e0d4'" alt="Profile" class="h-10 w-10 rounded-full object-cover shadow-sm border border-gray-100 transition-transform group-hover:scale-105" />
           
           <!-- Standard Speech Bubble Tooltip -->
           <div class="absolute top-full mt-2 right-0 opacity-0 group-hover:opacity-100 invisible group-hover:visible transition-all duration-200 z-50 origin-top-right scale-95 group-hover:scale-100 pointer-events-none whitespace-nowrap">
             <div class="relative bg-gray-900 text-white rounded-md px-3 py-1.5 text-xs font-medium shadow-lg">
               <!-- Tail -->
               <div class="absolute -top-1 right-4 w-2 h-2 bg-gray-900 rotate-45"></div>
-              Hi, {{ user?.name || 'Hardik' }}
+              Hi, {{ user?.name || 'User' }}
             </div>
           </div>
         </div>

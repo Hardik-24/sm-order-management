@@ -51,8 +51,23 @@ export const useAuth = () => {
         headers: reqHeaders.cookie ? { cookie: reqHeaders.cookie } : undefined
       })
       user.value = data.user
-    } catch {
-      user.value = null
+    } catch (err: any) {
+      const status = err?.statusCode || err?.status || err?.response?.status
+      // Only clear session on explicit 401/403 authorization rejections.
+      // Temporary network drops or offline transitions preserve in-memory user to prevent breaking UI.
+      if (status === 401 || status === 403) {
+        user.value = null
+        if (import.meta.client) {
+          try {
+            const route = useRoute()
+            if (route.path.startsWith('/dashboard') || route.path.startsWith('/driver')) {
+              navigateTo(`/login?redirect=${encodeURIComponent(route.fullPath)}`)
+            }
+          } catch {}
+        }
+      } else if (!user.value) {
+        user.value = null
+      }
     }
   }
 

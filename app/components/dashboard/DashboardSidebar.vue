@@ -149,10 +149,10 @@
     <div ref="profileCardRef" class="mt-auto p-4 flex flex-col gap-2 border-t border-gray-800/50 bg-[#1c1c1c] shrink-0">
       <div class="flex items-center bg-[#242424] hover:bg-[#2a2a2a] cursor-pointer rounded-xl p-3 border border-gray-700/50 transition-colors" :class="isSidebarCollapsed ? 'justify-center' : 'justify-between'">
         <div class="flex items-center gap-3 overflow-hidden">
-          <img :src="'https://ui-avatars.com/api/?name=' + (user?.name || 'Hardik') + '&background=1b3b5f&color=e8e0d4'" alt="Hardik" class="h-9 w-9 rounded-full shrink-0 object-cover" />
+          <img :src="'https://ui-avatars.com/api/?name=' + (user?.name || 'User') + '&background=1b3b5f&color=e8e0d4'" alt="User" class="h-9 w-9 rounded-full shrink-0 object-cover" />
           <div v-if="!isSidebarCollapsed" class="flex flex-col overflow-hidden whitespace-nowrap">
-            <span class="text-sm font-medium text-gray-200 truncate">{{ user?.name || 'Hardik' }}</span>
-            <span class="text-[10px] text-gray-500 truncate">{{ user?.role === 'ADMIN' ? 'Administrator' : user?.role === 'SUPERVISOR' ? 'Supervisor' : user?.role || 'Administrator' }}</span>
+            <span class="text-sm font-medium text-gray-200 truncate">{{ user?.name || 'User' }}</span>
+            <span class="text-[10px] text-gray-500 truncate">{{ user?.role === 'ADMIN' ? 'Administrator' : user?.role === 'SUPERVISOR' ? 'Supervisor' : user?.role || 'Staff' }}</span>
           </div>
         </div>
       </div>
