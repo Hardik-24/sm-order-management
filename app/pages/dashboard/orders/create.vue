@@ -443,6 +443,10 @@ const submitOrder = async () => {
       alert('Please enter a custom customer / party name')
       return
     }
+    // Neither phone number nor place/city is required; fallback delivery address gracefully
+    if (!form.value.deliveryAddress?.trim()) {
+      form.value.deliveryAddress = customCustomer.value.city?.trim() || 'Address to be verified'
+    }
   } else {
     if (!form.value.customerId) {
       alert('Please select a customer')
@@ -566,7 +570,7 @@ const getCustomerInitials = (name: string) => {
                 class="text-xs font-bold text-[#1b3b5f] hover:text-[#132c49] flex items-center gap-1 hover:underline cursor-pointer"
               >
                 <component :is="isCustomCustomer ? Database : Plus" class="w-3.5 h-3.5 text-[#1b3b5f]" />
-                <span>{{ isCustomCustomer ? 'Choose from Database' : '+ Custom Customer (Not in Busy)' }}</span>
+                <span>{{ isCustomCustomer ? 'Choose from Database' : 'Custom Customer (Not in Busy)' }}</span>
               </button>
             </div>
 
@@ -667,7 +671,10 @@ const getCustomerInitials = (name: string) => {
 
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label class="block text-xs font-bold text-gray-700 mb-1">Phone Number (Optional)</label>
+                  <label class="block text-xs font-bold text-gray-700 mb-1 flex items-center justify-between">
+                    <span>Phone Number</span>
+                    <span class="text-gray-400 font-normal text-[11px]">(Optional)</span>
+                  </label>
                   <input 
                     type="tel" 
                     v-model="customCustomer.phone" 
@@ -676,7 +683,10 @@ const getCustomerInitials = (name: string) => {
                   />
                 </div>
                 <div>
-                  <label class="block text-xs font-bold text-gray-700 mb-1">Place / City (Optional)</label>
+                  <label class="block text-xs font-bold text-gray-700 mb-1 flex items-center justify-between">
+                    <span>Place / City</span>
+                    <span class="text-gray-400 font-normal text-[11px]">(Optional)</span>
+                  </label>
                   <input 
                     type="text" 
                     v-model="customCustomer.city" 
@@ -850,10 +860,10 @@ const getCustomerInitials = (name: string) => {
           <!-- Delivery Address Textarea -->
           <div class="md:col-span-2">
             <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
-              <span class="sm:hidden">Delivery Address *</span>
-              <span class="hidden sm:inline">Delivery Address (Site / Destination) *</span>
+              <span class="sm:hidden">{{ isCustomCustomer ? 'Delivery Address' : 'Delivery Address *' }}</span>
+              <span class="hidden sm:inline">{{ isCustomCustomer ? 'Delivery Address (Site / Destination - Optional)' : 'Delivery Address (Site / Destination) *' }}</span>
             </label>
-            <textarea v-model="form.deliveryAddress" rows="2" class="w-full text-sm border border-gray-300 rounded-lg p-3 focus:ring-[#1b3b5f] focus:border-[#1b3b5f] resize-none" required placeholder="Delivery address, site or landmark..."></textarea>
+            <textarea v-model="form.deliveryAddress" rows="2" class="w-full text-sm border border-gray-300 rounded-lg p-3 focus:ring-[#1b3b5f] focus:border-[#1b3b5f] resize-none" :required="!isCustomCustomer" placeholder="Delivery address, site or landmark..."></textarea>
           </div>
 
           <!-- Internal Order Notes -->
