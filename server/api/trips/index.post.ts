@@ -121,10 +121,16 @@ export default defineEventHandler(async (event) => {
   // Non-blocking Push Notification dispatch with await for Serverless container safety
   if (await isNotificationEnabled('delivery')) {
     try {
+      const relatedUserIds = new Set<string>()
+      if (result.driverId) relatedUserIds.add(result.driverId)
+      result.stops?.forEach((s: any) => {
+        if (s.order?.salesPersonId) relatedUserIds.add(s.order.salesPersonId)
+      })
+
       await sendPushNotification({
         title: `🚚 Trip Dispatched: ${result.tripNumber}`,
         body: `Driver: ${result.driverName} • ${result.stops?.length || stops.length} stop(s) scheduled`,
-        topic: 'orders',
+        userIds: Array.from(relatedUserIds),
         data: {
           tripNumber: result.tripNumber,
           tripId: result.id,

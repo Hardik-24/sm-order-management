@@ -85,10 +85,11 @@ export default defineEventHandler(async (event) => {
   // Non-blocking Push Notification dispatch with await for Serverless container safety
   if (await isNotificationEnabled('order_approvals')) {
     try {
+      const relatedUserIds = [updatedOrder.salesPersonId, updatedOrder.packingStatus?.assignedToId].filter(Boolean) as string[]
       await sendPushNotification({
         title: `✅ Order Approved: ${updatedOrder.orderNumber}`,
         body: `${updatedOrder.customer?.company || updatedOrder.customer?.name || 'Customer'} • Cleared for packing`,
-        topic: 'orders',
+        userIds: relatedUserIds,
         data: {
           orderNumber: updatedOrder.orderNumber,
           orderId: updatedOrder.id,

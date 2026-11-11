@@ -74,15 +74,19 @@ export interface PushNotificationPayload {
   body: string
   data?: Record<string, string>
   topic?: string
+  broadcastToTopic?: boolean
   tokens?: string[]
   userId?: string
+  userIds?: string[]
+  includeAdmins?: boolean // Default TRUE: all notifications route to admins
 }
 
 /**
  * Sends push notifications to mobile devices via Firebase Cloud Messaging (FCM).
- * Employs Dual Delivery:
- * 1. Broadcasts to Topic (e.g. 'orders') if specified and not scoped to a specific user
- * 2. Directly multicasts to active registered device tokens for guaranteed sub-second delivery
+ * Rule:
+ * 1. Admins (role: 'ADMIN') receive ALL notifications unless includeAdmins is explicitly false.
+ * 2. Specific non-admin users only receive notifications if they are linked to the event (via userId or userIds).
+ * 3. Topic broadcasting to 'orders' is restricted so non-admins are never spammed with unrelated alerts.
  * Non-blocking: Errors are logged but will never throw or interrupt business flow.
  */
 export async function sendPushNotification(payload: PushNotificationPayload): Promise<boolean> {
@@ -96,14 +100,19 @@ export async function sendPushNotification(payload: PushNotificationPayload): Pr
   appendDebugLog({
     level: 'info',
     message: `Triggering push: "${payload.title}" (${payload.body})`,
-    data: { topic: payload.topic, userId: payload.userId, tokenCount: String(payload.tokens?.length || 0) }
+    data: { 
+      topic: payload.topic, 
+      userId: payload.userId, 
+      userIds: payload.userIds?.join(',') || '', 
+      tokenCount: String(payload.tokens?.length || 0) 
+    }
   })
 
   try {
     const messaging = getMessaging(app)
 
-    // A. Broadcast to topic (Only if topic is specified and NO specific userId is targeted)
-    if (payload.topic && !payload.userId) {
+    // A. Optional topic broadcast (ONLY if explicitly enabled via broadcastToTopic === true, e.g. Admin tests)
+    if (payload.topic && payload.broadcastToTopic === true) {
       try {
         const response = await messaging.send({
           topic: payload.topic,
@@ -130,45 +139,75 @@ export async function sendPushNotification(payload: PushNotificationPayload): Pr
     }
 
     // B. Collect explicit or targeted device tokens from DB
-    let targetTokens: string[] = []
+    const allTokens = new Set<string>()
 
     if (payload.tokens !== undefined) {
-      // Caller explicitly provided a tokens array: strictly respect it (never fallback to all devices)
-      targetTokens = payload.tokens.filter(t => Boolean(t && t.trim()))
-    } else if (payload.userId) {
-      // Caller specified a target user: find only devices logged in with that specific user ID
-      try {
-        const userDevices = await prisma.trustedDevice.findMany({
-          where: {
-            userId: payload.userId,
-            fcmToken: { not: null },
-            isApproved: true,
-            isBlocked: false
-          },
-          select: { fcmToken: true }
-        })
-        targetTokens = userDevices.map(d => d.fcmToken!).filter(Boolean)
-      } catch (dbErr) {
-        console.warn('[FCM] Failed to query user device tokens for user ' + payload.userId + ':', dbErr)
+      // Caller explicitly provided a tokens array: strictly respect it (e.g. manual admin test tool)
+      for (const t of payload.tokens) {
+        if (t && typeof t === 'string' && t.trim()) allTokens.add(t.trim())
       }
-    } else if (!payload.topic) {
-      // Only fallback to all active devices if NO topic, NO tokens, and NO userId was provided (general broadcast)
-      try {
-        const activeDevices = await prisma.trustedDevice.findMany({
-          where: {
-            fcmToken: { not: null },
-            isApproved: true,
-            isBlocked: false
-          },
-          select: { fcmToken: true }
-        })
-        targetTokens = activeDevices.map(d => d.fcmToken!).filter(Boolean)
-      } catch (dbErr) {
-        console.warn('[FCM] Failed to query trusted device tokens:', dbErr)
+    } else {
+      // 1. Admins: Send all notifications to admin by default
+      const shouldIncludeAdmins = payload.includeAdmins !== false
+      if (shouldIncludeAdmins) {
+        try {
+          const adminDevices = await prisma.trustedDevice.findMany({
+            where: {
+              fcmToken: { not: null },
+              isApproved: true,
+              isBlocked: false,
+              user: {
+                role: 'ADMIN',
+                isActive: true
+              }
+            },
+            select: { fcmToken: true }
+          })
+          for (const d of adminDevices) {
+            if (d.fcmToken && d.fcmToken.trim()) allTokens.add(d.fcmToken.trim())
+          }
+        } catch (dbErr) {
+          console.warn('[FCM] Failed to query admin device tokens:', dbErr)
+        }
+      }
+
+      // 2. Specific Linked Users (non-admins or staff associated with this specific event/entity)
+      const linkedUserIds = new Set<string>()
+      if (payload.userId && typeof payload.userId === 'string' && payload.userId.trim()) {
+        linkedUserIds.add(payload.userId.trim())
+      }
+      if (Array.isArray(payload.userIds)) {
+        for (const uid of payload.userIds) {
+          if (uid && typeof uid === 'string' && uid.trim()) linkedUserIds.add(uid.trim())
+        }
+      }
+
+      if (linkedUserIds.size > 0) {
+        try {
+          const userDevices = await prisma.trustedDevice.findMany({
+            where: {
+              userId: { in: Array.from(linkedUserIds) },
+              fcmToken: { not: null },
+              isApproved: true,
+              isBlocked: false,
+              user: {
+                isActive: true
+              }
+            },
+            select: { fcmToken: true }
+          })
+          for (const d of userDevices) {
+            if (d.fcmToken && d.fcmToken.trim()) allTokens.add(d.fcmToken.trim())
+          }
+        } catch (dbErr) {
+          console.warn('[FCM] Failed to query linked user device tokens:', dbErr)
+        }
       }
     }
 
-    // C. Multicast direct send to all device tokens for instant arrival
+    const targetTokens = Array.from(allTokens)
+
+    // C. Multicast direct send to all target device tokens (Admins + Linked users)
     if (targetTokens.length > 0) {
       try {
         const response = await messaging.sendEachForMulticast({
@@ -188,15 +227,17 @@ export async function sendPushNotification(payload: PushNotificationPayload): Pr
             }
           }
         })
-        console.log(`[FCM] Direct multicast: ${response.successCount} delivered, ${response.failureCount} failed out of ${targetTokens.length}`)
+        console.log(`[FCM] Targeted multicast: ${response.successCount} delivered, ${response.failureCount} failed out of ${targetTokens.length}`)
         appendDebugLog({
           level: response.successCount > 0 ? 'success' : 'warn',
           message: `Push delivered: ${response.successCount} ok, ${response.failureCount} failed (${payload.title})`
         })
         if (response.successCount > 0) anySuccess = true
       } catch (multiErr: any) {
-        console.warn('[FCM] Direct multicast error:', multiErr?.message || multiErr)
+        console.warn('[FCM] Targeted multicast error:', multiErr?.message || multiErr)
       }
+    } else {
+      console.log(`[FCM] No registered target device tokens found for "${payload.title}"`)
     }
 
     return anySuccess

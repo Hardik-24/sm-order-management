@@ -292,7 +292,7 @@ export default defineEventHandler(async (event) => {
       await sendPushNotification({
         title: `New Order: ${order.orderNumber}`,
         body: `${order.customer?.name || 'Customer'} • ₹${order.totalAmount.toLocaleString('en-IN')}`,
-        topic: 'orders',
+        userIds: [order.salesPersonId].filter(Boolean),
         data: {
           orderNumber: order.orderNumber,
           orderId: order.id,

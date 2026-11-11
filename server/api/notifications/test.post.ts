@@ -53,6 +53,7 @@ export default defineEventHandler(async (event) => {
     title,
     body: messageBody,
     topic: targetTopic,
+    broadcastToTopic: Boolean(targetTopic),
     tokens: targetTokens,
     data: {
       type: 'SYSTEM_TEST',

@@ -177,7 +177,6 @@ export default defineEventHandler(async (event) => {
       await sendPushNotification({
         title: `🛍️ New Storefront Request: ${orderRequest.requestNumber}`,
         body: `${orderRequest.customerName} • ₹${Number(orderRequest.totalEstimated || 0).toLocaleString('en-IN')}`,
-        topic: 'orders',
         data: {
           requestNumber: orderRequest.requestNumber,
           orderRequestId: orderRequest.id,

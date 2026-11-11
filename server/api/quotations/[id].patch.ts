@@ -78,18 +78,16 @@ export default defineEventHandler(async (event) => {
         }
         if (!creatorId) creatorId = user?.id
 
-        if (creatorId) {
-          await sendPushNotification({
-            title: `Quotation Updated: ${quote.quoteNumber}`,
-            body: `${quote.customerName} • ₹${Number(quote.grandTotal || 0).toLocaleString('en-IN')}`,
-            userId: creatorId,
-            data: {
-              quoteNumber: quote.quoteNumber,
-              quotationId: quote.id,
-              type: 'QUOTATION_UPDATED'
-            }
-          })
-        }
+        await sendPushNotification({
+          title: `Quotation Updated: ${quote.quoteNumber}`,
+          body: `${quote.customerName} • ₹${Number(quote.grandTotal || 0).toLocaleString('en-IN')}`,
+          userId: creatorId || undefined,
+          data: {
+            quoteNumber: quote.quoteNumber,
+            quotationId: quote.id,
+            type: 'QUOTATION_UPDATED'
+          }
+        })
       } catch (pushErr) {
         console.warn('[FCM] Quotation edit push failed:', pushErr)
       }

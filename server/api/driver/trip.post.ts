@@ -91,10 +91,11 @@ export default defineEventHandler(async (event) => {
     // Non-blocking Push Notification dispatch with await for Serverless container safety
     if (await isNotificationEnabled('delivery')) {
       try {
+        const relatedUserIds = [stop.order?.salesPersonId, user.id].filter(Boolean) as string[]
         await sendPushNotification({
           title: `🏁 Order Delivered: ${stop.order.orderNumber}`,
           body: `${stop.customerName} • Delivered by ${user.name}`,
-          topic: 'orders',
+          userIds: relatedUserIds,
           data: {
             orderNumber: stop.order.orderNumber,
             orderId: stop.orderId,

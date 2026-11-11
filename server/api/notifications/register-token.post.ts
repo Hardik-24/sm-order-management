@@ -14,11 +14,13 @@ export default defineEventHandler(async (event) => {
   const user = getUserFromEvent(event)
 
   try {
-    // 1. Subscribe token to general notification topics immediately
-    await Promise.allSettled([
-      subscribeToTopic(token, 'orders'),
-      subscribeToTopic(token, 'general')
-    ])
+    // 1. Subscribe token to general notification topics only for ADMIN users
+    if (user?.role === 'ADMIN') {
+      await Promise.allSettled([
+        subscribeToTopic(token, 'orders'),
+        subscribeToTopic(token, 'general')
+      ])
+    }
 
     // 2. Update TrustedDevice if deviceId is provided
     if (deviceId) {

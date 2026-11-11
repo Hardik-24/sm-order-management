@@ -2,6 +2,8 @@ import { requireActionPermission, getUserFromEvent } from '~~/server/utils/auth'
 import { prisma } from '~~/server/utils/prisma'
 import { syncOrderTripState } from '~~/server/utils/tripSync'
 import { syncOrderHistoricalPrices } from '~~/server/utils/historicalPrice'
+import { sendPushNotification } from '~~/server/utils/firebaseAdmin'
+import { isNotificationEnabled } from '~~/server/utils/notificationSettings'
 import type { OrderStatus, BillingState, PackingState, DeliveryState } from '@prisma/client'
 
 function calculateOverallStatus(billing: string, packing: string, delivery: string): OrderStatus {
@@ -310,6 +312,24 @@ export default defineEventHandler(async (event) => {
     maxWait: 10000,
     timeout: 25000
   })
+
+  if (changes.length > 0 && result && await isNotificationEnabled('orders')) {
+    try {
+      const spId = result.salesPersonId || result.salesPerson?.id
+      await sendPushNotification({
+        title: `⚙️ Status Updated: ${result.orderNumber}`,
+        body: `${result.customer?.company || result.customer?.name || 'Customer'} • ${changes.join(', ')}`,
+        userIds: [spId].filter(Boolean),
+        data: {
+          orderNumber: result.orderNumber,
+          orderId: result.id,
+          type: 'ORDER_ADMIN_OVERRIDE'
+        }
+      })
+    } catch (pushErr) {
+      console.warn('[FCM] Admin status override push failed:', pushErr)
+    }
+  }
 
   return {
     success: true,

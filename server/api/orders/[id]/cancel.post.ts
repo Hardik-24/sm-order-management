@@ -1,6 +1,8 @@
 import { requireActionPermission, getUserFromEvent } from '~~/server/utils/auth'
 import { prisma } from '~~/server/utils/prisma'
 import { syncOrderTripState } from '~~/server/utils/tripSync'
+import { sendPushNotification } from '~~/server/utils/firebaseAdmin'
+import { isNotificationEnabled } from '~~/server/utils/notificationSettings'
 
 export default defineEventHandler(async (event) => {
   const user = await getUserFromEvent(event)
@@ -78,6 +80,24 @@ export default defineEventHandler(async (event) => {
       timeline: { include: { performedBy: true }, orderBy: { timestamp: 'desc' } }
     }
   })
+
+  // Non-blocking Push Notification dispatch with await for Serverless container safety
+  if (await isNotificationEnabled('orders')) {
+    try {
+      await sendPushNotification({
+        title: `❌ Order Cancelled: ${updatedOrder.orderNumber}`,
+        body: `${updatedOrder.customer?.company || updatedOrder.customer?.name || 'Customer'} • Reason: ${reason}`,
+        userIds: [updatedOrder.salesPersonId].filter(Boolean),
+        data: {
+          orderNumber: updatedOrder.orderNumber,
+          orderId: updatedOrder.id,
+          type: 'ORDER_CANCELLED'
+        }
+      })
+    } catch (pushErr) {
+      console.warn('[FCM] Order cancel push failed:', pushErr)
+    }
+  }
 
   return updatedOrder
 })

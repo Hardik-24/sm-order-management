@@ -1,6 +1,8 @@
 import { requireRole, getUserFromEvent } from '~~/server/utils/auth'
 import { prisma } from '~~/server/utils/prisma'
 import { syncOrderHistoricalPrices } from '~~/server/utils/historicalPrice'
+import { sendPushNotification } from '~~/server/utils/firebaseAdmin'
+import { isNotificationEnabled } from '~~/server/utils/notificationSettings'
 
 function calculateOverallStatus(billing: string, packing: string, delivery: string) {
   if (delivery === 'DELIVERED') return 'DELIVERED';
@@ -109,6 +111,24 @@ export default defineEventHandler(async (event) => {
 
   if (status === 'GENERATED') {
     await syncOrderHistoricalPrices(prisma, id, invoiceNumber)
+
+    if (await isNotificationEnabled('orders')) {
+      try {
+        await sendPushNotification({
+          title: `🧾 Bill Generated: ${order.orderNumber}`,
+          body: `${order.customer?.company || order.customer?.name || 'Customer'} • Invoice #${invoiceNumber || 'Generated'}`,
+          userIds: [order.salesPersonId].filter(Boolean),
+          data: {
+            orderNumber: order.orderNumber,
+            orderId: order.id,
+            invoiceNumber: String(invoiceNumber || ''),
+            type: 'ORDER_BILLED'
+          }
+        })
+      } catch (pushErr) {
+        console.warn('[FCM] Order billing push failed:', pushErr)
+      }
+    }
   }
 
   return updatedOrder

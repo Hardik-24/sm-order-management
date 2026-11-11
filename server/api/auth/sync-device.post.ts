@@ -29,10 +29,12 @@ export default defineEventHandler(async (event) => {
       message: `Received FCM token in sync-device: ${fcmToken.slice(0, 15)}...`,
       data: { userId: sessionUser.id }
     })
-    Promise.allSettled([
-      subscribeToTopic(fcmToken, 'orders'),
-      subscribeToTopic(fcmToken, 'general')
-    ]).catch(() => {})
+    if (sessionUser.role === 'ADMIN') {
+      Promise.allSettled([
+        subscribeToTopic(fcmToken, 'orders'),
+        subscribeToTopic(fcmToken, 'general')
+      ]).catch(() => {})
+    }
   }
 
   // 1. If user is ADMIN:

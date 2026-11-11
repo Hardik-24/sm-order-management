@@ -147,7 +147,7 @@ export default defineEventHandler(async (event) => {
       customer: { select: { id: true, name: true, company: true, city: true, latitude: true, longitude: true, landmark: true } },
       salesPerson: { select: { name: true } },
       billingStatus: { select: { status: true, invoiceNumber: true } },
-      packingStatus: { select: { status: true } },
+      packingStatus: { select: { status: true, assignedToId: true } },
       deliveryStatus: { select: { status: true, driverName: true } },
       items: { include: { product: true } }
     }
@@ -159,10 +159,11 @@ export default defineEventHandler(async (event) => {
       const editorName = user?.name || 'Team member'
       const customerName = order.customer?.name || order.customer?.company || 'Customer'
       const totalFormatted = order.totalAmount ? `₹${order.totalAmount.toLocaleString('en-IN')}` : ''
+      const relatedUserIds = [order.salesPersonId, (order.packingStatus as any)?.assignedToId].filter(Boolean) as string[]
       await sendPushNotification({
         title: `Order Updated: ${order.orderNumber}`,
         body: `${customerName}${totalFormatted ? ' • ' + totalFormatted : ''} • Modified by ${editorName}`,
-        topic: 'orders',
+        userIds: relatedUserIds,
         data: {
           orderNumber: order.orderNumber,
           orderId: order.id,
