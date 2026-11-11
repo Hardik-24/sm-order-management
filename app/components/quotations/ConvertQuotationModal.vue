@@ -439,7 +439,8 @@ const getPrivilegeBadgeStyle = (tier: string) => {
 
 const getCustomerInitials = (name: string) => {
   if (!name) return 'C'
-  const words = name.trim().split(/\s+/)
+  const clean = name.replace(/[()[\]{}]/g, ' ').replace(/\s+/g, ' ').trim()
+  const words = clean.split(/\s+/)
   if (words.length === 1) return words[0].slice(0, 2).toUpperCase()
   return (words[0][0] + words[words.length - 1][0]).toUpperCase()
 }

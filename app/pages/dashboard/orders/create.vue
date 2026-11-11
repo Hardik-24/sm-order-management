@@ -524,7 +524,8 @@ const getPrivilegeBadgeStyle = (tier: string) => {
 
 const getCustomerInitials = (name: string) => {
   if (!name) return 'C'
-  const words = name.trim().split(/\s+/)
+  const clean = name.replace(/[()[\]{}]/g, ' ').replace(/\s+/g, ' ').trim()
+  const words = clean.split(/\s+/)
   if (words.length === 1) return words[0].slice(0, 2).toUpperCase()
   return (words[0][0] + words[words.length - 1][0]).toUpperCase()
 }
@@ -563,7 +564,7 @@ const getCustomerInitials = (name: string) => {
           <!-- Customer Picker / Custom Customer Entry -->
           <div class="md:col-span-2">
             <div class="flex items-center justify-between mb-2">
-              <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider">Customer *</label>
+              <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap shrink-0">Customer *</label>
               <button 
                 type="button"
                 @click="toggleCustomCustomer"
