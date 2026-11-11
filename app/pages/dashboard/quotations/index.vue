@@ -593,6 +593,7 @@ definePageMeta({
 
 const { showSaved, showEditing } = useSnackbar()
 const { user } = useAuth()
+const route = useRoute()
 const { animateStagger, initContext } = useGsapAnimation()
 
 const statsContainerRef = ref<HTMLElement | null>(null)
@@ -877,5 +878,14 @@ onMounted(() => {
   }
   fetchQuotations()
   checkSheetStatus()
+  if (route.query.create === '1' || route.query.create === 'true') {
+    openNewQuoteModal()
+  }
+})
+
+watch(() => route.query.create, (val) => {
+  if (val === '1' || val === 'true') {
+    openNewQuoteModal()
+  }
 })
 </script>
