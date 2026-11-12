@@ -557,25 +557,27 @@
       </div>
     </div>
 
-    <!-- Responsive Quotation Modal (Drafting & Export Sharing) -->
-    <QuotationModal
-      v-model="isModalOpen"
-      :initial-quote="selectedQuote"
-      @created="onQuoteCreated"
-      @convert="openConvertModal"
-    />
+    <!-- Responsive Quotation Modal & Conversion Modal (Wrapped in ClientOnly & loaded async to prevent SSR cold-start timeouts on Vercel) -->
+    <ClientOnly>
+      <QuotationModal
+        v-model="isModalOpen"
+        :initial-quote="selectedQuote"
+        @created="onQuoteCreated"
+        @convert="openConvertModal"
+      />
 
-    <!-- Convert Quotation to Sales Order Modal -->
-    <ConvertQuotationModal
-      v-model="isConvertModalOpen"
-      :quotation="selectedQuoteForConversion"
-      @converted="onQuotationConverted"
-    />
+      <!-- Convert Quotation to Sales Order Modal -->
+      <ConvertQuotationModal
+        v-model="isConvertModalOpen"
+        :quotation="selectedQuoteForConversion"
+        @converted="onQuotationConverted"
+      />
+    </ClientOnly>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick, watch, defineAsyncComponent } from 'vue'
 import {
   Calculator,
   Plus,
@@ -606,8 +608,8 @@ import OdometerNumber from '~/components/ui/OdometerNumber.vue'
 import LoadingTopBar from '~/components/ui/LoadingTopBar.vue'
 import TableSkeletonRows from '~/components/ui/TableSkeletonRows.vue'
 import { getEffectiveActionPermissions } from '~/utils/permissions'
-import QuotationModal from '~/components/quotations/QuotationModal.vue'
-import ConvertQuotationModal from '~/components/quotations/ConvertQuotationModal.vue'
+const QuotationModal = defineAsyncComponent(() => import('~/components/quotations/QuotationModal.vue'))
+const ConvertQuotationModal = defineAsyncComponent(() => import('~/components/quotations/ConvertQuotationModal.vue'))
 import TableFilterButtons from '~/components/dashboard/TableFilterButtons.vue'
 import RowsPerPageSelect from '~/components/ui/RowsPerPageSelect.vue'
 import { rankAndFilter } from '~/utils/search'
