@@ -200,9 +200,14 @@ onMounted(() => {
     </div>
 
     <!-- Quick Stats Cards (Matching Approve Orders Design) -->
-    <div ref="statsContainer" class="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-4">
+    <div ref="statsContainer" class="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-4 select-none">
       <!-- 1. Awaiting Billing -->
-      <div class="bg-white rounded-xl border border-[#e5e2dc] p-3.5 sm:p-5 shadow-sm">
+      <div 
+        @click="activeTab = activeTab === 'PENDING' ? 'ALL' : 'PENDING'; page = 1"
+        class="bg-white rounded-xl border p-3.5 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 active:scale-[0.98]"
+        :class="activeTab === 'PENDING' ? 'ring-2 ring-amber-500 border-amber-500 bg-amber-50/30' : 'border-[#e5e2dc] hover:border-amber-300'"
+        title="Click to toggle Awaiting Billing filter"
+      >
         <div class="flex gap-2.5 sm:gap-4">
           <div class="flex flex-col justify-between shrink-0">
             <div class="bg-amber-50 p-2 sm:p-2.5 rounded-lg text-amber-600 border border-amber-100/50">
@@ -221,7 +226,12 @@ onMounted(() => {
       </div>
 
       <!-- 2. Urgent / SLA Breached -->
-      <div class="bg-white rounded-xl border border-rose-200/80 p-3.5 sm:p-5 shadow-sm">
+      <div 
+        @click="activeTab = activeTab === 'URGENT' ? 'ALL' : 'URGENT'; page = 1"
+        class="bg-white rounded-xl border p-3.5 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 active:scale-[0.98]"
+        :class="activeTab === 'URGENT' ? 'ring-2 ring-rose-500 border-rose-500 bg-rose-50/30' : 'border-rose-200/80 hover:border-rose-400'"
+        title="Click to toggle Urgent Orders filter"
+      >
         <div class="flex gap-2.5 sm:gap-4">
           <div class="flex flex-col justify-between shrink-0">
             <div class="bg-rose-50 p-2 sm:p-2.5 rounded-lg text-rose-600 border border-rose-100/50">
@@ -240,7 +250,12 @@ onMounted(() => {
       </div>
 
       <!-- 3. Invoices Generated -->
-      <div class="bg-white rounded-xl border border-[#e5e2dc] p-3.5 sm:p-5 shadow-sm">
+      <div 
+        @click="activeTab = activeTab === 'GENERATED' ? 'ALL' : 'GENERATED'; page = 1"
+        class="bg-white rounded-xl border p-3.5 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 active:scale-[0.98]"
+        :class="activeTab === 'GENERATED' ? 'ring-2 ring-[#1b3b5f] border-[#1b3b5f] bg-[#1b3b5f]/5' : 'border-[#e5e2dc] hover:border-[#1b3b5f]/40'"
+        title="Click to toggle Invoices Generated filter"
+      >
         <div class="flex gap-2.5 sm:gap-4">
           <div class="flex flex-col justify-between shrink-0">
             <div class="bg-[#1b3b5f]/10 p-2 sm:p-2.5 rounded-lg text-[#1b3b5f] border border-[#1b3b5f]/20">
@@ -259,7 +274,12 @@ onMounted(() => {
       </div>
 
       <!-- 4. Flagged / On Hold -->
-      <div class="bg-white rounded-xl border border-[#e5e2dc] p-3.5 sm:p-5 shadow-sm">
+      <div 
+        @click="activeTab = activeTab === 'ON_HOLD' ? 'ALL' : 'ON_HOLD'; page = 1"
+        class="bg-white rounded-xl border p-3.5 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 active:scale-[0.98]"
+        :class="activeTab === 'ON_HOLD' ? 'ring-2 ring-orange-500 border-orange-500 bg-orange-50/30' : 'border-[#e5e2dc] hover:border-orange-300'"
+        title="Click to toggle On Hold filter"
+      >
         <div class="flex gap-2.5 sm:gap-4">
           <div class="flex flex-col justify-between shrink-0">
             <div class="bg-orange-50 p-2 sm:p-2.5 rounded-lg text-orange-600 border border-orange-100/50">

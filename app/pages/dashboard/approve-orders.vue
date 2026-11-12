@@ -360,9 +360,14 @@ const getTotalNos = (order: any) => {
     </div>
 
     <!-- Quick Stats Cards -->
-    <div ref="statsContainer" class="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-4">
+    <div ref="statsContainer" class="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-4 select-none">
       <!-- Pending Approval -->
-      <div class="bg-white rounded-xl border border-[#e5e2dc] p-3.5 sm:p-5 shadow-sm">
+      <div 
+        @click="activeTab = activeTab === 'PENDING' ? 'ALL' : 'PENDING'; page = 1"
+        class="bg-white rounded-xl border p-3.5 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 active:scale-[0.98]"
+        :class="activeTab === 'PENDING' ? 'ring-2 ring-amber-500 border-amber-500 bg-amber-50/30' : 'border-[#e5e2dc] hover:border-amber-300'"
+        title="Click to toggle Pending Approval filter"
+      >
         <div class="flex gap-2.5 sm:gap-4">
           <div class="flex flex-col justify-between">
             <div class="bg-amber-50 p-2 sm:p-2.5 rounded-lg text-amber-600 border border-amber-100/50">
@@ -381,7 +386,12 @@ const getTotalNos = (order: any) => {
       </div>
 
       <!-- Urgent Orders -->
-      <div class="bg-white rounded-xl border border-rose-200/80 p-3.5 sm:p-5 shadow-sm">
+      <div 
+        @click="activeTab = activeTab === 'URGENT' ? 'ALL' : 'URGENT'; page = 1"
+        class="bg-white rounded-xl border p-3.5 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 active:scale-[0.98]"
+        :class="activeTab === 'URGENT' ? 'ring-2 ring-rose-500 border-rose-500 bg-rose-50/30' : 'border-rose-200/80 hover:border-rose-400'"
+        title="Click to toggle Urgent Orders filter"
+      >
         <div class="flex gap-2.5 sm:gap-4">
           <div class="flex flex-col justify-between">
             <div class="bg-rose-50 p-2 sm:p-2.5 rounded-lg text-rose-600 border border-rose-100/50">
@@ -400,7 +410,12 @@ const getTotalNos = (order: any) => {
       </div>
 
       <!-- Approved -->
-      <div class="bg-white rounded-xl border border-[#e5e2dc] p-3.5 sm:p-5 shadow-sm">
+      <div 
+        @click="activeTab = activeTab === 'APPROVED' ? 'ALL' : 'APPROVED'; page = 1"
+        class="bg-white rounded-xl border p-3.5 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 active:scale-[0.98]"
+        :class="activeTab === 'APPROVED' ? 'ring-2 ring-[#1b3b5f] border-[#1b3b5f] bg-[#1b3b5f]/5' : 'border-[#e5e2dc] hover:border-[#1b3b5f]/40'"
+        title="Click to toggle Approved Orders filter"
+      >
         <div class="flex gap-2.5 sm:gap-4">
           <div class="flex flex-col justify-between">
             <div class="bg-[#1b3b5f]/10 p-2 sm:p-2.5 rounded-lg text-[#1b3b5f] border border-[#1b3b5f]/20">
@@ -419,7 +434,12 @@ const getTotalNos = (order: any) => {
       </div>
 
       <!-- Total Orders -->
-      <div class="bg-white rounded-xl border border-[#e5e2dc] p-3.5 sm:p-5 shadow-sm">
+      <div 
+        @click="activeTab = 'ALL'; page = 1"
+        class="bg-white rounded-xl border p-3.5 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 active:scale-[0.98]"
+        :class="activeTab === 'ALL' ? 'ring-2 ring-gray-400 border-gray-400 bg-gray-50/50' : 'border-[#e5e2dc] hover:border-gray-400'"
+        title="Click to show all orders"
+      >
         <div class="flex gap-2.5 sm:gap-4">
           <div class="flex flex-col justify-between">
             <div class="bg-gray-100 p-2 sm:p-2.5 rounded-lg text-gray-600 border border-gray-200/50">

@@ -308,11 +308,13 @@ onMounted(() => {
     </div>
 
     <!-- Quick Stats -->
-    <div ref="statsContainer" class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+    <div ref="statsContainer" class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 select-none">
       <!-- Pending Review -->
       <div 
-        @click="activeTab = 'PENDING'; page = 1"
-        class="bg-white rounded-xl border border-[#e5e2dc] p-3.5 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-shadow duration-200"
+        @click="activeTab = activeTab === 'PENDING' ? 'ALL' : 'PENDING'; page = 1"
+        class="bg-white rounded-xl border p-3.5 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 active:scale-[0.98]"
+        :class="activeTab === 'PENDING' ? 'ring-2 ring-amber-500 border-amber-500 bg-amber-50/30' : 'border-[#e5e2dc] hover:border-amber-300'"
+        title="Click to toggle Pending Review filter"
       >
         <div class="flex gap-2.5 sm:gap-4">
           <div class="flex flex-col justify-between shrink-0">
@@ -333,8 +335,10 @@ onMounted(() => {
 
       <!-- Converted Orders -->
       <div 
-        @click="activeTab = 'CONFIRMED'; page = 1"
-        class="bg-white rounded-xl border border-[#e5e2dc] p-3.5 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-shadow duration-200"
+        @click="activeTab = activeTab === 'CONFIRMED' ? 'ALL' : 'CONFIRMED'; page = 1"
+        class="bg-white rounded-xl border p-3.5 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 active:scale-[0.98]"
+        :class="activeTab === 'CONFIRMED' ? 'ring-2 ring-[#1b3b5f] border-[#1b3b5f] bg-[#1b3b5f]/5' : 'border-[#e5e2dc] hover:border-[#1b3b5f]/40'"
+        title="Click to toggle Converted Orders filter"
       >
         <div class="flex gap-2.5 sm:gap-4">
           <div class="flex flex-col justify-between shrink-0">
@@ -355,8 +359,10 @@ onMounted(() => {
 
       <!-- Declined -->
       <div 
-        @click="activeTab = 'DECLINED'; page = 1"
-        class="bg-white rounded-xl border border-[#e5e2dc] p-3.5 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-shadow duration-200"
+        @click="activeTab = activeTab === 'DECLINED' ? 'ALL' : 'DECLINED'; page = 1"
+        class="bg-white rounded-xl border p-3.5 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 active:scale-[0.98]"
+        :class="activeTab === 'DECLINED' ? 'ring-2 ring-rose-500 border-rose-500 bg-rose-50/30' : 'border-[#e5e2dc] hover:border-rose-400'"
+        title="Click to toggle Declined requests filter"
       >
         <div class="flex gap-2.5 sm:gap-4">
           <div class="flex flex-col justify-between shrink-0">
@@ -378,7 +384,9 @@ onMounted(() => {
       <!-- Total Inquiries -->
       <div 
         @click="activeTab = 'ALL'; page = 1"
-        class="bg-white rounded-xl border border-[#e5e2dc] p-3.5 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-shadow duration-200"
+        class="bg-white rounded-xl border p-3.5 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 active:scale-[0.98]"
+        :class="activeTab === 'ALL' ? 'ring-2 ring-gray-400 border-gray-400 bg-gray-50/50' : 'border-[#e5e2dc] hover:border-gray-400'"
+        title="Click to view all requests"
       >
         <div class="flex gap-2.5 sm:gap-4">
           <div class="flex flex-col justify-between shrink-0">

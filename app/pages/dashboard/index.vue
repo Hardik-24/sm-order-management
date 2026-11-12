@@ -104,6 +104,58 @@ const packingStatus = ref('')
 const deliveryStatus = ref('')
 const isApproved = ref('')
 const tableSalesPersonId = ref('')
+const activeStatCard = ref<string | null>(null)
+
+const handleStatCardClick = (cardKey: string) => {
+  if (activeStatCard.value === cardKey) {
+    // Toggle OFF: reset all filters
+    activeStatCard.value = null
+    startDate.value = ''
+    endDate.value = ''
+    isApproved.value = ''
+    packingStatus.value = ''
+    billingStatus.value = ''
+    deliveryStatus.value = ''
+    status.value = ''
+    page.value = 1
+    return
+  }
+
+  // Toggle ON
+  activeStatCard.value = cardKey
+  page.value = 1
+
+  // Format today's YYYY-MM-DD
+  const now = new Date()
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+
+  // Clear existing filters first
+  startDate.value = ''
+  endDate.value = ''
+  isApproved.value = ''
+  packingStatus.value = ''
+  billingStatus.value = ''
+  deliveryStatus.value = ''
+  status.value = ''
+
+  if (cardKey === 'ordersToday') {
+    startDate.value = todayStr
+    endDate.value = todayStr
+  } else if (cardKey === 'pendingApproval') {
+    isApproved.value = 'false'
+    status.value = '!CANCELLED'
+  } else if (cardKey === 'packing') {
+    isApproved.value = 'true'
+    packingStatus.value = 'PENDING'
+  } else if (cardKey === 'awaitingBilling') {
+    isApproved.value = 'true'
+    billingStatus.value = 'PENDING'
+  } else if (cardKey === 'delivered') {
+    startDate.value = todayStr
+    endDate.value = todayStr
+    deliveryStatus.value = 'DELIVERED'
+  }
+}
 
 const isPanelOpen = ref(false)
 const selectedOrderId = ref<string | null>(null)
@@ -349,7 +401,12 @@ const handleOrderSelect = (orderId: string) => {
 
   <!-- Stat Cards (Mobile: #4, Desktop: Row 2 full-width) -->
   <div class="col-span-1 lg:col-span-5 order-4 lg:order-2">
-    <StatCards :stats="dashboardData" :isLoading="dashboardPending" />
+    <StatCards 
+      :stats="dashboardData" 
+      :isLoading="dashboardPending" 
+      :activeFilter="activeStatCard"
+      @selectCard="handleStatCardClick"
+    />
   </div>
 
   <!-- Recent Orders Table (Mobile: #2 right under header, Desktop: Row 3 right after stat cards) -->
@@ -376,6 +433,24 @@ const handleOrderSelect = (orderId: string) => {
             <UserIcon class="w-3.5 h-3.5" />
             Filtered: {{ isAdmin ? (selectedRep?.name || 'Representative') : 'My Orders' }}
           </span>
+        </div>
+
+        <div v-if="activeStatCard" class="self-start sm:self-auto">
+          <button 
+            type="button"
+            @click="handleStatCardClick(activeStatCard)"
+            class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-blue-50 text-[#1b3b5f] border border-blue-200 cursor-pointer hover:bg-blue-100 transition-colors"
+            title="Click to clear card filter"
+          >
+            <span>Card Filter: {{ 
+              activeStatCard === 'ordersToday' ? 'Today Intake' :
+              activeStatCard === 'pendingApproval' ? 'Pending Approval' :
+              activeStatCard === 'packing' ? 'In Packing' :
+              activeStatCard === 'awaitingBilling' ? 'Awaiting Billing' :
+              'Delivered Today'
+            }}</span>
+            <X class="w-3.5 h-3.5" />
+          </button>
         </div>
 
         <!-- Create Order CTA Button (Desktop only; on mobile, OrderTable's button after search bar is used) -->

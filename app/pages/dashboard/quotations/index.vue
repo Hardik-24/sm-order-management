@@ -25,7 +25,12 @@
     <!-- Quick Stats Cards (Matching billing.vue:216-284 exact structure & typography) -->
     <div ref="statsContainerRef" class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-4 select-none">
       <!-- 1. Total Quotes -->
-      <div class="bg-white rounded-xl border border-[#e5e2dc] p-3.5 sm:p-5 shadow-sm">
+      <div 
+        @click="handleClearDateFilter"
+        class="bg-white rounded-xl border p-3.5 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 active:scale-[0.98]"
+        :class="!startDate && !endDate ? 'ring-2 ring-[#1b3b5f] border-[#1b3b5f] bg-[#1b3b5f]/5' : 'border-[#e5e2dc] hover:border-blue-300'"
+        title="Click to view all quotes (clear date filter)"
+      >
         <div class="flex gap-2.5 sm:gap-4">
           <div class="flex flex-col justify-between shrink-0">
             <div class="bg-blue-50 p-2 sm:p-2.5 rounded-lg text-[#1b3b5f] border border-blue-100/50">
@@ -44,7 +49,12 @@
       </div>
 
       <!-- 2. This Month -->
-      <div class="bg-white rounded-xl border border-[#e5e2dc] p-3.5 sm:p-5 shadow-sm">
+      <div 
+        @click="handleToggleThisMonth"
+        class="bg-white rounded-xl border p-3.5 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 active:scale-[0.98]"
+        :class="isThisMonthActive ? 'ring-2 ring-amber-500 border-amber-500 bg-amber-50/30' : 'border-[#e5e2dc] hover:border-amber-300'"
+        title="Click to toggle This Month filter"
+      >
         <div class="flex gap-2.5 sm:gap-4">
           <div class="flex flex-col justify-between shrink-0">
             <div class="bg-amber-50 p-2 sm:p-2.5 rounded-lg text-amber-600 border border-amber-100/50">
@@ -840,6 +850,34 @@ const quotesThisMonth = computed(() => {
     return d.getMonth() === currentMonth && d.getFullYear() === currentYear
   }).length
 })
+
+const isThisMonthActive = computed(() => {
+  const y = now.getFullYear()
+  const m = String(now.getMonth() + 1).padStart(2, '0')
+  const firstDay = `${y}-${m}-01`
+  const lastDay = new Date(y, now.getMonth() + 1, 0).toISOString().split('T')[0]
+  return startDate.value === firstDay && endDate.value === lastDay
+})
+
+const handleToggleThisMonth = () => {
+  const y = now.getFullYear()
+  const m = String(now.getMonth() + 1).padStart(2, '0')
+  const firstDay = `${y}-${m}-01`
+  const lastDay = new Date(y, now.getMonth() + 1, 0).toISOString().split('T')[0]
+
+  if (startDate.value === firstDay && endDate.value === lastDay) {
+    startDate.value = ''
+    endDate.value = ''
+  } else {
+    startDate.value = firstDay
+    endDate.value = lastDay
+  }
+}
+
+const handleClearDateFilter = () => {
+  startDate.value = ''
+  endDate.value = ''
+}
 
 const currentMonthName = computed(() => {
   return now.toLocaleString('default', { month: 'short' })

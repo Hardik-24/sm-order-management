@@ -204,6 +204,15 @@ const handleTabChange = (tab: any) => {
   page.value = 1
 }
 
+const handleCardClick = (tab: 'WAITING' | 'DISPATCHED' | 'DELIVERED' | 'ALL') => {
+  viewMode.value = 'ORDERS'
+  if (activeTab.value === tab && tab !== 'ALL') {
+    handleTabChange('ALL')
+  } else {
+    handleTabChange(tab)
+  }
+}
+
 watch(queryObj, () => {
   isSwitchingTab.value = true
 })
@@ -391,10 +400,13 @@ onUnmounted(() => {
     </div>
 
     <!-- Quick Stats Cards (Matching Approve Orders & Billing Design) -->
-    <div ref="statsContainer" class="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-4">
+    <div ref="statsContainer" class="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-4 select-none">
       <!-- 1. Awaiting Dispatch -->
       <div 
-        class="bg-white rounded-xl border border-[#e5e2dc] p-3.5 sm:p-5 shadow-sm"
+        @click="handleCardClick('WAITING')"
+        class="bg-white rounded-xl border p-3.5 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 active:scale-[0.98]"
+        :class="viewMode === 'ORDERS' && activeTab === 'WAITING' ? 'ring-2 ring-amber-500 border-amber-500 bg-amber-50/30' : 'border-[#e5e2dc] hover:border-amber-300'"
+        title="Click to view and filter orders Awaiting Dispatch"
       >
         <div class="flex gap-2.5 sm:gap-4">
           <div class="flex flex-col justify-between shrink-0">
@@ -415,7 +427,10 @@ onUnmounted(() => {
 
       <!-- 2. In Transit -->
       <div 
-        class="bg-white rounded-xl border border-[#e5e2dc] p-3.5 sm:p-5 shadow-sm"
+        @click="handleCardClick('DISPATCHED')"
+        class="bg-white rounded-xl border p-3.5 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 active:scale-[0.98]"
+        :class="viewMode === 'ORDERS' && activeTab === 'DISPATCHED' ? 'ring-2 ring-blue-500 border-blue-500 bg-blue-50/30' : 'border-[#e5e2dc] hover:border-blue-300'"
+        title="Click to view and filter orders In Transit"
       >
         <div class="flex gap-2.5 sm:gap-4">
           <div class="flex flex-col justify-between shrink-0">
@@ -436,7 +451,10 @@ onUnmounted(() => {
 
       <!-- 3. Delivered Today -->
       <div 
-        class="bg-white rounded-xl border border-[#e5e2dc] p-3.5 sm:p-5 shadow-sm"
+        @click="handleCardClick('DELIVERED')"
+        class="bg-white rounded-xl border p-3.5 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 active:scale-[0.98]"
+        :class="viewMode === 'ORDERS' && activeTab === 'DELIVERED' ? 'ring-2 ring-emerald-500 border-emerald-500 bg-emerald-50/30' : 'border-[#e5e2dc] hover:border-emerald-300'"
+        title="Click to view and filter Delivered orders"
       >
         <div class="flex gap-2.5 sm:gap-4">
           <div class="flex flex-col justify-between shrink-0">
@@ -457,7 +475,10 @@ onUnmounted(() => {
 
       <!-- 4. Total Orders -->
       <div 
-        class="bg-white rounded-xl border border-[#e5e2dc] p-3.5 sm:p-5 shadow-sm"
+        @click="handleCardClick('ALL')"
+        class="bg-white rounded-xl border p-3.5 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 active:scale-[0.98]"
+        :class="viewMode === 'ORDERS' && activeTab === 'ALL' ? 'ring-2 ring-[#1b3b5f] border-[#1b3b5f] bg-[#1b3b5f]/5' : 'border-[#e5e2dc] hover:border-[#1b3b5f]/40'"
+        title="Click to view all orders"
       >
         <div class="flex gap-2.5 sm:gap-4">
           <div class="flex flex-col justify-between shrink-0">

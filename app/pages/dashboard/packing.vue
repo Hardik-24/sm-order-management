@@ -164,10 +164,13 @@ onMounted(() => {
     </div>
 
     <!-- Quick Stats Cards (Matching Approve Orders & Billing Design) -->
-    <div ref="statsContainer" class="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-4">
+    <div ref="statsContainer" class="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-4 select-none">
       <!-- 1. Pending Packing -->
       <div 
-        class="bg-white rounded-xl border border-[#e5e2dc] p-3.5 sm:p-5 shadow-sm"
+        @click="activeTab = activeTab === 'PENDING' ? 'ALL' : 'PENDING'; page = 1"
+        class="bg-white rounded-xl border p-3.5 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 active:scale-[0.98]"
+        :class="activeTab === 'PENDING' ? 'ring-2 ring-amber-500 border-amber-500 bg-amber-50/30' : 'border-[#e5e2dc] hover:border-amber-300'"
+        title="Click to toggle Pending Packing filter"
       >
         <div class="flex gap-2.5 sm:gap-4">
           <div class="flex flex-col justify-between shrink-0">
@@ -188,7 +191,10 @@ onMounted(() => {
 
       <!-- 2. Urgent Orders -->
       <div 
-        class="bg-white rounded-xl border border-rose-200/80 p-3.5 sm:p-5 shadow-sm"
+        @click="activeTab = activeTab === 'URGENT' ? 'ALL' : 'URGENT'; page = 1"
+        class="bg-white rounded-xl border p-3.5 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 active:scale-[0.98]"
+        :class="activeTab === 'URGENT' ? 'ring-2 ring-rose-500 border-rose-500 bg-rose-50/30' : 'border-rose-200/80 hover:border-rose-400'"
+        title="Click to toggle Urgent Orders filter"
       >
         <div class="flex gap-2.5 sm:gap-4">
           <div class="flex flex-col justify-between shrink-0">
@@ -209,7 +215,10 @@ onMounted(() => {
 
       <!-- 3. Currently Packing -->
       <div 
-        class="bg-white rounded-xl border border-[#e5e2dc] p-3.5 sm:p-5 shadow-sm"
+        @click="activeTab = activeTab === 'IN_PROGRESS' ? 'ALL' : 'IN_PROGRESS'; page = 1"
+        class="bg-white rounded-xl border p-3.5 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 active:scale-[0.98]"
+        :class="activeTab === 'IN_PROGRESS' ? 'ring-2 ring-blue-500 border-blue-500 bg-blue-50/30' : 'border-[#e5e2dc] hover:border-blue-300'"
+        title="Click to toggle Currently Packing filter"
       >
         <div class="flex gap-2.5 sm:gap-4">
           <div class="flex flex-col justify-between shrink-0">
@@ -230,7 +239,10 @@ onMounted(() => {
 
       <!-- 4. Ready / Packed -->
       <div 
-        class="bg-white rounded-xl border border-[#e5e2dc] p-3.5 sm:p-5 shadow-sm"
+        @click="activeTab = activeTab === 'PACKED' ? 'ALL' : 'PACKED'; page = 1"
+        class="bg-white rounded-xl border p-3.5 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 active:scale-[0.98]"
+        :class="activeTab === 'PACKED' ? 'ring-2 ring-[#1b3b5f] border-[#1b3b5f] bg-[#1b3b5f]/5' : 'border-[#e5e2dc] hover:border-[#1b3b5f]/40'"
+        title="Click to toggle Ready / Packed filter"
       >
         <div class="flex gap-2.5 sm:gap-4">
           <div class="flex flex-col justify-between shrink-0">

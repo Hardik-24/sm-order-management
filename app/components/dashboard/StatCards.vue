@@ -8,10 +8,16 @@ import OdometerNumber from '~/components/ui/OdometerNumber.vue'
 const props = withDefaults(defineProps<{
   stats?: DashboardStats | null
   isLoading?: boolean
+  activeFilter?: string | null
 }>(), {
   stats: null,
-  isLoading: false
+  isLoading: false,
+  activeFilter: null
 })
+
+const emit = defineEmits<{
+  (e: 'selectCard', cardKey: string): void
+}>()
 
 const { animateStagger, initContext } = useGsapAnimation()
 const containerRef = ref<HTMLElement | null>(null)
@@ -35,7 +41,12 @@ onMounted(() => {
 <template>
   <div ref="containerRef" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4 select-none">
     <!-- 1. Orders Placed (Sales) -->
-    <div class="stat-card rounded-xl border border-gray-100 bg-white p-3 sm:p-5 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] flex flex-col justify-between hover:shadow-md hover:border-[#1b3b5f]/30 transition-all duration-200 group">
+    <div 
+      @click="emit('selectCard', 'ordersToday')"
+      class="stat-card rounded-xl border bg-white p-3 sm:p-5 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] flex flex-col justify-between hover:shadow-md hover:border-[#1b3b5f]/40 transition-all duration-200 group cursor-pointer active:scale-[0.98]"
+      :class="activeFilter === 'ordersToday' ? 'ring-2 ring-[#1b3b5f] border-[#1b3b5f] bg-[#1b3b5f]/5 shadow-sm' : 'border-gray-100'"
+      title="Click to filter table by today's orders"
+    >
       <div class="flex justify-between items-start mb-2 sm:mb-4">
         <h3 class="uppercase tracking-wider text-[10px] font-semibold text-gray-500 group-hover:text-[#1b3b5f] transition-colors">Orders Placed</h3>
         <div class="w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-[#e8eff7] text-[#1b3b5f] flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
@@ -59,7 +70,12 @@ onMounted(() => {
     </div>
 
     <!-- 2. Pending Approval (Approval) -->
-    <div class="stat-card rounded-xl border border-gray-100 bg-white p-3 sm:p-5 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] flex flex-col justify-between hover:shadow-md hover:border-amber-200 transition-all duration-200 group">
+    <div 
+      @click="emit('selectCard', 'pendingApproval')"
+      class="stat-card rounded-xl border bg-white p-3 sm:p-5 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] flex flex-col justify-between hover:shadow-md hover:border-amber-300 transition-all duration-200 group cursor-pointer active:scale-[0.98]"
+      :class="activeFilter === 'pendingApproval' ? 'ring-2 ring-amber-500 border-amber-500 bg-amber-50/40 shadow-sm' : 'border-gray-100'"
+      title="Click to filter table by pending approval orders"
+    >
       <div class="flex justify-between items-start mb-2 sm:mb-4">
         <h3 class="uppercase tracking-wider text-[10px] font-semibold text-gray-500 group-hover:text-amber-700 transition-colors">Pending Approval</h3>
         <div class="w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-[#fef3c7] text-[#d97706] flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
@@ -79,7 +95,12 @@ onMounted(() => {
     </div>
 
     <!-- 3. In Packing (Packing) -->
-    <div class="stat-card rounded-xl border border-gray-100 bg-white p-3 sm:p-5 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] flex flex-col justify-between hover:shadow-md hover:border-blue-200 transition-all duration-200 group">
+    <div 
+      @click="emit('selectCard', 'packing')"
+      class="stat-card rounded-xl border bg-white p-3 sm:p-5 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] flex flex-col justify-between hover:shadow-md hover:border-blue-300 transition-all duration-200 group cursor-pointer active:scale-[0.98]"
+      :class="activeFilter === 'packing' ? 'ring-2 ring-blue-500 border-blue-500 bg-blue-50/40 shadow-sm' : 'border-gray-100'"
+      title="Click to filter table by orders currently in packing"
+    >
       <div class="flex justify-between items-start mb-2 sm:mb-4">
         <h3 class="uppercase tracking-wider text-[10px] font-semibold text-gray-500 group-hover:text-blue-700 transition-colors">In Packing</h3>
         <div class="w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
@@ -99,7 +120,12 @@ onMounted(() => {
     </div>
 
     <!-- 4. Awaiting Billing (Billing) -->
-    <div class="stat-card rounded-xl border border-gray-100 bg-white p-3 sm:p-5 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] flex flex-col justify-between hover:shadow-md hover:border-indigo-200 transition-all duration-200 group">
+    <div 
+      @click="emit('selectCard', 'awaitingBilling')"
+      class="stat-card rounded-xl border bg-white p-3 sm:p-5 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] flex flex-col justify-between hover:shadow-md hover:border-indigo-300 transition-all duration-200 group cursor-pointer active:scale-[0.98]"
+      :class="activeFilter === 'awaitingBilling' ? 'ring-2 ring-indigo-500 border-indigo-500 bg-indigo-50/40 shadow-sm' : 'border-gray-100'"
+      title="Click to filter table by orders awaiting billing"
+    >
       <div class="flex justify-between items-start mb-2 sm:mb-4">
         <h3 class="uppercase tracking-wider text-[10px] font-semibold text-gray-500 group-hover:text-indigo-700 transition-colors">Awaiting Billing</h3>
         <div class="w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
@@ -119,7 +145,12 @@ onMounted(() => {
     </div>
 
     <!-- 5. Delivered Today (Delivery) -->
-    <div class="stat-card rounded-xl border border-gray-100 bg-white p-3 sm:p-5 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] flex flex-col justify-between hover:shadow-md hover:border-emerald-200 transition-all duration-200 group">
+    <div 
+      @click="emit('selectCard', 'delivered')"
+      class="stat-card rounded-xl border bg-white p-3 sm:p-5 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] flex flex-col justify-between hover:shadow-md hover:border-emerald-300 transition-all duration-200 group cursor-pointer active:scale-[0.98]"
+      :class="activeFilter === 'delivered' ? 'ring-2 ring-emerald-500 border-emerald-500 bg-emerald-50/40 shadow-sm' : 'border-gray-100'"
+      title="Click to filter table by orders delivered today"
+    >
       <div class="flex justify-between items-start mb-2 sm:mb-4">
         <h3 class="uppercase tracking-wider text-[10px] font-semibold text-gray-500 group-hover:text-emerald-700 transition-colors">Delivered Today</h3>
         <div class="w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
