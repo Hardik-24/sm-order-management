@@ -3,6 +3,7 @@ import { getPrisma, resetPrisma } from '~~/server/utils/prisma'
 import { requireAuth } from '~~/server/utils/auth'
 import { sendPushNotification } from '~~/server/utils/firebaseAdmin'
 import { isNotificationEnabled } from '~~/server/utils/notificationSettings'
+import { broadcastRealtimeEvent } from '~~/server/utils/realtimeBroadcast'
 
 export default defineEventHandler(async (event) => {
   const user = requireAuth(event)
@@ -111,6 +112,11 @@ export default defineEventHandler(async (event) => {
       data
     })
     await notifyQuotationEdit(updated, p)
+    await broadcastRealtimeEvent('sm_orders_realtime', 'QUOTATION_CHANGE', {
+      type: 'QUOTATION_CHANGE',
+      action: 'QUOTATION_UPDATED',
+      quotation: updated
+    })
     return { success: true, quotation: updated }
   } catch (err: any) {
     p = resetPrisma()
@@ -119,6 +125,11 @@ export default defineEventHandler(async (event) => {
       data
     })
     await notifyQuotationEdit(updated, p)
+    await broadcastRealtimeEvent('sm_orders_realtime', 'QUOTATION_CHANGE', {
+      type: 'QUOTATION_CHANGE',
+      action: 'QUOTATION_UPDATED',
+      quotation: updated
+    })
     return { success: true, quotation: updated }
   }
 })

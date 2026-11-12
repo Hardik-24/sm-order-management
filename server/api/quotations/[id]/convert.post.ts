@@ -2,6 +2,7 @@ import { defineEventHandler, readBody, createError } from 'h3'
 import { getPrisma, resetPrisma } from '~~/server/utils/prisma'
 import { requireRole } from '~~/server/utils/auth'
 import { generateSequentialOrderNumber } from '~~/server/utils/seriesNumber'
+import { broadcastRealtimeEvent } from '~~/server/utils/realtimeBroadcast'
 
 export default defineEventHandler(async (event) => {
   const user = await requireRole(event, ['ADMIN', 'SALES'])
@@ -300,6 +301,19 @@ export default defineEventHandler(async (event) => {
         console.warn('[ConvertQuotation] Failed to update customer payment terms on first order:', custErr)
       }
     }
+
+    // Instant broadcast for both the new order and the converted quotation
+    await broadcastRealtimeEvent('sm_orders_realtime', 'ORDER_CHANGE', {
+      type: 'ORDER_CHANGE',
+      action: 'ORDER_CREATED_FROM_QUOTATION',
+      order
+    })
+    await broadcastRealtimeEvent('sm_orders_realtime', 'QUOTATION_CHANGE', {
+      type: 'QUOTATION_CHANGE',
+      action: 'QUOTATION_CONVERTED',
+      quotationId: quotation.id,
+      convertedOrderNumber: order.orderNumber
+    })
 
     return {
       success: true,

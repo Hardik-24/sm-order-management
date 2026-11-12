@@ -49,10 +49,13 @@ function attachGlobalLifecycleListeners() {
   })
 
   // 4. Visible-only background safety heartbeat (every 40 seconds)
+  // Ensures WebSocket connection stays alive and recovers dropped channels without emitting fake record change events
   if (!heartbeatInterval) {
     heartbeatInterval = setInterval(() => {
       if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
-        triggerListeners({ type: 'HEARTBEAT_SYNC', timestamp: Date.now() })
+        if (!isSubscribed || !sharedChannel) {
+          reconnectChannel(true)
+        }
       }
     }, 40000)
   }
@@ -163,6 +166,9 @@ function setupRealtimeChannel() {
     sharedChannel.on('broadcast', { event: 'USER_CHANGE' }, (payload) => {
       triggerListeners(payload?.payload || { type: 'USER_CHANGE' })
     })
+    sharedChannel.on('broadcast', { event: 'QUOTATION_CHANGE' }, (payload) => {
+      triggerListeners(payload?.payload || { type: 'QUOTATION_CHANGE' })
+    })
 
     // 2. Direct Postgres database changes fallback
     sharedChannel
@@ -213,6 +219,9 @@ function setupRealtimeChannel() {
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'trusted_devices' }, (payload) => {
         triggerListeners({ type: 'DB_DEVICE_CHANGE', table: 'trusted_devices', eventType: payload.eventType, record: payload.new || payload.old, oldRecord: payload.old, newRecord: payload.new })
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'quotations' }, (payload) => {
+        triggerListeners({ type: 'DB_QUOTATION_CHANGE', table: 'quotations', record: payload.new || payload.old })
       })
 
     sharedChannel.subscribe((status) => {
@@ -293,6 +302,16 @@ export function useRealtimeSync() {
           sharedChannel.send({
             type: 'broadcast',
             event: 'USER_CHANGE',
+            payload,
+          })
+        }
+        if (
+          payload.type?.includes('QUOTATION') || 
+          payload.action?.includes('QUOTATION')
+        ) {
+          sharedChannel.send({
+            type: 'broadcast',
+            event: 'QUOTATION_CHANGE',
             payload,
           })
         }

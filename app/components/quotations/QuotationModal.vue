@@ -1388,7 +1388,7 @@
             >
               <Loader2 v-if="isSaving" class="w-4 h-4 animate-spin" />
               <CheckCircle2 v-else class="w-4 h-4" />
-              <span>Create Quotation</span>
+              <span>{{ isSaving ? (isEditingExisting || props.initialQuote ? 'Saving Changes...' : 'Creating Quotation...') : (isEditingExisting || props.initialQuote ? 'Save Changes' : 'Create Quotation') }}</span>
             </button>
           </div>
         </div>

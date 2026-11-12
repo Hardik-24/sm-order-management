@@ -85,8 +85,9 @@ watch(billingStatus, (val) => {
   }
 })
 
-watch(() => [props.isOpen, props.order], ([open]) => {
-  if (open) {
+watch(() => props.isOpen, (open, oldOpen) => {
+  // Only initialize form when the modal transitions from closed to open
+  if (open && !oldOpen) {
     initForm()
     nextTick(() => {
       if (scrollContainerRef.value) {
@@ -95,6 +96,13 @@ watch(() => [props.isOpen, props.order], ([open]) => {
     })
   }
 }, { immediate: true })
+
+// Only reset form if switching to an entirely different order ID while open
+watch(() => props.order?.id, (newId, oldId) => {
+  if (props.isOpen && newId && oldId && newId !== oldId) {
+    initForm()
+  }
+})
 
 // Status options
 const packingOptions = [

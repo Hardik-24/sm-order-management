@@ -186,7 +186,24 @@ const copyOrderNumber = () => {
 
 // Automatically refresh drawer if another user/tab updates this order
 onOrderSync((event) => {
-  if (props.isOpen && props.orderId && (!event.orderId || event.orderId === props.orderId)) {
+  if (event?.type === 'HEARTBEAT_SYNC') return
+
+  // Do not clobber order data while the user has an action modal or inline form open
+  if (
+    isAdminStatusModalOpen.value || 
+    isCancelModalOpen.value || 
+    isPinModalOpen.value || 
+    isHandoverModalOpen.value || 
+    isLinkModalOpen.value || 
+    isLinkItemModalOpen.value || 
+    showBillingForm.value || 
+    showPackingForm.value || 
+    showDeliveryForm.value
+  ) {
+    return
+  }
+
+  if (props.isOpen && props.orderId && (!event?.orderId || event.orderId === props.orderId)) {
     fetchOrder(props.orderId)
   }
 })

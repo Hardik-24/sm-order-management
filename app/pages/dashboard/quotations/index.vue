@@ -27,23 +27,25 @@
       <!-- 1. Total Quotes -->
       <div 
         @click="handleClearDateFilter"
-        class="bg-white rounded-xl border p-3.5 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 active:scale-[0.98]"
-        :class="!startDate && !endDate ? 'ring-2 ring-[#1b3b5f] border-[#1b3b5f] bg-[#1b3b5f]/5' : 'border-[#e5e2dc] hover:border-blue-300'"
+        class="rounded-xl border p-3.5 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 active:scale-[0.98]"
+        :class="!startDate && !endDate 
+          ? '!bg-blue-100/90 !border-[#1b3b5f] ring-2 ring-[#1b3b5f]/30 shadow-md' 
+          : 'bg-white border-[#e5e2dc] hover:border-blue-300 hover:bg-blue-50/20'"
         title="Click to view all quotes (clear date filter)"
       >
         <div class="flex gap-2.5 sm:gap-4">
           <div class="flex flex-col justify-between shrink-0">
-            <div class="bg-blue-50 p-2 sm:p-2.5 rounded-lg text-[#1b3b5f] border border-blue-100/50">
+            <div class="p-2 sm:p-2.5 rounded-lg border transition-colors" :class="!startDate && !endDate ? 'bg-[#1b3b5f] text-white border-[#1b3b5f] shadow-xs' : 'bg-blue-50 text-[#1b3b5f] border-blue-100/50'">
               <FileText class="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div class="w-6 sm:w-8 h-1 bg-[#1b3b5f] rounded-full mt-4 sm:mt-6"></div>
           </div>
           <div class="flex flex-col justify-center min-w-0">
-            <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">Total Quotes</p>
-            <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">
+            <p class="text-[10px] font-bold uppercase tracking-widest mb-0.5 truncate" :class="!startDate && !endDate ? 'text-[#1b3b5f]' : 'text-gray-500'">Total Quotes</p>
+            <h3 class="text-xl sm:text-2xl font-bold mb-0.5 tabular-nums truncate" :class="!startDate && !endDate ? 'text-[#1b3b5f]' : 'text-gray-900'">
               <OdometerNumber :value="quotations.length" :loading="isLoading" />
             </h3>
-            <p class="text-[11px] sm:text-xs text-gray-500 font-medium truncate">Recorded in system</p>
+            <p class="text-[11px] sm:text-xs font-medium truncate" :class="!startDate && !endDate ? 'text-blue-900 font-semibold' : 'text-gray-500'">Recorded in system</p>
           </div>
         </div>
       </div>
@@ -51,23 +53,25 @@
       <!-- 2. This Month -->
       <div 
         @click="handleToggleThisMonth"
-        class="bg-white rounded-xl border p-3.5 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 active:scale-[0.98]"
-        :class="isThisMonthActive ? 'ring-2 ring-amber-500 border-amber-500 bg-amber-50/30' : 'border-[#e5e2dc] hover:border-amber-300'"
+        class="rounded-xl border p-3.5 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 active:scale-[0.98]"
+        :class="isThisMonthActive 
+          ? '!bg-amber-100/90 !border-amber-500 ring-2 ring-amber-500/30 shadow-md' 
+          : 'bg-white border-[#e5e2dc] hover:border-amber-300 hover:bg-amber-50/20'"
         title="Click to toggle This Month filter"
       >
         <div class="flex gap-2.5 sm:gap-4">
           <div class="flex flex-col justify-between shrink-0">
-            <div class="bg-amber-50 p-2 sm:p-2.5 rounded-lg text-amber-600 border border-amber-100/50">
+            <div class="p-2 sm:p-2.5 rounded-lg border transition-colors" :class="isThisMonthActive ? 'bg-amber-500 text-white border-amber-600 shadow-xs' : 'bg-amber-50 text-amber-600 border-amber-100/50'">
               <Calendar class="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div class="w-6 sm:w-8 h-1 bg-amber-500 rounded-full mt-4 sm:mt-6"></div>
           </div>
           <div class="flex flex-col justify-center min-w-0">
-            <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">This Month</p>
-            <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">
+            <p class="text-[10px] font-bold uppercase tracking-widest mb-0.5 truncate" :class="isThisMonthActive ? 'text-amber-900' : 'text-gray-500'">This Month</p>
+            <h3 class="text-xl sm:text-2xl font-bold mb-0.5 tabular-nums truncate" :class="isThisMonthActive ? 'text-amber-950' : 'text-gray-900'">
               <OdometerNumber :value="quotesThisMonth" :loading="isLoading" />
             </h3>
-            <p class="text-[11px] sm:text-xs text-amber-600 font-medium truncate">Issued in {{ currentMonthName }}</p>
+            <p class="text-[11px] sm:text-xs font-medium truncate" :class="isThisMonthActive ? 'text-amber-800 font-semibold' : 'text-amber-600'">Issued in {{ currentMonthName }}</p>
           </div>
         </div>
       </div>
@@ -597,6 +601,7 @@ import {
 import { useSnackbar } from '~/composables/useSnackbar'
 import { useAuth } from '~/composables/useAuth'
 import { useGsapAnimation } from '~/composables/useGsapAnimation'
+import { useRealtimeSync } from '~/composables/useRealtimeSync'
 import OdometerNumber from '~/components/ui/OdometerNumber.vue'
 import LoadingTopBar from '~/components/ui/LoadingTopBar.vue'
 import TableSkeletonRows from '~/components/ui/TableSkeletonRows.vue'
@@ -767,6 +772,7 @@ const onQuotationConverted = (order: any) => {
       q.convertedAt = new Date().toISOString()
     }
   }
+  notifyChange({ type: 'QUOTATION_CHANGE', action: 'QUOTATION_CONVERTED', quotationId: selectedQuoteForConversion.value?.id })
   fetchQuotations()
 }
 
@@ -909,8 +915,35 @@ const viewQuoteDetails = (quote: any) => {
 }
 
 const onQuoteCreated = (newQuote: any) => {
-  quotations.value.unshift(newQuote)
+  if (!newQuote) return
+  const idx = quotations.value.findIndex(q => q.id === newQuote.id || q.quoteNumber === newQuote.quoteNumber)
+  if (idx !== -1) {
+    quotations.value[idx] = { ...quotations.value[idx], ...newQuote }
+  } else {
+    quotations.value.unshift(newQuote)
+  }
 }
+
+// Realtime synchronization across all devices
+const { onOrderSync, notifyChange } = useRealtimeSync()
+onOrderSync((event) => {
+  if (event?.type === 'HEARTBEAT_SYNC') return
+  // Don't disturb active modal if user is drafting or editing
+  if (isModalOpen.value || isConvertModalOpen.value) return
+
+  if (
+    event?.type === 'QUOTATION_CHANGE' || 
+    event?.type === 'DB_QUOTATION_CHANGE' || 
+    event?.type === 'WAKEUP_SYNC' || 
+    event?.action?.includes('QUOTATION')
+  ) {
+    if (event?.quotation) {
+      onQuoteCreated(event.quotation)
+    } else {
+      fetchQuotations()
+    }
+  }
+})
 
 // Delete handler
 const deleteQuote = async (quote: any) => {
@@ -922,6 +955,7 @@ const deleteQuote = async (quote: any) => {
     await $fetch(`/api/quotations/${quote.id}`, { method: 'DELETE' })
     quotations.value = quotations.value.filter(q => q.id !== quote.id)
     showSaved(`Quotation ${quote.quoteNumber} deleted`)
+    notifyChange({ type: 'QUOTATION_CHANGE', action: 'QUOTATION_DELETED', quotationId: quote.id })
   } catch (err: any) {
     showEditing(err.message || 'Could not delete quotation')
   }

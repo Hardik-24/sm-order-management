@@ -4,6 +4,7 @@ import { requireAuth } from '~~/server/utils/auth'
 import { sendPushNotification } from '~~/server/utils/firebaseAdmin'
 import { isNotificationEnabled } from '~~/server/utils/notificationSettings'
 import { generateSequentialQuoteNumber } from '~~/server/utils/seriesNumber'
+import { broadcastRealtimeEvent } from '~~/server/utils/realtimeBroadcast'
 
 export default defineEventHandler(async (event) => {
   const user = requireAuth(event)
@@ -84,6 +85,13 @@ export default defineEventHandler(async (event) => {
       }
     }
 
+    // Instant real-time broadcast across all devices
+    await broadcastRealtimeEvent('sm_orders_realtime', 'QUOTATION_CHANGE', {
+      type: 'QUOTATION_CHANGE',
+      action: 'QUOTATION_CREATED',
+      quotation: saved
+    })
+
     return {
       success: true,
       quotation: saved
@@ -111,6 +119,13 @@ export default defineEventHandler(async (event) => {
         console.warn('[FCM] Quotation push failed:', pushErr)
       }
     }
+
+    // Instant real-time broadcast across all devices
+    await broadcastRealtimeEvent('sm_orders_realtime', 'QUOTATION_CHANGE', {
+      type: 'QUOTATION_CHANGE',
+      action: 'QUOTATION_CREATED',
+      quotation: saved
+    })
 
     return {
       success: true,
