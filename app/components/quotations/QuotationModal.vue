@@ -12,6 +12,18 @@
         <!-- Modal Top Header (Matching GenerateBillModal.vue:9-20) -->
         <div class="px-4 sm:px-5 py-3.5 border-b border-gray-100 bg-gray-50 flex items-center justify-between shrink-0">
           <div class="flex items-center gap-2.5 min-w-0">
+            <!-- Back to Review Slip button when in Edit Mode over an existing quotation -->
+            <button
+              v-if="!isSuccessView && (props.initialQuote || activeQuoteData)"
+              type="button"
+              @click="closeModal"
+              class="px-2.5 py-1 -ml-1 text-gray-700 hover:text-gray-900 rounded-lg hover:bg-gray-200 transition cursor-pointer flex items-center gap-1 text-xs font-bold border border-gray-200 bg-white shadow-2xs"
+              title="Return to Review Slip"
+            >
+              <ChevronLeft class="w-3.5 h-3.5 text-[#1b3b5f]" />
+              <span>Back to Slip</span>
+            </button>
+
             <div
               class="w-8 h-8 rounded-lg bg-[#1b3b5f]/10 text-[#1b3b5f] items-center justify-center shrink-0"
               :class="isSuccessView ? 'hidden sm:flex' : 'flex'"
@@ -24,7 +36,7 @@
                   class="text-base sm:text-lg font-bold text-gray-900 truncate"
                   :class="isSuccessView ? 'hidden sm:block' : 'block'"
                 >
-                  {{ isSuccessView ? 'Quotation Ready to Share' : (isEditingExisting ? 'View Quotation' : 'New Quotation') }}
+                  {{ isSuccessView ? 'Quotation Ready to Share' : (isEditingExisting || props.initialQuote ? 'Edit Quotation' : 'New Quotation') }}
                 </h2>
                 <span class="text-xs sm:text-[10px] font-bold px-2.5 py-1 sm:py-0.5 rounded-md sm:rounded bg-gray-200/80 text-gray-700 shrink-0">
                   {{ quoteNumber }}
@@ -34,7 +46,7 @@
                 class="text-xs text-gray-500 truncate mt-0.5"
                 :class="isSuccessView ? 'hidden sm:block' : 'hidden sm:block'"
               >
-                {{ isSuccessView ? 'Share official quotation via WhatsApp, image or PDF.' : 'Search Google Sheet catalog, review DB inventory, and save quote.' }}
+                {{ isSuccessView ? 'Share official quotation via WhatsApp, image or PDF.' : (isEditingExisting || props.initialQuote ? 'Modify items, customer details, or discounts, then save changes.' : 'Search Google Sheet catalog, review DB inventory, and save quote.') }}
               </p>
             </div>
           </div>
@@ -106,7 +118,7 @@
               type="button"
               @click="closeModal"
               class="p-1.5 text-gray-400 hover:text-gray-700 rounded-lg hover:bg-gray-200 transition cursor-pointer"
-              title="Close Modal"
+              :title="!isSuccessView && (props.initialQuote || activeQuoteData) ? 'Back to Review Slip' : 'Close Modal'"
               data-modal-close="true"
             >
               <X class="w-5 h-5" />
@@ -1372,9 +1384,10 @@
           <button
             type="button"
             @click="closeModal"
-            class="px-4 py-2 border border-gray-300 hover:bg-gray-50 rounded-xl text-xs font-bold text-gray-700 transition cursor-pointer"
+            class="px-4 py-2 border border-gray-300 hover:bg-gray-50 rounded-xl text-xs font-bold text-gray-700 transition cursor-pointer flex items-center gap-1.5"
           >
-            {{ isSuccessView ? 'Back to Quotations List' : 'Cancel' }}
+            <ChevronLeft v-if="!isSuccessView && (props.initialQuote || activeQuoteData)" class="w-3.5 h-3.5 text-gray-500" />
+            <span>{{ isSuccessView ? 'Back to Quotations List' : ((props.initialQuote || activeQuoteData) ? 'Back to Review Slip' : 'Cancel') }}</span>
           </button>
 
           <div class="flex items-center gap-2.5 sm:gap-3">
@@ -2188,6 +2201,7 @@ import {
   ShoppingBag,
   EyeOff,
   ChevronDown,
+  ChevronLeft,
   Percent
 } from 'lucide-vue-next'
 import CustomSelect from '~/components/ui/CustomSelect.vue'
@@ -2215,6 +2229,7 @@ const { user } = useAuth()
 const isSuccessView = ref(false)
 const isEditingExisting = ref(false)
 const isAnonymousMode = ref(false)
+const activeQuoteData = ref<any | null>(null)
 
 // Employees / Requested By
 const dbUsers = ref<any[]>([])
@@ -3250,6 +3265,9 @@ const executeSaveQuote = async () => {
         quoteNumber.value = res.quotation.quoteNumber
       }
       showSaved(`Quotation ${quoteNumber.value} ${quoteId ? 'updated' : 'saved'} successfully!`)
+      if (res.quotation) {
+        activeQuoteData.value = res.quotation
+      }
       emit('created', res.quotation)
       isSuccessView.value = true
     } else {
@@ -3267,6 +3285,7 @@ const executeSaveQuote = async () => {
 const resetForNewQuote = () => {
   isSuccessView.value = false
   isEditingExisting.value = false
+  activeQuoteData.value = null
   quoteNumber.value = generateQuoteNumber()
   fetchNextQuoteNumber()
   customerName.value = ''
@@ -3289,6 +3308,7 @@ const resetForNewQuote = () => {
 
 const loadQuoteIntoState = (newQuote: any) => {
   if (newQuote) {
+    activeQuoteData.value = newQuote
     isSuccessView.value = true
     isEditingExisting.value = true
     quoteNumber.value = newQuote.quoteNumber
@@ -3375,7 +3395,16 @@ watch(
 )
 
 const closeModal = () => {
-  if (props.initialQuote) {
+  // If we are currently editing an existing quote over the review slip,
+  // closing edit mode returns cleanly to the review slip without closing the modal
+  const targetQuote = props.initialQuote || activeQuoteData.value
+  if (targetQuote && !isSuccessView.value) {
+    loadQuoteIntoState(targetQuote)
+    isSuccessView.value = true
+    return
+  }
+
+  if (targetQuote) {
     isSuccessView.value = true
   }
   emit('update:modelValue', false)
