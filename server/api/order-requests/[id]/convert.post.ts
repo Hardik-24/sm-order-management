@@ -1,6 +1,7 @@
 import { defineEventHandler, readBody, createError } from 'h3'
 import { prisma } from '~~/server/utils/prisma'
 import { requireRole } from '~~/server/utils/auth'
+import { generateSequentialOrderNumber } from '~~/server/utils/seriesNumber'
 
 export default defineEventHandler(async (event) => {
   const user = await requireRole(event, ['ADMIN', 'SALES'])
@@ -116,30 +117,13 @@ export default defineEventHandler(async (event) => {
     totalAmount = Number(orderRequest.totalEstimated)
   }
 
-  // 3. Auto-generate sequential orderNumber (SO-YYYY-NNNN)
-  const year = new Date().getFullYear()
+  // 3. Auto-generate sequential orderNumber (SO-YYMM-0001)
   let orderNumber = ''
   let attempts = 0
 
-  const existingOrdersThisYear = await prisma.order.findMany({
-    where: { orderNumber: { startsWith: `SO-${year}-` } },
-    select: { orderNumber: true }
-  })
-
-  let maxSeq = 0
-  for (const o of existingOrdersThisYear) {
-    const match = o.orderNumber.match(/^SO-\d{4}-(\d+)/)
-    if (match) {
-      const seq = parseInt(match[1], 10)
-      if (!isNaN(seq) && seq > maxSeq) {
-        maxSeq = seq
-      }
-    }
-  }
-
   while (!orderNumber && attempts < 10) {
     attempts++
-    const candidate = `SO-${year}-${String(maxSeq + attempts).padStart(4, '0')}`
+    const { orderNumber: candidate } = await generateSequentialOrderNumber(prisma, new Date(), attempts)
     const existing = await prisma.order.findUnique({
       where: { orderNumber: candidate },
       select: { id: true }
@@ -151,7 +135,8 @@ export default defineEventHandler(async (event) => {
   }
 
   if (!orderNumber) {
-    orderNumber = `SO-${year}-${Date.now().toString().slice(-4)}`
+    const { orderNumber: fallback } = await generateSequentialOrderNumber(prisma, new Date(), 99)
+    orderNumber = fallback
   }
 
   const deliveryAddress = body.deliveryAddress || orderRequest.deliveryAddress || 'Address on file'

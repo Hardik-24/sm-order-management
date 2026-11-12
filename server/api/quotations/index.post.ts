@@ -1,8 +1,9 @@
-import { defineEventHandler, readBody } from 'h3'
+import { defineEventHandler, readBody, createError } from 'h3'
 import { getPrisma, resetPrisma } from '~~/server/utils/prisma'
 import { requireAuth } from '~~/server/utils/auth'
 import { sendPushNotification } from '~~/server/utils/firebaseAdmin'
 import { isNotificationEnabled } from '~~/server/utils/notificationSettings'
+import { generateSequentialQuoteNumber } from '~~/server/utils/seriesNumber'
 
 export default defineEventHandler(async (event) => {
   const user = requireAuth(event)
@@ -15,44 +16,54 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  // Generate unique Quote ID if not provided
-  const now = new Date()
-  const datePrefix = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}`
-  const randomSuffix = Math.floor(1000 + Math.random() * 9000)
-  const quoteNumber = body.quoteNumber || `QT-${datePrefix}-${randomSuffix}`
-
   let p = getPrisma()
+  let saved: any = null
+  let attempts = 0
 
-  const saveQuotation = async (prismaClient: typeof p) => {
-    return await prismaClient.quotation.create({
-      data: {
-        quoteNumber,
-        customerName: String(body.customerName).trim(),
-        customerPlace: body.customerPlace ? String(body.customerPlace).trim() : null,
-        customerPhone: body.customerPhone ? String(body.customerPhone).trim() : null,
-        validityDays: Number(body.validityDays) || 7,
-        taxMode: body.taxMode || 'EXTRA',
-        quoteNotes: body.quoteNotes ? String(body.quoteNotes).trim() : null,
-        items: body.items,
-        totalItems: body.items.length,
-        totalMrp: Number(body.totalMrp) || 0,
-        subtotal: Number(body.subtotal) || 0,
-        discountAmount: Number(body.discountAmount) || 0,
-        gstAmount: Number(body.gstAmount) || 0,
-        grandTotal: Math.round(Number(body.grandTotal) || 0),
-        createdById: user?.id || body.createdById || null,
-        createdByName: user?.name || body.createdByName || 'Sales Staff',
-        createdByRole: user?.role || body.createdByRole || 'SALES',
-        requestedById: body.requestedById || user?.id || null,
-        requestedByName: body.requestedByName || user?.name || 'Sales Staff',
-        requestedByRole: body.requestedByRole || user?.role || 'SALES',
-        signature: body.signature ? String(body.signature) : null
+  while (!saved && attempts < 10) {
+    attempts++
+    const { quoteNumber } = await generateSequentialQuoteNumber(p, new Date(), attempts)
+
+    try {
+      saved = await p.quotation.create({
+        data: {
+          quoteNumber,
+          customerName: String(body.customerName).trim(),
+          customerPlace: body.customerPlace ? String(body.customerPlace).trim() : null,
+          customerPhone: body.customerPhone ? String(body.customerPhone).trim() : null,
+          validityDays: Number(body.validityDays) || 7,
+          taxMode: body.taxMode || 'EXTRA',
+          quoteNotes: body.quoteNotes ? String(body.quoteNotes).trim() : null,
+          items: body.items,
+          totalItems: body.items.length,
+          totalMrp: Number(body.totalMrp) || 0,
+          subtotal: Number(body.subtotal) || 0,
+          discountAmount: Number(body.discountAmount) || 0,
+          gstAmount: Number(body.gstAmount) || 0,
+          grandTotal: Math.round(Number(body.grandTotal) || 0),
+          createdById: user?.id || body.createdById || null,
+          createdByName: user?.name || body.createdByName || 'Sales Staff',
+          createdByRole: user?.role || body.createdByRole || 'SALES',
+          requestedById: body.requestedById || user?.id || null,
+          requestedByName: body.requestedByName || user?.name || 'Sales Staff',
+          requestedByRole: body.requestedByRole || user?.role || 'SALES',
+          signature: body.signature ? String(body.signature) : null
+        }
+      })
+    } catch (createErr: any) {
+      if (createErr.code === 'P2002' && attempts < 10) {
+        continue
       }
-    })
+      p = resetPrisma()
+      throw createErr
+    }
+  }
+
+  if (!saved) {
+    throw createError({ statusCode: 500, message: 'Failed to assign a unique quotation number' })
   }
 
   try {
-    const saved = await saveQuotation(p)
 
     // Non-blocking Push Notification dispatch to admins and quotation creator
     if (await isNotificationEnabled('quotations')) {

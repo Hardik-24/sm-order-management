@@ -1,6 +1,7 @@
 import { defineEventHandler, readBody, createError } from 'h3'
 import { getPrisma, resetPrisma } from '~~/server/utils/prisma'
 import { requireRole } from '~~/server/utils/auth'
+import { generateSequentialOrderNumber } from '~~/server/utils/seriesNumber'
 
 export default defineEventHandler(async (event) => {
   const user = await requireRole(event, ['ADMIN', 'SALES'])
@@ -219,30 +220,13 @@ export default defineEventHandler(async (event) => {
       where: { customerId }
     })
 
-    const existingOrdersThisYear = await prismaClient.order.findMany({
-      where: { orderNumber: { startsWith: `SO-${year}-` } },
-      select: { orderNumber: true }
-    })
-
-    let maxSeq = 0
-    for (const o of existingOrdersThisYear) {
-      const match = o.orderNumber.match(/^SO-\d{4}-(\d+)/)
-      if (match) {
-        const seq = parseInt(match[1], 10)
-        if (!isNaN(seq) && seq > maxSeq) {
-          maxSeq = seq
-        }
-      }
-    }
-
     const resolvedDeliveryAddress = body.deliveryAddress?.trim() ||
       quotation.customerPlace ||
       'Mysuru, Karnataka'
 
     while (!order && attempts < 10) {
       attempts++
-      const candidateSeq = maxSeq + attempts
-      const orderNumber = `SO-${year}-${String(candidateSeq).padStart(4, '0')}`
+      const { orderNumber } = await generateSequentialOrderNumber(prismaClient, new Date(), attempts)
 
       try {
         order = await prismaClient.order.create({

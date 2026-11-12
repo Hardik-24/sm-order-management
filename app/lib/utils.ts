@@ -69,11 +69,12 @@ export function timeAgo(date: string | Date): string {
   return days === 1 ? 'yesterday' : `${days} days ago`
 }
 
-/** Generate order number: SO-YYYY-NNNN */
-export function generateOrderNumber(sequenceNumber: number): string {
-  const year = new Date().getFullYear()
+/** Generate order number: SO-YYMM-NNNN */
+export function generateOrderNumber(sequenceNumber: number, date: Date = new Date()): string {
+  const yy = String(date.getFullYear()).slice(-2)
+  const mm = String(date.getMonth() + 1).padStart(2, '0')
   const num = String(sequenceNumber).padStart(4, '0')
-  return `SO-${year}-${num}`
+  return `SO-${yy}${mm}-${num}`
 }
 
 /** Get status badge color classes - Standardized 4-Semantic System:

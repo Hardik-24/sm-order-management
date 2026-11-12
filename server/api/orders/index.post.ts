@@ -2,6 +2,7 @@ import { requireRole, getUserFromEvent } from '~~/server/utils/auth'
 import { prisma } from '~~/server/utils/prisma'
 import { sendPushNotification } from '~~/server/utils/firebaseAdmin'
 import { isNotificationEnabled } from '~~/server/utils/notificationSettings'
+import { generateSequentialOrderNumber } from '~~/server/utils/seriesNumber'
 
 export default defineEventHandler(async (event) => {
   const user = await getUserFromEvent(event)
@@ -206,28 +207,10 @@ export default defineEventHandler(async (event) => {
     where: { customerId: resolvedCustomerId }
   })
 
-  // 1. Find all existing orders for this year to determine true maximum sequence number
-  const existingOrdersThisYear = await prisma.order.findMany({
-    where: { orderNumber: { startsWith: `SO-${year}-` } },
-    select: { orderNumber: true }
-  })
-
-  let maxSeq = 0
-  for (const o of existingOrdersThisYear) {
-    // Regex matches SO-YYYY-XXXX (where XXXX is any number of digits), ignoring any split suffix like -B or -C
-    const match = o.orderNumber.match(/^SO-\d{4}-(\d+)/)
-    if (match) {
-      const seq = parseInt(match[1], 10)
-      if (!isNaN(seq) && seq > maxSeq) {
-        maxSeq = seq
-      }
-    }
-  }
-
+  // 1. Generate sequential order number (SO-YYMM-0001)
   while (!order && attempts < 10) {
     attempts++
-    const candidateSeq = maxSeq + attempts
-    const orderNumber = `SO-${year}-${String(candidateSeq).padStart(4, '0')}`
+    const { orderNumber } = await generateSequentialOrderNumber(prisma, new Date(), attempts)
 
     try {
       order = await prisma.order.create({

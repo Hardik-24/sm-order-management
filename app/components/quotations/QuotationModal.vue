@@ -2572,9 +2572,20 @@ const loadSheetCatalog = async (force = false) => {
 // Quotation Meta
 const generateQuoteNumber = () => {
   const d = new Date()
-  const prefix = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}`
-  const rand = Math.floor(1000 + Math.random() * 9000)
-  return `QT-${prefix}-${rand}`
+  const yy = String(d.getFullYear()).slice(-2)
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  return `QT-${yy}${mm}-....`
+}
+
+const fetchNextQuoteNumber = async () => {
+  try {
+    const res = await $fetch<any>('/api/quotations/next-number')
+    if (res?.nextNumber) {
+      quoteNumber.value = res.nextNumber
+    }
+  } catch {
+    // Keep placeholder
+  }
 }
 
 const quoteNumber = ref(generateQuoteNumber())
@@ -3235,6 +3246,9 @@ const executeSaveQuote = async () => {
     })
 
     if (res?.success) {
+      if (res.quotation?.quoteNumber) {
+        quoteNumber.value = res.quotation.quoteNumber
+      }
       showSaved(`Quotation ${quoteNumber.value} ${quoteId ? 'updated' : 'saved'} successfully!`)
       emit('created', res.quotation)
       isSuccessView.value = true
@@ -3254,6 +3268,7 @@ const resetForNewQuote = () => {
   isSuccessView.value = false
   isEditingExisting.value = false
   quoteNumber.value = generateQuoteNumber()
+  fetchNextQuoteNumber()
   customerName.value = ''
   customerPlace.value = ''
   customerPhone.value = ''
