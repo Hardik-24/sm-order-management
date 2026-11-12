@@ -644,6 +644,35 @@ const canViewAllCompanyOrders = computed(() => {
 
 const quoteScope = ref<'all' | 'mine'>(canViewAllCompanyOrders.value ? 'all' : 'mine')
 
+// Filters & State
+const startDate = ref('')
+const endDate = ref('')
+const salesPersonId = ref('')
+const quotations = ref<any[]>([])
+const isLoading = ref(false)
+const searchQuery = ref('')
+const sheetDiagnostics = ref<any>(null)
+const isCheckingSheet = ref(false)
+
+// Load Quotations from DB
+async function fetchQuotations() {
+  isLoading.value = true
+  try {
+    const params: any = { scope: quoteScope.value }
+    if (salesPersonId.value) params.salesPersonId = salesPersonId.value
+    if (startDate.value) params.startDate = startDate.value
+    if (endDate.value) params.endDate = endDate.value
+    const res = await $fetch<any>('/api/quotations', { params })
+    if (res?.quotations) {
+      quotations.value = res.quotations
+    }
+  } catch (err: any) {
+    console.error('Failed to load quotations:', err)
+  } finally {
+    isLoading.value = false
+  }
+}
+
 watch(canViewAllCompanyOrders, (val) => {
   if (!val) {
     quoteScope.value = 'mine'
@@ -654,39 +683,8 @@ watch(quoteScope, () => {
   fetchQuotations()
 })
 
-// Filters & State
-const startDate = ref('')
-const endDate = ref('')
-const salesPersonId = ref('')
-
 watch([salesPersonId, startDate, endDate], () => {
   fetchQuotations()
-})
-
-const quotations = ref<any[]>([])
-const isLoading = ref(false)
-const searchQuery = ref('')
-const sheetDiagnostics = ref<any>(null)
-const isCheckingSheet = ref(false)
-
-const triggerRowAnimation = () => {
-  nextTick(() => {
-    if (!isLoading.value) {
-      if (tbodyRef.value) {
-        const rows = tbodyRef.value.querySelectorAll('tr')
-        const targetRows = Array.from(rows).slice(0, 15)
-        animateStagger(targetRows, { duration: 0.22, stagger: 0.02, y: 6 })
-      }
-      if (mobileListRef.value) {
-        const cards = Array.from(mobileListRef.value.children).slice(0, 15)
-        animateStagger(cards, { duration: 0.22, stagger: 0.02, y: 6 })
-      }
-    }
-  })
-}
-
-watch([() => paginatedQuotations.value, isLoading], () => {
-  triggerRowAnimation()
 })
 
 const checkSheetStatus = async (forceSync = false) => {
@@ -778,25 +776,6 @@ const onQuotationConverted = (order: any) => {
   fetchQuotations()
 }
 
-// Load Quotations from DB
-const fetchQuotations = async () => {
-  isLoading.value = true
-  try {
-    const params: any = { scope: quoteScope.value }
-    if (salesPersonId.value) params.salesPersonId = salesPersonId.value
-    if (startDate.value) params.startDate = startDate.value
-    if (endDate.value) params.endDate = endDate.value
-    const res = await $fetch<any>('/api/quotations', { params })
-    if (res?.quotations) {
-      quotations.value = res.quotations
-    }
-  } catch (err: any) {
-    console.error('Failed to load quotations:', err)
-  } finally {
-    isLoading.value = false
-  }
-}
-
 // Filtered Quotations with relevance ranking
 const filteredQuotations = computed(() => {
   if (!quotations.value) return []
@@ -844,6 +823,29 @@ const paginatedQuotations = computed(() => {
   const start = (currentPage.value - 1) * pageSize.value
   return filteredQuotations.value.slice(start, start + pageSize.value)
 })
+
+const triggerRowAnimation = () => {
+  if (import.meta.server) return
+  nextTick(() => {
+    if (!isLoading.value) {
+      if (tbodyRef.value) {
+        const rows = tbodyRef.value.querySelectorAll('tr')
+        const targetRows = Array.from(rows).slice(0, 15)
+        animateStagger(targetRows, { duration: 0.22, stagger: 0.02, y: 6 })
+      }
+      if (mobileListRef.value) {
+        const cards = Array.from(mobileListRef.value.children).slice(0, 15)
+        animateStagger(cards, { duration: 0.22, stagger: 0.02, y: 6 })
+      }
+    }
+  })
+}
+
+if (import.meta.client) {
+  watch([() => paginatedQuotations.value, isLoading], () => {
+    triggerRowAnimation()
+  })
+}
 
 const onPageSizeChange = (newSize: number) => {
   pageSize.value = newSize
