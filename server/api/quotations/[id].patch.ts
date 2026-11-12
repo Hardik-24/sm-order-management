@@ -14,6 +14,17 @@ export default defineEventHandler(async (event) => {
   const body = await readBody(event)
   let p = getPrisma()
 
+  const existingQuote = await p.quotation.findUnique({
+    where: { id },
+    select: { id: true, status: true }
+  })
+  if (!existingQuote) {
+    throw createError({ statusCode: 404, statusMessage: 'Quotation not found' })
+  }
+  if (existingQuote.status === 'CONVERTED') {
+    throw createError({ statusCode: 400, statusMessage: 'Cannot edit an already converted quotation' })
+  }
+
   const data: Record<string, any> = {}
   if (body.signature !== undefined) {
     data.signature = body.signature ? String(body.signature) : null

@@ -44,12 +44,20 @@
             <button
               v-if="isSuccessView"
               type="button"
+              :disabled="props.initialQuote?.status === 'CONVERTED'"
               @click="enterEditMode"
-              class="flex items-center gap-1.5 px-3 py-1.5 bg-[#1b3b5f] hover:bg-[#132c49] active:scale-98 text-white rounded-lg text-xs font-bold transition shadow-xs cursor-pointer"
-              title="Edit Quotation items, customer details, or discounts"
+              class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-xs"
+              :class="props.initialQuote?.status === 'CONVERTED'
+                ? 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed shadow-none'
+                : 'bg-[#1b3b5f] hover:bg-[#132c49] active:scale-98 text-white cursor-pointer'"
+              :title="props.initialQuote?.status === 'CONVERTED'
+                ? 'Quotation already converted to Sales Order (Locked)'
+                : 'Edit Quotation items, customer details, or discounts'"
             >
-              <Edit3 class="w-3.5 h-3.5" />
+              <Lock v-if="props.initialQuote?.status === 'CONVERTED'" class="w-3.5 h-3.5 text-gray-400" />
+              <Edit3 v-else class="w-3.5 h-3.5" />
               <span>Edit Quotation</span>
+              <span v-if="props.initialQuote?.status === 'CONVERTED'" class="text-[9px] font-semibold bg-gray-200/80 text-gray-500 px-1.5 py-0.2 rounded">Locked</span>
             </button>
 
             <!-- Back to Preview Button (shown when editing an existing quote) -->
@@ -2174,6 +2182,7 @@ import {
   ZoomOut,
   Printer,
   Edit3,
+  Lock,
   Database,
   UserPlus,
   ShoppingBag,
@@ -2307,6 +2316,7 @@ const triggerConversion = () => {
 }
 
 const enterEditMode = () => {
+  if (props.initialQuote?.status === 'CONVERTED') return
   isSuccessView.value = false
   isEditingExisting.value = true
 }

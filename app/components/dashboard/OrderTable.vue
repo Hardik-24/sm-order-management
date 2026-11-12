@@ -238,17 +238,6 @@ const shouldShowCustomerCompany = (customer?: { name?: string | null; company?: 
   return compNorm.length > 0 && compNorm !== nameNorm
 }
 
-const getCustomerAliasOrCompany = (customer?: any) => {
-  if (!customer) return ''
-  if (customer.alias && typeof customer.alias === 'string' && customer.alias.trim()) {
-    return customer.alias.trim()
-  }
-  if (shouldShowCustomerCompany(customer)) {
-    return customer.company.trim()
-  }
-  return ''
-}
-
 const getCustomerSubtitle = (customer?: any) => {
   return formatCustomerContact(customer)
 }
@@ -564,15 +553,12 @@ const getItemsTotalQuantity = (order: Order) => {
             />
           </div>
 
-          <!-- LINE 2: Full Customer Name + Optional Customer Alias (in parenthesis) -->
-          <div class="flex items-baseline gap-1.5 min-w-0 leading-tight">
+          <!-- LINE 2: Full Customer Name -->
+          <div class="flex items-center gap-1.5 min-w-0 leading-tight">
             <span class="font-semibold text-gray-900 text-xs break-words" :title="order.customer?.name || ''">
               {{ order.customer?.name || 'Walk-in Customer' }}
             </span>
             <span v-if="(order.customer as any)?.isPriorityClient" class="text-amber-500 font-bold text-xs shrink-0" title="Priority Client">★</span>
-            <span v-if="getCustomerAliasOrCompany(order.customer)" class="text-gray-400 text-[11px] truncate min-w-0 shrink font-normal">
-              ({{ getCustomerAliasOrCompany(order.customer) }})
-            </span>
           </div>
 
           <!-- LINE 3: Phone • City (Left) + Time • Item Count (Right) -->
