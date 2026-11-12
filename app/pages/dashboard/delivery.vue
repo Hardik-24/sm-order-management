@@ -7,7 +7,7 @@ import CreateTripModal from '~/components/dashboard/CreateTripModal.vue'
 import {
   Truck, Clock, MapPin, PackageCheck, CheckCircle2, RefreshCw,
   Plus, ArrowUp, ArrowDown, ChevronRight, User, ExternalLink, Calendar, AlertTriangle,
-  Trash2, X, Loader2
+  Trash2, X, Loader2, Zap
 } from 'lucide-vue-next'
 import { useGsapAnimation } from '~/composables/useGsapAnimation'
 import { useRealtimeSync } from '~/composables/useRealtimeSync'
@@ -500,7 +500,7 @@ onUnmounted(() => {
             <div class="w-6 sm:w-8 h-1 bg-rose-500 rounded-full mt-4 sm:mt-6"></div>
           </div>
           <div class="flex flex-col justify-center min-w-0">
-            <p class="text-[10px] font-bold uppercase tracking-widest mb-0.5 truncate" :class="viewMode === 'ORDERS' && activeTab === 'URGENT' ? 'text-rose-900' : 'text-rose-600'">⚡ Urgent (Not Delivered)</p>
+            <p class="text-[10px] font-bold uppercase tracking-widest mb-0.5 truncate" :class="viewMode === 'ORDERS' && activeTab === 'URGENT' ? 'text-rose-900' : 'text-rose-600'">Urgent (Not Delivered)</p>
             <h3 class="text-xl sm:text-2xl font-bold mb-0.5 tabular-nums truncate" :class="viewMode === 'ORDERS' && activeTab === 'URGENT' ? 'text-rose-950' : 'text-gray-900'">
               <OdometerNumber :value="counts.urgent" :loading="pending" />
             </h3>
