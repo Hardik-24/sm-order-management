@@ -33,7 +33,7 @@ export default defineEventHandler(async (event) => {
     prisma.order.count({ 
       where: { 
         ...where, 
-        billingStatus: { status: 'PENDING' }, 
+        billingStatus: { status: { not: 'GENERATED' } }, 
         isUrgent: true
       } 
     }),

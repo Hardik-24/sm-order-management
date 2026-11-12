@@ -162,7 +162,7 @@ const salesPersonId = ref('')
 const selectedOrderId = ref<string | null>(null)
 const isPanelOpen = ref(false)
 
-const activeTab = ref<'ALL' | 'WAITING' | 'DISPATCHED' | 'DELIVERED' | 'ON_HOLD'>('WAITING')
+const activeTab = ref<'ALL' | 'WAITING' | 'DISPATCHED' | 'DELIVERED' | 'ON_HOLD' | 'URGENT'>('WAITING')
 
 const queryObj = computed(() => {
   const q: any = { 
@@ -173,6 +173,9 @@ const queryObj = computed(() => {
   
   if (deliveryStatus.value) {
     q.deliveryStatus = deliveryStatus.value
+  } else if (activeTab.value === 'URGENT') {
+    q.isUrgent = 'true'
+    q.deliveryStatus = '!DELIVERED'
   } else if (activeTab.value !== 'ALL') {
     q.deliveryStatus = activeTab.value
   }
@@ -204,7 +207,7 @@ const handleTabChange = (tab: any) => {
   page.value = 1
 }
 
-const handleCardClick = (tab: 'WAITING' | 'DISPATCHED' | 'DELIVERED' | 'ALL') => {
+const handleCardClick = (tab: 'WAITING' | 'DISPATCHED' | 'DELIVERED' | 'ALL' | 'URGENT') => {
   viewMode.value = 'ORDERS'
   if (activeTab.value === tab && tab !== 'ALL') {
     handleTabChange('ALL')
@@ -224,6 +227,7 @@ const { data: statsData, refresh: refreshStats } = useFetch('/api/orders/deliver
 
 const counts = computed(() => ({
   waiting: statsData.value?.waiting ?? 0,
+  urgent: statsData.value?.urgent ?? 0,
   dispatched: statsData.value?.dispatched ?? 0,
   delivered: statsData.value?.delivered ?? 0,
   onHold: statsData.value?.onHold ?? 0,
@@ -404,23 +408,25 @@ onUnmounted(() => {
       <!-- 1. Awaiting Dispatch -->
       <div 
         @click="handleCardClick('WAITING')"
-        class="bg-white rounded-xl border p-3.5 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 active:scale-[0.98]"
-        :class="viewMode === 'ORDERS' && activeTab === 'WAITING' ? 'ring-2 ring-amber-500 border-amber-500 bg-amber-50/30' : 'border-[#e5e2dc] hover:border-amber-300'"
+        class="rounded-xl border p-3.5 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 active:scale-[0.98]"
+        :class="viewMode === 'ORDERS' && activeTab === 'WAITING' 
+          ? '!bg-amber-100/90 !border-amber-500 ring-2 ring-amber-500/30 shadow-md' 
+          : 'bg-white border-[#e5e2dc] hover:border-amber-300 hover:bg-amber-50/20'"
         title="Click to view and filter orders Awaiting Dispatch"
       >
         <div class="flex gap-2.5 sm:gap-4">
           <div class="flex flex-col justify-between shrink-0">
-            <div class="bg-amber-50 p-2 sm:p-2.5 rounded-lg text-amber-600 border border-amber-100/50">
+            <div class="p-2 sm:p-2.5 rounded-lg border transition-colors" :class="viewMode === 'ORDERS' && activeTab === 'WAITING' ? 'bg-amber-500 text-white border-amber-600 shadow-xs' : 'bg-amber-50 text-amber-600 border-amber-100/50'">
               <Clock class="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div class="w-6 sm:w-8 h-1 bg-amber-500 rounded-full mt-4 sm:mt-6"></div>
           </div>
           <div class="flex flex-col justify-center min-w-0">
-            <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">Awaiting Dispatch</p>
-            <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 tabular-nums truncate">
+            <p class="text-[10px] font-bold uppercase tracking-widest mb-0.5 truncate" :class="viewMode === 'ORDERS' && activeTab === 'WAITING' ? 'text-amber-900' : 'text-gray-500'">Awaiting Dispatch</p>
+            <h3 class="text-xl sm:text-2xl font-bold mb-0.5 tabular-nums truncate" :class="viewMode === 'ORDERS' && activeTab === 'WAITING' ? 'text-amber-950' : 'text-gray-900'">
               <OdometerNumber :value="counts.waiting" :loading="pending" />
             </h3>
-            <p class="text-[11px] sm:text-xs text-amber-600 font-medium truncate">Ready for driver</p>
+            <p class="text-[11px] sm:text-xs font-medium truncate" :class="viewMode === 'ORDERS' && activeTab === 'WAITING' ? 'text-amber-800' : 'text-amber-600'">Ready for driver</p>
           </div>
         </div>
       </div>
@@ -428,23 +434,25 @@ onUnmounted(() => {
       <!-- 2. In Transit -->
       <div 
         @click="handleCardClick('DISPATCHED')"
-        class="bg-white rounded-xl border p-3.5 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 active:scale-[0.98]"
-        :class="viewMode === 'ORDERS' && activeTab === 'DISPATCHED' ? 'ring-2 ring-blue-500 border-blue-500 bg-blue-50/30' : 'border-[#e5e2dc] hover:border-blue-300'"
+        class="rounded-xl border p-3.5 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 active:scale-[0.98]"
+        :class="viewMode === 'ORDERS' && activeTab === 'DISPATCHED' 
+          ? '!bg-blue-100/90 !border-blue-500 ring-2 ring-blue-500/30 shadow-md' 
+          : 'bg-white border-[#e5e2dc] hover:border-blue-300 hover:bg-blue-50/20'"
         title="Click to view and filter orders In Transit"
       >
         <div class="flex gap-2.5 sm:gap-4">
           <div class="flex flex-col justify-between shrink-0">
-            <div class="bg-blue-50 p-2 sm:p-2.5 rounded-lg text-blue-600 border border-blue-100/50">
+            <div class="p-2 sm:p-2.5 rounded-lg border transition-colors" :class="viewMode === 'ORDERS' && activeTab === 'DISPATCHED' ? 'bg-blue-600 text-white border-blue-700 shadow-xs' : 'bg-blue-50 text-blue-600 border-blue-100/50'">
               <Truck class="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div class="w-6 sm:w-8 h-1 bg-blue-500 rounded-full mt-4 sm:mt-6"></div>
           </div>
           <div class="flex flex-col justify-center min-w-0">
-            <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">In Transit</p>
-            <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 tabular-nums truncate">
+            <p class="text-[10px] font-bold uppercase tracking-widest mb-0.5 truncate" :class="viewMode === 'ORDERS' && activeTab === 'DISPATCHED' ? 'text-blue-900' : 'text-gray-500'">In Transit</p>
+            <h3 class="text-xl sm:text-2xl font-bold mb-0.5 tabular-nums truncate" :class="viewMode === 'ORDERS' && activeTab === 'DISPATCHED' ? 'text-blue-950' : 'text-gray-900'">
               <OdometerNumber :value="counts.dispatched" :loading="pending" />
             </h3>
-            <p class="text-[11px] sm:text-xs text-blue-600 font-medium truncate">Live on GPS</p>
+            <p class="text-[11px] sm:text-xs font-medium truncate" :class="viewMode === 'ORDERS' && activeTab === 'DISPATCHED' ? 'text-blue-800' : 'text-blue-600'">Live on GPS</p>
           </div>
         </div>
       </div>
@@ -452,47 +460,51 @@ onUnmounted(() => {
       <!-- 3. Delivered Today -->
       <div 
         @click="handleCardClick('DELIVERED')"
-        class="bg-white rounded-xl border p-3.5 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 active:scale-[0.98]"
-        :class="viewMode === 'ORDERS' && activeTab === 'DELIVERED' ? 'ring-2 ring-emerald-500 border-emerald-500 bg-emerald-50/30' : 'border-[#e5e2dc] hover:border-emerald-300'"
+        class="rounded-xl border p-3.5 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 active:scale-[0.98]"
+        :class="viewMode === 'ORDERS' && activeTab === 'DELIVERED' 
+          ? '!bg-emerald-100/90 !border-emerald-500 ring-2 ring-emerald-500/30 shadow-md' 
+          : 'bg-white border-[#e5e2dc] hover:border-emerald-300 hover:bg-emerald-50/20'"
         title="Click to view and filter Delivered orders"
       >
         <div class="flex gap-2.5 sm:gap-4">
           <div class="flex flex-col justify-between shrink-0">
-            <div class="bg-emerald-50 p-2 sm:p-2.5 rounded-lg text-emerald-600 border border-emerald-100/50">
+            <div class="p-2 sm:p-2.5 rounded-lg border transition-colors" :class="viewMode === 'ORDERS' && activeTab === 'DELIVERED' ? 'bg-emerald-600 text-white border-emerald-700 shadow-xs' : 'bg-emerald-50 text-emerald-600 border-emerald-100/50'">
               <CheckCircle2 class="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div class="w-6 sm:w-8 h-1 bg-emerald-500 rounded-full mt-4 sm:mt-6"></div>
           </div>
           <div class="flex flex-col justify-center min-w-0">
-            <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">Delivered</p>
-            <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 tabular-nums truncate">
+            <p class="text-[10px] font-bold uppercase tracking-widest mb-0.5 truncate" :class="viewMode === 'ORDERS' && activeTab === 'DELIVERED' ? 'text-emerald-900' : 'text-gray-500'">Delivered</p>
+            <h3 class="text-xl sm:text-2xl font-bold mb-0.5 tabular-nums truncate" :class="viewMode === 'ORDERS' && activeTab === 'DELIVERED' ? 'text-emerald-950' : 'text-gray-900'">
               <OdometerNumber :value="counts.delivered" :loading="pending" />
             </h3>
-            <p class="text-[11px] sm:text-xs text-emerald-600 font-medium truncate">Completed orders</p>
+            <p class="text-[11px] sm:text-xs font-medium truncate" :class="viewMode === 'ORDERS' && activeTab === 'DELIVERED' ? 'text-emerald-800' : 'text-emerald-600'">Completed orders</p>
           </div>
         </div>
       </div>
 
-      <!-- 4. Total Orders -->
+      <!-- 4. Urgent Orders (Not Delivered) -->
       <div 
-        @click="handleCardClick('ALL')"
-        class="bg-white rounded-xl border p-3.5 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 active:scale-[0.98]"
-        :class="viewMode === 'ORDERS' && activeTab === 'ALL' ? 'ring-2 ring-[#1b3b5f] border-[#1b3b5f] bg-[#1b3b5f]/5' : 'border-[#e5e2dc] hover:border-[#1b3b5f]/40'"
-        title="Click to view all orders"
+        @click="handleCardClick('URGENT')"
+        class="rounded-xl border p-3.5 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 active:scale-[0.98]"
+        :class="viewMode === 'ORDERS' && activeTab === 'URGENT' 
+          ? '!bg-rose-100/90 !border-rose-500 ring-2 ring-rose-500/30 shadow-md' 
+          : 'bg-white border-rose-200/80 hover:border-rose-400 hover:bg-rose-50/20'"
+        title="Click to view and filter Urgent orders awaiting delivery"
       >
         <div class="flex gap-2.5 sm:gap-4">
           <div class="flex flex-col justify-between shrink-0">
-            <div class="bg-[#1b3b5f]/10 p-2 sm:p-2.5 rounded-lg text-[#1b3b5f] border border-[#1b3b5f]/20">
-              <PackageCheck class="w-4 h-4 sm:w-5 sm:h-5" />
+            <div class="p-2 sm:p-2.5 rounded-lg border transition-colors" :class="viewMode === 'ORDERS' && activeTab === 'URGENT' ? 'bg-rose-500 text-white border-rose-600 shadow-xs' : 'bg-rose-50 text-rose-600 border-rose-100/50'">
+              <Zap class="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <div class="w-6 sm:w-8 h-1 bg-[#1b3b5f] rounded-full mt-4 sm:mt-6"></div>
+            <div class="w-6 sm:w-8 h-1 bg-rose-500 rounded-full mt-4 sm:mt-6"></div>
           </div>
           <div class="flex flex-col justify-center min-w-0">
-            <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">Total Orders</p>
-            <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 tabular-nums truncate">
-              <OdometerNumber :value="counts.total" :loading="pending" />
+            <p class="text-[10px] font-bold uppercase tracking-widest mb-0.5 truncate" :class="viewMode === 'ORDERS' && activeTab === 'URGENT' ? 'text-rose-900' : 'text-rose-600'">⚡ Urgent (Not Delivered)</p>
+            <h3 class="text-xl sm:text-2xl font-bold mb-0.5 tabular-nums truncate" :class="viewMode === 'ORDERS' && activeTab === 'URGENT' ? 'text-rose-950' : 'text-gray-900'">
+              <OdometerNumber :value="counts.urgent" :loading="pending" />
             </h3>
-            <p class="text-[11px] sm:text-xs text-[#1b3b5f] font-medium truncate">All records</p>
+            <p class="text-[11px] sm:text-xs font-medium truncate" :class="viewMode === 'ORDERS' && activeTab === 'URGENT' ? 'text-rose-800' : 'text-rose-500'">Priority dispatch</p>
           </div>
         </div>
       </div>
@@ -743,14 +755,16 @@ onUnmounted(() => {
       <div class="border-b border-gray-200">
         <nav class="-mb-px flex gap-6 sm:gap-8 overflow-x-auto no-scrollbar">
           <button 
-            v-for="tab in (['WAITING', 'DISPATCHED', 'DELIVERED', 'ON_HOLD', 'ALL'] as const)" :key="tab"
+            v-for="tab in (['WAITING', 'URGENT', 'DISPATCHED', 'DELIVERED', 'ON_HOLD', 'ALL'] as const)" :key="tab"
             @click="handleTabChange(tab)"
             class="whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm transition-colors flex items-center gap-2 cursor-pointer"
             :class="activeTab === tab ? 'border-[#1b3b5f] text-[#1b3b5f]' : 'border-transparent text-gray-500 hover:text-gray-900 hover:border-gray-300'"
           >
+            <span v-if="tab === 'URGENT'">⚡</span>
             <span>
               {{ 
                 tab === 'WAITING' ? 'Awaiting Dispatch' : 
+                tab === 'URGENT' ? 'Urgent (Not Delivered)' : 
                 tab === 'DISPATCHED' ? 'In Transit' : 
                 tab === 'DELIVERED' ? 'Delivered' : 
                 tab === 'ON_HOLD' ? 'On Hold' : 'All Orders' 
@@ -760,12 +774,13 @@ onUnmounted(() => {
               class="px-2 py-0.5 rounded-full text-[10px] font-bold transition-colors"
               :class="[
                 activeTab === tab
-                  ? 'bg-[#1b3b5f]/10 text-[#1b3b5f]'
+                  ? (tab === 'URGENT' ? 'bg-rose-100 text-rose-700' : 'bg-[#1b3b5f]/10 text-[#1b3b5f]')
                   : 'bg-gray-100 text-gray-600'
               ]"
             >
               {{ 
                 tab === 'WAITING' ? counts.waiting : 
+                tab === 'URGENT' ? counts.urgent : 
                 tab === 'DISPATCHED' ? counts.dispatched : 
                 tab === 'DELIVERED' ? counts.delivered : 
                 tab === 'ON_HOLD' ? counts.onHold : counts.total 

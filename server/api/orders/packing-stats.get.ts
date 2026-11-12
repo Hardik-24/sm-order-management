@@ -34,7 +34,8 @@ export default defineEventHandler(async (event) => {
     prisma.order.count({ 
       where: { 
         ...where, 
-        isUrgent: true
+        isUrgent: true,
+        packingStatus: { status: { not: 'PACKED' } }
       } 
     }),
     prisma.order.count({ where: { ...where, packingStatus: { status: 'IN_PROGRESS' } } }),

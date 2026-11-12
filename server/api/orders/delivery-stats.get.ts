@@ -29,13 +29,20 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  const [waiting, dispatched, delivered, onHold, total] = await Promise.all([
+  const [waiting, urgent, dispatched, delivered, onHold, total] = await Promise.all([
     prisma.order.count({ where: { ...where, deliveryStatus: { status: { in: ['WAITING', 'ASSIGNED'] } } } }),
+    prisma.order.count({ 
+      where: { 
+        ...where, 
+        isUrgent: true, 
+        deliveryStatus: { status: { not: 'DELIVERED' } } 
+      } 
+    }),
     prisma.order.count({ where: { ...where, deliveryStatus: { status: 'DISPATCHED' } } }),
     prisma.order.count({ where: { ...where, deliveryStatus: { status: 'DELIVERED' } } }),
     prisma.order.count({ where: { ...where, deliveryStatus: { status: 'ON_HOLD' } } }),
     prisma.order.count({ where })
   ])
 
-  return { waiting, dispatched, delivered, onHold, total }
+  return { waiting, urgent, dispatched, delivered, onHold, total }
 })

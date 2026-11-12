@@ -99,5 +99,13 @@ export default defineEventHandler(async (event) => {
     }
   }
 
+  // Guaranteed server-side Realtime broadcast to all connected devices/phones
+  await broadcastRealtimeEvent('sm_orders_realtime', 'ORDER_CHANGE', {
+    type: 'ORDER_CHANGE',
+    action: 'ORDER_CANCELLED',
+    orderId: updatedOrder.id,
+    order: updatedOrder
+  })
+
   return updatedOrder
 })

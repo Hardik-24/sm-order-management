@@ -331,6 +331,15 @@ export default defineEventHandler(async (event) => {
     }
   }
 
+  if (result) {
+    await broadcastRealtimeEvent('sm_orders_realtime', 'ORDER_CHANGE', {
+      type: 'ORDER_CHANGE',
+      action: 'ORDER_UPDATED',
+      orderId: result.id,
+      order: result
+    })
+  }
+
   return {
     success: true,
     changes,

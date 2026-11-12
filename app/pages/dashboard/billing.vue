@@ -38,7 +38,7 @@ const queryObj = computed(() => {
   } else if (activeTab.value === 'PENDING') {
     q.billingStatus = 'PENDING'
   } else if (activeTab.value === 'URGENT') {
-    q.billingStatus = 'PENDING'
+    q.billingStatus = '!GENERATED'
     q.isUrgent = 'true'
   } else if (activeTab.value === 'GENERATED') {
     q.billingStatus = 'GENERATED'
@@ -204,23 +204,25 @@ onMounted(() => {
       <!-- 1. Awaiting Billing -->
       <div 
         @click="activeTab = activeTab === 'PENDING' ? 'ALL' : 'PENDING'; page = 1"
-        class="bg-white rounded-xl border p-3.5 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 active:scale-[0.98]"
-        :class="activeTab === 'PENDING' ? 'ring-2 ring-amber-500 border-amber-500 bg-amber-50/30' : 'border-[#e5e2dc] hover:border-amber-300'"
+        class="rounded-xl border p-3.5 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 active:scale-[0.98]"
+        :class="activeTab === 'PENDING' 
+          ? '!bg-amber-100/90 !border-amber-500 ring-2 ring-amber-500/30 shadow-md' 
+          : 'bg-white border-[#e5e2dc] hover:border-amber-300 hover:bg-amber-50/20'"
         title="Click to toggle Awaiting Billing filter"
       >
         <div class="flex gap-2.5 sm:gap-4">
           <div class="flex flex-col justify-between shrink-0">
-            <div class="bg-amber-50 p-2 sm:p-2.5 rounded-lg text-amber-600 border border-amber-100/50">
+            <div class="p-2 sm:p-2.5 rounded-lg border transition-colors" :class="activeTab === 'PENDING' ? 'bg-amber-500 text-white border-amber-600 shadow-xs' : 'bg-amber-50 text-amber-600 border-amber-100/50'">
               <IndianRupee class="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div class="w-6 sm:w-8 h-1 bg-amber-500 rounded-full mt-4 sm:mt-6"></div>
           </div>
           <div class="flex flex-col justify-center min-w-0">
-            <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">Awaiting Billing</p>
-            <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">
+            <p class="text-[10px] font-bold uppercase tracking-widest mb-0.5 truncate" :class="activeTab === 'PENDING' ? 'text-amber-900' : 'text-gray-500'">Awaiting Billing</p>
+            <h3 class="text-xl sm:text-2xl font-bold mb-0.5 truncate" :class="activeTab === 'PENDING' ? 'text-amber-950' : 'text-gray-900'">
               <OdometerNumber :value="counts.pending" :loading="isLoading" />
             </h3>
-            <p class="text-[11px] sm:text-xs text-amber-600 font-medium truncate">Pending creation</p>
+            <p class="text-[11px] sm:text-xs font-medium truncate" :class="activeTab === 'PENDING' ? 'text-amber-800' : 'text-amber-600'">Pending creation</p>
           </div>
         </div>
       </div>
@@ -228,23 +230,25 @@ onMounted(() => {
       <!-- 2. Urgent / SLA Breached -->
       <div 
         @click="activeTab = activeTab === 'URGENT' ? 'ALL' : 'URGENT'; page = 1"
-        class="bg-white rounded-xl border p-3.5 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 active:scale-[0.98]"
-        :class="activeTab === 'URGENT' ? 'ring-2 ring-rose-500 border-rose-500 bg-rose-50/30' : 'border-rose-200/80 hover:border-rose-400'"
+        class="rounded-xl border p-3.5 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 active:scale-[0.98]"
+        :class="activeTab === 'URGENT' 
+          ? '!bg-rose-100/90 !border-rose-500 ring-2 ring-rose-500/30 shadow-md' 
+          : 'bg-white border-rose-200/80 hover:border-rose-400 hover:bg-rose-50/20'"
         title="Click to toggle Urgent Orders filter"
       >
         <div class="flex gap-2.5 sm:gap-4">
           <div class="flex flex-col justify-between shrink-0">
-            <div class="bg-rose-50 p-2 sm:p-2.5 rounded-lg text-rose-600 border border-rose-100/50">
+            <div class="p-2 sm:p-2.5 rounded-lg border transition-colors" :class="activeTab === 'URGENT' ? 'bg-rose-500 text-white border-rose-600 shadow-xs' : 'bg-rose-50 text-rose-600 border-rose-100/50'">
               <Zap class="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div class="w-6 sm:w-8 h-1 bg-rose-500 rounded-full mt-4 sm:mt-6"></div>
           </div>
           <div class="flex flex-col justify-center min-w-0">
-            <p class="text-[10px] font-bold text-rose-600 uppercase tracking-widest mb-0.5 truncate">⚡ Urgent Orders</p>
-            <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">
+            <p class="text-[10px] font-bold uppercase tracking-widest mb-0.5 truncate" :class="activeTab === 'URGENT' ? 'text-rose-900' : 'text-rose-600'">⚡ Urgent (Not Billed)</p>
+            <h3 class="text-xl sm:text-2xl font-bold mb-0.5 truncate" :class="activeTab === 'URGENT' ? 'text-rose-950' : 'text-gray-900'">
               <OdometerNumber :value="counts.urgent" :loading="isLoading" />
             </h3>
-            <p class="text-[11px] sm:text-xs text-rose-500 font-medium truncate">High priority</p>
+            <p class="text-[11px] sm:text-xs font-medium truncate" :class="activeTab === 'URGENT' ? 'text-rose-800' : 'text-rose-500'">Needs billing</p>
           </div>
         </div>
       </div>
@@ -252,23 +256,25 @@ onMounted(() => {
       <!-- 3. Invoices Generated -->
       <div 
         @click="activeTab = activeTab === 'GENERATED' ? 'ALL' : 'GENERATED'; page = 1"
-        class="bg-white rounded-xl border p-3.5 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 active:scale-[0.98]"
-        :class="activeTab === 'GENERATED' ? 'ring-2 ring-[#1b3b5f] border-[#1b3b5f] bg-[#1b3b5f]/5' : 'border-[#e5e2dc] hover:border-[#1b3b5f]/40'"
+        class="rounded-xl border p-3.5 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 active:scale-[0.98]"
+        :class="activeTab === 'GENERATED' 
+          ? '!bg-emerald-100/90 !border-emerald-500 ring-2 ring-emerald-500/30 shadow-md' 
+          : 'bg-white border-[#e5e2dc] hover:border-[#1b3b5f]/40 hover:bg-emerald-50/20'"
         title="Click to toggle Invoices Generated filter"
       >
         <div class="flex gap-2.5 sm:gap-4">
           <div class="flex flex-col justify-between shrink-0">
-            <div class="bg-[#1b3b5f]/10 p-2 sm:p-2.5 rounded-lg text-[#1b3b5f] border border-[#1b3b5f]/20">
+            <div class="p-2 sm:p-2.5 rounded-lg border transition-colors" :class="activeTab === 'GENERATED' ? 'bg-emerald-600 text-white border-emerald-700 shadow-xs' : 'bg-[#1b3b5f]/10 text-[#1b3b5f] border border-[#1b3b5f]/20'">
               <CheckCircle2 class="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div class="w-6 sm:w-8 h-1 bg-[#1b3b5f] rounded-full mt-4 sm:mt-6"></div>
           </div>
           <div class="flex flex-col justify-center min-w-0">
-            <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">Generated</p>
-            <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">
+            <p class="text-[10px] font-bold uppercase tracking-widest mb-0.5 truncate" :class="activeTab === 'GENERATED' ? 'text-emerald-900' : 'text-gray-500'">Generated</p>
+            <h3 class="text-xl sm:text-2xl font-bold mb-0.5 truncate" :class="activeTab === 'GENERATED' ? 'text-emerald-950' : 'text-gray-900'">
               <OdometerNumber :value="counts.generated" :loading="isLoading" />
             </h3>
-            <p class="text-[11px] sm:text-xs text-emerald-600 font-medium truncate">Ready invoices</p>
+            <p class="text-[11px] sm:text-xs font-medium truncate" :class="activeTab === 'GENERATED' ? 'text-emerald-800' : 'text-emerald-600'">Ready invoices</p>
           </div>
         </div>
       </div>
@@ -276,23 +282,25 @@ onMounted(() => {
       <!-- 4. Flagged / On Hold -->
       <div 
         @click="activeTab = activeTab === 'ON_HOLD' ? 'ALL' : 'ON_HOLD'; page = 1"
-        class="bg-white rounded-xl border p-3.5 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 active:scale-[0.98]"
-        :class="activeTab === 'ON_HOLD' ? 'ring-2 ring-orange-500 border-orange-500 bg-orange-50/30' : 'border-[#e5e2dc] hover:border-orange-300'"
+        class="rounded-xl border p-3.5 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 active:scale-[0.98]"
+        :class="activeTab === 'ON_HOLD' 
+          ? '!bg-orange-100/90 !border-orange-500 ring-2 ring-orange-500/30 shadow-md' 
+          : 'bg-white border-[#e5e2dc] hover:border-orange-300 hover:bg-orange-50/20'"
         title="Click to toggle On Hold filter"
       >
         <div class="flex gap-2.5 sm:gap-4">
           <div class="flex flex-col justify-between shrink-0">
-            <div class="bg-orange-50 p-2 sm:p-2.5 rounded-lg text-orange-600 border border-orange-100/50">
+            <div class="p-2 sm:p-2.5 rounded-lg border transition-colors" :class="activeTab === 'ON_HOLD' ? 'bg-orange-500 text-white border-orange-600 shadow-xs' : 'bg-orange-50 text-orange-600 border-orange-100/50'">
               <AlertCircle class="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div class="w-6 sm:w-8 h-1 bg-orange-500 rounded-full mt-4 sm:mt-6"></div>
           </div>
           <div class="flex flex-col justify-center min-w-0">
-            <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">On Hold</p>
-            <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">
+            <p class="text-[10px] font-bold uppercase tracking-widest mb-0.5 truncate" :class="activeTab === 'ON_HOLD' ? 'text-orange-900' : 'text-gray-500'">On Hold</p>
+            <h3 class="text-xl sm:text-2xl font-bold mb-0.5 truncate" :class="activeTab === 'ON_HOLD' ? 'text-orange-950' : 'text-gray-900'">
               <OdometerNumber :value="counts.onHold" :loading="isLoading" />
             </h3>
-            <p class="text-[11px] sm:text-xs text-orange-500 font-medium truncate">Needs check</p>
+            <p class="text-[11px] sm:text-xs font-medium truncate" :class="activeTab === 'ON_HOLD' ? 'text-orange-800' : 'text-orange-500'">Needs check</p>
           </div>
         </div>
       </div>
@@ -311,7 +319,7 @@ onMounted(() => {
           <span>
             {{ 
               tab === 'PENDING' ? 'Awaiting Billing' : 
-              tab === 'URGENT' ? 'Urgent Orders' : 
+              tab === 'URGENT' ? 'Urgent (Not Billed)' : 
               tab === 'GENERATED' ? 'Invoices Generated' : 
               tab === 'ON_HOLD' ? 'On Hold' : 'All Orders' 
             }}

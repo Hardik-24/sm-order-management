@@ -312,23 +312,25 @@ onMounted(() => {
       <!-- Pending Review -->
       <div 
         @click="activeTab = activeTab === 'PENDING' ? 'ALL' : 'PENDING'; page = 1"
-        class="bg-white rounded-xl border p-3.5 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 active:scale-[0.98]"
-        :class="activeTab === 'PENDING' ? 'ring-2 ring-amber-500 border-amber-500 bg-amber-50/30' : 'border-[#e5e2dc] hover:border-amber-300'"
+        class="rounded-xl border p-3.5 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 active:scale-[0.98]"
+        :class="activeTab === 'PENDING' 
+          ? '!bg-amber-100/90 !border-amber-500 ring-2 ring-amber-500/30 shadow-md' 
+          : 'bg-white border-[#e5e2dc] hover:border-amber-300 hover:bg-amber-50/20'"
         title="Click to toggle Pending Review filter"
       >
         <div class="flex gap-2.5 sm:gap-4">
           <div class="flex flex-col justify-between shrink-0">
-            <div class="bg-amber-50 p-2 sm:p-2.5 rounded-lg text-amber-600 border border-amber-100/50">
+            <div class="p-2 sm:p-2.5 rounded-lg border transition-colors" :class="activeTab === 'PENDING' ? 'bg-amber-500 text-white border-amber-600 shadow-xs' : 'bg-amber-50 text-amber-600 border-amber-100/50'">
               <Clock class="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div class="w-6 sm:w-8 h-1 bg-amber-500 rounded-full mt-4 sm:mt-6"></div>
           </div>
           <div class="flex flex-col justify-center min-w-0">
-            <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">Pending Review</p>
-            <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">
+            <p class="text-[10px] font-bold uppercase tracking-widest mb-0.5 truncate" :class="activeTab === 'PENDING' ? 'text-amber-900' : 'text-gray-500'">Pending Review</p>
+            <h3 class="text-xl sm:text-2xl font-bold mb-0.5 truncate" :class="activeTab === 'PENDING' ? 'text-amber-950' : 'text-gray-900'">
               <OdometerNumber :value="counts.pending" :loading="isLoading" />
             </h3>
-            <p class="text-xs text-amber-600 font-medium truncate">Action needed</p>
+            <p class="text-xs font-medium truncate" :class="activeTab === 'PENDING' ? 'text-amber-800' : 'text-amber-600'">Action needed</p>
           </div>
         </div>
       </div>
@@ -336,23 +338,25 @@ onMounted(() => {
       <!-- Converted Orders -->
       <div 
         @click="activeTab = activeTab === 'CONFIRMED' ? 'ALL' : 'CONFIRMED'; page = 1"
-        class="bg-white rounded-xl border p-3.5 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 active:scale-[0.98]"
-        :class="activeTab === 'CONFIRMED' ? 'ring-2 ring-[#1b3b5f] border-[#1b3b5f] bg-[#1b3b5f]/5' : 'border-[#e5e2dc] hover:border-[#1b3b5f]/40'"
+        class="rounded-xl border p-3.5 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 active:scale-[0.98]"
+        :class="activeTab === 'CONFIRMED' 
+          ? '!bg-emerald-100/90 !border-emerald-500 ring-2 ring-emerald-500/30 shadow-md' 
+          : 'bg-white border-[#e5e2dc] hover:border-emerald-300 hover:bg-emerald-50/20'"
         title="Click to toggle Converted Orders filter"
       >
         <div class="flex gap-2.5 sm:gap-4">
           <div class="flex flex-col justify-between shrink-0">
-            <div class="bg-[#1b3b5f]/10 p-2 sm:p-2.5 rounded-lg text-[#1b3b5f] border border-[#1b3b5f]/20">
+            <div class="p-2 sm:p-2.5 rounded-lg border transition-colors" :class="activeTab === 'CONFIRMED' ? 'bg-emerald-600 text-white border-emerald-700 shadow-xs' : 'bg-[#1b3b5f]/10 text-[#1b3b5f] border border-[#1b3b5f]/20'">
               <CheckCircle2 class="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div class="w-6 sm:w-8 h-1 bg-[#1b3b5f] rounded-full mt-4 sm:mt-6"></div>
           </div>
           <div class="flex flex-col justify-center min-w-0">
-            <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">Converted Orders</p>
-            <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">
+            <p class="text-[10px] font-bold uppercase tracking-widest mb-0.5 truncate" :class="activeTab === 'CONFIRMED' ? 'text-emerald-900' : 'text-gray-500'">Converted Orders</p>
+            <h3 class="text-xl sm:text-2xl font-bold mb-0.5 truncate" :class="activeTab === 'CONFIRMED' ? 'text-emerald-950' : 'text-gray-900'">
               <OdometerNumber :value="counts.confirmed" :loading="isLoading" />
             </h3>
-            <p class="text-xs text-gray-500 truncate">Confirmed</p>
+            <p class="text-xs font-medium truncate" :class="activeTab === 'CONFIRMED' ? 'text-emerald-800' : 'text-gray-500'">Confirmed</p>
           </div>
         </div>
       </div>
@@ -360,23 +364,25 @@ onMounted(() => {
       <!-- Declined -->
       <div 
         @click="activeTab = activeTab === 'DECLINED' ? 'ALL' : 'DECLINED'; page = 1"
-        class="bg-white rounded-xl border p-3.5 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 active:scale-[0.98]"
-        :class="activeTab === 'DECLINED' ? 'ring-2 ring-rose-500 border-rose-500 bg-rose-50/30' : 'border-[#e5e2dc] hover:border-rose-400'"
+        class="rounded-xl border p-3.5 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 active:scale-[0.98]"
+        :class="activeTab === 'DECLINED' 
+          ? '!bg-rose-100/90 !border-rose-500 ring-2 ring-rose-500/30 shadow-md' 
+          : 'bg-white border-[#e5e2dc] hover:border-rose-400 hover:bg-rose-50/20'"
         title="Click to toggle Declined requests filter"
       >
         <div class="flex gap-2.5 sm:gap-4">
           <div class="flex flex-col justify-between shrink-0">
-            <div class="bg-rose-50 p-2 sm:p-2.5 rounded-lg text-rose-600 border border-rose-100/50">
+            <div class="p-2 sm:p-2.5 rounded-lg border transition-colors" :class="activeTab === 'DECLINED' ? 'bg-rose-500 text-white border-rose-600 shadow-xs' : 'bg-rose-50 text-rose-600 border-rose-100/50'">
               <XCircle class="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div class="w-6 sm:w-8 h-1 bg-rose-500 rounded-full mt-4 sm:mt-6"></div>
           </div>
           <div class="flex flex-col justify-center min-w-0">
-            <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">Declined</p>
-            <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">
+            <p class="text-[10px] font-bold uppercase tracking-widest mb-0.5 truncate" :class="activeTab === 'DECLINED' ? 'text-rose-900' : 'text-gray-500'">Declined</p>
+            <h3 class="text-xl sm:text-2xl font-bold mb-0.5 truncate" :class="activeTab === 'DECLINED' ? 'text-rose-950' : 'text-gray-900'">
               <OdometerNumber :value="counts.declined" :loading="isLoading" />
             </h3>
-            <p class="text-xs text-rose-500 font-medium truncate">Rejected</p>
+            <p class="text-xs font-medium truncate" :class="activeTab === 'DECLINED' ? 'text-rose-800' : 'text-rose-500'">Rejected</p>
           </div>
         </div>
       </div>
@@ -384,23 +390,25 @@ onMounted(() => {
       <!-- Total Inquiries -->
       <div 
         @click="activeTab = 'ALL'; page = 1"
-        class="bg-white rounded-xl border p-3.5 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 active:scale-[0.98]"
-        :class="activeTab === 'ALL' ? 'ring-2 ring-gray-400 border-gray-400 bg-gray-50/50' : 'border-[#e5e2dc] hover:border-gray-400'"
+        class="rounded-xl border p-3.5 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 active:scale-[0.98]"
+        :class="activeTab === 'ALL' 
+          ? '!bg-slate-200/90 !border-slate-500 ring-2 ring-slate-400/30 shadow-md' 
+          : 'bg-white border-[#e5e2dc] hover:border-gray-400 hover:bg-gray-50/20'"
         title="Click to view all requests"
       >
         <div class="flex gap-2.5 sm:gap-4">
           <div class="flex flex-col justify-between shrink-0">
-            <div class="bg-gray-100 p-2 sm:p-2.5 rounded-lg text-gray-600 border border-gray-200/50">
+            <div class="p-2 sm:p-2.5 rounded-lg border transition-colors" :class="activeTab === 'ALL' ? 'bg-slate-700 text-white border-slate-800 shadow-xs' : 'bg-gray-100 text-gray-600 border-gray-200/50'">
               <Inbox class="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div class="w-6 sm:w-8 h-1 bg-gray-500 rounded-full mt-4 sm:mt-6"></div>
           </div>
           <div class="flex flex-col justify-center min-w-0">
-            <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">Total Inquiries</p>
-            <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">
+            <p class="text-[10px] font-bold uppercase tracking-widest mb-0.5 truncate" :class="activeTab === 'ALL' ? 'text-slate-900' : 'text-gray-500'">Total Inquiries</p>
+            <h3 class="text-xl sm:text-2xl font-bold mb-0.5 truncate" :class="activeTab === 'ALL' ? 'text-slate-950' : 'text-gray-900'">
               <OdometerNumber :value="counts.all" :loading="isLoading" />
             </h3>
-            <p class="text-xs text-gray-500 truncate">All time</p>
+            <p class="text-xs truncate" :class="activeTab === 'ALL' ? 'text-slate-700' : 'text-gray-500'">All time</p>
           </div>
         </div>
       </div>

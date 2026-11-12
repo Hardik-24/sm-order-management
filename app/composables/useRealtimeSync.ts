@@ -6,6 +6,78 @@ let sharedChannel: RealtimeChannel | null = null
 let localBroadcastChannel: BroadcastChannel | null = null
 const listeners = new Set<(event: any) => void>()
 let isSubscribed = false
+let reconnectTimer: any = null
+let reconnectAttempts = 0
+let lastWakeupSync = 0
+let isGlobalLifecycleAttached = false
+let heartbeatInterval: any = null
+
+function triggerWakeupSync() {
+  if (typeof window === 'undefined') return
+  const now = Date.now()
+  if (now - lastWakeupSync < 10000) return // 10-second throttle to prevent rapid spam
+  lastWakeupSync = now
+  triggerListeners({ type: 'WAKEUP_SYNC', timestamp: now })
+}
+
+function attachGlobalLifecycleListeners() {
+  if (typeof window === 'undefined' || isGlobalLifecycleAttached) return
+  isGlobalLifecycleAttached = true
+
+  // 1. Phone wake-up / tab visibility change
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      if (!isSubscribed || !sharedChannel) {
+        reconnectChannel(true)
+      }
+      triggerWakeupSync()
+    }
+  })
+
+  // 2. Window focus (desktop tab switch / app return)
+  window.addEventListener('focus', () => {
+    if (!isSubscribed || !sharedChannel) {
+      reconnectChannel(true)
+    }
+    triggerWakeupSync()
+  })
+
+  // 3. Online connection restored
+  window.addEventListener('online', () => {
+    reconnectChannel(true)
+    triggerWakeupSync()
+  })
+
+  // 4. Visible-only background safety heartbeat (every 40 seconds)
+  if (!heartbeatInterval) {
+    heartbeatInterval = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        triggerListeners({ type: 'HEARTBEAT_SYNC', timestamp: Date.now() })
+      }
+    }, 40000)
+  }
+}
+
+function reconnectChannel(immediate = false) {
+  if (typeof window === 'undefined') return
+  clearTimeout(reconnectTimer)
+
+  const delay = immediate ? 50 : Math.min(1000 * Math.pow(1.5, reconnectAttempts), 15000)
+  reconnectTimer = setTimeout(() => {
+    const supabase = getSupabase()
+    if (!supabase) return
+
+    if (sharedChannel) {
+      try {
+        supabase.removeChannel(sharedChannel)
+      } catch (e) {}
+      sharedChannel = null
+    }
+    isSubscribed = false
+    reconnectAttempts++
+    setupRealtimeChannel()
+  }, delay)
+}
 
 // Initialize client and channels once
 function getSupabase(): SupabaseClient | null {
@@ -62,6 +134,7 @@ function triggerListeners(event: any) {
 
 function setupRealtimeChannel() {
   if (typeof window === 'undefined') return
+  attachGlobalLifecycleListeners()
   getLocalBroadcastChannel()
 
   const supabase = getSupabase()
@@ -145,6 +218,11 @@ function setupRealtimeChannel() {
     sharedChannel.subscribe((status) => {
       if (status === 'SUBSCRIBED') {
         isSubscribed = true
+        reconnectAttempts = 0
+      } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        isSubscribed = false
+        console.warn(`[RealtimeSync] Channel status changed to: ${status}, scheduling reconnect...`)
+        reconnectChannel(false)
       }
     })
   } catch (err) {
@@ -181,8 +259,9 @@ export function useRealtimeSync() {
     triggerListeners(payload)
 
     // B. WebSocket Broadcast across devices (sub-100ms multi-device instant sync)
-    try {
-      if (sharedChannel && isSubscribed) {
+    const sendBroadcast = () => {
+      if (!sharedChannel || !isSubscribed) return false
+      try {
         sharedChannel.send({
           type: 'broadcast',
           event: 'ORDER_CHANGE',
@@ -217,9 +296,19 @@ export function useRealtimeSync() {
             payload,
           })
         }
+        return true
+      } catch (e) {
+        console.warn('[RealtimeSync] Failed to send broadcast:', e)
+        return false
       }
-    } catch (e) {
-      console.warn('[RealtimeSync] Failed to send broadcast:', e)
+    }
+
+    const sent = sendBroadcast()
+    if (!sent && sharedChannel) {
+      // Retry once after 350ms in case socket is in the middle of subscribing or recovering
+      setTimeout(() => {
+        sendBroadcast()
+      }, 350)
     }
   }
 

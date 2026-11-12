@@ -54,17 +54,25 @@ export default defineEventHandler(async (event) => {
     }
   }
   if (billingStatus) {
-    if (billingStatus === 'ON_HOLD') {
+    if (billingStatus === '!GENERATED' || billingStatus === 'NOT_BILLED') {
+      andConditions.push({ billingStatus: { status: { not: 'GENERATED' } } })
+    } else if (billingStatus === 'ON_HOLD') {
       andConditions.push({ billingStatus: { status: { in: ['ON_HOLD', 'ERROR'] } } })
     } else {
       andConditions.push({ billingStatus: { status: billingStatus } })
     }
   }
   if (packingStatus) {
-    andConditions.push({ packingStatus: { status: packingStatus } })
+    if (packingStatus === '!PACKED' || packingStatus === 'NOT_PACKED') {
+      andConditions.push({ packingStatus: { status: { not: 'PACKED' } } })
+    } else {
+      andConditions.push({ packingStatus: { status: packingStatus } })
+    }
   }
   if (deliveryStatus) {
-    if (deliveryStatus === 'WAITING') {
+    if (deliveryStatus === '!DELIVERED' || deliveryStatus === 'NOT_DELIVERED') {
+      andConditions.push({ deliveryStatus: { status: { not: 'DELIVERED' } } })
+    } else if (deliveryStatus === 'WAITING') {
       andConditions.push({ deliveryStatus: { status: { in: ['WAITING', 'ASSIGNED'] } } })
     } else {
       andConditions.push({ deliveryStatus: { status: deliveryStatus } })

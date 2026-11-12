@@ -38,6 +38,7 @@ const queryObj = computed(() => {
     q.packingStatus = 'PENDING'
   } else if (activeTab.value === 'URGENT') {
     q.isUrgent = 'true'
+    q.packingStatus = '!PACKED'
   } else if (activeTab.value === 'IN_PROGRESS') {
     q.packingStatus = 'IN_PROGRESS'
   } else if (activeTab.value === 'PACKED') {
@@ -168,23 +169,25 @@ onMounted(() => {
       <!-- 1. Pending Packing -->
       <div 
         @click="activeTab = activeTab === 'PENDING' ? 'ALL' : 'PENDING'; page = 1"
-        class="bg-white rounded-xl border p-3.5 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 active:scale-[0.98]"
-        :class="activeTab === 'PENDING' ? 'ring-2 ring-amber-500 border-amber-500 bg-amber-50/30' : 'border-[#e5e2dc] hover:border-amber-300'"
+        class="rounded-xl border p-3.5 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 active:scale-[0.98]"
+        :class="activeTab === 'PENDING' 
+          ? '!bg-amber-100/90 !border-amber-500 ring-2 ring-amber-500/30 shadow-md' 
+          : 'bg-white border-[#e5e2dc] hover:border-amber-300 hover:bg-amber-50/20'"
         title="Click to toggle Pending Packing filter"
       >
         <div class="flex gap-2.5 sm:gap-4">
           <div class="flex flex-col justify-between shrink-0">
-            <div class="bg-amber-50 p-2 sm:p-2.5 rounded-lg text-amber-600 border border-amber-100/50">
+            <div class="p-2 sm:p-2.5 rounded-lg border transition-colors" :class="activeTab === 'PENDING' ? 'bg-amber-500 text-white border-amber-600 shadow-xs' : 'bg-amber-50 text-amber-600 border-amber-100/50'">
               <Clock class="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div class="w-6 sm:w-8 h-1 bg-amber-500 rounded-full mt-4 sm:mt-6"></div>
           </div>
           <div class="flex flex-col justify-center min-w-0">
-            <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">Pending Packing</p>
-            <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">
+            <p class="text-[10px] font-bold uppercase tracking-widest mb-0.5 truncate" :class="activeTab === 'PENDING' ? 'text-amber-900' : 'text-gray-500'">Pending Packing</p>
+            <h3 class="text-xl sm:text-2xl font-bold mb-0.5 truncate" :class="activeTab === 'PENDING' ? 'text-amber-950' : 'text-gray-900'">
               <OdometerNumber :value="counts.pending" :loading="pending" />
             </h3>
-            <p class="text-[11px] sm:text-xs text-amber-600 font-medium truncate">Awaiting picking</p>
+            <p class="text-[11px] sm:text-xs font-medium truncate" :class="activeTab === 'PENDING' ? 'text-amber-800' : 'text-amber-600'">Awaiting picking</p>
           </div>
         </div>
       </div>
@@ -192,23 +195,25 @@ onMounted(() => {
       <!-- 2. Urgent Orders -->
       <div 
         @click="activeTab = activeTab === 'URGENT' ? 'ALL' : 'URGENT'; page = 1"
-        class="bg-white rounded-xl border p-3.5 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 active:scale-[0.98]"
-        :class="activeTab === 'URGENT' ? 'ring-2 ring-rose-500 border-rose-500 bg-rose-50/30' : 'border-rose-200/80 hover:border-rose-400'"
+        class="rounded-xl border p-3.5 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 active:scale-[0.98]"
+        :class="activeTab === 'URGENT' 
+          ? '!bg-rose-100/90 !border-rose-500 ring-2 ring-rose-500/30 shadow-md' 
+          : 'bg-white border-rose-200/80 hover:border-rose-400 hover:bg-rose-50/20'"
         title="Click to toggle Urgent Orders filter"
       >
         <div class="flex gap-2.5 sm:gap-4">
           <div class="flex flex-col justify-between shrink-0">
-            <div class="bg-rose-50 p-2 sm:p-2.5 rounded-lg text-rose-600 border border-rose-100/50">
+            <div class="p-2 sm:p-2.5 rounded-lg border transition-colors" :class="activeTab === 'URGENT' ? 'bg-rose-500 text-white border-rose-600 shadow-xs' : 'bg-rose-50 text-rose-600 border-rose-100/50'">
               <Zap class="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div class="w-6 sm:w-8 h-1 bg-rose-500 rounded-full mt-4 sm:mt-6"></div>
           </div>
           <div class="flex flex-col justify-center min-w-0">
-            <p class="text-[10px] font-bold text-rose-600 uppercase tracking-widest mb-0.5 truncate">⚡ Urgent Orders</p>
-            <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">
+            <p class="text-[10px] font-bold uppercase tracking-widest mb-0.5 truncate" :class="activeTab === 'URGENT' ? 'text-rose-900' : 'text-rose-600'">⚡ Urgent (Not Packed)</p>
+            <h3 class="text-xl sm:text-2xl font-bold mb-0.5 truncate" :class="activeTab === 'URGENT' ? 'text-rose-950' : 'text-gray-900'">
               <OdometerNumber :value="counts.urgent" :loading="pending" />
             </h3>
-            <p class="text-[11px] sm:text-xs text-rose-500 font-medium truncate">High priority</p>
+            <p class="text-[11px] sm:text-xs font-medium truncate" :class="activeTab === 'URGENT' ? 'text-rose-800' : 'text-rose-500'">Needs packing</p>
           </div>
         </div>
       </div>
@@ -216,23 +221,25 @@ onMounted(() => {
       <!-- 3. Currently Packing -->
       <div 
         @click="activeTab = activeTab === 'IN_PROGRESS' ? 'ALL' : 'IN_PROGRESS'; page = 1"
-        class="bg-white rounded-xl border p-3.5 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 active:scale-[0.98]"
-        :class="activeTab === 'IN_PROGRESS' ? 'ring-2 ring-blue-500 border-blue-500 bg-blue-50/30' : 'border-[#e5e2dc] hover:border-blue-300'"
+        class="rounded-xl border p-3.5 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 active:scale-[0.98]"
+        :class="activeTab === 'IN_PROGRESS' 
+          ? '!bg-blue-100/90 !border-blue-500 ring-2 ring-blue-500/30 shadow-md' 
+          : 'bg-white border-[#e5e2dc] hover:border-blue-300 hover:bg-blue-50/20'"
         title="Click to toggle Currently Packing filter"
       >
         <div class="flex gap-2.5 sm:gap-4">
           <div class="flex flex-col justify-between shrink-0">
-            <div class="bg-blue-50 p-2 sm:p-2.5 rounded-lg text-blue-600 border border-blue-100/50">
+            <div class="p-2 sm:p-2.5 rounded-lg border transition-colors" :class="activeTab === 'IN_PROGRESS' ? 'bg-blue-600 text-white border-blue-700 shadow-xs' : 'bg-blue-50 text-blue-600 border-blue-100/50'">
               <PlayCircle class="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div class="w-6 sm:w-8 h-1 bg-blue-500 rounded-full mt-4 sm:mt-6"></div>
           </div>
           <div class="flex flex-col justify-center min-w-0">
-            <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">Currently Packing</p>
-            <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">
+            <p class="text-[10px] font-bold uppercase tracking-widest mb-0.5 truncate" :class="activeTab === 'IN_PROGRESS' ? 'text-blue-900' : 'text-gray-500'">Currently Packing</p>
+            <h3 class="text-xl sm:text-2xl font-bold mb-0.5 truncate" :class="activeTab === 'IN_PROGRESS' ? 'text-blue-950' : 'text-gray-900'">
               <OdometerNumber :value="counts.inProgress" :loading="pending" />
             </h3>
-            <p class="text-[11px] sm:text-xs text-blue-600 font-medium truncate">On floor</p>
+            <p class="text-[11px] sm:text-xs font-medium truncate" :class="activeTab === 'IN_PROGRESS' ? 'text-blue-800' : 'text-blue-600'">On floor</p>
           </div>
         </div>
       </div>
@@ -240,23 +247,25 @@ onMounted(() => {
       <!-- 4. Ready / Packed -->
       <div 
         @click="activeTab = activeTab === 'PACKED' ? 'ALL' : 'PACKED'; page = 1"
-        class="bg-white rounded-xl border p-3.5 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 active:scale-[0.98]"
-        :class="activeTab === 'PACKED' ? 'ring-2 ring-[#1b3b5f] border-[#1b3b5f] bg-[#1b3b5f]/5' : 'border-[#e5e2dc] hover:border-[#1b3b5f]/40'"
+        class="rounded-xl border p-3.5 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 active:scale-[0.98]"
+        :class="activeTab === 'PACKED' 
+          ? '!bg-emerald-100/90 !border-emerald-500 ring-2 ring-emerald-500/30 shadow-md' 
+          : 'bg-white border-[#e5e2dc] hover:border-emerald-300 hover:bg-emerald-50/20'"
         title="Click to toggle Ready / Packed filter"
       >
         <div class="flex gap-2.5 sm:gap-4">
           <div class="flex flex-col justify-between shrink-0">
-            <div class="bg-[#1b3b5f]/10 p-2 sm:p-2.5 rounded-lg text-[#1b3b5f] border border-[#1b3b5f]/20">
+            <div class="p-2 sm:p-2.5 rounded-lg border transition-colors" :class="activeTab === 'PACKED' ? 'bg-emerald-600 text-white border-emerald-700 shadow-xs' : 'bg-emerald-50 text-emerald-600 border-emerald-100/50'">
               <CheckCircle2 class="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <div class="w-6 sm:w-8 h-1 bg-[#1b3b5f] rounded-full mt-4 sm:mt-6"></div>
+            <div class="w-6 sm:w-8 h-1 bg-emerald-500 rounded-full mt-4 sm:mt-6"></div>
           </div>
           <div class="flex flex-col justify-center min-w-0">
-            <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">Ready / Packed</p>
-            <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">
+            <p class="text-[10px] font-bold uppercase tracking-widest mb-0.5 truncate" :class="activeTab === 'PACKED' ? 'text-emerald-900' : 'text-gray-500'">Ready / Packed</p>
+            <h3 class="text-xl sm:text-2xl font-bold mb-0.5 truncate" :class="activeTab === 'PACKED' ? 'text-emerald-950' : 'text-gray-900'">
               <OdometerNumber :value="counts.packed" :loading="pending" />
             </h3>
-            <p class="text-[11px] sm:text-xs text-emerald-600 font-medium truncate">Ready for dispatch</p>
+            <p class="text-[11px] sm:text-xs font-medium truncate" :class="activeTab === 'PACKED' ? 'text-emerald-800' : 'text-emerald-600'">Ready for dispatch</p>
           </div>
         </div>
       </div>
@@ -273,7 +282,7 @@ onMounted(() => {
         >
           <span v-if="tab === 'URGENT'">⚡</span>
           <span>
-            {{ tab === 'PENDING' ? 'Pending Packing' : tab === 'URGENT' ? 'Urgent Orders' : tab === 'IN_PROGRESS' ? 'Currently Packing' : tab === 'PACKED' ? 'Ready / Packed' : 'All Orders' }}
+            {{ tab === 'PENDING' ? 'Pending Packing' : tab === 'URGENT' ? 'Urgent (Not Packed)' : tab === 'IN_PROGRESS' ? 'Currently Packing' : tab === 'PACKED' ? 'Ready / Packed' : 'All Orders' }}
           </span>
           <span 
             class="px-2 py-0.5 rounded-full text-[10px] font-bold transition-colors"
