@@ -165,7 +165,10 @@
 
   
   <!-- Mobile Bottom Navigation -->
-  <aside class="flex md:hidden flex-col bg-[#1c1c1c] text-white w-full z-[400] fixed bottom-0 inset-x-0 shadow-[0_-4px_20px_rgba(0,0,0,0.5)] border-t border-gray-800 pb-[env(safe-area-inset-bottom,0px)]">
+  <aside
+    class="flex md:hidden flex-col bg-[#1c1c1c] text-white w-full fixed bottom-0 inset-x-0 shadow-[0_-4px_20px_rgba(0,0,0,0.5)] border-t border-gray-800 pb-[env(safe-area-inset-bottom,0px)]"
+    :class="isSheetElevated ? 'z-[800]' : 'z-[400]'"
+  >
     <!-- Backdrop when category sheet is open -->
     <Transition
       enter-active-class="transition-opacity duration-200 ease-out"
@@ -190,6 +193,7 @@
       leave-active-class="transition-transform duration-200 ease-in"
       leave-from-class="translate-y-0"
       leave-to-class="translate-y-full"
+      @after-leave="onSheetAfterLeave"
     >
       <div
         v-if="activeMobileSheet !== null"
@@ -350,7 +354,7 @@
             <NuxtLink
               v-if="canAccessRoute('/dashboard/quotations')"
               to="/dashboard/quotations?create=1"
-              @click="onSheetItemClick"
+              @click="handleCreateQuotationNav"
               class="flex items-center justify-between p-3.5 rounded-xl bg-[#242424] hover:bg-[#2a2a2a] border border-gray-800/80 transition-all active:scale-[0.98]"
               :class="{ 'ring-1 ring-sky-500/60 bg-[#182d47]/50 border-sky-500/40 text-sky-300': route.path.startsWith('/dashboard/quotations') && (route.query.create === '1' || route.query.create === 'true') }"
             >
@@ -777,10 +781,20 @@ const isMobileMenuOpen = useState('mobileMenuOpen', () => false)
 
 type MobileSheetType = 'operations' | 'create' | 'data' | 'more' | null
 const activeMobileSheet = ref<MobileSheetType>(null)
+const isSheetElevated = ref(false)
 
 watch(activeMobileSheet, (val) => {
   isMobileMenuOpen.value = val !== null
+  if (val !== null) {
+    isSheetElevated.value = true
+  }
 })
+
+const onSheetAfterLeave = () => {
+  if (activeMobileSheet.value === null) {
+    isSheetElevated.value = false
+  }
+}
 
 watch(isMobileMenuOpen, (open) => {
   if (!open) {
@@ -834,9 +848,6 @@ const toggleMobileSheet = (sheet: 'operations' | 'create' | 'data' | 'more') => 
   if (sheet === 'create' && !hasCreateAccess.value) return
   if (sheet === 'data' && !hasDataReportsAccess.value) return
   if (sheet === 'more' && !hasSettingsAccess.value) return
-  if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('close-order-panel'))
-  }
   activeMobileSheet.value = activeMobileSheet.value === sheet ? null : sheet
 }
 
@@ -848,6 +859,7 @@ const onDirectTabClick = () => {
   activeMobileSheet.value = null
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('close-order-panel'))
+    window.dispatchEvent(new CustomEvent('close-all-modals'))
   }
   scrollToTop()
 }
@@ -856,6 +868,16 @@ const onSheetItemClick = () => {
   activeMobileSheet.value = null
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('close-order-panel'))
+    window.dispatchEvent(new CustomEvent('close-all-modals'))
+  }
+  scrollToTop()
+}
+
+const handleCreateQuotationNav = () => {
+  activeMobileSheet.value = null
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('close-order-panel'))
+    window.dispatchEvent(new CustomEvent('open-create-quotation'))
   }
   scrollToTop()
 }
@@ -1087,6 +1109,7 @@ const scrollToTopAndClose = () => {
 watch(() => route.path, () => {
   activeMobileSheet.value = null
   isMobileMenuOpen.value = false
+  isSheetElevated.value = false
 })
 </script>
 

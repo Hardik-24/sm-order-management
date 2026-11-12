@@ -2,6 +2,7 @@
   <Teleport to="body">
     <div
       v-if="modelValue"
+      @click.self="closeModal"
       class="fixed inset-x-0 top-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] md:bottom-0 md:inset-0 z-[500] overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-0 sm:p-4 lg:p-6 animate-in fade-in duration-200"
     >
       <!-- Modal Box: Responsive Full-screen on mobile, rounded card on sm+ (Matching GenerateBillModal.vue:6) -->

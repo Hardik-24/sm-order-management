@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, computed, nextTick } from 'vue'
+import { ref, watch, computed, nextTick, onMounted, onUnmounted } from 'vue'
 import { X, MoreHorizontal, Lock, Edit, Package, PackageCheck, PackageX, Truck, Check, Box, Plus, Trash2, MapPin, AlertCircle, AlertTriangle, Ban, CheckCheck, CheckCircle2, Zap, User, IndianRupee, Clock, Building2, Phone, FileText, Calendar, Copy, ChevronRight, Car, GitFork, SlidersHorizontal, Loader2, Save, Link2, UserCheck, Calculator } from 'lucide-vue-next'
 import StatusBadge from '~/components/ui/StatusBadge.vue'
 import GenerateBillModal from '~/components/dashboard/GenerateBillModal.vue'
@@ -1121,11 +1121,21 @@ watch(() => route.fullPath, () => {
   }
 })
 
+const handleCloseOrderPanel = () => {
+  if (props.isOpen) emit('close')
+}
+
 onMounted(() => {
   if (typeof window !== 'undefined') {
-    window.addEventListener('close-order-panel', () => {
-      if (props.isOpen) emit('close')
-    })
+    window.addEventListener('close-order-panel', handleCloseOrderPanel)
+    window.addEventListener('close-all-modals', handleCloseOrderPanel)
+  }
+})
+
+onUnmounted(() => {
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('close-order-panel', handleCloseOrderPanel)
+    window.removeEventListener('close-all-modals', handleCloseOrderPanel)
   }
 })
 

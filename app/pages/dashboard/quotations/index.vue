@@ -571,7 +571,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import {
   Calculator,
   Plus,
@@ -614,6 +614,7 @@ definePageMeta({
 const { showSaved, showEditing } = useSnackbar()
 const { user } = useAuth()
 const route = useRoute()
+const router = useRouter()
 const { animateStagger, initContext } = useGsapAnimation()
 
 const statsContainerRef = ref<HTMLElement | null>(null)
@@ -728,6 +729,11 @@ const selectedQuote = ref<any | null>(null)
 watch(isModalOpen, (isOpen) => {
   if (!isOpen) {
     selectedQuote.value = null
+    if (route.query.create) {
+      const q = { ...route.query }
+      delete q.create
+      router.replace({ path: route.path, query: q })
+    }
   }
 })
 
@@ -921,6 +927,15 @@ const deleteQuote = async (quote: any) => {
   }
 }
 
+const handleOpenCreateQuotation = () => {
+  openNewQuoteModal()
+}
+
+const handleCloseAllModals = () => {
+  isModalOpen.value = false
+  isConvertModalOpen.value = false
+}
+
 onMounted(() => {
   initContext(statsContainerRef.value || undefined)
   if (statsContainerRef.value) {
@@ -931,11 +946,24 @@ onMounted(() => {
   if (route.query.create === '1' || route.query.create === 'true') {
     openNewQuoteModal()
   }
+  if (typeof window !== 'undefined') {
+    window.addEventListener('open-create-quotation', handleOpenCreateQuotation)
+    window.addEventListener('close-all-modals', handleCloseAllModals)
+  }
+})
+
+onUnmounted(() => {
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('open-create-quotation', handleOpenCreateQuotation)
+    window.removeEventListener('close-all-modals', handleCloseAllModals)
+  }
 })
 
 watch(() => route.query.create, (val) => {
   if (val === '1' || val === 'true') {
     openNewQuoteModal()
+  } else if (!val && isModalOpen.value && !selectedQuote.value) {
+    isModalOpen.value = false
   }
 })
 </script>

@@ -912,6 +912,11 @@ function openVoucherDrawer(voucher: any) {
 function closeVoucherDrawer() {
   isDrawerOpen.value = false
   selectedVoucher.value = null
+  if (route.query.voucherNo) {
+    const q = { ...route.query }
+    delete q.voucherNo
+    router.replace({ path: route.path, query: q })
+  }
   if (typeof window !== 'undefined') {
     window.removeEventListener('keydown', onDrawerKeydown, true)
   }
@@ -920,6 +925,7 @@ function closeVoucherDrawer() {
 onUnmounted(() => {
   if (typeof window !== 'undefined') {
     window.removeEventListener('keydown', onDrawerKeydown, true)
+    window.removeEventListener('close-all-modals', closeVoucherDrawer)
   }
 })
 
@@ -970,5 +976,8 @@ onMounted(() => {
     animateStagger(statsContainerRef.value.children, { duration: 0.35, stagger: 0.06, y: 12 })
   }
   fetchVouchers(true)
+  if (typeof window !== 'undefined') {
+    window.addEventListener('close-all-modals', closeVoucherDrawer)
+  }
 })
 </script>
