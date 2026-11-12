@@ -30,7 +30,7 @@
       >
         <div 
           v-if="isOpen" 
-          @click.stop="isOpen = false" 
+          @click.stop="onBackdropClick" 
           class="fixed inset-0 z-[99998]"
         ></div>
       </transition>
@@ -265,19 +265,37 @@ const scrollToFocused = () => {
 }
 
 const isFlippedUp = ref(false)
+const openedAt = ref(0)
+
+const onBackdropClick = () => {
+  // Prevent immediate ghost/synthetic touch clicks from closing right on open (especially on mobile)
+  if (Date.now() - openedAt.value < 250) return
+  isOpen.value = false
+}
+
+const isSearchInputFocused = () => {
+  return typeof document !== 'undefined' && !!searchInput.value && document.activeElement === searchInput.value
+}
 
 const updatePosition = (force = false) => {
   if ((!isOpen.value && !force) || !containerRef.value || typeof window === 'undefined') return
   const rect = containerRef.value.getBoundingClientRect()
 
-  // If the select trigger is completely scrolled offscreen, close it
-  if (rect.bottom < 0 || rect.top > window.innerHeight) {
-    isOpen.value = false
-    return
+  const isSettled = (Date.now() - openedAt.value) > 600
+  const isFocused = isSearchInputFocused()
+
+  // Only close if user has genuinely scrolled the page and search input is not actively focused.
+  // Generous margin (-60px and +150px) avoids false triggers from mobile soft keyboard and browser chrome resizing.
+  if (isSettled && !isFocused) {
+    const vHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight
+    if (rect.bottom < -60 || rect.top > (vHeight + 150)) {
+      isOpen.value = false
+      return
+    }
   }
 
-  const viewportWidth = window.innerWidth
-  const viewportHeight = window.innerHeight
+  const viewportWidth = window.visualViewport ? window.visualViewport.width : window.innerWidth
+  const viewportHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight
 
   // Width calculation: minimum 260px if searchable, but never wider than viewport minus margin
   let width = rect.width
@@ -325,6 +343,7 @@ const updatePosition = (force = false) => {
 
 const toggleOpen = () => {
   if (!isOpen.value) {
+    openedAt.value = Date.now()
     searchQuery.value = ''
     hoveredOption.value = null
     focusedIndex.value = props.options.findIndex(o => o.value === props.modelValue)
@@ -348,7 +367,13 @@ const toggleOpen = () => {
   }
 }
 
-const onWindowScroll = () => updatePosition()
+const onWindowScroll = (e: Event) => {
+  // If the scroll happened inside the dropdown list itself, do nothing
+  if (dropdownRef.value && e.target && dropdownRef.value.contains(e.target as Node)) {
+    return
+  }
+  updatePosition()
+}
 const onWindowResize = () => updatePosition()
 
 watch(isOpen, (newVal) => {
@@ -356,12 +381,18 @@ watch(isOpen, (newVal) => {
     if (typeof window !== 'undefined') {
       window.addEventListener('scroll', onWindowScroll, true)
       window.addEventListener('resize', onWindowResize)
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', onWindowResize)
+      }
     }
   } else {
     hoveredOption.value = null
     if (typeof window !== 'undefined') {
       window.removeEventListener('scroll', onWindowScroll, true)
       window.removeEventListener('resize', onWindowResize)
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', onWindowResize)
+      }
     }
   }
 })
@@ -432,6 +463,9 @@ onUnmounted(() => {
     window.removeEventListener('keydown', handleGlobalKeydown)
     window.removeEventListener('scroll', onWindowScroll, true)
     window.removeEventListener('resize', onWindowResize)
+    if (window.visualViewport) {
+      window.visualViewport.removeEventListener('resize', onWindowResize)
+    }
   }
 })
 </script>

@@ -187,8 +187,12 @@ const addItem = (isCustom = false) => {
   })
 
   nextTick(() => {
-    if (itemsContainerRef.value?.lastElementChild) {
-      animateModalOpen(itemsContainerRef.value.lastElementChild as HTMLElement, null, { duration: 0.25 })
+    const el = itemsContainerRef.value?.lastElementChild as HTMLElement | null
+    if (el) {
+      animateModalOpen(el, null, { duration: 0.25 })
+      setTimeout(() => {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }, 80)
     }
   })
 }
