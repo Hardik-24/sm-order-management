@@ -993,7 +993,7 @@ const getTotalNos = (order: any) => {
 
     <!-- Mandatory Cancellation Modal -->
     <Teleport to="body">
-      <div v-if="isCancelModalOpen" class="fixed inset-0 z-[550] flex items-center justify-center p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[calc(1rem+env(safe-area-inset-top,0px))] bg-black/60 backdrop-blur-xs overflow-y-auto">
+      <div v-if="isCancelModalOpen" class="fixed inset-0 z-[700] flex items-center justify-center p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[calc(1rem+env(safe-area-inset-top,0px))] bg-black/60 backdrop-blur-xs overflow-y-auto">
         <div ref="cancelModalCardRef" class="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden border border-gray-200">
           <div class="p-6">
             <div class="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mb-4 border border-rose-100 ring-4 ring-rose-50/50">

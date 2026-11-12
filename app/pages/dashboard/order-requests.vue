@@ -979,7 +979,7 @@ onMounted(() => {
       <!-- Decline Confirmation Prompt Modal -->
       <div 
         v-if="showDeclineModal" 
-        class="fixed inset-0 z-[550] flex items-center justify-center p-3 sm:p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[calc(1rem+env(safe-area-inset-top,0px))] bg-black/50 backdrop-blur-xs"
+        class="fixed inset-0 z-[700] flex items-center justify-center p-3 sm:p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[calc(1rem+env(safe-area-inset-top,0px))] bg-black/50 backdrop-blur-xs"
       >
         <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
           <!-- Header -->
@@ -1040,7 +1040,7 @@ onMounted(() => {
       <!-- Delete Confirmation Prompt Modal -->
       <div 
         v-if="showDeleteConfirm" 
-        class="fixed inset-0 z-[550] flex items-center justify-center p-3 sm:p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[calc(1rem+env(safe-area-inset-top,0px))] bg-black/50 backdrop-blur-xs"
+        class="fixed inset-0 z-[700] flex items-center justify-center p-3 sm:p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[calc(1rem+env(safe-area-inset-top,0px))] bg-black/50 backdrop-blur-xs"
       >
         <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
           <!-- Header -->

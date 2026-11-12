@@ -481,7 +481,7 @@
 
   <!-- ── Temporary Pairing Code Generator Modal ────────────────────────────── -->
   <Teleport to="body">
-    <div v-if="isPairingModalOpen" class="fixed inset-x-0 top-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] md:bottom-0 md:inset-0 z-[550] flex items-center justify-center p-3 sm:p-4 pt-[calc(1rem+env(safe-area-inset-top,0px))] bg-black/60 backdrop-blur-xs">
+    <div v-if="isPairingModalOpen" class="fixed inset-x-0 top-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] md:bottom-0 md:inset-0 z-[600] flex items-center justify-center p-3 sm:p-4 pt-[calc(1rem+env(safe-area-inset-top,0px))] bg-black/60 backdrop-blur-xs">
       <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 border border-gray-100 space-y-4">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">

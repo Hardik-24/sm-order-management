@@ -1902,7 +1902,7 @@
     <!-- Stock Override Confirmation Dialog -->
     <div
       v-if="stockOverrideModalOpen && targetOverrideRow"
-      class="fixed inset-x-0 top-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] md:bottom-0 md:inset-0 z-[550] overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
+      class="fixed inset-x-0 top-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] md:bottom-0 md:inset-0 z-[650] overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
     >
       <div
         class="bg-white rounded-2xl shadow-2xl border border-gray-200 w-full max-w-md p-6 overflow-hidden animate-in zoom-in-95 duration-150 text-gray-900"
@@ -2002,7 +2002,7 @@
     <!-- Drawing Canvas Signature Modal -->
     <div
       v-if="isSignatureModalOpen"
-      class="fixed inset-x-0 top-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] md:bottom-0 md:inset-0 z-[550] overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
+      class="fixed inset-x-0 top-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] md:bottom-0 md:inset-0 z-[650] overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
     >
       <div
         class="bg-white rounded-3xl shadow-2xl border border-gray-200 w-full max-w-lg p-6 overflow-hidden animate-in zoom-in-95 duration-150 text-gray-900 flex flex-col gap-4"

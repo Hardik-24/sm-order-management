@@ -208,7 +208,7 @@ const submitStatusUpdate = async () => {
 
 <template>
   <Teleport to="body">
-    <div v-if="isOpen" class="fixed inset-x-0 top-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] md:bottom-0 md:inset-0 z-[500] flex items-center justify-center p-2 sm:p-4 pt-[calc(1rem+env(safe-area-inset-top,0px))] overflow-y-auto">
+    <div v-if="isOpen" class="fixed inset-x-0 top-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] md:bottom-0 md:inset-0 z-[600] flex items-center justify-center p-2 sm:p-4 pt-[calc(1rem+env(safe-area-inset-top,0px))] overflow-y-auto">
       <!-- Backdrop -->
       <div 
         class="absolute inset-0 bg-black/60 backdrop-blur-xs transition-opacity" 

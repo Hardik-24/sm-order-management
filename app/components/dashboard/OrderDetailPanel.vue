@@ -1153,7 +1153,7 @@ onMounted(() => {
 
   <!-- Mandatory Order Cancellation Modal -->
   <Teleport to="body">
-    <div v-if="isCancelModalOpen" class="fixed inset-0 z-[550] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+    <div v-if="isCancelModalOpen" class="fixed inset-0 z-[700] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
       <div ref="cancelModalCardRef" class="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden border border-gray-200">
         <div class="p-6">
           <div class="w-12 h-12 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center mb-4 border border-rose-100">
@@ -1195,7 +1195,7 @@ onMounted(() => {
 
   <!-- Explicit Confirmation for Quantity Mismatch Modal -->
   <Teleport to="body">
-    <div v-if="isMismatchModalOpen && mismatchModalItem" class="fixed inset-0 z-[550] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+    <div v-if="isMismatchModalOpen && mismatchModalItem" class="fixed inset-0 z-[700] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
       <div ref="mismatchModalCardRef" class="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden border border-gray-200">
         <div class="p-6">
           <div 
@@ -2568,7 +2568,7 @@ onMounted(() => {
 
   <!-- Edit Order Modal -->
   <Teleport to="body">
-    <div v-if="isEditModalOpen" data-modal-container class="fixed inset-x-0 top-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] md:bottom-0 md:inset-0 z-[550] flex items-center justify-center p-2 sm:p-4 pt-[calc(1rem+env(safe-area-inset-top,0px))] overflow-y-auto">
+    <div v-if="isEditModalOpen" data-modal-container class="fixed inset-x-0 top-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] md:bottom-0 md:inset-0 z-[600] flex items-center justify-center p-2 sm:p-4 pt-[calc(1rem+env(safe-area-inset-top,0px))] overflow-y-auto">
       <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" @click="isEditModalOpen = false; hide()"></div>
       
       <div ref="editModalCardRef" class="relative bg-[#faf8f5] w-full max-w-4xl rounded-xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[calc(100dvh-3.5rem-env(safe-area-inset-bottom,0px)-2rem)] md:max-h-[92vh] overflow-hidden transform transition-all border border-gray-200">
@@ -3088,7 +3088,7 @@ onMounted(() => {
 
     <!-- ── Rate Calculator Modal for Edit Order (A × B × Rate per Sq.ft) ─────────── -->
     <Teleport to="body">
-      <div v-if="isEditRateCalcOpen" data-modal-container class="fixed inset-x-0 top-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] md:bottom-0 md:inset-0 z-[560] flex items-center justify-center p-3 sm:p-4 pt-[calc(1rem+env(safe-area-inset-top,0px))] bg-black/60 backdrop-blur-xs">
+      <div v-if="isEditRateCalcOpen" data-modal-container class="fixed inset-x-0 top-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] md:bottom-0 md:inset-0 z-[650] flex items-center justify-center p-3 sm:p-4 pt-[calc(1rem+env(safe-area-inset-top,0px))] bg-black/60 backdrop-blur-xs">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-4 sm:p-5 border border-gray-100 space-y-3 animate-in fade-in zoom-in-95 duration-150">
           <!-- Modal Header -->
           <div class="flex items-center justify-between border-b border-gray-100 pb-2.5">
