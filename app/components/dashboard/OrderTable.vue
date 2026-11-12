@@ -238,6 +238,17 @@ const shouldShowCustomerCompany = (customer?: { name?: string | null; company?: 
   return compNorm.length > 0 && compNorm !== nameNorm
 }
 
+const getCustomerAliasOrCompany = (customer?: any) => {
+  if (!customer) return ''
+  if (customer.alias && typeof customer.alias === 'string' && customer.alias.trim()) {
+    return customer.alias.trim()
+  }
+  if (shouldShowCustomerCompany(customer)) {
+    return customer.company.trim()
+  }
+  return ''
+}
+
 const getCustomerSubtitle = (customer?: any) => {
   return formatCustomerContact(customer)
 }
@@ -510,26 +521,22 @@ const getItemsTotalQuantity = (order: Order) => {
       <!-- Floating Horizontal Scrollbar (Desktop only) -->
       <FloatingHorizontalScrollbar :target="tableScrollRef" />
 
-      <!-- MOBILE VIEW: 2-Line High-Density Non-Scrollable Rows -->
+      <!-- MOBILE VIEW: 4-Line High-Density Non-Scrollable Rows -->
       <div ref="mobileListRef" class="block md:hidden divide-y divide-gray-100 bg-white">
         <div 
           v-for="order in orders" 
           :key="'mob-' + order.id"
           @click="emit('select', order.id)"
-          class="px-3.5 py-3 cursor-pointer transition-colors flex flex-col gap-1.5"
+          class="px-3.5 py-2.5 cursor-pointer transition-colors flex flex-col gap-1"
           :class="order.overallStatus === 'CANCELLED' 
             ? 'bg-gray-100/75 active:bg-gray-200/60 text-gray-400 [&_span]:!text-gray-400 [&_p]:!text-gray-400 opacity-60 border-l-4 border-l-gray-400' 
             : ((order as any).isUrgent ? 'bg-rose-50/20 active:bg-gray-100 border-l-4 border-l-rose-500' : 'hover:bg-gray-50 active:bg-gray-100')"
         >
-          <!-- LINE 1: Order Number, Time & Badges (Left) + Overall Status Badge (Right) -->
+          <!-- LINE 1: Order Number & Badges (Left) + Overall Status Badge (Right) -->
           <div class="flex items-center justify-between gap-2 min-w-0">
             <div class="flex items-center gap-1.5 min-w-0 flex-wrap">
               <span class="text-sm font-bold text-gray-950 shrink-0 font-mono">
                 {{ order.orderNumber }}
-              </span>
-              <span class="text-gray-300 text-xs shrink-0 select-none">•</span>
-              <span class="text-[11px] text-gray-500 font-medium tabular-nums shrink-0">
-                {{ formatTime(order.createdAt) }}
               </span>
               <span v-if="order.vehicleMode === 'PARTY_VEHICLE' && order.overallStatus !== 'CANCELLED'" class="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-50 text-amber-800 border border-amber-200" title="Customer Pickup / Party Vehicle">
                 🚗 Party
@@ -557,76 +564,57 @@ const getItemsTotalQuantity = (order: Order) => {
             />
           </div>
 
-          <!-- LINE 2: Customer Name (Left) + Item Count Badge (Right) & Contact Subtitle -->
-          <div class="min-w-0">
-            <div class="flex items-center justify-between gap-2 min-w-0">
-              <div class="flex items-center gap-1.5 min-w-0 text-xs flex-1">
-                <span class="font-semibold text-gray-800 truncate" :title="order.customer?.name || ''">
-                  {{ order.customer?.name || 'Walk-in Customer' }}
-                </span>
-                <span v-if="(order.customer as any)?.isPriorityClient" class="text-amber-500 font-bold text-xs shrink-0" title="Priority Client">★</span>
-                <span v-if="shouldShowCustomerCompany(order.customer)" class="text-gray-400 text-[11px] truncate min-w-0 shrink">
-                  ({{ order.customer?.company }})
-                </span>
-              </div>
-
-              <!-- Items Count Pill -->
-              <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-gray-100 text-gray-600 border border-gray-200/70 shrink-0 tabular-nums">
-                {{ order.items?.length || 0 }} {{ (order.items?.length === 1) ? 'item' : 'items' }}
-              </span>
-            </div>
-            <p v-if="formatCustomerContact(order.customer) !== '—'" class="text-[11px] text-gray-500 truncate mt-0.5" :title="formatCustomerContact(order.customer)">
-              {{ formatCustomerContact(order.customer) }}
-            </p>
+          <!-- LINE 2: Full Customer Name + Optional Customer Alias (in parenthesis) -->
+          <div class="flex items-baseline gap-1.5 min-w-0 leading-tight">
+            <span class="font-semibold text-gray-900 text-xs break-words" :title="order.customer?.name || ''">
+              {{ order.customer?.name || 'Walk-in Customer' }}
+            </span>
+            <span v-if="(order.customer as any)?.isPriorityClient" class="text-amber-500 font-bold text-xs shrink-0" title="Priority Client">★</span>
+            <span v-if="getCustomerAliasOrCompany(order.customer)" class="text-gray-400 text-[11px] truncate min-w-0 shrink font-normal">
+              ({{ getCustomerAliasOrCompany(order.customer) }})
+            </span>
           </div>
 
-          <!-- LINE 3: Full-Width Connected Workflow Stepper -->
-          <div class="flex items-center pt-2 mt-0.5 border-t border-gray-100/90">
+          <!-- LINE 3: Phone • City (Left) + Time • Item Count (Right) -->
+          <div class="flex items-center justify-between gap-2 text-[11px] text-gray-500 min-w-0 leading-none">
+            <span class="truncate min-w-0 font-medium text-gray-500" :title="formatCustomerContact(order.customer)">
+              {{ formatCustomerContact(order.customer) !== '—' ? formatCustomerContact(order.customer) : (order.customer?.city || '') }}
+            </span>
+            <div class="flex items-center gap-1.5 shrink-0 text-gray-400 tabular-nums">
+              <span class="text-gray-500 font-medium">{{ formatTime(order.createdAt) }}</span>
+              <span class="text-gray-300">•</span>
+              <span class="text-gray-600 font-semibold">{{ order.items?.length || 0 }} {{ (order.items?.length === 1) ? 'item' : 'items' }}</span>
+            </div>
+          </div>
+
+          <!-- LINE 4: Workflow Icon Stepper (Slightly bigger icons, color indicator, connecting lines, no text words, no tick badges) -->
+          <div class="flex items-center pt-1.5 mt-0.5 border-t border-gray-100">
             <div class="flex items-center justify-between flex-1 min-w-0 pr-1">
               <template v-for="(step, idx) in getOrderPipeline(order).steps" :key="'mob-step-' + step.key">
-                <!-- Step Node (Icon + Micro-label) -->
-                <div class="flex items-center gap-1 sm:gap-1.5 shrink-0">
-                  <div 
-                    class="relative flex items-center justify-center w-5 h-5 rounded-full text-xs shrink-0 transition-all shadow-2xs"
+                <!-- Step Node (Slightly bigger icon with clean color indicator) -->
+                <div 
+                  class="flex items-center justify-center w-6 h-6 rounded-full text-xs shrink-0 transition-all shadow-2xs"
+                  :class="[
+                    step.status === 'completed' ? 'bg-emerald-50 text-emerald-600 border border-emerald-400' :
+                    step.status === 'in_progress' ? 'bg-amber-50 text-amber-600 border border-amber-400 animate-pulse ring-2 ring-amber-400/20' :
+                    step.status === 'alert' ? 'bg-rose-50 text-rose-600 border border-rose-400' :
+                    'bg-gray-50 text-gray-400 border border-gray-200/90 opacity-60'
+                  ]"
+                  :title="step.label + ': ' + (step.status === 'completed' ? 'Completed' : step.status === 'in_progress' ? 'In Progress' : step.status === 'alert' ? 'Action Needed' : 'Waiting')"
+                >
+                  <component 
+                    :is="getStepIcon(step.key)" 
                     :class="[
-                      step.status === 'completed' ? 'bg-emerald-50 text-emerald-700 border border-emerald-400' :
-                      step.status === 'in_progress' ? 'bg-amber-50 text-amber-700 border border-amber-400 animate-pulse ring-2 ring-amber-400/20' :
-                      step.status === 'alert' ? 'bg-rose-50 text-rose-700 border border-rose-400' :
-                      'bg-gray-50 text-gray-400 border border-gray-200/90 opacity-60'
+                      step.key === 'B' ? 'w-3 h-3' : 'w-3.5 h-3.5',
+                      step.status === 'completed' ? 'stroke-[2.2]' : 'stroke-[1.8]'
                     ]"
-                    :title="step.label + ': ' + (step.status === 'completed' ? 'Completed' : step.status === 'in_progress' ? 'In Progress' : step.status === 'alert' ? 'Action Needed' : 'Waiting')"
-                  >
-                    <component 
-                      :is="getStepIcon(step.key)" 
-                      :class="[
-                        step.key === 'B' ? 'w-2.5 h-2.5' : 'w-3 h-3',
-                        step.status === 'completed' ? 'stroke-[2.2]' : 'stroke-[1.8]'
-                      ]"
-                    />
-                    <span 
-                      v-if="step.status === 'completed'" 
-                      class="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[6px] font-black ring-1 ring-white"
-                    >
-                      ✓
-                    </span>
-                  </div>
-                  <span 
-                    class="text-[10px] font-semibold tracking-tight"
-                    :class="[
-                      step.status === 'completed' ? 'text-emerald-700' :
-                      step.status === 'in_progress' ? 'text-amber-700 font-bold' :
-                      step.status === 'alert' ? 'text-rose-600 font-bold' :
-                      'text-gray-400'
-                    ]"
-                  >
-                    {{ step.shortName }}
-                  </span>
+                  />
                 </div>
 
-                <!-- Connector Line between steps: flex-1 stretches to fit any mobile screen width -->
+                <!-- Connector Line between steps: flex-1 stretches to fit screen width -->
                 <div 
                   v-if="idx < getOrderPipeline(order).steps.length - 1"
-                  class="flex-1 mx-1 sm:mx-2 h-0.5 rounded-full transition-colors"
+                  class="flex-1 mx-1.5 h-0.5 rounded-full transition-colors"
                   :class="getOrderPipeline(order).steps[idx + 1].status !== 'waiting' ? 'bg-emerald-400' : 'bg-gray-200'"
                 ></div>
               </template>

@@ -62,6 +62,7 @@ export interface Customer {
   id: string
   name: string
   company: string
+  alias?: string | null
   phone: string
   email?: string | null
   address: string
