@@ -701,7 +701,7 @@ onUnmounted(() => {
             </template>
             <template v-else>
               <div class="flex items-center gap-2 text-xs">
-                <span>Groups: <strong class="text-gray-900">{{ groupTreeStats.totalRootGroups }}</strong> roots / <strong class="text-gray-900">{{ groupTreeStats.totalSubGroups }}</strong> sub</span>
+                <span>Groups: <strong class="text-gray-900">{{ groupTreeStats.totalRootGroups }}</strong> primary / <strong class="text-gray-900">{{ groupTreeStats.totalSubGroups }}</strong> sub</span>
                 <span class="text-gray-300">|</span>
                 <span>Total Items: <strong class="text-gray-900">{{ filteredProducts.length }}</strong></span>
               </div>
@@ -873,7 +873,7 @@ onUnmounted(() => {
                         v-if="row.node.level === 0" 
                         class="ml-1 text-[10px] font-bold tracking-wider px-1.5 py-0.5 rounded bg-[#1b3b5f]/10 text-[#1b3b5f] uppercase"
                       >
-                        Root
+                        Primary
                       </span>
                     </div>
                   </td>
@@ -892,9 +892,9 @@ onUnmounted(() => {
                     </span>
                   </td>
 
-                  <!-- Total Stock -->
-                  <td class="px-5 py-2.5 w-28 min-w-[100px] text-sm text-right font-bold whitespace-nowrap" :class="row.node.totalStock > 0 ? 'text-gray-900' : 'text-gray-400'">
-                    {{ row.node.totalStock.toLocaleString('en-IN') }}
+                  <!-- Total Stock (Group Row) -->
+                  <td class="px-5 py-2.5 w-28 min-w-[100px] text-sm text-right font-medium text-gray-300 whitespace-nowrap">
+                    -
                   </td>
 
                   <!-- Status -->
@@ -1102,11 +1102,8 @@ onUnmounted(() => {
               </div>
 
               <div class="flex items-center gap-2 shrink-0 text-right">
-                <span class="text-[11px] font-mono text-gray-600 bg-gray-100 px-2 py-0.5 rounded">
-                  {{ row.node.totalItems }}
-                </span>
-                <span class="text-xs font-bold text-gray-900">
-                  {{ row.node.totalStock }} qty
+                <span class="text-[11px] font-mono text-gray-600 bg-gray-100 px-2 py-0.5 rounded border border-gray-200">
+                  {{ row.node.totalItems }} items
                 </span>
               </div>
             </div>
@@ -1194,18 +1191,7 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <div v-else-if="viewMode === 'group'" class="p-3 sm:p-4 border-t border-gray-200 bg-gray-50/70 rounded-b-xl flex flex-col sm:flex-row items-center justify-between gap-2.5 sm:gap-4 text-xs text-gray-600">
-        <div class="flex items-center gap-3">
-          <span class="font-medium text-gray-900">Group Wise Hierarchy</span>
-          <span class="text-gray-300">|</span>
-          <span><strong>{{ groupTreeStats.totalRootGroups }}</strong> Primary Groups</span>
-          <span class="text-gray-300">•</span>
-          <span><strong>{{ groupTreeStats.totalSubGroups }}</strong> Sub-Groups</span>
-        </div>
-        <div class="text-gray-500">
-          Click any group to expand/collapse. Click any item to inspect price history.
-        </div>
-      </div>
+
     </div>
 
     <!-- Product Detail Modal Popup (Untruncated) -->

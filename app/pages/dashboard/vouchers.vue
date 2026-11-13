@@ -557,6 +557,69 @@
                 </div>
               </div>
 
+              <!-- Sales Profitability & Margin Intelligence (Sales Vouchers Only) -->
+              <div 
+                v-if="activeTab === 'sales'" 
+                class="rounded-xl border p-3.5 transition-all shadow-2xs"
+                :class="[
+                  voucherProfitability?.hasCostData
+                    ? (voucherProfitability.grossProfit >= 0 ? 'bg-gradient-to-r from-emerald-500/10 via-emerald-50/70 to-teal-500/10 border-emerald-200/90' : 'bg-gradient-to-r from-rose-500/10 via-rose-50/70 to-orange-500/10 border-rose-200/90')
+                    : 'bg-gray-50 border-gray-200/80'
+                ]"
+              >
+                <div v-if="isLoadingDetail && !voucherProfitability" class="flex items-center justify-center gap-2 py-2 text-xs text-gray-500 font-medium">
+                  <Loader2 class="w-4 h-4 animate-spin text-[#1b3b5f]" />
+                  <span>Calculating Profitability & Margin from Purchase Records...</span>
+                </div>
+
+                <div v-else-if="voucherProfitability?.hasCostData" class="flex items-center justify-between gap-3">
+                  <div class="flex items-center gap-2.5 min-w-0">
+                    <div 
+                      class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-xs"
+                      :class="voucherProfitability.grossProfit >= 0 ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'"
+                    >
+                      <TrendingUp class="w-5 h-5" />
+                    </div>
+                    <div class="min-w-0">
+                      <div class="flex items-center gap-1.5">
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Gross Profitability</span>
+                        <span 
+                          class="px-1.5 py-0.2 rounded text-[10px] font-mono font-bold"
+                          :class="voucherProfitability.marginPercent >= 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'"
+                        >
+                          {{ voucherProfitability.marginPercent >= 0 ? '+' : '' }}{{ voucherProfitability.marginPercent.toFixed(1) }}% Margin
+                        </span>
+                      </div>
+                      <p class="text-xs text-gray-600 truncate mt-0.5">
+                        Est. Cost: <strong class="font-mono text-gray-900">{{ formatCurrency(voucherProfitability.totalCost) }}</strong>
+                        <span class="text-gray-300 mx-1">•</span>
+                        <span class="text-[10px] text-gray-500 font-medium">{{ voucherProfitability.resolvedCount }}/{{ voucherProfitability.totalCount }} items matched</span>
+                      </p>
+                    </div>
+                  </div>
+
+                  <div class="text-right shrink-0">
+                    <div 
+                      class="text-base sm:text-lg font-black font-mono tracking-tight tabular-nums"
+                      :class="voucherProfitability.grossProfit >= 0 ? 'text-emerald-700' : 'text-rose-600'"
+                    >
+                      {{ voucherProfitability.grossProfit >= 0 ? '+' : '' }}{{ formatCurrency(voucherProfitability.grossProfit) }}
+                    </div>
+                    <span class="text-[10px] font-semibold text-gray-500 block">
+                      {{ voucherProfitability.grossProfit >= 0 ? 'Net Realized Profit' : 'Loss / Low Margin' }}
+                    </span>
+                  </div>
+                </div>
+
+                <div v-else class="flex items-center justify-between text-xs text-gray-500 py-1">
+                  <span class="flex items-center gap-1.5">
+                    <TrendingUp class="w-4 h-4 text-gray-400" />
+                    <span>Purchase Cost Intelligence</span>
+                  </span>
+                  <span class="text-[11px] text-gray-400 font-medium">No purchase records or cost prices linked to items</span>
+                </div>
+              </div>
+
               <!-- Itemized Line Items Table (Matching OrderDetailPanel.vue:1551-1644 exact typography & spacing) -->
               <div class="space-y-2">
                 <div class="flex items-center justify-between">
@@ -603,6 +666,20 @@
                             <span v-if="item.sku && item.sku.trim().toLowerCase() !== (item.name || '').trim().toLowerCase()" class="font-mono truncate max-w-[160px]">SKU: {{ item.sku }}</span>
                             <span v-if="item.hsn" class="font-mono bg-gray-100 px-1 py-0.2 rounded text-[10px] text-gray-700">HSN: {{ item.hsn }}</span>
                             <span v-if="item.taxRate" class="font-mono text-emerald-700 text-[10px]">GST {{ item.taxRate }}%</span>
+                          </div>
+
+                          <!-- Line Cost & Profit Margin (Sales Vouchers Only) -->
+                          <div v-if="activeTab === 'sales' && item.costPrice != null" class="flex items-center gap-1.5 text-[10px] mt-1 font-mono flex-wrap">
+                            <span class="text-gray-600 bg-gray-100 px-1.5 py-0.2 rounded border border-gray-200/80">
+                              Cost: {{ formatCurrency(item.costPrice) }}
+                            </span>
+                            <span 
+                              class="px-1.5 py-0.2 rounded font-semibold inline-flex items-center gap-0.5"
+                              :class="item.lineProfit >= 0 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'"
+                              :title="item.costSource ? `Cost Source: ${item.costSource}` : ''"
+                            >
+                              {{ item.lineProfit >= 0 ? '+' : '' }}{{ formatCurrency(item.lineProfit) }} ({{ item.lineProfit >= 0 ? '+' : '' }}{{ item.lineMargin }}%)
+                            </span>
                           </div>
                         </td>
 
@@ -652,6 +729,29 @@
                   <span>Invoice Grand Total:</span>
                   <span class="font-mono text-[#1b3b5f] font-black text-base">{{ formatCurrency(selectedVoucher?.totalAmount) }}</span>
                 </div>
+
+                <!-- Profitability Breakdown in Summary Card (Sales Vouchers Only) -->
+                <div v-if="activeTab === 'sales' && voucherProfitability?.hasCostData" class="pt-2 border-t border-gray-200/80 space-y-1">
+                  <div class="flex items-center justify-between text-gray-600">
+                    <span>Est. Purchase Cost:</span>
+                    <span class="font-mono font-semibold text-gray-800">{{ formatCurrency(voucherProfitability.totalCost) }}</span>
+                  </div>
+                  <div class="flex items-center justify-between font-bold text-sm" :class="voucherProfitability.grossProfit >= 0 ? 'text-emerald-700' : 'text-rose-600'">
+                    <span class="flex items-center gap-1.5">
+                      <TrendingUp class="w-4 h-4" />
+                      Gross Profit (Margin):
+                    </span>
+                    <span class="font-mono flex items-center gap-1.5">
+                      {{ voucherProfitability.grossProfit >= 0 ? '+' : '' }}{{ formatCurrency(voucherProfitability.grossProfit) }}
+                      <span 
+                        class="text-xs px-1.5 py-0.5 rounded font-bold font-mono shadow-2xs"
+                        :class="voucherProfitability.marginPercent >= 0 ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-rose-100 text-rose-800 border border-rose-200'"
+                      >
+                        {{ voucherProfitability.marginPercent >= 0 ? '+' : '' }}{{ voucherProfitability.marginPercent.toFixed(1) }}%
+                      </span>
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -695,7 +795,8 @@ import {
   RotateCcw,
   Loader2,
   ShoppingBag,
-  Building2
+  Building2,
+  TrendingUp
 } from 'lucide-vue-next'
 import { useGsapAnimation } from '~/composables/useGsapAnimation'
 import OdometerNumber from '~/components/ui/OdometerNumber.vue'
@@ -778,6 +879,8 @@ const lastSynced = ref<string | null>(null)
 const selectedVoucher = ref<any>(null)
 const isDrawerOpen = ref(false)
 const copiedVoucherNo = ref(false)
+const voucherProfitability = ref<any>(null)
+const isLoadingDetail = ref(false)
 
 // Date presets
 const datePresets = [
@@ -961,7 +1064,8 @@ function onDrawerKeydown(e: KeyboardEvent) {
   }
 }
 
-function openVoucherDrawer(voucher: any) {
+async function openVoucherDrawer(voucher: any) {
+  voucherProfitability.value = null
   let items = voucher.items
   if (!Array.isArray(items)) {
     items = items && typeof items === 'object' ? [items] : []
@@ -979,11 +1083,36 @@ function openVoucherDrawer(voucher: any) {
   nextTick(() => {
     animateModalOpen(drawerPanelRef.value, drawerBackdropRef.value, { duration: 0.28 })
   })
+
+  // Fetch profitability & purchase enrichment for sales vouchers
+  const vchIdentifier = voucher.voucherNo || voucher.id
+  if (activeTab.value === 'sales' && vchIdentifier) {
+    isLoadingDetail.value = true
+    try {
+      const res: any = await $fetch(`/api/vouchers/${encodeURIComponent(vchIdentifier)}`)
+      if (res?.voucher && selectedVoucher.value?.voucherNo === (voucher.voucherNo || voucher.id)) {
+        selectedVoucher.value = {
+          ...selectedVoucher.value,
+          ...res.voucher,
+          items: res.voucher.items || selectedVoucher.value.items
+        }
+        if (res.profitability) {
+          voucherProfitability.value = res.profitability
+        }
+      }
+    } catch (e) {
+      console.error('Failed to load voucher profitability details:', e)
+    } finally {
+      isLoadingDetail.value = false
+    }
+  }
 }
 
 function closeVoucherDrawer() {
   isDrawerOpen.value = false
   selectedVoucher.value = null
+  voucherProfitability.value = null
+  isLoadingDetail.value = false
   if (route.query.voucherNo) {
     const q = { ...route.query }
     delete q.voucherNo

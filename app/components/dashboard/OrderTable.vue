@@ -193,8 +193,6 @@ const getOrderPipeline = (order: Order): { steps: PipelineStep[], summary: strin
     delStatus = 'in_progress'
   } else if (delStat === 'ON_HOLD') {
     delStatus = 'alert'
-  } else if (billStatus === 'completed' && packStatus === 'completed') {
-    delStatus = 'in_progress'
   }
 
   const deliveryStep: PipelineStep = {
