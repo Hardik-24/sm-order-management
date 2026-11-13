@@ -29,6 +29,7 @@ namespace SMFlowSyncAgent
         public int IntervalMinutes { get; set; }
         public string PrimaryPcName { get; set; }
         public bool StartWithWindows { get; set; }
+        public bool IsStandby { get; set; }
 
         public AgentConfig()
         {
@@ -41,6 +42,7 @@ namespace SMFlowSyncAgent
             IntervalMinutes = 30;
             PrimaryPcName = "PRISM";
             StartWithWindows = true;
+            IsStandby = false;
         }
 
         public static string GetConfigPath()
@@ -49,23 +51,69 @@ namespace SMFlowSyncAgent
             return Path.Combine(appDir, "config.json");
         }
 
-        public static AgentConfig Load()
+        public static string GetConfigBackupPath()
         {
-            try
+            string appDir = AppDomain.CurrentDomain.BaseDirectory;
+            return Path.Combine(appDir, "config.json.bak");
+        }
+
+        private static AgentConfig TryParseFile(string filePath)
+        {
+            if (!File.Exists(filePath)) return null;
+
+            // Retry up to 3 times with exponential delay for Windows startup file locks
+            for (int attempt = 1; attempt <= 3; attempt++)
             {
-                string path = GetConfigPath();
-                if (File.Exists(path))
+                try
                 {
-                    string json = File.ReadAllText(path, Encoding.UTF8);
-                    JavaScriptSerializer ser = new JavaScriptSerializer();
-                    AgentConfig cfg = ser.Deserialize<AgentConfig>(json);
-                    if (cfg != null) return cfg;
+                    using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                    using (StreamReader reader = new StreamReader(fs, Encoding.UTF8))
+                    {
+                        string json = reader.ReadToEnd();
+                        if (!string.IsNullOrEmpty(json) && json.Trim().Length > 2)
+                        {
+                            JavaScriptSerializer ser = new JavaScriptSerializer();
+                            AgentConfig cfg = ser.Deserialize<AgentConfig>(json);
+                            if (cfg != null) return cfg;
+                        }
+                    }
+                }
+                catch
+                {
+                    if (attempt < 3) Thread.Sleep(150 * attempt);
                 }
             }
-            catch { }
-            AgentConfig def = new AgentConfig();
-            def.Save();
-            return def;
+            return null;
+        }
+
+        public static AgentConfig Load()
+        {
+            string path = GetConfigPath();
+            string bakPath = GetConfigBackupPath();
+
+            // 1. Try loading primary config.json with sharing-safe retries
+            AgentConfig cfg = TryParseFile(path);
+            if (cfg != null) return cfg;
+
+            // 2. Try loading from backup if primary failed or was corrupted
+            cfg = TryParseFile(bakPath);
+            if (cfg != null)
+            {
+                try { cfg.Save(); } catch { }
+                return cfg;
+            }
+
+            // 3. If file does not exist at all (first-time installation), create default and save
+            if (!File.Exists(path) && !File.Exists(bakPath))
+            {
+                AgentConfig def = new AgentConfig();
+                def.Save();
+                return def;
+            }
+
+            // 4. IMPORTANT: If config physically exists on disk but could not be read,
+            // NEVER call def.Save()! Never overwrite the user's config file with factory defaults!
+            return new AgentConfig();
         }
 
         public void Save()
@@ -73,9 +121,29 @@ namespace SMFlowSyncAgent
             try
             {
                 string path = GetConfigPath();
+                string bakPath = GetConfigBackupPath();
+                string tmpPath = path + ".tmp";
+
                 JavaScriptSerializer ser = new JavaScriptSerializer();
                 string json = ser.Serialize(this);
-                File.WriteAllText(path, json, Encoding.UTF8);
+
+                // Write atomically to temporary file first
+                using (FileStream fs = new FileStream(tmpPath, FileMode.Create, FileAccess.Write, FileShare.None))
+                using (StreamWriter writer = new StreamWriter(fs, Encoding.UTF8))
+                {
+                    writer.Write(json);
+                    writer.Flush();
+                }
+
+                // If existing config is non-empty, back it up safely
+                if (File.Exists(path))
+                {
+                    try { File.Copy(path, bakPath, true); } catch { }
+                }
+
+                // Atomically move/replace tmp to actual path
+                File.Copy(tmpPath, path, true);
+                try { File.Delete(tmpPath); } catch { }
             }
             catch { }
         }
@@ -218,6 +286,7 @@ namespace SMFlowSyncAgent
         private ComboBox cbInterval;
         private TextBox txtPrimaryPc;
         private Button btnClaimPrimary;
+        private CheckBox chkStandbyMode;
         private CheckBox chkStartWithWindows;
         private Button btnSaveSettings;
 
@@ -247,7 +316,8 @@ namespace SMFlowSyncAgent
             }
             else
             {
-                AppendLog(string.Format("Status: STANDBY. Auto-sync is managed by primary PC: '{0}'.", config.PrimaryPcName), ColorAmber);
+                string reason = config.IsStandby ? "Forced STANDBY setting enabled" : string.Format("Auto-sync is managed by primary PC: '{0}'", config.PrimaryPcName);
+                AppendLog(string.Format("Status: STANDBY. {0}.", reason), ColorAmber);
             }
         }
 
@@ -263,6 +333,7 @@ namespace SMFlowSyncAgent
 
         private bool IsPrimary()
         {
+            if (config.IsStandby) return false;
             return string.Equals(Environment.MachineName, config.PrimaryPcName, StringComparison.OrdinalIgnoreCase);
         }
 
@@ -571,7 +642,7 @@ namespace SMFlowSyncAgent
             txtPrimaryPc = new TextBox();
             txtPrimaryPc.Text = config.PrimaryPcName;
             txtPrimaryPc.Font = new Font("Segoe UI", 9.5F);
-            txtPrimaryPc.Size = new Size(300, 26);
+            txtPrimaryPc.Size = new Size(260, 28);
             txtPrimaryPc.Location = new Point(24, y);
             tabSettings.Controls.Add(txtPrimaryPc);
 
@@ -582,15 +653,31 @@ namespace SMFlowSyncAgent
             btnClaimPrimary.BackColor = ColorBrandNavy;
             btnClaimPrimary.FlatStyle = FlatStyle.Flat;
             btnClaimPrimary.FlatAppearance.BorderSize = 0;
-            btnClaimPrimary.Size = new Size(260, 28);
-            btnClaimPrimary.Location = new Point(334, y - 1);
+            // Dynamic width so PC name is never truncated regardless of length
+            int claimBtnWidth = Math.Max(260, TextRenderer.MeasureText(btnClaimPrimary.Text, btnClaimPrimary.Font).Width + 28);
+            btnClaimPrimary.Size = new Size(claimBtnWidth, 28);
+            btnClaimPrimary.Location = new Point(296, y - 1);
             btnClaimPrimary.Cursor = Cursors.Hand;
             btnClaimPrimary.Click += (s, e) =>
             {
+                config.IsStandby = false;
+                if (chkStandbyMode != null) chkStandbyMode.Checked = false;
                 txtPrimaryPc.Text = Environment.MachineName;
                 MessageBox.Show(string.Format("Designated Primary PC changed to '{0}'. Click 'Save Settings' to apply.", Environment.MachineName), "Primary Updated", MessageBoxButtons.OK, MessageBoxIcon.Information);
             };
             tabSettings.Controls.Add(btnClaimPrimary);
+            y += 36;
+
+            // Dedicated Standby toggle checkbox
+            chkStandbyMode = new CheckBox();
+            chkStandbyMode.Text = string.Format("Force STANDBY on this PC ({0}) - Ignore Primary designation and prevent all auto-syncs", Environment.MachineName);
+            chkStandbyMode.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            chkStandbyMode.ForeColor = ColorAmber;
+            chkStandbyMode.Checked = config.IsStandby;
+            chkStandbyMode.AutoSize = true;
+            chkStandbyMode.Location = new Point(24, y);
+            chkStandbyMode.Cursor = Cursors.Hand;
+            tabSettings.Controls.Add(chkStandbyMode);
             y += 40;
 
             // Section 2: Source and Server
@@ -730,6 +817,7 @@ namespace SMFlowSyncAgent
                 else config.IntervalMinutes = 0; // Manual only
 
                 config.StartWithWindows = chkStartWithWindows.Checked;
+                config.IsStandby = chkStandbyMode != null && chkStandbyMode.Checked;
                 config.Save();
 
                 UpdateStartupShortcut(config.StartWithWindows);
@@ -963,13 +1051,13 @@ namespace SMFlowSyncAgent
                 btnSyncNow.Enabled = false;
                 btnSyncNow.Text = "Standby (Locked)";
                 btnSyncNow.BackColor = Color.FromArgb(148, 163, 184);
-                lblStatusPill.Text = string.Format("○ STANDBY ({0})", config.PrimaryPcName);
+                lblStatusPill.Text = config.IsStandby ? "○ STANDBY (FORCED)" : string.Format("○ STANDBY ({0})", config.PrimaryPcName);
                 lblStatusPill.BackColor = Color.FromArgb(241, 245, 249);
                 lblStatusPill.ForeColor = Color.FromArgb(71, 85, 105);
-                trayIcon.Text = string.Format("SM Flow Sync Agent: Standby (Primary is {0})", config.PrimaryPcName);
+                trayIcon.Text = config.IsStandby ? "SM Flow Sync Agent: Standby (Forced on this PC)" : string.Format("SM Flow Sync Agent: Standby (Primary is {0})", config.PrimaryPcName);
             }
 
-            lblStatPrimary.Text = string.Format("Host: {0} ({1})", Environment.MachineName, prim ? "Primary" : "Standby");
+            lblStatPrimary.Text = string.Format("Host: {0} ({1})", Environment.MachineName, prim ? "Primary" : (config.IsStandby ? "Standby - Forced" : "Standby"));
             lblStatInterval.Text = config.IntervalMinutes > 0 ? string.Format("Interval: {0} Mins", config.IntervalMinutes) : "Interval: Manual";
 
             if (lastSyncTime > DateTime.MinValue)
@@ -991,8 +1079,12 @@ namespace SMFlowSyncAgent
 
             if (!IsPrimary())
             {
+                string msg = config.IsStandby
+                    ? string.Format("Sync is blocked on this PC.\n\nThis computer ({0}) is in FORCED STANDBY mode.\nTo make this PC primary, uncheck 'Force STANDBY' in the Settings tab and click 'Save Settings'.", Environment.MachineName)
+                    : string.Format("Sync is blocked on this PC.\n\nThis computer ({0}) is in STANDBY mode.\nAll database sync operations are handled exclusively by the Primary PC: '{1}'.\n\nIf you want this PC to become the Primary, open the Settings tab and click 'Set Current PC as Primary'.", Environment.MachineName, config.PrimaryPcName);
+
                 MessageBox.Show(
-                    string.Format("Sync is blocked on this PC.\n\nThis computer ({0}) is in STANDBY mode.\nAll database sync operations are handled exclusively by the Primary PC: '{1}'.\n\nIf you want this PC to become the Primary, open the Settings tab and click 'Set Current PC as Primary'.", Environment.MachineName, config.PrimaryPcName),
+                    msg,
                     "Sync Blocked - Standby Mode",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Warning

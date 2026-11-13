@@ -34,6 +34,9 @@ google-service-account.json
 *firebase-adminsdk*.json
 
 busy_sync_payload.json
+sync_agent/busy_sync_payload.json
+sync_agent/config.json.bak
+sync_agent/config.json.tmp
 
 # Portable runtimes in sync_agent (local only)
 sync_agent/node.exe

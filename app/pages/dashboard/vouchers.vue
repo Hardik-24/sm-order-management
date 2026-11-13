@@ -15,7 +15,7 @@
           </span>
         </div>
         <p class="text-xs sm:text-sm text-gray-500 mt-1">
-          Review BUSY ERP sales vouchers, search customer history, and inspect GST breakdowns.
+          Review BUSY ERP {{ activeTab === 'purchases' ? 'purchase vouchers, supplier history, and tax credits' : 'sales vouchers, customer history, and GST breakdowns' }}.
         </p>
       </div>
 
@@ -39,17 +39,22 @@
       <div class="bg-white rounded-xl border border-[#e5e2dc] p-3.5 sm:p-5 shadow-sm">
         <div class="flex gap-2.5 sm:gap-4">
           <div class="flex flex-col justify-between shrink-0">
-            <div class="bg-[#1b3b5f]/10 p-2 sm:p-2.5 rounded-lg text-[#1b3b5f] border border-[#1b3b5f]/20">
-              <Receipt class="w-4 h-4 sm:w-5 sm:h-5" />
+            <div class="p-2 sm:p-2.5 rounded-lg border" :class="activeTab === 'purchases' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-[#1b3b5f]/10 text-[#1b3b5f] border-[#1b3b5f]/20'">
+              <ShoppingBag v-if="activeTab === 'purchases'" class="w-4 h-4 sm:w-5 sm:h-5" />
+              <Receipt v-else class="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <div class="w-6 sm:w-8 h-1 bg-[#1b3b5f] rounded-full mt-4 sm:mt-6"></div>
+            <div class="w-6 sm:w-8 h-1 rounded-full mt-4 sm:mt-6" :class="activeTab === 'purchases' ? 'bg-indigo-600' : 'bg-[#1b3b5f]'"></div>
           </div>
           <div class="flex flex-col justify-center min-w-0">
-            <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">Total Sales Invoices</p>
+            <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5 truncate">
+              {{ activeTab === 'purchases' ? 'Total Purchase Invoices' : 'Total Sales Invoices' }}
+            </p>
             <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">
               <OdometerNumber :value="stats != null ? stats.totalCount : (pagination.total || 0)" :loading="isLoading" />
             </h3>
-            <p class="text-[11px] sm:text-xs text-gray-500 font-medium truncate">Synced vouchers</p>
+            <p class="text-[11px] sm:text-xs text-gray-500 font-medium truncate">
+              {{ activeTab === 'purchases' ? 'Synced vendor invoices' : 'Synced sales vouchers' }}
+            </p>
           </div>
         </div>
       </div>
@@ -64,11 +69,15 @@
             <div class="w-6 sm:w-8 h-1 bg-emerald-500 rounded-full mt-4 sm:mt-6"></div>
           </div>
           <div class="flex flex-col justify-center min-w-0">
-            <p class="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-0.5 truncate">Total Invoiced Amount</p>
+            <p class="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-0.5 truncate">
+              {{ activeTab === 'purchases' ? 'Total Purchase Amount' : 'Total Invoiced Amount' }}
+            </p>
             <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">
               <OdometerNumber :value="stats?.totalAmount || 0" prefix="₹" :loading="isLoading" />
             </h3>
-            <p class="text-[11px] sm:text-xs text-emerald-600 font-medium truncate">Gross sales value</p>
+            <p class="text-[11px] sm:text-xs text-emerald-600 font-medium truncate">
+              {{ activeTab === 'purchases' ? 'Gross procurement value' : 'Gross sales value' }}
+            </p>
           </div>
         </div>
       </div>
@@ -83,7 +92,9 @@
             <div class="w-6 sm:w-8 h-1 bg-sky-500 rounded-full mt-4 sm:mt-6"></div>
           </div>
           <div class="flex flex-col justify-center min-w-0">
-            <p class="text-[10px] font-bold text-sky-600 uppercase tracking-widest mb-0.5 truncate">Total GST Collected</p>
+            <p class="text-[10px] font-bold text-sky-600 uppercase tracking-widest mb-0.5 truncate">
+              {{ activeTab === 'purchases' ? 'Total GST Paid (ITC)' : 'Total GST Collected' }}
+            </p>
             <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">
               <OdometerNumber :value="stats?.totalTax || 0" prefix="₹" :loading="isLoading" />
             </h3>
@@ -92,6 +103,34 @@
         </div>
       </div>
     </div>
+
+    <!-- Voucher Type Tabs: Sales Invoices vs Purchase Invoices -->
+    <div class="flex items-center gap-2 border-b border-gray-200 pb-2">
+      <button
+        type="button"
+        @click="setActiveTab('sales')"
+        class="flex items-center gap-2 px-4 py-2 text-xs sm:text-sm font-semibold rounded-xl transition-all cursor-pointer"
+        :class="activeTab === 'sales' ? 'bg-[#1b3b5f] text-white shadow-sm' : 'bg-white text-gray-600 hover:text-gray-900 hover:bg-gray-50 border border-gray-200'"
+      >
+        <Receipt class="w-4 h-4" />
+        <span>Sales Invoices</span>
+        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold" :class="activeTab === 'sales' ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'">
+          {{ activeTab === 'sales' ? (stats?.totalCount || pagination.total || 0).toLocaleString() : 'Sales' }}
+        </span>
+      </button>
+
+      <button
+        type="button"
+        @click="setActiveTab('purchases')"
+        class="flex items-center gap-2 px-4 py-2 text-xs sm:text-sm font-semibold rounded-xl transition-all cursor-pointer"
+        :class="activeTab === 'purchases' ? 'bg-[#1b3b5f] text-white shadow-sm' : 'bg-white text-gray-600 hover:text-gray-900 hover:bg-gray-50 border border-gray-200'"
+      >
+        <ShoppingBag class="w-4 h-4" />
+        <span>Purchase Invoices</span>
+        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold" :class="activeTab === 'purchases' ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'">
+          {{ activeTab === 'purchases' ? (stats?.totalCount || pagination.total || 0).toLocaleString() : 'Purchases' }}
+        </span>
+      </button>
     </div>
 
     <!-- Search & Filter Controls Toolbar (Matching BillingTable.vue:104-145) -->
@@ -104,7 +143,7 @@
             v-model="searchInput"
             @input="onSearchInput"
             type="text"
-            placeholder="Search order #, customer, invoice..."
+            :placeholder="activeTab === 'purchases' ? 'Search invoice #, supplier name, item...' : 'Search order #, customer, invoice...'"
             class="w-full pl-9 pr-8 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f] transition-all"
           />
           <button
@@ -116,11 +155,11 @@
           </button>
         </div>
 
-        <!-- Sales Series Indicator -->
+        <!-- Series Indicator -->
         <div class="flex items-center gap-2 text-xs text-gray-500">
-          <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-sky-50 text-sky-700 font-semibold border border-sky-100">
-            <Receipt class="w-3.5 h-3.5" />
-            BUSY Sales Series: SMG
+          <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-semibold border" :class="activeTab === 'purchases' ? 'bg-indigo-50 text-indigo-700 border-indigo-100' : 'bg-sky-50 text-sky-700 border-sky-100'">
+            <component :is="activeTab === 'purchases' ? ShoppingBag : Receipt" class="w-3.5 h-3.5" />
+            {{ activeTab === 'purchases' ? 'BUSY Voucher Type: Purchase (VchType 2)' : 'BUSY Sales Series: SMG (VchType 9)' }}
           </span>
         </div>
       </div>
@@ -229,10 +268,10 @@
 
       <!-- Empty State (Matching BillingTable.vue:195-201) -->
       <div v-else-if="vouchers.length === 0" class="py-14 text-center text-gray-400">
-        <Receipt class="w-8 h-8 mx-auto text-gray-300 mb-2" />
-        <p class="text-sm font-semibold text-gray-700">No vouchers found</p>
+        <component :is="activeTab === 'purchases' ? ShoppingBag : Receipt" class="w-8 h-8 mx-auto text-gray-300 mb-2" />
+        <p class="text-sm font-semibold text-gray-700">No {{ activeTab === 'purchases' ? 'purchase' : 'sales' }} vouchers found</p>
         <p class="text-xs text-gray-400 mt-0.5 max-w-sm mx-auto">
-          No BUSY sales invoices matching your criteria were found.
+          {{ activeTab === 'purchases' ? 'No BUSY purchase invoices matching your criteria were found.' : 'No BUSY sales invoices matching your criteria were found.' }}
         </p>
         <button
           v-if="hasActiveFilters"
@@ -252,9 +291,9 @@
               <tr class="bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                 <th class="px-5 py-3.5 whitespace-nowrap">Voucher No</th>
                 <th class="px-5 py-3.5 whitespace-nowrap">Date</th>
-                <th class="px-5 py-3.5">Customer & Series</th>
+                <th class="px-5 py-3.5">{{ activeTab === 'purchases' ? 'Supplier & Series' : 'Customer & Series' }}</th>
                 <th class="px-5 py-3.5 whitespace-nowrap text-center">Items</th>
-                <th class="px-5 py-3.5 whitespace-nowrap text-right">Invoice Amount</th>
+                <th class="px-5 py-3.5 whitespace-nowrap text-right">{{ activeTab === 'purchases' ? 'Purchase Amount' : 'Invoice Amount' }}</th>
                 <th class="px-5 py-3.5 whitespace-nowrap text-right pr-5">Actions</th>
               </tr>
             </thead>
@@ -271,12 +310,12 @@
                     <span class="text-xs font-bold text-gray-900 group-hover:text-[#1b3b5f] transition-colors">
                       {{ v.voucherNo }}
                     </span>
-                    <span class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-bold bg-sky-100 text-sky-800">
-                      {{ v.series || 'SMG' }}
+                    <span class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-bold" :class="activeTab === 'purchases' ? 'bg-indigo-100 text-indigo-800' : 'bg-sky-100 text-sky-800'">
+                      {{ v.series || (activeTab === 'purchases' ? 'Main' : 'SMG') }}
                     </span>
                   </div>
                   <p class="text-[11px] text-gray-400 mt-0.5 tabular-nums">
-                    BUSY {{ v.voucherType || 'Sales' }}
+                    BUSY {{ activeTab === 'purchases' ? 'Purchase' : (v.voucherType || 'Sales') }}
                   </p>
                 </td>
 
@@ -287,13 +326,13 @@
                   </span>
                 </td>
 
-                <!-- 3. Customer (Matching BillingTable.vue Customer & Tier) -->
+                <!-- 3. Customer / Supplier (Matching BillingTable.vue Customer & Tier) -->
                 <td class="px-5 py-3.5 min-w-0">
-                  <div class="text-xs font-semibold text-gray-900 truncate" :title="v.customerName">
-                    {{ v.customerName }}
+                  <div class="text-xs font-semibold text-gray-900 truncate" :title="activeTab === 'purchases' ? v.supplierName : v.customerName">
+                    {{ activeTab === 'purchases' ? v.supplierName : v.customerName }}
                   </div>
-                  <p v-if="v.customerCode" class="text-[11px] text-gray-500 truncate mt-0.5 tabular-nums">
-                    {{ v.customerCode }}
+                  <p v-if="activeTab === 'purchases' ? v.supplierCode : v.customerCode" class="text-[11px] text-gray-500 truncate mt-0.5 tabular-nums">
+                    {{ activeTab === 'purchases' ? v.supplierCode : v.customerCode }}
                   </p>
                 </td>
 
@@ -321,7 +360,7 @@
                       @click.stop="openVoucherDrawer(v)"
                       class="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 border border-gray-200 shadow-2xs transition-colors flex items-center justify-center gap-1 cursor-pointer whitespace-nowrap"
                     >
-                      <span>View Bill</span>
+                      <span>{{ activeTab === 'purchases' ? 'View Bill' : 'View Bill' }}</span>
                       <ChevronRight class="w-3.5 h-3.5 text-gray-400" />
                     </button>
                   </div>
@@ -345,12 +384,12 @@
                 <span class="text-xs font-bold text-gray-900 shrink-0">
                   {{ v.voucherNo }}
                 </span>
-                <span class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-bold shrink-0 bg-sky-100 text-sky-800">
-                  {{ v.series || 'SMG' }}
+                <span class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-bold shrink-0" :class="activeTab === 'purchases' ? 'bg-indigo-100 text-indigo-800' : 'bg-sky-100 text-sky-800'">
+                  {{ v.series || (activeTab === 'purchases' ? 'Main' : 'SMG') }}
                 </span>
                 <span class="text-gray-300 text-xs shrink-0">&bull;</span>
-                <span class="text-xs font-semibold text-gray-700 truncate" :title="v.customerName">
-                  {{ v.customerName }}
+                <span class="text-xs font-semibold text-gray-700 truncate" :title="activeTab === 'purchases' ? v.supplierName : v.customerName">
+                  {{ activeTab === 'purchases' ? v.supplierName : v.customerName }}
                 </span>
               </div>
               <span class="text-[11px] text-gray-400 tabular-nums shrink-0">
@@ -449,9 +488,9 @@
                 </div>
                 <span
                   class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold"
-                  :class="selectedVoucher?.series === 'SMG' ? 'bg-sky-50 text-sky-800 border border-sky-200' : 'bg-emerald-50 text-emerald-800 border border-emerald-200'"
+                  :class="activeTab === 'purchases' ? 'bg-indigo-50 text-indigo-800 border border-indigo-200' : (selectedVoucher?.series === 'SMG' ? 'bg-sky-50 text-sky-800 border border-sky-200' : 'bg-emerald-50 text-emerald-800 border border-emerald-200')"
                 >
-                  {{ selectedVoucher?.series === 'SMG' ? 'Wholesale (SMG)' : 'Retail Direct' }}
+                  {{ activeTab === 'purchases' ? 'Purchase (VchType 2)' : (selectedVoucher?.series === 'SMG' ? 'Wholesale (SMG)' : 'Retail Direct') }}
                 </span>
               </div>
 
@@ -472,13 +511,15 @@
                   <div class="flex items-center gap-1.5">
                     <Building2 class="w-3.5 h-3.5 text-gray-400 shrink-0" />
                     <h3 class="text-sm font-bold text-gray-900 truncate">
-                      {{ selectedVoucher?.customerName || 'Customer' }}
+                      {{ (activeTab === 'purchases' ? selectedVoucher?.supplierName : selectedVoucher?.customerName) || (activeTab === 'purchases' ? 'Supplier' : 'Customer') }}
                     </h3>
                   </div>
                   <div class="flex items-center gap-1.5 min-w-0 text-xs text-gray-500 mt-0.5">
-                    <span v-if="selectedVoucher?.customerCode" class="hidden sm:inline font-mono text-gray-700">{{ selectedVoucher.customerCode }}</span>
-                    <span v-if="selectedVoucher?.customerCode" class="hidden sm:inline-block w-1 h-1 rounded-full bg-gray-400 shrink-0 self-center" />
-                    <span class="whitespace-nowrap shrink-0">Billed on {{ formatDate(selectedVoucher?.voucherDate) }}</span>
+                    <span v-if="activeTab === 'purchases' ? selectedVoucher?.supplierCode : selectedVoucher?.customerCode" class="hidden sm:inline font-mono text-gray-700">
+                      {{ activeTab === 'purchases' ? selectedVoucher?.supplierCode : selectedVoucher?.customerCode }}
+                    </span>
+                    <span v-if="activeTab === 'purchases' ? selectedVoucher?.supplierCode : selectedVoucher?.customerCode" class="hidden sm:inline-block w-1 h-1 rounded-full bg-gray-400 shrink-0 self-center" />
+                    <span class="whitespace-nowrap shrink-0">{{ activeTab === 'purchases' ? 'Purchased on ' : 'Billed on ' }}{{ formatDate(selectedVoucher?.voucherDate) }}</span>
                   </div>
                 </div>
                 <div class="text-right shrink-0">
@@ -628,6 +669,7 @@
         </div>
       </div>
     </Teleport>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -651,7 +693,9 @@ import {
   Check,
   ExternalLink,
   RotateCcw,
-  Loader2
+  Loader2,
+  ShoppingBag,
+  Building2
 } from 'lucide-vue-next'
 import { useGsapAnimation } from '~/composables/useGsapAnimation'
 import OdometerNumber from '~/components/ui/OdometerNumber.vue'
@@ -672,6 +716,16 @@ const tbodyRef = ref<HTMLElement | null>(null)
 const mobileListRef = ref<HTMLElement | null>(null)
 const drawerBackdropRef = ref<HTMLElement | null>(null)
 const drawerPanelRef = ref<HTMLElement | null>(null)
+
+// Voucher Type Tab (Sales vs Purchases)
+const activeTab = ref<'sales' | 'purchases'>((route.query.tab as any) === 'purchases' ? 'purchases' : 'sales')
+
+function setActiveTab(tab: 'sales' | 'purchases') {
+  if (activeTab.value === tab) return
+  activeTab.value = tab
+  currentPage.value = 1
+  fetchVouchers(true)
+}
 
 // Reactive Filter States
 const searchInput = ref((route.query.search as string) || '')
@@ -850,28 +904,46 @@ async function fetchVouchers(includeStats = true) {
     if (customDateTo.value) params.dateTo = customDateTo.value
     if (includeStats) params.includeStats = 'true'
 
-    const res: any = await $fetch('/api/vouchers', { params })
-    if (res?.success) {
-      vouchers.value = res.vouchers || []
-      pagination.value = res.pagination || pagination.value
-      summary.value = res.summary || summary.value
-      if (res.stats) {
+    if (activeTab.value === 'purchases') {
+      const res: any = await $fetch('/api/purchases', { params })
+      vouchers.value = res?.purchases || []
+      pagination.value = {
+        page: res?.page || 1,
+        limit: res?.limit || pageSize.value,
+        total: res?.total || 0,
+        totalPages: res?.totalPages || 1
+      }
+      summary.value = {
+        totalAmount: Number(res?.stats?.totalAmount || 0),
+        totalCount: Number(res?.total || 0)
+      }
+      if (res?.stats) {
         stats.value = { ...res.stats }
-      } else if (res.summary) {
-        stats.value = {
-          totalCount: res.summary.totalCount || 0,
-          totalAmount: res.summary.totalAmount || 0,
-          totalTaxable: res.summary.taxableAmount || 0,
-          totalTax: res.summary.taxAmount || 0
+      }
+    } else {
+      const res: any = await $fetch('/api/vouchers', { params })
+      if (res?.success) {
+        vouchers.value = res.vouchers || []
+        pagination.value = res.pagination || pagination.value
+        summary.value = res.summary || summary.value
+        if (res.stats) {
+          stats.value = { ...res.stats }
+        } else if (res.summary) {
+          stats.value = {
+            totalCount: res.summary.totalCount || 0,
+            totalAmount: res.summary.totalAmount || 0,
+            totalTaxable: res.summary.taxableAmount || 0,
+            totalTax: res.summary.taxAmount || 0
+          }
         }
+        if (res.lastSynced) lastSynced.value = res.lastSynced
       }
-      if (res.lastSynced) lastSynced.value = res.lastSynced
+    }
 
-      // If URL had a specific voucherNo to open
-      if (route.query.voucherNo && !isDrawerOpen.value) {
-        const target = vouchers.value.find(v => v.voucherNo === route.query.voucherNo)
-        if (target) openVoucherDrawer(target)
-      }
+    // If URL had a specific voucherNo to open
+    if (route.query.voucherNo && !isDrawerOpen.value) {
+      const target = vouchers.value.find(v => v.voucherNo === route.query.voucherNo)
+      if (target) openVoucherDrawer(target)
     }
   } catch (err: any) {
     console.error('Failed to load vouchers:', err)
