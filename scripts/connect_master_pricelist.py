@@ -99,6 +99,7 @@ def main():
     audit_summary = []
     matched_updates = []
     unmatched_items = []
+    matched_db_names = set()
 
     for s_name in sheets_to_process:
         ws = wb[s_name]
@@ -148,10 +149,12 @@ def main():
                 e_thick_m = re.search(r'(\d+(?:\.\d+)?)\s*MM', desc)
                 e_thick = e_thick_m.group(1) if e_thick_m else None
                 
-                e_is_hdwr = 'HDWR' in desc or 'HDHMR' in desc or 'BOILO' in desc
+                e_is_hdwr = 'HDWR' in desc or 'HDHMR' in desc or 'BOILO' in desc or 'BOIL' in desc
                 e_is_ext = 'EXTERIOR' in desc or 'EXT' in desc
                 e_is_int = 'INTERIOR' in desc or 'INT' in desc
                 e_is_prelam = 'PRELAM' in desc
+                e_is_fr = 'FR' in desc or 'FIRE' in desc
+                e_is_door = 'DOOR' in desc
                 
                 # Search among DB products of this brand
                 brand_keywords = {
@@ -168,6 +171,10 @@ def main():
                 if e_thick:
                     for p in db_products:
                         p_n = clean_str(p.get('name'))
+                        # Avoid assigning multiple distinct excel rows to the same product if already matched
+                        if p_n in matched_db_names:
+                            continue
+
                         # Must match brand keyword
                         if not any(bk in p_n for bk in brand_keywords):
                             continue
@@ -178,17 +185,23 @@ def main():
                             continue
                             
                         # Must match grade
-                        p_is_hdwr = 'HDWR' in p_n or 'HDHMR' in p_n or 'BOILO' in p_n
+                        p_is_hdwr = 'HDWR' in p_n or 'HDHMR' in p_n or 'BOILO' in p_n or 'BOIL' in p_n
                         p_is_ext = 'EXT' in p_n
                         p_is_int = 'INT' in p_n
                         p_is_prelam = 'PRELAM' in p_n
+                        p_is_fr = 'FR' in p_n or 'FIRE' in p_n
+                        p_is_door = 'DOOR' in p_n
                         
-                        if e_is_hdwr == p_is_hdwr and e_is_prelam == p_is_prelam:
+                        if (e_is_hdwr == p_is_hdwr and 
+                            e_is_prelam == p_is_prelam and 
+                            e_is_fr == p_is_fr and
+                            e_is_door == p_is_door):
                             if (e_is_ext and p_is_ext) or (e_is_int and p_is_int) or (not e_is_ext and not e_is_int):
                                 matched_product = p
                                 break
 
             if matched_product:
+                matched_db_names.add(clean_str(matched_product.get("name")))
                 s_matched += 1
                 curr_price = float(matched_product.get("price") or 0.0)
                 matched_updates.append({
