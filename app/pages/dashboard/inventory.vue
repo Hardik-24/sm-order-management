@@ -703,7 +703,7 @@ onUnmounted(() => {
               <div class="flex items-center gap-2 text-xs">
                 <span>Groups: <strong class="text-gray-900">{{ groupTreeStats.totalRootGroups }}</strong> roots / <strong class="text-gray-900">{{ groupTreeStats.totalSubGroups }}</strong> sub</span>
                 <span class="text-gray-300">|</span>
-                <span>Valuation: <strong class="text-emerald-700 font-bold">{{ formatInr(groupTreeStats.totalStockValuation) }}</strong></span>
+                <span>Total Items: <strong class="text-gray-900">{{ filteredProducts.length }}</strong></span>
               </div>
             </template>
           </div>
@@ -819,11 +819,11 @@ onUnmounted(() => {
         <table v-else class="w-full text-left border-collapse table-auto">
           <thead>
             <tr class="bg-gray-50 border-b border-gray-200 text-xs font-medium text-gray-500 uppercase tracking-wider">
-              <th class="px-5 py-3.5 min-w-[320px]">Item / Group Hierarchy</th>
-              <th class="px-5 py-3.5 w-44 min-w-[150px]">Level / Alias</th>
-              <th class="px-5 py-3.5 w-32 min-w-[110px] text-right">Items / Rate</th>
-              <th class="px-5 py-3.5 w-32 min-w-[110px] text-right">Stock Qty</th>
-              <th class="px-5 py-3.5 w-40 min-w-[130px] text-center">Status / Valuation</th>
+              <th class="px-5 py-3.5 min-w-[280px]">Item / Group Hierarchy</th>
+              <th class="px-5 py-3.5 w-44 min-w-[150px]">Level / Group Name</th>
+              <th class="px-5 py-3.5 w-44 min-w-[150px] max-w-[180px]">Items / Product Alias</th>
+              <th class="px-5 py-3.5 w-28 min-w-[100px] text-right">Stock</th>
+              <th class="px-5 py-3.5 w-32 min-w-[120px] text-center">Status</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-100">
@@ -886,21 +886,26 @@ onUnmounted(() => {
                   </td>
 
                   <!-- Items Count -->
-                  <td class="px-5 py-2.5 w-32 min-w-[110px] text-sm text-right font-medium text-gray-600">
+                  <td class="px-5 py-2.5 w-44 min-w-[150px] max-w-[180px] text-sm text-gray-600">
                     <span class="inline-flex items-center gap-1 font-mono text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-700 border border-gray-200">
                       {{ row.node.totalItems }} items
                     </span>
                   </td>
 
                   <!-- Total Stock -->
-                  <td class="px-5 py-2.5 w-32 min-w-[110px] text-sm text-right font-bold whitespace-nowrap" :class="row.node.totalStock > 0 ? 'text-gray-900' : 'text-gray-400'">
+                  <td class="px-5 py-2.5 w-28 min-w-[100px] text-sm text-right font-bold whitespace-nowrap" :class="row.node.totalStock > 0 ? 'text-gray-900' : 'text-gray-400'">
                     {{ row.node.totalStock.toLocaleString('en-IN') }}
                   </td>
 
-                  <!-- Valuation -->
-                  <td class="px-5 py-2.5 w-40 min-w-[130px] text-center whitespace-nowrap">
-                    <span class="font-mono text-xs font-semibold text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-                      {{ formatInr(row.node.totalValue) }}
+                  <!-- Status -->
+                  <td class="px-5 py-2.5 w-32 min-w-[120px] text-center whitespace-nowrap">
+                    <span v-if="row.node.totalStock > 0" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
+                      <CheckCircle2 class="w-3.5 h-3.5" />
+                      In Stock
+                    </span>
+                    <span v-else class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200">
+                      <XCircle class="w-3.5 h-3.5" />
+                      Out of Stock
                     </span>
                   </td>
                 </tr>
@@ -921,6 +926,13 @@ onUnmounted(() => {
                     </div>
                   </td>
 
+                  <!-- Group Name -->
+                  <td class="px-5 py-2 w-44 min-w-[150px] text-sm text-gray-500">
+                    <span class="truncate block max-w-[160px]" :title="row.parentNode.name">
+                      {{ row.parentNode.name }}
+                    </span>
+                  </td>
+
                   <!-- Product Alias -->
                   <td class="px-5 py-2 w-44 min-w-[150px] max-w-[180px] text-xs font-mono group-hover:text-[#1b3b5f]">
                     <span 
@@ -933,24 +945,19 @@ onUnmounted(() => {
                     <span v-else class="text-gray-400 font-sans">-</span>
                   </td>
 
-                  <!-- Sale Price -->
-                  <td class="px-5 py-2 w-32 min-w-[110px] text-xs text-right font-mono text-gray-600">
-                    {{ Number(row.product.price) > 0 ? ('₹' + Number(row.product.price).toFixed(2)) : '-' }}
-                  </td>
-
                   <!-- Stock -->
-                  <td class="px-5 py-2 w-32 min-w-[110px] text-sm text-right font-bold whitespace-nowrap" :class="row.product.stock > 0 ? 'text-gray-900' : 'text-red-600'">
+                  <td class="px-5 py-2 w-28 min-w-[100px] text-sm text-right font-bold whitespace-nowrap" :class="row.product.stock > 0 ? 'text-gray-900' : 'text-red-600'">
                     {{ row.product.stock }}
                   </td>
 
                   <!-- Status -->
-                  <td class="px-5 py-2 w-40 min-w-[130px] text-center whitespace-nowrap">
-                    <span v-if="row.product.stock > 0" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-green-100 text-green-800 border border-green-200">
-                      <CheckCircle2 class="w-3 h-3" />
+                  <td class="px-5 py-2 w-32 min-w-[120px] text-center whitespace-nowrap">
+                    <span v-if="row.product.stock > 0" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
+                      <CheckCircle2 class="w-3.5 h-3.5" />
                       In Stock
                     </span>
-                    <span v-else class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-red-100 text-red-800 border border-red-200">
-                      <XCircle class="w-3 h-3" />
+                    <span v-else class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200">
+                      <XCircle class="w-3.5 h-3.5" />
                       Out of Stock
                     </span>
                   </td>

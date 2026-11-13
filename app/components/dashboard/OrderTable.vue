@@ -427,7 +427,7 @@ const getItemsTotalQuantity = (order: Order) => {
                         class="relative flex items-center justify-center w-6 h-6 rounded-full text-xs shrink-0 transition-all shadow-xs"
                         :class="[
                           step.status === 'completed' ? 'bg-emerald-50 text-emerald-700 border border-emerald-400' :
-                          step.status === 'in_progress' ? 'bg-amber-50 text-amber-700 border border-amber-400 animate-pulse ring-2 ring-amber-400/20' :
+                          step.status === 'in_progress' ? 'bg-blue-50 text-blue-700 border border-blue-400 animate-pulse ring-2 ring-blue-400/20' :
                           step.status === 'alert' ? 'bg-rose-50 text-rose-700 border border-rose-400' :
                           'bg-gray-50 text-gray-400 border border-gray-200/90 opacity-60'
                         ]"
@@ -456,7 +456,7 @@ const getItemsTotalQuantity = (order: Order) => {
                         class="text-[9px] font-semibold mt-1 tracking-tight"
                         :class="[
                           step.status === 'completed' ? 'text-emerald-700' :
-                          step.status === 'in_progress' ? 'text-amber-700 font-bold' :
+                          step.status === 'in_progress' ? 'text-blue-700 font-bold' :
                           step.status === 'alert' ? 'text-rose-600 font-bold' :
                           'text-gray-400'
                         ]"
@@ -581,9 +581,9 @@ const getItemsTotalQuantity = (order: Order) => {
                 <div 
                   class="flex items-center justify-center w-6 h-6 rounded-full text-xs shrink-0 transition-all shadow-2xs"
                   :class="[
-                    step.status === 'completed' ? 'bg-emerald-50 text-emerald-600 border border-emerald-400' :
-                    step.status === 'in_progress' ? 'bg-amber-50 text-amber-600 border border-amber-400 animate-pulse ring-2 ring-amber-400/20' :
-                    step.status === 'alert' ? 'bg-rose-50 text-rose-600 border border-rose-400' :
+                    step.status === 'completed' ? 'bg-emerald-50 text-emerald-700 border border-emerald-400' :
+                    step.status === 'in_progress' ? 'bg-blue-50 text-blue-700 border border-blue-400 animate-pulse ring-2 ring-blue-400/20' :
+                    step.status === 'alert' ? 'bg-rose-50 text-rose-700 border border-rose-400' :
                     'bg-gray-50 text-gray-400 border border-gray-200/90 opacity-60'
                   ]"
                   :title="step.label + ': ' + (step.status === 'completed' ? 'Completed' : step.status === 'in_progress' ? 'In Progress' : step.status === 'alert' ? 'Action Needed' : 'Waiting')"

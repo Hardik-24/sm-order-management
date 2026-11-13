@@ -762,11 +762,19 @@ const getStepStatus = (step: string) => {
 
 const getStepColor = (step: string) => {
   const status = getStepStatus(step)
-  if (['COMPLETED', 'APPROVED', 'GENERATED', 'PACKED', 'DELIVERED'].includes(status)) return 'text-emerald-700 border-emerald-600 bg-emerald-50'
-  if (status === 'IN_PROGRESS' || status === 'WAITING' || status === 'DISPATCHED') return 'text-blue-600 border-blue-600 bg-blue-50'
-  if (status === 'ON_HOLD') return 'text-orange-600 border-orange-600 bg-orange-50'
-  if (status === 'PENDING' && step === 'APPROVAL') return 'text-amber-600 border-amber-500 bg-amber-50'
-  return 'text-gray-400 border-gray-300 bg-white'
+  if (['COMPLETED', 'APPROVED', 'GENERATED', 'PACKED', 'DELIVERED'].includes(status)) {
+    return 'text-emerald-700 border-emerald-500 bg-emerald-50'
+  }
+  if (status === 'IN_PROGRESS' || status === 'DISPATCHED' || status === 'ASSIGNED' || (status === 'PENDING' && step === 'APPROVAL')) {
+    return 'text-blue-700 border-blue-500 bg-blue-50 animate-pulse ring-2 ring-blue-400/20'
+  }
+  if (status === 'ON_HOLD' || status === 'HOLD') {
+    return 'text-amber-700 border-amber-500 bg-amber-50'
+  }
+  if (status === 'SHORTAGE' || status === 'ERROR') {
+    return 'text-rose-700 border-rose-500 bg-rose-50'
+  }
+  return 'text-gray-400 border-gray-200 bg-gray-50/60 opacity-60'
 }
 
 const isEditModalOpen = ref(false)
@@ -1553,7 +1561,7 @@ onUnmounted(() => {
                   >
                     <Check v-if="step.id === 'SALES'" class="w-3.5 h-3.5" />
                     <CheckCheck v-else-if="step.id === 'APPROVAL'" class="w-3.5 h-3.5" />
-                    <Box v-else-if="step.id === 'PACKING'" class="w-3.5 h-3.5" />
+                    <Package v-else-if="step.id === 'PACKING'" class="w-3.5 h-3.5" />
                     <IndianRupee v-else-if="step.id === 'BILLING'" class="w-3 h-3" />
                     <Truck v-else-if="step.id === 'DELIVERY'" class="w-3.5 h-3.5" />
                   </div>
