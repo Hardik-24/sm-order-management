@@ -23,6 +23,9 @@ definePageMeta({
   middleware: 'auth'
 })
 
+// Seamless redirect to integrated tab in BUSY Vouchers
+await navigateTo('/dashboard/vouchers?tab=purchases', { replace: true })
+
 useHead({
   title: 'Purchase Invoices - SM OMS'
 })

@@ -155,13 +155,22 @@ namespace SMFlowSyncAgent
     static class Program
     {
         [DllImport("user32.dll")]
-        private static extern bool SetForegroundWindow(IntPtr hWnd);
+        public static extern bool SetForegroundWindow(IntPtr hWnd);
 
         [DllImport("user32.dll")]
-        private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+        public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
 
         [DllImport("user32.dll", SetLastError = true)]
-        private static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
+        public static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
+
+        [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+        public static extern int RegisterWindowMessage(string lpString);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        public static extern bool PostMessage(IntPtr hWnd, int Msg, IntPtr wParam, IntPtr lParam);
+
+        public static readonly int WM_SHOWME = RegisterWindowMessage("SM_FLOW_SYNC_AGENT_SHOWME_MSG");
+        public static readonly IntPtr HWND_BROADCAST = new IntPtr(0xffff);
 
         [STAThread]
         static void Main(string[] args)
@@ -184,12 +193,18 @@ namespace SMFlowSyncAgent
             string dbgPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "debug.log");
             try
             {
+                File.AppendAllText(dbgPath, string.Format("Main entered at {0}\n", DateTime.Now));
                 Process current = Process.GetCurrentProcess();
                 Process[] processes = Process.GetProcessesByName(current.ProcessName);
+                File.AppendAllText(dbgPath, string.Format("Found {0} processes with name {1}\n", processes.Length, current.ProcessName));
                 foreach (Process p in processes)
                 {
                     if (p.Id != current.Id)
                     {
+                        File.AppendAllText(dbgPath, string.Format("Another instance already running (PID {0}), signaling window restore.\n", p.Id));
+                        // Broadcast message to wake up and show existing instance
+                        PostMessage(HWND_BROADCAST, WM_SHOWME, IntPtr.Zero, IntPtr.Zero);
+
                         IntPtr hWnd = p.MainWindowHandle;
                         if (hWnd == IntPtr.Zero)
                         {
@@ -204,9 +219,12 @@ namespace SMFlowSyncAgent
                     }
                 }
 
+                File.AppendAllText(dbgPath, "Calling Application.EnableVisualStyles...\n");
                 Application.EnableVisualStyles();
                 Application.SetCompatibleTextRenderingDefault(false);
+                File.AppendAllText(dbgPath, "Creating MainForm...\n");
                 MainForm form = new MainForm(startInTray);
+                File.AppendAllText(dbgPath, "Starting Application.Run...\n");
                 Application.Run(form);
             }
             catch (Exception ex)
@@ -297,11 +315,34 @@ namespace SMFlowSyncAgent
             this.startInTray = startInTray;
             config = AgentConfig.Load();
             InitializeComponent();
+            if (!this.IsHandleCreated) CreateHandle();
             SetupTray();
             SetupTimers();
             UpdateStatsUI();
             LoadHistory();
             ResetTerminalWelcome();
+        }
+
+        protected override void WndProc(ref Message m)
+        {
+            if (m.Msg == Program.WM_SHOWME)
+            {
+                ShowAndRestore();
+            }
+            base.WndProc(ref m);
+        }
+
+        protected override void OnShown(EventArgs e)
+        {
+            base.OnShown(e);
+            if (!startInTray)
+            {
+                this.WindowState = FormWindowState.Normal;
+                this.Show();
+                this.BringToFront();
+                this.Activate();
+                Program.SetForegroundWindow(this.Handle);
+            }
         }
 
         private void ResetTerminalWelcome()
@@ -901,13 +942,21 @@ namespace SMFlowSyncAgent
             trayIcon.DoubleClick += (s, e) => ShowAndRestore();
         }
 
-        private void ShowAndRestore()
+        public void ShowAndRestore()
         {
+            if (this.InvokeRequired)
+            {
+                this.BeginInvoke(new Action(ShowAndRestore));
+                return;
+            }
             startInTray = false;
             this.Show();
             this.WindowState = FormWindowState.Normal;
+            this.ShowInTaskbar = true;
+            this.Visible = true;
             this.BringToFront();
             this.Activate();
+            Program.SetForegroundWindow(this.Handle);
         }
 
         private void ForceExit()

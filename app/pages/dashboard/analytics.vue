@@ -778,7 +778,7 @@
             </div>
             <div class="flex items-center justify-between text-xs text-gray-500 mt-2">
               <span class="text-indigo-700 font-semibold">{{ data.purchases.totalInvoices || 0 }} Invoices</span>
-              <NuxtLink to="/dashboard/purchases" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 underline">View all ↗</NuxtLink>
+              <NuxtLink to="/dashboard/vouchers?tab=purchases" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 underline">View all ↗</NuxtLink>
             </div>
           </div>
           <div class="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 to-indigo-600"></div>
@@ -916,7 +916,7 @@
             <p class="text-xs text-gray-500 mt-0.5">Top manufacturers & suppliers ranked by cumulative purchase invoice volume</p>
           </div>
           <NuxtLink
-            to="/dashboard/purchases"
+            to="/dashboard/vouchers?tab=purchases"
             class="text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg border border-indigo-100 transition inline-flex items-center gap-1.5 self-start sm:self-auto"
           >
             <span>Explore All Purchase Bills</span>
