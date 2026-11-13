@@ -568,7 +568,7 @@
                         </div>
                         <div>
                           <span class="text-[10px] uppercase font-bold tracking-wider text-gray-500 block">
-                            Estimated Profit
+                            Estimated Gross Profit
                           </span>
                           <div 
                             v-if="voucherProfitability?.hasCostData" 
@@ -645,7 +645,7 @@
                 </div>
               </div>
 
-              <!-- B. ITEMIZED LINE ITEMS (Card view on Mobile, Table on Desktop) -->
+              <!-- B. ITEMIZED LINE ITEMS (Unified Table for both Mobile and PC) -->
               <div class="space-y-2">
                 <div class="flex items-center justify-between px-0.5">
                   <span class="text-[11px] font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
@@ -666,137 +666,76 @@
                   No individual item lines recorded on this invoice.
                 </div>
 
-                <template v-else>
-                  <!-- MOBILE VIEW: High-Clarity Structured Cards (hidden on sm) -->
-                  <div class="sm:hidden space-y-2.5">
-                    <div 
-                      v-for="(item, idx) in selectedVoucher.items" 
-                      :key="'mob-item-' + idx"
-                      class="bg-white rounded-xl border border-gray-200/90 shadow-2xs overflow-hidden"
-                    >
-                      <!-- Main Card Body -->
-                      <div class="p-3 space-y-2">
-                        <!-- Product Name & Line Total -->
-                        <div class="flex items-start justify-between gap-2">
-                          <div class="min-w-0 flex-1">
-                            <h4 class="font-bold text-xs text-gray-900 leading-snug break-words">
-                              {{ item.name }}
-                            </h4>
-                            <div class="flex items-center gap-2 mt-1 text-[10px] text-gray-500 flex-wrap">
-                              <span v-if="item.sku && item.sku.trim().toLowerCase() !== (item.name || '').trim().toLowerCase()" class="font-mono bg-gray-100 px-1.5 py-0.5 rounded text-gray-700">
-                                SKU: {{ item.sku }}
-                              </span>
-                              <span v-if="item.taxRate" class="font-mono text-emerald-700 font-medium">
-                                GST {{ item.taxRate }}%
-                              </span>
-                            </div>
+                <!-- UNIFIED RESPONSIVE TABLE FOR BOTH MOBILE & PC -->
+                <div v-else class="overflow-x-auto border border-gray-200/90 rounded-xl shadow-2xs bg-white">
+                  <table class="w-full text-left text-xs">
+                    <thead class="bg-gray-50 text-[10px] sm:text-[11px] font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">
+                      <tr>
+                        <th class="px-3 sm:px-3.5 py-2.5 font-bold min-w-[130px] sm:min-w-[160px]">Product</th>
+                        <th class="px-2 sm:px-3 py-2.5 font-bold text-right whitespace-nowrap">Rate</th>
+                        <th class="px-2 sm:px-3 py-2.5 font-bold text-right whitespace-nowrap">Qty</th>
+                        <th class="px-2.5 sm:px-3.5 py-2.5 font-bold text-right whitespace-nowrap">Total</th>
+                        <th v-if="activeTab === 'sales'" class="px-2 sm:px-3 py-2.5 font-bold text-right whitespace-nowrap">Cost</th>
+                        <th v-if="activeTab === 'sales'" class="px-2.5 sm:px-3.5 py-2.5 font-bold text-right whitespace-nowrap">Profit</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100 bg-white">
+                      <tr
+                        v-for="(item, idx) in selectedVoucher.items"
+                        :key="'item-' + idx"
+                        class="hover:bg-gray-50/70 transition-colors"
+                      >
+                        <!-- Product (No HSN code) -->
+                        <td class="px-3 sm:px-3.5 py-2.5">
+                          <div class="font-bold text-xs text-gray-900 break-words whitespace-normal leading-snug" :title="item.name">
+                            {{ item.name }}
                           </div>
-
-                          <div class="text-right shrink-0">
-                            <div class="text-sm font-black font-mono text-[#1b3b5f]">
-                              {{ formatCurrency(item.amount) }}
-                            </div>
-                            <span class="text-[10px] font-mono text-gray-500 block">
-                              {{ item.qty }} × {{ formatCurrency(item.rate) }}
+                          <div class="flex items-center gap-2 mt-0.5 text-[10px] text-gray-500 flex-wrap">
+                            <span v-if="item.sku && item.sku.trim().toLowerCase() !== (item.name || '').trim().toLowerCase()" class="font-mono text-gray-600">
+                              SKU: {{ item.sku }}
+                            </span>
+                            <span v-if="item.taxRate" class="font-mono text-emerald-700">
+                              GST {{ item.taxRate }}%
                             </span>
                           </div>
-                        </div>
-                      </div>
+                        </td>
 
-                      <!-- Profitability Strip (Sales Vouchers Only) -->
-                      <div 
-                        v-if="activeTab === 'sales' && item.costPrice != null" 
-                        class="px-3 py-2 bg-gray-50 border-t border-gray-100 flex items-center justify-between text-[11px]"
-                      >
-                        <!-- Cost -->
-                        <div class="text-gray-600">
-                          <span class="text-gray-400 text-[10px] block">Cost Price</span>
-                          <strong class="font-mono text-gray-900 font-bold">
-                            {{ formatCurrency(item.costPrice) }}
-                          </strong>
-                          <span class="text-[10px] text-gray-400">/unit</span>
-                        </div>
+                        <!-- Rate -->
+                        <td class="px-2 sm:px-3 py-2.5 text-right font-medium text-gray-600 tabular-nums whitespace-nowrap text-xs">
+                          {{ formatCurrency(item.rate) }}
+                        </td>
 
-                        <!-- Profit & Margin -->
-                        <div class="text-right">
-                          <span class="text-gray-400 text-[10px] block">Profit (Margin)</span>
+                        <!-- Qty -->
+                        <td class="px-2 sm:px-3 py-2.5 font-bold tabular-nums whitespace-nowrap text-right text-gray-900 text-xs">
+                          {{ item.qty }}
+                        </td>
+
+                        <!-- Total -->
+                        <td class="px-2.5 sm:px-3.5 py-2.5 text-right font-bold text-[#1b3b5f] tabular-nums whitespace-nowrap text-xs">
+                          {{ formatCurrency(item.amount) }}
+                        </td>
+
+                        <!-- Cost (Sales Vouchers Only) -->
+                        <td v-if="activeTab === 'sales'" class="px-2 sm:px-3 py-2.5 text-right font-mono text-gray-600 tabular-nums whitespace-nowrap text-xs">
+                          {{ item.costPrice != null ? formatCurrency(item.costPrice) : '—' }}
+                        </td>
+
+                        <!-- Profit (Sales Vouchers Only) -->
+                        <td v-if="activeTab === 'sales'" class="px-2.5 sm:px-3.5 py-2.5 text-right tabular-nums whitespace-nowrap text-xs">
                           <span 
-                            class="inline-flex items-center gap-1 font-mono font-bold text-xs px-2 py-0.5 rounded-md"
-                            :class="item.lineProfit >= 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'"
+                            v-if="item.lineProfit != null" 
+                            class="inline-flex items-center gap-1 font-mono font-bold text-[11px] px-1.5 py-0.5 rounded"
+                            :class="item.lineProfit >= 0 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'"
+                            :title="item.lineMargin ? `${item.lineMargin}% margin` : ''"
                           >
                             {{ item.lineProfit >= 0 ? '+' : '' }}{{ formatCurrency(item.lineProfit) }}
-                            <span class="text-[10px] opacity-80">({{ item.lineMargin >= 0 ? '+' : '' }}{{ item.lineMargin }}%)</span>
                           </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- DESKTOP VIEW: Clean Table (hidden on mobile) -->
-                  <div class="hidden sm:block overflow-x-auto border border-gray-200/90 rounded-xl shadow-2xs bg-white">
-                    <table class="w-full text-left text-xs">
-                      <thead class="bg-gray-50 text-[10px] font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">
-                        <tr>
-                          <th class="px-3.5 py-2.5 font-bold">Product</th>
-                          <th class="px-3 py-2.5 font-bold text-right">Rate</th>
-                          <th class="px-3 py-2.5 font-bold text-right">Qty</th>
-                          <th class="px-3.5 py-2.5 font-bold text-right">Total</th>
-                          <th v-if="activeTab === 'sales'" class="px-3 py-2.5 font-bold text-right">Cost</th>
-                          <th v-if="activeTab === 'sales'" class="px-3 py-2.5 font-bold text-right">Profit</th>
-                        </tr>
-                      </thead>
-                      <tbody class="divide-y divide-gray-100 bg-white">
-                        <tr
-                          v-for="(item, idx) in selectedVoucher.items"
-                          :key="'dt-item-' + idx"
-                          class="hover:bg-gray-50/70 transition-colors"
-                        >
-                          <td class="px-3.5 py-2.5">
-                            <div class="font-bold text-xs text-gray-900 break-words whitespace-normal leading-snug" :title="item.name">
-                              {{ item.name }}
-                            </div>
-                            <div class="flex items-center gap-2 mt-0.5 text-[10px] text-gray-500 flex-wrap">
-                              <span v-if="item.sku && item.sku.trim().toLowerCase() !== (item.name || '').trim().toLowerCase()" class="font-mono text-gray-600">
-                                SKU: {{ item.sku }}
-                              </span>
-                              <span v-if="item.taxRate" class="font-mono text-emerald-700">
-                                GST {{ item.taxRate }}%
-                              </span>
-                            </div>
-                          </td>
-
-                          <td class="px-3 py-2.5 text-right font-medium text-gray-600 tabular-nums whitespace-nowrap">
-                            {{ formatCurrency(item.rate) }}
-                          </td>
-
-                          <td class="px-3 py-2.5 font-bold tabular-nums whitespace-nowrap text-right text-gray-900">
-                            {{ item.qty }}
-                          </td>
-
-                          <td class="px-3.5 py-2.5 text-right font-bold text-[#1b3b5f] tabular-nums whitespace-nowrap">
-                            {{ formatCurrency(item.amount) }}
-                          </td>
-
-                          <td v-if="activeTab === 'sales'" class="px-3 py-2.5 text-right font-mono text-gray-600 tabular-nums whitespace-nowrap">
-                            {{ item.costPrice != null ? formatCurrency(item.costPrice) : '—' }}
-                          </td>
-
-                          <td v-if="activeTab === 'sales'" class="px-3 py-2.5 text-right tabular-nums whitespace-nowrap">
-                            <span 
-                              v-if="item.lineProfit != null" 
-                              class="inline-flex items-center gap-1 font-mono font-bold text-[11px] px-1.5 py-0.5 rounded"
-                              :class="item.lineProfit >= 0 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'"
-                              :title="item.lineMargin ? `${item.lineMargin}% margin` : ''"
-                            >
-                              {{ item.lineProfit >= 0 ? '+' : '' }}{{ formatCurrency(item.lineProfit) }}
-                            </span>
-                            <span v-else class="text-gray-300">—</span>
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </template>
+                          <span v-else class="text-gray-300">—</span>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               </div>
 
               <!-- C. TAX & GRAND TOTAL SUMMARY CARD -->
@@ -826,18 +765,21 @@
                   <span class="font-mono text-[#1b3b5f] font-black text-base">{{ formatCurrency(selectedVoucher?.totalAmount) }}</span>
                 </div>
 
-                <!-- Clear Net Profit Row for Sales Vouchers -->
-                <div v-if="activeTab === 'sales' && voucherProfitability?.hasCostData" class="pt-2.5 mt-2 border-t-2 border-dashed border-emerald-200 flex items-center justify-between text-sm">
-                  <div class="flex items-center gap-1.5 font-bold text-emerald-800">
-                    <TrendingUp class="w-4 h-4 text-emerald-600" />
-                    <span>Estimated Net Profit:</span>
+                <!-- Estimated Gross Profit Row (Accurate accounting terminology, fits cleanly on mobile) -->
+                <div v-if="activeTab === 'sales' && voucherProfitability?.hasCostData" class="pt-2.5 mt-2 border-t-2 border-dashed border-emerald-200 flex items-center justify-between gap-3 text-sm">
+                  <div class="flex items-center gap-1.5 font-bold text-emerald-800 min-w-0">
+                    <TrendingUp class="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span class="truncate">Estimated Gross Profit:</span>
                   </div>
-                  <div class="flex items-center gap-1.5 font-mono">
-                    <span class="font-black text-base" :class="voucherProfitability.grossProfit >= 0 ? 'text-emerald-700' : 'text-rose-600'">
+                  <div class="flex flex-col items-end shrink-0 text-right font-mono">
+                    <span 
+                      class="font-black text-sm sm:text-base whitespace-nowrap tabular-nums leading-tight" 
+                      :class="voucherProfitability.grossProfit >= 0 ? 'text-emerald-700' : 'text-rose-600'"
+                    >
                       {{ voucherProfitability.grossProfit >= 0 ? '+' : '' }}{{ formatCurrency(voucherProfitability.grossProfit) }}
                     </span>
-                    <span class="text-xs px-2 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
-                      {{ voucherProfitability.marginPercent >= 0 ? '+' : '' }}{{ voucherProfitability.marginPercent.toFixed(1) }}%
+                    <span class="text-[11px] px-2 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 mt-1 whitespace-nowrap">
+                      {{ voucherProfitability.marginPercent >= 0 ? '+' : '' }}{{ voucherProfitability.marginPercent.toFixed(1) }}% Margin
                     </span>
                   </div>
                 </div>
