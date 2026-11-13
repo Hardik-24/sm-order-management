@@ -2,9 +2,11 @@
 import { ref, computed, watch, onUnmounted, nextTick } from 'vue'
 import { 
   RefreshCw, CheckCircle2, XCircle, Search, Package, AlertTriangle, 
-  ChevronLeft, ChevronRight, X, Tag, Hash, Layers, IndianRupee, ShieldCheck
+  ChevronLeft, ChevronRight, X, Tag, Hash, Layers, IndianRupee, ShieldCheck,
+  ShoppingBag, Receipt, TrendingUp
 } from 'lucide-vue-next'
 import { formatDateTime } from '~/lib/utils'
+import { useAuth } from '~/composables/useAuth'
 
 import { useGsapAnimation } from '~/composables/useGsapAnimation'
 import { useRealtimeSync } from '~/composables/useRealtimeSync'
@@ -58,6 +60,8 @@ const triggerRowAnimation = () => {
   })
 }
 
+const { user } = useAuth()
+
 // Selected product for detail popup
 const selectedProduct = ref<any | null>(null)
 const isDetailModalOpen = ref(false)
@@ -65,9 +69,45 @@ const modalRef = ref<HTMLElement | null>(null)
 const backdropRef = ref<HTMLElement | null>(null)
 const progressBarRef = ref<HTMLElement | null>(null)
 
+// Price & Transaction History (Admin only)
+const priceHistory = ref<any>(null)
+const loadingPriceHistory = ref(false)
+const activePriceTab = ref<'purchases' | 'sales'>('purchases')
+
+const formatShortDate = (dateVal: string | Date | null | undefined) => {
+  if (!dateVal) return '-'
+  const d = new Date(dateVal)
+  if (isNaN(d.getTime())) return '-'
+  return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+}
+
+const fetchPriceHistory = async (productId: string) => {
+  if (user.value?.role !== 'ADMIN') return
+  loadingPriceHistory.value = true
+  priceHistory.value = null
+  try {
+    const data: any = await $fetch(`/api/products/${productId}/price-history`)
+    if (data?.success) {
+      priceHistory.value = data
+      if (data.purchases?.length === 0 && data.sales?.length > 0) {
+        activePriceTab.value = 'sales'
+      } else {
+        activePriceTab.value = 'purchases'
+      }
+    }
+  } catch (err) {
+    console.error('Failed to load product price history:', err)
+  } finally {
+    loadingPriceHistory.value = false
+  }
+}
+
 const openProductDetail = (product: any) => {
   selectedProduct.value = product
   isDetailModalOpen.value = true
+  if (user.value?.role === 'ADMIN') {
+    fetchPriceHistory(product.id)
+  }
   nextTick(() => {
     animateModalOpen(modalRef.value, backdropRef.value, { duration: 0.26 })
   })
@@ -76,6 +116,8 @@ const openProductDetail = (product: any) => {
 const closeProductDetail = () => {
   isDetailModalOpen.value = false
   selectedProduct.value = null
+  priceHistory.value = null
+  loadingPriceHistory.value = false
 }
 
 // Watch sync progress updates and tween bar smoothly
@@ -595,7 +637,7 @@ onUnmounted(() => {
       <!-- Modal Card -->
       <div 
         ref="modalRef"
-        class="relative bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[calc(100dvh-3.5rem-env(safe-area-inset-bottom,0px)-2rem)] md:max-h-[90vh] overflow-hidden flex flex-col border border-gray-100"
+        class="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl sm:max-w-3xl max-h-[calc(100dvh-3.5rem-env(safe-area-inset-bottom,0px)-2rem)] md:max-h-[90vh] overflow-hidden flex flex-col border border-gray-100"
       >
         <!-- Header -->
         <div class="px-6 py-4 bg-gray-50/80 border-b border-gray-100 flex items-center justify-between shrink-0">
@@ -697,6 +739,204 @@ onUnmounted(() => {
               </div>
               <div class="text-sm font-semibold text-gray-900">
                 {{ selectedProduct.unit || 'PIECE' }}
+              </div>
+            </div>
+          </div>
+
+          <!-- ADMIN ONLY: Price Check & Transaction History -->
+          <div v-if="user?.role === 'ADMIN'" class="pt-3 border-t border-gray-200/80 space-y-3.5">
+            <!-- Section Title -->
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <div class="w-6 h-6 rounded-md bg-[#1b3b5f]/10 text-[#1b3b5f] flex items-center justify-center">
+                  <ShieldCheck class="w-3.5 h-3.5" />
+                </div>
+                <div>
+                  <h3 class="text-xs font-bold uppercase tracking-wider text-gray-900 flex items-center gap-1.5">
+                    Price Check & Transaction History
+                    <span class="px-1.5 py-0.5 text-[9px] font-bold rounded bg-indigo-50 text-indigo-700 border border-indigo-200">ADMIN ONLY</span>
+                  </h3>
+                </div>
+              </div>
+              <span v-if="loadingPriceHistory" class="text-[11px] text-gray-400 flex items-center gap-1">
+                <RefreshCw class="w-3 h-3 animate-spin text-sky-500" />
+                Fetching BUSY rates...
+              </span>
+            </div>
+
+            <!-- Loading Shimmer -->
+            <div v-if="loadingPriceHistory" class="space-y-2.5">
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <div class="h-16 bg-gray-100 rounded-xl animate-pulse"></div>
+                <div class="h-16 bg-gray-100 rounded-xl animate-pulse"></div>
+                <div class="h-16 bg-gray-100 rounded-xl animate-pulse"></div>
+              </div>
+              <div class="h-28 bg-gray-100 rounded-xl animate-pulse"></div>
+            </div>
+
+            <!-- Loaded Price Intelligence -->
+            <div v-else-if="priceHistory" class="space-y-3">
+              <!-- 3 Quick KPI Price Cards -->
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                <!-- 1. Last Purchase Rate (Buying Cost) -->
+                <div class="p-3 rounded-xl bg-amber-50/70 border border-amber-200/80 flex flex-col justify-between">
+                  <div class="flex items-center justify-between text-[11px] text-amber-900 font-semibold">
+                    <span class="flex items-center gap-1"><ShoppingBag class="w-3 h-3 text-amber-700" /> Last Purchase Rate</span>
+                    <span v-if="priceHistory.summary?.lastPurchase" class="text-[10px] text-amber-700 font-normal">
+                      {{ formatShortDate(priceHistory.summary.lastPurchase.voucherDate) }}
+                    </span>
+                  </div>
+                  <div class="mt-1.5">
+                    <div v-if="priceHistory.summary?.lastPurchase" class="text-base sm:text-lg font-extrabold text-amber-950 leading-tight">
+                      ₹{{ Number(priceHistory.summary.lastPurchase.rate).toLocaleString('en-IN') }}
+                      <span class="text-[10px] font-normal text-amber-700">/ {{ selectedProduct.unit || 'unit' }}</span>
+                    </div>
+                    <div v-else class="text-xs text-amber-700/80 font-medium italic">
+                      No purchase bill yet
+                    </div>
+                    <div v-if="priceHistory.summary?.lastPurchase" class="text-[10px] text-amber-800 truncate mt-0.5" :title="priceHistory.summary.lastPurchase.supplierName">
+                      From {{ priceHistory.summary.lastPurchase.supplierName }}
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 2. Last Sold Rate (Selling Price) -->
+                <div class="p-3 rounded-xl bg-sky-50/70 border border-sky-200/80 flex flex-col justify-between">
+                  <div class="flex items-center justify-between text-[11px] text-sky-900 font-semibold">
+                    <span class="flex items-center gap-1"><Receipt class="w-3 h-3 text-sky-700" /> Last Sold Rate</span>
+                    <span v-if="priceHistory.summary?.lastSale" class="text-[10px] text-sky-700 font-normal">
+                      {{ formatShortDate(priceHistory.summary.lastSale.voucherDate) }}
+                    </span>
+                  </div>
+                  <div class="mt-1.5">
+                    <div v-if="priceHistory.summary?.lastSale" class="text-base sm:text-lg font-extrabold text-sky-950 leading-tight">
+                      ₹{{ Number(priceHistory.summary.lastSale.rate).toLocaleString('en-IN') }}
+                      <span class="text-[10px] font-normal text-sky-700">/ {{ selectedProduct.unit || 'unit' }}</span>
+                    </div>
+                    <div v-else class="text-xs text-sky-700/80 font-medium italic">
+                      No sales invoice yet
+                    </div>
+                    <div v-if="priceHistory.summary?.lastSale" class="text-[10px] text-sky-800 truncate mt-0.5" :title="priceHistory.summary.lastSale.customerName">
+                      To {{ priceHistory.summary.lastSale.customerName }}
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 3. Margin Spread -->
+                <div class="p-3 rounded-xl bg-emerald-50/70 border border-emerald-200/80 flex flex-col justify-between">
+                  <div class="flex items-center justify-between text-[11px] text-emerald-900 font-semibold">
+                    <span class="flex items-center gap-1"><TrendingUp class="w-3 h-3 text-emerald-700" /> Margin / Spread</span>
+                    <span v-if="priceHistory.summary?.marginPercent !== null" class="px-1.5 py-0.2 rounded-full text-[9px] font-bold" :class="priceHistory.summary.marginAmount >= 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'">
+                      {{ priceHistory.summary.marginAmount >= 0 ? '+' : '' }}{{ priceHistory.summary.marginPercent }}%
+                    </span>
+                  </div>
+                  <div class="mt-1.5">
+                    <div v-if="priceHistory.summary?.marginAmount !== null" class="text-base sm:text-lg font-extrabold leading-tight" :class="priceHistory.summary.marginAmount >= 0 ? 'text-emerald-950' : 'text-red-700'">
+                      {{ priceHistory.summary.marginAmount >= 0 ? '+' : '' }}₹{{ Number(priceHistory.summary.marginAmount).toLocaleString('en-IN') }}
+                      <span class="text-[10px] font-normal text-emerald-700">/ unit</span>
+                    </div>
+                    <div v-else class="text-xs text-emerald-700/80 font-medium italic">
+                      Requires purchase & sale
+                    </div>
+                    <div class="text-[10px] text-emerald-800/80 mt-0.5">
+                      {{ priceHistory.summary?.marginAmount >= 0 ? 'Gross profit spread' : 'Negative markup' }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Sub-Tab Switcher: Purchases vs Sales -->
+              <div class="flex items-center gap-2 border-b border-gray-200 pt-1">
+                <button 
+                  type="button"
+                  @click="activePriceTab = 'purchases'"
+                  class="pb-2 px-2.5 text-xs font-semibold flex items-center gap-1.5 transition-colors border-b-2 cursor-pointer"
+                  :class="activePriceTab === 'purchases' ? 'border-[#1b3b5f] text-[#1b3b5f]' : 'border-transparent text-gray-500 hover:text-gray-800'"
+                >
+                  <ShoppingBag class="w-3.5 h-3.5 text-amber-600" />
+                  <span>Recent Purchases (Vendor Bills)</span>
+                  <span class="px-1.5 py-0.2 rounded-full text-[10px] font-bold" :class="activePriceTab === 'purchases' ? 'bg-[#1b3b5f] text-white' : 'bg-gray-100 text-gray-600'">
+                    {{ priceHistory.purchases?.length || 0 }}
+                  </span>
+                </button>
+                <button 
+                  type="button"
+                  @click="activePriceTab = 'sales'"
+                  class="pb-2 px-2.5 text-xs font-semibold flex items-center gap-1.5 transition-colors border-b-2 cursor-pointer"
+                  :class="activePriceTab === 'sales' ? 'border-[#1b3b5f] text-[#1b3b5f]' : 'border-transparent text-gray-500 hover:text-gray-800'"
+                >
+                  <Receipt class="w-3.5 h-3.5 text-sky-600" />
+                  <span>Recent Sales (Customer Invoices)</span>
+                  <span class="px-1.5 py-0.2 rounded-full text-[10px] font-bold" :class="activePriceTab === 'sales' ? 'bg-[#1b3b5f] text-white' : 'bg-gray-100 text-gray-600'">
+                    {{ priceHistory.sales?.length || 0 }}
+                  </span>
+                </button>
+              </div>
+
+              <!-- Purchases Table -->
+              <div v-if="activePriceTab === 'purchases'">
+                <div v-if="priceHistory.purchases?.length > 0" class="overflow-x-auto rounded-xl border border-gray-200 bg-white">
+                  <table class="w-full text-left text-xs">
+                    <thead class="bg-amber-50/40 text-gray-600 text-[10px] font-bold uppercase tracking-wider border-b border-gray-200">
+                      <tr>
+                        <th class="px-3 py-2.5">Date</th>
+                        <th class="px-3 py-2.5">Supplier Name</th>
+                        <th class="px-3 py-2.5">Bill #</th>
+                        <th class="px-3 py-2.5 text-right">Qty</th>
+                        <th class="px-3 py-2.5 text-right font-bold text-amber-950">Buying Rate</th>
+                        <th class="px-3 py-2.5 text-right">Bill Total</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                      <tr v-for="(p, idx) in priceHistory.purchases" :key="'ph-p-' + idx" class="hover:bg-amber-50/30 transition-colors">
+                        <td class="px-3 py-2 text-gray-600 whitespace-nowrap">{{ formatShortDate(p.voucherDate) }}</td>
+                        <td class="px-3 py-2 font-medium text-gray-900 max-w-[170px] truncate" :title="p.supplierName">{{ p.supplierName }}</td>
+                        <td class="px-3 py-2 text-gray-500 font-mono text-[11px]">{{ p.voucherNo }}</td>
+                        <td class="px-3 py-2 text-right text-gray-700 font-semibold">{{ p.qty }}</td>
+                        <td class="px-3 py-2 text-right font-bold text-amber-900 whitespace-nowrap">₹{{ Number(p.rate).toLocaleString('en-IN') }}</td>
+                        <td class="px-3 py-2 text-right text-gray-500 font-mono text-[11px]">₹{{ Number(p.amount).toLocaleString('en-IN') }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div v-else class="text-center py-6 px-4 bg-gray-50/60 rounded-xl border border-dashed border-gray-200">
+                  <ShoppingBag class="w-6 h-6 text-gray-300 mx-auto mb-1.5" />
+                  <p class="text-xs font-semibold text-gray-600">No BUSY Purchase Bills Found</p>
+                  <p class="text-[11px] text-gray-400 mt-0.5">No vendor bills recorded in BUSY for this item.</p>
+                </div>
+              </div>
+
+              <!-- Sales Table -->
+              <div v-if="activePriceTab === 'sales'">
+                <div v-if="priceHistory.sales?.length > 0" class="overflow-x-auto rounded-xl border border-gray-200 bg-white">
+                  <table class="w-full text-left text-xs">
+                    <thead class="bg-sky-50/40 text-gray-600 text-[10px] font-bold uppercase tracking-wider border-b border-gray-200">
+                      <tr>
+                        <th class="px-3 py-2.5">Date</th>
+                        <th class="px-3 py-2.5">Customer Name</th>
+                        <th class="px-3 py-2.5">Invoice #</th>
+                        <th class="px-3 py-2.5 text-right">Qty</th>
+                        <th class="px-3 py-2.5 text-right font-bold text-sky-950">Sold Rate</th>
+                        <th class="px-3 py-2.5 text-right">Inv Total</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                      <tr v-for="(s, idx) in priceHistory.sales" :key="'ph-s-' + idx" class="hover:bg-sky-50/30 transition-colors">
+                        <td class="px-3 py-2 text-gray-600 whitespace-nowrap">{{ formatShortDate(s.voucherDate) }}</td>
+                        <td class="px-3 py-2 font-medium text-gray-900 max-w-[170px] truncate" :title="s.customerName">{{ s.customerName }}</td>
+                        <td class="px-3 py-2 text-gray-500 font-mono text-[11px]">{{ s.voucherNo }}</td>
+                        <td class="px-3 py-2 text-right text-gray-700 font-semibold">{{ s.qty }}</td>
+                        <td class="px-3 py-2 text-right font-bold text-sky-900 whitespace-nowrap">₹{{ Number(s.rate).toLocaleString('en-IN') }}</td>
+                        <td class="px-3 py-2 text-right text-gray-500 font-mono text-[11px]">₹{{ Number(s.amount).toLocaleString('en-IN') }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div v-else class="text-center py-6 px-4 bg-gray-50/60 rounded-xl border border-dashed border-gray-200">
+                  <Receipt class="w-6 h-6 text-gray-300 mx-auto mb-1.5" />
+                  <p class="text-xs font-semibold text-gray-600">No BUSY Sales Invoices Found</p>
+                  <p class="text-[11px] text-gray-400 mt-0.5">No customer invoices recorded in BUSY for this item.</p>
+                </div>
               </div>
             </div>
           </div>
