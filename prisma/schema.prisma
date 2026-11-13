@@ -642,6 +642,8 @@ model BusyVoucher {
   igstAmount    Decimal  @default(0) @db.Decimal(12, 2)
   itemCount     Int      @default(0)
   items         Json     // [{ name, sku, qty, rate, amount, isTaxInclusive, hsn, taxableAmount, taxRate, taxAmount, cgstRate, cgstAmount, sgstRate, sgstAmount, igstRate, igstAmount }]
+  grossProfit   Decimal? @default(0) @db.Decimal(12, 2)
+  marginPercent Decimal? @default(0) @db.Decimal(5, 2)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

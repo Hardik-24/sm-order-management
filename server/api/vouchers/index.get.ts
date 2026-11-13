@@ -74,7 +74,8 @@ export default defineEventHandler(async (event) => {
           taxAmount: true,
           cgstAmount: true,
           sgstAmount: true,
-          igstAmount: true
+          igstAmount: true,
+          grossProfit: true
         }
       }),
       prisma.systemSetting.findUnique({
@@ -88,14 +89,20 @@ export default defineEventHandler(async (event) => {
     const summary = results[2]
     const lastSyncedSetting = results[3]
 
+    const totalTaxable = Number(summary._sum.taxableAmount || 0)
+    const totalGrossProfit = Number(summary._sum.grossProfit || 0)
+    const overallMargin = totalTaxable > 0 ? Math.round(((totalGrossProfit / totalTaxable) * 100) * 100) / 100 : 0
+
     const stats = {
       totalCount: total,
       totalAmount: Number(summary._sum.totalAmount || 0),
-      totalTaxable: Number(summary._sum.taxableAmount || 0),
+      totalTaxable,
       totalTax: Number(summary._sum.taxAmount || 0),
       totalCgst: Number(summary._sum.cgstAmount || 0),
       totalSgst: Number(summary._sum.sgstAmount || 0),
-      totalIgst: Number(summary._sum.igstAmount || 0)
+      totalIgst: Number(summary._sum.igstAmount || 0),
+      totalGrossProfit,
+      marginPercent: overallMargin
     }
 
     const normalizedVouchers = vouchers.map((v: any) => {
@@ -127,6 +134,8 @@ export default defineEventHandler(async (event) => {
         cgstAmount: Number(summary._sum.cgstAmount || 0),
         sgstAmount: Number(summary._sum.sgstAmount || 0),
         igstAmount: Number(summary._sum.igstAmount || 0),
+        grossProfit: totalGrossProfit,
+        marginPercent: overallMargin,
         totalCount: total
       },
       stats,

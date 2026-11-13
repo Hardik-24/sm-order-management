@@ -82,23 +82,47 @@
         </div>
       </div>
 
-      <!-- 3. GST Tax Collected -->
+      <!-- 3. Total Est Gross Profit (In Hand) for Sales, Total GST for Purchases -->
       <div class="bg-white rounded-xl border border-[#e5e2dc] p-3.5 sm:p-5 shadow-sm">
         <div class="flex gap-2.5 sm:gap-4">
           <div class="flex flex-col justify-between shrink-0">
-            <div class="bg-sky-50 p-2 sm:p-2.5 rounded-lg text-sky-600 border border-sky-100/50">
-              <ShieldCheck class="w-4 h-4 sm:w-5 sm:h-5" />
+            <div 
+              class="p-2 sm:p-2.5 rounded-lg border"
+              :class="activeTab === 'purchases' ? 'bg-sky-50 text-sky-600 border-sky-100/50' : 'bg-emerald-50 text-emerald-600 border-emerald-100/50'"
+            >
+              <ShieldCheck v-if="activeTab === 'purchases'" class="w-4 h-4 sm:w-5 sm:h-5" />
+              <TrendingUp v-else class="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <div class="w-6 sm:w-8 h-1 bg-sky-500 rounded-full mt-4 sm:mt-6"></div>
+            <div 
+              class="w-6 sm:w-8 h-1 rounded-full mt-4 sm:mt-6"
+              :class="activeTab === 'purchases' ? 'bg-sky-500' : 'bg-emerald-500'"
+            ></div>
           </div>
           <div class="flex flex-col justify-center min-w-0">
-            <p class="text-[10px] font-bold text-sky-600 uppercase tracking-widest mb-0.5 truncate">
-              {{ activeTab === 'purchases' ? 'Total GST Paid (ITC)' : 'Total GST Collected' }}
+            <p 
+              class="text-[10px] font-bold uppercase tracking-widest mb-0.5 truncate"
+              :class="activeTab === 'purchases' ? 'text-sky-600' : 'text-emerald-700'"
+            >
+              {{ activeTab === 'purchases' ? 'Total GST Paid (ITC)' : 'Total Est Gross Profit (In Hand)' }}
             </p>
             <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 truncate">
-              <OdometerNumber :value="stats?.totalTax || 0" prefix="₹" :loading="isLoading" />
+              <OdometerNumber 
+                :value="activeTab === 'purchases' ? (stats?.totalTax || 0) : (stats?.totalGrossProfit || 0)" 
+                prefix="₹" 
+                :loading="isLoading" 
+              />
             </h3>
-            <p class="text-[11px] sm:text-xs text-sky-600 font-medium truncate">Taxable: {{ formatCurrency(stats?.totalTaxable || 0) }}</p>
+            <p 
+              class="text-[11px] sm:text-xs font-medium truncate"
+              :class="activeTab === 'purchases' ? 'text-sky-600' : 'text-emerald-600'"
+            >
+              <template v-if="activeTab === 'purchases'">
+                Taxable: {{ formatCurrency(stats?.totalTaxable || 0) }}
+              </template>
+              <template v-else>
+                Margin: {{ stats?.marginPercent ? Number(stats.marginPercent).toFixed(2) + '%' : '—' }} (Pre-Tax)
+              </template>
+            </p>
           </div>
         </div>
       </div>
@@ -1070,7 +1094,9 @@ async function fetchVouchers(includeStats = true) {
             totalCount: res.summary.totalCount || 0,
             totalAmount: res.summary.totalAmount || 0,
             totalTaxable: res.summary.taxableAmount || 0,
-            totalTax: res.summary.taxAmount || 0
+            totalTax: res.summary.taxAmount || 0,
+            totalGrossProfit: res.summary.grossProfit || 0,
+            marginPercent: res.summary.marginPercent || 0
           }
         }
         if (res.lastSynced) lastSynced.value = res.lastSynced

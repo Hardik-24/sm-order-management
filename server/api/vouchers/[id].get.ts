@@ -186,6 +186,19 @@ export default defineEventHandler(async (event) => {
       let lineMargin: number | null = null
 
       if (costPrice !== null && costPrice > 0) {
+        // Guard against unit mismatches (e.g. screws per box vs single piece)
+        if (rate > 0 && costPrice / rate > 3) {
+          if (costPrice / rate > 500) {
+            costPrice = Math.round((costPrice / 1000) * 100) / 100
+          } else if (costPrice / rate > 50) {
+            costPrice = Math.round((costPrice / 100) * 100) / 100
+          } else {
+            costPrice = null
+          }
+        }
+      }
+
+      if (costPrice !== null && costPrice > 0) {
         lineCost = Math.round(qty * costPrice * 100) / 100
         // Real in-hand Gross Profit = Base Pre-Tax Revenue - Base Pre-Tax Purchase Cost
         lineProfit = Math.round((lineTaxable - lineCost) * 100) / 100
@@ -223,6 +236,13 @@ export default defineEventHandler(async (event) => {
       resolvedCount,
       totalCount: items.length,
       hasCostData: resolvedCount > 0
+    }
+
+    if (profitability.hasCostData) {
+      prisma.busyVoucher.update({
+        where: { id: voucher.id },
+        data: { grossProfit, marginPercent }
+      }).catch(() => {})
     }
 
     const normalizedVoucher = {
