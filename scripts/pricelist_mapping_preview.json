@@ -1,5 +1,5 @@
 {
-  "generatedAt": 1794502259.9363728,
+  "generatedAt": 1794567166.1690483,
   "summary": [
     {
       "sheet": "GREENPANEL",
@@ -10,52 +10,52 @@
     },
     {
       "sheet": "ACTION_TESA",
-      "total": 218,
-      "matched": 72,
-      "unmatched": 146,
-      "match_pct": 33.0
+      "total": 128,
+      "matched": 63,
+      "unmatched": 65,
+      "match_pct": 49.2
     },
     {
       "sheet": "RELWOOD",
-      "total": 14,
+      "total": 30,
       "matched": 0,
-      "unmatched": 14,
+      "unmatched": 30,
       "match_pct": 0.0
     },
     {
       "sheet": "MERINO",
-      "total": 30,
-      "matched": 12,
-      "unmatched": 18,
-      "match_pct": 40.0
+      "total": 14,
+      "matched": 5,
+      "unmatched": 9,
+      "match_pct": 35.7
     },
     {
       "sheet": "CENTURY",
-      "total": 4,
-      "matched": 2,
-      "unmatched": 2,
-      "match_pct": 50.0
+      "total": 13,
+      "matched": 8,
+      "unmatched": 5,
+      "match_pct": 61.5
     },
     {
       "sheet": "REHAU",
-      "total": 40,
-      "matched": 13,
-      "unmatched": 27,
-      "match_pct": 32.5
+      "total": 49,
+      "matched": 15,
+      "unmatched": 34,
+      "match_pct": 30.6
     },
     {
       "sheet": "BLUM",
-      "total": 440,
-      "matched": 178,
-      "unmatched": 262,
-      "match_pct": 40.5
+      "total": 448,
+      "matched": 176,
+      "unmatched": 272,
+      "match_pct": 39.3
     },
     {
       "sheet": "GREENPLY",
-      "total": 57,
-      "matched": 52,
-      "unmatched": 5,
-      "match_pct": 91.2
+      "total": 19,
+      "matched": 15,
+      "unmatched": 4,
+      "match_pct": 78.9
     },
     {
       "sheet": "VRINDA",
@@ -66,21 +66,21 @@
     },
     {
       "sheet": "WIGWAM",
-      "total": 56,
-      "matched": 56,
+      "total": 35,
+      "matched": 35,
       "unmatched": 0,
       "match_pct": 100.0
     },
     {
       "sheet": "HAFELE",
-      "total": 3403,
-      "matched": 532,
-      "unmatched": 2871,
-      "match_pct": 15.6
+      "total": 3843,
+      "matched": 708,
+      "unmatched": 3135,
+      "match_pct": 18.4
     }
   ],
-  "totalMatched": 1103,
-  "totalItems": 4546,
+  "totalMatched": 1211,
+  "totalItems": 4863,
   "sampleMatchedUpdates": [
     {
       "sheet": "GREENPANEL",
@@ -107,6 +107,17 @@
     {
       "sheet": "GREENPANEL",
       "db_id": null,
+      "db_name": "30 HDWR GR (GREEN)",
+      "db_sku": "30 HDWR GR (GREEN)",
+      "excel_desc": "GREENPANEL HDWR DOOR 30MM",
+      "excel_sku": "SM-GPN-DOOR-HDWR-30MM",
+      "old_price": 0.0,
+      "new_price": 283.78,
+      "price_diff": 283.78
+    },
+    {
+      "sheet": "GREENPANEL",
+      "db_id": null,
       "db_name": "12 FRMDF GR (GREEN)",
       "db_sku": "12 FRMDF GR (GREEN)",
       "excel_desc": "GREENPANEL FRMDF FIRE RETARDANT 12MM",
@@ -125,17 +136,6 @@
       "old_price": 0.0,
       "new_price": 126.45,
       "price_diff": 126.45
-    },
-    {
-      "sheet": "GREENPANEL",
-      "db_id": null,
-      "db_name": "30 HDWR GR (GREEN)",
-      "db_sku": "30 HDWR GR (GREEN)",
-      "excel_desc": "GREENPANEL HDWR DOOR 30MM",
-      "excel_sku": "SM-GPN-HDWR-DOOR-30MM",
-      "old_price": 0.0,
-      "new_price": 283.78,
-      "price_diff": 283.78
     },
     {
       "sheet": "GREENPANEL",
@@ -228,6 +228,17 @@
     {
       "sheet": "GREENPANEL",
       "db_id": null,
+      "db_name": "3.3 HDWR GR (GREEN)",
+      "db_sku": "3.3 HDWR GR (GREEN)",
+      "excel_desc": "GREENPANEL PLAIN MDF BOARD HDWR 3MM",
+      "excel_sku": "SM-GPN-MDF-HDWR-03MM",
+      "old_price": 0.0,
+      "new_price": 25.73,
+      "price_diff": 25.73
+    },
+    {
+      "sheet": "GREENPANEL",
+      "db_id": null,
       "db_name": "11 HDWR GR (GREEN)",
       "db_sku": "11 HDWR GR (GREEN)",
       "excel_desc": "GREENPANEL PLAIN MDF BOARD HDWR 11MM",
@@ -294,17 +305,6 @@
     {
       "sheet": "GREENPANEL",
       "db_id": null,
-      "db_name": "3.3 HDWR GR (GREEN)",
-      "db_sku": "3.3 HDWR GR (GREEN)",
-      "excel_desc": "GREENPANEL PLAIN MDF BOARD HDWR 3MM",
-      "excel_sku": "SM-GPN-MDF-HDWR-3MM",
-      "old_price": 0.0,
-      "new_price": 25.73,
-      "price_diff": 25.73
-    },
-    {
-      "sheet": "GREENPANEL",
-      "db_id": null,
       "db_name": "5.5 HDWR GR (GREEN) 8X4",
       "db_sku": "5.5 HDWR GR (GREEN) 8X4",
       "excel_desc": "GREENPANEL PLAIN MDF BOARD HDWR 5.5MM",
@@ -323,6 +323,28 @@
       "old_price": 0.0,
       "new_price": 57.44,
       "price_diff": 57.44
+    },
+    {
+      "sheet": "GREENPANEL",
+      "db_id": null,
+      "db_name": "18 MDF INT GR 10X4 (GREEN)",
+      "db_sku": "18 MDF INT GR 10X4 (GREEN)",
+      "excel_desc": "GREENPANEL PLAIN MDF BOARD INTERIOR 4MM",
+      "excel_sku": "SM-GPN-MDF-INT-04MM",
+      "old_price": 0.0,
+      "new_price": 21.58,
+      "price_diff": 21.58
+    },
+    {
+      "sheet": "GREENPANEL",
+      "db_id": null,
+      "db_name": "7.3 MDF INT GR (GREEN)",
+      "db_sku": "7.3 MDF INT GR (GREEN)",
+      "excel_desc": "GREENPANEL PLAIN MDF BOARD INTERIOR 7MM",
+      "excel_sku": "SM-GPN-MDF-INT-07MM",
+      "old_price": 0.0,
+      "new_price": 34.22,
+      "price_diff": 34.22
     },
     {
       "sheet": "GREENPANEL",
@@ -389,28 +411,6 @@
       "old_price": 0.0,
       "new_price": 81.4,
       "price_diff": 81.4
-    },
-    {
-      "sheet": "GREENPANEL",
-      "db_id": null,
-      "db_name": "18 MDF INT GR 10X4 (GREEN)",
-      "db_sku": "18 MDF INT GR 10X4 (GREEN)",
-      "excel_desc": "GREENPANEL PLAIN MDF BOARD INTERIOR 18MM",
-      "excel_sku": "SM-GPN-MDF-INT-18MM",
-      "old_price": 0.0,
-      "new_price": 89.92,
-      "price_diff": 89.92
-    },
-    {
-      "sheet": "GREENPANEL",
-      "db_id": null,
-      "db_name": "2.1 MDF INT GR (GREEN)",
-      "db_sku": "2.1 MDF INT GR (GREEN)",
-      "excel_desc": "GREENPANEL PLAIN MDF BOARD INTERIOR 2.1MM",
-      "excel_sku": "SM-GPN-MDF-INT-2.1MM",
-      "old_price": 0.0,
-      "new_price": 14.03,
-      "price_diff": 14.03
     }
   ]
 }

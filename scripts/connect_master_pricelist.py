@@ -15,7 +15,26 @@ import openpyxl
 # Ensure UTF-8 output
 sys.stdout.reconfigure(encoding='utf-8')
 
-DESKTOP_PATH = r"C:\Users\hdpat\OneDrive\Desktop\SM_MASTER_PRICELIST_2026_RECREATED.xlsx"
+CANDIDATE_PATHS = [
+    r"C:\Users\hdpat\OneDrive\Desktop\SM_MASTER_PRICELIST_2026_UPDATED.xlsx",
+    r"C:\Users\hdpat\OneDrive\Desktop\SM_MASTER_PRICELIST_2026.xlsx",
+    r"C:\Users\hdpat\OneDrive\Desktop\SM_MASTER_PRICELIST_2026_RECREATED.xlsx",
+    r"C:\Users\hdpat\Desktop\SM_MASTER_PRICELIST_2026_UPDATED.xlsx",
+    r"C:\Users\hdpat\Desktop\SM_MASTER_PRICELIST_2026.xlsx",
+    r"SM_MASTER_PRICELIST_2026_UPDATED.xlsx",
+    r"SM_MASTER_PRICELIST_2026.xlsx"
+]
+
+def resolve_desktop_path():
+    for arg in sys.argv[1:]:
+        if arg.endswith('.xlsx') and os.path.exists(arg):
+            return arg
+    for p in CANDIDATE_PATHS:
+        if os.path.exists(p):
+            return p
+    return None
+
+DESKTOP_PATH = resolve_desktop_path()
 PAYLOAD_PATH = "busy_sync_payload.json"
 
 def clean_str(s):
@@ -37,9 +56,11 @@ def main():
     print("=" * 70)
     print(f"Mode: {'DRY RUN (Read-Only Preview - No DB Changes)' if dry_run else 'APPLY (Will Update Database)'}\n")
 
-    if not os.path.exists(DESKTOP_PATH):
-        print(f"Error: Master price list not found at {DESKTOP_PATH}")
+    if not DESKTOP_PATH or not os.path.exists(DESKTOP_PATH):
+        print("Error: Master price list not found. Checked Desktop for SM_MASTER_PRICELIST_2026_UPDATED.xlsx and SM_MASTER_PRICELIST_2026.xlsx")
         sys.exit(1)
+
+    print(f"Using Master Price List: {DESKTOP_PATH}\n")
 
     # Copy to temporary file to avoid lock issues if open in Excel
     temp_wb_path = os.path.join(os.path.dirname(__file__), "temp_audit_pricelist.xlsx")
