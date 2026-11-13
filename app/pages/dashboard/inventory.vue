@@ -2,8 +2,8 @@
 import { ref, computed, watch, onUnmounted, nextTick } from 'vue'
 import { 
   RefreshCw, CheckCircle2, XCircle, Search, Package, AlertTriangle, 
-  ChevronLeft, ChevronRight, X, Tag, Hash, Layers, IndianRupee, ShieldCheck,
-  ShoppingBag, Receipt, TrendingUp
+  ChevronLeft, ChevronRight, ChevronDown, X, Tag, Hash, Layers, IndianRupee, ShieldCheck,
+  ShoppingBag, Receipt, TrendingUp, FolderTree, Folder, FolderOpen
 } from 'lucide-vue-next'
 import { formatDateTime } from '~/lib/utils'
 import { useAuth } from '~/composables/useAuth'
@@ -200,6 +200,266 @@ const endIndex = computed(() => {
   return Math.min(currentPage.value * pageSize.value, filteredProducts.value.length)
 })
 
+// =============================================================================
+// Group Wise Tree Hierarchy State & Methods
+// =============================================================================
+const viewMode = ref<'product' | 'group'>('product')
+const expandedGroups = ref<Set<string>>(new Set())
+const leafLimits = ref<Record<string, number>>({})
+
+const toggleGroup = (key: string) => {
+  const next = new Set(expandedGroups.value)
+  if (next.has(key)) {
+    next.delete(key)
+  } else {
+    next.add(key)
+  }
+  expandedGroups.value = next
+}
+
+const expandAllGroups = () => {
+  const allKeys = new Set<string>()
+  function collect(nodes: GroupTreeNode[]) {
+    for (const n of nodes) {
+      allKeys.add(n.key)
+      if (n.children.length > 0) collect(n.children)
+    }
+  }
+  collect(groupTree.value)
+  expandedGroups.value = allKeys
+}
+
+const collapseAllGroups = () => {
+  expandedGroups.value = new Set()
+}
+
+const showAllProductsForGroup = (key: string) => {
+  leafLimits.value = { ...leafLimits.value, [key]: 999999 }
+}
+
+const formatInr = (val: number) => {
+  if (!val || val === 0) return '₹0'
+  if (val >= 10000000) return `₹${(val / 10000000).toFixed(2)} Cr`
+  if (val >= 100000) return `₹${(val / 100000).toFixed(2)} L`
+  return `₹${Math.round(val).toLocaleString('en-IN')}`
+}
+
+export interface GroupTreeNode {
+  key: string
+  name: string
+  level: number
+  parentKey: string | null
+  children: GroupTreeNode[]
+  products: any[]
+  totalItems: number
+  totalStock: number
+  totalValue: number
+  inStockItems: number
+  outOfStockItems: number
+}
+
+// Build hierarchy chain for a product
+const getProductCategoryChain = (p: any): { id: string; name: string }[] => {
+  const chain: { id: string; name: string }[] = []
+  let cur = p.category
+  while (cur) {
+    if (cur.name && cur.name.trim()) {
+      chain.unshift({ id: cur.id || cur.name, name: cur.name.trim() })
+    }
+    cur = cur.parent
+  }
+  if (chain.length === 0) {
+    chain.push({ id: 'general', name: 'GENERAL' })
+  }
+  return chain
+}
+
+// Hierarchical Group Tree computed from filteredProducts
+const groupTree = computed<GroupTreeNode[]>(() => {
+  const list = filteredProducts.value || []
+  if (list.length === 0) return []
+
+  interface RawNode {
+    key: string
+    name: string
+    level: number
+    parentKey: string | null
+    childrenMap: Map<string, RawNode>
+    products: any[]
+  }
+
+  const rootMap = new Map<string, RawNode>()
+
+  for (const p of list) {
+    const chain = getProductCategoryChain(p)
+    let curMap = rootMap
+    let parentKey: string | null = null
+
+    for (let i = 0; i < chain.length; i++) {
+      const item = chain[i]
+      const key = (parentKey ? parentKey + ' > ' : '') + item.name
+
+      if (!curMap.has(item.name)) {
+        curMap.set(item.name, {
+          key,
+          name: item.name,
+          level: i,
+          parentKey,
+          childrenMap: new Map(),
+          products: []
+        })
+      }
+
+      const node = curMap.get(item.name)!
+      if (i === chain.length - 1) {
+        node.products.push(p)
+      }
+      curMap = node.childrenMap
+      parentKey = key
+    }
+  }
+
+  function transform(raw: RawNode): GroupTreeNode {
+    const sortedChildRaws = Array.from(raw.childrenMap.values()).sort((a, b) => a.name.localeCompare(b.name))
+    const children = sortedChildRaws.map(transform)
+
+    let totalItems = raw.products.length
+    let totalStock = raw.products.reduce((acc, p) => acc + (p.stock !== undefined ? p.stock : (p.stockQuantity || 0)), 0)
+    let totalValue = raw.products.reduce((acc, p) => {
+      const qty = p.stock !== undefined ? p.stock : (p.stockQuantity || 0)
+      const pr = Number(p.price || 0)
+      return acc + (qty * pr)
+    }, 0)
+    let inStockItems = raw.products.filter(p => (p.stock !== undefined ? p.stock : (p.stockQuantity || 0)) > 0).length
+    let outOfStockItems = raw.products.filter(p => (p.stock !== undefined ? p.stock : (p.stockQuantity || 0)) <= 0).length
+
+    for (const child of children) {
+      totalItems += child.totalItems
+      totalStock += child.totalStock
+      totalValue += child.totalValue
+      inStockItems += child.inStockItems
+      outOfStockItems += child.outOfStockItems
+    }
+
+    const products = [...raw.products].sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+
+    return {
+      key: raw.key,
+      name: raw.name,
+      level: raw.level,
+      parentKey: raw.parentKey,
+      children,
+      products,
+      totalItems,
+      totalStock,
+      totalValue: Math.round(totalValue),
+      inStockItems,
+      outOfStockItems
+    }
+  }
+
+  return Array.from(rootMap.values())
+    .map(transform)
+    .sort((a, b) => a.name.localeCompare(b.name))
+})
+
+// Auto-expand tree when search query is active
+watch(searchQuery, (newQuery) => {
+  if (newQuery && newQuery.trim()) {
+    const keys = new Set<string>()
+    function collect(nodes: GroupTreeNode[]) {
+      for (const n of nodes) {
+        keys.add(n.key)
+        if (n.children.length > 0) collect(n.children)
+      }
+    }
+    collect(groupTree.value)
+    expandedGroups.value = keys
+  }
+})
+
+// Group tree top-level statistics
+const groupTreeStats = computed(() => {
+  const roots = groupTree.value
+  let totalRootGroups = roots.length
+  let totalSubGroups = 0
+  let totalStockValuation = 0
+
+  function countSub(nodes: GroupTreeNode[]) {
+    for (const n of nodes) {
+      if (n.level > 0) totalSubGroups++
+      if (n.children.length > 0) countSub(n.children)
+    }
+  }
+
+  for (const r of roots) {
+    totalStockValuation += r.totalValue
+    countSub(r.children)
+  }
+
+  return {
+    totalRootGroups,
+    totalSubGroups,
+    totalStockValuation
+  }
+})
+
+type FlatGroupRow = 
+  | { type: 'group'; node: GroupTreeNode; isExpanded: boolean; hasChildren: boolean; productTotal: number; displayedCount: number; hasMore: boolean }
+  | { type: 'product'; product: any; parentNode: GroupTreeNode }
+  | { type: 'more-button'; node: GroupTreeNode; total: number; displayed: number }
+
+const visibleGroupRows = computed<FlatGroupRow[]>(() => {
+  const rows: FlatGroupRow[] = []
+
+  function walk(node: GroupTreeNode) {
+    const isExpanded = expandedGroups.value.has(node.key)
+    const hasChildren = node.children.length > 0 || node.products.length > 0
+    const limit = leafLimits.value[node.key] || 40
+    const productTotal = node.products.length
+    const displayedCount = Math.min(limit, productTotal)
+    const hasMore = productTotal > displayedCount
+
+    rows.push({
+      type: 'group',
+      node,
+      isExpanded,
+      hasChildren,
+      productTotal,
+      displayedCount,
+      hasMore
+    })
+
+    if (isExpanded) {
+      for (const child of node.children) {
+        walk(child)
+      }
+      const prodsToDisplay = node.products.slice(0, displayedCount)
+      for (const p of prodsToDisplay) {
+        rows.push({
+          type: 'product',
+          product: p,
+          parentNode: node
+        })
+      }
+      if (hasMore) {
+        rows.push({
+          type: 'more-button',
+          node,
+          total: productTotal,
+          displayed: displayedCount
+        })
+      }
+    }
+  }
+
+  for (const root of groupTree.value) {
+    walk(root)
+  }
+
+  return rows
+})
+
 const requestSync = async () => {
   isSyncing.value = true
   try {
@@ -366,19 +626,68 @@ onUnmounted(() => {
       class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col"
     >
       <!-- Toolbar -->
-      <div class="p-4 border-b border-gray-100 bg-gray-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div class="relative w-full sm:w-80">
-          <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input 
-            v-model="searchQuery"
-            type="text" 
-            placeholder="Search items by name, alias, group..."
-            class="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:border-[#1b3b5f] focus:ring-1 focus:ring-[#1b3b5f] bg-white"
-          />
+      <div class="p-4 border-b border-gray-100 bg-gray-50/50 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <!-- Left: Search Box + View Toggle -->
+        <div class="flex flex-col sm:flex-row sm:items-center gap-3 w-full lg:w-auto flex-1">
+          <div class="relative w-full sm:w-80">
+            <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input 
+              v-model="searchQuery"
+              type="text" 
+              :placeholder="viewMode === 'group' ? 'Search items, groups, sub-groups...' : 'Search items by name, alias, group...'"
+              class="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:border-[#1b3b5f] focus:ring-1 focus:ring-[#1b3b5f] bg-white transition-all"
+            />
+          </div>
+
+          <!-- View Mode Toggle: Product Wise vs Group Wise -->
+          <div class="inline-flex items-center bg-gray-200/80 p-0.5 rounded-lg border border-gray-300/80 shadow-2xs self-start sm:self-auto">
+            <button 
+              type="button"
+              @click="viewMode = 'product'"
+              :class="viewMode === 'product' ? 'bg-white text-gray-900 shadow-xs font-semibold' : 'text-gray-600 hover:text-gray-900 font-medium'"
+              class="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs transition-all cursor-pointer"
+              title="View flat list of individual products"
+            >
+              <Layers class="w-3.5 h-3.5 text-[#1b3b5f]" />
+              <span>Product Wise</span>
+            </button>
+
+            <button 
+              type="button"
+              @click="viewMode = 'group'"
+              :class="viewMode === 'group' ? 'bg-[#1b3b5f] text-white shadow-xs font-semibold' : 'text-gray-600 hover:text-gray-900 font-medium'"
+              class="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs transition-all cursor-pointer"
+              title="View hierarchical tree grouped by Primary Category -> Sub-group"
+            >
+              <FolderTree class="w-3.5 h-3.5" :class="viewMode === 'group' ? 'text-white' : 'text-[#1b3b5f]'" />
+              <span>Group Wise</span>
+            </button>
+          </div>
+
+          <!-- Quick Expand / Collapse All buttons (when in Group Wise) -->
+          <div v-if="viewMode === 'group'" class="flex items-center gap-1.5 self-start sm:self-auto animate-in fade-in duration-150">
+            <button
+              type="button"
+              @click="expandAllGroups"
+              class="px-2.5 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-md hover:bg-gray-50 hover:text-[#1b3b5f] shadow-2xs transition-colors cursor-pointer"
+              title="Expand all categories and sub-groups"
+            >
+              Expand All
+            </button>
+            <button
+              type="button"
+              @click="collapseAllGroups"
+              class="px-2.5 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-md hover:bg-gray-50 hover:text-[#1b3b5f] shadow-2xs transition-colors cursor-pointer"
+              title="Collapse all categories to top level"
+            >
+              Collapse All
+            </button>
+          </div>
         </div>
         
-        <div class="flex items-center gap-4 text-sm text-gray-500">
-          <div class="flex items-center gap-2">
+        <!-- Right: Metrics / Rows Per Page -->
+        <div class="flex items-center justify-between sm:justify-end gap-4 text-sm text-gray-500">
+          <div v-if="viewMode === 'product'" class="flex items-center gap-2">
             <span>Rows:</span>
             <RowsPerPageSelect 
               :modelValue="pageSize" 
@@ -387,7 +696,16 @@ onUnmounted(() => {
             />
           </div>
           <div>
-            Total Items: <span class="font-bold text-gray-900">{{ filteredProducts.length }}</span>
+            <template v-if="viewMode === 'product'">
+              Total Items: <span class="font-bold text-gray-900">{{ filteredProducts.length }}</span>
+            </template>
+            <template v-else>
+              <div class="flex items-center gap-2 text-xs">
+                <span>Groups: <strong class="text-gray-900">{{ groupTreeStats.totalRootGroups }}</strong> roots / <strong class="text-gray-900">{{ groupTreeStats.totalSubGroups }}</strong> sub</span>
+                <span class="text-gray-300">|</span>
+                <span>Valuation: <strong class="text-emerald-700 font-bold">{{ formatInr(groupTreeStats.totalStockValuation) }}</strong></span>
+              </div>
+            </template>
           </div>
         </div>
       </div>
@@ -419,7 +737,8 @@ onUnmounted(() => {
           </div>
         </Transition>
 
-        <table class="w-full text-left border-collapse table-auto">
+        <!-- PRODUCT WISE TABLE (Desktop) -->
+        <table v-if="viewMode === 'product'" class="w-full text-left border-collapse table-auto">
           <thead>
             <tr class="bg-gray-50 border-b border-gray-200 text-xs font-medium text-gray-500 uppercase tracking-wider">
               <th class="px-5 py-3.5 min-w-[220px]">Item Name</th>
@@ -495,6 +814,165 @@ onUnmounted(() => {
             </template>
           </tbody>
         </table>
+
+        <!-- GROUP WISE HIERARCHICAL TABLE (Desktop) -->
+        <table v-else class="w-full text-left border-collapse table-auto">
+          <thead>
+            <tr class="bg-gray-50 border-b border-gray-200 text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th class="px-5 py-3.5 min-w-[320px]">Item / Group Hierarchy</th>
+              <th class="px-5 py-3.5 w-44 min-w-[150px]">Level / Alias</th>
+              <th class="px-5 py-3.5 w-32 min-w-[110px] text-right">Items / Rate</th>
+              <th class="px-5 py-3.5 w-32 min-w-[110px] text-right">Stock Qty</th>
+              <th class="px-5 py-3.5 w-40 min-w-[130px] text-center">Status / Valuation</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            <TableSkeletonRows v-if="productsLoading && groupTree.length === 0" :rows="6" :cols="5" />
+
+            <template v-else>
+              <tr v-if="visibleGroupRows.length === 0">
+                <td colspan="5" class="px-6 py-12 text-center text-gray-500">
+                  <div class="flex flex-col items-center justify-center">
+                    <AlertTriangle class="w-8 h-8 text-gray-400 mb-2" />
+                    <p class="text-sm font-medium text-gray-900">No matching categories or items found</p>
+                    <p class="text-xs text-gray-500 mt-1">Try adjusting your search query or tab filter.</p>
+                  </div>
+                </td>
+              </tr>
+
+              <template v-for="row in visibleGroupRows" :key="row.type === 'group' ? row.node.key : (row.type === 'product' ? ('tree-p-' + row.product.id) : ('more-' + row.node.key))">
+                <!-- GROUP ROW -->
+                <tr 
+                  v-if="row.type === 'group'"
+                  @click="toggleGroup(row.node.key)"
+                  class="cursor-pointer transition-colors group select-none"
+                  :class="[
+                    row.node.level === 0 
+                      ? 'bg-[#1b3b5f]/5 hover:bg-[#1b3b5f]/10 border-t border-t-[#1b3b5f]/20 font-semibold text-gray-900' 
+                      : row.node.level === 1 
+                        ? 'bg-slate-50/80 hover:bg-slate-100/80 text-gray-800' 
+                        : 'bg-white hover:bg-gray-50/80 text-gray-700'
+                  ]"
+                >
+                  <!-- Group Name & Chevron -->
+                  <td class="py-2.5 pr-4 text-sm font-medium" :style="{ paddingLeft: (row.node.level * 24 + 16) + 'px' }">
+                    <div class="flex items-center gap-2">
+                      <span class="w-5 h-5 flex items-center justify-center text-gray-400 group-hover:text-gray-700 transition-colors">
+                        <ChevronDown v-if="row.isExpanded" class="w-4 h-4 text-[#1b3b5f]" />
+                        <ChevronRight v-else class="w-4 h-4" />
+                      </span>
+
+                      <FolderOpen v-if="row.isExpanded" class="w-4 h-4 text-[#1b3b5f] shrink-0" />
+                      <Folder v-else class="w-4 h-4 text-slate-500 shrink-0" />
+
+                      <span class="truncate font-bold tracking-tight text-gray-900" :title="row.node.name">
+                        {{ row.node.name }}
+                      </span>
+
+                      <span 
+                        v-if="row.node.level === 0" 
+                        class="ml-1 text-[10px] font-bold tracking-wider px-1.5 py-0.5 rounded bg-[#1b3b5f]/10 text-[#1b3b5f] uppercase"
+                      >
+                        Root
+                      </span>
+                    </div>
+                  </td>
+
+                  <!-- Level Classification -->
+                  <td class="px-5 py-2.5 w-44 min-w-[150px] text-xs text-gray-500">
+                    <span v-if="row.node.level === 0" class="text-xs font-medium text-gray-500">Primary Category</span>
+                    <span v-else-if="row.node.level === 1" class="text-xs font-medium text-slate-500">Sub-Group</span>
+                    <span v-else class="text-xs font-medium text-slate-400">Sub-Group L{{ row.node.level }}</span>
+                  </td>
+
+                  <!-- Items Count -->
+                  <td class="px-5 py-2.5 w-32 min-w-[110px] text-sm text-right font-medium text-gray-600">
+                    <span class="inline-flex items-center gap-1 font-mono text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-700 border border-gray-200">
+                      {{ row.node.totalItems }} items
+                    </span>
+                  </td>
+
+                  <!-- Total Stock -->
+                  <td class="px-5 py-2.5 w-32 min-w-[110px] text-sm text-right font-bold whitespace-nowrap" :class="row.node.totalStock > 0 ? 'text-gray-900' : 'text-gray-400'">
+                    {{ row.node.totalStock.toLocaleString('en-IN') }}
+                  </td>
+
+                  <!-- Valuation -->
+                  <td class="px-5 py-2.5 w-40 min-w-[130px] text-center whitespace-nowrap">
+                    <span class="font-mono text-xs font-semibold text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                      {{ formatInr(row.node.totalValue) }}
+                    </span>
+                  </td>
+                </tr>
+
+                <!-- PRODUCT ROW UNDER EXPANDED GROUP -->
+                <tr 
+                  v-else-if="row.type === 'product'"
+                  @click="openProductDetail(row.product)"
+                  class="hover:bg-[#1b3b5f]/5 cursor-pointer transition-colors group bg-white/60"
+                >
+                  <!-- Product Name -->
+                  <td class="py-2 pr-4 text-sm text-gray-800 font-normal" :style="{ paddingLeft: ((row.parentNode.level + 1) * 24 + 20) + 'px' }">
+                    <div class="flex items-center gap-2">
+                      <span class="w-1.5 h-1.5 rounded-full bg-slate-300 group-hover:bg-[#1b3b5f] transition-colors shrink-0"></span>
+                      <span class="break-words line-clamp-2 group-hover:text-[#1b3b5f] transition-colors" :title="row.product.name">
+                        {{ row.product.name }}
+                      </span>
+                    </div>
+                  </td>
+
+                  <!-- Product Alias -->
+                  <td class="px-5 py-2 w-44 min-w-[150px] max-w-[180px] text-xs font-mono group-hover:text-[#1b3b5f]">
+                    <span 
+                      v-if="row.product.sku && row.product.sku !== row.product.name" 
+                      class="break-words line-clamp-2 text-gray-900 font-semibold" 
+                      :title="row.product.sku"
+                    >
+                      {{ row.product.sku }}
+                    </span>
+                    <span v-else class="text-gray-400 font-sans">-</span>
+                  </td>
+
+                  <!-- Sale Price -->
+                  <td class="px-5 py-2 w-32 min-w-[110px] text-xs text-right font-mono text-gray-600">
+                    {{ Number(row.product.price) > 0 ? ('₹' + Number(row.product.price).toFixed(2)) : '-' }}
+                  </td>
+
+                  <!-- Stock -->
+                  <td class="px-5 py-2 w-32 min-w-[110px] text-sm text-right font-bold whitespace-nowrap" :class="row.product.stock > 0 ? 'text-gray-900' : 'text-red-600'">
+                    {{ row.product.stock }}
+                  </td>
+
+                  <!-- Status -->
+                  <td class="px-5 py-2 w-40 min-w-[130px] text-center whitespace-nowrap">
+                    <span v-if="row.product.stock > 0" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-green-100 text-green-800 border border-green-200">
+                      <CheckCircle2 class="w-3 h-3" />
+                      In Stock
+                    </span>
+                    <span v-else class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-red-100 text-red-800 border border-red-200">
+                      <XCircle class="w-3 h-3" />
+                      Out of Stock
+                    </span>
+                  </td>
+                </tr>
+
+                <!-- MORE BUTTON ROW -->
+                <tr v-else-if="row.type === 'more-button'" class="bg-gray-50/50">
+                  <td colspan="5" class="py-2.5 text-center text-xs text-gray-500 font-medium" :style="{ paddingLeft: ((row.node.level + 1) * 24 + 16) + 'px' }">
+                    <span>Showing {{ row.displayed }} of {{ row.total }} items in {{ row.node.name }}</span>
+                    <button 
+                      type="button"
+                      @click.stop="showAllProductsForGroup(row.node.key)"
+                      class="ml-3 font-bold text-[#1b3b5f] hover:underline cursor-pointer"
+                    >
+                      + Show all {{ row.total }} items
+                    </button>
+                  </td>
+                </tr>
+              </template>
+            </template>
+          </tbody>
+        </table>
       </div>
 
       <!-- Floating Horizontal Scrollbar (Desktop only) -->
@@ -524,71 +1002,160 @@ onUnmounted(() => {
           </div>
         </Transition>
 
-        <div v-if="filteredProducts.length === 0" class="p-8 text-center text-sm text-gray-500">
-          <AlertTriangle class="w-8 h-8 text-gray-400 mx-auto mb-2" />
-          <p class="font-medium text-gray-900">No items found</p>
-          <p class="text-xs text-gray-500 mt-0.5">Try adjusting your search query.</p>
-        </div>
-
-        <div 
-          v-for="product in paginatedProducts" 
-          :key="'mob-inv-' + product.id"
-          @click="openProductDetail(product)"
-          class="p-3.5 hover:bg-gray-50 active:bg-gray-100 transition-colors cursor-pointer flex items-start justify-between gap-3"
-        >
-          <!-- Left Column: Alias, Group, Item Name -->
-          <div class="flex-1 min-w-0 space-y-1">
-            <!-- Product Alias Tag (Only when distinct from item name) -->
-            <div v-if="product.sku && product.sku !== product.name" class="flex items-center">
-              <span class="text-xs font-mono font-bold text-gray-900 bg-gray-100 px-2 py-0.5 rounded border border-gray-200">
-                {{ product.sku }}
-              </span>
-            </div>
-
-            <!-- Category / Group Name -->
-            <div v-if="product.category?.name" class="flex items-center">
-              <span class="text-[10px] font-semibold text-gray-600 bg-gray-50 px-2 py-0.5 rounded border border-gray-200/80">
-                {{ product.category.name }}
-              </span>
-            </div>
-
-            <!-- Item Name -->
-            <h3 class="text-sm font-semibold text-gray-900 leading-snug break-words">
-              {{ product.name }}
-            </h3>
+        <!-- Product Wise Mobile Cards -->
+        <template v-if="viewMode === 'product'">
+          <div v-if="filteredProducts.length === 0" class="p-8 text-center text-sm text-gray-500">
+            <AlertTriangle class="w-8 h-8 text-gray-400 mx-auto mb-2" />
+            <p class="font-medium text-gray-900">No items found</p>
+            <p class="text-xs text-gray-500 mt-0.5">Try adjusting your search query.</p>
           </div>
 
-          <!-- Right Column: In Stock badge, Quantity right below it -->
-          <div class="flex flex-col items-end shrink-0 space-y-1.5 text-right pl-2">
-            <!-- In Stock / Out of Stock badge -->
-            <span 
-              v-if="product.stock > 0" 
-              class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 text-green-800 border border-green-200"
-            >
-              <CheckCircle2 class="w-3 h-3 text-green-600" />
-              <span>In Stock</span>
-            </span>
-            <span 
-              v-else 
-              class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-100 text-red-800 border border-red-200"
-            >
-              <XCircle class="w-3 h-3 text-red-600" />
-              <span>Out of Stock</span>
-            </span>
+          <div 
+            v-for="product in paginatedProducts" 
+            :key="'mob-inv-' + product.id"
+            @click="openProductDetail(product)"
+            class="p-3.5 hover:bg-gray-50 active:bg-gray-100 transition-colors cursor-pointer flex items-start justify-between gap-3"
+          >
+            <!-- Left Column: Alias, Group, Item Name -->
+            <div class="flex-1 min-w-0 space-y-1">
+              <div v-if="product.sku && product.sku !== product.name" class="flex items-center">
+                <span class="text-xs font-mono font-bold text-gray-900 bg-gray-100 px-2 py-0.5 rounded border border-gray-200">
+                  {{ product.sku }}
+                </span>
+              </div>
 
-            <!-- Quantity Number & Unit right below the badge -->
+              <div v-if="product.category?.name" class="flex items-center">
+                <span class="text-[10px] font-semibold text-gray-600 bg-gray-50 px-2 py-0.5 rounded border border-gray-200/80">
+                  {{ product.category.name }}
+                </span>
+              </div>
+
+              <h3 class="text-sm font-semibold text-gray-900 leading-snug break-words">
+                {{ product.name }}
+              </h3>
+            </div>
+
+            <!-- Right Column: In Stock badge, Quantity right below it -->
+            <div class="flex flex-col items-end shrink-0 space-y-1.5 text-right pl-2">
+              <span 
+                v-if="product.stock > 0" 
+                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 text-green-800 border border-green-200"
+              >
+                <CheckCircle2 class="w-3 h-3 text-green-600" />
+                <span>In Stock</span>
+              </span>
+              <span 
+                v-else 
+                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-100 text-red-800 border border-red-200"
+              >
+                <XCircle class="w-3 h-3 text-red-600" />
+                <span>Out of Stock</span>
+              </span>
+
+              <div 
+                class="text-sm font-bold tabular-nums"
+                :class="product.stock > 0 ? (product.stock < 10 ? 'text-amber-600' : 'text-gray-900') : 'text-rose-600'"
+              >
+                {{ product.stock }} <span class="text-xs font-semibold text-gray-500">{{ product.unit || '' }}</span>
+              </div>
+            </div>
+          </div>
+        </template>
+
+        <!-- Group Wise Mobile Accordion -->
+        <template v-else>
+          <div v-if="visibleGroupRows.length === 0" class="p-8 text-center text-sm text-gray-500">
+            <AlertTriangle class="w-8 h-8 text-gray-400 mx-auto mb-2" />
+            <p class="font-medium text-gray-900">No matching categories or items found</p>
+            <p class="text-xs text-gray-500 mt-0.5">Try adjusting your search query.</p>
+          </div>
+
+          <template v-for="row in visibleGroupRows" :key="'mob-' + (row.type === 'group' ? row.node.key : (row.type === 'product' ? row.product.id : ('more-' + row.node.key)))">
+            <!-- MOBILE GROUP ROW -->
             <div 
-              class="text-sm font-bold tabular-nums"
-              :class="product.stock > 0 ? (product.stock < 10 ? 'text-amber-600' : 'text-gray-900') : 'text-rose-600'"
+              v-if="row.type === 'group'"
+              @click="toggleGroup(row.node.key)"
+              class="p-3 transition-colors cursor-pointer flex items-center justify-between border-b border-gray-100"
+              :class="[
+                row.node.level === 0 
+                  ? 'bg-[#1b3b5f]/5 text-gray-900 font-bold border-l-4 border-l-[#1b3b5f]' 
+                  : row.node.level === 1 
+                    ? 'bg-slate-50 text-gray-800 font-semibold pl-6 border-l-2 border-l-slate-400' 
+                    : 'bg-white text-gray-700 pl-9 border-l-2 border-l-gray-200'
+              ]"
             >
-              {{ product.stock }} <span class="text-xs font-semibold text-gray-500">{{ product.unit || '' }}</span>
+              <div class="flex items-center gap-2 min-w-0 flex-1 pr-2">
+                <ChevronDown v-if="row.isExpanded" class="w-4 h-4 text-[#1b3b5f] shrink-0" />
+                <ChevronRight v-else class="w-4 h-4 text-gray-400 shrink-0" />
+                
+                <FolderOpen v-if="row.isExpanded" class="w-4 h-4 text-[#1b3b5f] shrink-0" />
+                <Folder v-else class="w-4 h-4 text-slate-500 shrink-0" />
+
+                <span class="truncate text-sm font-bold text-gray-900">{{ row.node.name }}</span>
+              </div>
+
+              <div class="flex items-center gap-2 shrink-0 text-right">
+                <span class="text-[11px] font-mono text-gray-600 bg-gray-100 px-2 py-0.5 rounded">
+                  {{ row.node.totalItems }}
+                </span>
+                <span class="text-xs font-bold text-gray-900">
+                  {{ row.node.totalStock }} qty
+                </span>
+              </div>
             </div>
-          </div>
-        </div>
+
+            <!-- MOBILE PRODUCT ROW -->
+            <div 
+              v-else-if="row.type === 'product'"
+              @click="openProductDetail(row.product)"
+              class="p-3 pl-8 hover:bg-gray-50 active:bg-gray-100 transition-colors cursor-pointer flex items-start justify-between gap-3 border-b border-gray-100/70 bg-white"
+            >
+              <div class="flex-1 min-w-0 space-y-1">
+                <div v-if="row.product.sku && row.product.sku !== row.product.name" class="flex items-center">
+                  <span class="text-xs font-mono font-bold text-gray-900 bg-gray-100 px-2 py-0.5 rounded border border-gray-200">
+                    {{ row.product.sku }}
+                  </span>
+                </div>
+                <h3 class="text-sm font-medium text-gray-900 leading-snug break-words">
+                  {{ row.product.name }}
+                </h3>
+                <div class="text-xs text-gray-500 font-mono">
+                  {{ Number(row.product.price) > 0 ? ('₹' + Number(row.product.price).toFixed(2)) : '' }}
+                </div>
+              </div>
+
+              <div class="text-right shrink-0 flex flex-col items-end gap-1">
+                <span class="text-sm font-bold font-mono" :class="row.product.stock > 0 ? 'text-gray-900' : 'text-red-600'">
+                  {{ row.product.stock }}
+                </span>
+                <span v-if="row.product.stock > 0" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-green-100 text-green-800 border border-green-200">
+                  <CheckCircle2 class="w-3 h-3" />
+                  In Stock
+                </span>
+                <span v-else class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-red-100 text-red-800 border border-red-200">
+                  <XCircle class="w-3 h-3" />
+                  Out
+                </span>
+              </div>
+            </div>
+
+            <!-- MOBILE MORE BUTTON -->
+            <div v-else-if="row.type === 'more-button'" class="p-2.5 text-center bg-gray-50 border-b border-gray-200 text-xs">
+              <span>Showing {{ row.displayed }} of {{ row.total }} items</span>
+              <button 
+                type="button"
+                @click.stop="showAllProductsForGroup(row.node.key)"
+                class="ml-2 font-bold text-[#1b3b5f] hover:underline"
+              >
+                + Show all {{ row.total }}
+              </button>
+            </div>
+          </template>
+        </template>
       </div>
 
-      <!-- Pagination Footer -->
-      <div v-if="filteredProducts.length > 0 && pageSize !== -1" class="p-3 sm:p-4 border-t border-gray-200 bg-white rounded-b-xl flex flex-col sm:flex-row items-center justify-between gap-2.5 sm:gap-4">
+      <!-- Pagination / Summary Footer -->
+      <div v-if="viewMode === 'product' && filteredProducts.length > 0 && pageSize !== -1" class="p-3 sm:p-4 border-t border-gray-200 bg-white rounded-b-xl flex flex-col sm:flex-row items-center justify-between gap-2.5 sm:gap-4">
         <p class="text-[11px] sm:text-xs text-gray-500 whitespace-nowrap text-center sm:text-left">
           Showing <span class="font-medium text-gray-900">{{ startIndex }}</span> to <span class="font-medium text-gray-900">{{ endIndex }}</span> of <span class="font-medium text-gray-900">{{ filteredProducts.length }}</span> items
         </p>
@@ -617,6 +1184,19 @@ onUnmounted(() => {
             <span class="hidden sm:inline">Next</span>
             <ChevronRight class="w-4 h-4" />
           </button>
+        </div>
+      </div>
+
+      <div v-else-if="viewMode === 'group'" class="p-3 sm:p-4 border-t border-gray-200 bg-gray-50/70 rounded-b-xl flex flex-col sm:flex-row items-center justify-between gap-2.5 sm:gap-4 text-xs text-gray-600">
+        <div class="flex items-center gap-3">
+          <span class="font-medium text-gray-900">Group Wise Hierarchy</span>
+          <span class="text-gray-300">|</span>
+          <span><strong>{{ groupTreeStats.totalRootGroups }}</strong> Primary Groups</span>
+          <span class="text-gray-300">•</span>
+          <span><strong>{{ groupTreeStats.totalSubGroups }}</strong> Sub-Groups</span>
+        </div>
+        <div class="text-gray-500">
+          Click any group to expand/collapse. Click any item to inspect price history.
         </div>
       </div>
     </div>

@@ -16,6 +16,8 @@ export default defineEventHandler(async (event) => {
       { name: { contains: token, mode: 'insensitive' } },
       { sku: { contains: token, mode: 'insensitive' } },
       { category: { name: { contains: token, mode: 'insensitive' } } },
+      { category: { parent: { name: { contains: token, mode: 'insensitive' } } } },
+      { category: { parent: { parent: { name: { contains: token, mode: 'insensitive' } } } } },
       ...(token.length >= 4 ? [{ hsnCode: { contains: token, mode: 'insensitive' } }] : [{ hsnCode: { startsWith: token, mode: 'insensitive' } }])
     ])
     if (multiTokenFilter) {
@@ -25,7 +27,17 @@ export default defineEventHandler(async (event) => {
 
   const products = await prisma.product.findMany({
     where,
-    include: { category: true },
+    include: {
+      category: {
+        include: {
+          parent: {
+            include: {
+              parent: true
+            }
+          }
+        }
+      }
+    },
     orderBy: { name: 'asc' }
   })
 
@@ -33,7 +45,7 @@ export default defineEventHandler(async (event) => {
     return rankServerItems(products, search, {
       primary: p => p.name,
       secondary: p => p.sku,
-      meta: p => p.category?.name,
+      meta: (p: any) => [p.category?.name, p.category?.parent?.name, p.category?.parent?.parent?.name].filter(Boolean),
       code: p => p.hsnCode
     })
   }

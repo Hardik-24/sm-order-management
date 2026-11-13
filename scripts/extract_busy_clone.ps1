@@ -67,15 +67,33 @@ try {
 
 # 1. Categories (Item Groups)
 Write-Host "Extracting Categories..."
-$rsCat = $conn.Execute("SELECT Code, Name FROM Master1 WHERE MasterType = 5")
+$rsCat = $conn.Execute("SELECT Code, Name, ParentGrp FROM Master1 WHERE MasterType = 5")
+$catMap = @{}
+$catList = [System.Collections.Generic.List[PSCustomObject]]::new()
 $categories = @{}
 while (-not $rsCat.EOF) {
     $c = $rsCat.Fields.Item("Code").Value
     $n = $rsCat.Fields.Item("Name").Value.ToString().Trim()
+    $p = $rsCat.Fields.Item("ParentGrp").Value
+    $parentCode = if ($p -ne $null -and $p -ne [DBNull]::Value) { [int]$p } else { 0 }
     $categories[$c] = $n
+    $catMap[$c] = @{ Code = $c; Name = $n; ParentGrp = $parentCode }
+    $catList.Add([PSCustomObject]@{
+        code = $c
+        name = $n
+        parentCode = $parentCode
+        parentName = $null
+    })
     $rsCat.MoveNext()
 }
-Write-Host "  Found $($categories.Count) categories."
+
+# Resolve parent names
+foreach ($item in $catList) {
+    if ($item.parentCode -gt 0 -and $catMap.ContainsKey($item.parentCode)) {
+        $item.parentName = $catMap[$item.parentCode].Name
+    }
+}
+Write-Host "  Found $($catList.Count) categories with hierarchy links."
 
 # 2. Products with Opening Stock & Daily Movements
 Write-Host "Extracting Products & Stock..."
@@ -526,7 +544,7 @@ if (-not $OutputPath) {
 
 $payload = [PSCustomObject]@{
     extractedAt = (Get-Date).ToString("o")
-    categories = $categories.Values | Select-Object -Unique
+    categories = $catList
     products = $products
     customers = $customers
     monthlyFlow = $monthlyFlow

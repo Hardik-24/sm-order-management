@@ -5,6 +5,10 @@ export default defineEventHandler(async (event) => {
   await requireAuth(event)
   
   const categories = await prisma.category.findMany({
+    include: {
+      parent: true,
+      children: true
+    },
     orderBy: { name: 'asc' }
   })
 

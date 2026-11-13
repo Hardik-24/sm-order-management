@@ -26,13 +26,28 @@ async function runSync() {
   console.log(`- Customers in payload:  ${data.customers.length}`);
 
   // -----------------------------------------------------------------------------
-  // STEP 1: Categories Sync
+  // STEP 1: Categories Sync (with Hierarchy)
   // -----------------------------------------------------------------------------
-  console.log("\n[1/3] Syncing Categories...");
-  const catSet = new Set(data.categories.map(c => c.trim()).filter(Boolean));
+  console.log("\n[1/3] Syncing Categories & Hierarchy...");
+  const catEntries = [];
+  const catSet = new Set();
+
+  if (Array.isArray(data.categories)) {
+    for (const c of data.categories) {
+      const name = (typeof c === 'string' ? c : (c.name || '')).trim();
+      const parentName = (typeof c === 'object' && c && c.parentName) ? c.parentName.trim() : null;
+      if (name && !catSet.has(name)) {
+        catSet.add(name);
+        catEntries.push({ name, parentName });
+      }
+    }
+  }
+
   data.products.forEach(p => {
-    if (p.categoryName && p.categoryName.trim()) {
-      catSet.add(p.categoryName.trim());
+    if (p.categoryName && p.categoryName.trim() && !catSet.has(p.categoryName.trim())) {
+      const pCat = p.categoryName.trim();
+      catSet.add(pCat);
+      catEntries.push({ name: pCat, parentName: null });
     }
   });
 
@@ -57,6 +72,30 @@ async function runSync() {
   const categoryMap = new Map();
   allDBCats.forEach(c => categoryMap.set(c.name, c.id));
   const defaultCatId = categoryMap.get("General") || allDBCats[0]?.id;
+
+  // Link parent categories
+  const parentLinks = [];
+  for (const c of catEntries) {
+    if (c.parentName && categoryMap.has(c.parentName) && categoryMap.has(c.name)) {
+      const childId = categoryMap.get(c.name);
+      const parentId = categoryMap.get(c.parentName);
+      if (childId && parentId && childId !== parentId) {
+        parentLinks.push({ childId, parentId });
+      }
+    }
+  }
+
+  if (parentLinks.length > 0) {
+    const whenClauses = parentLinks.map(l => `WHEN id = ${esc(l.childId)} THEN ${esc(l.parentId)}`).join(' ');
+    const childIds = parentLinks.map(l => esc(l.childId)).join(',');
+    await prisma.$executeRawUnsafe(`
+      UPDATE categories 
+      SET "parentId" = CASE ${whenClauses} END, "updatedAt" = NOW()
+      WHERE id IN (${childIds});
+    `);
+    console.log(`  -> Linked ${parentLinks.length} category hierarchy relations in batch.`);
+  }
+
   console.log(`  -> Synced ${allDBCats.length} total categories in database.`);
 
   // -----------------------------------------------------------------------------

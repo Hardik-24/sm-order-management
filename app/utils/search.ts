@@ -234,7 +234,12 @@ export function rankProducts<T extends { name?: string; sku?: string; hsnCode?: 
   return rankAndFilter(products, query, {
     primary: p => p.name,
     secondary: p => p.sku,
-    meta: p => p.category?.name || (getCategoryName && p.categoryId ? getCategoryName(p.categoryId) : ''),
+    meta: p => [
+      p.category?.name,
+      (p.category as any)?.parent?.name,
+      (p.category as any)?.parent?.parent?.name,
+      (getCategoryName && p.categoryId ? getCategoryName(p.categoryId) : '')
+    ].filter(Boolean) as string[],
     code: p => p.hsnCode
   })
 }
