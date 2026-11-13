@@ -534,22 +534,110 @@
             </div>
 
             <!-- 3. Drawer Body (Scrollable) -->
-            <div class="flex-grow overflow-y-auto bg-white p-4 sm:p-6 space-y-4">
-              <!-- Quick 3 KPI Cards -->
-              <div class="grid grid-cols-3 gap-2">
-                <div class="px-2.5 py-1.5 bg-gray-50 rounded-lg border border-gray-200 text-center">
+            <div class="flex-grow overflow-y-auto bg-gray-50/40 p-3.5 sm:p-5 space-y-3.5">
+              
+              <!-- A. FINANCIAL OVERVIEW CARD (Unified for Sales / Purchases) -->
+              <!-- For Sales Vouchers: Clean Profitability & Financial Health Card -->
+              <div 
+                v-if="activeTab === 'sales'" 
+                class="bg-white rounded-2xl border border-gray-200/90 shadow-xs overflow-hidden"
+              >
+                <!-- Loading State while cost intelligence runs -->
+                <div v-if="isLoadingDetail && !voucherProfitability" class="p-4 flex items-center justify-center gap-2 text-xs text-gray-500">
+                  <Loader2 class="w-4 h-4 animate-spin text-[#1b3b5f]" />
+                  <span>Loading cost & profit breakdown...</span>
+                </div>
+
+                <template v-else>
+                  <!-- 1. Primary Highlight Banner (Estimated Profit) -->
+                  <div 
+                    class="p-4 transition-colors"
+                    :class="[
+                      voucherProfitability?.hasCostData
+                        ? (voucherProfitability.grossProfit >= 0 ? 'bg-gradient-to-r from-emerald-50 via-emerald-50/60 to-teal-50 border-b border-emerald-100' : 'bg-gradient-to-r from-rose-50 via-rose-50/60 to-orange-50 border-b border-rose-100')
+                        : 'bg-gray-50 border-b border-gray-100'
+                    ]"
+                  >
+                    <div class="flex items-center justify-between gap-3">
+                      <div class="flex items-center gap-2.5">
+                        <div 
+                          class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-xs"
+                          :class="voucherProfitability?.grossProfit >= 0 ? 'bg-emerald-600 text-white' : (voucherProfitability?.hasCostData ? 'bg-rose-600 text-white' : 'bg-gray-200 text-gray-500')"
+                        >
+                          <TrendingUp class="w-5 h-5" />
+                        </div>
+                        <div>
+                          <span class="text-[10px] uppercase font-bold tracking-wider text-gray-500 block">
+                            Estimated Profit
+                          </span>
+                          <div 
+                            v-if="voucherProfitability?.hasCostData" 
+                            class="text-xl sm:text-2xl font-black font-mono tracking-tight"
+                            :class="voucherProfitability.grossProfit >= 0 ? 'text-emerald-700' : 'text-rose-600'"
+                          >
+                            {{ voucherProfitability.grossProfit >= 0 ? '+' : '' }}{{ formatCurrency(voucherProfitability.grossProfit) }}
+                          </div>
+                          <div v-else class="text-sm font-semibold text-gray-500">
+                            Awaiting Cost Data
+                          </div>
+                        </div>
+                      </div>
+
+                      <div v-if="voucherProfitability?.hasCostData" class="text-right shrink-0">
+                        <span 
+                          class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold font-mono shadow-2xs"
+                          :class="voucherProfitability.marginPercent >= 0 ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'"
+                        >
+                          {{ voucherProfitability.marginPercent >= 0 ? '+' : '' }}{{ voucherProfitability.marginPercent.toFixed(1) }}% Margin
+                        </span>
+                        <span class="block text-[10px] text-gray-500 mt-1 font-medium">
+                          {{ voucherProfitability.resolvedCount }}/{{ voucherProfitability.totalCount }} items matched
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- 2. Simple 3-Box Financial Breakdown -->
+                  <div class="grid grid-cols-3 divide-x divide-gray-100 bg-white p-3 text-center">
+                    <div class="px-1.5 py-1">
+                      <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider block">Sale Amount</span>
+                      <span class="text-xs sm:text-sm font-bold font-mono text-gray-900 mt-0.5 block truncate">
+                        {{ formatCurrency(selectedVoucher?.totalAmount) }}
+                      </span>
+                    </div>
+
+                    <div class="px-1.5 py-1">
+                      <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider block">Purchase Cost</span>
+                      <span class="text-xs sm:text-sm font-bold font-mono text-gray-700 mt-0.5 block truncate">
+                        {{ voucherProfitability?.hasCostData ? formatCurrency(voucherProfitability.totalCost) : '—' }}
+                      </span>
+                    </div>
+
+                    <div class="px-1.5 py-1">
+                      <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider block">Total GST</span>
+                      <span class="text-xs sm:text-sm font-bold font-mono text-emerald-800 mt-0.5 block truncate">
+                        {{ formatCurrency(selectedVoucher?.taxAmount) }}
+                      </span>
+                    </div>
+                  </div>
+                </template>
+              </div>
+
+              <!-- For Purchases: Normal 3 KPI Cards -->
+              <div v-else class="grid grid-cols-3 gap-2">
+                <div class="px-2.5 py-2 bg-white rounded-xl border border-gray-200 text-center shadow-2xs">
                   <p class="text-[9px] font-bold uppercase tracking-wider text-gray-400">Taxable</p>
                   <p class="font-mono text-xs font-bold text-gray-700 truncate mt-0.5">
                     {{ formatCurrency(selectedVoucher?.taxableAmount) }}
                   </p>
                 </div>
-                <div class="px-2.5 py-1.5 bg-emerald-50/70 rounded-lg border border-emerald-200 text-center">
+                <div class="px-2.5 py-2 bg-white rounded-xl border border-emerald-200 text-center shadow-2xs">
                   <p class="text-[9px] font-bold uppercase tracking-wider text-emerald-700">Total Tax</p>
                   <p class="font-mono text-xs font-bold text-emerald-800 truncate mt-0.5">
                     {{ formatCurrency(selectedVoucher?.taxAmount) }}
                   </p>
                 </div>
-                <div class="px-2.5 py-1.5 bg-[#1b3b5f]/10 rounded-lg border border-[#1b3b5f]/30 text-center">
+                <div class="px-2.5 py-2 bg-[#1b3b5f]/5 rounded-xl border border-[#1b3b5f]/20 text-center shadow-2xs">
                   <p class="text-[9px] font-bold uppercase tracking-wider text-[#1b3b5f]">Grand Total</p>
                   <p class="font-mono text-xs font-extrabold text-[#1b3b5f] truncate mt-0.5">
                     {{ formatCurrency(selectedVoucher?.totalAmount) }}
@@ -557,75 +645,12 @@
                 </div>
               </div>
 
-              <!-- Sales Profitability & Margin Intelligence (Sales Vouchers Only) -->
-              <div 
-                v-if="activeTab === 'sales'" 
-                class="rounded-xl border p-3.5 transition-all shadow-2xs"
-                :class="[
-                  voucherProfitability?.hasCostData
-                    ? (voucherProfitability.grossProfit >= 0 ? 'bg-gradient-to-r from-emerald-500/10 via-emerald-50/70 to-teal-500/10 border-emerald-200/90' : 'bg-gradient-to-r from-rose-500/10 via-rose-50/70 to-orange-500/10 border-rose-200/90')
-                    : 'bg-gray-50 border-gray-200/80'
-                ]"
-              >
-                <div v-if="isLoadingDetail && !voucherProfitability" class="flex items-center justify-center gap-2 py-2 text-xs text-gray-500 font-medium">
-                  <Loader2 class="w-4 h-4 animate-spin text-[#1b3b5f]" />
-                  <span>Calculating Profitability & Margin from Purchase Records...</span>
-                </div>
-
-                <div v-else-if="voucherProfitability?.hasCostData" class="flex items-center justify-between gap-3">
-                  <div class="flex items-center gap-2.5 min-w-0">
-                    <div 
-                      class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-xs"
-                      :class="voucherProfitability.grossProfit >= 0 ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'"
-                    >
-                      <TrendingUp class="w-5 h-5" />
-                    </div>
-                    <div class="min-w-0">
-                      <div class="flex items-center gap-1.5">
-                        <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Gross Profitability</span>
-                        <span 
-                          class="px-1.5 py-0.2 rounded text-[10px] font-mono font-bold"
-                          :class="voucherProfitability.marginPercent >= 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'"
-                        >
-                          {{ voucherProfitability.marginPercent >= 0 ? '+' : '' }}{{ voucherProfitability.marginPercent.toFixed(1) }}% Margin
-                        </span>
-                      </div>
-                      <p class="text-xs text-gray-600 truncate mt-0.5">
-                        Est. Cost: <strong class="font-mono text-gray-900">{{ formatCurrency(voucherProfitability.totalCost) }}</strong>
-                        <span class="text-gray-300 mx-1">•</span>
-                        <span class="text-[10px] text-gray-500 font-medium">{{ voucherProfitability.resolvedCount }}/{{ voucherProfitability.totalCount }} items matched</span>
-                      </p>
-                    </div>
-                  </div>
-
-                  <div class="text-right shrink-0">
-                    <div 
-                      class="text-base sm:text-lg font-black font-mono tracking-tight tabular-nums"
-                      :class="voucherProfitability.grossProfit >= 0 ? 'text-emerald-700' : 'text-rose-600'"
-                    >
-                      {{ voucherProfitability.grossProfit >= 0 ? '+' : '' }}{{ formatCurrency(voucherProfitability.grossProfit) }}
-                    </div>
-                    <span class="text-[10px] font-semibold text-gray-500 block">
-                      {{ voucherProfitability.grossProfit >= 0 ? 'Net Realized Profit' : 'Loss / Low Margin' }}
-                    </span>
-                  </div>
-                </div>
-
-                <div v-else class="flex items-center justify-between text-xs text-gray-500 py-1">
-                  <span class="flex items-center gap-1.5">
-                    <TrendingUp class="w-4 h-4 text-gray-400" />
-                    <span>Purchase Cost Intelligence</span>
-                  </span>
-                  <span class="text-[11px] text-gray-400 font-medium">No purchase records or cost prices linked to items</span>
-                </div>
-              </div>
-
-              <!-- Itemized Line Items Table (Matching OrderDetailPanel.vue:1551-1644 exact typography & spacing) -->
+              <!-- B. ITEMIZED LINE ITEMS (Card view on Mobile, Table on Desktop) -->
               <div class="space-y-2">
-                <div class="flex items-center justify-between">
+                <div class="flex items-center justify-between px-0.5">
                   <span class="text-[11px] font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
                     <Package class="w-3.5 h-3.5 text-gray-400" />
-                    Itemized Line Items
+                    <span>Items ({{ selectedVoucher?.items?.length || 0 }})</span>
                   </span>
                   <NuxtLink
                     v-if="selectedVoucher?.customerCode"
@@ -637,74 +662,145 @@
                   </NuxtLink>
                 </div>
 
-                <div v-if="!selectedVoucher?.items || selectedVoucher.items.length === 0" class="p-6 text-center text-xs text-gray-400 border border-dashed border-gray-200 rounded-xl">
+                <div v-if="!selectedVoucher?.items || selectedVoucher.items.length === 0" class="p-6 text-center text-xs text-gray-400 border border-dashed border-gray-200 rounded-xl bg-white">
                   No individual item lines recorded on this invoice.
                 </div>
 
-                <div v-else class="overflow-x-auto border border-gray-200/80 rounded-xl shadow-2xs">
-                  <table class="w-full text-left text-xs sm:text-sm">
-                    <thead class="bg-gray-50/80 text-[11px] font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-200/70">
-                      <tr>
-                        <th class="px-3.5 py-2.5 font-semibold">Product</th>
-                        <th class="px-3 py-2.5 font-semibold text-right">Rate</th>
-                        <th class="px-3 py-2.5 font-semibold text-right">Qty</th>
-                        <th class="px-3.5 py-2.5 font-semibold text-right">Total</th>
-                      </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-100 bg-white">
-                      <tr
-                        v-for="(item, idx) in selectedVoucher.items"
-                        :key="'item-' + idx"
-                        class="bg-white hover:bg-gray-50/60 transition-colors"
+                <template v-else>
+                  <!-- MOBILE VIEW: High-Clarity Structured Cards (hidden on sm) -->
+                  <div class="sm:hidden space-y-2.5">
+                    <div 
+                      v-for="(item, idx) in selectedVoucher.items" 
+                      :key="'mob-item-' + idx"
+                      class="bg-white rounded-xl border border-gray-200/90 shadow-2xs overflow-hidden"
+                    >
+                      <!-- Main Card Body -->
+                      <div class="p-3 space-y-2">
+                        <!-- Product Name & Line Total -->
+                        <div class="flex items-start justify-between gap-2">
+                          <div class="min-w-0 flex-1">
+                            <h4 class="font-bold text-xs text-gray-900 leading-snug break-words">
+                              {{ item.name }}
+                            </h4>
+                            <div class="flex items-center gap-2 mt-1 text-[10px] text-gray-500 flex-wrap">
+                              <span v-if="item.sku && item.sku.trim().toLowerCase() !== (item.name || '').trim().toLowerCase()" class="font-mono bg-gray-100 px-1.5 py-0.5 rounded text-gray-700">
+                                SKU: {{ item.sku }}
+                              </span>
+                              <span v-if="item.taxRate" class="font-mono text-emerald-700 font-medium">
+                                GST {{ item.taxRate }}%
+                              </span>
+                            </div>
+                          </div>
+
+                          <div class="text-right shrink-0">
+                            <div class="text-sm font-black font-mono text-[#1b3b5f]">
+                              {{ formatCurrency(item.amount) }}
+                            </div>
+                            <span class="text-[10px] font-mono text-gray-500 block">
+                              {{ item.qty }} × {{ formatCurrency(item.rate) }}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Profitability Strip (Sales Vouchers Only) -->
+                      <div 
+                        v-if="activeTab === 'sales' && item.costPrice != null" 
+                        class="px-3 py-2 bg-gray-50 border-t border-gray-100 flex items-center justify-between text-[11px]"
                       >
-                        <!-- Product (Matching OrderDetailPanel.vue:1578-1606) -->
-                        <td class="px-3.5 py-2.5">
-                          <div class="font-mono font-bold text-xs text-gray-900 break-words whitespace-normal" :title="item.name">
-                            {{ item.name }}
-                          </div>
-                          <div class="flex items-center gap-1.5 text-[11px] text-gray-500 mt-0.5 flex-wrap">
-                            <span v-if="item.sku && item.sku.trim().toLowerCase() !== (item.name || '').trim().toLowerCase()" class="font-mono truncate max-w-[160px]">SKU: {{ item.sku }}</span>
-                            <span v-if="item.hsn" class="font-mono bg-gray-100 px-1 py-0.2 rounded text-[10px] text-gray-700">HSN: {{ item.hsn }}</span>
-                            <span v-if="item.taxRate" class="font-mono text-emerald-700 text-[10px]">GST {{ item.taxRate }}%</span>
-                          </div>
+                        <!-- Cost -->
+                        <div class="text-gray-600">
+                          <span class="text-gray-400 text-[10px] block">Cost Price</span>
+                          <strong class="font-mono text-gray-900 font-bold">
+                            {{ formatCurrency(item.costPrice) }}
+                          </strong>
+                          <span class="text-[10px] text-gray-400">/unit</span>
+                        </div>
 
-                          <!-- Line Cost & Profit Margin (Sales Vouchers Only) -->
-                          <div v-if="activeTab === 'sales' && item.costPrice != null" class="flex items-center gap-1.5 text-[10px] mt-1 font-mono flex-wrap">
-                            <span class="text-gray-600 bg-gray-100 px-1.5 py-0.2 rounded border border-gray-200/80">
-                              Cost: {{ formatCurrency(item.costPrice) }}
-                            </span>
+                        <!-- Profit & Margin -->
+                        <div class="text-right">
+                          <span class="text-gray-400 text-[10px] block">Profit (Margin)</span>
+                          <span 
+                            class="inline-flex items-center gap-1 font-mono font-bold text-xs px-2 py-0.5 rounded-md"
+                            :class="item.lineProfit >= 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'"
+                          >
+                            {{ item.lineProfit >= 0 ? '+' : '' }}{{ formatCurrency(item.lineProfit) }}
+                            <span class="text-[10px] opacity-80">({{ item.lineMargin >= 0 ? '+' : '' }}{{ item.lineMargin }}%)</span>
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- DESKTOP VIEW: Clean Table (hidden on mobile) -->
+                  <div class="hidden sm:block overflow-x-auto border border-gray-200/90 rounded-xl shadow-2xs bg-white">
+                    <table class="w-full text-left text-xs">
+                      <thead class="bg-gray-50 text-[10px] font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">
+                        <tr>
+                          <th class="px-3.5 py-2.5 font-bold">Product</th>
+                          <th class="px-3 py-2.5 font-bold text-right">Rate</th>
+                          <th class="px-3 py-2.5 font-bold text-right">Qty</th>
+                          <th class="px-3.5 py-2.5 font-bold text-right">Total</th>
+                          <th v-if="activeTab === 'sales'" class="px-3 py-2.5 font-bold text-right">Cost</th>
+                          <th v-if="activeTab === 'sales'" class="px-3 py-2.5 font-bold text-right">Profit</th>
+                        </tr>
+                      </thead>
+                      <tbody class="divide-y divide-gray-100 bg-white">
+                        <tr
+                          v-for="(item, idx) in selectedVoucher.items"
+                          :key="'dt-item-' + idx"
+                          class="hover:bg-gray-50/70 transition-colors"
+                        >
+                          <td class="px-3.5 py-2.5">
+                            <div class="font-bold text-xs text-gray-900 break-words whitespace-normal leading-snug" :title="item.name">
+                              {{ item.name }}
+                            </div>
+                            <div class="flex items-center gap-2 mt-0.5 text-[10px] text-gray-500 flex-wrap">
+                              <span v-if="item.sku && item.sku.trim().toLowerCase() !== (item.name || '').trim().toLowerCase()" class="font-mono text-gray-600">
+                                SKU: {{ item.sku }}
+                              </span>
+                              <span v-if="item.taxRate" class="font-mono text-emerald-700">
+                                GST {{ item.taxRate }}%
+                              </span>
+                            </div>
+                          </td>
+
+                          <td class="px-3 py-2.5 text-right font-medium text-gray-600 tabular-nums whitespace-nowrap">
+                            {{ formatCurrency(item.rate) }}
+                          </td>
+
+                          <td class="px-3 py-2.5 font-bold tabular-nums whitespace-nowrap text-right text-gray-900">
+                            {{ item.qty }}
+                          </td>
+
+                          <td class="px-3.5 py-2.5 text-right font-bold text-[#1b3b5f] tabular-nums whitespace-nowrap">
+                            {{ formatCurrency(item.amount) }}
+                          </td>
+
+                          <td v-if="activeTab === 'sales'" class="px-3 py-2.5 text-right font-mono text-gray-600 tabular-nums whitespace-nowrap">
+                            {{ item.costPrice != null ? formatCurrency(item.costPrice) : '—' }}
+                          </td>
+
+                          <td v-if="activeTab === 'sales'" class="px-3 py-2.5 text-right tabular-nums whitespace-nowrap">
                             <span 
-                              class="px-1.5 py-0.2 rounded font-semibold inline-flex items-center gap-0.5"
+                              v-if="item.lineProfit != null" 
+                              class="inline-flex items-center gap-1 font-mono font-bold text-[11px] px-1.5 py-0.5 rounded"
                               :class="item.lineProfit >= 0 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'"
-                              :title="item.costSource ? `Cost Source: ${item.costSource}` : ''"
+                              :title="item.lineMargin ? `${item.lineMargin}% margin` : ''"
                             >
-                              {{ item.lineProfit >= 0 ? '+' : '' }}{{ formatCurrency(item.lineProfit) }} ({{ item.lineProfit >= 0 ? '+' : '' }}{{ item.lineMargin }}%)
+                              {{ item.lineProfit >= 0 ? '+' : '' }}{{ formatCurrency(item.lineProfit) }}
                             </span>
-                          </div>
-                        </td>
-
-                        <!-- Rate (Matching OrderDetailPanel.vue:1610-1612) -->
-                        <td class="px-3 py-2.5 text-right font-medium text-gray-600 tabular-nums whitespace-nowrap text-xs">
-                          {{ formatCurrency(item.rate) }}
-                        </td>
-
-                        <!-- Qty (Matching OrderDetailPanel.vue:1615-1638) -->
-                        <td class="px-3 py-2.5 font-bold tabular-nums whitespace-nowrap text-right text-gray-900 text-xs">
-                          {{ item.qty }}
-                        </td>
-
-                        <!-- Total (Matching OrderDetailPanel.vue:1641-1643) -->
-                        <td class="px-3.5 py-2.5 text-right font-bold text-[#1b3b5f] tabular-nums whitespace-nowrap text-xs">
-                          {{ formatCurrency(item.amount) }}
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
+                            <span v-else class="text-gray-300">—</span>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </template>
               </div>
 
-              <!-- Comprehensive Tax Invoice Summary Card (Matching OrderDetailPanel.vue design) -->
-              <div class="p-3.5 sm:p-4 bg-gray-50/80 rounded-xl border border-gray-200/70 space-y-1.5 text-xs">
+              <!-- C. TAX & GRAND TOTAL SUMMARY CARD -->
+              <div class="p-3.5 sm:p-4 bg-white rounded-xl border border-gray-200/90 shadow-2xs space-y-1.5 text-xs">
                 <div class="flex items-center justify-between text-gray-600">
                   <span>Taxable Subtotal:</span>
                   <span class="font-mono font-semibold text-gray-800">{{ formatCurrency(selectedVoucher?.taxableAmount) }}</span>
@@ -721,7 +817,7 @@
                   <span>IGST (Integrated Tax):</span>
                   <span class="font-mono font-semibold text-gray-800">{{ formatCurrency(selectedVoucher?.igstAmount) }}</span>
                 </div>
-                <div class="flex items-center justify-between text-emerald-800 pt-1 border-t border-gray-200/70 font-semibold">
+                <div class="flex items-center justify-between text-emerald-800 pt-1 border-t border-gray-100 font-semibold">
                   <span>Total Tax Amount:</span>
                   <span class="font-mono font-bold">{{ formatCurrency(selectedVoucher?.taxAmount) }}</span>
                 </div>
@@ -730,25 +826,18 @@
                   <span class="font-mono text-[#1b3b5f] font-black text-base">{{ formatCurrency(selectedVoucher?.totalAmount) }}</span>
                 </div>
 
-                <!-- Profitability Breakdown in Summary Card (Sales Vouchers Only) -->
-                <div v-if="activeTab === 'sales' && voucherProfitability?.hasCostData" class="pt-2 border-t border-gray-200/80 space-y-1">
-                  <div class="flex items-center justify-between text-gray-600">
-                    <span>Est. Purchase Cost:</span>
-                    <span class="font-mono font-semibold text-gray-800">{{ formatCurrency(voucherProfitability.totalCost) }}</span>
+                <!-- Clear Net Profit Row for Sales Vouchers -->
+                <div v-if="activeTab === 'sales' && voucherProfitability?.hasCostData" class="pt-2.5 mt-2 border-t-2 border-dashed border-emerald-200 flex items-center justify-between text-sm">
+                  <div class="flex items-center gap-1.5 font-bold text-emerald-800">
+                    <TrendingUp class="w-4 h-4 text-emerald-600" />
+                    <span>Estimated Net Profit:</span>
                   </div>
-                  <div class="flex items-center justify-between font-bold text-sm" :class="voucherProfitability.grossProfit >= 0 ? 'text-emerald-700' : 'text-rose-600'">
-                    <span class="flex items-center gap-1.5">
-                      <TrendingUp class="w-4 h-4" />
-                      Gross Profit (Margin):
-                    </span>
-                    <span class="font-mono flex items-center gap-1.5">
+                  <div class="flex items-center gap-1.5 font-mono">
+                    <span class="font-black text-base" :class="voucherProfitability.grossProfit >= 0 ? 'text-emerald-700' : 'text-rose-600'">
                       {{ voucherProfitability.grossProfit >= 0 ? '+' : '' }}{{ formatCurrency(voucherProfitability.grossProfit) }}
-                      <span 
-                        class="text-xs px-1.5 py-0.5 rounded font-bold font-mono shadow-2xs"
-                        :class="voucherProfitability.marginPercent >= 0 ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-rose-100 text-rose-800 border border-rose-200'"
-                      >
-                        {{ voucherProfitability.marginPercent >= 0 ? '+' : '' }}{{ voucherProfitability.marginPercent.toFixed(1) }}%
-                      </span>
+                    </span>
+                    <span class="text-xs px-2 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                      {{ voucherProfitability.marginPercent >= 0 ? '+' : '' }}{{ voucherProfitability.marginPercent.toFixed(1) }}%
                     </span>
                   </div>
                 </div>
