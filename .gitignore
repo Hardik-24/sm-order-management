@@ -41,3 +41,7 @@ sync_agent/config.json.tmp
 # Portable runtimes in sync_agent (local only)
 sync_agent/node.exe
 sync_agent/*.dll
+
+# Temp scripts files
+scripts/temp_*.*
+*.tmp
