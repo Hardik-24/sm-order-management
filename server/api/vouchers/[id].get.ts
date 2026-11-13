@@ -141,8 +141,10 @@ export default defineEventHandler(async (event) => {
       }
     }
 
-    let totalSalesWithCost = 0
+    let totalSalesTaxable = 0
+    let totalSalesInclusive = 0
     let totalCost = 0
+    let totalTax = 0
     let resolvedCount = 0
 
     const enrichedItems = items.map((item: any) => {
@@ -167,17 +169,32 @@ export default defineEventHandler(async (event) => {
       const rate = Number(item.rate) || 0
       const itemTotal = Number(item.amount) || (qty * rate)
 
+      // Tax rate determination (defaults to 18% if GST applies on voucher or item)
+      const taxRate = Number(item.taxRate) > 0 ? Number(item.taxRate) : (Number(voucher.taxAmount) > 0 ? 18 : 0)
+
+      // In BUSY sales vouchers (e.g. SMG series), item rates and amounts are tax-inclusive
+      const isTaxInclusive = item.isTaxInclusive !== false && (Number(voucher.taxAmount) > 0 || item.isTaxInclusive === true)
+
+      // Real Pre-Tax Base Revenue (stripping out customer GST that belongs to the Govt)
+      const lineTaxable = isTaxInclusive && taxRate > 0
+        ? Math.round((itemTotal / (1 + (taxRate / 100))) * 100) / 100
+        : (Number(item.taxableAmount) || itemTotal)
+      const lineTax = Math.round((itemTotal - lineTaxable) * 100) / 100
+
       let lineCost: number | null = null
       let lineProfit: number | null = null
       let lineMargin: number | null = null
 
       if (costPrice !== null && costPrice > 0) {
         lineCost = Math.round(qty * costPrice * 100) / 100
-        lineProfit = Math.round((itemTotal - lineCost) * 100) / 100
-        lineMargin = itemTotal > 0 ? Math.round(((lineProfit / itemTotal) * 100) * 100) / 100 : 0
+        // Real in-hand Gross Profit = Base Pre-Tax Revenue - Base Pre-Tax Purchase Cost
+        lineProfit = Math.round((lineTaxable - lineCost) * 100) / 100
+        lineMargin = lineTaxable > 0 ? Math.round(((lineProfit / lineTaxable) * 100) * 100) / 100 : 0
 
-        totalSalesWithCost += itemTotal
+        totalSalesTaxable += lineTaxable
+        totalSalesInclusive += itemTotal
         totalCost += lineCost
+        totalTax += lineTax
         resolvedCount++
       }
 
@@ -185,18 +202,22 @@ export default defineEventHandler(async (event) => {
         ...item,
         costPrice,
         costSource,
+        lineTaxable,
+        lineTax,
         lineCost,
         lineProfit,
         lineMargin
       }
     })
 
-    const grossProfit = Math.round((totalSalesWithCost - totalCost) * 100) / 100
-    const marginPercent = totalSalesWithCost > 0 ? Math.round(((grossProfit / totalSalesWithCost) * 100) * 100) / 100 : 0
+    const grossProfit = Math.round((totalSalesTaxable - totalCost) * 100) / 100
+    const marginPercent = totalSalesTaxable > 0 ? Math.round(((grossProfit / totalSalesTaxable) * 100) * 100) / 100 : 0
 
     const profitability = {
-      totalSales: totalSalesWithCost,
+      totalSales: Math.round(totalSalesTaxable * 100) / 100, // Pre-tax taxable sales revenue
+      totalSalesInclusive: Math.round(totalSalesInclusive * 100) / 100, // Gross sales bill incl. GST
       totalCost: Math.round(totalCost * 100) / 100,
+      totalTax: Math.round(totalTax * 100) / 100,
       grossProfit,
       marginPercent,
       resolvedCount,

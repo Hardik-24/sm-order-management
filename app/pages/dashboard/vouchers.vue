@@ -567,8 +567,8 @@
                           <TrendingUp class="w-5 h-5" />
                         </div>
                         <div>
-                          <span class="text-[10px] uppercase font-bold tracking-wider text-gray-500 block">
-                            Estimated Gross Profit
+                          <span class="text-[10px] uppercase font-bold tracking-wider text-emerald-800/80 block">
+                            Estimated Gross Profit (In Hand)
                           </span>
                           <div 
                             v-if="voucherProfitability?.hasCostData" 
@@ -597,12 +597,15 @@
                     </div>
                   </div>
 
-                  <!-- 2. Simple 3-Box Financial Breakdown -->
+                  <!-- 2. Simple 3-Box Financial Breakdown (Pre-Tax In-Hand Comparison) -->
                   <div class="grid grid-cols-3 divide-x divide-gray-100 bg-white p-3 text-center">
                     <div class="px-1.5 py-1">
-                      <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider block">Sale Amount</span>
-                      <span class="text-xs sm:text-sm font-bold font-mono text-gray-900 mt-0.5 block truncate">
-                        {{ formatCurrency(selectedVoucher?.totalAmount) }}
+                      <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider block">Net Sale (Pre-Tax)</span>
+                      <span 
+                        class="text-xs sm:text-sm font-bold font-mono text-gray-900 mt-0.5 block truncate"
+                        :title="voucherProfitability?.totalSalesInclusive ? `Full invoice bill with GST: ${formatCurrency(voucherProfitability.totalSalesInclusive)}` : ''"
+                      >
+                        {{ formatCurrency(voucherProfitability?.hasCostData ? voucherProfitability.totalSales : selectedVoucher?.taxableAmount) }}
                       </span>
                     </div>
 
@@ -614,8 +617,8 @@
                     </div>
 
                     <div class="px-1.5 py-1">
-                      <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider block">Total GST</span>
-                      <span class="text-xs sm:text-sm font-bold font-mono text-emerald-800 mt-0.5 block truncate">
+                      <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider block">Govt GST</span>
+                      <span class="text-xs sm:text-sm font-bold font-mono text-emerald-800 mt-0.5 block truncate" title="GST payable to Government (excluded from profit)">
                         {{ formatCurrency(selectedVoucher?.taxAmount) }}
                       </span>
                     </div>
@@ -676,7 +679,7 @@
                         <th class="px-2 sm:px-3 py-2.5 font-bold text-right whitespace-nowrap">Qty</th>
                         <th class="px-2.5 sm:px-3.5 py-2.5 font-bold text-right whitespace-nowrap">Total</th>
                         <th v-if="activeTab === 'sales'" class="px-2 sm:px-3 py-2.5 font-bold text-right whitespace-nowrap">Cost</th>
-                        <th v-if="activeTab === 'sales'" class="px-2.5 sm:px-3.5 py-2.5 font-bold text-right whitespace-nowrap">Profit</th>
+                        <th v-if="activeTab === 'sales'" class="px-2.5 sm:px-3.5 py-2.5 font-bold text-right whitespace-nowrap" title="In-hand profit (Taxable Sale minus Purchase Cost, excluding GST)">Profit</th>
                       </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100 bg-white">
@@ -726,7 +729,7 @@
                             v-if="item.lineProfit != null" 
                             class="inline-flex items-center gap-1 font-mono font-bold text-[11px] px-1.5 py-0.5 rounded"
                             :class="item.lineProfit >= 0 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'"
-                            :title="item.lineMargin != null ? `${Number(item.lineMargin).toFixed(2)}% margin` : ''"
+                            :title="item.lineMargin != null ? `+${formatCurrency(item.lineProfit)} in-hand (${Number(item.lineMargin).toFixed(2)}% margin, excl. GST)` : ''"
                           >
                             {{ item.lineProfit >= 0 ? '+' : '' }}{{ formatCurrency(item.lineProfit) }}
                           </span>
@@ -769,7 +772,7 @@
                 <div v-if="activeTab === 'sales' && voucherProfitability?.hasCostData" class="pt-2.5 mt-2 border-t-2 border-dashed border-emerald-200 flex items-center justify-between gap-3 text-sm">
                   <div class="flex items-center gap-1.5 font-bold text-emerald-800 min-w-0">
                     <TrendingUp class="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span class="truncate">Estimated Gross Profit:</span>
+                    <span class="truncate">Estimated Gross Profit (In Hand):</span>
                   </div>
                   <div class="flex flex-col items-end shrink-0 text-right font-mono">
                     <span 
