@@ -588,7 +588,7 @@
                           class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold font-mono shadow-2xs"
                           :class="voucherProfitability.marginPercent >= 0 ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'"
                         >
-                          {{ voucherProfitability.marginPercent >= 0 ? '+' : '' }}{{ voucherProfitability.marginPercent.toFixed(1) }}% Margin
+                          {{ voucherProfitability.marginPercent >= 0 ? '+' : '' }}{{ Number(voucherProfitability.marginPercent).toFixed(2) }}% Margin
                         </span>
                         <span class="block text-[10px] text-gray-500 mt-1 font-medium">
                           {{ voucherProfitability.resolvedCount }}/{{ voucherProfitability.totalCount }} items matched
@@ -726,7 +726,7 @@
                             v-if="item.lineProfit != null" 
                             class="inline-flex items-center gap-1 font-mono font-bold text-[11px] px-1.5 py-0.5 rounded"
                             :class="item.lineProfit >= 0 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'"
-                            :title="item.lineMargin ? `${item.lineMargin}% margin` : ''"
+                            :title="item.lineMargin != null ? `${Number(item.lineMargin).toFixed(2)}% margin` : ''"
                           >
                             {{ item.lineProfit >= 0 ? '+' : '' }}{{ formatCurrency(item.lineProfit) }}
                           </span>
@@ -779,7 +779,7 @@
                       {{ voucherProfitability.grossProfit >= 0 ? '+' : '' }}{{ formatCurrency(voucherProfitability.grossProfit) }}
                     </span>
                     <span class="text-[11px] px-2 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 mt-1 whitespace-nowrap">
-                      {{ voucherProfitability.marginPercent >= 0 ? '+' : '' }}{{ voucherProfitability.marginPercent.toFixed(1) }}% Margin
+                      {{ voucherProfitability.marginPercent >= 0 ? '+' : '' }}{{ Number(voucherProfitability.marginPercent).toFixed(2) }}% Margin
                     </span>
                   </div>
                 </div>

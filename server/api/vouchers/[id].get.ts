@@ -174,7 +174,7 @@ export default defineEventHandler(async (event) => {
       if (costPrice !== null && costPrice > 0) {
         lineCost = Math.round(qty * costPrice * 100) / 100
         lineProfit = Math.round((itemTotal - lineCost) * 100) / 100
-        lineMargin = itemTotal > 0 ? Math.round(((lineProfit / itemTotal) * 100) * 10) / 10 : 0
+        lineMargin = itemTotal > 0 ? Math.round(((lineProfit / itemTotal) * 100) * 100) / 100 : 0
 
         totalSalesWithCost += itemTotal
         totalCost += lineCost
@@ -192,7 +192,7 @@ export default defineEventHandler(async (event) => {
     })
 
     const grossProfit = Math.round((totalSalesWithCost - totalCost) * 100) / 100
-    const marginPercent = totalSalesWithCost > 0 ? Math.round(((grossProfit / totalSalesWithCost) * 100) * 10) / 10 : 0
+    const marginPercent = totalSalesWithCost > 0 ? Math.round(((grossProfit / totalSalesWithCost) * 100) * 100) / 100 : 0
 
     const profitability = {
       totalSales: totalSalesWithCost,
