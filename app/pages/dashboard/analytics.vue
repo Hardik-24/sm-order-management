@@ -777,28 +777,28 @@
               <span class="text-sm font-medium text-gray-400">Suppliers</span>
             </div>
             <div class="flex items-center justify-between text-xs text-gray-500 mt-2">
-              <span class="text-indigo-700 font-semibold">{{ data.purchases.gstRegistered }} GST Registered</span>
-              <span class="text-gray-400">{{ Math.round((data.purchases.gstRegistered / data.purchases.totalSuppliers) * 100) }}% compliant</span>
+              <span class="text-indigo-700 font-semibold">{{ data.purchases.totalInvoices || 0 }} Invoices</span>
+              <NuxtLink to="/dashboard/purchases" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 underline">View all ↗</NuxtLink>
             </div>
           </div>
           <div class="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 to-indigo-600"></div>
         </div>
 
-        <!-- 2. Primary Credit Terms -->
+        <!-- 2. Total Purchase Spend -->
         <div class="bg-white rounded-2xl p-5 border border-gray-200/80 shadow-xs relative overflow-hidden group hover:border-gray-300 transition-all">
           <div class="flex items-center justify-between">
-            <span class="text-xs font-semibold uppercase tracking-wider text-gray-500">Standard Credit Terms</span>
+            <span class="text-xs font-semibold uppercase tracking-wider text-gray-500">Total Procured Spend</span>
             <div class="w-9 h-9 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center border border-sky-100">
-              <Clock class="w-5 h-5" />
+              <IndianRupee class="w-5 h-5" />
             </div>
           </div>
           <div class="mt-3">
-            <div class="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
-              Net 30 Days
+            <div class="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight flex items-baseline">
+              <OdometerNumber :value="data.purchases.totalSpend >= 10000000 ? Number((data.purchases.totalSpend / 10000000).toFixed(2)) : (data.purchases.totalSpend || 0)" prefix="₹" :suffix="data.purchases.totalSpend >= 10000000 ? ' Cr' : ''" :decimals="data.purchases.totalSpend >= 10000000 ? 2 : 0" :loading="loading" />
             </div>
             <div class="flex items-center justify-between text-xs text-gray-500 mt-2">
-              <span class="text-sky-700 font-semibold">Standard Industry Terms</span>
-              <span class="text-gray-400">100% verified</span>
+              <span class="text-sky-700 font-semibold">BUSY Purchase Bills</span>
+              <span class="text-gray-400">GST: {{ formatCrores(data.purchases.totalTaxCredit || 0) }}</span>
             </div>
           </div>
           <div class="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-sky-400 to-sky-500"></div>
@@ -897,6 +897,58 @@
                     :class="c.marginSpread >= 20 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-sky-50 text-sky-700 border border-sky-200'"
                   >
                     +{{ c.marginSpread }}% Spread
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Top Vendors & Spend Breakdown Table -->
+      <div v-if="data.purchases.topSuppliers?.length" class="bg-white rounded-2xl p-6 border border-gray-200/80 shadow-xs flex flex-col">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-gray-100 gap-2">
+          <div>
+            <h2 class="text-base font-bold text-gray-900 flex items-center gap-2">
+              <Truck class="w-5 h-5 text-indigo-600" />
+              Top Vendors by Procurement Spend
+            </h2>
+            <p class="text-xs text-gray-500 mt-0.5">Top manufacturers & suppliers ranked by cumulative purchase invoice volume</p>
+          </div>
+          <NuxtLink
+            to="/dashboard/purchases"
+            class="text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg border border-indigo-100 transition inline-flex items-center gap-1.5 self-start sm:self-auto"
+          >
+            <span>Explore All Purchase Bills</span>
+            <ChevronRight class="w-3.5 h-3.5" />
+          </NuxtLink>
+        </div>
+
+        <div class="mt-4 overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead>
+              <tr class="text-gray-400 border-b border-gray-100 pb-2">
+                <th class="py-2.5 font-medium">Vendor / Manufacturer</th>
+                <th class="py-2.5 font-medium text-right">Invoices</th>
+                <th class="py-2.5 font-medium text-right">Total Procurement Spend</th>
+                <th class="py-2.5 font-medium text-right">% of Total Spend</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+              <tr 
+                v-for="s in data.purchases.topSuppliers" 
+                :key="s.name"
+                class="hover:bg-indigo-50/30 transition-colors"
+              >
+                <td class="py-3 pr-2 font-bold text-gray-900 flex items-center gap-2">
+                  <div class="w-2 h-2 rounded-full bg-indigo-500"></div>
+                  <span>{{ s.name }}</span>
+                </td>
+                <td class="py-3 px-2 text-right text-gray-600 font-medium">{{ s.count }} bills</td>
+                <td class="py-3 px-2 text-right font-extrabold text-gray-900">{{ formatCurrency(s.totalSpend) }}</td>
+                <td class="py-3 pl-2 text-right">
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10.5px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                    {{ data.purchases.totalSpend > 0 ? ((s.totalSpend / data.purchases.totalSpend) * 100).toFixed(1) : 0 }}%
                   </span>
                 </td>
               </tr>

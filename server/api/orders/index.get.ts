@@ -46,12 +46,18 @@ export default defineEventHandler(async (event) => {
   if (isUrgent !== undefined && isUrgent !== '') {
     andConditions.push({ isUrgent: isUrgent === 'true' })
   }
+  const includeCancelled = query.includeCancelled === 'true'
   if (status) {
     if (status === '!CANCELLED' || status === 'ACTIVE') {
       andConditions.push({ overallStatus: { not: 'CANCELLED' } })
+    } else if (status === 'ALL' || status === 'ALL_WITH_CANCELLED') {
+      // Show all orders including cancelled
     } else {
       andConditions.push({ overallStatus: status })
     }
+  } else if (!includeCancelled) {
+    // Option B: Active-by-default. Exclude CANCELLED unless explicitly requested via status=CANCELLED or includeCancelled=true
+    andConditions.push({ overallStatus: { not: 'CANCELLED' } })
   }
   if (billingStatus) {
     if (billingStatus === '!GENERATED' || billingStatus === 'NOT_BILLED') {

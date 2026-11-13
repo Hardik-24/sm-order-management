@@ -564,6 +564,63 @@ async function runSync() {
   }
 
   // -----------------------------------------------------------------------------
+  // STEP 6: BUSY Purchases Sync
+  // -----------------------------------------------------------------------------
+  if (data.purchases && data.purchases.length > 0) {
+    console.log(`\n[6/6] Syncing ${data.purchases.length} Purchase Invoices (busy_purchases)...`);
+
+    const purchChunkSize = 100;
+    let purchSyncedCount = 0;
+
+    for (let i = 0; i < data.purchases.length; i += purchChunkSize) {
+      const chunk = data.purchases.slice(i, i + purchChunkSize);
+      const valuesList = chunk.map(p => {
+        let itemsArr = [];
+        if (Array.isArray(p.items)) {
+          itemsArr = p.items;
+        } else if (p.items && typeof p.items === 'object' && Object.keys(p.items).length > 0) {
+          itemsArr = [p.items];
+        }
+        itemsArr = itemsArr.filter(it => it && typeof it === 'object' && Object.keys(it).length > 0 && it.name);
+        const iCount = itemsArr.length;
+        const tot = Number(p.totalAmount) || 0;
+        const taxable = Number(p.taxableAmount) || 0;
+        const taxAmt = Number(p.taxAmount) || 0;
+        const cgst = Number(p.cgstAmount) || 0;
+        const sgst = Number(p.sgstAmount) || 0;
+        const igst = Number(p.igstAmount) || 0;
+        const itemsJson = JSON.stringify(itemsArr);
+        return `(gen_random_uuid(), ${esc(p.voucherNo)}, ${p.voucherType || 2}, ${esc(p.series || 'Main')}, '${p.voucherDate}'::timestamp, ${esc(p.supplierCode)}, ${esc(p.supplierName)}, ${tot}, ${taxable}, ${taxAmt}, ${cgst}, ${sgst}, ${igst}, ${iCount}, ${esc(itemsJson)}::jsonb, NOW(), NOW())`;
+      }).join(',');
+
+      await prisma.$executeRawUnsafe(`
+        INSERT INTO busy_purchases (
+          id, "voucherNo", "voucherType", series, "voucherDate", "supplierCode", "supplierName",
+          "totalAmount", "taxableAmount", "taxAmount", "cgstAmount", "sgstAmount", "igstAmount", "itemCount", items, "createdAt", "updatedAt"
+        )
+        VALUES ${valuesList}
+        ON CONFLICT ("voucherNo") DO UPDATE SET
+          "voucherType" = EXCLUDED."voucherType",
+          series = EXCLUDED.series,
+          "voucherDate" = EXCLUDED."voucherDate",
+          "supplierCode" = EXCLUDED."supplierCode",
+          "supplierName" = EXCLUDED."supplierName",
+          "totalAmount" = EXCLUDED."totalAmount",
+          "taxableAmount" = EXCLUDED."taxableAmount",
+          "taxAmount" = EXCLUDED."taxAmount",
+          "cgstAmount" = EXCLUDED."cgstAmount",
+          "sgstAmount" = EXCLUDED."sgstAmount",
+          "igstAmount" = EXCLUDED."igstAmount",
+          "itemCount" = EXCLUDED."itemCount",
+          items = EXCLUDED.items,
+          "updatedAt" = NOW();
+      `);
+      purchSyncedCount += chunk.length;
+    }
+    console.log(`  -> Synced ${purchSyncedCount} purchase invoices to database.`);
+  }
+
+  // -----------------------------------------------------------------------------
   // VERIFICATION
   // -----------------------------------------------------------------------------
   const totalProducts = await prisma.product.count();

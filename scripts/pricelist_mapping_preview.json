@@ -1,0 +1,416 @@
+{
+  "generatedAt": 1794502259.9363728,
+  "summary": [
+    {
+      "sheet": "GREENPANEL",
+      "total": 273,
+      "matched": 186,
+      "unmatched": 87,
+      "match_pct": 68.1
+    },
+    {
+      "sheet": "ACTION_TESA",
+      "total": 218,
+      "matched": 72,
+      "unmatched": 146,
+      "match_pct": 33.0
+    },
+    {
+      "sheet": "RELWOOD",
+      "total": 14,
+      "matched": 0,
+      "unmatched": 14,
+      "match_pct": 0.0
+    },
+    {
+      "sheet": "MERINO",
+      "total": 30,
+      "matched": 12,
+      "unmatched": 18,
+      "match_pct": 40.0
+    },
+    {
+      "sheet": "CENTURY",
+      "total": 4,
+      "matched": 2,
+      "unmatched": 2,
+      "match_pct": 50.0
+    },
+    {
+      "sheet": "REHAU",
+      "total": 40,
+      "matched": 13,
+      "unmatched": 27,
+      "match_pct": 32.5
+    },
+    {
+      "sheet": "BLUM",
+      "total": 440,
+      "matched": 178,
+      "unmatched": 262,
+      "match_pct": 40.5
+    },
+    {
+      "sheet": "GREENPLY",
+      "total": 57,
+      "matched": 52,
+      "unmatched": 5,
+      "match_pct": 91.2
+    },
+    {
+      "sheet": "VRINDA",
+      "total": 11,
+      "matched": 0,
+      "unmatched": 11,
+      "match_pct": 0.0
+    },
+    {
+      "sheet": "WIGWAM",
+      "total": 56,
+      "matched": 56,
+      "unmatched": 0,
+      "match_pct": 100.0
+    },
+    {
+      "sheet": "HAFELE",
+      "total": 3403,
+      "matched": 532,
+      "unmatched": 2871,
+      "match_pct": 15.6
+    }
+  ],
+  "totalMatched": 1103,
+  "totalItems": 4546,
+  "sampleMatchedUpdates": [
+    {
+      "sheet": "GREENPANEL",
+      "db_id": null,
+      "db_name": "12 FRMDF GR (GREEN)",
+      "db_sku": "12 FRMDF GR (GREEN)",
+      "excel_desc": "GREENPANEL BOILBLACK MDF 12MM",
+      "excel_sku": "SM-GPN-BOILBLACK-12MM",
+      "old_price": 0.0,
+      "new_price": 180.51,
+      "price_diff": 180.51
+    },
+    {
+      "sheet": "GREENPANEL",
+      "db_id": null,
+      "db_name": "18 MDF EXT GR 8X6(GREEN)",
+      "db_sku": "18 MDF EXT GR 8X6(GREEN)",
+      "excel_desc": "GREENPANEL BOILBLACK MDF 18MM",
+      "excel_sku": "SM-GPN-BOILBLACK-18MM",
+      "old_price": 0.0,
+      "new_price": 262.82,
+      "price_diff": 262.82
+    },
+    {
+      "sheet": "GREENPANEL",
+      "db_id": null,
+      "db_name": "12 FRMDF GR (GREEN)",
+      "db_sku": "12 FRMDF GR (GREEN)",
+      "excel_desc": "GREENPANEL FRMDF FIRE RETARDANT 12MM",
+      "excel_sku": "SM-GPN-FRMDF-12MM",
+      "old_price": 0.0,
+      "new_price": 84.89,
+      "price_diff": 84.89
+    },
+    {
+      "sheet": "GREENPANEL",
+      "db_id": null,
+      "db_name": "18 MDF EXT GR 8X6(GREEN)",
+      "db_sku": "18 MDF EXT GR 8X6(GREEN)",
+      "excel_desc": "GREENPANEL FRMDF FIRE RETARDANT 18MM",
+      "excel_sku": "SM-GPN-FRMDF-18MM",
+      "old_price": 0.0,
+      "new_price": 126.45,
+      "price_diff": 126.45
+    },
+    {
+      "sheet": "GREENPANEL",
+      "db_id": null,
+      "db_name": "30 HDWR GR (GREEN)",
+      "db_sku": "30 HDWR GR (GREEN)",
+      "excel_desc": "GREENPANEL HDWR DOOR 30MM",
+      "excel_sku": "SM-GPN-HDWR-DOOR-30MM",
+      "old_price": 0.0,
+      "new_price": 283.78,
+      "price_diff": 283.78
+    },
+    {
+      "sheet": "GREENPANEL",
+      "db_id": null,
+      "db_name": "11 MDF EXT GR (GREEN)",
+      "db_sku": "11 MDF EXT GR (GREEN)",
+      "excel_desc": "GREENPANEL PLAIN MDF BOARD EXTERIOR 11MM",
+      "excel_sku": "SM-GPN-MDF-EXT-11MM",
+      "old_price": 0.0,
+      "new_price": 70.41,
+      "price_diff": 70.41
+    },
+    {
+      "sheet": "GREENPANEL",
+      "db_id": null,
+      "db_name": "17 MDF EXT 8X6 GR (GREEN)",
+      "db_sku": "17 MDF EXT 8X6 GR (GREEN)",
+      "excel_desc": "GREENPANEL PLAIN MDF BOARD EXTERIOR 17MM",
+      "excel_sku": "SM-GPN-MDF-EXT-17MM",
+      "old_price": 0.0,
+      "new_price": 103.57,
+      "price_diff": 103.57
+    },
+    {
+      "sheet": "GREENPANEL",
+      "db_id": null,
+      "db_name": "18 MDF EXT GR 8X6(GREEN)",
+      "db_sku": "18 MDF EXT GR 8X6(GREEN)",
+      "excel_desc": "GREENPANEL PLAIN MDF BOARD EXTERIOR 18MM",
+      "excel_sku": "SM-GPN-MDF-EXT-18MM",
+      "old_price": 0.0,
+      "new_price": 114.41,
+      "price_diff": 114.41
+    },
+    {
+      "sheet": "GREENPANEL",
+      "db_id": null,
+      "db_name": "2.7 MDF EXT 8 X 7 GR (GREEN)",
+      "db_sku": "2.7 MDF EXT 8 X 7 GR (GREEN)",
+      "excel_desc": "GREENPANEL PLAIN MDF BOARD EXTERIOR 2.7MM",
+      "excel_sku": "SM-GPN-MDF-EXT-2.7MM",
+      "old_price": 0.0,
+      "new_price": 19.94,
+      "price_diff": 19.94
+    },
+    {
+      "sheet": "GREENPANEL",
+      "db_id": null,
+      "db_name": "25 MDF EXT GR (GREEN)",
+      "db_sku": "25 MDF EXT GR (GREEN)",
+      "excel_desc": "GREENPANEL PLAIN MDF BOARD EXTERIOR 25MM",
+      "excel_sku": "SM-GPN-MDF-EXT-25MM",
+      "old_price": 0.0,
+      "new_price": 168.69,
+      "price_diff": 168.69
+    },
+    {
+      "sheet": "GREENPANEL",
+      "db_id": null,
+      "db_name": "3.3 MDF EXT GR (GREEN)",
+      "db_sku": "3.3 MDF EXT GR (GREEN)",
+      "excel_desc": "GREENPANEL PLAIN MDF BOARD EXTERIOR 3.3MM",
+      "excel_sku": "SM-GPN-MDF-EXT-3.3MM",
+      "old_price": 0.0,
+      "new_price": 23.21,
+      "price_diff": 23.21
+    },
+    {
+      "sheet": "GREENPANEL",
+      "db_id": null,
+      "db_name": "5.5 MDF EXT GR (GREEN)",
+      "db_sku": "5.5 MDF EXT GR (GREEN)",
+      "excel_desc": "GREENPANEL PLAIN MDF BOARD EXTERIOR 5.5MM",
+      "excel_sku": "SM-GPN-MDF-EXT-5.5MM",
+      "old_price": 0.0,
+      "new_price": 37.48,
+      "price_diff": 37.48
+    },
+    {
+      "sheet": "GREENPANEL",
+      "db_id": null,
+      "db_name": "7.3 MDF EXT GR (GREEN)",
+      "db_sku": "7.3 MDF EXT GR (GREEN)",
+      "excel_desc": "GREENPANEL PLAIN MDF BOARD EXTERIOR 7.3MM",
+      "excel_sku": "SM-GPN-MDF-EXT-7.3MM",
+      "old_price": 0.0,
+      "new_price": 45.89,
+      "price_diff": 45.89
+    },
+    {
+      "sheet": "GREENPANEL",
+      "db_id": null,
+      "db_name": "11 HDWR GR (GREEN)",
+      "db_sku": "11 HDWR GR (GREEN)",
+      "excel_desc": "GREENPANEL PLAIN MDF BOARD HDWR 11MM",
+      "excel_sku": "SM-GPN-MDF-HDWR-11MM",
+      "old_price": 0.0,
+      "new_price": 85.41,
+      "price_diff": 85.41
+    },
+    {
+      "sheet": "GREENPANEL",
+      "db_id": null,
+      "db_name": "16.75 HDWR GR (GREEN)",
+      "db_sku": "16.75 HDWR GR (GREEN)",
+      "excel_desc": "GREENPANEL PLAIN MDF BOARD HDWR 16.75MM",
+      "excel_sku": "SM-GPN-MDF-HDWR-16.75MM",
+      "old_price": 0.0,
+      "new_price": 123.86,
+      "price_diff": 123.86
+    },
+    {
+      "sheet": "GREENPANEL",
+      "db_id": null,
+      "db_name": "16.75 HDWR GR (GREEN)",
+      "db_sku": "16.75 HDWR GR (GREEN)",
+      "excel_desc": "GREENPANEL PLAIN MDF BOARD HDWR 16MM",
+      "excel_sku": "SM-GPN-MDF-HDWR-16MM",
+      "old_price": 0.0,
+      "new_price": 118.31,
+      "price_diff": 118.31
+    },
+    {
+      "sheet": "GREENPANEL",
+      "db_id": null,
+      "db_name": "18 HDWR GR (GREEN)",
+      "db_sku": "18 HDWR GR (GREEN)",
+      "excel_desc": "GREENPANEL PLAIN MDF BOARD HDWR 18MM",
+      "excel_sku": "SM-GPN-MDF-HDWR-18MM",
+      "old_price": 0.0,
+      "new_price": 138.8,
+      "price_diff": 138.8
+    },
+    {
+      "sheet": "GREENPANEL",
+      "db_id": null,
+      "db_name": "25 HDWR GR (GREEN)",
+      "db_sku": "25 HDWR GR (GREEN)",
+      "excel_desc": "GREENPANEL PLAIN MDF BOARD HDWR 25MM",
+      "excel_sku": "SM-GPN-MDF-HDWR-25MM",
+      "old_price": 0.0,
+      "new_price": 205.64,
+      "price_diff": 205.64
+    },
+    {
+      "sheet": "GREENPANEL",
+      "db_id": null,
+      "db_name": "3.3 HDWR GR (GREEN)",
+      "db_sku": "3.3 HDWR GR (GREEN)",
+      "excel_desc": "GREENPANEL PLAIN MDF BOARD HDWR 3.3MM",
+      "excel_sku": "SM-GPN-MDF-HDWR-3.3MM",
+      "old_price": 0.0,
+      "new_price": 28.15,
+      "price_diff": 28.15
+    },
+    {
+      "sheet": "GREENPANEL",
+      "db_id": null,
+      "db_name": "3.3 HDWR GR (GREEN)",
+      "db_sku": "3.3 HDWR GR (GREEN)",
+      "excel_desc": "GREENPANEL PLAIN MDF BOARD HDWR 3MM",
+      "excel_sku": "SM-GPN-MDF-HDWR-3MM",
+      "old_price": 0.0,
+      "new_price": 25.73,
+      "price_diff": 25.73
+    },
+    {
+      "sheet": "GREENPANEL",
+      "db_id": null,
+      "db_name": "5.5 HDWR GR (GREEN) 8X4",
+      "db_sku": "5.5 HDWR GR (GREEN) 8X4",
+      "excel_desc": "GREENPANEL PLAIN MDF BOARD HDWR 5.5MM",
+      "excel_sku": "SM-GPN-MDF-HDWR-5.5MM",
+      "old_price": 0.0,
+      "new_price": 45.47,
+      "price_diff": 45.47
+    },
+    {
+      "sheet": "GREENPANEL",
+      "db_id": null,
+      "db_name": "7.5 HDWR GR (GREEN)",
+      "db_sku": "7.5 HDWR GR (GREEN)",
+      "excel_desc": "GREENPANEL PLAIN MDF BOARD HDWR 7.5MM",
+      "excel_sku": "SM-GPN-MDF-HDWR-7.5MM",
+      "old_price": 0.0,
+      "new_price": 57.44,
+      "price_diff": 57.44
+    },
+    {
+      "sheet": "GREENPANEL",
+      "db_id": null,
+      "db_name": "1.7 MDF INT GR (GREEN)",
+      "db_sku": "1.7 MDF INT GR (GREEN)",
+      "excel_desc": "GREENPANEL PLAIN MDF BOARD INTERIOR 1.7MM",
+      "excel_sku": "SM-GPN-MDF-INT-1.7MM",
+      "old_price": 0.0,
+      "new_price": 10.65,
+      "price_diff": 10.65
+    },
+    {
+      "sheet": "GREENPANEL",
+      "db_id": null,
+      "db_name": "11 MDF INT GR (GREEN)",
+      "db_sku": "11 MDF INT GR (GREEN)",
+      "excel_desc": "GREENPANEL PLAIN MDF BOARD INTERIOR 11MM",
+      "excel_sku": "SM-GPN-MDF-INT-11MM",
+      "old_price": 0.0,
+      "new_price": 55.34,
+      "price_diff": 55.34
+    },
+    {
+      "sheet": "GREENPANEL",
+      "db_id": null,
+      "db_name": "14.5 MDF INT ECO GR (GREEN)",
+      "db_sku": "14.5 MDF INT ECO GR (GREEN)",
+      "excel_desc": "GREENPANEL PLAIN MDF BOARD INTERIOR 14.5MM",
+      "excel_sku": "SM-GPN-MDF-INT-14.5MM",
+      "old_price": 0.0,
+      "new_price": 71.42,
+      "price_diff": 71.42
+    },
+    {
+      "sheet": "GREENPANEL",
+      "db_id": null,
+      "db_name": "16.5 MDF INT ECO GR (GREEN)",
+      "db_sku": "16.5 MDF INT ECO GR (GREEN)",
+      "excel_desc": "GREENPANEL PLAIN MDF BOARD INTERIOR 16.5MM",
+      "excel_sku": "SM-GPN-MDF-INT-16.5MM",
+      "old_price": 0.0,
+      "new_price": 79.05,
+      "price_diff": 79.05
+    },
+    {
+      "sheet": "GREENPANEL",
+      "db_id": null,
+      "db_name": "16.5 MDF INT ECO GR (GREEN)",
+      "db_sku": "16.5 MDF INT ECO GR (GREEN)",
+      "excel_desc": "GREENPANEL PLAIN MDF BOARD INTERIOR 16MM",
+      "excel_sku": "SM-GPN-MDF-INT-16MM",
+      "old_price": 0.0,
+      "new_price": 76.66,
+      "price_diff": 76.66
+    },
+    {
+      "sheet": "GREENPANEL",
+      "db_id": null,
+      "db_name": "17 MDF INT GR (GREEN)",
+      "db_sku": "17 MDF INT GR (GREEN)",
+      "excel_desc": "GREENPANEL PLAIN MDF BOARD INTERIOR 17MM",
+      "excel_sku": "SM-GPN-MDF-INT-17MM",
+      "old_price": 0.0,
+      "new_price": 81.4,
+      "price_diff": 81.4
+    },
+    {
+      "sheet": "GREENPANEL",
+      "db_id": null,
+      "db_name": "18 MDF INT GR 10X4 (GREEN)",
+      "db_sku": "18 MDF INT GR 10X4 (GREEN)",
+      "excel_desc": "GREENPANEL PLAIN MDF BOARD INTERIOR 18MM",
+      "excel_sku": "SM-GPN-MDF-INT-18MM",
+      "old_price": 0.0,
+      "new_price": 89.92,
+      "price_diff": 89.92
+    },
+    {
+      "sheet": "GREENPANEL",
+      "db_id": null,
+      "db_name": "2.1 MDF INT GR (GREEN)",
+      "db_sku": "2.1 MDF INT GR (GREEN)",
+      "excel_desc": "GREENPANEL PLAIN MDF BOARD INTERIOR 2.1MM",
+      "excel_sku": "SM-GPN-MDF-INT-2.1MM",
+      "old_price": 0.0,
+      "new_price": 14.03,
+      "price_diff": 14.03
+    }
+  ]
+}

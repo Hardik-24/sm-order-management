@@ -456,6 +456,57 @@ while (-not $rsVch.EOF) {
     $rsVch.MoveNext()
 }
 Write-Host "  Extracted $($vouchers.Count) full vouchers with line items."
+
+# 8. Extract Full Purchase Vouchers with Line Items & Taxes (VchType = 2)
+Write-Host "Extracting Full Purchase Vouchers (VchType = 2)..."
+$sqlPurchHeaders = @"
+SELECT t1.VchCode, t1.VchType, t1.VchNo, t1.Date, t1.VchAmtBaseCur AS TotalAmt,
+       m1.Name AS SuppName, m1.Code AS SuppCode, mSeries.Name AS SeriesName
+FROM (Tran1 t1 LEFT JOIN Master1 m1 ON t1.MasterCode1 = m1.Code)
+LEFT JOIN Master1 mSeries ON t1.VchSeriesCode = mSeries.Code
+WHERE t1.VchType = 2 AND t1.Cancelled = False
+ORDER BY t1.Date DESC, t1.VchCode DESC
+"@
+$rsPurch = $conn.Execute($sqlPurchHeaders)
+$purchases = [System.Collections.Generic.List[PSCustomObject]]::new()
+while (-not $rsPurch.EOF) {
+    $vCode = $rsPurch.Fields.Item("VchCode").Value
+    $vType = [int]$rsPurch.Fields.Item("VchType").Value
+    $vNo = if ($rsPurch.Fields.Item("VchNo").Value -ne $null) { $rsPurch.Fields.Item("VchNo").Value.ToString().Trim() } else { "PURCH" }
+    $vDate = [datetime]$rsPurch.Fields.Item("Date").Value
+    $sName = if ($rsPurch.Fields.Item("SuppName").Value -ne $null) { $rsPurch.Fields.Item("SuppName").Value.ToString().Trim() } else { "Unknown Supplier" }
+    $sCode = if ($rsPurch.Fields.Item("SuppCode").Value -ne $null) { "SUPP-$($rsPurch.Fields.Item('SuppCode').Value)" } else { "" }
+    $totAmt = [Math]::Round([double]$rsPurch.Fields.Item("TotalAmt").Value, 2)
+    $series = if ($rsPurch.Fields.Item("SeriesName").Value -ne $null) { $rsPurch.Fields.Item("SeriesName").Value.ToString().Trim() } else { "Main" }
+
+    $items = if ($vchItemsMap.ContainsKey($vCode)) { $vchItemsMap[$vCode] } else { @() }
+
+    $gst = if ($vchGstSummary.ContainsKey($vCode)) { $vchGstSummary[$vCode] } else { $null }
+    $taxableAmt = if ($gst -and $gst.taxableAmount -gt 0) { [Math]::Round($gst.taxableAmount, 2) } else { [Math]::Round($totAmt / 1.18, 2) }
+    $cgstAmt = if ($gst) { [Math]::Round($gst.cgstAmount, 2) } else { [Math]::Round(($totAmt - $taxableAmt) / 2, 2) }
+    $sgstAmt = if ($gst) { [Math]::Round($gst.sgstAmount, 2) } else { [Math]::Round(($totAmt - $taxableAmt) / 2, 2) }
+    $igstAmt = if ($gst) { [Math]::Round($gst.igstAmount, 2) } else { 0 }
+    $taxAmt = if ($gst -and $gst.taxAmount -gt 0) { [Math]::Round($gst.taxAmount, 2) } else { [Math]::Round($totAmt - $taxableAmt, 2) }
+
+    $purchases.Add([PSCustomObject]@{
+        voucherNo = $vNo
+        voucherType = $vType
+        series = $series
+        voucherDate = $vDate.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
+        supplierCode = $sCode
+        supplierName = $sName
+        totalAmount = $totAmt
+        taxableAmount = $taxableAmt
+        taxAmount = $taxAmt
+        cgstAmount = $cgstAmt
+        sgstAmount = $sgstAmt
+        igstAmount = $igstAmt
+        itemCount = $items.Count
+        items = $items
+    })
+    $rsPurch.MoveNext()
+}
+Write-Host "  Extracted $($purchases.Count) full purchase vouchers with line items."
 } finally {
     if ($conn -ne $null) {
         $conn.Close()
@@ -482,6 +533,7 @@ $payload = [PSCustomObject]@{
     topBilledCustomers = $topBilledCustomers
     historicalPrices = $historicalPrices
     vouchers = $vouchers
+    purchases = $purchases
 }
 
 Write-Host "Saving payload to $payloadPath..."

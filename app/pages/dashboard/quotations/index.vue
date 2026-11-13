@@ -122,7 +122,7 @@
     </div>
 
     <!-- Search & Filter Controls Toolbar (Matching BillingTable.vue:104-145) -->
-    <div class="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
+    <div class="bg-white rounded-xl border border-gray-200 shadow-xs overflow-visible relative z-30">
       <div class="p-4 flex flex-col sm:flex-row justify-between sm:items-center gap-3.5 bg-gray-50/50">
         <!-- 1. Scope Toggle: At top above search on mobile, utilizing full row (flex-1 buttons); on desktop pushed right next to Refresh -->
         <div
@@ -195,7 +195,7 @@
     </div>
 
     <!-- Quotations Table Card (Matching BillingTable.vue) -->
-    <div class="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden flex flex-col relative">
+    <div class="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden flex flex-col relative z-10">
       <LoadingTopBar :loading="isLoading" />
 
       <!-- Toolbar Header -->

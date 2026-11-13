@@ -123,7 +123,7 @@ const getPackingProgress = (order: any) => {
 </script>
 
 <template>
-  <div ref="tableRootRef" class="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden flex flex-col">
+  <div ref="tableRootRef" class="bg-white rounded-xl border border-gray-200 shadow-xs overflow-visible flex flex-col relative z-20">
     <!-- Top Toolbar -->
     <div class="p-4 border-b border-gray-200 flex flex-col sm:flex-row justify-between items-center gap-3.5 bg-gray-50/50">
       <!-- Search Input -->

@@ -73,15 +73,15 @@ const updateDatePlacement = () => {
   const spaceBelow = window.innerHeight - rect.bottom
   const spaceAbove = rect.top
   
-  // Open upward if space below is too tight (< 380px) and space above is larger
-  dateOpenUpward.value = spaceBelow < 380 && spaceAbove > spaceBelow
+  // Dynamically flip upward when space below is tight (< 340px) and there is more room above
+  dateOpenUpward.value = spaceBelow < 340 && spaceAbove > spaceBelow
   
   // Check horizontal alignment to avoid overflowing left edge on desktop
-  dateAlignLeft.value = rect.right < 300
+  dateAlignLeft.value = rect.left < 300 || rect.right < 340
   
   // Constrain max height so popover never goes outside viewport
-  const available = dateOpenUpward.value ? spaceAbove - 24 : spaceBelow - 24
-  dateMaxHeight.value = Math.max(260, Math.min(available, 520))
+  const available = dateOpenUpward.value ? spaceAbove - 16 : spaceBelow - 16
+  dateMaxHeight.value = Math.max(240, Math.min(available, 520))
 }
 
 const updateFiltersPlacement = () => {
@@ -90,16 +90,35 @@ const updateFiltersPlacement = () => {
   const spaceBelow = window.innerHeight - rect.bottom
   const spaceAbove = rect.top
   
-  // Open upward if space below is too tight (< 440px) and space above is larger
-  filtersOpenUpward.value = spaceBelow < 440 && spaceAbove > spaceBelow
+  // Dynamically flip upward when space below is tight (< 360px) and there is more room above
+  filtersOpenUpward.value = spaceBelow < 360 && spaceAbove > spaceBelow
   
   // Check horizontal alignment
-  filtersAlignLeft.value = rect.right < 330
+  filtersAlignLeft.value = rect.left < 320 || rect.right < 350
   
   // Constrain max height so popover never goes outside viewport
-  const available = filtersOpenUpward.value ? spaceAbove - 24 : spaceBelow - 24
-  filtersMaxHeight.value = Math.max(280, Math.min(available, 580))
+  const available = filtersOpenUpward.value ? spaceAbove - 16 : spaceBelow - 16
+  filtersMaxHeight.value = Math.max(260, Math.min(available, 580))
 }
+
+const handleViewportUpdate = () => {
+  if (isDatePickerOpen.value) updateDatePlacement()
+  if (isFiltersOpen.value) updateFiltersPlacement()
+}
+
+onMounted(() => {
+  if (typeof window !== 'undefined') {
+    window.addEventListener('scroll', handleViewportUpdate, true)
+    window.addEventListener('resize', handleViewportUpdate, { passive: true })
+  }
+})
+
+onUnmounted(() => {
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('scroll', handleViewportUpdate, true)
+    window.removeEventListener('resize', handleViewportUpdate)
+  }
+})
 
 const toggleDatePicker = () => {
   if (isDatePickerOpen.value) {
@@ -328,7 +347,8 @@ const onFilterSectionClick = (e: MouseEvent) => {
 
 // 1. Overall Status
 const overallStatusOptions = [
-  { label: 'All Statuses', value: '', dot: 'bg-gray-300' },
+  { label: 'All Active Orders', value: '', dot: 'bg-gray-300' },
+  { label: 'All Orders (Incl. Cancelled)', value: 'ALL', dot: 'bg-gray-400' },
   { label: 'Awaiting Billing & Packing', value: 'CONFIRMED', dot: 'bg-amber-400' },
   { label: 'Awaiting / Action Required', value: 'PROCESSING', dot: 'bg-amber-500' },
   { label: 'Ready for Dispatch', value: 'READY', dot: 'bg-emerald-500' },
@@ -384,7 +404,7 @@ const deliveryStatusOptions = [
     </Transition>
 
     <!-- Date Range Filter -->
-    <div v-if="showDateFilter" class="relative flex-1 sm:flex-initial" ref="dateContainerRef">
+    <div v-if="showDateFilter" class="relative flex-1 sm:flex-initial" ref="dateContainerRef" :class="{ 'z-50': isDatePickerOpen }">
       <button 
         ref="dateButtonRef"
         type="button"
@@ -556,7 +576,7 @@ const deliveryStatusOptions = [
     </div>
 
     <!-- Filters Popover -->
-    <div class="relative flex-1 sm:flex-initial" ref="filtersContainerRef">
+    <div class="relative flex-1 sm:flex-initial" ref="filtersContainerRef" :class="{ 'z-50': isFiltersOpen }">
       <button 
         ref="filtersButtonRef"
         type="button"

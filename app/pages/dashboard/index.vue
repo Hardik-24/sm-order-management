@@ -143,7 +143,6 @@ const handleStatCardClick = (cardKey: string) => {
     endDate.value = todayStr
   } else if (cardKey === 'pendingApproval') {
     isApproved.value = 'false'
-    status.value = '!CANCELLED'
   } else if (cardKey === 'packing') {
     isApproved.value = 'true'
     packingStatus.value = 'PENDING'

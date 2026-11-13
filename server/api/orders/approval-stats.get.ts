@@ -50,7 +50,10 @@ export default defineEventHandler(async (event) => {
       }
     }),
     prisma.order.count({
-      where
+      where: {
+        ...where,
+        overallStatus: { not: 'CANCELLED' }
+      }
     })
   ])
 

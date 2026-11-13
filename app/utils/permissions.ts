@@ -23,13 +23,14 @@ export const APP_PAGES: AppPageDef[] = [
   { key: 'PACKING', path: '/dashboard/packing', label: 'Packing Desk', category: 'Operations', description: 'Warehouse packing and order fulfillment' },
   { key: 'BILLING', path: '/dashboard/billing', label: 'Billing & Invoicing', category: 'Operations', description: 'Generate invoices and tax splits' },
   { key: 'DELIVERY', path: '/dashboard/delivery', label: 'Delivery & Dispatch', category: 'Operations', description: 'Trip planning and driver dispatch' },
-  { key: 'INVENTORY', path: '/dashboard/inventory', label: 'Inventory', category: 'Operations', description: 'Stock levels and product availability' },
+  { key: 'INVENTORY', path: '/dashboard/inventory', label: 'Stock Status', category: 'Operations', description: 'Stock levels and product availability' },
   { key: 'DRIVER_PORTAL', path: '/driver', label: 'Driver Portal', category: 'Operations', description: 'Driver delivery manifests, active trips, and live GPS transit console' },
 
   // Data
   { key: 'CUSTOMERS', path: '/dashboard/customers', label: 'Customers', category: 'Data', description: 'Customer accounts and details' },
   { key: 'PRODUCTS', path: '/dashboard/products', label: 'Products', category: 'Data', description: 'Product catalog, pricing, and SKUs' },
   { key: 'VOUCHERS', path: '/dashboard/vouchers', label: 'BUSY Vouchers', category: 'Data', description: 'Search and inspect all historical and live BUSY sales invoices' },
+  { key: 'PURCHASES', path: '/dashboard/purchases', label: 'Purchase Invoices', category: 'Data', description: 'Search and inspect all BUSY purchase invoices and supplier spend' },
 
   // Administration
   { key: 'ADMIN', path: '/dashboard/admin', label: 'Administration', category: 'Administration', description: 'Manage users, roles, and permissions' },
@@ -39,12 +40,12 @@ export const DEFAULT_ROLE_PAGES: Record<UserRole, string[]> = {
   ADMIN: [
     'OVERVIEW', 'ANALYTICS', 'ORDERS', 'CREATE_ORDER', 'ORDER_REQUESTS', 'CHAT',
     'QUOTATIONS', 'APPROVE_ORDERS', 'PACKING', 'BILLING', 'DELIVERY', 'INVENTORY', 'DRIVER_PORTAL',
-    'CUSTOMERS', 'PRODUCTS', 'VOUCHERS', 'ADMIN'
+    'CUSTOMERS', 'PRODUCTS', 'VOUCHERS', 'PURCHASES', 'ADMIN'
   ],
   SUPERVISOR: [
     'OVERVIEW', 'ANALYTICS', 'ORDERS', 'CREATE_ORDER', 'ORDER_REQUESTS', 'CHAT',
     'QUOTATIONS', 'APPROVE_ORDERS', 'PACKING', 'BILLING', 'DELIVERY', 'INVENTORY',
-    'CUSTOMERS', 'PRODUCTS', 'VOUCHERS'
+    'CUSTOMERS', 'PRODUCTS', 'VOUCHERS', 'PURCHASES'
   ],
   SALES: [
     'OVERVIEW', 'ANALYTICS', 'ORDERS', 'CREATE_ORDER', 'ORDER_REQUESTS', 'CHAT',
@@ -82,6 +83,7 @@ export function getPageKeyFromPath(path: string): string | null {
   if (cleanPath.startsWith('/dashboard/customers')) return 'CUSTOMERS'
   if (cleanPath.startsWith('/dashboard/products')) return 'PRODUCTS'
   if (cleanPath.startsWith('/dashboard/vouchers')) return 'VOUCHERS'
+  if (cleanPath.startsWith('/dashboard/purchases')) return 'PURCHASES'
   if (cleanPath.startsWith('/dashboard/chat')) return 'CHAT'
   if (cleanPath.startsWith('/dashboard/admin')) return 'ADMIN'
 

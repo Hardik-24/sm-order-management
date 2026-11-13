@@ -649,6 +649,32 @@ model BusyVoucher {
   @@map("busy_vouchers")
 }
 
+model BusyPurchase {
+  id            String   @id @default(uuid())
+  voucherNo     String   @unique
+  voucherType   Int      @default(2) // 2 for Purchase
+  series        String   @default("Main")
+  voucherDate   DateTime
+  supplierCode  String?
+  supplierName  String
+  totalAmount   Decimal  @db.Decimal(12, 2)
+  taxableAmount Decimal  @default(0) @db.Decimal(12, 2)
+  taxAmount     Decimal  @default(0) @db.Decimal(12, 2)
+  cgstAmount    Decimal  @default(0) @db.Decimal(12, 2)
+  sgstAmount    Decimal  @default(0) @db.Decimal(12, 2)
+  igstAmount    Decimal  @default(0) @db.Decimal(12, 2)
+  itemCount     Int      @default(0)
+  items         Json     // [{ name, sku, qty, rate, amount, isTaxInclusive, hsn, taxableAmount, taxRate, taxAmount, cgstRate, cgstAmount, sgstRate, sgstAmount, igstRate, igstAmount }]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([voucherNo])
+  @@index([supplierName])
+  @@index([voucherDate])
+  @@index([series])
+  @@map("busy_purchases")
+}
+
 model TrustedDevice {
   id               String    @id @default(uuid())
   deviceId         String    @unique

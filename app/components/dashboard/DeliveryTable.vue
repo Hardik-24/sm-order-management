@@ -355,7 +355,7 @@ const saveDriverAssignment = async () => {
 </script>
 
 <template>
-  <div ref="tableRootRef" class="bg-white rounded-xl shadow-sm border border-[#e5e2dc] overflow-visible">
+  <div ref="tableRootRef" class="bg-white rounded-xl shadow-sm border border-[#e5e2dc] overflow-visible relative z-20">
     <!-- Top Bar -->
     <div class="p-4 border-b border-gray-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
       <!-- Search -->

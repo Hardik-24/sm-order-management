@@ -59,7 +59,7 @@ watch(() => [props.isOpen, props.orderId], async ([open, id]) => {
       const baseNum = data.orderNumber.replace(/-[A-Z]$/, '')
       try {
         const relatedRes = await $fetch<any>('/api/orders', {
-          query: { search: baseNum, limit: 50 }
+          query: { search: baseNum, limit: 50, includeCancelled: 'true' }
         })
         const existingNumbers = new Set<string>(
           (relatedRes?.orders || []).map((o: any) => String(o.orderNumber).toUpperCase())

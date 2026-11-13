@@ -52,10 +52,15 @@ const debouncedSearch = refDebounced(search, 300)
 const startDate = ref('')
 const endDate = ref('')
 const salesPersonId = ref('')
+const status = ref('')
+const billingStatus = ref('')
+const packingStatus = ref('')
+const deliveryStatus = ref('')
+const isApproved = ref('')
 const activeTab = ref<'PENDING' | 'URGENT' | 'APPROVED' | 'ALL'>('PENDING')
 
-// Reset page on search or date change
-watch([debouncedSearch, startDate, endDate, salesPersonId], () => {
+// Reset page on search, date, or filter change
+watch([debouncedSearch, startDate, endDate, salesPersonId, status, billingStatus, packingStatus, deliveryStatus, isApproved], () => {
   page.value = 1
 })
 
@@ -64,18 +69,35 @@ const queryObj = computed(() => {
     page: page.value,
     limit: limit.value
   }
-  if (activeTab.value === 'PENDING') {
-    q.isApproved = 'false'
-    q.status = '!CANCELLED'
-  } else if (activeTab.value === 'URGENT') {
-    q.isUrgent = 'true'
-    q.isApproved = 'false'
-    q.status = '!CANCELLED'
-  } else if (activeTab.value === 'APPROVED') {
-    q.isApproved = 'true'
-    q.status = '!CANCELLED'
-  } else if (activeTab.value === 'ALL') {
-    q.status = '!CANCELLED'
+  if (status.value) {
+    q.status = status.value
+  } else {
+    if (activeTab.value === 'PENDING') {
+      q.isApproved = 'false'
+      q.status = '!CANCELLED'
+    } else if (activeTab.value === 'URGENT') {
+      q.isUrgent = 'true'
+      q.isApproved = 'false'
+      q.status = '!CANCELLED'
+    } else if (activeTab.value === 'APPROVED') {
+      q.isApproved = 'true'
+      q.status = '!CANCELLED'
+    } else if (activeTab.value === 'ALL') {
+      q.status = '!CANCELLED'
+    }
+  }
+
+  if (isApproved.value !== '') {
+    q.isApproved = isApproved.value
+  }
+  if (billingStatus.value) {
+    q.billingStatus = billingStatus.value
+  }
+  if (packingStatus.value) {
+    q.packingStatus = packingStatus.value
+  }
+  if (deliveryStatus.value) {
+    q.deliveryStatus = deliveryStatus.value
   }
   if (startDate.value) {
     q.startDate = startDate.value
@@ -494,7 +516,7 @@ const getTotalNos = (order: any) => {
     </div>
 
     <!-- Table Toolbar -->
-    <div class="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
+    <div class="bg-white rounded-xl border border-gray-200 shadow-xs overflow-visible relative z-20">
       <div class="p-4 border-b border-gray-200 flex flex-col sm:flex-row justify-between items-center gap-3.5 bg-gray-50/50">
         <!-- Search -->
         <div class="relative w-full sm:w-80">
@@ -519,12 +541,17 @@ const getTotalNos = (order: any) => {
           <TableFilterButtons
             v-model:startDate="startDate"
             v-model:endDate="endDate"
+            v-model:status="status"
+            v-model:billingStatus="billingStatus"
+            v-model:packingStatus="packingStatus"
+            v-model:deliveryStatus="deliveryStatus"
+            v-model:isApproved="isApproved"
             v-model:salesPersonId="salesPersonId"
-            :showOverallStatus="false"
-            :showApprovalStatus="false"
-            :showPackingStatus="false"
-            :showBillingStatus="false"
-            :showDeliveryStatus="false"
+            :showOverallStatus="true"
+            :showApprovalStatus="true"
+            :showPackingStatus="true"
+            :showBillingStatus="true"
+            :showDeliveryStatus="true"
             :showPlacedBy="true"
           />
           <RowsPerPageSelect v-model="limit" />

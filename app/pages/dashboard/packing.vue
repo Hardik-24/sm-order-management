@@ -299,7 +299,7 @@ onMounted(() => {
     </div>
 
     <!-- Table -->
-    <div class="relative">
+    <div class="relative z-20">
       <PackingTable 
         :orders="data?.orders || []"
         :isLoading="pending"

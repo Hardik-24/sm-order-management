@@ -250,7 +250,7 @@ const getItemsTotalQuantity = (order: Order) => {
 </script>
 
 <template>
-  <div ref="tableRootRef" class="rounded-xl border border-gray-200 bg-white shadow-sm flex flex-col">
+  <div ref="tableRootRef" class="rounded-xl border border-gray-200 bg-white shadow-sm flex flex-col relative z-20 overflow-visible">
     <!-- Top Bar -->
     <div class="p-4 border-b border-gray-200 bg-white rounded-t-xl relative flex flex-col md:flex-row md:items-center justify-between gap-4">
       <div class="flex flex-col sm:flex-row gap-3 sm:items-center w-full md:w-auto">

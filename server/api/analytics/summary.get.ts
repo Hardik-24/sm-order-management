@@ -164,26 +164,26 @@ export default defineEventHandler(async (event) => {
         WHERE "voucherType" = 9
       `),
 
-      // 8. Supplier Base Statistics
+      // 8. Supplier Base Statistics (from busy_purchases)
       prisma.$queryRawUnsafe(`
         SELECT 
-          COUNT(*)::int AS total_suppliers,
-          COUNT(CASE WHEN "gstNumber" IS NOT NULL AND "gstNumber" <> '' THEN 1 END)::int AS gst_registered_count,
-          COUNT(CASE WHEN phone IS NOT NULL AND phone <> '' THEN 1 END)::int AS phone_count
-        FROM suppliers
-        WHERE "isActive" = true
+          COUNT(DISTINCT "supplierName")::int AS total_suppliers,
+          COUNT(id)::int AS total_invoices,
+          COALESCE(SUM("totalAmount"), 0)::numeric AS total_spend,
+          COALESCE(SUM("taxAmount"), 0)::numeric AS total_tax_credit
+        FROM busy_purchases
       `),
 
-      // 9. Supplier Payment Terms Breakdown
+      // 9. Top Suppliers Breakdown
       prisma.$queryRawUnsafe(`
         SELECT 
-          COALESCE(NULLIF(TRIM("paymentTerms"), ''), 'Net 30 Days') AS terms,
-          COUNT(*)::int AS count
-        FROM suppliers
-        WHERE "isActive" = true
-        GROUP BY COALESCE(NULLIF(TRIM("paymentTerms"), ''), 'Net 30 Days')
-        ORDER BY count DESC
-        LIMIT 6
+          "supplierName" AS name,
+          COUNT(*)::int AS count,
+          COALESCE(SUM("totalAmount"), 0)::numeric AS total_spend
+        FROM busy_purchases
+        GROUP BY "supplierName"
+        ORDER BY total_spend DESC
+        LIMIT 10
       `),
 
       // 10. Critical Stockout Risk (High-demand items where stock <= 10 or 0)
@@ -423,11 +423,13 @@ export default defineEventHandler(async (event) => {
       // ─── 3. PURCHASE & SUPPLY CHAIN ─────────────────────────────────────
       purchases: {
         totalSuppliers: Number(sup.total_suppliers || 0),
-        gstRegistered: Number(sup.gst_registered_count || 0),
-        phoneVerified: Number(sup.phone_count || 0),
-        paymentTerms: (paymentTermsDist as any[]).map(t => ({
-          terms: t.terms,
-          count: Number(t.count)
+        totalInvoices: Number(sup.total_invoices || 0),
+        totalSpend: Number(sup.total_spend || 0),
+        totalTaxCredit: Number(sup.total_tax_credit || 0),
+        topSuppliers: (paymentTermsDist as any[]).map(t => ({
+          name: t.name,
+          count: Number(t.count),
+          totalSpend: Number(t.total_spend || 0)
         })),
         categories: (categoryRows as any[]).map(c => {
           const costVal = Number(c.cost_value || 0)

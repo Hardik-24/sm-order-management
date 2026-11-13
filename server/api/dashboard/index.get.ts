@@ -45,8 +45,8 @@ export default defineEventHandler(async (event) => {
     readyOrders,
     recentOrders
   ] = await Promise.all([
-    prisma.order.count({ where: { createdAt: { gte: today, lt: tomorrow }, ...personFilter } }),
-    prisma.order.count({ where: { createdAt: { gte: yesterday, lt: today }, ...personFilter } }),
+    prisma.order.count({ where: { createdAt: { gte: today, lt: tomorrow }, overallStatus: { not: 'CANCELLED' }, ...personFilter } }),
+    prisma.order.count({ where: { createdAt: { gte: yesterday, lt: today }, overallStatus: { not: 'CANCELLED' }, ...personFilter } }),
     prisma.order.count({
       where: {
         isApproved: false,
@@ -58,7 +58,7 @@ export default defineEventHandler(async (event) => {
       where: { 
         isApproved: true,
         billingStatus: { status: 'PENDING' },
-        overallStatus: { not: 'DELIVERED' },
+        overallStatus: { notIn: ['DELIVERED', 'CANCELLED'] },
         ...personFilter
       } 
     }),
@@ -66,7 +66,7 @@ export default defineEventHandler(async (event) => {
       where: { 
         isApproved: true,
         packingStatus: { status: { in: ['PENDING', 'IN_PROGRESS'] } },
-        overallStatus: { not: 'DELIVERED' },
+        overallStatus: { notIn: ['DELIVERED', 'CANCELLED'] },
         ...personFilter
       } 
     }),
@@ -76,6 +76,7 @@ export default defineEventHandler(async (event) => {
         deliveryStatus: { status: 'WAITING' },
         billingStatus: { status: 'GENERATED' },
         packingStatus: { status: 'PACKED' },
+        overallStatus: { notIn: ['DELIVERED', 'CANCELLED'] },
         ...personFilter
       }
     }),
@@ -93,12 +94,12 @@ export default defineEventHandler(async (event) => {
       take: 5
     }),
     prisma.order.findMany({
-      where: { isApproved: true, billingStatus: { status: 'PENDING' }, createdAt: { lt: oneHourAgo }, ...personFilter },
+      where: { isApproved: true, billingStatus: { status: 'PENDING' }, overallStatus: { notIn: ['DELIVERED', 'CANCELLED'] }, createdAt: { lt: oneHourAgo }, ...personFilter },
       include: { customer: true },
       take: 5
     }),
     prisma.order.findMany({
-      where: { isApproved: true, deliveryStatus: { status: 'WAITING' }, billingStatus: { status: 'GENERATED' }, packingStatus: { status: 'PACKED' }, ...personFilter },
+      where: { isApproved: true, deliveryStatus: { status: 'WAITING' }, billingStatus: { status: 'GENERATED' }, packingStatus: { status: 'PACKED' }, overallStatus: { notIn: ['DELIVERED', 'CANCELLED'] }, ...personFilter },
       include: { customer: true },
       take: 5
     }),

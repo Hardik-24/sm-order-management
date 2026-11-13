@@ -69,9 +69,9 @@
             <Truck class="shrink-0 w-4 h-4 transition-colors" :class="isLinkActive('/dashboard/delivery') ? 'text-sky-400' : 'text-gray-400'" />
             <span v-if="!isSidebarCollapsed" class="font-medium whitespace-nowrap">Delivery</span>
           </NuxtLink>
-          <NuxtLink v-if="canAccessRoute('/dashboard/inventory')" to="/dashboard/inventory" title="Inventory" class="flex items-center gap-3 rounded-md py-2.5 text-sm transition-colors" :class="[isLinkActive('/dashboard/inventory') ? 'bg-[#182d47] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50 hover:text-gray-200', isSidebarCollapsed ? 'justify-center px-0' : 'px-3']">
+          <NuxtLink v-if="canAccessRoute('/dashboard/inventory')" to="/dashboard/inventory" title="Stock Status" class="flex items-center gap-3 rounded-md py-2.5 text-sm transition-colors" :class="[isLinkActive('/dashboard/inventory') ? 'bg-[#182d47] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50 hover:text-gray-200', isSidebarCollapsed ? 'justify-center px-0' : 'px-3']">
             <Boxes class="shrink-0 w-4 h-4 transition-colors" :class="isLinkActive('/dashboard/inventory') ? 'text-sky-400' : 'text-gray-400'" />
-            <span v-if="!isSidebarCollapsed" class="font-medium whitespace-nowrap">Inventory</span>
+            <span v-if="!isSidebarCollapsed" class="font-medium whitespace-nowrap">Stock Status</span>
           </NuxtLink>
           <NuxtLink v-if="canAccessDriverApp" to="/driver" target="_blank" title="Driver Portal" class="flex items-center gap-3 rounded-md py-2 text-sm transition-colors text-sky-400 hover:bg-gray-800/50 hover:text-sky-300" :class="[isSidebarCollapsed ? 'justify-center px-0' : 'px-3']">
             <Navigation class="shrink-0 w-4 h-4" />
@@ -113,7 +113,7 @@
       </div>
 
       <!-- DATA -->
-      <div v-if="canAccessRoute('/dashboard/customers') || canAccessRoute('/dashboard/products') || canAccessRoute('/dashboard/vouchers')">
+      <div v-if="canAccessRoute('/dashboard/customers') || canAccessRoute('/dashboard/products') || canAccessRoute('/dashboard/vouchers') || canAccessRoute('/dashboard/purchases')">
         <h3 v-if="!isSidebarCollapsed" class="mb-3 px-3 text-[10px] font-bold uppercase tracking-widest text-gray-500 whitespace-nowrap">DATA</h3>
         <div v-else class="mb-3 h-3 flex justify-center border-b border-gray-800 mx-2"></div>
         <nav class="flex flex-col gap-1">
@@ -128,6 +128,10 @@
           <NuxtLink v-if="canAccessRoute('/dashboard/vouchers')" to="/dashboard/vouchers" title="BUSY Vouchers" class="flex items-center gap-3 rounded-md py-2.5 text-sm transition-colors" :class="[isLinkActive('/dashboard/vouchers') ? 'bg-[#182d47] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50 hover:text-gray-200', isSidebarCollapsed ? 'justify-center px-0' : 'px-3']">
             <Receipt class="shrink-0 w-4 h-4 transition-colors" :class="isLinkActive('/dashboard/vouchers') ? 'text-sky-400' : 'text-gray-400'" />
             <span v-if="!isSidebarCollapsed" class="font-medium whitespace-nowrap">BUSY Vouchers</span>
+          </NuxtLink>
+          <NuxtLink v-if="canAccessRoute('/dashboard/purchases')" to="/dashboard/purchases" title="Purchase Invoices" class="flex items-center gap-3 rounded-md py-2.5 text-sm transition-colors" :class="[isLinkActive('/dashboard/purchases') ? 'bg-[#182d47] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50 hover:text-gray-200', isSidebarCollapsed ? 'justify-center px-0' : 'px-3']">
+            <ShoppingBag class="shrink-0 w-4 h-4 transition-colors" :class="isLinkActive('/dashboard/purchases') ? 'text-sky-400' : 'text-gray-400'" />
+            <span v-if="!isSidebarCollapsed" class="font-medium whitespace-nowrap">Purchase Invoices</span>
           </NuxtLink>
         </nav>
       </div>
@@ -419,7 +423,7 @@
                 <Boxes class="w-4 h-4" />
               </div>
               <div class="flex flex-col min-w-0">
-                <span class="text-xs font-semibold text-gray-100 leading-tight">Inventory</span>
+                <span class="text-xs font-semibold text-gray-100 leading-tight">Stock Status</span>
                 <span class="text-[10px] text-gray-400 leading-tight mt-0.5">Stock levels</span>
               </div>
             </NuxtLink>
@@ -538,7 +542,26 @@
                 </div>
                 <div class="flex flex-col min-w-0">
                   <span class="text-xs font-semibold text-gray-100">BUSY Vouchers</span>
-                  <span class="text-[10px] text-gray-400">Accounting sync status</span>
+                  <span class="text-[10px] text-gray-400">Sales accounting sync</span>
+                </div>
+              </div>
+              <ChevronRight class="w-4 h-4 text-gray-500" />
+            </NuxtLink>
+
+            <NuxtLink
+              v-if="canAccessRoute('/dashboard/purchases')"
+              to="/dashboard/purchases"
+              @click="onSheetItemClick"
+              class="col-span-2 flex items-center justify-between p-2.5 rounded-xl bg-[#242424] hover:bg-[#2a2a2a] border border-gray-800/80 transition-all active:scale-[0.98]"
+              :class="{ 'ring-1 ring-sky-500/60 bg-[#182d47]/50 border-sky-500/40 text-sky-300': isLinkActive('/dashboard/purchases') }"
+            >
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-lg bg-sky-500/10 text-sky-400 border border-sky-500/20 flex items-center justify-center shrink-0">
+                  <ShoppingBag class="w-4 h-4" />
+                </div>
+                <div class="flex flex-col min-w-0">
+                  <span class="text-xs font-semibold text-gray-100">Purchase Invoices</span>
+                  <span class="text-[10px] text-gray-400">Vendor bills & spend</span>
                 </div>
               </div>
               <ChevronRight class="w-4 h-4 text-gray-500" />
@@ -765,6 +788,7 @@ import {
   CheckCheck,
   Calculator,
   Receipt,
+  ShoppingBag,
   Layers,
   ChevronRight,
   ExternalLink,
@@ -835,6 +859,7 @@ const hasDataReportsAccess = computed(() => {
     '/dashboard/customers',
     '/dashboard/products',
     '/dashboard/vouchers',
+    '/dashboard/purchases',
     '/dashboard/chat'
   ]
   return routes.some(r => canAccessRoute(r))
@@ -911,7 +936,8 @@ const isDataActive = computed(() => {
     '/dashboard/chat',
     '/dashboard/customers',
     '/dashboard/products',
-    '/dashboard/vouchers'
+    '/dashboard/vouchers',
+    '/dashboard/purchases'
   ]
   return dataRoutes.some(p => route.path.startsWith(p))
 })

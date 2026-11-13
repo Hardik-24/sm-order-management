@@ -344,7 +344,7 @@ onMounted(() => {
     </div>
 
     <!-- Table Container -->
-    <div class="relative">
+    <div class="relative z-20">
       <BillingTable 
         :isLoading="isLoading"
         :orders="data?.orders || []"
