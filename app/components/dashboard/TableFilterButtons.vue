@@ -67,6 +67,15 @@ const filtersOpenUpward = ref(false)
 const filtersAlignLeft = ref(false)
 const filtersMaxHeight = ref(560)
 
+const isDesktop = ref(false)
+const isMounted = ref(false)
+
+const updateDeviceSize = () => {
+  if (typeof window !== 'undefined') {
+    isDesktop.value = window.innerWidth >= 640
+  }
+}
+
 const updateDatePlacement = () => {
   if (typeof window === 'undefined' || !dateButtonRef.value) return
   const rect = dateButtonRef.value.getBoundingClientRect()
@@ -102,12 +111,15 @@ const updateFiltersPlacement = () => {
 }
 
 const handleViewportUpdate = () => {
+  updateDeviceSize()
   if (isDatePickerOpen.value) updateDatePlacement()
   if (isFiltersOpen.value) updateFiltersPlacement()
 }
 
 onMounted(() => {
   if (typeof window !== 'undefined') {
+    isMounted.value = true
+    updateDeviceSize()
     window.addEventListener('scroll', handleViewportUpdate, true)
     window.addEventListener('resize', handleViewportUpdate, { passive: true })
   }
@@ -121,6 +133,7 @@ onUnmounted(() => {
 })
 
 const toggleDatePicker = () => {
+  updateDeviceSize()
   if (isDatePickerOpen.value) {
     isDatePickerOpen.value = false
   } else {
@@ -131,6 +144,7 @@ const toggleDatePicker = () => {
 }
 
 const toggleFilters = () => {
+  updateDeviceSize()
   if (isFiltersOpen.value) {
     isFiltersOpen.value = false
   } else {
@@ -147,10 +161,12 @@ const closeAll = () => {
 }
 
 onClickOutside(dateContainerRef, () => {
+  if (!isDesktop.value) return
   isDatePickerOpen.value = false
 })
 
 onClickOutside(filtersContainerRef, () => {
+  if (!isDesktop.value) return
   isFiltersOpen.value = false
   activeDropdown.value = null
 })
@@ -394,17 +410,8 @@ const deliveryStatusOptions = [
 
 <template>
   <div class="flex items-center gap-1.5 sm:gap-2 flex-1 sm:flex-initial">
-    <!-- Backdrop for mobile viewport safety -->
-    <Transition name="fade">
-      <div 
-        v-if="isDatePickerOpen || isFiltersOpen" 
-        class="fixed inset-x-0 top-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] bg-black/40 backdrop-blur-[1px] z-[450] sm:hidden" 
-        @click="closeAll"
-      />
-    </Transition>
-
     <!-- Date Range Filter -->
-    <div v-if="showDateFilter" class="relative flex-1 sm:flex-initial" ref="dateContainerRef" :class="{ 'z-50': isDatePickerOpen }">
+    <div v-if="showDateFilter" class="relative flex-1 sm:flex-initial" ref="dateContainerRef" :class="{ 'z-50': isDatePickerOpen && isDesktop }">
       <button 
         ref="dateButtonRef"
         type="button"
@@ -418,16 +425,30 @@ const deliveryStatusOptions = [
       </button>
 
       <!-- Date Popover Content -->
-      <div 
-        v-if="isDatePickerOpen" 
-        class="fixed sm:absolute inset-x-4 top-1/2 -translate-y-1/2 sm:translate-y-0 sm:inset-x-auto bg-white border border-gray-200 shadow-2xl rounded-xl z-[460] w-auto sm:w-80 flex flex-col transform translate-z-0"
-        :class="[
-          dateOpenUpward ? 'sm:bottom-full sm:mb-2 sm:top-auto' : 'sm:top-full sm:mt-2 sm:bottom-auto',
-          dateAlignLeft ? 'sm:left-0 sm:right-auto' : 'sm:right-0 sm:left-auto'
-        ]"
-        :style="{ maxHeight: dateMaxHeight + 'px' }"
-      >
-        <!-- Header -->
+      <Teleport to="body" :disabled="!isMounted || isDesktop">
+        <div 
+          v-if="isDatePickerOpen" 
+          :class="isDesktop ? 'contents' : 'fixed inset-x-0 top-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] md:bottom-0 md:inset-0 z-[600] flex items-center justify-center p-3 sm:p-4 pt-[calc(1rem+env(safe-area-inset-top,0px))]'"
+        >
+          <!-- Mobile Backdrop -->
+          <div 
+            v-if="!isDesktop" 
+            class="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity" 
+            @click="closeAll" 
+          />
+
+          <!-- Popover Card -->
+          <div 
+            class="bg-white border border-gray-200 shadow-2xl rounded-2xl flex flex-col overflow-hidden"
+            :class="isDesktop ? [
+              'absolute z-50 w-80',
+              dateOpenUpward ? 'bottom-full mb-2 top-auto' : 'top-full mt-2 bottom-auto',
+              dateAlignLeft ? 'left-0 right-auto' : 'right-0 left-auto'
+            ] : 'relative z-10 w-full max-w-sm max-h-[calc(100dvh-3.5rem-env(safe-area-inset-bottom,0px)-2rem)] animate-in zoom-in-95 duration-150'"
+            :style="{ maxHeight: isDesktop ? (dateMaxHeight + 'px') : undefined }"
+            @click.stop
+          >
+            <!-- Header -->
         <div class="p-4 pb-3 flex items-center justify-between border-b border-gray-100 flex-shrink-0">
           <div class="flex items-center gap-2 truncate">
             <h4 class="text-xs font-bold text-gray-900 uppercase tracking-wider">Date Range</h4>
@@ -574,9 +595,11 @@ const deliveryStatusOptions = [
         </div>
       </div>
     </div>
+  </Teleport>
+</div>
 
     <!-- Filters Popover -->
-    <div class="relative flex-1 sm:flex-initial" ref="filtersContainerRef" :class="{ 'z-50': isFiltersOpen }">
+    <div class="relative flex-1 sm:flex-initial" ref="filtersContainerRef" :class="{ 'z-50': isFiltersOpen && isDesktop }">
       <button 
         ref="filtersButtonRef"
         type="button"
@@ -592,16 +615,30 @@ const deliveryStatusOptions = [
       </button>
 
       <!-- Filters Popover Content -->
-      <div 
-        v-if="isFiltersOpen" 
-        class="fixed sm:absolute inset-x-4 top-1/2 -translate-y-1/2 sm:translate-y-0 sm:inset-x-auto bg-white border border-gray-200 shadow-2xl rounded-xl z-[460] w-auto sm:w-80 flex flex-col transform translate-z-0"
-        :class="[
-          filtersOpenUpward ? 'sm:bottom-full sm:mb-2 sm:top-auto' : 'sm:top-full sm:mt-2 sm:bottom-auto',
-          filtersAlignLeft ? 'sm:left-0 sm:right-auto' : 'sm:right-0 sm:left-auto'
-        ]"
-        :style="{ maxHeight: filtersMaxHeight + 'px' }"
-      >
-        <!-- Header -->
+      <Teleport to="body" :disabled="!isMounted || isDesktop">
+        <div 
+          v-if="isFiltersOpen" 
+          :class="isDesktop ? 'contents' : 'fixed inset-x-0 top-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] md:bottom-0 md:inset-0 z-[600] flex items-center justify-center p-3 sm:p-4 pt-[calc(1rem+env(safe-area-inset-top,0px))]'"
+        >
+          <!-- Mobile Backdrop -->
+          <div 
+            v-if="!isDesktop" 
+            class="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity" 
+            @click="closeAll" 
+          />
+
+          <!-- Filters Popover Card -->
+          <div 
+            class="bg-white border border-gray-200 shadow-2xl rounded-2xl flex flex-col overflow-hidden"
+            :class="isDesktop ? [
+              'absolute z-50 w-80',
+              filtersOpenUpward ? 'bottom-full mb-2 top-auto' : 'top-full mt-2 bottom-auto',
+              filtersAlignLeft ? 'left-0 right-auto' : 'right-0 left-auto'
+            ] : 'relative z-10 w-full max-w-sm max-h-[calc(100dvh-3.5rem-env(safe-area-inset-bottom,0px)-2rem)] animate-in zoom-in-95 duration-150'"
+            :style="{ maxHeight: isDesktop ? (filtersMaxHeight + 'px') : undefined }"
+            @click.stop
+          >
+            <!-- Header -->
         <div class="p-4 pb-3 flex items-center justify-between border-b border-gray-100 flex-shrink-0" @click="activeDropdown = null">
           <div class="flex items-center gap-2">
             <h4 class="text-xs font-bold text-gray-900 uppercase tracking-wider">Filters</h4>
@@ -1051,5 +1088,7 @@ const deliveryStatusOptions = [
         </div>
       </div>
     </div>
+  </Teleport>
+</div>
   </div>
 </template>
