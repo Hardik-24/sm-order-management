@@ -84,7 +84,8 @@ def sync_workbook(filepath):
     print(f"\nOpening workbook: {filepath}")
     wb = openpyxl.load_workbook(filepath)
 
-    brand_sheets = [s for s in wb.sheetnames if s not in ['MASTER_ALL', '_GOOGLE_SHEETS_GUIDE_']]
+    EXCLUDED_SHEETS = {'MASTER_ALL', 'PRICE_HISTORY', '_GOOGLE_SHEETS_GUIDE_'}
+    brand_sheets = [s for s in wb.sheetnames if s not in EXCLUDED_SHEETS]
     print(f"Scanning {len(brand_sheets)} brand sheets:")
 
     all_items = []
@@ -221,6 +222,14 @@ def sync_workbook(filepath):
     ws_all.protection.insertRows = False
     ws_all.protection.deleteColumns = False
     ws_all.protection.deleteRows = False
+
+    # Ensure PRICE_HISTORY remains protected if present
+    if 'PRICE_HISTORY' in wb.sheetnames:
+        ws_hist = wb['PRICE_HISTORY']
+        ws_hist.protection.sheet = True
+        ws_hist.protection.enable()
+        ws_hist.protection.selectLockedCells = True
+        ws_hist.protection.selectUnlockedCells = True
 
     # Check lock again before saving
     wait_for_excel_close(filepath)
