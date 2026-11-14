@@ -154,6 +154,9 @@ function setupRealtimeChannel() {
     sharedChannel.on('broadcast', { event: 'ORDER_CHANGE' }, (payload) => {
       triggerListeners(payload?.payload || { type: 'ORDER_CHANGE' })
     })
+    sharedChannel.on('broadcast', { event: 'ORDER_REQUEST_CHANGE' }, (payload) => {
+      triggerListeners(payload?.payload || { type: 'ORDER_REQUEST_CHANGE' })
+    })
     sharedChannel.on('broadcast', { event: 'TRIP_CHANGE' }, (payload) => {
       triggerListeners(payload?.payload || { type: 'TRIP_CHANGE' })
     })
@@ -286,6 +289,13 @@ export function useRealtimeSync() {
           sharedChannel.send({
             type: 'broadcast',
             event: 'TRIP_CHANGE',
+            payload,
+          })
+        }
+        if (payload.type?.includes('ORDER_REQUEST') || payload.action?.includes('ORDER_REQUEST')) {
+          sharedChannel.send({
+            type: 'broadcast',
+            event: 'ORDER_REQUEST_CHANGE',
             payload,
           })
         }

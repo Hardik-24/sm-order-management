@@ -4,6 +4,7 @@ import { startTrip, recordTripPing, completeTrip, getTrip } from '~~/server/util
 import { resolveDestinationPin } from '~~/server/utils/customerPins'
 import { sendPushNotification } from '~~/server/utils/firebaseAdmin'
 import { isNotificationEnabled } from '~~/server/utils/notificationSettings'
+import { broadcastRealtimeEvent } from '~~/server/utils/realtimeBroadcast'
 
 function calculateOverallStatus(billing: string, packing: string, delivery: string) {
   if (delivery === 'DELIVERED') return 'DELIVERED'
@@ -144,6 +145,24 @@ export default defineEventHandler(async (event) => {
 
     const nextPendingStop = updatedTrip?.stops.find(s => s.status === 'PENDING') || null
 
+    // Multi-device WebSocket broadcast (<100ms) for Stop delivered and Order delivered
+    await Promise.allSettled([
+      broadcastRealtimeEvent('sm_orders_realtime', 'TRIP_CHANGE', {
+        type: 'TRIP_CHANGE',
+        action: 'TRIP_STOP_DELIVERED',
+        tripId: stop.tripId,
+        stopId: stop.id,
+        orderId: stop.orderId,
+        isTripCompleted,
+        trip: updatedTrip
+      }),
+      broadcastRealtimeEvent('sm_orders_realtime', 'ORDER_CHANGE', {
+        type: 'ORDER_CHANGE',
+        action: 'DELIVERY_UPDATED',
+        orderId: stop.orderId
+      })
+    ])
+
     return {
       success: true,
       stopId: stop.id,
@@ -235,6 +254,21 @@ export default defineEventHandler(async (event) => {
         stops: { orderBy: { stopSequence: 'asc' } }
       }
     }) : null
+
+    // Multi-device WebSocket broadcast (<100ms) for navigation reset
+    await Promise.allSettled([
+      tripId ? broadcastRealtimeEvent('sm_orders_realtime', 'TRIP_CHANGE', {
+        type: 'TRIP_CHANGE',
+        action: 'TRIP_UPDATED',
+        tripId,
+        trip: updatedTrip
+      }) : Promise.resolve(),
+      targetOrderId ? broadcastRealtimeEvent('sm_orders_realtime', 'ORDER_CHANGE', {
+        type: 'ORDER_CHANGE',
+        action: 'DELIVERY_UPDATED',
+        orderId: targetOrderId
+      }) : Promise.resolve()
+    ])
 
     return {
       success: true,
@@ -396,6 +430,20 @@ export default defineEventHandler(async (event) => {
       }
     })
 
+    // Multi-device WebSocket broadcast (<100ms) for Trip started and Order dispatched
+    await Promise.allSettled([
+      tripId ? broadcastRealtimeEvent('sm_orders_realtime', 'TRIP_CHANGE', {
+        type: 'TRIP_CHANGE',
+        action: 'TRIP_STARTED',
+        tripId
+      }) : Promise.resolve(),
+      broadcastRealtimeEvent('sm_orders_realtime', 'ORDER_CHANGE', {
+        type: 'ORDER_CHANGE',
+        action: 'DELIVERY_UPDATED',
+        orderId: order.id
+      })
+    ])
+
     return { success: true, trip }
   }
 
@@ -496,6 +544,20 @@ export default defineEventHandler(async (event) => {
         }
       }
     })
+
+    // Multi-device WebSocket broadcast (<100ms) for Trip completed and Order delivered
+    await Promise.allSettled([
+      tripId ? broadcastRealtimeEvent('sm_orders_realtime', 'TRIP_CHANGE', {
+        type: 'TRIP_CHANGE',
+        action: 'TRIP_COMPLETED',
+        tripId
+      }) : Promise.resolve(),
+      broadcastRealtimeEvent('sm_orders_realtime', 'ORDER_CHANGE', {
+        type: 'ORDER_CHANGE',
+        action: 'DELIVERY_UPDATED',
+        orderId: order.id
+      })
+    ])
 
     return { success: true, trip }
   }

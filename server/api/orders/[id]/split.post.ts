@@ -1,5 +1,6 @@
 import { requireRole, getUserFromEvent } from '~~/server/utils/auth'
 import { prisma } from '~~/server/utils/prisma'
+import { broadcastRealtimeEvent } from '~~/server/utils/realtimeBroadcast'
 
 function calculateOverallStatus(billing: string, packing: string, delivery: string) {
   if (delivery === 'DELIVERED') return 'DELIVERED'
@@ -347,6 +348,23 @@ export default defineEventHandler(async (event) => {
     maxWait: 10000, // Wait up to 10s to acquire transaction connection from pool
     timeout: 25000  // Allow up to 25s for execution (prevents 5s timeout on remote DB)
   })
+
+  // Multi-device WebSocket broadcast (<100ms) for parent updated order and brand-new split order
+  await Promise.allSettled([
+    broadcastRealtimeEvent('sm_orders_realtime', 'ORDER_CHANGE', {
+      type: 'ORDER_CHANGE',
+      action: 'ORDER_SPLIT',
+      orderId: result.parentOrder.id,
+      order: result.parentOrder,
+      newOrderId: result.newOrder.id
+    }),
+    broadcastRealtimeEvent('sm_orders_realtime', 'ORDER_CHANGE', {
+      type: 'ORDER_CHANGE',
+      action: 'ORDER_CREATED',
+      orderId: result.newOrder.id,
+      order: result.newOrder
+    })
+  ])
 
   return {
     success: true,

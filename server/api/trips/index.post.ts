@@ -2,6 +2,7 @@ import { requireRole } from '~~/server/utils/auth'
 import { prisma } from '~~/server/utils/prisma'
 import { sendPushNotification } from '~~/server/utils/firebaseAdmin'
 import { isNotificationEnabled } from '~~/server/utils/notificationSettings'
+import { broadcastRealtimeEvent } from '~~/server/utils/realtimeBroadcast'
 
 export default defineEventHandler(async (event) => {
   const user = requireRole(event, ['ADMIN', 'DELIVERY', 'SALES'])
@@ -141,6 +142,23 @@ export default defineEventHandler(async (event) => {
       console.warn('[FCM] Trip dispatch push failed:', pushErr)
     }
   }
+
+  // Multi-device WebSocket broadcast (<100ms) for Trip and assigned Orders
+  await Promise.allSettled([
+    broadcastRealtimeEvent('sm_orders_realtime', 'TRIP_CHANGE', {
+      type: 'TRIP_CHANGE',
+      action: 'TRIP_CREATED',
+      tripId: result.id,
+      tripNumber: result.tripNumber,
+      trip: result
+    }),
+    broadcastRealtimeEvent('sm_orders_realtime', 'ORDER_CHANGE', {
+      type: 'ORDER_CHANGE',
+      action: 'TRIP_ASSIGNED',
+      tripId: result.id,
+      orderIds: stops.map((s: any) => s.orderId)
+    })
+  ])
 
   return {
     success: true,

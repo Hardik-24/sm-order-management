@@ -1,6 +1,7 @@
 import { requireRole, getUserFromEvent } from '~~/server/utils/auth'
 import { prisma } from '~~/server/utils/prisma'
 import { deleteTrip } from '~~/server/utils/driverTrips'
+import { broadcastRealtimeEvent } from '~~/server/utils/realtimeBroadcast'
 
 export default defineEventHandler(async (event) => {
   const user = await getUserFromEvent(event)
@@ -109,6 +110,22 @@ export default defineEventHandler(async (event) => {
       })
     }
   })
+
+  // Multi-device WebSocket broadcast (<100ms)
+  await Promise.allSettled([
+    broadcastRealtimeEvent('sm_orders_realtime', 'TRIP_CHANGE', {
+      type: 'TRIP_CHANGE',
+      action: tripDeleted ? 'TRIP_DELETED' : 'TRIP_STOP_DELETED',
+      tripId,
+      stopId,
+      tripDeleted
+    }),
+    targetStop?.orderId ? broadcastRealtimeEvent('sm_orders_realtime', 'ORDER_CHANGE', {
+      type: 'ORDER_CHANGE',
+      action: 'DELIVERY_UPDATED',
+      orderId: targetStop.orderId
+    }) : Promise.resolve()
+  ])
 
   return {
     success: true,

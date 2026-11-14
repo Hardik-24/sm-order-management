@@ -1,6 +1,7 @@
 import { defineEventHandler, createError } from 'h3'
 import { prisma } from '~~/server/utils/prisma'
 import { requireAuth, requireRole } from '~~/server/utils/auth'
+import { broadcastRealtimeEvent } from '~~/server/utils/realtimeBroadcast'
 
 export default defineEventHandler(async (event) => {
   requireAuth(event)
@@ -24,6 +25,14 @@ export default defineEventHandler(async (event) => {
   // Delete the order request. Prisma will cascade delete the items.
   await prisma.orderRequest.delete({
     where: { id }
+  })
+
+  // Multi-device WebSocket broadcast (<100ms)
+  await broadcastRealtimeEvent('sm_orders_realtime', 'ORDER_REQUEST_CHANGE', {
+    type: 'ORDER_REQUEST_CHANGE',
+    action: 'ORDER_REQUEST_DELETED',
+    requestId: id,
+    requestNumber: orderRequest.requestNumber
   })
 
   return { success: true, message: 'Order request deleted successfully' }

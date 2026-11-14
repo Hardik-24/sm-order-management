@@ -3,6 +3,7 @@ import { prisma } from '~~/server/utils/prisma'
 import { enforceRateLimit } from '~~/server/utils/rateLimit'
 import { sendPushNotification } from '~~/server/utils/firebaseAdmin'
 import { isNotificationEnabled } from '~~/server/utils/notificationSettings'
+import { broadcastRealtimeEvent } from '~~/server/utils/realtimeBroadcast'
 
 export default defineEventHandler(async (event) => {
   enforceRateLimit(event, {
@@ -187,6 +188,14 @@ export default defineEventHandler(async (event) => {
       console.warn('[FCM] Storefront request push failed:', pushErr)
     }
   }
+
+  // Multi-device WebSocket broadcast (<100ms)
+  await broadcastRealtimeEvent('sm_orders_realtime', 'ORDER_REQUEST_CHANGE', {
+    type: 'ORDER_REQUEST_CHANGE',
+    action: 'ORDER_REQUEST_CREATED',
+    requestId: orderRequest.id,
+    request: orderRequest
+  })
 
   return {
     success: true,

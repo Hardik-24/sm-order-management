@@ -1,5 +1,6 @@
 import { requireRole } from '~~/server/utils/auth'
 import { prisma } from '~~/server/utils/prisma'
+import { broadcastRealtimeEvent } from '~~/server/utils/realtimeBroadcast'
 
 export default defineEventHandler(async (event) => {
   requireRole(event, ['ADMIN', 'DELIVERY', 'SALES'])
@@ -57,6 +58,14 @@ export default defineEventHandler(async (event) => {
         }
       }
     }
+  })
+
+  // Multi-device WebSocket broadcast (<100ms) for Trip stops reordered
+  await broadcastRealtimeEvent('sm_orders_realtime', 'TRIP_CHANGE', {
+    type: 'TRIP_CHANGE',
+    action: 'REORDER_STOPS',
+    tripId,
+    trip: updatedTrip
   })
 
   return {

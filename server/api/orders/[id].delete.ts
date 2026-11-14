@@ -1,5 +1,6 @@
 import { requireRole, getUserFromEvent } from '~~/server/utils/auth'
 import { prisma } from '~~/server/utils/prisma'
+import { broadcastRealtimeEvent } from '~~/server/utils/realtimeBroadcast'
 
 export default defineEventHandler(async (event) => {
   const user = await getUserFromEvent(event)
@@ -22,11 +23,15 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  // Prisma will cascade delete items, timeline, statuses if configured, 
-  // but to be safe, let's delete explicitly if we need to.
-  // Actually, wait, let's check prisma schema if cascade is enabled.
-  
   await prisma.order.delete({ where: { id } })
+
+  // Multi-device WebSocket broadcast (<100ms)
+  await broadcastRealtimeEvent('sm_orders_realtime', 'ORDER_CHANGE', {
+    type: 'ORDER_CHANGE',
+    action: 'ORDER_DELETED',
+    orderId: id,
+    orderNumber: order.orderNumber
+  })
 
   return { success: true }
 })
