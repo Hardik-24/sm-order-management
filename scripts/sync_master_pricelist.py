@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-SM Master Pricelist Synchronizer
+SM Master Pricelist Synchronizer (Enhanced 17-Column Schema)
 Reads all brand sheets from SM_MASTER_PRICELIST_2026.xlsx and synchronizes MASTER_ALL.
 Keeps MASTER_ALL read-only / protected while preserving all styles and formatting.
 Handles Excel open/lock gracefully with an interactive retry prompt.
@@ -23,13 +23,17 @@ COLUMNS = [
     ("Product Description", 46, Alignment(horizontal='left', vertical='center')),
     ("Brand", 16, Alignment(horizontal='center', vertical='center')),
     ("Category", 18, Alignment(horizontal='center', vertical='center')),
-    ("Rate / MRP (₹)", 18, Alignment(horizontal='right', vertical='center')),
+    ("Thickness", 12, Alignment(horizontal='center', vertical='center')),
+    ("Dimensions", 14, Alignment(horizontal='center', vertical='center')),
+    ("Sqft", 10, Alignment(horizontal='right', vertical='center')),
+    ("Rate / Sqft (₹)", 16, Alignment(horizontal='right', vertical='center')),
+    ("Rate / Unit (₹)", 18, Alignment(horizontal='right', vertical='center')),
     ("UoM", 10, Alignment(horizontal='center', vertical='center')),
     ("MOQ", 10, Alignment(horizontal='right', vertical='center')),
     ("TD %", 10, Alignment(horizontal='right', vertical='center')),
     ("CD %", 10, Alignment(horizontal='right', vertical='center')),
     ("GST %", 10, Alignment(horizontal='right', vertical='center')),
-    ("Revision", 14, Alignment(horizontal='center', vertical='center')),
+    ("Revision Date", 14, Alignment(horizontal='center', vertical='center')),
     ("Status", 14, Alignment(horizontal='center', vertical='center')),
     ("Source", 20, Alignment(horizontal='left', vertical='center'))
 ]
@@ -51,10 +55,6 @@ thin_border = Border(
 zebra_fill = PatternFill(start_color='F9FAFB', end_color='F9FAFB', fill_type='solid')
 
 def wait_for_excel_close(filepath):
-    """
-    Checks if the file is locked by Excel.
-    Prompts the user to save and close Excel if locked.
-    """
     while True:
         try:
             with open(filepath, 'a+'):
@@ -108,15 +108,19 @@ def sync_workbook(filepath):
                 'description': row[1] if len(row) > 1 and row[1] is not None else '',
                 'brand': row[2] if len(row) > 2 and row[2] is not None else b_name,
                 'category': row[3] if len(row) > 3 and row[3] is not None else '',
-                'mrp': row[4] if len(row) > 4 and row[4] is not None else 0.0,
-                'uom': row[5] if len(row) > 5 and row[5] is not None else 'NOS',
-                'moq': row[6] if len(row) > 6 and row[6] is not None else 1,
-                'td': row[7] if len(row) > 7 and row[7] is not None else 0.0,
-                'cd': row[8] if len(row) > 8 and row[8] is not None else 0.0,
-                'gst': row[9] if len(row) > 9 and row[9] is not None else 0.18,
-                'revision': row[10] if len(row) > 10 and row[10] is not None else '2026-R1',
-                'status': row[11] if len(row) > 11 and row[11] is not None else 'ACTIVE',
-                'source': row[12] if len(row) > 12 and row[12] is not None else f'Sheet: {b_name}'
+                'thickness': row[4] if len(row) > 4 and row[4] is not None else '-',
+                'dimensions': row[5] if len(row) > 5 and row[5] is not None else '-',
+                'sqft': row[6] if len(row) > 6 and row[6] is not None else 1.0,
+                'rate_sqft': row[7] if len(row) > 7 and row[7] is not None else None,
+                'rate_unit': row[8] if len(row) > 8 and row[8] is not None else 0.0,
+                'uom': row[9] if len(row) > 9 and row[9] is not None else 'NOS',
+                'moq': row[10] if len(row) > 10 and row[10] is not None else 1,
+                'td': row[11] if len(row) > 11 and row[11] is not None else 0.0,
+                'cd': row[12] if len(row) > 12 and row[12] is not None else 0.0,
+                'gst': row[13] if len(row) > 13 and row[13] is not None else 0.18,
+                'revision': row[14] if len(row) > 14 and row[14] is not None else '2026-10-01',
+                'status': row[15] if len(row) > 15 and row[15] is not None else 'ACTIVE',
+                'source': row[16] if len(row) > 16 and row[16] is not None else f'Sheet: {b_name}'
             }
             all_items.append(item)
             count += 1
@@ -157,7 +161,11 @@ def sync_workbook(filepath):
             item['description'],
             item['brand'],
             item['category'],
-            item['mrp'],
+            item['thickness'],
+            item['dimensions'],
+            item['sqft'],
+            item['rate_sqft'],
+            item['rate_unit'],
             item['uom'],
             item['moq'],
             item['td'],
@@ -170,21 +178,28 @@ def sync_workbook(filepath):
         is_even = (r_idx % 2 == 0)
         for c_idx, val in enumerate(row_vals, 1):
             cell = ws_all.cell(row=r_idx, column=c_idx, value=val)
-            cell.font = Font(name='Segoe UI', size=10, bold=(c_idx in [1, 5]))
+            cell.font = Font(name='Segoe UI', size=10, bold=(c_idx in [1, 9]))
             cell.alignment = COLUMNS[c_idx - 1][2]
             cell.border = thin_border
 
             if is_even:
                 cell.fill = zebra_fill
 
-            if c_idx == 5:
+            if c_idx == 7: # Sqft
+                cell.number_format = '#,##0.0'
+            elif c_idx == 8: # Rate / Sqft
+                if val is not None:
+                    cell.number_format = '₹#,##0.00'
+            elif c_idx == 9: # Rate / Unit
                 cell.number_format = '₹#,##0.00'
-            elif c_idx == 7:
+            elif c_idx == 11: # MOQ
                 cell.number_format = '#,##0'
-            elif c_idx in [8, 9, 10]:
+            elif c_idx in [12, 13, 14]: # TD, CD, GST %
                 cell.number_format = '0.0%'
+            elif c_idx == 15: # Revision Date
+                cell.number_format = 'YYYY-MM-DD'
 
-            if c_idx == 12:
+            if c_idx == 16:
                 if 'ACTIVE' in str(val).upper():
                     cell.fill = ACTIVE_FILL
                     cell.font = ACTIVE_FONT
@@ -210,12 +225,12 @@ def sync_workbook(filepath):
     # Check lock again before saving
     wait_for_excel_close(filepath)
     wb.save(filepath)
-    print(f"\n[OK] MASTER_ALL synchronized and protected successfully ({len(all_items)} products).")
+    print(f"\n[OK] MASTER_ALL synchronized and protected successfully ({len(all_items)} products, 17 columns).")
     return True
 
 if __name__ == '__main__':
     print("=" * 70)
-    print("  SM MASTER PRICELIST - SYNCHRONIZER")
+    print("  SM MASTER PRICELIST - SYNCHRONIZER (17 COLUMNS)")
     print("=" * 70)
     sync_workbook(PRIMARY_PATH)
     print("\nAll done! MASTER_ALL is fully updated and protected.")
