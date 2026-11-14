@@ -21,6 +21,20 @@ const { data: products, pending: productsLoading, refresh: refreshProducts } = u
 const { data: syncStatusData, refresh: refreshSyncStatus } = useFetch('/api/inventory/sync-status')
 const { data: lastSyncedData, refresh: refreshLastSynced } = useFetch('/api/inventory/last-synced')
 
+const isManualRefreshing = ref(false)
+const handleManualRefresh = async () => {
+  isManualRefreshing.value = true
+  try {
+    await Promise.all([
+      refreshProducts(),
+      refreshLastSynced(),
+      refreshSyncStatus()
+    ])
+  } finally {
+    isManualRefreshing.value = false
+  }
+}
+
 const { animateProgressBar, animateModalOpen, animateStagger, initContext } = useGsapAnimation()
 const { onOrderSync } = useRealtimeSync()
 
@@ -535,6 +549,18 @@ onUnmounted(() => {
             Last synced: {{ formatDateTime(lastSyncedData.lastSynced) }}
           </span>
         </p>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <button 
+          @click="handleManualRefresh" 
+          :disabled="isManualRefreshing || productsLoading"
+          class="inline-flex items-center gap-2 px-3 py-2 text-xs sm:text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 shadow-sm transition-colors cursor-pointer disabled:opacity-50"
+          title="Refresh Stock Status"
+        >
+          <RefreshCw class="w-4 h-4" :class="{ 'animate-spin': isManualRefreshing || productsLoading }" />
+          <span>Refresh</span>
+        </button>
       </div>
     </div>
 

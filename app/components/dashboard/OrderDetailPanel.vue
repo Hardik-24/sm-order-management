@@ -3118,6 +3118,21 @@ onUnmounted(() => {
                   No items added.
                 </div>
               </div>
+
+              <!-- Bottom Add Item Actions (Below last item added in list) -->
+              <div v-if="editForm.items.length > 0" class="flex items-center justify-between pt-3 pb-1 flex-wrap gap-2.5 border-t border-gray-100">
+                <button
+                  type="button"
+                  @click="addEditItem"
+                  class="px-3.5 py-2 bg-[#1b3b5f] hover:bg-[#132c49] text-white rounded-xl text-xs font-bold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer active:scale-95"
+                >
+                  <Plus class="w-3.5 h-3.5" />
+                  <span>Add Product</span>
+                </button>
+                <span class="text-xs text-gray-500 font-medium">
+                  {{ editForm.items.length }} {{ editForm.items.length === 1 ? 'item' : 'items' }} added
+                </span>
+              </div>
             </div>
           </template>
         </div>
