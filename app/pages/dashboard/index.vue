@@ -149,10 +149,11 @@ const handleStatCardClick = (cardKey: string) => {
   } else if (cardKey === 'awaitingBilling') {
     isApproved.value = 'true'
     billingStatus.value = 'PENDING'
-  } else if (cardKey === 'delivered') {
-    startDate.value = todayStr
-    endDate.value = todayStr
-    deliveryStatus.value = 'DELIVERED'
+  } else if (cardKey === 'awaitingDispatch' || cardKey === 'delivered') {
+    isApproved.value = 'true'
+    packingStatus.value = 'PACKED'
+    billingStatus.value = 'GENERATED'
+    deliveryStatus.value = 'WAITING'
   }
 }
 
@@ -446,7 +447,7 @@ const handleOrderSelect = (orderId: string) => {
               activeStatCard === 'pendingApproval' ? 'Pending Approval' :
               activeStatCard === 'packing' ? 'In Packing' :
               activeStatCard === 'awaitingBilling' ? 'Awaiting Billing' :
-              'Delivered Today'
+              'Awaiting Dispatch'
             }}</span>
             <X class="w-3.5 h-3.5" />
           </button>

@@ -188,25 +188,25 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- 5. Delivered Today (Delivery) -->
+    <!-- 5. Awaiting Dispatch (Delivery) -->
     <div 
-      @click="emit('selectCard', 'delivered')"
+      @click="emit('selectCard', 'awaitingDispatch')"
       class="stat-card rounded-xl border p-3 sm:p-5 flex flex-col justify-between transition-all duration-200 group cursor-pointer active:scale-[0.98]"
-      :class="activeFilter === 'delivered' 
+      :class="activeFilter === 'awaitingDispatch' 
         ? '!bg-emerald-100/90 !border-emerald-500 ring-2 ring-emerald-500/30 shadow-md' 
         : 'bg-white border-[#e5e2dc] shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] hover:shadow-md hover:border-emerald-300 hover:bg-emerald-50/20'"
-      title="Click to filter table by orders delivered today"
+      title="Click to filter table by orders awaiting dispatch"
     >
       <div class="flex justify-between items-start mb-2 sm:mb-4">
         <h3 
           class="uppercase tracking-wider text-[10px] font-semibold transition-colors"
-          :class="activeFilter === 'delivered' ? 'text-emerald-900 font-bold' : 'text-gray-500 group-hover:text-emerald-700'"
+          :class="activeFilter === 'awaitingDispatch' ? 'text-emerald-900 font-bold' : 'text-gray-500 group-hover:text-emerald-700'"
         >
-          Delivered Today
+          Awaiting Dispatch
         </h3>
         <div 
           class="w-7 h-7 sm:w-9 sm:h-9 rounded-full flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-105"
-          :class="activeFilter === 'delivered' ? 'bg-emerald-600 text-white shadow-xs' : 'bg-emerald-50 text-emerald-600'"
+          :class="activeFilter === 'awaitingDispatch' ? 'bg-emerald-600 text-white shadow-xs' : 'bg-emerald-50 text-emerald-600'"
         >
           <Truck class="w-3.5 h-3.5 sm:w-4 sm:h-4" />
         </div>
@@ -214,13 +214,13 @@ onMounted(() => {
       <div>
         <div class="mb-1 sm:mb-2">
           <OdometerNumber 
-            :value="stats?.delivered ?? 0" 
+            :value="stats?.readyForDelivery ?? 0" 
             :loading="isLoading" 
             class="text-2xl sm:text-[32px] leading-none font-bold" 
-            :class="activeFilter === 'delivered' ? 'text-emerald-950' : 'text-[#1a1a1a]'"
+            :class="activeFilter === 'awaitingDispatch' ? 'text-emerald-950' : 'text-[#1a1a1a]'"
           />
         </div>
-        <p class="text-[10px] sm:text-[11px] font-medium" :class="activeFilter === 'delivered' ? 'text-emerald-900 font-semibold' : 'text-emerald-600'">Fulfilled & closed</p>
+        <p class="text-[10px] sm:text-[11px] font-medium" :class="activeFilter === 'awaitingDispatch' ? 'text-emerald-900 font-semibold' : 'text-emerald-600'">Ready for transit</p>
       </div>
     </div>
   </div>

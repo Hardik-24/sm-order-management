@@ -223,6 +223,38 @@
           <!-- Grid items -->
           <div class="grid grid-cols-2 gap-2 p-3">
             <NuxtLink
+              v-if="canAccessRoute('/dashboard/orders')"
+              to="/dashboard/orders"
+              @click="onSheetItemClick"
+              class="flex items-start gap-2.5 p-2.5 rounded-xl bg-[#242424] hover:bg-[#2a2a2a] border border-gray-800/80 transition-all active:scale-[0.98]"
+              :class="{ 'ring-1 ring-sky-500/60 bg-[#182d47]/50 border-sky-500/40 text-sky-300': isLinkActive('/dashboard/orders') }"
+            >
+              <div class="w-8 h-8 rounded-lg bg-sky-500/10 text-sky-400 border border-sky-500/20 flex items-center justify-center shrink-0">
+                <ClipboardList class="w-4 h-4" />
+              </div>
+              <div class="flex flex-col min-w-0">
+                <span class="text-xs font-semibold text-gray-100 leading-tight">Orders</span>
+                <span class="text-[10px] text-gray-400 leading-tight mt-0.5">Sales orders</span>
+              </div>
+            </NuxtLink>
+
+            <NuxtLink
+              v-if="canAccessRoute('/dashboard/quotations')"
+              to="/dashboard/quotations"
+              @click="onSheetItemClick"
+              class="flex items-start gap-2.5 p-2.5 rounded-xl bg-[#242424] hover:bg-[#2a2a2a] border border-gray-800/80 transition-all active:scale-[0.98]"
+              :class="{ 'ring-1 ring-sky-500/60 bg-[#182d47]/50 border-sky-500/40 text-sky-300': isLinkActive('/dashboard/quotations') && !route.query.create }"
+            >
+              <div class="w-8 h-8 rounded-lg bg-sky-500/10 text-sky-400 border border-sky-500/20 flex items-center justify-center shrink-0">
+                <Calculator class="w-4 h-4" />
+              </div>
+              <div class="flex flex-col min-w-0">
+                <span class="text-xs font-semibold text-gray-100 leading-tight">Quotations</span>
+                <span class="text-[10px] text-gray-400 leading-tight mt-0.5">Estimates & rates</span>
+              </div>
+            </NuxtLink>
+
+            <NuxtLink
               v-if="['ADMIN', 'SUPERVISOR', 'SALES'].includes(user?.role || '') && canAccessRoute('/dashboard/approve-orders')"
               to="/dashboard/approve-orders"
               @click="onSheetItemClick"
@@ -393,22 +425,6 @@
           <!-- Grid items -->
           <div class="grid grid-cols-2 gap-2 p-3">
             <NuxtLink
-              v-if="canAccessRoute('/dashboard/orders')"
-              to="/dashboard/orders"
-              @click="onSheetItemClick"
-              class="flex items-start gap-2.5 p-2.5 rounded-xl bg-[#242424] hover:bg-[#2a2a2a] border border-gray-800/80 transition-all active:scale-[0.98]"
-              :class="{ 'ring-1 ring-sky-500/60 bg-[#182d47]/50 border-sky-500/40 text-sky-300': isLinkActive('/dashboard/orders') }"
-            >
-              <div class="w-8 h-8 rounded-lg bg-sky-500/10 text-sky-400 border border-sky-500/20 flex items-center justify-center shrink-0">
-                <ClipboardList class="w-4 h-4" />
-              </div>
-              <div class="flex flex-col min-w-0">
-                <span class="text-xs font-semibold text-gray-100 leading-tight">Orders</span>
-                <span class="text-[10px] text-gray-400 leading-tight mt-0.5">Sales orders</span>
-              </div>
-            </NuxtLink>
-
-            <NuxtLink
               v-if="canAccessRoute('/dashboard/inventory')"
               to="/dashboard/inventory"
               @click="onSheetItemClick"
@@ -458,22 +474,6 @@
                   </span>
                 </div>
                 <span class="text-[10px] text-gray-400 leading-tight mt-0.5">Customer drafts</span>
-              </div>
-            </NuxtLink>
-
-            <NuxtLink
-              v-if="canAccessRoute('/dashboard/quotations')"
-              to="/dashboard/quotations"
-              @click="onSheetItemClick"
-              class="flex items-start gap-2.5 p-2.5 rounded-xl bg-[#242424] hover:bg-[#2a2a2a] border border-gray-800/80 transition-all active:scale-[0.98]"
-              :class="{ 'ring-1 ring-sky-500/60 bg-[#182d47]/50 border-sky-500/40 text-sky-300': isLinkActive('/dashboard/quotations') && !route.query.create }"
-            >
-              <div class="w-8 h-8 rounded-lg bg-sky-500/10 text-sky-400 border border-sky-500/20 flex items-center justify-center shrink-0">
-                <Calculator class="w-4 h-4" />
-              </div>
-              <div class="flex flex-col min-w-0">
-                <span class="text-xs font-semibold text-gray-100 leading-tight">Quotations</span>
-                <span class="text-[10px] text-gray-400 leading-tight mt-0.5">Estimates & rates</span>
               </div>
             </NuxtLink>
 
@@ -805,12 +805,14 @@ watch(isMobileMenuOpen, (open) => {
 
 // Tab 1: Operations access
 const hasOperationsAccess = computed(() => {
+  const canOrders = canAccessRoute('/dashboard/orders')
+  const canQuotes = canAccessRoute('/dashboard/quotations')
   const canApprove = ['ADMIN', 'SUPERVISOR', 'SALES'].includes(user.value?.role || '') && canAccessRoute('/dashboard/approve-orders')
   const canPack = canAccessRoute('/dashboard/packing')
   const canBill = canAccessRoute('/dashboard/billing')
   const canDeliver = canAccessRoute('/dashboard/delivery')
   const canDriver = canAccessDriverApp.value
-  return canApprove || canPack || canBill || canDeliver || canDriver
+  return canOrders || canQuotes || canApprove || canPack || canBill || canDeliver || canDriver
 })
 
 // Tab 2: Create access
@@ -828,11 +830,9 @@ const hasHomeAccess = computed(() => {
 // Tab 4: Data & Reports access
 const hasDataReportsAccess = computed(() => {
   const routes = [
-    '/dashboard/orders',
     '/dashboard/inventory',
     '/dashboard/analytics',
     '/dashboard/order-requests',
-    '/dashboard/quotations',
     '/dashboard/customers',
     '/dashboard/products',
     '/dashboard/vouchers',
@@ -886,7 +886,10 @@ const handleCreateQuotationNav = () => {
 const isHomeActive = computed(() => route.path === '/dashboard')
 
 const isOperationsActive = computed(() => {
+  if (isCreateActive.value) return false
   const opsRoutes = [
+    '/dashboard/orders',
+    '/dashboard/quotations',
     '/dashboard/approve-orders',
     '/dashboard/packing',
     '/dashboard/billing',
@@ -904,11 +907,9 @@ const isCreateActive = computed(() => {
 const isDataActive = computed(() => {
   if (isCreateActive.value) return false
   const dataRoutes = [
-    '/dashboard/orders',
     '/dashboard/inventory',
     '/dashboard/analytics',
     '/dashboard/order-requests',
-    '/dashboard/quotations',
     '/dashboard/chat',
     '/dashboard/customers',
     '/dashboard/products',

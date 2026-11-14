@@ -1426,7 +1426,7 @@ onUnmounted(() => {
                   class="pb-2 px-2.5 text-xs font-semibold flex items-center gap-1.5 transition-colors border-b-2 cursor-pointer"
                   :class="activePriceTab === 'purchases' ? 'border-[#1b3b5f] text-[#1b3b5f]' : 'border-transparent text-gray-500 hover:text-gray-800'"
                 >
-                  <ShoppingBag class="w-3.5 h-3.5 text-amber-600" />
+                  <ShoppingBag class="w-3.5 h-3.5 text-amber-600 hidden sm:inline-block" />
                   <span>Recent Purchases (Vendor Bills)</span>
                   <span class="px-1.5 py-0.2 rounded-full text-[10px] font-bold" :class="activePriceTab === 'purchases' ? 'bg-[#1b3b5f] text-white' : 'bg-gray-100 text-gray-600'">
                     {{ priceHistory.purchases?.length || 0 }}
@@ -1438,7 +1438,7 @@ onUnmounted(() => {
                   class="pb-2 px-2.5 text-xs font-semibold flex items-center gap-1.5 transition-colors border-b-2 cursor-pointer"
                   :class="activePriceTab === 'sales' ? 'border-[#1b3b5f] text-[#1b3b5f]' : 'border-transparent text-gray-500 hover:text-gray-800'"
                 >
-                  <Receipt class="w-3.5 h-3.5 text-sky-600" />
+                  <Receipt class="w-3.5 h-3.5 text-sky-600 hidden sm:inline-block" />
                   <span>Recent Sales (Customer Invoices)</span>
                   <span class="px-1.5 py-0.2 rounded-full text-[10px] font-bold" :class="activePriceTab === 'sales' ? 'bg-[#1b3b5f] text-white' : 'bg-gray-100 text-gray-600'">
                     {{ priceHistory.sales?.length || 0 }}
