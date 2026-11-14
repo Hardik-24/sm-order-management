@@ -212,6 +212,10 @@ const submitApproval = async () => {
     // 1. Immediately close modal upon success
     isReviewModalOpen.value = false
     selectedOrder.value = null
+    if (selectedDrawerOrderId.value === orderId) {
+      isDrawerOpen.value = false
+      selectedDrawerOrderId.value = null
+    }
 
     // 2. Show proper snackbar
     showSnackbar(`Order ${orderNumber} approved successfully and sent to Packing & Billing!`, 'success')
@@ -254,6 +258,14 @@ const submitCancel = async () => {
     })
     isCancelModalOpen.value = false
     orderToCancel.value = null
+    if (selectedOrder.value?.id === orderId) {
+      isReviewModalOpen.value = false
+      selectedOrder.value = null
+    }
+    if (selectedDrawerOrderId.value === orderId) {
+      isDrawerOpen.value = false
+      selectedDrawerOrderId.value = null
+    }
     showSnackbar(`Order ${orderNumber} has been cancelled`, 'info')
     notifyChange({ action: 'ORDER_CANCELLED', orderId })
     await handleRefresh()
@@ -833,7 +845,7 @@ const getTotalNos = (order: any) => {
     <Teleport to="body">
       <div 
         v-if="isReviewModalOpen" 
-        class="fixed inset-x-0 top-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] md:bottom-0 md:inset-0 z-[500] flex items-center justify-center p-2 sm:p-4 md:p-6 pt-[calc(1rem+env(safe-area-inset-top,0px))] overflow-y-auto"
+        class="fixed inset-x-0 top-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] md:bottom-0 md:inset-0 z-[600] flex items-center justify-center p-2 sm:p-4 md:p-6 pt-[calc(1rem+env(safe-area-inset-top,0px))] overflow-y-auto"
       >
         <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="isReviewModalOpen = false"></div>
         
