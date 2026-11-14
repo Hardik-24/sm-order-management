@@ -2,6 +2,7 @@ import { requireRole, getUserFromEvent } from '~~/server/utils/auth'
 import { prisma } from '~~/server/utils/prisma'
 import { sendPushNotification } from '~~/server/utils/firebaseAdmin'
 import { isNotificationEnabled } from '~~/server/utils/notificationSettings'
+import { broadcastRealtimeEvent } from '~~/server/utils/realtimeBroadcast'
 
 export default defineEventHandler(async (event) => {
   const user = await getUserFromEvent(event)
@@ -100,6 +101,13 @@ export default defineEventHandler(async (event) => {
       console.warn('[FCM] Order approval push failed:', pushErr)
     }
   }
+
+  await broadcastRealtimeEvent('sm_orders_realtime', 'ORDER_CHANGE', {
+    type: 'ORDER_CHANGE',
+    action: 'ORDER_APPROVED',
+    orderId: id,
+    order: updatedOrder
+  })
 
   return updatedOrder
 })

@@ -22,6 +22,14 @@ export async function broadcastRealtimeEvent(topic: string, event: string, paylo
               ...payload,
               timestamp: Date.now()
             }
+          },
+          {
+            topic: topic.startsWith('realtime:') ? topic : `realtime:${topic}`,
+            event,
+            payload: {
+              ...payload,
+              timestamp: Date.now()
+            }
           }
         ]
       }

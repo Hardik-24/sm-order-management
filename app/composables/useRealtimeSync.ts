@@ -173,19 +173,24 @@ function setupRealtimeChannel() {
     // 2. Direct Postgres database changes fallback
     sharedChannel
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
-        triggerListeners({ type: 'DB_ORDER_CHANGE', table: 'orders', record: payload.new || payload.old })
+        const rec = payload.new || payload.old
+        triggerListeners({ type: 'DB_ORDER_CHANGE', table: 'orders', orderId: rec?.id, record: rec })
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'billing_statuses' }, (payload) => {
-        triggerListeners({ type: 'DB_BILLING_CHANGE', table: 'billing_statuses', record: payload.new || payload.old })
+        const rec = payload.new || payload.old
+        triggerListeners({ type: 'DB_BILLING_CHANGE', table: 'billing_statuses', orderId: rec?.order_id || rec?.orderId, record: rec })
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'packing_statuses' }, (payload) => {
-        triggerListeners({ type: 'DB_PACKING_CHANGE', table: 'packing_statuses', record: payload.new || payload.old })
+        const rec = payload.new || payload.old
+        triggerListeners({ type: 'DB_PACKING_CHANGE', table: 'packing_statuses', orderId: rec?.order_id || rec?.orderId, record: rec })
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'delivery_statuses' }, (payload) => {
-        triggerListeners({ type: 'DB_DELIVERY_CHANGE', table: 'delivery_statuses', record: payload.new || payload.old })
+        const rec = payload.new || payload.old
+        triggerListeners({ type: 'DB_DELIVERY_CHANGE', table: 'delivery_statuses', orderId: rec?.order_id || rec?.orderId, record: rec })
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'order_items' }, (payload) => {
-        triggerListeners({ type: 'DB_ORDER_ITEM_CHANGE', table: 'order_items', record: payload.new || payload.old })
+        const rec = payload.new || payload.old
+        triggerListeners({ type: 'DB_ORDER_ITEM_CHANGE', table: 'order_items', orderId: rec?.order_id || rec?.orderId, record: rec })
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'customers' }, (payload) => {
         triggerListeners({ type: 'DB_CUSTOMER_CHANGE', table: 'customers', record: payload.new || payload.old })
@@ -203,7 +208,8 @@ function setupRealtimeChannel() {
         triggerListeners({ type: 'DB_CHAT_CHANGE', table: 'chat_messages', record: payload.new || payload.old })
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'order_timeline' }, (payload) => {
-        triggerListeners({ type: 'DB_TIMELINE_CHANGE', table: 'order_timeline', record: payload.new || payload.old })
+        const rec = payload.new || payload.old
+        triggerListeners({ type: 'DB_TIMELINE_CHANGE', table: 'order_timeline', orderId: rec?.order_id || rec?.orderId, record: rec })
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'order_requests' }, (payload) => {
         triggerListeners({ type: 'DB_ORDER_REQUEST_CHANGE', table: 'order_requests', record: payload.new || payload.old })

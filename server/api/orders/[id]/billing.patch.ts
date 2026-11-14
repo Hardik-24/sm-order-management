@@ -3,6 +3,7 @@ import { prisma } from '~~/server/utils/prisma'
 import { syncOrderHistoricalPrices } from '~~/server/utils/historicalPrice'
 import { sendPushNotification } from '~~/server/utils/firebaseAdmin'
 import { isNotificationEnabled } from '~~/server/utils/notificationSettings'
+import { broadcastRealtimeEvent } from '~~/server/utils/realtimeBroadcast'
 
 function calculateOverallStatus(billing: string, packing: string, delivery: string) {
   if (delivery === 'DELIVERED') return 'DELIVERED';
@@ -144,6 +145,13 @@ export default defineEventHandler(async (event) => {
       }
     }
   }
+
+  await broadcastRealtimeEvent('sm_orders_realtime', 'ORDER_CHANGE', {
+    type: 'ORDER_CHANGE',
+    action: 'BILLING_UPDATED',
+    orderId: id,
+    order: updatedOrder
+  })
 
   return updatedOrder
 })

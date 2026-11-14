@@ -1,5 +1,6 @@
 import { requireActionPermission } from '~~/server/utils/auth'
 import { prisma } from '~~/server/utils/prisma'
+import { broadcastRealtimeEvent } from '~~/server/utils/realtimeBroadcast'
 
 export default defineEventHandler(async (event) => {
   const user = await requireActionPermission(event, 'canLinkBusyData')
@@ -83,6 +84,13 @@ export default defineEventHandler(async (event) => {
         }
       }
     })
+  })
+
+  await broadcastRealtimeEvent('sm_orders_realtime', 'ORDER_CHANGE', {
+    type: 'ORDER_CHANGE',
+    action: 'ORDER_UPDATED',
+    orderId: id,
+    order: updatedOrder
   })
 
   return {

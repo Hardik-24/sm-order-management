@@ -20,6 +20,8 @@ const isHandoverModalOpen = ref(false)
 const isAdminStatusModalOpen = ref(false)
 const isLinkModalOpen = ref(false)
 const isLinkItemModalOpen = ref(false)
+const isHeaderMenuOpen = ref(false)
+const isSilentRefreshing = ref(false)
 const selectedItemForLinking = ref<any>(null)
 
 const handleCustomerLinked = (updatedOrder: any) => {
@@ -191,23 +193,31 @@ const copyOrderNumber = () => {
 onOrderSync((event) => {
   if (event?.type === 'HEARTBEAT_SYNC') return
 
-  // Do not clobber order data while the user has an action modal or inline form open
+  if (!props.isOpen || !props.orderId) return
+
+  // Do not clobber order data while the user has an action modal open
   if (
+    isEditModalOpen.value ||
     isAdminStatusModalOpen.value || 
     isCancelModalOpen.value || 
     isPinModalOpen.value || 
     isHandoverModalOpen.value || 
     isLinkModalOpen.value || 
-    isLinkItemModalOpen.value || 
-    showBillingForm.value || 
-    showPackingForm.value || 
-    showDeliveryForm.value
+    isLinkItemModalOpen.value
   ) {
     return
   }
 
-  if (props.isOpen && props.orderId && (!event?.orderId || event.orderId === props.orderId)) {
-    fetchOrder(props.orderId)
+  const affectedId = event?.orderId 
+    || event?.payload?.orderId 
+    || event?.order?.id 
+    || event?.record?.order_id 
+    || event?.record?.orderId 
+    || (event?.table === 'orders' ? event?.record?.id : null)
+
+  // If this specific order was modified, or if a general order change broadcast arrived without an orderId
+  if (!affectedId || affectedId === props.orderId) {
+    fetchOrder(props.orderId, true)
   }
 })
 
@@ -247,12 +257,14 @@ const hasPackingChanges = ref(false)
 const isSavingPacking = ref(false)
 
 watch(() => props.orderId, async (newId) => {
+  isHeaderMenuOpen.value = false
   if (newId && props.isOpen) {
     await fetchOrder(newId)
   }
 })
 
 watch(() => props.isOpen, async (open) => {
+  isHeaderMenuOpen.value = false
   if (open && props.orderId) {
     await fetchOrder(props.orderId)
   }
@@ -323,11 +335,16 @@ const confirmCancelOrder = async () => {
   }
 }
 
-const fetchOrder = async (id: string) => {
-  isLoading.value = true
+const fetchOrder = async (id: string, silent = false) => {
+  if (silent) {
+    isSilentRefreshing.value = true
+  } else {
+    isLoading.value = true
+  }
   try {
     const data = await $fetch<Order>(`/api/orders/${id}`)
     order.value = data
+    emit('updated', data)
     hasPackingChanges.value = false
     packingForm.value = {
       status: data.packingStatus?.status || 'PENDING',
@@ -350,16 +367,19 @@ const fetchOrder = async (id: string) => {
       }) || [],
       holdReason: data.packingStatus?.holdReason || ''
     }
-    nextTick(() => {
-      if (itemsTbodyRef.value) {
-        const rows = itemsTbodyRef.value.querySelectorAll('tr')
-        animateStagger(rows, { duration: 0.18, stagger: 0.02, y: 4 })
-      }
-    })
+    if (!silent) {
+      nextTick(() => {
+        if (itemsTbodyRef.value) {
+          const rows = itemsTbodyRef.value.querySelectorAll('tr')
+          animateStagger(rows, { duration: 0.18, stagger: 0.02, y: 4 })
+        }
+      })
+    }
   } catch (error) {
     console.error('Failed to fetch order:', error)
   } finally {
     isLoading.value = false
+    isSilentRefreshing.value = false
   }
 }
 
@@ -444,6 +464,7 @@ const productOptions = computed(() => {
 })
 
 const closePanel = () => {
+  isHeaderMenuOpen.value = false
   if (hasPackingChanges.value) {
     const discard = confirm('You have unsaved packing changes. Are you sure you want to discard them?')
     if (!discard) return
@@ -1348,112 +1369,152 @@ onUnmounted(() => {
       
       <div 
         class="relative z-10 max-w-full w-full bg-white shadow-2xl pointer-events-auto flex flex-col h-full overflow-hidden transform transition-all duration-300 border-l border-gray-200/80 ml-auto"
-        :class="context === 'packing' ? 'sm:max-w-[760px] md:max-w-[880px] lg:max-w-[960px] xl:max-w-[1020px]' : 'sm:max-w-[500px] md:max-w-[540px]'"
+        :class="context === 'packing' ? 'sm:max-w-[760px] md:max-w-[880px] lg:max-w-[960px] xl:max-w-[1020px]' : 'sm:max-w-[580px] md:max-w-[640px] lg:max-w-[680px]'"
       >
-        <LoadingTopBar :loading="isLoading" />
+        <LoadingTopBar :loading="isLoading || isSilentRefreshing" />
       
       <template v-if="order">
-        <!-- Loading Overlay -->
-        <div v-if="isLoading" class="absolute inset-0 bg-white/20 backdrop-blur-[1px] z-50 pointer-events-none transition-opacity duration-200"></div>
+        <!-- Loading Overlay (only for blocking loads, silent refresh stays unobstructed) -->
+        <div v-if="isLoading && !isSilentRefreshing" class="absolute inset-0 bg-white/20 backdrop-blur-[1px] z-50 pointer-events-none transition-opacity duration-200"></div>
 
-        <!-- 1. Header Bar -->
-        <div class="px-5 sm:px-6 py-3.5 border-b border-gray-200/80 flex items-center justify-between bg-white flex-shrink-0 z-10">
-          <div class="flex items-center gap-2 flex-wrap min-w-0">
-            <div class="flex items-center gap-1.5">
-              <h2 class="text-base sm:text-lg font-bold font-mono tracking-tight text-gray-950">
-                {{ order.orderNumber }}
-              </h2>
-              <button 
-                @click="copyOrderNumber" 
-                class="p-1 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded transition cursor-pointer" 
-                :title="copiedOrderNumber ? 'Copied to clipboard!' : 'Copy Order Number'"
-              >
-                <Check v-if="copiedOrderNumber" class="w-3.5 h-3.5 text-emerald-600" />
-                <Copy v-else class="w-3.5 h-3.5" />
-              </button>
-            </div>
-
-            <span v-if="order.overallStatus === 'CANCELLED'" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-300 uppercase tracking-wider">
-              <Ban class="w-3 h-3 text-rose-600" /> CANCELLED
-            </span>
-            <StatusBadge 
-              v-else
-              :status="order.overallStatus" 
-              :display="getDisplayStatus(order)" 
-              :class="getOverallColor(order)" 
-            />
-            <span v-if="order.isUrgent && order.overallStatus !== 'CANCELLED'" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200 uppercase tracking-wider">
-              <Zap class="w-3 h-3 text-rose-600 fill-rose-600" />
-              <span>Urgent</span>
-            </span>
-            <span 
-              v-if="hasOutOfStockItems && order.overallStatus !== 'CANCELLED'" 
-              class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-100 text-orange-900 border border-orange-300 uppercase tracking-wider shadow-2xs" 
-              :title="`${outOfStockItems.length} item(s) are not in stock or have insufficient inventory.`"
+        <!-- 1. Header Bar: Title & Controls -->
+        <div class="px-5 sm:px-6 py-3 border-b border-gray-150 flex items-center justify-between bg-white flex-shrink-0 z-20">
+          <!-- Left: Order Number & Copy -->
+          <div class="flex items-center gap-2 min-w-0">
+            <h2 class="text-base sm:text-lg font-bold font-mono tracking-tight text-gray-950 truncate">
+              {{ order.orderNumber }}
+            </h2>
+            <button 
+              @click="copyOrderNumber" 
+              class="p-1 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded transition cursor-pointer shrink-0" 
+              :title="copiedOrderNumber ? 'Copied to clipboard!' : 'Copy Order Number'"
             >
-              <PackageX class="w-3 h-3 text-orange-700 shrink-0" />
-              <span>Not in Stock ({{ outOfStockItems.length }})</span>
-            </span>
+              <Check v-if="copiedOrderNumber" class="w-3.5 h-3.5 text-emerald-600" />
+              <Copy v-else class="w-3.5 h-3.5" />
+            </button>
           </div>
 
+          <!-- Right: Actions & Controls -->
           <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
-            <!-- Billed / Locked Badge -->
-            <span 
-              v-if="isBillGenerated"
-              class="px-2.5 py-1 text-xs font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-lg flex items-center gap-1 shadow-2xs select-none"
-              :title="`Order is locked: Bill generated (${order?.billingStatus?.invoiceNumber ? 'Invoice #' + order.billingStatus.invoiceNumber : 'Generated'}). Editing and cancellation are disabled.`"
-            >
-              <Lock class="w-3.5 h-3.5 text-emerald-600" />
-              <span class="hidden sm:inline">Billed (Locked)</span>
-            </span>
-
+            <!-- Edit Order Primary Button -->
             <button 
               v-if="canEditCurrentOrder"
               @click="openEditModal" 
               title="Edit Full Order Details"
-              class="px-2.5 py-1 text-xs font-bold text-white bg-[#1b3b5f] hover:bg-[#132c49] active:bg-[#0e2035] rounded-lg transition-all flex items-center gap-1.5 shadow-xs cursor-pointer active:scale-95"
+              class="px-2.5 sm:px-3 py-1.5 text-xs font-bold text-white bg-[#1b3b5f] hover:bg-[#132c49] active:bg-[#0e2035] rounded-lg transition-all flex items-center gap-1.5 shadow-xs cursor-pointer active:scale-95"
             >
               <Edit class="w-3.5 h-3.5" />
-              <span class="hidden sm:inline">Edit Order</span>
+              <span>Edit Order</span>
             </button>
 
-            <button 
-              v-if="canEditOrderStatus"
-              @click="openAdminStatusModal" 
-              title="Edit Status Across Departments"
-              class="px-2.5 py-1 text-xs font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+            <!-- More Actions Dropdown (•••) -->
+            <div 
+              v-if="canEditOrderStatus || canCancelOrder || (hasRole('ADMIN') && !isBillGenerated)" 
+              class="relative"
             >
-              <SlidersHorizontal class="w-3.5 h-3.5" />
-              <span class="hidden sm:inline">Edit Status</span>
-            </button>
+              <button 
+                @click.stop="isHeaderMenuOpen = !isHeaderMenuOpen" 
+                title="More Actions"
+                class="p-1.5 text-gray-600 hover:text-gray-900 rounded-lg hover:bg-gray-100 border border-gray-200 transition-colors flex items-center justify-center cursor-pointer"
+                :class="{ 'bg-gray-100 border-gray-300 text-gray-900': isHeaderMenuOpen }"
+              >
+                <MoreHorizontal class="w-4 h-4" />
+              </button>
 
-            <button 
-              v-if="canCancelOrder"
-              @click="openCancelModal" 
-              title="Cancel Order (Mandatory Reason Required)"
-              class="px-2.5 py-1 text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200/80 rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
-            >
-              <Ban class="w-3.5 h-3.5" />
-              <span class="hidden sm:inline">Cancel</span>
-            </button>
-            <button 
-              v-if="hasRole('ADMIN') && !isBillGenerated"
-              @click="deleteOrder" 
-              :disabled="isDeleting"
-              title="Delete Order (Admin Only)"
-              class="p-1.5 text-red-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50 cursor-pointer"
-            >
-              <Trash2 class="w-4 h-4" />
-            </button>
+              <!-- Transparent click-away backdrop -->
+              <div 
+                v-if="isHeaderMenuOpen" 
+                class="fixed inset-0 z-30" 
+                @click="isHeaderMenuOpen = false"
+              ></div>
+
+              <!-- Dropdown Content -->
+              <div 
+                v-if="isHeaderMenuOpen" 
+                class="absolute right-0 top-full mt-1.5 w-56 bg-white rounded-xl shadow-xl border border-gray-200 py-1 z-40 text-xs divide-y divide-gray-100 animate-in fade-in zoom-in-95 duration-100"
+              >
+                <div v-if="canEditOrderStatus" class="py-1">
+                  <button 
+                    @click="openAdminStatusModal(); isHeaderMenuOpen = false"
+                    class="w-full text-left px-3.5 py-2 hover:bg-purple-50 text-purple-900 flex items-center gap-2 cursor-pointer font-medium transition-colors"
+                  >
+                    <SlidersHorizontal class="w-3.5 h-3.5 text-purple-600 shrink-0" />
+                    <span>Edit Status (Departments)</span>
+                  </button>
+                </div>
+                
+                <div v-if="canCancelOrder || (hasRole('ADMIN') && !isBillGenerated)" class="py-1">
+                  <button 
+                    v-if="canCancelOrder"
+                    @click="openCancelModal(); isHeaderMenuOpen = false"
+                    class="w-full text-left px-3.5 py-2 hover:bg-rose-50 text-rose-700 flex items-center gap-2 cursor-pointer font-medium transition-colors"
+                  >
+                    <Ban class="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                    <span>Cancel Order</span>
+                  </button>
+                  <button 
+                    v-if="hasRole('ADMIN') && !isBillGenerated"
+                    @click="deleteOrder(); isHeaderMenuOpen = false"
+                    :disabled="isDeleting"
+                    class="w-full text-left px-3.5 py-2 hover:bg-red-50 text-red-600 flex items-center gap-2 cursor-pointer font-medium transition-colors disabled:opacity-50"
+                  >
+                    <Trash2 class="w-3.5 h-3.5 text-red-500 shrink-0" />
+                    <span>Delete Order (Admin)</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Close Drawer Button -->
             <button 
               @click="closePanel" 
-              class="p-1.5 text-gray-400 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+              class="p-1.5 text-gray-400 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer ml-0.5"
               title="Close Panel"
               data-modal-close="true"
             >
               <X class="w-5 h-5" />
             </button>
           </div>
+        </div>
+
+        <!-- 2. Badges & Status Strip (Dedicated second tier, never disrupts action buttons) -->
+        <div class="px-5 sm:px-6 py-2 bg-gray-50/80 border-b border-gray-200/80 flex items-center gap-2 flex-wrap flex-shrink-0">
+          <!-- Primary Overall Status -->
+          <span v-if="order.overallStatus === 'CANCELLED'" class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-300 uppercase tracking-wider">
+            <Ban class="w-3.5 h-3.5 text-rose-600" /> CANCELLED
+          </span>
+          <StatusBadge 
+            v-else
+            :status="order.overallStatus" 
+            :display="getDisplayStatus(order)" 
+            :class="getOverallColor(order)" 
+          />
+
+          <!-- Urgent Badge -->
+          <span v-if="order.isUrgent && order.overallStatus !== 'CANCELLED'" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200 uppercase tracking-wider">
+            <Zap class="w-3 h-3 text-rose-600 fill-rose-600" />
+            <span>Urgent</span>
+          </span>
+
+          <!-- Out of Stock Badge -->
+          <span 
+            v-if="hasOutOfStockItems && order.overallStatus !== 'CANCELLED'" 
+            class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-100 text-orange-900 border border-orange-300 uppercase tracking-wider shadow-2xs" 
+            :title="`${outOfStockItems.length} item(s) are not in stock or have insufficient inventory.`"
+          >
+            <PackageX class="w-3 h-3 text-orange-700 shrink-0" />
+            <span>Not in Stock ({{ outOfStockItems.length }})</span>
+          </span>
+
+          <!-- Billed / Locked Badge -->
+          <span 
+            v-if="isBillGenerated"
+            class="px-2 py-0.5 text-[10px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-full flex items-center gap-1 shadow-2xs select-none uppercase tracking-wider"
+            :title="`Order is locked: Bill generated (${order?.billingStatus?.invoiceNumber ? 'Invoice #' + order.billingStatus.invoiceNumber : 'Generated'}).`"
+          >
+            <Lock class="w-3 h-3 text-emerald-600" />
+            <span>Billed (Locked)</span>
+          </span>
         </div>
 
         <!-- 2. Sub-header Quick Snapshot -->
