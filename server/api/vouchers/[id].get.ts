@@ -91,7 +91,7 @@ export default defineEventHandler(async (event) => {
     const names: string[] = items.map((it: any) => it.name).filter(Boolean)
     const skus: string[] = items.map((it: any) => it.sku).filter(Boolean)
 
-    const prodMap = new Map<string, number>()
+    const prodMap = new Map<string, { cost: number; price: number; unit?: string }>()
     if (names.length > 0 || skus.length > 0) {
       try {
         const matchingProds = await prisma.product.findMany({
@@ -101,12 +101,17 @@ export default defineEventHandler(async (event) => {
               ...(skus.length > 0 ? [{ sku: { in: skus, mode: 'insensitive' as const } }] : [])
             ]
           },
-          select: { name: true, sku: true, costPrice: true }
+          select: { name: true, sku: true, costPrice: true, price: true, unit: true }
         })
         for (const p of matchingProds) {
           if (p.costPrice && Number(p.costPrice) > 0) {
-            if (p.name) prodMap.set(p.name.toLowerCase().trim(), Number(p.costPrice))
-            if (p.sku) prodMap.set(p.sku.toLowerCase().trim(), Number(p.costPrice))
+            const prodData = {
+              cost: Number(p.costPrice),
+              price: Number(p.price || 0),
+              unit: p.unit || ''
+            }
+            if (p.name) prodMap.set(p.name.toLowerCase().trim(), prodData)
+            if (p.sku) prodMap.set(p.sku.toLowerCase().trim(), prodData)
           }
         }
       } catch (prodErr) {
@@ -147,12 +152,26 @@ export default defineEventHandler(async (event) => {
     let totalTax = 0
     let resolvedCount = 0
 
+    const isSheetOrPanel = (name: string) => {
+      const n = (name || '').toLowerCase()
+      return n.includes('ply') || n.includes('relw') || n.includes('mdf') || n.includes('mdp') ||
+             n.includes('laminate') || n.includes('pvc') || n.includes('door') || n.includes('acrylic') ||
+             n.includes('charcoal') || n.includes('louver') || n.includes('wig') || n.includes('board') ||
+             n.includes('veneer') || n.includes('sheet')
+    }
+
+    const isSmallHardware = (name: string) => {
+      const n = (name || '').toLowerCase()
+      return n.includes('screw') || n.includes('nail') || n.includes('fastener') || n.includes('washer') || n.includes('rivet')
+    }
+
     const enrichedItems = items.map((item: any) => {
       const normName = (item.name || '').toLowerCase().trim()
       const normSku = (item.sku || '').toLowerCase().trim()
 
       const purMatch = purMap.get(normName) || (normSku ? purMap.get(normSku) : undefined)
-      const prodCost = prodMap.get(normName) || (normSku ? prodMap.get(normSku) : undefined)
+      const prodInfo = prodMap.get(normName) || (normSku ? prodMap.get(normSku) : undefined)
+      const prodCost = prodInfo?.cost
 
       let costPrice: number | null = null
       let costSource: string | null = null
@@ -186,14 +205,24 @@ export default defineEventHandler(async (event) => {
       let lineMargin: number | null = null
 
       if (costPrice !== null && costPrice > 0) {
-        // Guard against unit mismatches (e.g. screws per box vs single piece)
+        // Guard against unit mismatches (e.g. bulk fasteners per box vs single piece)
         if (rate > 0 && costPrice / rate > 3) {
-          if (costPrice / rate > 500) {
-            costPrice = Math.round((costPrice / 1000) * 100) / 100
-          } else if (costPrice / rate > 50) {
-            costPrice = Math.round((costPrice / 100) * 100) / 100
+          if (isSheetOrPanel(item.name) || (prodInfo && prodInfo.price > 100)) {
+            // NEVER scale sheet goods or high-value items! If billed at ₹1 (token/sample bill), keep true cost.
+          } else if (isSmallHardware(item.name)) {
+            // Only scale genuine small bulk fasteners where a box of 500/1000 was sold loose
+            if (costPrice / rate > 500) {
+              costPrice = Math.round((costPrice / 1000) * 100) / 100
+            } else if (costPrice / rate > 50) {
+              costPrice = Math.round((costPrice / 100) * 100) / 100
+            } else {
+              costPrice = null
+            }
           } else {
-            costPrice = null
+            // For other ambiguous items with severe ratio mismatch (>50), discard rather than blindly scaling
+            if (costPrice / rate > 50) {
+              costPrice = null
+            }
           }
         }
       }
@@ -224,7 +253,9 @@ export default defineEventHandler(async (event) => {
     })
 
     const grossProfit = Math.round((totalSalesTaxable - totalCost) * 100) / 100
-    const marginPercent = totalSalesTaxable > 0 ? Math.round(((grossProfit / totalSalesTaxable) * 100) * 100) / 100 : 0
+    const rawMargin = totalSalesTaxable > 0 ? Math.round(((grossProfit / totalSalesTaxable) * 100) * 100) / 100 : 0
+    // Clamp to valid Decimal(5, 2) DB range [-999.99, 999.99] to prevent numeric overflow on extreme token/sample invoices
+    const marginPercent = Math.min(999.99, Math.max(-999.99, rawMargin))
 
     const profitability = {
       totalSales: Math.round(totalSalesTaxable * 100) / 100, // Pre-tax taxable sales revenue
