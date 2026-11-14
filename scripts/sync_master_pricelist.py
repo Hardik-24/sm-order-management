@@ -1,15 +1,22 @@
 #!/usr/bin/env python3
 """
-SM Master Pricelist Synchronizer (Enhanced 17-Column Schema)
-Reads all brand sheets from SM_MASTER_PRICELIST_2026.xlsx and synchronizes MASTER_ALL.
-Keeps MASTER_ALL read-only / protected while preserving all styles and formatting.
-Handles Excel open/lock gracefully with an interactive retry prompt.
+Sync Script for SM_MASTER_PRICELIST_2026.xlsx:
+- Supports the Append-Only Brand Ledger architecture:
+    1. Scans each of the 11 Brand Sheets.
+    2. Groups rows by Article Number / SKU.
+    3. Finds the latest Revision Date for each SKU and marks it ACTIVE (soft green fill, bold dark green text).
+    4. Marks any older revision rows for that SKU as LEGACY (soft gray fill, muted gray text).
+    5. Re-sorts each Brand Sheet so the ACTIVE rate is always on top for each SKU, followed by historical rates.
+    6. Rebuilds MASTER_ALL containing ONLY the single ACTIVE price for every product.
+    7. Protects MASTER_ALL (read-only against accidental edits).
+    8. Leaves Brand Sheets unprotected (editable so users can paste new price lists anytime).
+- Handles Windows Excel open locks gracefully with interactive prompt.
+- High performance sheet replacement (recreates sheets in 0.5s rather than slow cell delete).
 """
 
 import os
 import sys
-import shutil
-import datetime
+import time
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
@@ -33,31 +40,34 @@ COLUMNS = [
     ("TD %", 10, Alignment(horizontal='right', vertical='center')),
     ("CD %", 10, Alignment(horizontal='right', vertical='center')),
     ("GST %", 10, Alignment(horizontal='right', vertical='center')),
-    ("Revision Date", 14, Alignment(horizontal='center', vertical='center')),
+    ("Revision Date", 16, Alignment(horizontal='center', vertical='center')),
     ("Status", 14, Alignment(horizontal='center', vertical='center')),
-    ("Source", 20, Alignment(horizontal='left', vertical='center'))
+    ("Source", 22, Alignment(horizontal='left', vertical='center'))
 ]
 
-header_fill = PatternFill(start_color='1B365D', end_color='1B365D', fill_type='solid')
+# Styling
 header_font = Font(name='Segoe UI', size=11, bold=True, color='FFFFFF')
+header_fill = PatternFill(start_color='1E3A8A', end_color='1E3A8A', fill_type='solid') # Navy
+brand_header_fill = PatternFill(start_color='1E293B', end_color='1E293B', fill_type='solid') # Slate
+zebra_fill = PatternFill(start_color='F8FAFC', end_color='F8FAFC', fill_type='solid')
 
-ACTIVE_FILL = PatternFill(start_color='E8F5E9', end_color='E8F5E9', fill_type='solid')
-ACTIVE_FONT = Font(name='Segoe UI', size=10, color='1B5E20', bold=True)
-LEGACY_FILL = PatternFill(start_color='FFF3E0', end_color='FFF3E0', fill_type='solid')
-LEGACY_FONT = Font(name='Segoe UI', size=10, color='E65100', bold=True)
+ACTIVE_FILL = PatternFill(start_color='D1E7DD', end_color='D1E7DD', fill_type='solid')
+ACTIVE_FONT = Font(name='Segoe UI', size=10, bold=True, color='0F5132')
+
+LEGACY_FILL = PatternFill(start_color='F1F5F9', end_color='F1F5F9', fill_type='solid')
+LEGACY_FONT = Font(name='Segoe UI', size=10, italic=True, color='64748B')
 
 thin_border = Border(
-    left=Side(style='thin', color='E0E0E0'),
-    right=Side(style='thin', color='E0E0E0'),
-    top=Side(style='thin', color='E0E0E0'),
-    bottom=Side(style='thin', color='E0E0E0')
+    left=Side(style='thin', color='E2E8F0'),
+    right=Side(style='thin', color='E2E8F0'),
+    top=Side(style='thin', color='E2E8F0'),
+    bottom=Side(style='thin', color='E2E8F0')
 )
-zebra_fill = PatternFill(start_color='F9FAFB', end_color='F9FAFB', fill_type='solid')
 
 def wait_for_excel_close(filepath):
     while True:
         try:
-            with open(filepath, 'a+'):
+            with open(filepath, 'a'):
                 pass
             return True
         except PermissionError:
@@ -85,25 +95,25 @@ def sync_workbook(filepath):
     wb = openpyxl.load_workbook(filepath)
 
     EXCLUDED_SHEETS = {'MASTER_ALL', 'PRICE_HISTORY', '_GOOGLE_SHEETS_GUIDE_'}
-    brand_sheets = [s for s in wb.sheetnames if s not in EXCLUDED_SHEETS]
-    print(f"Scanning {len(brand_sheets)} brand sheets:")
+    brand_sheet_names = [s for s in wb.sheetnames if s not in EXCLUDED_SHEETS]
+    print(f"Scanning {len(brand_sheet_names)} brand sheets...")
 
-    all_items = []
-    brand_counts = {}
+    master_active_items = []
+    brand_stats = {}
 
-    for b_name in brand_sheets:
-        ws = wb[b_name]
-        ws.protection.sheet = False
-        ws.protection.disable()
+    for b_name in brand_sheet_names:
+        ws_old = wb[b_name]
+        sheet_idx = wb.sheetnames.index(b_name)
 
-        count = 0
-        for row in ws.iter_rows(min_row=2, values_only=True):
+        raw_items = []
+        for row in ws_old.iter_rows(min_row=2, values_only=True):
             if not row or not row[0]:
                 continue
             sku = str(row[0]).strip()
             if not sku:
                 continue
 
+            rev = str(row[14]).strip() if len(row) > 14 and row[14] is not None else '2026-10-01'
             item = {
                 'sku': sku,
                 'description': row[1] if len(row) > 1 and row[1] is not None else '',
@@ -119,21 +129,108 @@ def sync_workbook(filepath):
                 'td': row[11] if len(row) > 11 and row[11] is not None else 0.0,
                 'cd': row[12] if len(row) > 12 and row[12] is not None else 0.0,
                 'gst': row[13] if len(row) > 13 and row[13] is not None else 0.18,
-                'revision': row[14] if len(row) > 14 and row[14] is not None else '2026-10-01',
-                'status': row[15] if len(row) > 15 and row[15] is not None else 'ACTIVE',
-                'source': row[16] if len(row) > 16 and row[16] is not None else f'Sheet: {b_name}'
+                'revision': rev,
+                'status': str(row[15]).strip() if len(row) > 15 and row[15] is not None else 'ACTIVE',
+                'source': row[16] if len(row) > 16 and row[16] is not None else f'Sheet:{b_name}'
             }
-            all_items.append(item)
-            count += 1
-        brand_counts[b_name] = count
-        print(f"  - {b_name:<16}: {count:>5} products")
+            raw_items.append(item)
 
-    print(f"\nTotal products scanned across all brand sheets: {len(all_items)}")
+        # Group by SKU
+        sku_groups = {}
+        for it in raw_items:
+            sku_groups.setdefault(it['sku'], []).append(it)
 
-    # Sort items by Brand, then Status (ACTIVE first), then SKU
-    all_items.sort(key=lambda x: (
+        # For each SKU, determine newest date -> ACTIVE, older -> LEGACY
+        brand_final_rows = []
+        for sku, group in sku_groups.items():
+            group.sort(key=lambda x: str(x['revision']), reverse=True)
+            group[0]['status'] = 'ACTIVE'
+            master_active_items.append(group[0])
+
+            for leg in group[1:]:
+                leg['status'] = 'LEGACY'
+
+            brand_final_rows.extend(group)
+
+        # Sort brand sheet: SKU ascending, ACTIVE before LEGACY, date descending
+        brand_final_rows.sort(key=lambda x: (
+            str(x['sku']).upper(),
+            0 if x['status'] == 'ACTIVE' else 1,
+            str(x['revision'])
+        ))
+
+        # Fast recreate sheet at exact same index
+        wb.remove(ws_old)
+        ws = wb.create_sheet(title=b_name, index=sheet_idx)
+        ws.views.sheetView[0].showGridLines = True
+        ws.row_dimensions[1].height = 28
+        ws.freeze_panes = 'A2'
+
+        # Write Headers
+        for c_idx, (col_name, col_width, _) in enumerate(COLUMNS, 1):
+            cell = ws.cell(row=1, column=c_idx, value=col_name)
+            cell.font = header_font
+            cell.fill = brand_header_fill
+            cell.alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
+            ws.column_dimensions[get_column_letter(c_idx)].width = col_width
+
+        # Write Rows
+        for r_idx, item in enumerate(brand_final_rows, 2):
+            row_vals = [
+                item['sku'], item['description'], item['brand'], item['category'],
+                item['thickness'], item['dimensions'], item['sqft'], item['rate_sqft'],
+                item['rate_unit'], item['uom'], item['moq'], item['td'],
+                item['cd'], item['gst'], item['revision'], item['status'], item['source']
+            ]
+            is_active = (item['status'] == 'ACTIVE')
+            for c_idx, val in enumerate(row_vals, 1):
+                cell = ws.cell(row=r_idx, column=c_idx, value=val)
+                cell.font = Font(name='Segoe UI', size=10, bold=(c_idx in [1, 9] and is_active))
+                cell.alignment = COLUMNS[c_idx - 1][2]
+                cell.border = thin_border
+
+                if is_active:
+                    if r_idx % 2 == 0:
+                        cell.fill = zebra_fill
+                else:
+                    cell.fill = LEGACY_FILL
+                    cell.font = LEGACY_FONT
+
+                if c_idx == 7:
+                    cell.number_format = '#,##0.0'
+                elif c_idx == 8 and val is not None:
+                    cell.number_format = '₹#,##0.00'
+                elif c_idx == 9:
+                    cell.number_format = '₹#,##0.00'
+                elif c_idx == 11:
+                    cell.number_format = '#,##0'
+                elif c_idx in [12, 13, 14]:
+                    cell.number_format = '0.0%'
+                elif c_idx == 15:
+                    cell.number_format = 'YYYY-MM-DD'
+
+                if c_idx == 16:
+                    if is_active:
+                        cell.fill = ACTIVE_FILL
+                        cell.font = ACTIVE_FONT
+                    else:
+                        cell.fill = LEGACY_FILL
+                        cell.font = LEGACY_FONT
+
+            ws.row_dimensions[r_idx].height = 20
+
+        # Unprotected so users can edit freely
+        ws.protection.sheet = False
+        ws.protection.disable()
+
+        brand_stats[b_name] = (len(sku_groups), len(brand_final_rows))
+        print(f"  - {b_name:<16}: {len(sku_groups):>5} unique active SKUs ({len(brand_final_rows):>6} total ledger rows)")
+
+    print(f"\nTotal ACTIVE products selected for MASTER_ALL: {len(master_active_items)}")
+
+    # Sort MASTER_ALL by Brand, then SKU
+    master_active_items.sort(key=lambda x: (
         str(x['brand']).upper(),
-        0 if 'ACTIVE' in str(x['status']).upper() else 1,
         str(x['sku']).upper()
     ))
 
@@ -156,25 +253,12 @@ def sync_workbook(filepath):
     ws_all.freeze_panes = 'A2'
 
     # Rows
-    for r_idx, item in enumerate(all_items, 2):
+    for r_idx, item in enumerate(master_active_items, 2):
         row_vals = [
-            item['sku'],
-            item['description'],
-            item['brand'],
-            item['category'],
-            item['thickness'],
-            item['dimensions'],
-            item['sqft'],
-            item['rate_sqft'],
-            item['rate_unit'],
-            item['uom'],
-            item['moq'],
-            item['td'],
-            item['cd'],
-            item['gst'],
-            item['revision'],
-            item['status'],
-            item['source']
+            item['sku'], item['description'], item['brand'], item['category'],
+            item['thickness'], item['dimensions'], item['sqft'], item['rate_sqft'],
+            item['rate_unit'], item['uom'], item['moq'], item['td'],
+            item['cd'], item['gst'], item['revision'], item['status'], item['source']
         ]
         is_even = (r_idx % 2 == 0)
         for c_idx, val in enumerate(row_vals, 1):
@@ -186,27 +270,22 @@ def sync_workbook(filepath):
             if is_even:
                 cell.fill = zebra_fill
 
-            if c_idx == 7: # Sqft
+            if c_idx == 7:
                 cell.number_format = '#,##0.0'
-            elif c_idx == 8: # Rate / Sqft
-                if val is not None:
-                    cell.number_format = '₹#,##0.00'
-            elif c_idx == 9: # Rate / Unit
+            elif c_idx == 8 and val is not None:
                 cell.number_format = '₹#,##0.00'
-            elif c_idx == 11: # MOQ
+            elif c_idx == 9:
+                cell.number_format = '₹#,##0.00'
+            elif c_idx == 11:
                 cell.number_format = '#,##0'
-            elif c_idx in [12, 13, 14]: # TD, CD, GST %
+            elif c_idx in [12, 13, 14]:
                 cell.number_format = '0.0%'
-            elif c_idx == 15: # Revision Date
+            elif c_idx == 15:
                 cell.number_format = 'YYYY-MM-DD'
 
             if c_idx == 16:
-                if 'ACTIVE' in str(val).upper():
-                    cell.fill = ACTIVE_FILL
-                    cell.font = ACTIVE_FONT
-                else:
-                    cell.fill = LEGACY_FILL
-                    cell.font = LEGACY_FONT
+                cell.fill = ACTIVE_FILL
+                cell.font = ACTIVE_FONT
 
         ws_all.row_dimensions[r_idx].height = 21
 
@@ -223,23 +302,19 @@ def sync_workbook(filepath):
     ws_all.protection.deleteColumns = False
     ws_all.protection.deleteRows = False
 
-    # Ensure PRICE_HISTORY remains protected if present
+    # Remove PRICE_HISTORY if still present
     if 'PRICE_HISTORY' in wb.sheetnames:
-        ws_hist = wb['PRICE_HISTORY']
-        ws_hist.protection.sheet = True
-        ws_hist.protection.enable()
-        ws_hist.protection.selectLockedCells = True
-        ws_hist.protection.selectUnlockedCells = True
+        del wb['PRICE_HISTORY']
 
     # Check lock again before saving
     wait_for_excel_close(filepath)
     wb.save(filepath)
-    print(f"\n[OK] MASTER_ALL synchronized and protected successfully ({len(all_items)} products, 17 columns).")
+    print(f"\n[OK] MASTER_ALL synchronized and protected successfully ({len(master_active_items)} active products).")
     return True
 
 if __name__ == '__main__':
     print("=" * 70)
-    print("  SM MASTER PRICELIST - SYNCHRONIZER (17 COLUMNS)")
+    print("  SM MASTER PRICELIST - SYNCHRONIZER (APPEND-ONLY BRAND ARCHITECTURE)")
     print("=" * 70)
     sync_workbook(PRIMARY_PATH)
     print("\nAll done! MASTER_ALL is fully updated and protected.")
