@@ -126,6 +126,8 @@ const canGenerateBill = computed(() => {
   if (!order.value) return false
   if (order.value.overallStatus === 'CANCELLED') return false
   if (order.value.billingStatus?.status === 'GENERATED') return false
+  if (!order.value.isApproved) return false
+  if (order.value.packingStatus?.status !== 'PACKED') return false
   return hasRole('ADMIN', 'BILLING')
 })
 
@@ -133,7 +135,8 @@ const hasFooterActionButtons = computed(() => {
   if (props.context === 'packing') {
     return Boolean(
       hasRole('ADMIN', 'PACKING') && 
-      order.value?.overallStatus !== 'CANCELLED'
+      order.value?.overallStatus !== 'CANCELLED' &&
+      order.value?.isApproved
     )
   }
   if (props.context === 'billing') {

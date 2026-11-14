@@ -7,7 +7,9 @@ export default defineEventHandler(async (event) => {
   const query = getQuery(event)
   
   const where: any = {
-    overallStatus: { not: 'CANCELLED' }
+    overallStatus: { not: 'CANCELLED' },
+    isApproved: true,
+    packingStatus: { status: 'PACKED' }
   }
   
   if (query.startDate || query.endDate) {
@@ -38,7 +40,7 @@ export default defineEventHandler(async (event) => {
       } 
     }),
     prisma.order.count({ where: { ...where, billingStatus: { status: 'GENERATED' } } }),
-    prisma.order.count({ where: { ...where, billingStatus: { status: 'ON_HOLD' } } }),
+    prisma.order.count({ where: { ...where, billingStatus: { status: { in: ['ON_HOLD', 'ERROR'] } } } }),
     prisma.order.count({ where })
   ])
 

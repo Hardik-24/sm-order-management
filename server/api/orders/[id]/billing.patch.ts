@@ -39,6 +39,20 @@ export default defineEventHandler(async (event) => {
 
   // Enforcement Gate for Final Invoice Generation
   if (status === 'GENERATED' || invoiceNumber) {
+    if (!order.isApproved) {
+      throw createError({
+        statusCode: 400,
+        message: 'Cannot generate bill: Order must be approved first.'
+      })
+    }
+
+    if (order.packingStatus?.status !== 'PACKED') {
+      throw createError({
+        statusCode: 400,
+        message: 'Cannot generate bill: Order must be packed first.'
+      })
+    }
+
     if (order.customer?.isBusySynced === false) {
       throw createError({
         statusCode: 400,

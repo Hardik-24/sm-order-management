@@ -28,6 +28,13 @@ export default defineEventHandler(async (event) => {
 
   if (!order) throw createError({ statusCode: 404, message: 'Order not found' })
 
+  if (!order.isApproved) {
+    throw createError({
+      statusCode: 400,
+      message: 'Cannot pack: Order must be approved first.'
+    })
+  }
+
   if (items && items.length > 0) {
     for (const item of items) {
       const updateData: any = { packedQuantity: Number(item.packedQuantity ?? 0) }

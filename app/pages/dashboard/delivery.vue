@@ -126,6 +126,9 @@ const handleToggleTripOrder = (orderId: string) => {
   if (ord && (ord.vehicleMode === 'PARTY_VEHICLE' || ord.vehicleMode === 'THIRD_PARTY')) {
     return
   }
+  if (ord && (!ord.isApproved || ord.packingStatus?.status !== 'PACKED' || ord.billingStatus?.status !== 'GENERATED')) {
+    return
+  }
   const idx = selectedTripOrderIds.value.indexOf(orderId)
   if (idx > -1) {
     selectedTripOrderIds.value.splice(idx, 1)
@@ -168,7 +171,9 @@ const queryObj = computed(() => {
   const q: any = { 
     page: page.value, 
     limit: limit.value,
-    isApproved: 'true'
+    isApproved: 'true',
+    packingStatus: 'PACKED',
+    billingStatus: 'GENERATED'
   }
   
   if (deliveryStatus.value) {

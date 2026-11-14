@@ -461,7 +461,9 @@ const loadInitialData = async () => {
         query: {
           limit: 100,
           deliveryStatus: 'WAITING',
-          isApproved: 'true'
+          isApproved: 'true',
+          packingStatus: 'PACKED',
+          billingStatus: 'GENERATED'
         }
       }).catch(() => ({ orders: [] }))
     ])
@@ -487,11 +489,11 @@ const loadInitialData = async () => {
     // Set available orders (excluding Party Vehicle and Third Party orders)
     const ords = Array.isArray(ordersRes.orders) ? ordersRes.orders : []
     unassignedOrders.value = ords.filter((o: any) =>
-      o.vehicleMode !== 'PARTY_VEHICLE' && o.vehicleMode !== 'THIRD_PARTY' && (
-        o.deliveryStatus?.status === 'WAITING' ||
-        o.deliveryStatus?.status === 'ASSIGNED' ||
-        (o.billingStatus?.status === 'GENERATED' && o.packingStatus?.status === 'PACKED' && o.deliveryStatus?.status !== 'DELIVERED')
-      )
+      o.vehicleMode !== 'PARTY_VEHICLE' && o.vehicleMode !== 'THIRD_PARTY' &&
+      o.isApproved === true &&
+      o.packingStatus?.status === 'PACKED' &&
+      o.billingStatus?.status === 'GENERATED' &&
+      (o.deliveryStatus?.status === 'WAITING' || o.deliveryStatus?.status === 'ASSIGNED')
     )
 
     // If preselected order IDs passed, add them
@@ -501,7 +503,7 @@ const loadInitialData = async () => {
         if (!found) {
           try {
             found = await $fetch<any>(`/api/orders/${oid}`)
-            if (found && found.vehicleMode !== 'PARTY_VEHICLE' && found.vehicleMode !== 'THIRD_PARTY') unassignedOrders.value.push(found)
+            if (found && found.vehicleMode !== 'PARTY_VEHICLE' && found.vehicleMode !== 'THIRD_PARTY' && found.isApproved && found.packingStatus?.status === 'PACKED' && found.billingStatus?.status === 'GENERATED') unassignedOrders.value.push(found)
           } catch (e) {}
         }
         if (found && found.vehicleMode !== 'PARTY_VEHICLE' && found.vehicleMode !== 'THIRD_PARTY') addOrderToTrip(found)

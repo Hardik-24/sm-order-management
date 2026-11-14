@@ -564,10 +564,11 @@ const saveDriverAssignment = async () => {
                     <button 
                       v-else-if="order.overallStatus !== 'CANCELLED'"
                       type="button"
+                      :disabled="order.billingStatus?.status !== 'GENERATED'"
                       @click.stop="openHandoverModal(order)"
-                      class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white rounded-lg shadow-sm hover:shadow transition-all cursor-pointer"
+                      class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white rounded-lg shadow-sm hover:shadow transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                       :class="order.vehicleMode === 'THIRD_PARTY' ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-amber-600 hover:bg-amber-700'"
-                      :title="order.vehicleMode === 'THIRD_PARTY' ? 'Hand over order to Porter / Rapido' : 'Hand over order to party vehicle'"
+                      :title="order.billingStatus?.status !== 'GENERATED' ? 'Cannot hand over: Order must be billed first' : (order.vehicleMode === 'THIRD_PARTY' ? 'Hand over order to Porter / Rapido' : 'Hand over order to party vehicle')"
                     >
                       <PackageCheck class="w-3.5 h-3.5" />
                       <span>Hand Over</span>
@@ -823,9 +824,11 @@ const saveDriverAssignment = async () => {
             <button 
               v-if="order.vehicleMode === 'PARTY_VEHICLE' || order.vehicleMode === 'THIRD_PARTY'"
               type="button"
+              :disabled="order.billingStatus?.status !== 'GENERATED'"
               @click.stop="openHandoverModal(order)"
-              class="w-full py-2 px-3 text-white text-xs font-bold rounded-lg active:scale-[0.99] transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
+              class="w-full py-2 px-3 text-white text-xs font-bold rounded-lg active:scale-[0.99] transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               :class="order.vehicleMode === 'THIRD_PARTY' ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-amber-600 hover:bg-amber-700'"
+              :title="order.billingStatus?.status !== 'GENERATED' ? 'Cannot hand over: Order must be billed first' : undefined"
             >
               <PackageCheck class="w-3.5 h-3.5" />
               <span>Hand Over to {{ order.vehicleMode === 'THIRD_PARTY' ? 'Third Party' : 'Party Vehicle' }}</span>

@@ -8,7 +8,9 @@ export default defineEventHandler(async (event) => {
   
   const where: any = {
     overallStatus: { not: 'CANCELLED' },
-    isApproved: true
+    isApproved: true,
+    packingStatus: { status: 'PACKED' },
+    billingStatus: { status: 'GENERATED' }
   }
   
   if (query.startDate || query.endDate) {

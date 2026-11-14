@@ -27,6 +27,30 @@ export default defineEventHandler(async (event) => {
 
   if (!order) throw createError({ statusCode: 404, message: 'Order not found' })
 
+  // Enforcement Gate for Dispatch and Delivery
+  if (status === 'DISPATCHED' || status === 'DELIVERED') {
+    if (!order.isApproved) {
+      throw createError({
+        statusCode: 400,
+        message: 'Cannot dispatch or deliver: Order must be approved first.'
+      })
+    }
+
+    if (order.packingStatus?.status !== 'PACKED') {
+      throw createError({
+        statusCode: 400,
+        message: 'Cannot dispatch or deliver: Order must be packed first.'
+      })
+    }
+
+    if (order.billingStatus?.status !== 'GENERATED') {
+      throw createError({
+        statusCode: 400,
+        message: 'Cannot dispatch or deliver: Order must be billed (invoice generated) first.'
+      })
+    }
+  }
+
   // Synchronize trip manifest and stops
   if (status) {
     await syncOrderTripState(prisma, id, status, {
