@@ -3,6 +3,7 @@
 SM Master Pricelist Synchronizer
 Reads all brand sheets from SM_MASTER_PRICELIST_2026.xlsx and synchronizes MASTER_ALL.
 Keeps MASTER_ALL read-only / protected while preserving all styles and formatting.
+Handles Excel open/lock gracefully with an interactive retry prompt.
 """
 
 import os
@@ -16,7 +17,6 @@ from openpyxl.utils import get_column_letter
 sys.stdout.reconfigure(encoding='utf-8')
 
 PRIMARY_PATH = r"C:\Users\hdpat\OneDrive\Desktop\SM_MASTER_PRICELIST_2026.xlsx"
-UPDATED_PATH = r"C:\Users\hdpat\OneDrive\Desktop\SM_MASTER_PRICELIST_2026_UPDATED.xlsx"
 
 COLUMNS = [
     ("Article Number / SKU", 26, Alignment(horizontal='left', vertical='center')),
@@ -50,16 +50,42 @@ thin_border = Border(
 )
 zebra_fill = PatternFill(start_color='F9FAFB', end_color='F9FAFB', fill_type='solid')
 
+def wait_for_excel_close(filepath):
+    """
+    Checks if the file is locked by Excel.
+    Prompts the user to save and close Excel if locked.
+    """
+    while True:
+        try:
+            with open(filepath, 'a+'):
+                pass
+            return True
+        except PermissionError:
+            print("\n" + "=" * 70)
+            print("  [!] NOTICE: 'SM_MASTER_PRICELIST_2026.xlsx' IS CURRENTLY OPEN IN EXCEL")
+            print("=" * 70)
+            print("  Windows prevents updating the file while it is open in Excel.\n")
+            print("  1. In Excel, press Ctrl+S to save any changes you just made.")
+            print("  2. Close the Excel window.")
+            print("  3. Press ENTER here to proceed with the synchronization.\n")
+            try:
+                input("Press ENTER once Excel is closed (or Ctrl+C to cancel)... ")
+            except KeyboardInterrupt:
+                print("\nSync cancelled by user.")
+                sys.exit(0)
+
 def sync_workbook(filepath):
     if not os.path.exists(filepath):
-        print(f"File not found: {filepath}")
+        print(f"Error: File not found at {filepath}")
         return False
+
+    wait_for_excel_close(filepath)
 
     print(f"\nOpening workbook: {filepath}")
     wb = openpyxl.load_workbook(filepath)
 
     brand_sheets = [s for s in wb.sheetnames if s not in ['MASTER_ALL', '_GOOGLE_SHEETS_GUIDE_']]
-    print(f"Found {len(brand_sheets)} brand sheets.")
+    print(f"Scanning {len(brand_sheets)} brand sheets:")
 
     all_items = []
     brand_counts = {}
@@ -71,7 +97,7 @@ def sync_workbook(filepath):
 
         count = 0
         for row in ws.iter_rows(min_row=2, values_only=True):
-            if not row or not row[0]: # empty SKU
+            if not row or not row[0]:
                 continue
             sku = str(row[0]).strip()
             if not sku:
@@ -168,7 +194,7 @@ def sync_workbook(filepath):
 
         ws_all.row_dimensions[r_idx].height = 21
 
-    # Lock & Protect MASTER_ALL
+    # Lock & Protect MASTER_ALL (read-only against accidental edits)
     ws_all.protection.sheet = True
     ws_all.protection.enable()
     ws_all.protection.selectLockedCells = True
@@ -181,17 +207,15 @@ def sync_workbook(filepath):
     ws_all.protection.deleteColumns = False
     ws_all.protection.deleteRows = False
 
-    # Save
+    # Check lock again before saving
+    wait_for_excel_close(filepath)
     wb.save(filepath)
-    print(f"MASTER_ALL synchronized and protected successfully: {filepath}")
+    print(f"\n[OK] MASTER_ALL synchronized and protected successfully ({len(all_items)} products).")
     return True
 
 if __name__ == '__main__':
     print("=" * 70)
-    print("  SM MASTER PRICELIST - FULL LOCAL SYNCHRONIZER")
+    print("  SM MASTER PRICELIST - SYNCHRONIZER")
     print("=" * 70)
-    if os.path.exists(PRIMARY_PATH):
-        sync_workbook(PRIMARY_PATH)
-    if os.path.exists(UPDATED_PATH):
-        sync_workbook(UPDATED_PATH)
-    print("\nAll done! MASTER_ALL is fully synchronized and protected against accidental edits.")
+    sync_workbook(PRIMARY_PATH)
+    print("\nAll done! MASTER_ALL is fully updated and protected.")
