@@ -1377,11 +1377,11 @@ onUnmounted(() => {
         <!-- Loading Overlay (only for blocking loads, silent refresh stays unobstructed) -->
         <div v-if="isLoading && !isSilentRefreshing" class="absolute inset-0 bg-white/20 backdrop-blur-[1px] z-50 pointer-events-none transition-opacity duration-200"></div>
 
-        <!-- 1. Header Bar: Title & Direct Action Buttons -->
-        <div class="px-5 sm:px-6 py-3 border-b border-gray-150 flex items-center justify-between bg-white flex-shrink-0 z-20">
+        <!-- 1. Header Bar: Title & Action Controls -->
+        <div class="px-3.5 sm:px-6 py-3 border-b border-gray-150 flex items-center justify-between bg-white flex-shrink-0 z-20">
           <!-- Left: Order Number & Copy -->
-          <div class="flex items-center gap-2 min-w-0">
-            <h2 class="text-base sm:text-lg font-bold font-mono tracking-tight text-gray-950 truncate">
+          <div class="flex items-center gap-1.5 sm:gap-2 min-w-0">
+            <h2 class="text-sm sm:text-lg font-bold font-mono tracking-tight text-gray-950 truncate">
               {{ order.orderNumber }}
             </h2>
             <button 
@@ -1394,57 +1394,105 @@ onUnmounted(() => {
             </button>
           </div>
 
-          <!-- Right: All Action Controls (Directly visible on PC) -->
+          <!-- Right: Action Controls (On PC all buttons visible side-by-side; on Mobile Cancel & Delete tuck under '...') -->
           <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
-            <!-- Edit Order Button -->
+            <!-- Edit Order Button (Always visible) -->
             <button 
               v-if="canEditCurrentOrder"
               @click="openEditModal" 
               title="Edit Full Order Details"
-              class="px-2.5 sm:px-3 py-1.5 text-xs font-bold text-white bg-[#1b3b5f] hover:bg-[#132c49] active:bg-[#0e2035] rounded-lg transition-all flex items-center gap-1.5 shadow-xs cursor-pointer active:scale-95"
+              class="px-2 sm:px-3 py-1.5 text-xs font-bold text-white bg-[#1b3b5f] hover:bg-[#132c49] active:bg-[#0e2035] rounded-lg transition-all flex items-center gap-1 sm:gap-1.5 shadow-xs cursor-pointer active:scale-95"
             >
-              <Edit class="w-3.5 h-3.5" />
+              <Edit class="w-3.5 h-3.5 shrink-0" />
               <span>Edit Order</span>
             </button>
 
-            <!-- Edit Status Button -->
+            <!-- Edit Status Button (Always visible) -->
             <button 
               v-if="canEditOrderStatus"
               @click="openAdminStatusModal" 
               title="Edit Status Across Departments"
-              class="px-2.5 sm:px-3 py-1.5 text-xs font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer"
+              class="px-2 sm:px-3 py-1.5 text-xs font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-lg transition-colors flex items-center gap-1 sm:gap-1.5 cursor-pointer"
             >
-              <SlidersHorizontal class="w-3.5 h-3.5 text-purple-600" />
+              <SlidersHorizontal class="w-3.5 h-3.5 text-purple-600 shrink-0" />
               <span>Edit Status</span>
             </button>
 
-            <!-- Cancel Button -->
+            <!-- Cancel Button (Direct on PC, hidden on mobile) -->
             <button 
               v-if="canCancelOrder"
               @click="openCancelModal" 
               title="Cancel Order (Mandatory Reason Required)"
-              class="px-2.5 sm:px-3 py-1.5 text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200/80 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer"
+              class="hidden sm:inline-flex px-2.5 sm:px-3 py-1.5 text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200/80 rounded-lg transition-colors items-center gap-1.5 cursor-pointer"
             >
-              <Ban class="w-3.5 h-3.5 text-rose-600" />
+              <Ban class="w-3.5 h-3.5 text-rose-600 shrink-0" />
               <span>Cancel</span>
             </button>
 
-            <!-- Delete Button (Admin Only) -->
+            <!-- Delete Button (Direct on PC, hidden on mobile) -->
             <button 
               v-if="hasRole('ADMIN') && !isBillGenerated"
               @click="deleteOrder" 
               :disabled="isDeleting"
               title="Delete Order (Admin Only)"
-              class="px-2.5 sm:px-3 py-1.5 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              class="hidden sm:inline-flex px-2.5 sm:px-3 py-1.5 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors items-center gap-1.5 cursor-pointer disabled:opacity-50"
             >
-              <Trash2 class="w-3.5 h-3.5 text-red-500" />
+              <Trash2 class="w-3.5 h-3.5 text-red-500 shrink-0" />
               <span>Delete</span>
             </button>
+
+            <!-- Mobile More Actions Dropdown (•••) - Visible only on mobile (<sm) -->
+            <div 
+              v-if="canCancelOrder || (hasRole('ADMIN') && !isBillGenerated)" 
+              class="relative sm:hidden"
+            >
+              <button 
+                @click.stop="isHeaderMenuOpen = !isHeaderMenuOpen" 
+                title="More Actions"
+                class="p-1.5 text-gray-600 hover:text-gray-900 rounded-lg hover:bg-gray-100 border border-gray-200 transition-colors flex items-center justify-center cursor-pointer"
+                :class="{ 'bg-gray-100 border-gray-300 text-gray-900': isHeaderMenuOpen }"
+              >
+                <MoreHorizontal class="w-4 h-4" />
+              </button>
+
+              <!-- Transparent click-away backdrop -->
+              <div 
+                v-if="isHeaderMenuOpen" 
+                class="fixed inset-0 z-30" 
+                @click="isHeaderMenuOpen = false"
+              ></div>
+
+              <!-- Dropdown Content -->
+              <div 
+                v-if="isHeaderMenuOpen" 
+                class="absolute right-0 top-full mt-1.5 w-48 bg-white rounded-xl shadow-xl border border-gray-200 py-1 z-40 text-xs divide-y divide-gray-100 animate-in fade-in zoom-in-95 duration-100"
+              >
+                <div v-if="canCancelOrder" class="py-1">
+                  <button 
+                    @click="openCancelModal(); isHeaderMenuOpen = false"
+                    class="w-full text-left px-3.5 py-2 hover:bg-rose-50 text-rose-700 flex items-center gap-2 cursor-pointer font-medium transition-colors"
+                  >
+                    <Ban class="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                    <span>Cancel Order</span>
+                  </button>
+                </div>
+                <div v-if="hasRole('ADMIN') && !isBillGenerated" class="py-1">
+                  <button 
+                    @click="deleteOrder(); isHeaderMenuOpen = false"
+                    :disabled="isDeleting"
+                    class="w-full text-left px-3.5 py-2 hover:bg-red-50 text-red-600 flex items-center gap-2 cursor-pointer font-medium transition-colors disabled:opacity-50"
+                  >
+                    <Trash2 class="w-3.5 h-3.5 text-red-500 shrink-0" />
+                    <span>Delete Order</span>
+                  </button>
+                </div>
+              </div>
+            </div>
 
             <!-- Close Drawer Button -->
             <button 
               @click="closePanel" 
-              class="p-1.5 text-gray-400 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer ml-1"
+              class="p-1.5 text-gray-400 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer ml-0.5 sm:ml-1"
               title="Close Panel"
               data-modal-close="true"
             >
