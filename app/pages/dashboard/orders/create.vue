@@ -19,9 +19,25 @@ const { animateModalOpen, initContext } = useGsapAnimation()
 
 const customerBannerRef = ref<HTMLElement | null>(null)
 const itemsContainerRef = ref<HTMLElement | null>(null)
+const deliveryFieldRef = ref<HTMLElement | null>(null)
+const deliveryTextareaRef = ref<HTMLTextAreaElement | null>(null)
 
 // Auto-Collapsing Logistics (Customer, Transport & Address)
 const isLogisticsCollapsed = ref(false)
+
+const onChangeDeliveryAddressClick = () => {
+  isLogisticsCollapsed.value = false
+  nextTick(() => {
+    setTimeout(() => {
+      if (deliveryFieldRef.value) {
+        deliveryFieldRef.value.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+      if (deliveryTextareaRef.value) {
+        deliveryTextareaRef.value.focus()
+      }
+    }, 100)
+  })
+}
 
 // Custom Customer State (Not in Busy)
 const isCustomCustomer = ref(false)
@@ -134,13 +150,9 @@ const isFirstOrderForCustomer = computed(() => {
   return count === 0
 })
 
-const showMobileCustomerDetails = ref(false)
-
 const onCustomerChange = () => {
   const c = selectedCustomer.value
-  showMobileCustomerDetails.value = false
   if (c) {
-    isLogisticsCollapsed.value = true
     const isFirst = (c.orderCount ?? c._count?.orders ?? 0) === 0
     if (isFirst) {
       // First order for this customer:
@@ -851,48 +863,31 @@ const getCustomerInitials = (name: string) => {
               <div v-if="selectedCustomer" ref="customerBannerRef" class="mt-3.5 bg-gradient-to-r from-slate-50 via-white to-sky-50/20 rounded-2xl border border-gray-200 shadow-2xs transition-all overflow-hidden">
                 <!-- Mobile Compact Card -->
                 <div class="sm:hidden p-3">
-                  <div class="flex items-center justify-between gap-2.5">
-                    <div class="flex items-center gap-2.5 min-w-0">
-                      <div class="w-9 h-9 rounded-xl bg-[#1b3b5f] text-white flex items-center justify-center font-black text-xs shadow-xs shrink-0 tracking-wider">
-                        {{ getCustomerInitials(selectedCustomer.name) }}
-                      </div>
-                      <div class="min-w-0">
-                        <div class="flex items-center gap-1.5 flex-wrap">
-                          <h4 class="text-xs font-black text-gray-900 truncate">
-                            {{ selectedCustomer.name }}
-                          </h4>
-                          <span 
-                            class="px-1.5 py-0.2 rounded font-extrabold text-[9px] uppercase tracking-wider border"
-                            :class="getPrivilegeBadgeStyle(selectedCustomer.privilegeTier || 'BRONZE')"
-                          >
-                            {{ selectedCustomer.privilegeTier || 'BRONZE' }}
-                          </span>
-                        </div>
-                        <p class="text-[10px] text-gray-500 truncate mt-0.5">
-                          <span v-if="selectedCustomer.city">{{ selectedCustomer.city }}</span>
-                          <span v-if="selectedCustomer.city && selectedCustomer.phone"> • </span>
-                          <span v-if="selectedCustomer.phone" class="font-mono">{{ selectedCustomer.phone }}</span>
-                        </p>
-                      </div>
+                  <div class="flex items-center gap-2.5 min-w-0">
+                    <div class="w-9 h-9 rounded-xl bg-[#1b3b5f] text-white flex items-center justify-center font-black text-xs shadow-xs shrink-0 tracking-wider">
+                      {{ getCustomerInitials(selectedCustomer.name) }}
                     </div>
-                    <button 
-                      type="button" 
-                      @click="showMobileCustomerDetails = !showMobileCustomerDetails"
-                      class="text-[10px] font-bold text-[#1b3b5f] bg-white px-2 py-1 rounded-lg border border-gray-200 shadow-2xs hover:bg-gray-50 shrink-0 cursor-pointer flex items-center gap-1"
-                    >
-                      <span>{{ showMobileCustomerDetails ? 'Less' : 'Details' }}</span>
-                      <component :is="showMobileCustomerDetails ? ChevronUp : ChevronDown" class="w-3 h-3 text-[#1b3b5f]" />
-                    </button>
-                  </div>
-
-                  <!-- Mobile Expandable Details -->
-                  <div v-if="showMobileCustomerDetails" class="mt-2.5 pt-2 border-t border-gray-100 text-[11px] space-y-1.5 bg-gray-50/50 -mx-3 -mb-3 p-3">
-                    <div v-if="selectedCustomer.company && selectedCustomer.company !== selectedCustomer.name" class="text-gray-700 font-medium">
-                      Company: <strong>{{ selectedCustomer.company }}</strong>
-                    </div>
-                    <div v-if="selectedCustomer.customerManager" class="flex items-center gap-1.5 text-gray-600">
-                      <UserCheck class="w-3.5 h-3.5 text-[#1b3b5f]" />
-                      <span>Account Manager: <strong class="text-gray-900">{{ selectedCustomer.customerManager.name }}</strong></span>
+                    <div class="min-w-0 flex-1">
+                      <div class="flex items-center gap-1.5 flex-wrap">
+                        <h4 class="text-xs font-black text-gray-900 truncate">
+                          {{ selectedCustomer.name }}
+                        </h4>
+                        <span 
+                          class="px-1.5 py-0.2 rounded font-extrabold text-[9px] uppercase tracking-wider border shadow-2xs"
+                          :class="getPrivilegeBadgeStyle(selectedCustomer.privilegeTier || 'BRONZE')"
+                        >
+                          {{ selectedCustomer.privilegeTier || 'BRONZE' }}
+                        </span>
+                        <span v-if="selectedCustomer.isPriorityClient" class="px-1.5 py-0.2 rounded font-extrabold text-[9px] uppercase tracking-wider bg-amber-500 text-white shadow-2xs">
+                          Priority
+                        </span>
+                      </div>
+                      <p class="text-[10px] text-gray-500 truncate mt-0.5">
+                        <span v-if="selectedCustomer.city">{{ selectedCustomer.city }}</span>
+                        <span v-if="selectedCustomer.city && selectedCustomer.phone"> • </span>
+                        <span v-if="selectedCustomer.phone" class="font-mono">{{ selectedCustomer.phone }}</span>
+                        <span v-if="selectedCustomer.company && selectedCustomer.company !== selectedCustomer.name"> • {{ selectedCustomer.company }}</span>
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -1208,12 +1203,12 @@ const getCustomerInitials = (name: string) => {
           </div>
 
           <!-- Delivery Address Textarea -->
-          <div class="md:col-span-2">
+          <div class="md:col-span-2" ref="deliveryFieldRef">
             <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
               <span class="sm:hidden">{{ isCustomCustomer ? 'Delivery Address' : 'Delivery Address *' }}</span>
               <span class="hidden sm:inline">{{ isCustomCustomer ? 'Delivery Address (Site / Destination - Optional)' : 'Delivery Address (Site / Destination) *' }}</span>
             </label>
-            <textarea v-model="form.deliveryAddress" rows="2" class="w-full text-sm border border-gray-300 rounded-lg p-3 focus:ring-[#1b3b5f] focus:border-[#1b3b5f] resize-none" :required="!isCustomCustomer" placeholder="Delivery address, site or landmark..."></textarea>
+            <textarea ref="deliveryTextareaRef" v-model="form.deliveryAddress" rows="2" class="w-full text-sm border border-gray-300 rounded-lg p-3 focus:ring-[#1b3b5f] focus:border-[#1b3b5f] resize-none" :required="!isCustomCustomer" placeholder="Delivery address, site or landmark..."></textarea>
           </div>
 
           <!-- Internal Order Notes -->
@@ -1223,6 +1218,19 @@ const getCustomerInitials = (name: string) => {
               <span class="hidden sm:inline">Internal Order Instructions / Dispatch Notes</span>
             </label>
             <textarea v-model="form.notes" rows="2" class="w-full text-sm border border-gray-300 rounded-lg p-3 focus:ring-[#1b3b5f] focus:border-[#1b3b5f] resize-none" placeholder="e.g. Call before arrival, gate timing, site contact..."></textarea>
+          </div>
+
+          <!-- Done Button below Internal Dispatch Notes to close/collapse Customer Details -->
+          <div v-if="selectedCustomer || (isCustomCustomer && customCustomer.name.trim())" class="md:col-span-2 pt-2 flex justify-end">
+            <button 
+              type="button" 
+              @click="isLogisticsCollapsed = true" 
+              class="w-full sm:w-auto py-2.5 px-6 bg-[#1b3b5f] hover:bg-[#132c49] text-white text-xs font-bold rounded-xl shadow-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95"
+            >
+              <Check class="w-4 h-4 text-white" />
+              <span>Done</span>
+              <ChevronUp class="w-3.5 h-3.5 text-white/80" />
+            </button>
           </div>
         </div>
       </div>
@@ -1378,8 +1386,8 @@ const getCustomerInitials = (name: string) => {
                 @click="openAddItemModal(true)"
                 class="px-4 py-2 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-xl text-xs font-bold shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer active:scale-95"
               >
-                <Tag class="w-3.5 h-3.5 text-amber-700" />
-                <span>Non-Busy</span>
+                <Plus class="w-3.5 h-3.5 text-amber-700" />
+                <span>Add Custom Item (Not in Busy)</span>
               </button>
             </div>
           </div>
@@ -1398,10 +1406,10 @@ const getCustomerInitials = (name: string) => {
           <button
             type="button"
             @click="openAddItemModal(true)"
-            class="py-2.5 px-3 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold rounded-xl shadow-xs flex items-center justify-center gap-1 transition-all cursor-pointer active:scale-95"
+            class="py-2.5 px-3 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold rounded-xl shadow-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95"
           >
-            <Tag class="w-3.5 h-3.5 text-amber-700" />
-            <span>Non-Busy</span>
+            <Plus class="w-3.5 h-3.5 text-amber-700" />
+            <span>Add Custom Item (Not in Busy)</span>
           </button>
         </div>
 
@@ -1446,7 +1454,7 @@ const getCustomerInitials = (name: string) => {
           <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Delivery Destination</span>
           <button 
             type="button" 
-            @click="isLogisticsCollapsed = false" 
+            @click="onChangeDeliveryAddressClick" 
             class="text-[10px] sm:text-xs text-blue-600 font-bold hover:underline cursor-pointer"
           >
             Change
