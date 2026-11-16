@@ -48,6 +48,7 @@ export default defineEventHandler(async (event) => {
       canDeleteQuotations: true,
       canViewAllCompanyOrders: true,
       canLinkBusyData: true,
+      canEditConvertedQuotationOrders: true,
     }
   }
 

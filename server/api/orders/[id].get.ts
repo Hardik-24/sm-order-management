@@ -58,9 +58,16 @@ export default defineEventHandler(async (event) => {
 
   const hasUnsyncedBusyItems = order.items?.some((i: any) => i.isBusySynced === false || i.product?.isBusySynced === false) || false
 
+  const convertedQuotation = await prisma.quotation.findFirst({
+    where: { convertedOrderId: id },
+    select: { id: true, quoteNumber: true }
+  })
+
   return {
     ...order,
     hasUnsyncedBusyItems,
+    isConvertedFromQuotation: Boolean(convertedQuotation),
+    convertedQuotationNumber: convertedQuotation?.quoteNumber || null,
     destinationCoords: pin ? { lat: pin.lat, lng: pin.lng, areaName: pin.areaName, landmark: pin.landmark } : null,
     hasDestinationPin: !!pin,
     assignedTrip

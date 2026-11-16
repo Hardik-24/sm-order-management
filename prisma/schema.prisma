@@ -104,7 +104,7 @@ model User {
   vehicleName   String?
   isActive  Boolean  @default(true)
   allowedPages Json? @default("[]")
-  actionPermissions Json? @default("{\"canEditOrders\":false,\"canEditOrderStatus\":false,\"canCancelOrders\":false,\"canEditCustomers\":false,\"canEditProducts\":false,\"canDeleteQuotations\":false}")
+  actionPermissions Json? @default("{\"canEditOrders\":false,\"canEditOrderStatus\":false,\"canCancelOrders\":false,\"canEditCustomers\":false,\"canEditProducts\":false,\"canDeleteQuotations\":false,\"canLinkBusyData\":false,\"canEditConvertedQuotationOrders\":false}")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

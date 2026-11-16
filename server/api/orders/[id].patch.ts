@@ -29,6 +29,30 @@ export default defineEventHandler(async (event) => {
       message: 'Cannot edit an order that has already been cancelled.'
     })
   }
+
+  // Check if order was converted from a quotation
+  const convertedQuotation = await prisma.quotation.findFirst({
+    where: { convertedOrderId: id },
+    select: { id: true, quoteNumber: true }
+  })
+
+  if (convertedQuotation) {
+    if (user.role !== 'ADMIN') {
+      const dbUser = await prisma.user.findUnique({
+        where: { id: user.id },
+        select: { role: true, actionPermissions: true }
+      })
+      const perms = (dbUser?.actionPermissions && typeof dbUser.actionPermissions === 'object')
+        ? (dbUser.actionPermissions as Record<string, boolean>)
+        : {}
+      if (!perms.canEditConvertedQuotationOrders) {
+        throw createError({
+          statusCode: 403,
+          message: `This order was converted from Quotation ${convertedQuotation.quoteNumber} and cannot be edited. Only administrators or users with permission to edit quotation orders can modify it.`
+        })
+      }
+    }
+  }
   
   const body = await readBody(event)
   const { orderNumber, customerId, deliveryAddress, deliveryAddressId, paymentTerms, notes, isUrgent, vehicleMode, items } = body

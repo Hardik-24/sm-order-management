@@ -155,6 +155,7 @@ export const DEFAULT_ROLE_ACTION_PERMISSIONS: Record<UserRole, UserActionPermiss
     canDeleteQuotations: true,
     canViewAllCompanyOrders: true,
     canLinkBusyData: true,
+    canEditConvertedQuotationOrders: true,
   },
   SUPERVISOR: {
     canEditOrders: true,
@@ -165,6 +166,7 @@ export const DEFAULT_ROLE_ACTION_PERMISSIONS: Record<UserRole, UserActionPermiss
     canDeleteQuotations: true,
     canViewAllCompanyOrders: true,
     canLinkBusyData: true,
+    canEditConvertedQuotationOrders: false,
   },
   SALES: {
     canEditOrders: true,
@@ -175,6 +177,7 @@ export const DEFAULT_ROLE_ACTION_PERMISSIONS: Record<UserRole, UserActionPermiss
     canDeleteQuotations: false,
     canViewAllCompanyOrders: true,
     canLinkBusyData: false,
+    canEditConvertedQuotationOrders: false,
   },
   BILLING: {
     canEditOrders: false,
@@ -185,6 +188,7 @@ export const DEFAULT_ROLE_ACTION_PERMISSIONS: Record<UserRole, UserActionPermiss
     canDeleteQuotations: false,
     canViewAllCompanyOrders: true,
     canLinkBusyData: true,
+    canEditConvertedQuotationOrders: false,
   },
   PACKING: {
     canEditOrders: false,
@@ -195,6 +199,7 @@ export const DEFAULT_ROLE_ACTION_PERMISSIONS: Record<UserRole, UserActionPermiss
     canDeleteQuotations: false,
     canViewAllCompanyOrders: true,
     canLinkBusyData: false,
+    canEditConvertedQuotationOrders: false,
   },
   DELIVERY: {
     canEditOrders: false,
@@ -205,6 +210,7 @@ export const DEFAULT_ROLE_ACTION_PERMISSIONS: Record<UserRole, UserActionPermiss
     canDeleteQuotations: false,
     canViewAllCompanyOrders: true,
     canLinkBusyData: false,
+    canEditConvertedQuotationOrders: false,
   },
 }
 
@@ -224,6 +230,7 @@ export function getEffectiveActionPermissions(
       canDeleteQuotations: false,
       canViewAllCompanyOrders: false,
       canLinkBusyData: false,
+      canEditConvertedQuotationOrders: false,
     }
   }
 
@@ -238,6 +245,7 @@ export function getEffectiveActionPermissions(
       canDeleteQuotations: true,
       canViewAllCompanyOrders: true,
       canLinkBusyData: true,
+      canEditConvertedQuotationOrders: true,
     }
   }
 
@@ -251,6 +259,7 @@ export function getEffectiveActionPermissions(
     canDeleteQuotations: false,
     canViewAllCompanyOrders: false,
     canLinkBusyData: false,
+    canEditConvertedQuotationOrders: false,
   }
 
   const userPerms = (user.actionPermissions && typeof user.actionPermissions === 'object')
@@ -266,6 +275,7 @@ export function getEffectiveActionPermissions(
     canDeleteQuotations: userPerms.canDeleteQuotations !== undefined ? Boolean(userPerms.canDeleteQuotations) : defaults.canDeleteQuotations,
     canViewAllCompanyOrders: userPerms.canViewAllCompanyOrders !== undefined ? Boolean(userPerms.canViewAllCompanyOrders) : defaults.canViewAllCompanyOrders,
     canLinkBusyData: userPerms.canLinkBusyData !== undefined ? Boolean(userPerms.canLinkBusyData) : defaults.canLinkBusyData,
+    canEditConvertedQuotationOrders: userPerms.canEditConvertedQuotationOrders !== undefined ? Boolean(userPerms.canEditConvertedQuotationOrders) : defaults.canEditConvertedQuotationOrders,
   }
 }
 

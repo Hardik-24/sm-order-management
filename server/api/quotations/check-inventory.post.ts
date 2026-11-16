@@ -35,13 +35,16 @@ export default defineEventHandler(async (event) => {
       return { success: true, results: {} }
     }
 
+    const cleanSkus = requestedSkus.map(s => s.replace(/[^a-zA-Z0-9]/g, '')).filter(Boolean)
+    const allSkusToSearch = Array.from(new Set([...requestedSkus, ...cleanSkus]))
+
     let p = getPrisma()
     let dbProducts: Array<{ sku: string, stock: number, isActive: boolean }> = []
 
     try {
       dbProducts = await p.product.findMany({
         where: {
-          sku: { in: requestedSkus, mode: 'insensitive' }
+          sku: { in: allSkusToSearch, mode: 'insensitive' }
         },
         select: {
           sku: true,
@@ -54,7 +57,7 @@ export default defineEventHandler(async (event) => {
       p = resetPrisma()
       dbProducts = await p.product.findMany({
         where: {
-          sku: { in: requestedSkus, mode: 'insensitive' }
+          sku: { in: allSkusToSearch, mode: 'insensitive' }
         },
         select: {
           sku: true,
@@ -89,22 +92,26 @@ export default defineEventHandler(async (event) => {
       const found = productMap.get(lowerKey) || (cleanKey ? productMap.get(cleanKey) : undefined)
       if (found) {
         const inStock = found.stock >= reqQty && found.stock > 0
-        results[art] = {
+        const statusItem: InventoryItemStatus = {
           articleNumber: art,
           existsInDb: true,
           stock: found.stock,
           inStock,
           status: inStock ? 'IN_STOCK' : 'AGAINST_ORDER'
         }
+        results[art] = statusItem
+        results[art.toUpperCase()] = statusItem
       } else {
         // Not found in Supabase DB -> against order
-        results[art] = {
+        const statusItem: InventoryItemStatus = {
           articleNumber: art,
           existsInDb: false,
           stock: 0,
           inStock: false,
           status: 'AGAINST_ORDER'
         }
+        results[art] = statusItem
+        results[art.toUpperCase()] = statusItem
       }
     }
 

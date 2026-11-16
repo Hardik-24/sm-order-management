@@ -902,7 +902,26 @@
                       >
                         {{ item.sourceTab === '2026JULY' ? item.sourceTab : 'Old Price List: ' + item.sourceTab }}
                       </span>
-                      <span v-if="item.stock" class="text-[9px] font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
+                      <!-- DB Inventory Stock Badge (BUSY Stock with count, wrapped on mobile) -->
+                      <span 
+                        v-if="getSearchItemInventory(item) && getSearchItemInventory(item)!.existsInDb"
+                        class="text-[9px] font-bold px-1.5 py-0.5 rounded border inline-flex items-center gap-1 leading-tight whitespace-normal break-words shadow-2xs"
+                        :class="getSearchItemInventory(item)!.stock > 0 
+                          ? 'bg-emerald-50 text-emerald-800 border-emerald-200' 
+                          : 'bg-amber-50 text-amber-800 border-amber-200'"
+                        :title="`BUSY Warehouse Stock: ${getSearchItemInventory(item)!.stock}`"
+                      >
+                        <span 
+                          class="w-1.5 h-1.5 rounded-full shrink-0"
+                          :class="getSearchItemInventory(item)!.stock > 0 ? 'bg-emerald-600' : 'bg-amber-500'"
+                        ></span>
+                        <span>{{ getSearchItemInventory(item)!.stock > 0 ? `In Stock (${getSearchItemInventory(item)!.stock})` : 'Against Order (0)' }}</span>
+                      </span>
+                      <!-- Fallback Google Sheet Stock (if DB item doesn't exist or hasn't loaded and sheet stock exists) -->
+                      <span 
+                        v-else-if="item.stock" 
+                        class="text-[9px] font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 leading-tight whitespace-normal break-words"
+                      >
                         Sheet Stock: {{ item.stock }}
                       </span>
                     </div>
@@ -976,7 +995,7 @@
                     <th class="py-2.5 px-2.5 w-28">Article No.</th>
                     <th class="py-2.5 px-3">Description</th>
                     <th class="py-2.5 px-2 w-14 text-center">Brand</th>
-                    <th class="py-2.5 px-2 w-28 text-center">Qty</th>
+                    <th class="py-2.5 px-2 min-w-[110px] w-28 sm:w-32 text-center">Qty</th>
                     <th class="py-2.5 px-2.5 w-20 text-right">MRP (₹)</th>
                     <th class="py-2.5 px-2 w-12 text-center">UoM</th>
                     <th class="py-2.5 px-2.5 w-20 text-center bg-amber-50/40 border-x border-amber-100">Disc %</th>
@@ -1068,25 +1087,30 @@
                           type="button"
                           tabindex="-1"
                           @click.stop="requestToggleStock(row)"
-                          class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold transition-all cursor-pointer border shadow-2xs group select-none"
+                          class="inline-flex items-center justify-center gap-1 px-2 py-0.5 rounded-lg text-[9px] font-bold transition-all cursor-pointer border shadow-2xs group select-none max-w-full text-center flex-wrap leading-tight"
                           :class="isItemInStock(row) 
                             ? 'bg-emerald-100 hover:bg-emerald-200 text-emerald-900 border-emerald-300' 
                             : 'bg-amber-100 hover:bg-amber-200 text-amber-900 border-amber-300'"
-                          :title="isItemInStock(row) ? 'In Stock (Green) • Click to toggle to Against Order' : 'Against Order (Orange) • Click to toggle to In Stock'"
+                          :title="getStockBadgeTitle(row)"
                         >
                           <span
                             class="w-1.5 h-1.5 rounded-full shrink-0"
                             :class="isItemInStock(row) ? 'bg-emerald-600' : 'bg-amber-500'"
                           ></span>
-                          <span class="truncate max-w-[70px]">{{ isItemInStock(row) ? 'In Stock' : 'Against Order' }}</span>
+                          <span class="whitespace-normal break-words leading-tight text-center">
+                            <span>{{ getStockBadgeLabel(row) }}</span>
+                            <span v-if="!row.isCustom" class="block sm:inline font-mono font-bold text-[8.5px] opacity-90 sm:ml-0.5">
+                              ({{ getItemInventoryStatus(row).stock }})
+                            </span>
+                          </span>
                           <span
                             v-if="row.manualStockOverride !== undefined && row.manualStockOverride !== null"
-                            class="text-[7.5px] font-black uppercase px-1 py-0.2 rounded bg-white/80 text-gray-700 ml-0.5 shrink-0"
+                            class="text-[7.5px] font-black uppercase px-1 py-0.2 rounded bg-white/80 text-gray-700 shrink-0"
                             title="Manually set by quote creator"
                           >
                             Manual
                           </span>
-                          <RefreshCw class="w-2.5 h-2.5 opacity-40 group-hover:opacity-100 transition-opacity ml-0.5 shrink-0" />
+                          <RefreshCw class="w-2.5 h-2.5 opacity-40 group-hover:opacity-100 transition-opacity shrink-0" />
                         </button>
                       </div>
                     </td>
@@ -1974,6 +1998,9 @@
             <span>
               System Detected: 
               {{ getItemInventoryStatus(targetOverrideRow).inStock ? 'IN STOCK (Green)' : 'AGAINST ORDER (Orange)' }}
+              <span v-if="targetOverrideRow && !targetOverrideRow.isCustom" class="font-normal opacity-90">
+                ({{ getItemInventoryStatus(targetOverrideRow).stock }} in warehouse)
+              </span>
             </span>
           </div>
           <p v-if="!desiredStockState" class="text-gray-700">
@@ -2793,6 +2820,25 @@ const isItemInStock = (item: QuoteRow): boolean => {
   return getItemInventoryStatus(item).inStock
 }
 
+const getStockBadgeLabel = (row: QuoteRow): string => {
+  return isItemInStock(row) ? 'In Stock' : 'Against Order'
+}
+
+const getStockBadgeTitle = (row: QuoteRow): string => {
+  const inv = getItemInventoryStatus(row)
+  const inStock = isItemInStock(row)
+  const stockStr = row.isCustom ? 'Custom item' : `${inv.stock} unit${inv.stock === 1 ? '' : 's'} in warehouse`
+  return inStock 
+    ? `In Stock (${stockStr}) • Click to toggle to Against Order`
+    : `Against Order (${stockStr}) • Click to toggle to In Stock`
+}
+
+const getSearchItemInventory = (item: SheetProduct): InventoryItemStatus | null => {
+  const art = (item.articleNumber || '').trim().toUpperCase()
+  if (!art) return null
+  return inventoryMap.value[art] || null
+}
+
 watch(
   () => quoteItems.value.map(i => `${i.articleNumber}:${i.quantity}`),
   () => {
@@ -2818,6 +2864,37 @@ const filteredSearchResults = computed(() => {
     secondary: p => p.brand
   }).slice(0, 20)
 })
+
+let searchInventoryDebounceTimer: any = null
+watch(
+  filteredSearchResults,
+  (results) => {
+    if (!results || results.length === 0) return
+    clearTimeout(searchInventoryDebounceTimer)
+    searchInventoryDebounceTimer = setTimeout(async () => {
+      const missing = results
+        .map(it => (it.articleNumber || '').trim())
+        .filter(art => art && art !== '.' && art !== '-' && !inventoryMap.value[art.toUpperCase()])
+      
+      if (missing.length === 0) return
+      
+      try {
+        const data = await $fetch<{ success: boolean, results: Record<string, InventoryItemStatus> }>('/api/quotations/check-inventory', {
+          method: 'POST',
+          body: { items: missing.map(art => ({ articleNumber: art, quantity: 1 })) }
+        })
+        if (data?.results) {
+          for (const [key, item] of Object.entries(data.results)) {
+            inventoryMap.value[key.trim().toUpperCase()] = item
+          }
+        }
+      } catch (err) {
+        // Non-blocking background fetch
+      }
+    }, 120)
+  },
+  { immediate: true }
+)
 
 const scrollToHighlightedItem = () => {
   if (!dropdownContainerRef.value || highlightedIndex.value < 0) return

@@ -119,7 +119,7 @@ export function requireRole(event: H3Event, allowedRoles: string[]): SessionUser
 /** Require specific action permission (e.g. canEditOrders, canEditOrderStatus, canCancelOrders, canEditCustomers, canEditProducts, canDeleteQuotations) */
 export async function requireActionPermission(
   event: H3Event,
-  permission: 'canEditOrders' | 'canEditOrderStatus' | 'canCancelOrders' | 'canEditCustomers' | 'canEditProducts' | 'canDeleteQuotations' | 'canViewAllCompanyOrders' | 'canLinkBusyData'
+  permission: 'canEditOrders' | 'canEditOrderStatus' | 'canCancelOrders' | 'canEditCustomers' | 'canEditProducts' | 'canDeleteQuotations' | 'canViewAllCompanyOrders' | 'canLinkBusyData' | 'canEditConvertedQuotationOrders'
 ): Promise<SessionUser> {
   const sessionUser = requireAuth(event)
   if (sessionUser.role === 'ADMIN') {

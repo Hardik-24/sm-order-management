@@ -148,6 +148,15 @@ export default defineEventHandler(async (event) => {
 
   const preloadedPins = loadCustomerPins()
 
+  const orderIds = orders.map((o) => o.id)
+  const convertedQuotes = orderIds.length > 0
+    ? await prisma.quotation.findMany({
+        where: { convertedOrderId: { in: orderIds } },
+        select: { convertedOrderId: true, quoteNumber: true }
+      })
+    : []
+  const quoteMap = new Map(convertedQuotes.filter(q => q.convertedOrderId).map((q) => [q.convertedOrderId!, q.quoteNumber]))
+
   const formattedOrders = orders.map((order) => {
     const pin = resolveDestinationPin(
       order.customerId,
@@ -163,6 +172,8 @@ export default defineEventHandler(async (event) => {
     return {
       ...order,
       hasUnsyncedBusyItems,
+      isConvertedFromQuotation: quoteMap.has(order.id),
+      convertedQuotationNumber: quoteMap.get(order.id) || null,
       destinationCoords: pin ? { lat: pin.lat, lng: pin.lng, areaName: pin.areaName, landmark: pin.landmark } : null,
       hasDestinationPin: !!pin,
     }

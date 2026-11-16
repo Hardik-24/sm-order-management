@@ -226,14 +226,13 @@
                 <th class="px-5 py-3.5 whitespace-nowrap text-center">Items</th>
                 <th class="px-5 py-3.5 whitespace-nowrap text-center">Conversion Status</th>
                 <th class="px-5 py-3.5 whitespace-nowrap">Requested / Created By</th>
-                <th class="px-5 py-3.5 whitespace-nowrap text-center">Date</th>
                 <th class="px-5 py-3.5 whitespace-nowrap text-right pr-5">Actions</th>
               </tr>
             </thead>
-            <TableSkeletonRows :cols="7" :rows="5" />
+            <TableSkeletonRows :cols="6" :rows="5" />
           </table>
         </div>
-        <TableSkeletonRows :cols="7" :rows="5" :isMobileOnly="true" :renderMobile="true" />
+        <TableSkeletonRows :cols="6" :rows="5" :isMobileOnly="true" :renderMobile="true" />
       </div>
 
       <!-- Empty State matching BillingTable.vue:195-201 -->
@@ -266,7 +265,6 @@
                 <th class="px-5 py-3.5 whitespace-nowrap text-center">Items</th>
                 <th class="px-5 py-3.5 whitespace-nowrap text-center">Conversion Status</th>
                 <th class="px-5 py-3.5 whitespace-nowrap">Requested / Created By</th>
-                <th class="px-5 py-3.5 whitespace-nowrap text-center">Date</th>
                 <th class="px-5 py-3.5 whitespace-nowrap text-right pr-5">Actions</th>
               </tr>
             </thead>
@@ -332,26 +330,25 @@
                   </span>
                 </td>
 
-                <!-- 5. Requested / Created By -->
+                <!-- 5. Requested / Created By (Line 1: Name, Line 2: Role / Submitter, Line 3: Date) -->
                 <td class="px-5 py-3.5 whitespace-nowrap">
-                  <div class="text-xs font-semibold text-gray-800 truncate" :title="quote.requestedByName || quote.createdByName">
+                  <!-- Line 1: Requested / Contact Person -->
+                  <div class="text-xs font-semibold text-gray-900 truncate" :title="quote.requestedByName || quote.createdByName">
                     {{ quote.requestedByName || quote.createdByName || 'Sales Staff' }}
                   </div>
+                  <!-- Line 2: Submitter / Role -->
                   <div class="text-[11px] text-gray-400">
                     <span v-if="quote.requestedByName && quote.createdByName && quote.requestedByName.toLowerCase() !== quote.createdByName.toLowerCase()">
                       By {{ quote.createdByName }}
                     </span>
-                    <span v-else class="uppercase font-medium tracking-wider">
+                    <span v-else class="uppercase font-medium tracking-wider text-[10px]">
                       {{ quote.requestedByRole || quote.createdByRole || 'STAFF' }}
                     </span>
                   </div>
-                </td>
-
-                <!-- 6. Date -->
-                <td class="px-5 py-3.5 whitespace-nowrap text-center">
-                  <span class="text-xs text-gray-700">
+                  <!-- Line 3: Date -->
+                  <div class="text-[11px] text-gray-500 font-medium tabular-nums mt-0.5">
                     {{ formatDisplayDate(new Date(quote.createdAt)) }}
-                  </span>
+                  </div>
                 </td>
 
                 <!-- 7. Actions (Convert, View Slip, Delete) -->

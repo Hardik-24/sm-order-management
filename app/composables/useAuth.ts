@@ -95,6 +95,7 @@ export const useAuth = () => {
   const canEditCustomers = computed(() => user.value?.role === 'ADMIN' || actionPermissions.value.canEditCustomers)
   const canEditProducts = computed(() => user.value?.role === 'ADMIN' || actionPermissions.value.canEditProducts)
   const canLinkBusyData = computed(() => user.value?.role === 'ADMIN' || actionPermissions.value.canLinkBusyData)
+  const canEditConvertedQuotationOrders = computed(() => user.value?.role === 'ADMIN' || Boolean(actionPermissions.value.canEditConvertedQuotationOrders))
 
   return {
     user,
@@ -112,6 +113,7 @@ export const useAuth = () => {
     canEditCustomers,
     canEditProducts,
     canLinkBusyData,
+    canEditConvertedQuotationOrders,
   }
 }
 

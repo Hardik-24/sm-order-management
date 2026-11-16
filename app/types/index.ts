@@ -17,6 +17,7 @@ export interface UserActionPermissions {
   canDeleteQuotations: boolean
   canViewAllCompanyOrders: boolean
   canLinkBusyData: boolean
+  canEditConvertedQuotationOrders: boolean
 }
 
 export interface SessionUser {
@@ -143,6 +144,8 @@ export interface Order {
   overallStatus: OrderStatus
   items: OrderItem[]
   hasUnsyncedBusyItems?: boolean
+  isConvertedFromQuotation?: boolean
+  convertedQuotationNumber?: string | null
   billingStatus?: BillingStatus | null
   packingStatus?: PackingStatus | null
   deliveryStatus?: DeliveryStatus | null

@@ -452,6 +452,13 @@
                       Link Busy Data
                     </span>
                     <span 
+                      v-if="getEffectiveActionPermissions(u).canEditConvertedQuotationOrders"
+                      class="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200"
+                      title="Can Edit Orders Converted from Quotations"
+                    >
+                      Edit Converted Quotes
+                    </span>
+                    <span 
                       v-if="u.role === 'SALES'"
                       class="text-[9px] font-semibold px-1.5 py-0.5 rounded border"
                       :class="getEffectiveActionPermissions(u).canViewAllCompanyOrders 
@@ -462,7 +469,7 @@
                       {{ getEffectiveActionPermissions(u).canViewAllCompanyOrders ? 'All Company Scope' : 'My Scope Only' }}
                     </span>
                     <span 
-                      v-if="!getEffectiveActionPermissions(u).canEditOrders && !getEffectiveActionPermissions(u).canEditOrderStatus && !getEffectiveActionPermissions(u).canCancelOrders && !getEffectiveActionPermissions(u).canEditCustomers && !getEffectiveActionPermissions(u).canEditProducts && !getEffectiveActionPermissions(u).canDeleteQuotations && !getEffectiveActionPermissions(u).canLinkBusyData"
+                      v-if="!getEffectiveActionPermissions(u).canEditOrders && !getEffectiveActionPermissions(u).canEditOrderStatus && !getEffectiveActionPermissions(u).canCancelOrders && !getEffectiveActionPermissions(u).canEditCustomers && !getEffectiveActionPermissions(u).canEditProducts && !getEffectiveActionPermissions(u).canDeleteQuotations && !getEffectiveActionPermissions(u).canLinkBusyData && !getEffectiveActionPermissions(u).canEditConvertedQuotationOrders"
                       class="text-[9px] text-gray-400 italic"
                     >
                       No action permissions
@@ -1176,6 +1183,41 @@
                     </p>
                   </div>
                 </div>
+
+                <!-- 9. Edit Converted Quotation Orders -->
+                <div
+                  @click="toggleActionPermission('canEditConvertedQuotationOrders')"
+                  class="p-3 rounded-lg border text-left transition-all flex items-start gap-2.5 select-none"
+                  :class="[
+                    form.role === 'ADMIN' ? 'cursor-not-allowed bg-purple-50/30 border-purple-200' : 'cursor-pointer',
+                    form.actionPermissions.canEditConvertedQuotationOrders 
+                      ? 'border-amber-500 bg-amber-50/25 text-[#1a1a1a] shadow-2xs' 
+                      : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50/60'
+                  ]"
+                >
+                  <div class="mt-0.5 shrink-0">
+                    <div 
+                      class="w-4 h-4 rounded border flex items-center justify-center transition-colors"
+                      :class="form.actionPermissions.canEditConvertedQuotationOrders ? 'bg-amber-600 border-amber-600 text-white' : 'border-gray-300 bg-white'"
+                    >
+                      <Check v-if="form.actionPermissions.canEditConvertedQuotationOrders" class="w-3 h-3 stroke-[3]" />
+                    </div>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center justify-between gap-1">
+                      <span class="text-xs font-semibold text-gray-900">Edit Converted Quotation Orders</span>
+                      <span 
+                        class="text-[10px] font-semibold px-1.5 py-0.2 rounded"
+                        :class="form.actionPermissions.canEditConvertedQuotationOrders ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-500'"
+                      >
+                        {{ form.actionPermissions.canEditConvertedQuotationOrders ? 'Granted' : 'Blocked' }}
+                      </span>
+                    </div>
+                    <p class="text-[11px] text-gray-500 mt-0.5 leading-snug">
+                      Allow editing sales orders that were converted from a quotation. By default, only Administrators can edit converted quotation orders.
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -1482,6 +1524,7 @@ const form = ref<{
     canDeleteQuotations: false,
     canViewAllCompanyOrders: true,
     canLinkBusyData: false,
+    canEditConvertedQuotationOrders: false,
   }
 })
 
@@ -1591,7 +1634,7 @@ onMounted(() => {
 
 // Action Permissions helpers
 const activeActionCount = computed(() => {
-  if (form.value.role === 'ADMIN') return 8
+  if (form.value.role === 'ADMIN') return 9
   const a = form.value.actionPermissions
   return (a.canEditOrders ? 1 : 0) + 
          (a.canEditOrderStatus ? 1 : 0) + 
@@ -1600,7 +1643,8 @@ const activeActionCount = computed(() => {
          (a.canEditProducts ? 1 : 0) + 
          (a.canDeleteQuotations ? 1 : 0) +
          (a.canViewAllCompanyOrders ? 1 : 0) +
-         (a.canLinkBusyData ? 1 : 0)
+         (a.canLinkBusyData ? 1 : 0) +
+         (a.canEditConvertedQuotationOrders ? 1 : 0)
 })
 
 const toggleActionPermission = (key: keyof UserActionPermissions) => {
@@ -1675,6 +1719,7 @@ const onRoleChanged = (newRole: any) => {
       canDeleteQuotations: true,
       canViewAllCompanyOrders: true,
       canLinkBusyData: true,
+      canEditConvertedQuotationOrders: true,
     }
   } else {
     form.value.allowedPages = form.value.allowedPages.filter(k => k !== 'ADMIN')
@@ -1829,7 +1874,7 @@ const openModal = (u: any = null) => {
       isActive: u.isActive !== false,
       allowedPages: u.role === 'ADMIN' ? APP_PAGES.map(p => p.key) : [...effective],
       actionPermissions: u.role === 'ADMIN' 
-        ? { canEditOrders: true, canEditOrderStatus: true, canCancelOrders: true, canEditCustomers: true, canEditProducts: true, canDeleteQuotations: true, canViewAllCompanyOrders: true, canLinkBusyData: true }
+        ? { canEditOrders: true, canEditOrderStatus: true, canCancelOrders: true, canEditCustomers: true, canEditProducts: true, canDeleteQuotations: true, canViewAllCompanyOrders: true, canLinkBusyData: true, canEditConvertedQuotationOrders: true }
         : { ...effectiveActions }
     }
   } else {
@@ -1891,6 +1936,7 @@ const saveUser = async () => {
         canDeleteQuotations: true,
         canViewAllCompanyOrders: true,
         canLinkBusyData: true,
+        canEditConvertedQuotationOrders: true,
       }
     : { ...form.value.actionPermissions }
 

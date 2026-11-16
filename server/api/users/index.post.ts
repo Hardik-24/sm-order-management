@@ -30,6 +30,7 @@ export default defineEventHandler(async (event) => {
       canDeleteQuotations: true,
       canViewAllCompanyOrders: true,
       canLinkBusyData: true,
+      canEditConvertedQuotationOrders: true,
     }
   } else if (body.role === 'SUPERVISOR' && !actionPermissions) {
     actionPermissions = {
@@ -41,6 +42,7 @@ export default defineEventHandler(async (event) => {
       canDeleteQuotations: true,
       canViewAllCompanyOrders: true,
       canLinkBusyData: true,
+      canEditConvertedQuotationOrders: false,
     }
   }
 
