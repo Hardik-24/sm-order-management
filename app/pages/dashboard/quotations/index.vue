@@ -379,7 +379,7 @@
                     </div>
 
                     <button
-                      v-if="canDeleteQuotations"
+                      v-if="canDeleteQuoteItem(quote)"
                       type="button"
                       @click="deleteQuote(quote)"
                       class="p-1.5 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer self-center"
@@ -474,7 +474,7 @@
                   <ChevronRight class="w-3 h-3 text-gray-400" />
                 </span>
                 <button
-                  v-if="canDeleteQuotations"
+                  v-if="canDeleteQuoteItem(quote)"
                   type="button"
                   @click.stop="deleteQuote(quote)"
                   class="p-1 rounded text-gray-300 hover:text-rose-600 active:bg-rose-50 transition cursor-pointer"
@@ -632,6 +632,16 @@ const canDeleteQuotations = computed(() => {
   const perms = getEffectiveActionPermissions(user.value)
   return Boolean(perms.canDeleteQuotations)
 })
+const isQuoteConverted = (quote: any) => {
+  return quote?.status === 'CONVERTED' || Boolean(quote?.convertedOrderId)
+}
+const canDeleteQuoteItem = (quote: any) => {
+  if (!canDeleteQuotations.value) return false
+  if (isQuoteConverted(quote)) {
+    return isAdmin.value
+  }
+  return true
+}
 const canViewAllCompanyOrders = computed(() => {
   if (!user.value) return false
   if (user.value.role === 'ADMIN') return true
@@ -948,6 +958,11 @@ onOrderSync((event) => {
 
 // Delete handler
 const deleteQuote = async (quote: any) => {
+  if (isQuoteConverted(quote) && !isAdmin.value) {
+    alert('Converted quotations can only be deleted by an Administrator.')
+    return
+  }
+
   if (!confirm(`Delete quotation ${quote.quoteNumber} for ${quote.customerName}?`)) {
     return
   }
