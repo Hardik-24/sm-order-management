@@ -3311,43 +3311,52 @@ onUnmounted(() => {
                           class="w-full"
                         />
 
-                        <!-- Product Badges: Stock, Category, UoM -->
-                        <div v-if="getEditSelectedProduct(item.productId)" class="mt-2 flex flex-wrap items-center gap-1.5">
-                          <span 
-                            class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-semibold border shadow-2xs"
-                            :class="[
-                              Number(getEditSelectedProduct(item.productId)?.stock ?? 0) <= 0 
-                                ? 'bg-rose-50 text-rose-700 border-rose-200' 
-                                : Number(getEditSelectedProduct(item.productId)?.stock ?? 0) < 10 
-                                  ? 'bg-amber-50 text-amber-700 border-amber-200' 
-                                  : 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                            ]"
-                          >
+                        <!-- Product Name & Badges: Stock, Category, UoM -->
+                        <div v-if="getEditSelectedProduct(item.productId)" class="mt-2 space-y-1.5">
+                          <div class="text-xs sm:text-sm font-bold text-slate-900 leading-snug break-words">
+                            {{ getEditSelectedProduct(item.productId)?.name }}
+                            <span v-if="getEditSelectedProduct(item.productId)?.sku && getEditSelectedProduct(item.productId)?.sku !== getEditSelectedProduct(item.productId)?.name" class="text-[11px] font-mono text-slate-500 font-normal ml-1">
+                              ({{ getEditSelectedProduct(item.productId)?.sku }})
+                            </span>
+                          </div>
+
+                          <div class="flex flex-wrap items-center gap-1.5">
                             <span 
-                              class="w-1.5 h-1.5 rounded-full"
+                              class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-semibold border shadow-2xs"
                               :class="[
                                 Number(getEditSelectedProduct(item.productId)?.stock ?? 0) <= 0 
-                                  ? 'bg-rose-500' 
+                                  ? 'bg-rose-50 text-rose-700 border-rose-200' 
                                   : Number(getEditSelectedProduct(item.productId)?.stock ?? 0) < 10 
-                                    ? 'bg-amber-500' 
-                                    : 'bg-emerald-500'
+                                    ? 'bg-amber-50 text-amber-700 border-amber-200' 
+                                    : 'bg-emerald-50 text-emerald-700 border-emerald-200'
                               ]"
-                            ></span>
-                            <span>Stock: <strong class="font-bold">{{ getEditSelectedProduct(item.productId)?.stock ?? 0 }}</strong> {{ getEditSelectedProduct(item.productId)?.unit || 'units' }}</span>
-                          </span>
+                            >
+                              <span 
+                                class="w-1.5 h-1.5 rounded-full"
+                                :class="[
+                                  Number(getEditSelectedProduct(item.productId)?.stock ?? 0) <= 0 
+                                    ? 'bg-rose-500' 
+                                    : Number(getEditSelectedProduct(item.productId)?.stock ?? 0) < 10 
+                                      ? 'bg-amber-500' 
+                                      : 'bg-emerald-500'
+                                ]"
+                              ></span>
+                              <span>Stock: <strong class="font-bold">{{ getEditSelectedProduct(item.productId)?.stock ?? 0 }}</strong> {{ getEditSelectedProduct(item.productId)?.unit || 'units' }}</span>
+                            </span>
 
-                          <span v-if="getEditSelectedProduct(item.productId)?.isBusySynced === false" class="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[9px] font-black uppercase tracking-wider bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs">
-                            <AlertCircle class="w-2.5 h-2.5 text-amber-700 shrink-0" />
-                            Not in Busy
-                          </span>
+                            <span v-if="getEditSelectedProduct(item.productId)?.isBusySynced === false" class="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[9px] font-black uppercase tracking-wider bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs">
+                              <AlertCircle class="w-2.5 h-2.5 text-amber-700 shrink-0" />
+                              Not in Busy
+                            </span>
 
-                          <span v-if="getEditSelectedProduct(item.productId)?.category?.name" class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-gray-100 text-gray-600 border border-gray-200">
-                            {{ getEditSelectedProduct(item.productId)?.category?.name }}
-                          </span>
+                            <span v-if="getEditSelectedProduct(item.productId)?.category?.name" class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-gray-100 text-gray-600 border border-gray-200">
+                              {{ getEditSelectedProduct(item.productId)?.category?.name }}
+                            </span>
 
-                          <span v-if="getEditSelectedProduct(item.productId)?.unit" class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200 uppercase tracking-wide">
-                            {{ getEditSelectedProduct(item.productId)?.unit }}
-                          </span>
+                            <span v-if="getEditSelectedProduct(item.productId)?.unit" class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200 uppercase tracking-wide">
+                              {{ getEditSelectedProduct(item.productId)?.unit }}
+                            </span>
+                          </div>
                         </div>
                       </div>
 
@@ -3918,8 +3927,8 @@ onUnmounted(() => {
 
     <!-- ── Rate Calculator Modal for Edit Order (A × B × Rate per Sq.ft) ─────────── -->
     <Teleport to="body">
-      <div v-if="isEditRateCalcOpen" data-modal-container class="fixed inset-x-0 top-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] md:bottom-0 md:inset-0 z-[650] flex items-center justify-center p-3 sm:p-4 pt-[calc(1rem+env(safe-area-inset-top,0px))] bg-black/60 backdrop-blur-xs">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-4 sm:p-5 border border-gray-100 space-y-3 animate-in fade-in zoom-in-95 duration-150">
+      <div v-if="isEditRateCalcOpen" data-modal-container class="fixed inset-0 z-[850] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-4 sm:p-5 border border-gray-100 space-y-3 animate-in fade-in zoom-in-95 duration-150 max-h-[90dvh] overflow-y-auto">
           <!-- Modal Header -->
           <div class="flex items-center justify-between border-b border-gray-100 pb-2.5">
             <div class="flex items-center gap-2.5">

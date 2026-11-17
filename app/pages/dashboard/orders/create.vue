@@ -1325,7 +1325,7 @@ const getCustomerInitials = (name: string) => {
               <span class="sm:hidden">Internal Dispatch Notes</span>
               <span class="hidden sm:inline">Internal Order Instructions / Dispatch Notes</span>
             </label>
-            <textarea v-model="form.notes" rows="2" class="w-full text-sm border border-gray-300 rounded-lg p-3 focus:ring-[#1b3b5f] focus:border-[#1b3b5f] resize-none" placeholder="e.g. Call before arrival, gate timing, site contact..."></textarea>
+            <textarea v-model="form.notes" rows="2" class="w-full text-sm border border-gray-300 rounded-lg p-3 focus:ring-[#1b3b5f] focus:border-[#1b3b5f] resize-none" :placeholder="uiMode === 'modern' ? '' : 'e.g. Call before arrival, gate timing, site contact...'"></textarea>
           </div>
 
           <!-- Done Button below Internal Dispatch Notes to close/collapse Customer Details (Only in Modern Mode) -->
@@ -1624,10 +1624,18 @@ const getCustomerInitials = (name: string) => {
                     class="w-full"
                   />
 
-                  <!-- Live Stock Badge right below the product name -->
-                  <div v-if="getSelectedProduct(item.productId)" class="mt-2 flex flex-wrap items-center gap-2">
-                    <span 
-                      class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold border shadow-2xs transition-colors"
+                  <!-- Full Product Name & Live Stock Badges right below product picker in Classic Mode -->
+                  <div v-if="getSelectedProduct(item.productId)" class="mt-2 space-y-1.5">
+                    <div class="text-xs sm:text-sm font-bold text-slate-900 leading-snug break-words">
+                      {{ getSelectedProduct(item.productId)?.name }}
+                      <span v-if="getSelectedProduct(item.productId)?.sku && getSelectedProduct(item.productId)?.sku !== getSelectedProduct(item.productId)?.name" class="text-[11px] font-mono text-slate-500 font-normal ml-1">
+                        ({{ getSelectedProduct(item.productId)?.sku }})
+                      </span>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-2">
+                      <span 
+                        class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold border shadow-2xs transition-colors"
                       :class="[
                         Number(getSelectedProduct(item.productId)?.stock ?? 0) <= 0 
                           ? 'bg-rose-50 text-rose-700 border-rose-200' 
@@ -1673,6 +1681,7 @@ const getCustomerInitials = (name: string) => {
                       {{ getSelectedProduct(item.productId)?.unit }}
                     </span>
                   </div>
+                </div>
                 </div>
 
                 <!-- Numerical Fields: Mobile has 2 columns (Qty & Rate in line 1, Tax & Total in line 2) -->
@@ -2304,8 +2313,8 @@ const getCustomerInitials = (name: string) => {
 
     <!-- ── Rate Calculator Modal (A × B × Rate per Sq.ft) ────────────────────── -->
     <Teleport to="body">
-      <div v-if="isRateCalcOpen" data-modal-container class="fixed inset-x-0 top-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] md:bottom-0 md:inset-0 z-[650] flex items-center justify-center p-3 sm:p-4 pt-[calc(1rem+env(safe-area-inset-top,0px))] bg-black/60 backdrop-blur-xs overflow-y-auto">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-4 sm:p-5 border border-gray-100 space-y-3 animate-in fade-in zoom-in-95 duration-150 max-h-[calc(100dvh-3.5rem-env(safe-area-inset-bottom,0px)-2rem)] overflow-y-auto">
+      <div v-if="isRateCalcOpen" data-modal-container class="fixed inset-0 z-[800] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-4 sm:p-5 border border-gray-100 space-y-3 animate-in fade-in zoom-in-95 duration-150 max-h-[90dvh] overflow-y-auto">
           <!-- Modal Header -->
           <div class="flex items-center justify-between border-b border-gray-100 pb-2.5">
             <div class="flex items-center gap-2.5">
