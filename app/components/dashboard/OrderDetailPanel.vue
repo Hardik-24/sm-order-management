@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, computed, nextTick, onMounted, onUnmounted } from 'vue'
-import { X, MoreHorizontal, Lock, Edit, Package, PackageCheck, PackageX, Truck, Check, Box, Plus, Trash2, MapPin, AlertCircle, AlertTriangle, Ban, CheckCheck, CheckCircle2, Zap, User, IndianRupee, Clock, Building2, Phone, FileText, Calendar, Copy, ChevronRight, Car, GitFork, SlidersHorizontal, Loader2, Save, Link2, UserCheck, Calculator } from 'lucide-vue-next'
+import { X, MoreHorizontal, Lock, Edit, Package, PackageCheck, PackageX, Truck, Check, Box, Plus, Trash2, MapPin, AlertCircle, AlertTriangle, Ban, CheckCheck, CheckCircle2, Zap, User, IndianRupee, Clock, Building2, Phone, FileText, Calendar, Copy, ChevronRight, Car, GitFork, SlidersHorizontal, Loader2, Save, Link2, UserCheck, Calculator, LayoutList, ChevronUp, ChevronDown, Tag, PackageSearch } from 'lucide-vue-next'
 import StatusBadge from '~/components/ui/StatusBadge.vue'
 import GenerateBillModal from '~/components/dashboard/GenerateBillModal.vue'
 import SetDeliveryPinModal from '~/components/dashboard/SetDeliveryPinModal.vue'
@@ -10,6 +10,7 @@ import LinkCustomerModal from '~/components/dashboard/LinkCustomerModal.vue'
 import LinkItemModal from '~/components/dashboard/LinkItemModal.vue'
 import LoadingTopBar from '~/components/ui/LoadingTopBar.vue'
 import CustomSelect from '~/components/ui/CustomSelect.vue'
+import SearchCombobox from '~/components/ui/SearchCombobox.vue'
 import { formatCurrency, formatDateTime, formatDate, formatTime, getDisplayStatus, getOverallColor, getStatusColor } from '~~/app/lib/utils'
 import type { Order } from '~/types'
 import { useSnackbar } from '~/composables/useSnackbar'
@@ -448,24 +449,33 @@ const packingStatusOptions = [
 ]
 
 const customerOptions = computed(() => {
-  return (customersList.value || []).map(c => ({
-    label: c.name,
-    value: c.id,
-    subtitle: c.company || c.city || ''
-  }))
+  return (customersList.value || []).map(c => {
+    const hasDistinctCompany = c.company && c.company.trim().toLowerCase() !== c.name?.trim().toLowerCase()
+    const label = hasDistinctCompany ? `${c.name} (${c.company.trim()})` : (c.name || c.company || '')
+    return {
+      label,
+      value: c.id,
+      subtitle: c.company && c.company !== c.name ? c.company : '',
+      city: c.city ? c.city.trim() : '',
+      phone: c.phone || '',
+      badge: c.privilegeTier,
+      badgeClass: c.privilegeTier === 'PLATINUM' ? 'bg-purple-100 text-purple-900 border-purple-300' : (c.privilegeTier === 'GOLD' ? 'bg-amber-100 text-amber-900 border-amber-300' : 'bg-slate-100 text-slate-800 border-slate-300'),
+      isBusySynced: c.isBusySynced
+    }
+  })
 })
 
 const productOptions = computed(() => {
-  return (productsList.value || []).map(p => {
-    const hasAlias = p.sku && p.sku !== p.name
-    return {
-      label: hasAlias ? `${p.sku} - ${p.name}` : p.name,
-      value: p.id,
-      subtitle: '',
-      stock: p.stock ?? 0,
-      unit: p.unit || ''
-    }
-  })
+  return (productsList.value || []).map(p => ({
+    label: p.name,
+    sku: p.sku,
+    value: p.id,
+    stock: p.stock ?? 0,
+    unit: p.unit || '',
+    hsnCode: p.hsnCode || '',
+    subtitle: p.category?.name || '',
+    isBusySynced: p.isBusySynced
+  }))
 })
 
 const closePanel = () => {
@@ -808,6 +818,142 @@ const getStepColor = (step: string) => {
 
 const isEditModalOpen = ref(false)
 const isEditLoading = ref(false)
+
+// UI Mode State for Edit Order Modal: 'modern' (Combobox + cards + item sheet) vs 'classic' (Traditional full inline rows)
+const editUiMode = ref<'modern' | 'classic'>('modern')
+
+onMounted(() => {
+  if (typeof window !== 'undefined') {
+    const saved = localStorage.getItem('sm_order_form_layout')
+    if (saved === 'classic' || saved === 'modern') {
+      editUiMode.value = saved
+    }
+  }
+})
+
+const setEditUiMode = (mode: 'modern' | 'classic') => {
+  editUiMode.value = mode
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('sm_order_form_layout', mode)
+  }
+}
+
+// ── Edit Item Sub-Modal State (for Modern UI in Edit Order) ──────────────────
+const isEditSubItemModalOpen = ref(false)
+const editingSubItemIndex = ref<number | null>(null) // null = adding, number = editing
+const currentEditSubItem = ref({
+  id: undefined as string | undefined,
+  productId: '',
+  quantity: 1,
+  unitPrice: 0,
+  taxRate: 18,
+  productSku: '',
+  isTaxInclusive: false,
+  applyLastPrice: false,
+  itemNotes: ''
+})
+
+const openAddSubItemModal = () => {
+  editingSubItemIndex.value = null
+  currentEditSubItem.value = {
+    id: undefined,
+    productId: '',
+    quantity: 1,
+    unitPrice: 0,
+    taxRate: 18,
+    productSku: '',
+    isTaxInclusive: false,
+    applyLastPrice: false,
+    itemNotes: ''
+  }
+  isEditSubItemModalOpen.value = true
+}
+
+const openEditSubItemModal = (index: number) => {
+  if (index < 0 || index >= editForm.value.items.length) return
+  editingSubItemIndex.value = index
+  const src = editForm.value.items[index]
+  currentEditSubItem.value = { ...src }
+  if (editForm.value.customerId && src.productId) {
+    if (editHistoricalPricesMap.value[src.productId] === undefined) {
+      fetchEditHistoricalPrice(editForm.value.customerId, src.productId)
+    }
+  }
+  isEditSubItemModalOpen.value = true
+}
+
+const closeEditSubItemModal = () => {
+  isEditSubItemModalOpen.value = false
+  editingSubItemIndex.value = null
+}
+
+const onEditSubItemProductChange = () => {
+  const item = currentEditSubItem.value
+  item.applyLastPrice = false
+  const product = productsList.value.find(p => p.id === item.productId)
+  if (product) {
+    item.unitPrice = Number(product.price) || 0
+    item.productSku = product.sku || ''
+    item.taxRate = product.taxRate !== null && product.taxRate !== undefined && !isNaN(Number(product.taxRate))
+      ? Number(product.taxRate)
+      : 18
+
+    if (editForm.value.customerId && item.productId) {
+      fetchEditHistoricalPrice(editForm.value.customerId, item.productId)
+    }
+  }
+}
+
+const applyEditSubItemHistoricalPrice = (hp: any) => {
+  if (!hp) return
+  if (currentEditSubItem.value.isTaxInclusive) {
+    currentEditSubItem.value.unitPrice = Number(hp.unitPrice)
+  } else {
+    currentEditSubItem.value.unitPrice = Number(hp.basePrice)
+  }
+  if (hp.taxRate !== undefined && hp.taxRate !== null) {
+    currentEditSubItem.value.taxRate = Number(hp.taxRate)
+  }
+  currentEditSubItem.value.applyLastPrice = true
+}
+
+const onEditSubItemTaxInclusiveToggle = () => {
+  const hp = editHistoricalPricesMap.value[currentEditSubItem.value.productId]
+  if (currentEditSubItem.value.applyLastPrice && hp) {
+    if (currentEditSubItem.value.isTaxInclusive) {
+      currentEditSubItem.value.unitPrice = Number(hp.unitPrice)
+    } else {
+      currentEditSubItem.value.unitPrice = Number(hp.basePrice)
+    }
+  }
+}
+
+const saveEditSubItem = (addAnother = false) => {
+  const item = currentEditSubItem.value
+  if (!item.productId) {
+    alert('Please select a product')
+    return
+  }
+  if (!item.quantity || item.quantity <= 0) {
+    alert('Quantity must be at least 1')
+    return
+  }
+
+  const cleanItem = { ...item }
+
+  if (editingSubItemIndex.value !== null) {
+    editForm.value.items[editingSubItemIndex.value] = cleanItem
+  } else {
+    editForm.value.items.push(cleanItem)
+  }
+
+  if (addAnother) {
+    openAddSubItemModal()
+  } else {
+    closeEditSubItemModal()
+  }
+}
+
 const editForm = ref({ 
   orderNumber: '', 
   customerId: '', 
@@ -986,23 +1132,36 @@ const editCalcTotalRate = computed(() => {
   return Number((area * rate).toFixed(2))
 })
 
-const openEditRateCalculator = (idx: number) => {
-  editCalcItemIndex.value = idx
+const openEditRateCalculator = (idx: number | 'submodal') => {
   const defaultSize = (sheetSizesOptions.value || []).find((s: any) => s.isDefault) || (sheetSizesOptions.value || [])[0]
   editCalcLength.value = defaultSize?.length || 8
   editCalcWidth.value = defaultSize?.width || 4
-  const currentItem = editForm.value.items[idx]
   const currentArea = editCalcLength.value * editCalcWidth.value
-  if (currentItem && currentItem.unitPrice > 0) {
-    editCalcSqftRate.value = currentArea > 0 ? Number((currentItem.unitPrice / currentArea).toFixed(2)) : 0
+
+  if (idx === 'submodal') {
+    editCalcItemIndex.value = -1
+    if (currentEditSubItem.value && currentEditSubItem.value.unitPrice > 0) {
+      editCalcSqftRate.value = currentArea > 0 ? Number((currentEditSubItem.value.unitPrice / currentArea).toFixed(2)) : 0
+    } else {
+      editCalcSqftRate.value = 0
+    }
   } else {
-    editCalcSqftRate.value = 0
+    editCalcItemIndex.value = idx
+    const currentItem = editForm.value.items[idx]
+    if (currentItem && currentItem.unitPrice > 0) {
+      editCalcSqftRate.value = currentArea > 0 ? Number((currentItem.unitPrice / currentArea).toFixed(2)) : 0
+    } else {
+      editCalcSqftRate.value = 0
+    }
   }
   isEditRateCalcOpen.value = true
 }
 
 const applyEditCalculatedRate = () => {
-  if (editCalcItemIndex.value !== null && editForm.value.items[editCalcItemIndex.value]) {
+  if (editCalcItemIndex.value === -1) {
+    currentEditSubItem.value.unitPrice = editCalcTotalRate.value
+    showSaved(`Applied rate ₹${editCalcTotalRate.value.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`)
+  } else if (editCalcItemIndex.value !== null && editForm.value.items[editCalcItemIndex.value]) {
     editForm.value.items[editCalcItemIndex.value].unitPrice = editCalcTotalRate.value
     showSaved(`Applied rate ₹${editCalcTotalRate.value.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`)
   }
@@ -1016,9 +1175,9 @@ const editPriceHistoryProductId = ref<string | null>(null)
 const editPriceHistoryProductName = ref<string>('')
 const editPriceHistoryProductSku = ref<string>('')
 
-const openEditPriceHistoryModal = (item: any, idx: number) => {
+const openEditPriceHistoryModal = (item: any, idx: number | 'submodal') => {
   if (!item.productId) return
-  editPriceHistoryTargetIndex.value = idx
+  editPriceHistoryTargetIndex.value = idx === 'submodal' ? -1 : idx
   editPriceHistoryProductId.value = item.productId
   const p = productsList.value.find((prod: any) => prod.id === item.productId)
   editPriceHistoryProductName.value = p?.name || item.name || 'Product'
@@ -1027,7 +1186,14 @@ const openEditPriceHistoryModal = (item: any, idx: number) => {
 }
 
 const onApplyEditPriceHistory = (data: { rate: number; isTaxInclusive?: boolean; voucherNo?: string }) => {
-  if (editPriceHistoryTargetIndex.value !== null && editForm.value.items[editPriceHistoryTargetIndex.value]) {
+  if (editPriceHistoryTargetIndex.value === -1) {
+    currentEditSubItem.value.unitPrice = data.rate
+    if (data.isTaxInclusive !== undefined) {
+      currentEditSubItem.value.isTaxInclusive = data.isTaxInclusive
+    }
+    currentEditSubItem.value.applyLastPrice = true
+    showSaved(`Applied historical rate ₹${data.rate.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`)
+  } else if (editPriceHistoryTargetIndex.value !== null && editForm.value.items[editPriceHistoryTargetIndex.value]) {
     const item = editForm.value.items[editPriceHistoryTargetIndex.value]
     item.unitPrice = data.rate
     if (data.isTaxInclusive !== undefined) {
@@ -1048,15 +1214,19 @@ const getEditSelectedProduct = (prodId?: string) => {
 }
 
 const addEditItem = () => {
-  editForm.value.items.push({ 
-    productId: '', 
-    quantity: 1, 
-    unitPrice: 0,
-    taxRate: 18,
-    isTaxInclusive: false,
-    applyLastPrice: false,
-    itemNotes: ''
-  })
+  if (editUiMode.value === 'modern') {
+    openAddSubItemModal()
+  } else {
+    editForm.value.items.push({ 
+      productId: '', 
+      quantity: 1, 
+      unitPrice: 0,
+      taxRate: 18,
+      isTaxInclusive: false,
+      applyLastPrice: false,
+      itemNotes: ''
+    })
+  }
 }
 
 const removeEditItem = (idx: number) => {
@@ -2730,18 +2900,44 @@ onUnmounted(() => {
       <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" @click="isEditModalOpen = false; hide()"></div>
       
       <div ref="editModalCardRef" class="relative bg-[#faf8f5] w-full max-w-4xl rounded-xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[calc(100dvh-3.5rem-env(safe-area-inset-bottom,0px)-2rem)] md:max-h-[92vh] overflow-hidden transform transition-all border border-gray-200">
-        <div class="px-4 py-3 sm:px-6 sm:py-4 border-b border-gray-200 bg-white flex items-center justify-between shrink-0">
+        <div class="px-3.5 py-3 sm:px-6 sm:py-4 border-b border-gray-200 bg-white flex items-center justify-between shrink-0 gap-2">
           <h2 class="text-base sm:text-lg font-bold text-gray-900 truncate">Edit Order: {{ order?.orderNumber }}</h2>
-          <div class="flex items-center gap-3">
-            <label class="hidden sm:flex items-center gap-3 px-4 py-2.5 rounded-xl border cursor-pointer select-none transition-all shadow-xs"
+          <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+            <!-- UI Mode Toggle: Modern vs Classic -->
+            <div class="inline-flex items-center p-0.5 sm:p-1 bg-slate-100 rounded-xl border border-slate-200 text-[10px] sm:text-xs font-bold shadow-2xs select-none">
+              <button
+                type="button"
+                @click="setEditUiMode('modern')"
+                class="px-2 sm:px-2.5 py-1 rounded-lg flex items-center gap-1 transition-all cursor-pointer"
+                :class="editUiMode === 'modern' ? 'bg-[#1b3b5f] text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'"
+                title="Modern View (Comboboxes + Item sheet)"
+              >
+                <Zap class="w-3 sm:w-3.5 h-3 sm:h-3.5" :class="editUiMode === 'modern' ? 'text-amber-300 fill-amber-300' : 'text-slate-400'" />
+                <span>Modern</span>
+              </button>
+              <button
+                type="button"
+                @click="setEditUiMode('classic')"
+                class="px-2 sm:px-2.5 py-1 rounded-lg flex items-center gap-1 transition-all cursor-pointer"
+                :class="editUiMode === 'classic' ? 'bg-[#1b3b5f] text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'"
+                title="Classic View (Traditional inline rows)"
+              >
+                <LayoutList class="w-3 sm:w-3.5 h-3 sm:h-3.5" :class="editUiMode === 'classic' ? 'text-white' : 'text-slate-400'" />
+                <span>Classic</span>
+              </button>
+            </div>
+
+            <!-- Desktop Urgent Order Toggle -->
+            <label class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl border cursor-pointer select-none transition-all shadow-xs"
               :class="editForm.isUrgent ? 'bg-rose-50 border-rose-300 text-rose-700 shadow-rose-100' : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'"
             >
               <input type="checkbox" v-model="editForm.isUrgent" class="w-4 h-4 text-rose-600 rounded focus:ring-rose-500" />
               <div class="flex items-center gap-1.5 font-bold text-xs uppercase tracking-wider">
                 <Zap class="w-4 h-4 text-rose-600 fill-rose-600" />
-                <span>Mark as Urgent Order</span>
+                <span>Urgent</span>
               </div>
             </label>
+
             <button @click="isEditModalOpen = false; hide()" data-modal-close="true" class="p-1.5 sm:p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors">
               <X class="w-5 h-5" />
             </button>
@@ -2749,15 +2945,15 @@ onUnmounted(() => {
         </div>
         
         <!-- Mobile Urgent Toggle (visible only on small screens) -->
-        <div class="sm:hidden px-3.5 pt-3.5 pb-0 bg-[#faf8f5]">
-          <label class="flex items-center gap-3 px-4 py-2.5 rounded-xl border cursor-pointer select-none transition-all shadow-xs w-full"
+        <div class="sm:hidden px-3.5 pt-3 pb-0 bg-[#faf8f5]">
+          <label class="flex items-center justify-between px-3.5 py-2 rounded-xl border cursor-pointer select-none transition-all shadow-xs w-full"
             :class="editForm.isUrgent ? 'bg-rose-50 border-rose-300 text-rose-700 shadow-rose-100' : 'bg-white border-gray-200 text-gray-700'"
           >
-            <input type="checkbox" v-model="editForm.isUrgent" class="w-4 h-4 text-rose-600 rounded focus:ring-rose-500" />
             <div class="flex items-center gap-1.5 font-bold text-xs uppercase tracking-wider">
               <Zap class="w-4 h-4 text-rose-600 fill-rose-600" />
               <span>Mark as Urgent Order</span>
             </div>
+            <input type="checkbox" v-model="editForm.isUrgent" class="w-4 h-4 text-rose-600 rounded focus:ring-rose-500" />
           </label>
         </div>
 
@@ -2803,13 +2999,12 @@ onUnmounted(() => {
                 </div>
                 <div>
                   <label class="block text-[10px] sm:text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Customer</label>
-                  <CustomSelect 
+                  <SearchCombobox 
                     :modelValue="editForm.customerId"
                     @update:modelValue="val => { editForm.customerId = val; onEditCustomerChange() }"
+                    @select="onEditCustomerChange"
                     :options="customerOptions"
-                    searchable
-                    searchPlaceholder="Search customer..."
-                    placeholder="Select Customer"
+                    placeholder="Search customer by name, company, city, phone..."
                     class="w-full"
                   />
                 </div>
@@ -2941,234 +3136,723 @@ onUnmounted(() => {
             </div>
 
             <!-- Section 2: Items -->
-            <div class="bg-white p-4 sm:p-6 rounded-xl border border-gray-200 shadow-sm space-y-4">
+            <div class="bg-white p-3.5 sm:p-6 rounded-xl border border-gray-200 shadow-sm space-y-4">
               <div class="flex items-center justify-between border-b border-gray-100 pb-2">
-                <h3 class="text-xs sm:text-sm font-bold text-gray-900 uppercase tracking-wider">Order Items ({{ editForm.items.length }})</h3>
-                <button type="button" @click="addEditItem" class="text-xs font-bold text-[#1b3b5f] flex items-center gap-1 hover:underline">
+                <div class="flex items-center gap-2">
+                  <h3 class="text-xs sm:text-sm font-bold text-gray-900 uppercase tracking-wider">
+                    Order Items <span v-if="editForm.items.length">({{ editForm.items.length }})</span>
+                  </h3>
+                  <span v-if="editUiMode === 'modern'" class="text-[10px] text-gray-400 font-medium hidden sm:inline">• Tap item to edit</span>
+                </div>
+                <button type="button" @click="addEditItem" class="text-xs font-bold text-[#1b3b5f] flex items-center gap-1 hover:underline cursor-pointer">
                   <Plus class="w-3.5 h-3.5" /> Add Product
                 </button>
               </div>
               
-              <div class="space-y-4">
-                <div v-for="(item, idx) in editForm.items" :key="idx" class="bg-gray-50/80 p-4 rounded-xl border border-gray-200 space-y-3">
-                  <div class="flex flex-wrap md:flex-nowrap gap-4 items-end">
-                    <!-- Product Select -->
-                    <div class="flex-1 w-full min-w-0">
-                      <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1.5">Product *</label>
-                      <CustomSelect 
-                        :modelValue="item.productId"
-                        @update:modelValue="val => { item.productId = val; onEditProductChange(idx) }"
-                        :options="productOptions"
-                        searchable
-                        searchPlaceholder="Search product by SKU or name..."
-                        placeholder="Select Product"
-                        class="w-full"
-                      />
+              <!-- Mode A: Modern Item Summary Cards -->
+              <template v-if="editUiMode === 'modern'">
+                <div class="space-y-2.5">
+                  <div 
+                    v-for="(item, idx) in editForm.items" 
+                    :key="idx" 
+                    @click="openEditSubItemModal(idx)"
+                    class="group bg-white hover:bg-slate-50/80 p-3 sm:p-3.5 rounded-2xl border border-slate-200/90 hover:border-[#1b3b5f]/40 shadow-2xs hover:shadow-xs transition-all cursor-pointer relative select-none"
+                  >
+                    <!-- Line 1: Item # + Name + Badges + Trash button -->
+                    <div class="flex items-start justify-between gap-2 mb-1.5">
+                      <div class="min-w-0 flex-1">
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                          <span class="text-[11px] font-mono font-bold text-slate-400 bg-slate-100 px-1.5 py-0.2 rounded">
+                            #{{ idx + 1 }}
+                          </span>
+                          <h4 class="text-xs sm:text-sm font-black text-slate-900 leading-tight">
+                            {{ getEditSelectedProduct(item.productId)?.name || 'Product #' + (idx + 1) }}
+                          </h4>
+                          <span v-if="getEditSelectedProduct(item.productId)?.sku && getEditSelectedProduct(item.productId)?.sku !== getEditSelectedProduct(item.productId)?.name" class="text-[10px] font-mono text-gray-400">
+                            ({{ getEditSelectedProduct(item.productId)?.sku }})
+                          </span>
+                        </div>
 
-                      <!-- Product Badges: Stock, Category, UoM -->
-                      <div v-if="getEditSelectedProduct(item.productId)" class="mt-2 flex flex-wrap items-center gap-1.5">
-                        <span 
-                          class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-semibold border shadow-2xs"
-                          :class="[
-                            Number(getEditSelectedProduct(item.productId)?.stock ?? 0) <= 0 
-                              ? 'bg-rose-50 text-rose-700 border-rose-200' 
-                              : Number(getEditSelectedProduct(item.productId)?.stock ?? 0) < 10 
-                                ? 'bg-amber-50 text-amber-700 border-amber-200' 
-                                : 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                          ]"
-                        >
+                        <!-- Badges Row -->
+                        <div class="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                          <!-- Live Stock badge -->
                           <span 
-                            class="w-1.5 h-1.5 rounded-full"
+                            v-if="getEditSelectedProduct(item.productId)"
+                            class="inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-md border"
                             :class="[
                               Number(getEditSelectedProduct(item.productId)?.stock ?? 0) <= 0 
-                                ? 'bg-rose-500' 
+                                ? 'bg-rose-50 text-rose-700 border-rose-200' 
                                 : Number(getEditSelectedProduct(item.productId)?.stock ?? 0) < 10 
-                                  ? 'bg-amber-500' 
-                                  : 'bg-emerald-500'
+                                  ? 'bg-amber-50 text-amber-700 border-amber-200' 
+                                  : 'bg-emerald-50 text-emerald-700 border-emerald-200'
                             ]"
-                          ></span>
-                          <span>Stock: <strong class="font-bold">{{ getEditSelectedProduct(item.productId)?.stock ?? 0 }}</strong> {{ getEditSelectedProduct(item.productId)?.unit || 'units' }}</span>
+                          >
+                            <span 
+                              class="w-1.5 h-1.5 rounded-full"
+                              :class="[
+                                Number(getEditSelectedProduct(item.productId)?.stock ?? 0) <= 0 
+                                  ? 'bg-rose-500' 
+                                  : Number(getEditSelectedProduct(item.productId)?.stock ?? 0) < 10 
+                                    ? 'bg-amber-500' 
+                                    : 'bg-emerald-500'
+                              ]"
+                            ></span>
+                            <span>In Stock ({{ getEditSelectedProduct(item.productId)?.stock ?? 0 }})</span>
+                          </span>
+
+                          <!-- Not in Busy badge -->
+                          <span 
+                            v-if="getEditSelectedProduct(item.productId)?.isBusySynced === false"
+                            class="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[9px] font-black uppercase tracking-wider bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs"
+                          >
+                            <AlertCircle class="w-2.5 h-2.5 text-amber-700 shrink-0" />
+                            Not in Busy
+                          </span>
+
+                          <!-- UoM badge -->
+                          <span v-if="getEditSelectedProduct(item.productId)?.unit" class="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] sm:text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200 uppercase tracking-wide">
+                            {{ getEditSelectedProduct(item.productId)?.unit }}
+                          </span>
+
+                          <!-- Category -->
+                          <span v-if="getEditSelectedProduct(item.productId)?.category?.name" class="hidden sm:inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-medium bg-gray-100 text-gray-600 border border-gray-200">
+                            {{ getEditSelectedProduct(item.productId)?.category?.name }}
+                          </span>
+                        </div>
+                      </div>
+
+                      <!-- Trash button -->
+                      <button 
+                        type="button" 
+                        @click.stop="removeEditItem(idx)" 
+                        class="text-slate-300 hover:text-rose-500 p-1.5 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer shrink-0"
+                        title="Remove Item"
+                      >
+                        <Trash2 class="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    <!-- Line 2: Pricing Math & Line Total -->
+                    <div class="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
+                      <div class="text-slate-600 text-[11px] font-semibold flex items-center gap-1.5 flex-wrap">
+                        <span class="font-bold text-slate-900">{{ item.quantity }} {{ getEditSelectedProduct(item.productId)?.unit || 'units' }}</span>
+                        <span>×</span>
+                        <span class="font-bold text-slate-900">{{ formatCurrency(item.unitPrice) }}</span>
+                        <span v-if="item.isTaxInclusive" class="text-[9px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.2 rounded border border-blue-200">
+                          INCL
                         </span>
-
-                        <span v-if="getEditSelectedProduct(item.productId)?.category?.name" class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-gray-100 text-gray-600 border border-gray-200">
-                          {{ getEditSelectedProduct(item.productId)?.category?.name }}
-                        </span>
-
-                        <span v-if="getEditSelectedProduct(item.productId)?.unit" class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200 uppercase tracking-wide">
-                          {{ getEditSelectedProduct(item.productId)?.unit }}
+                        <span v-else class="text-[9px] font-bold text-slate-600 bg-slate-100 px-1.5 py-0.2 rounded border border-slate-200">
+                          +{{ item.taxRate }}% Tax
                         </span>
                       </div>
-                    </div>
 
-                    <!-- Qty -->
-                    <div class="w-full md:w-20 shrink-0">
-                      <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1.5">Qty *</label>
-                      <input type="number" v-model.number="item.quantity" min="1" required class="w-full border border-gray-300 rounded-lg shadow-xs p-2 bg-white text-sm font-bold focus:ring-[#1b3b5f] focus:border-[#1b3b5f]" />
-                    </div>
-
-                    <!-- Unit Price with Sq.ft Sheet Rate Calculator -->
-                    <div class="w-full md:w-32 shrink-0">
-                      <div class="flex items-center justify-between mb-1.5">
-                        <label class="block text-[10px] uppercase font-bold text-gray-500 flex items-center gap-1 truncate">
-                          <IndianRupee class="w-3 h-3 text-gray-400 shrink-0" />
-                          <span>Rate *</span>
-                        </label>
-                        <button 
-                          type="button" 
-                          tabindex="-1"
-                          @click="openEditRateCalculator(idx)" 
-                          class="text-[9px] bg-[#1b3b5f] hover:bg-[#132c49] text-white font-bold flex items-center gap-1 px-2 py-0.5 rounded shadow-2xs transition-colors cursor-pointer"
-                          title="Calculate rate by Sheet Sq.ft (A × B × Rate)"
-                        >
-                          <Calculator class="w-2.5 h-2.5 text-white" />
-                          <span>Sq.ft Calc</span>
-                        </button>
-                      </div>
-                      <div class="relative flex items-center">
-                        <IndianRupee class="absolute left-2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
-                        <input 
-                          type="number" 
-                          v-model.number="item.unitPrice" 
-                          min="0" 
-                          step="0.01" 
-                          required 
-                          class="w-full pl-6 pr-8 border border-gray-300 rounded-lg shadow-xs p-2 bg-white text-sm font-bold focus:ring-[#1b3b5f] focus:border-[#1b3b5f]" 
-                        />
-                        <button 
-                          type="button"
-                          tabindex="-1"
-                          @click="openEditRateCalculator(idx)"
-                          class="absolute right-1 px-1.5 py-1 bg-[#1b3b5f] hover:bg-[#132c49] text-white rounded-md transition-colors cursor-pointer shadow-2xs"
-                          title="Sq.ft Sheet Rate Calculator"
-                        >
-                          <Calculator class="w-3.5 h-3.5 text-white" />
-                        </button>
+                      <div class="text-right">
+                        <div class="font-black text-slate-900 text-xs sm:text-sm">
+                          {{ formatCurrency(calculateEditItemTotal(item)) }}
+                        </div>
+                        <div class="text-[9px] text-slate-400">
+                          {{ item.isTaxInclusive ? 'GST incl.' : `+${formatCurrency(calculateEditItemTotal(item) - (item.quantity * item.unitPrice))} GST` }}
+                        </div>
                       </div>
                     </div>
 
-                    <!-- Tax % -->
-                    <div class="w-full md:w-20 shrink-0">
-                      <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1.5">Tax %</label>
-                      <div class="relative flex items-center">
-                        <input type="number" v-model.number="item.taxRate" min="0" max="100" step="0.1" class="w-full pr-5 border border-gray-300 rounded-lg shadow-xs p-2 bg-white text-sm font-bold focus:ring-[#1b3b5f] focus:border-[#1b3b5f] text-right" />
-                        <span class="absolute right-1.5 text-xs font-semibold text-gray-400 pointer-events-none">%</span>
-                      </div>
+                    <!-- Line 3: Item Note (if any) -->
+                    <div v-if="item.itemNotes?.trim()" class="mt-2 pt-1.5 border-t border-dashed border-gray-100 text-[11px] text-gray-500 flex items-center gap-1.5">
+                      <span class="font-bold text-gray-600 shrink-0">Note:</span>
+                      <span class="truncate italic text-gray-700">{{ item.itemNotes }}</span>
                     </div>
+                  </div>
 
-                    <!-- Line Total -->
-                    <div class="w-full md:w-28 shrink-0">
-                      <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1.5 flex items-center justify-between">
-                        <span>Total</span>
-                        <span v-if="item.isTaxInclusive" class="text-[8px] font-bold text-blue-700 bg-blue-50 px-1 py-0.2 rounded border border-blue-200">INCL</span>
-                        <span v-else class="text-[8px] font-bold text-gray-600 bg-gray-100 px-1 py-0.2 rounded border border-gray-200">+TAX</span>
-                      </label>
-                      <div class="p-2 bg-white text-gray-900 rounded-lg font-bold text-sm border border-gray-200 text-right">
-                        {{ formatCurrency(calculateEditItemTotal(item)) }}
-                      </div>
+                  <!-- Empty State Box -->
+                  <div 
+                    v-if="!editForm.items.length" 
+                    class="my-3 px-4 py-8 bg-slate-50/70 rounded-2xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-center transition-all"
+                  >
+                    <div class="w-12 h-12 rounded-2xl bg-white border border-slate-200/80 shadow-2xs flex items-center justify-center text-slate-400 mb-3">
+                      <PackageSearch class="w-6 h-6 text-[#1b3b5f]/70" />
                     </div>
-
-                    <!-- Remove -->
-                    <button type="button" @click="removeEditItem(idx)" class="p-2 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg shrink-0 transition-colors" title="Remove Item">
-                      <Trash2 class="w-4 h-4" />
+                    <p class="text-sm font-bold text-gray-800">No products in order</p>
+                    <p class="text-xs text-gray-500 mt-1">Tap below to add a product to this order.</p>
+                    <button
+                      type="button"
+                      @click="openAddSubItemModal"
+                      class="mt-4 px-4 py-2 bg-[#1b3b5f] hover:bg-[#132c49] text-white rounded-xl text-xs font-bold shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer active:scale-95"
+                    >
+                      <Plus class="w-3.5 h-3.5" />
+                      <span>Add Product</span>
                     </button>
                   </div>
+                </div>
 
-                  <!-- Item-Level Options & Notes (Identical to Create Order) -->
-                  <div class="flex flex-wrap items-center gap-3 sm:gap-4 pt-2.5 border-t border-gray-200/60 text-xs">
-                    <!-- Tax Inclusive Toggle -->
-                    <label class="flex items-center gap-2 cursor-pointer select-none">
-                      <input 
-                        type="checkbox" 
-                        v-model="item.isTaxInclusive" 
-                        @change="onEditTaxInclusiveToggle(item)"
-                        class="w-3.5 h-3.5 rounded text-[#1b3b5f] focus:ring-[#1b3b5f]" 
-                      />
-                      <span class="text-gray-700 font-medium">Tax Inclusive Rate</span>
-                      <span v-if="item.isTaxInclusive" class="text-[10px] text-blue-600 font-semibold">(Tax incl.)</span>
-                      <span v-else class="text-[10px] text-gray-500">(+{{ item.taxRate ?? 0 }}% Tax)</span>
-                    </label>
+                <!-- Add Item Button directly below items in Modern Mode -->
+                <div v-if="editForm.items.length > 0" class="pt-2">
+                  <button
+                    type="button"
+                    @click="openAddSubItemModal"
+                    class="w-full py-2.5 bg-[#1b3b5f] hover:bg-[#132c49] text-white text-xs font-bold rounded-xl shadow-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95"
+                  >
+                    <Plus class="w-3.5 h-3.5" />
+                    <span>Add Product</span>
+                  </button>
+                </div>
+              </template>
 
-                    <!-- Last Billed Price Interactive Pill with History Modal Trigger -->
-                    <div v-if="editForm.customerId && item.productId" class="flex items-center">
-                      <div 
-                        v-if="editHistoricalPricesMap[item.productId]" 
-                        @click="openEditPriceHistoryModal(item, idx)"
-                        class="inline-flex items-center gap-2 px-2.5 py-1 rounded-lg text-xs transition border cursor-pointer hover:shadow-xs select-none"
-                        :class="item.applyLastPrice 
-                          ? 'bg-emerald-50 text-emerald-900 border-emerald-300 shadow-xs ring-1 ring-emerald-400/30' 
-                          : 'bg-amber-50/90 text-amber-900 border-amber-200 hover:bg-amber-100/80'"
-                        title="Click to view complete price history for Current Party & All Parties"
-                      >
-                        <span class="w-1.5 h-1.5 rounded-full shrink-0" :class="item.applyLastPrice ? 'bg-emerald-600' : 'bg-amber-500'"></span>
-                        <span>
-                          Last Billed: 
-                          <strong class="font-bold text-gray-900">
-                            {{ formatCurrency(item.isTaxInclusive ? editHistoricalPricesMap[item.productId].unitPrice : editHistoricalPricesMap[item.productId].basePrice) }}
-                          </strong>
-                          <span class="text-[10px] text-gray-500 ml-1">
-                            ({{ item.isTaxInclusive ? 'Incl. Tax' : '+Tax' }} • {{ editHistoricalPricesMap[item.productId].daysAgo }}d ago)
+              <!-- Mode B: Classic Full Inline Items Rows -->
+              <template v-else>
+                <div class="space-y-4">
+                  <div v-for="(item, idx) in editForm.items" :key="idx" class="bg-gray-50/80 p-4 rounded-xl border border-gray-200 space-y-3">
+                    <div class="flex flex-wrap md:flex-nowrap gap-4 items-end">
+                      <!-- Product Select with Direct SearchCombobox -->
+                      <div class="flex-1 w-full min-w-0">
+                        <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1.5">Product *</label>
+                        <SearchCombobox 
+                          :modelValue="item.productId"
+                          @update:modelValue="val => { item.productId = val; onEditProductChange(idx) }"
+                          :options="productOptions"
+                          placeholder="Search product by SKU, name, brand..."
+                          class="w-full"
+                        />
+
+                        <!-- Product Badges: Stock, Category, UoM -->
+                        <div v-if="getEditSelectedProduct(item.productId)" class="mt-2 flex flex-wrap items-center gap-1.5">
+                          <span 
+                            class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-semibold border shadow-2xs"
+                            :class="[
+                              Number(getEditSelectedProduct(item.productId)?.stock ?? 0) <= 0 
+                                ? 'bg-rose-50 text-rose-700 border-rose-200' 
+                                : Number(getEditSelectedProduct(item.productId)?.stock ?? 0) < 10 
+                                  ? 'bg-amber-50 text-amber-700 border-amber-200' 
+                                  : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                            ]"
+                          >
+                            <span 
+                              class="w-1.5 h-1.5 rounded-full"
+                              :class="[
+                                Number(getEditSelectedProduct(item.productId)?.stock ?? 0) <= 0 
+                                  ? 'bg-rose-500' 
+                                  : Number(getEditSelectedProduct(item.productId)?.stock ?? 0) < 10 
+                                    ? 'bg-amber-500' 
+                                    : 'bg-emerald-500'
+                              ]"
+                            ></span>
+                            <span>Stock: <strong class="font-bold">{{ getEditSelectedProduct(item.productId)?.stock ?? 0 }}</strong> {{ getEditSelectedProduct(item.productId)?.unit || 'units' }}</span>
                           </span>
-                        </span>
 
-                        <span class="text-[10px] text-sky-700 font-bold hover:underline flex items-center gap-0.5 ml-0.5">
-                          <span>History</span>
-                          <ChevronRight class="w-3 h-3 text-sky-700" />
-                        </span>
+                          <span v-if="getEditSelectedProduct(item.productId)?.isBusySynced === false" class="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[9px] font-black uppercase tracking-wider bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs">
+                            <AlertCircle class="w-2.5 h-2.5 text-amber-700 shrink-0" />
+                            Not in Busy
+                          </span>
 
-                        <button
-                          type="button"
-                          @click.stop="applyEditHistoricalPrice(item, editHistoricalPricesMap[item.productId])"
-                          class="ml-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase transition cursor-pointer select-none"
-                          :class="item.applyLastPrice 
-                            ? 'bg-emerald-600 text-white shadow-xs' 
-                            : 'bg-amber-200 text-amber-900 hover:bg-amber-300'"
-                          :title="`Voucher ${editHistoricalPricesMap[item.productId].voucherNo} on ${formatDate(editHistoricalPricesMap[item.productId].voucherDate)}`"
-                        >
-                          {{ item.applyLastPrice ? '✓ Applied' : 'Apply' }}
-                        </button>
+                          <span v-if="getEditSelectedProduct(item.productId)?.category?.name" class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-gray-100 text-gray-600 border border-gray-200">
+                            {{ getEditSelectedProduct(item.productId)?.category?.name }}
+                          </span>
+
+                          <span v-if="getEditSelectedProduct(item.productId)?.unit" class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200 uppercase tracking-wide">
+                            {{ getEditSelectedProduct(item.productId)?.unit }}
+                          </span>
+                        </div>
                       </div>
 
-                      <div v-else-if="editLoadingPrices[item.productId]" class="text-[11px] text-gray-400 flex items-center gap-1.5 italic">
-                        <Loader2 class="w-3 h-3 animate-spin text-gray-400" />
-                        <span>Checking price history...</span>
+                      <!-- Qty -->
+                      <div class="w-full md:w-20 shrink-0">
+                        <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1.5">Qty *</label>
+                        <input type="number" v-model.number="item.quantity" min="1" required class="w-full border border-gray-300 rounded-lg shadow-xs p-2 bg-white text-sm font-bold focus:ring-[#1b3b5f] focus:border-[#1b3b5f]" />
                       </div>
 
-                      <div v-else-if="editHistoricalPricesMap[item.productId] === null" class="text-[11px] text-gray-400 italic">
-                        First time ordering this item
+                      <!-- Unit Price with Sq.ft Sheet Rate Calculator -->
+                      <div class="w-full md:w-32 shrink-0">
+                        <div class="flex items-center justify-between mb-1.5">
+                          <label class="block text-[10px] uppercase font-bold text-gray-500 flex items-center gap-1 truncate">
+                            <IndianRupee class="w-3 h-3 text-gray-400 shrink-0" />
+                            <span>Rate *</span>
+                          </label>
+                          <button 
+                            type="button" 
+                            tabindex="-1"
+                            @click="openEditRateCalculator(idx)" 
+                            class="text-[9px] bg-[#1b3b5f] hover:bg-[#132c49] text-white font-bold flex items-center gap-1 px-2 py-0.5 rounded shadow-2xs transition-colors cursor-pointer"
+                            title="Calculate rate by Sheet Sq.ft (A × B × Rate)"
+                          >
+                            <Calculator class="w-2.5 h-2.5 text-white" />
+                            <span>Sq.ft Calc</span>
+                          </button>
+                        </div>
+                        <div class="relative flex items-center">
+                          <IndianRupee class="absolute left-2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+                          <input 
+                            type="number" 
+                            v-model.number="item.unitPrice" 
+                            min="0" 
+                            step="0.01" 
+                            required 
+                            class="w-full pl-6 pr-8 border border-gray-300 rounded-lg shadow-xs p-2 bg-white text-sm font-bold focus:ring-[#1b3b5f] focus:border-[#1b3b5f]" 
+                          />
+                          <button 
+                            type="button"
+                            tabindex="-1"
+                            @click="openEditRateCalculator(idx)"
+                            class="absolute right-1 px-1.5 py-1 bg-[#1b3b5f] hover:bg-[#132c49] text-white rounded-md transition-colors cursor-pointer shadow-2xs"
+                            title="Sq.ft Sheet Rate Calculator"
+                          >
+                            <Calculator class="w-3.5 h-3.5 text-white" />
+                          </button>
+                        </div>
                       </div>
+
+                      <!-- Tax % -->
+                      <div class="w-full md:w-20 shrink-0">
+                        <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1.5">Tax %</label>
+                        <div class="relative flex items-center">
+                          <input type="number" v-model.number="item.taxRate" min="0" max="100" step="0.1" class="w-full pr-5 border border-gray-300 rounded-lg shadow-xs p-2 bg-white text-sm font-bold focus:ring-[#1b3b5f] focus:border-[#1b3b5f] text-right" />
+                          <span class="absolute right-1.5 text-xs font-semibold text-gray-400 pointer-events-none">%</span>
+                        </div>
+                      </div>
+
+                      <!-- Line Total -->
+                      <div class="w-full md:w-28 shrink-0">
+                        <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1.5 flex items-center justify-between">
+                          <span>Total</span>
+                          <span v-if="item.isTaxInclusive" class="text-[8px] font-bold text-blue-700 bg-blue-50 px-1 py-0.2 rounded border border-blue-200">INCL</span>
+                          <span v-else class="text-[8px] font-bold text-gray-600 bg-gray-100 px-1 py-0.2 rounded border border-gray-200">+TAX</span>
+                        </label>
+                        <div class="p-2 bg-white text-gray-900 rounded-lg font-bold text-sm border border-gray-200 text-right">
+                          {{ formatCurrency(calculateEditItemTotal(item)) }}
+                        </div>
+                      </div>
+
+                      <!-- Remove -->
+                      <button type="button" @click="removeEditItem(idx)" class="p-2 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg shrink-0 transition-colors" title="Remove Item">
+                        <Trash2 class="w-4 h-4" />
+                      </button>
                     </div>
 
-                    <!-- Item Notes Input -->
-                    <div class="flex-1 min-w-[200px]">
-                      <input 
-                        type="text" 
-                        v-model="item.itemNotes" 
-                        placeholder="Optional item note: e.g. 10% rate agreed, custom edge-banding..."
-                        class="w-full px-2.5 py-1 text-xs border border-gray-300 rounded-lg bg-white focus:ring-1 focus:ring-[#1b3b5f]"
-                      />
+                    <!-- Item-Level Options & Notes (Identical to Create Order) -->
+                    <div class="flex flex-wrap items-center gap-3 sm:gap-4 pt-2.5 border-t border-gray-200/60 text-xs">
+                      <!-- Tax Inclusive Toggle -->
+                      <label class="flex items-center gap-2 cursor-pointer select-none">
+                        <input 
+                          type="checkbox" 
+                          v-model="item.isTaxInclusive" 
+                          @change="onEditTaxInclusiveToggle(item)"
+                          class="w-3.5 h-3.5 rounded text-[#1b3b5f] focus:ring-[#1b3b5f]" 
+                        />
+                        <span class="text-gray-700 font-medium">Tax Inclusive Rate</span>
+                        <span v-if="item.isTaxInclusive" class="text-[10px] text-blue-600 font-semibold">(Tax incl.)</span>
+                        <span v-else class="text-[10px] text-gray-500">(+{{ item.taxRate ?? 0 }}% Tax)</span>
+                      </label>
+
+                      <!-- Last Billed Price Interactive Pill with History Modal Trigger -->
+                      <div v-if="editForm.customerId && item.productId" class="flex items-center">
+                        <div 
+                          v-if="editHistoricalPricesMap[item.productId]" 
+                          @click="openEditPriceHistoryModal(item, idx)"
+                          class="inline-flex items-center gap-2 px-2.5 py-1 rounded-lg text-xs transition border cursor-pointer hover:shadow-xs select-none"
+                          :class="item.applyLastPrice 
+                            ? 'bg-emerald-50 text-emerald-900 border-emerald-300 shadow-xs ring-1 ring-emerald-400/30' 
+                            : 'bg-amber-50/90 text-amber-900 border-amber-200 hover:bg-amber-100/80'"
+                          title="Click to view complete price history for Current Party & All Parties"
+                        >
+                          <span class="w-1.5 h-1.5 rounded-full shrink-0" :class="item.applyLastPrice ? 'bg-emerald-600' : 'bg-amber-500'"></span>
+                          <span>
+                            Last Billed: 
+                            <strong class="font-bold text-gray-900">
+                              {{ formatCurrency(item.isTaxInclusive ? editHistoricalPricesMap[item.productId].unitPrice : editHistoricalPricesMap[item.productId].basePrice) }}
+                            </strong>
+                            <span class="text-[10px] text-gray-500 ml-1">
+                              ({{ item.isTaxInclusive ? 'Incl. Tax' : '+Tax' }} • {{ editHistoricalPricesMap[item.productId].daysAgo }}d ago)
+                            </span>
+                          </span>
+
+                          <span class="text-[10px] text-sky-700 font-bold hover:underline flex items-center gap-0.5 ml-0.5">
+                            <span>History</span>
+                            <ChevronRight class="w-3 h-3 text-sky-700" />
+                          </span>
+
+                          <button
+                            type="button"
+                            @click.stop="applyEditHistoricalPrice(item, editHistoricalPricesMap[item.productId])"
+                            class="ml-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase transition cursor-pointer select-none"
+                            :class="item.applyLastPrice 
+                              ? 'bg-emerald-600 text-white shadow-xs' 
+                              : 'bg-amber-200 text-amber-900 hover:bg-amber-300'"
+                            :title="`Voucher ${editHistoricalPricesMap[item.productId].voucherNo} on ${formatDate(editHistoricalPricesMap[item.productId].voucherDate)}`"
+                          >
+                            {{ item.applyLastPrice ? '✓ Applied' : 'Apply' }}
+                          </button>
+                        </div>
+
+                        <div v-else-if="editLoadingPrices[item.productId]" class="text-[11px] text-gray-400 flex items-center gap-1.5 italic">
+                          <Loader2 class="w-3 h-3 animate-spin text-gray-400" />
+                          <span>Checking price history...</span>
+                        </div>
+
+                        <div v-else-if="editHistoricalPricesMap[item.productId] === null" class="text-[11px] text-gray-400 italic">
+                          First time ordering this item
+                        </div>
+                      </div>
+
+                      <!-- Item Notes Input -->
+                      <div class="flex-1 min-w-[200px]">
+                        <input 
+                          type="text" 
+                          v-model="item.itemNotes" 
+                          placeholder="Optional item note: e.g. 10% rate agreed, custom edge-banding..."
+                          class="w-full px-2.5 py-1 text-xs border border-gray-300 rounded-lg bg-white focus:ring-1 focus:ring-[#1b3b5f]"
+                        />
+                      </div>
                     </div>
                   </div>
+                  <div v-if="!editForm.items.length" class="text-sm text-gray-500 text-center py-4 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+                    No items added.
+                  </div>
                 </div>
-                <div v-if="!editForm.items.length" class="text-sm text-gray-500 text-center py-4 bg-gray-50 rounded-lg border border-dashed border-gray-300">
-                  No items added.
-                </div>
-              </div>
 
-              <!-- Bottom Add Item Actions (Below last item added in list) -->
-              <div v-if="editForm.items.length > 0" class="flex items-center justify-between pt-3 pb-1 flex-wrap gap-2.5 border-t border-gray-100">
-                <button
-                  type="button"
-                  @click="addEditItem"
-                  class="px-3.5 py-2 bg-[#1b3b5f] hover:bg-[#132c49] text-white rounded-xl text-xs font-bold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer active:scale-95"
-                >
-                  <Plus class="w-3.5 h-3.5" />
-                  <span>Add Product</span>
-                </button>
-                <span class="text-xs text-gray-500 font-medium">
-                  {{ editForm.items.length }} {{ editForm.items.length === 1 ? 'item' : 'items' }} added
+                <!-- Bottom Add Item Actions (Below last item added in list) -->
+                <div v-if="editForm.items.length > 0" class="flex items-center justify-between pt-3 pb-1 flex-wrap gap-2.5 border-t border-gray-100">
+                  <button
+                    type="button"
+                    @click="addEditItem"
+                    class="px-3.5 py-2 bg-[#1b3b5f] hover:bg-[#132c49] text-white rounded-xl text-xs font-bold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer active:scale-95"
+                  >
+                    <Plus class="w-3.5 h-3.5" />
+                    <span>Add Product</span>
+                  </button>
+                  <span class="text-xs text-gray-500 font-medium">
+                    {{ editForm.items.length }} {{ editForm.items.length === 1 ? 'item' : 'items' }} added
+                  </span>
+                </div>
+              </template>
+            </div>
+          </template>
+        </div>
+
+        <!-- Sticky Footer with Save & Total -->
+        <div class="px-4 py-3 sm:px-6 sm:py-4 bg-white border-t border-gray-200 flex items-center justify-between shrink-0">
+          <button 
+            type="button" 
+            @click="cancelEdit" 
+            class="px-4 py-2 text-xs sm:text-sm font-semibold text-gray-700 hover:bg-gray-100 rounded-lg border border-gray-300 transition-colors"
+          >
+            Cancel
+          </button>
+          <div class="flex items-center gap-3">
+            <div class="text-right">
+              <span class="text-xs text-gray-500 hidden sm:inline">Total: </span>
+              <span class="font-bold text-[#1b3b5f] text-sm sm:text-base">{{ formatCurrency(editOrderTotal) }}</span>
+            </div>
+            <button 
+              type="button" 
+              @click="saveEdit" 
+              class="px-5 py-2 text-xs sm:text-sm font-bold bg-[#1b3b5f] hover:bg-[#132c49] text-white rounded-lg shadow-sm transition-colors flex items-center gap-1.5"
+            >
+              <span>Save Changes</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </Teleport>
+
+  <!-- ── Edit Item Sub-Modal (Bottom Sheet on Mobile / Modal on Desktop) ── -->
+  <Teleport to="body">
+    <div 
+      v-if="isEditSubItemModalOpen" 
+      data-modal-container 
+      class="fixed inset-0 z-[700] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto"
+      @click.self="closeEditSubItemModal"
+    >
+      <div 
+        class="bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl w-full max-w-lg border border-gray-100 flex flex-col max-h-[92dvh] sm:max-h-[85dvh] overflow-hidden animate-in slide-in-from-bottom duration-200 sm:zoom-in-95"
+      >
+        <!-- Mobile Grab Handle -->
+        <div class="sm:hidden w-full pt-2.5 pb-1 flex justify-center shrink-0">
+          <div class="w-10 h-1 bg-gray-300 rounded-full"></div>
+        </div>
+
+        <!-- Modal Header -->
+        <div class="px-4 sm:px-5 py-3 border-b border-gray-100 flex items-center justify-between shrink-0 bg-white">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-xl bg-[#1b3b5f]/10 text-[#1b3b5f] flex items-center justify-center border border-[#1b3b5f]/20">
+              <Package class="w-4 h-4 text-[#1b3b5f]" />
+            </div>
+            <div>
+              <h3 class="text-sm sm:text-base font-bold text-gray-900 leading-tight">
+                {{ editingSubItemIndex !== null ? `Edit Item #${editingSubItemIndex + 1}` : 'Add Product to Order' }}
+              </h3>
+              <p class="text-[11px] text-gray-500">
+                Select product, quantity, and pricing
+              </p>
+            </div>
+          </div>
+          <button 
+            type="button" 
+            @click="closeEditSubItemModal"
+            aria-label="Close"
+            class="w-8 h-8 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center hover:bg-gray-200 transition-colors cursor-pointer text-xs"
+          >
+            <X class="w-4 h-4" />
+          </button>
+        </div>
+
+        <!-- Modal Body (Scrollable) -->
+        <div class="p-4 sm:p-5 space-y-4 overflow-y-auto text-xs">
+          <!-- 1. Product Field -->
+          <div class="space-y-1.5">
+            <label class="block text-[10px] uppercase font-bold text-gray-500">Product *</label>
+            <SearchCombobox 
+              :modelValue="currentEditSubItem.productId"
+              @update:modelValue="val => { currentEditSubItem.productId = val; onEditSubItemProductChange() }"
+              @select="onEditSubItemProductChange"
+              :options="productOptions"
+              placeholder="Search product by SKU, name, brand..."
+              class="w-full"
+            />
+
+            <!-- Live Stock Badge right below the product name -->
+            <div v-if="getEditSelectedProduct(currentEditSubItem.productId)" class="mt-2 flex flex-wrap items-center gap-2">
+              <span 
+                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold border shadow-2xs transition-colors"
+                :class="[
+                  Number(getEditSelectedProduct(currentEditSubItem.productId)?.stock ?? 0) <= 0 
+                    ? 'bg-rose-50 text-rose-700 border-rose-200' 
+                    : Number(getEditSelectedProduct(currentEditSubItem.productId)?.stock ?? 0) < 10 
+                      ? 'bg-amber-50 text-amber-700 border-amber-200' 
+                      : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                ]"
+              >
+                <span 
+                  class="w-2 h-2 rounded-full"
+                  :class="[
+                    Number(getEditSelectedProduct(currentEditSubItem.productId)?.stock ?? 0) <= 0 
+                      ? 'bg-rose-500' 
+                      : Number(getEditSelectedProduct(currentEditSubItem.productId)?.stock ?? 0) < 10 
+                        ? 'bg-amber-500' 
+                        : 'bg-emerald-500'
+                  ]"
+                ></span>
+                <span>
+                  Stock: <strong class="font-bold">{{ getEditSelectedProduct(currentEditSubItem.productId)?.stock ?? 0 }}</strong> {{ getEditSelectedProduct(currentEditSubItem.productId)?.unit || 'units' }}
                 </span>
+                <span v-if="Number(getEditSelectedProduct(currentEditSubItem.productId)?.stock ?? 0) <= 0" class="text-[10px] font-bold text-rose-600 uppercase tracking-wide">
+                  (Out of Stock)
+                </span>
+                <span v-else-if="Number(getEditSelectedProduct(currentEditSubItem.productId)?.stock ?? 0) < 10" class="text-[10px] font-bold text-amber-600 uppercase tracking-wide">
+                  (Low Stock)
+                </span>
+              </span>
+
+              <span v-if="getEditSelectedProduct(currentEditSubItem.productId)?.isBusySynced === false" class="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[9px] font-black uppercase tracking-wider bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs">
+                <AlertCircle class="w-2.5 h-2.5 text-amber-700 shrink-0" />
+                Not in Busy
+              </span>
+
+              <span v-if="getEditSelectedProduct(currentEditSubItem.productId)?.category?.name" class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-gray-100 text-gray-600 border border-gray-200">
+                {{ getEditSelectedProduct(currentEditSubItem.productId)?.category?.name }}
+              </span>
+
+              <span v-if="getEditSelectedProduct(currentEditSubItem.productId)?.unit" class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200 uppercase tracking-wide">
+                {{ getEditSelectedProduct(currentEditSubItem.productId)?.unit }}
+              </span>
+            </div>
+          </div>
+
+          <!-- 2. Quantity & Unit Price Grid -->
+          <div class="grid grid-cols-2 gap-3">
+            <!-- Quantity Stepper -->
+            <div>
+              <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1.5">Quantity *</label>
+              <div class="flex items-center border border-gray-300 rounded-lg bg-white overflow-hidden shadow-2xs">
+                <button 
+                  type="button" 
+                  @click="currentEditSubItem.quantity = Math.max(1, (currentEditSubItem.quantity || 1) - 1)" 
+                  class="w-9 h-9 bg-gray-50 hover:bg-gray-100 font-bold text-gray-700 flex items-center justify-center text-sm active:bg-gray-200 select-none cursor-pointer"
+                >-</button>
+                <input 
+                  type="number" 
+                  v-model.number="currentEditSubItem.quantity" 
+                  min="1" 
+                  required 
+                  class="w-full text-center font-bold text-gray-900 text-sm focus:outline-none p-1.5" 
+                />
+                <button 
+                  type="button" 
+                  @click="currentEditSubItem.quantity = (currentEditSubItem.quantity || 0) + 1" 
+                  class="w-9 h-9 bg-gray-50 hover:bg-gray-100 font-bold text-gray-700 flex items-center justify-center text-sm active:bg-gray-200 select-none cursor-pointer"
+                >+</button>
               </div>
             </div>
+
+            <!-- Unit Price (Rate) -->
+            <div>
+              <div class="flex items-center justify-between mb-1.5">
+                <label class="block text-[10px] uppercase font-bold text-gray-500 flex items-center gap-1 truncate">
+                  <IndianRupee class="w-3 h-3 text-gray-400 shrink-0" />
+                  <span>Rate *</span>
+                </label>
+                <button 
+                  type="button" 
+                  tabindex="-1"
+                  @click="openEditRateCalculator('submodal')" 
+                  class="text-[9px] bg-[#1b3b5f] hover:bg-[#132c49] text-white font-bold flex items-center gap-1 px-2 py-0.5 rounded shadow-2xs transition-colors cursor-pointer"
+                  title="Calculate rate by Sheet Sq.ft (A × B × Rate)"
+                >
+                  <Calculator class="w-2.5 h-2.5 text-white" />
+                  <span>Sq.ft Calc</span>
+                </button>
+              </div>
+              <div class="relative flex items-center">
+                <IndianRupee class="absolute left-2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+                <input 
+                  type="number" 
+                  v-model.number="currentEditSubItem.unitPrice" 
+                  min="0" 
+                  step="0.01" 
+                  required 
+                  class="w-full pl-6 pr-8 border border-gray-300 rounded-lg shadow-xs p-2 bg-white text-sm font-bold focus:ring-[#1b3b5f] focus:border-[#1b3b5f]" 
+                />
+                <button 
+                  type="button"
+                  tabindex="-1"
+                  @click="openEditRateCalculator('submodal')"
+                  class="absolute right-1 px-1.5 py-1 bg-[#1b3b5f] hover:bg-[#132c49] text-white rounded-md transition-colors cursor-pointer shadow-2xs"
+                  title="Sq.ft Sheet Rate Calculator"
+                >
+                  <Calculator class="w-3.5 h-3.5 text-white" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. Last Billed Price Interactive Pill -->
+          <div v-if="editForm.customerId && currentEditSubItem.productId" class="space-y-1">
+            <div 
+              v-if="editHistoricalPricesMap[currentEditSubItem.productId]" 
+              @click="openEditPriceHistoryModal(currentEditSubItem, 'submodal')"
+              class="flex items-center justify-between p-2 rounded-lg text-xs transition border cursor-pointer hover:shadow-xs select-none"
+              :class="currentEditSubItem.applyLastPrice 
+                ? 'bg-emerald-50 text-emerald-900 border-emerald-300 shadow-xs ring-1 ring-emerald-400/30' 
+                : 'bg-amber-50/90 text-amber-900 border-amber-200 hover:bg-amber-100/80'"
+            >
+              <div class="flex items-center gap-1.5 min-w-0 truncate">
+                <span class="w-1.5 h-1.5 rounded-full shrink-0" :class="currentEditSubItem.applyLastPrice ? 'bg-emerald-600' : 'bg-amber-500'"></span>
+                <span class="truncate">
+                  Last Billed: 
+                  <strong class="font-bold text-gray-900">
+                    {{ formatCurrency(currentEditSubItem.isTaxInclusive ? editHistoricalPricesMap[currentEditSubItem.productId].unitPrice : editHistoricalPricesMap[currentEditSubItem.productId].basePrice) }}
+                  </strong>
+                  <span class="text-[10px] text-gray-500 ml-1">
+                    ({{ currentEditSubItem.isTaxInclusive ? 'Incl. Tax' : '+Tax' }} • {{ editHistoricalPricesMap[currentEditSubItem.productId].daysAgo }}d ago)
+                  </span>
+                </span>
+                <span class="text-[10px] text-sky-700 font-bold hover:underline flex items-center gap-0.5 ml-1 shrink-0">
+                  <span>History</span>
+                  <ChevronRight class="w-3 h-3 text-sky-700" />
+                </span>
+              </div>
+
+              <button
+                type="button"
+                @click.stop="applyEditSubItemHistoricalPrice(editHistoricalPricesMap[currentEditSubItem.productId])"
+                class="ml-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase transition cursor-pointer select-none shrink-0"
+                :class="currentEditSubItem.applyLastPrice 
+                  ? 'bg-emerald-600 text-white shadow-xs' 
+                  : 'bg-amber-200 text-amber-900 hover:bg-amber-300'"
+              >
+                {{ currentEditSubItem.applyLastPrice ? '✓ Applied' : 'Apply' }}
+              </button>
+            </div>
+
+            <div v-else-if="editLoadingPrices[currentEditSubItem.productId]" class="text-[11px] text-gray-400 flex items-center gap-1.5 italic">
+              <Loader2 class="w-3 h-3 animate-spin text-gray-400" />
+              <span>Checking price history...</span>
+            </div>
+
+            <div v-else-if="editHistoricalPricesMap[currentEditSubItem.productId] === null" class="text-[11px] text-gray-400 italic">
+              First time ordering this item
+            </div>
+          </div>
+
+          <!-- 4. Tax Inclusive Toggle & Tax Rate % Grid -->
+          <div class="grid grid-cols-2 gap-3 pt-1 items-center">
+            <div>
+              <label class="flex items-center gap-2 cursor-pointer select-none">
+                <input 
+                  type="checkbox" 
+                  v-model="currentEditSubItem.isTaxInclusive" 
+                  @change="onEditSubItemTaxInclusiveToggle"
+                  class="w-4 h-4 rounded text-[#1b3b5f] focus:ring-[#1b3b5f]" 
+                />
+                <span class="text-xs font-bold text-gray-800">Tax Inclusive Rate</span>
+              </label>
+              <p class="text-[10px] text-gray-400 mt-0.5">
+                {{ currentEditSubItem.isTaxInclusive ? '(Rate includes GST)' : '(GST added to rate)' }}
+              </p>
+            </div>
+
+            <div>
+              <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1">Tax Rate %</label>
+              <div class="relative flex items-center">
+                <input 
+                  type="number" 
+                  v-model.number="currentEditSubItem.taxRate" 
+                  min="0" 
+                  max="100" 
+                  step="0.1" 
+                  placeholder="18"
+                  class="w-full pr-6 border border-gray-300 rounded-lg shadow-xs p-1.5 bg-white text-sm font-bold focus:ring-[#1b3b5f] focus:border-[#1b3b5f] text-right" 
+                />
+                <span class="absolute right-2 text-xs font-semibold text-gray-400 pointer-events-none">%</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 5. Item Notes Input -->
+          <div>
+            <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1">Item Note (Optional)</label>
+            <input 
+              type="text" 
+              v-model="currentEditSubItem.itemNotes" 
+              placeholder="Note (e.g. edge-banding, custom sizes)..."
+              class="w-full px-2.5 py-1.5 text-xs border border-gray-300 rounded-lg bg-white focus:ring-1 focus:ring-[#1b3b5f]"
+            />
+          </div>
+
+          <!-- 6. Computed Line Total Preview Box -->
+          <div class="p-3 bg-gray-50 border border-gray-200 rounded-xl flex items-center justify-between text-xs shadow-2xs">
+            <div>
+              <span class="text-gray-500 font-semibold">Item Total</span>
+              <div class="text-[10px] text-gray-400">
+                Rate: {{ formatCurrency(currentEditSubItem.unitPrice) }} × {{ currentEditSubItem.quantity }}
+              </div>
+            </div>
+            <span class="text-lg font-black text-[#1b3b5f]">
+              {{ formatCurrency(calculateEditItemTotal(currentEditSubItem)) }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Modal Footer Actions -->
+        <div class="p-3 sm:p-4 bg-gray-50/80 border-t border-gray-100 flex items-center gap-2 shrink-0">
+          <button 
+            type="button" 
+            @click="saveEditSubItem(true)" 
+            class="flex-1 py-2.5 px-3 border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 text-xs font-bold rounded-xl shadow-2xs flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+          >
+            <Plus class="w-3.5 h-3.5 text-gray-600" />
+            <span>Save & Add Another</span>
+          </button>
+          <button 
+            type="button" 
+            @click="saveEditSubItem(false)" 
+            class="flex-1 py-2.5 px-4 bg-[#1b3b5f] hover:bg-[#132c49] text-white text-xs font-bold rounded-xl shadow-md flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+          >
+            <Check class="w-3.5 h-3.5 text-white" />
+            <span>{{ editingSubItemIndex !== null ? 'Save Changes' : 'Done' }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </Teleport>
           </template>
         </div>
 

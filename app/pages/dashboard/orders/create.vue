@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { ArrowLeft, X, Plus, Trash2, Zap, MapPin, UserCheck, ShieldAlert, Award, FileText, IndianRupee, Truck, Car, AlertCircle, Package, PackageSearch, Loader2, Clock, Crown, Check, Tag, Calculator, ChevronRight, Database, Pencil, ChevronDown, ChevronUp } from 'lucide-vue-next'
+import { ArrowLeft, X, Plus, Trash2, Zap, MapPin, UserCheck, ShieldAlert, Award, FileText, IndianRupee, Truck, Car, AlertCircle, Package, PackageSearch, Loader2, Clock, Crown, Check, Tag, Calculator, ChevronRight, Database, Pencil, ChevronDown, ChevronUp, LayoutList } from 'lucide-vue-next'
 import { formatCurrency, formatDate } from '~/lib/utils'
 import CustomSelect from '~/components/ui/CustomSelect.vue'
+import SearchCombobox from '~/components/ui/SearchCombobox.vue'
 import { useSnackbar } from '~/composables/useSnackbar'
 import { useRealtimeSync } from '~/composables/useRealtimeSync'
 import { useGsapAnimation } from '~/composables/useGsapAnimation'
@@ -22,7 +23,26 @@ const itemsContainerRef = ref<HTMLElement | null>(null)
 const deliveryFieldRef = ref<HTMLElement | null>(null)
 const deliveryTextareaRef = ref<HTMLTextAreaElement | null>(null)
 
-// Auto-Collapsing Logistics (Customer, Transport & Address)
+// UI Mode State: 'modern' (Combobox + collapsing logistics + item sheet) vs 'classic' (Traditional full inline rows)
+const uiMode = ref<'modern' | 'classic'>('modern')
+
+onMounted(() => {
+  if (typeof window !== 'undefined') {
+    const saved = localStorage.getItem('sm_order_form_layout')
+    if (saved === 'classic' || saved === 'modern') {
+      uiMode.value = saved
+    }
+  }
+})
+
+const setUiMode = (mode: 'modern' | 'classic') => {
+  uiMode.value = mode
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('sm_order_form_layout', mode)
+  }
+}
+
+// Auto-Collapsing Logistics (Customer, Transport & Address) in Modern Mode
 const isLogisticsCollapsed = ref(false)
 
 const onChangeDeliveryAddressClick = () => {
@@ -97,7 +117,12 @@ const customerOptions = computed(() => {
     return {
       label,
       value: c.id,
-      subtitle: c.city ? c.city.trim() : ''
+      subtitle: c.company && c.company !== c.name ? c.company : '',
+      city: c.city ? c.city.trim() : '',
+      phone: c.phone || '',
+      badge: c.privilegeTier,
+      badgeClass: getPrivilegeBadgeStyle(c.privilegeTier || 'BRONZE'),
+      isBusySynced: c.isBusySynced
     }
   })
 })
@@ -135,11 +160,14 @@ const getSelectedProduct = (productId: string) => {
 
 const productOptions = computed(() => {
   return (products.value as any[] || []).map(p => ({
-    label: p.sku === p.name ? p.name : `${p.sku} - ${p.name}`,
+    label: p.name,
+    sku: p.sku,
     value: p.id,
     stock: p.stock ?? 0,
     unit: p.unit || '',
-    hsnCode: p.hsnCode || ''
+    hsnCode: p.hsnCode || '',
+    subtitle: p.category?.name || '',
+    isBusySynced: p.isBusySynced
   }))
 })
 
@@ -243,8 +271,38 @@ const closeItemModal = () => {
   editingItemIndex.value = null
 }
 
+const addClassicItem = (isCustom = false) => {
+  form.value.items.push({ 
+    productId: '', 
+    productSku: '',
+    isCustom,
+    customProductName: '',
+    customSku: '',
+    quantity: 1, 
+    unitPrice: 0,
+    taxRate: 18,
+    isTaxInclusive: false,
+    applyLastPrice: false,
+    itemNotes: ''
+  })
+
+  nextTick(() => {
+    const el = itemsContainerRef.value?.lastElementChild as HTMLElement | null
+    if (el) {
+      animateModalOpen(el, null, { duration: 0.25 })
+      setTimeout(() => {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }, 80)
+    }
+  })
+}
+
 const addItem = (isCustom = false) => {
-  openAddItemModal(isCustom)
+  if (uiMode.value === 'classic') {
+    addClassicItem(isCustom)
+  } else {
+    openAddItemModal(isCustom)
+  }
 }
 
 const onModalProductChange = () => {
@@ -707,8 +765,8 @@ const getCustomerInitials = (name: string) => {
 <template>
   <div class="max-w-4xl mx-auto space-y-3.5 sm:space-y-6 md:space-y-8 pb-32 sm:pb-12">
     <!-- Mobile Top Header (100% Mockup Screen 1 Match) -->
-    <div class="sm:hidden flex items-center justify-between bg-white p-3 rounded-2xl border border-slate-200/90 shadow-2xs">
-      <div class="flex items-center gap-2.5 min-w-0">
+    <div class="sm:hidden flex items-center justify-between bg-white p-3 rounded-2xl border border-slate-200/90 shadow-2xs gap-2">
+      <div class="flex items-center gap-2 min-w-0">
         <NuxtLink to="/dashboard/orders" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition-colors shrink-0">
           <ArrowLeft class="w-4 h-4" />
         </NuxtLink>
@@ -720,13 +778,40 @@ const getCustomerInitials = (name: string) => {
           <p class="text-[10px] text-slate-400 truncate">Customer, items & delivery</p>
         </div>
       </div>
-      <label class="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border cursor-pointer select-none transition-all shadow-2xs shrink-0"
-        :class="form.isUrgent ? 'bg-rose-50 border-rose-300 text-rose-700' : 'bg-slate-50 border-slate-200 text-slate-600'"
-      >
-        <input type="checkbox" v-model="form.isUrgent" class="sr-only" />
-        <Zap class="w-3.5 h-3.5" :class="form.isUrgent ? 'text-rose-600 fill-rose-600' : 'text-slate-400'" />
-        <span>Urgent</span>
-      </label>
+
+      <div class="flex items-center gap-1.5 shrink-0">
+        <!-- UI Mode Toggle: Modern vs Classic -->
+        <div class="inline-flex items-center p-0.5 bg-slate-100 rounded-xl border border-slate-200/90 text-[10px] font-bold select-none">
+          <button
+            type="button"
+            @click="setUiMode('modern')"
+            class="px-2 py-1 rounded-lg flex items-center gap-1 transition-all cursor-pointer"
+            :class="uiMode === 'modern' ? 'bg-[#1b3b5f] text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'"
+            title="Modern View (Comboboxes + Item sheet)"
+          >
+            <Zap class="w-3 h-3" :class="uiMode === 'modern' ? 'text-amber-300 fill-amber-300' : 'text-slate-400'" />
+            <span>Modern</span>
+          </button>
+          <button
+            type="button"
+            @click="setUiMode('classic')"
+            class="px-2 py-1 rounded-lg flex items-center gap-1 transition-all cursor-pointer"
+            :class="uiMode === 'classic' ? 'bg-[#1b3b5f] text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'"
+            title="Classic View (Traditional inline rows)"
+          >
+            <LayoutList class="w-3 h-3" :class="uiMode === 'classic' ? 'text-white' : 'text-slate-400'" />
+            <span>Classic</span>
+          </button>
+        </div>
+
+        <label class="flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold border cursor-pointer select-none transition-all shadow-2xs shrink-0"
+          :class="form.isUrgent ? 'bg-rose-50 border-rose-300 text-rose-700' : 'bg-slate-50 border-slate-200 text-slate-600'"
+        >
+          <input type="checkbox" v-model="form.isUrgent" class="sr-only" />
+          <Zap class="w-3 h-3" :class="form.isUrgent ? 'text-rose-600 fill-rose-600' : 'text-slate-400'" />
+          <span>Urgent</span>
+        </label>
+      </div>
     </div>
 
     <!-- Desktop Header -->
@@ -739,25 +824,51 @@ const getCustomerInitials = (name: string) => {
         <p class="text-xs text-gray-500 mt-1">Capture customer requirements, choose delivery destinations, and specify rates.</p>
       </div>
       
-      <!-- Urgent Order Toggle Header -->
-      <label class="flex items-center gap-2.5 sm:gap-3 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl border cursor-pointer select-none transition-all shadow-xs self-start sm:self-auto shrink-0"
-        :class="form.isUrgent ? 'bg-rose-50 border-rose-300 text-rose-700 shadow-rose-100' : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'"
-      >
-        <input type="checkbox" v-model="form.isUrgent" class="w-4 h-4 text-rose-600 rounded focus:ring-rose-500" />
-        <div class="flex items-center gap-1.5 font-bold text-xs uppercase tracking-wider">
-          <Zap class="w-4 h-4 text-rose-600" />
-          <span>Urgent Order</span>
+      <div class="flex items-center gap-3">
+        <!-- UI Mode Toggle: Modern vs Classic -->
+        <div class="inline-flex items-center p-1 bg-slate-100 rounded-xl border border-slate-200 text-xs font-bold shadow-2xs select-none">
+          <button
+            type="button"
+            @click="setUiMode('modern')"
+            class="px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer"
+            :class="uiMode === 'modern' ? 'bg-[#1b3b5f] text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'"
+            title="Modern View (Comboboxes + Item sheet)"
+          >
+            <Zap class="w-3.5 h-3.5" :class="uiMode === 'modern' ? 'text-amber-300 fill-amber-300' : 'text-slate-400'" />
+            <span>Modern UI</span>
+          </button>
+          <button
+            type="button"
+            @click="setUiMode('classic')"
+            class="px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer"
+            :class="uiMode === 'classic' ? 'bg-[#1b3b5f] text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'"
+            title="Classic View (Traditional inline rows)"
+          >
+            <LayoutList class="w-3.5 h-3.5" :class="uiMode === 'classic' ? 'text-white' : 'text-slate-400'" />
+            <span>Classic UI</span>
+          </button>
         </div>
-      </label>
+
+        <!-- Urgent Order Toggle Header -->
+        <label class="flex items-center gap-2.5 sm:gap-3 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl border cursor-pointer select-none transition-all shadow-xs self-start sm:self-auto shrink-0"
+          :class="form.isUrgent ? 'bg-rose-50 border-rose-300 text-rose-700 shadow-rose-100' : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'"
+        >
+          <input type="checkbox" v-model="form.isUrgent" class="w-4 h-4 text-rose-600 rounded focus:ring-rose-500" />
+          <div class="flex items-center gap-1.5 font-bold text-xs uppercase tracking-wider">
+            <Zap class="w-4 h-4 text-rose-600" />
+            <span>Urgent Order</span>
+          </div>
+        </label>
+      </div>
     </div>
 
     <form @submit.prevent="submitOrder" class="space-y-3.5 sm:space-y-6">
       
       <!-- ── Section 1: Customer Profile & Order Info ────────────────────── -->
       
-      <!-- Mode A: Collapsed Customer & Logistics Summary Card (100% Mockup Match) -->
+      <!-- Mode A: Collapsed Customer & Logistics Summary Card (Only in Modern mode) -->
       <div 
-        v-if="isLogisticsCollapsed && (selectedCustomer || (isCustomCustomer && customCustomer.name.trim()))"
+        v-if="uiMode === 'modern' && isLogisticsCollapsed && (selectedCustomer || (isCustomCustomer && customCustomer.name.trim()))"
         @click="isLogisticsCollapsed = false"
         class="bg-gradient-to-r from-slate-50 via-white to-blue-50/30 rounded-2xl p-3 sm:p-4 border border-slate-200/90 shadow-2xs hover:shadow-xs hover:border-[#1b3b5f]/30 transition-all select-none cursor-pointer"
       >
@@ -822,7 +933,7 @@ const getCustomerInitials = (name: string) => {
             Customer & Delivery Details
           </h3>
           <button 
-            v-if="selectedCustomer || (isCustomCustomer && customCustomer.name.trim())"
+            v-if="uiMode === 'modern' && (selectedCustomer || (isCustomCustomer && customCustomer.name.trim()))"
             type="button" 
             @click="isLogisticsCollapsed = true" 
             class="text-xs font-bold text-[#1b3b5f] bg-blue-50 hover:bg-blue-100 px-3 py-1 rounded-lg border border-blue-200 flex items-center gap-1 transition-colors cursor-pointer"
@@ -849,13 +960,12 @@ const getCustomerInitials = (name: string) => {
 
             <!-- Mode A: Database Customer Picker -->
             <div v-if="!isCustomCustomer">
-              <CustomSelect 
+              <SearchCombobox 
                 :modelValue="form.customerId"
                 @update:modelValue="val => { form.customerId = val; onCustomerChange() }"
+                @select="onCustomerChange"
                 :options="customerOptions"
-                searchable
-                searchPlaceholder="Search customers by name, company, city..."
-                placeholder="Select Customer"
+                placeholder="Search customers by name, company, city, phone..."
                 class="w-full"
               />
 
@@ -1220,8 +1330,8 @@ const getCustomerInitials = (name: string) => {
             <textarea v-model="form.notes" rows="2" class="w-full text-sm border border-gray-300 rounded-lg p-3 focus:ring-[#1b3b5f] focus:border-[#1b3b5f] resize-none" placeholder="e.g. Call before arrival, gate timing, site contact..."></textarea>
           </div>
 
-          <!-- Done Button below Internal Dispatch Notes to close/collapse Customer Details -->
-          <div v-if="selectedCustomer || (isCustomCustomer && customCustomer.name.trim())" class="md:col-span-2 pt-2 flex justify-end">
+          <!-- Done Button below Internal Dispatch Notes to close/collapse Customer Details (Only in Modern Mode) -->
+          <div v-if="uiMode === 'modern' && (selectedCustomer || (isCustomCustomer && customCustomer.name.trim()))" class="md:col-span-2 pt-2 flex justify-end">
             <button 
               type="button" 
               @click="isLogisticsCollapsed = true" 
@@ -1242,62 +1352,202 @@ const getCustomerInitials = (name: string) => {
             <h3 class="text-xs sm:text-sm font-black text-slate-900 uppercase tracking-wider">
               Order Items <span v-if="form.items.length">({{ form.items.length }})</span>
             </h3>
-            <span class="text-[10px] text-slate-400 font-medium hidden sm:inline">• Tap item to edit</span>
+            <span v-if="uiMode === 'modern'" class="text-[10px] text-slate-400 font-medium hidden sm:inline">• Tap item to edit</span>
           </div>
-          <span class="text-[10px] font-medium text-slate-400">Tap item to edit</span>
+          <span v-if="uiMode === 'modern'" class="text-[10px] font-medium text-slate-400">Tap item to edit</span>
+          <div v-else class="flex items-center gap-2">
+            <button type="button" @click="addItem(false)" class="text-xs font-bold text-[#1b3b5f] flex items-center gap-1 hover:underline cursor-pointer">
+              <Plus class="w-3.5 h-3.5" /> Add Product
+            </button>
+            <button type="button" @click="addItem(true)" class="text-xs font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-300 px-2.5 py-1 rounded-lg flex items-center gap-1 transition-colors cursor-pointer shadow-2xs">
+              <Plus class="w-3.5 h-3.5 text-amber-700" /> Custom Item (Not in Busy)
+            </button>
+          </div>
         </div>
 
-        <div ref="itemsContainerRef" class="space-y-2.5">
-          <!-- Items Summary Cards List (100% Mockup Match) -->
-          <div 
-            v-for="(item, idx) in form.items" 
-            :key="idx" 
-            @click="openEditItemModal(idx)"
-            class="group bg-white hover:bg-slate-50/80 p-3 sm:p-3.5 rounded-2xl border border-slate-200/90 hover:border-[#1b3b5f]/40 shadow-2xs hover:shadow-xs transition-all cursor-pointer relative select-none"
-          >
-            <!-- Line 1: Item # + Name + Badges + Trash button -->
-            <div class="flex items-start justify-between gap-2 mb-1.5">
-              <div class="min-w-0 flex-1">
-                <div class="flex items-center gap-1.5 flex-wrap">
-                  <span class="text-[11px] font-mono font-bold text-slate-400 bg-slate-100 px-1.5 py-0.2 rounded">
-                    #{{ idx + 1 }}
+        <!-- Mode A: Modern Item Summary Cards -->
+        <template v-if="uiMode === 'modern'">
+          <div ref="itemsContainerRef" class="space-y-2.5">
+            <!-- Items Summary Cards List (100% Mockup Match) -->
+            <div 
+              v-for="(item, idx) in form.items" 
+              :key="idx" 
+              @click="openEditItemModal(idx)"
+              class="group bg-white hover:bg-slate-50/80 p-3 sm:p-3.5 rounded-2xl border border-slate-200/90 hover:border-[#1b3b5f]/40 shadow-2xs hover:shadow-xs transition-all cursor-pointer relative select-none"
+            >
+              <!-- Line 1: Item # + Name + Badges + Trash button -->
+              <div class="flex items-start justify-between gap-2 mb-1.5">
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-center gap-1.5 flex-wrap">
+                    <span class="text-[11px] font-mono font-bold text-slate-400 bg-slate-100 px-1.5 py-0.2 rounded">
+                      #{{ idx + 1 }}
+                    </span>
+                    <h4 class="text-xs sm:text-sm font-black text-slate-900 leading-tight">
+                      {{ item.isCustom ? item.customProductName : (getSelectedProduct(item.productId)?.name || 'Product #' + (idx + 1)) }}
+                    </h4>
+                    <span v-if="!item.isCustom && getSelectedProduct(item.productId)?.sku && getSelectedProduct(item.productId)?.sku !== getSelectedProduct(item.productId)?.name" class="text-[10px] font-mono text-gray-400">
+                      ({{ getSelectedProduct(item.productId)?.sku }})
+                    </span>
+                  </div>
+
+                  <!-- Badges Row -->
+                  <div class="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                    <!-- Live Stock badge for catalog item -->
+                    <span 
+                      v-if="!item.isCustom && getSelectedProduct(item.productId)"
+                      class="inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-md border"
+                      :class="[
+                        Number(getSelectedProduct(item.productId)?.stock ?? 0) <= 0 
+                          ? 'bg-rose-50 text-rose-700 border-rose-200' 
+                          : Number(getSelectedProduct(item.productId)?.stock ?? 0) < 10 
+                            ? 'bg-amber-50 text-amber-700 border-amber-200' 
+                            : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                      ]"
+                    >
+                      <span 
+                        class="w-1.5 h-1.5 rounded-full"
+                        :class="[
+                          Number(getSelectedProduct(item.productId)?.stock ?? 0) <= 0 
+                            ? 'bg-rose-500' 
+                            : Number(getSelectedProduct(item.productId)?.stock ?? 0) < 10 
+                              ? 'bg-amber-500' 
+                              : 'bg-emerald-500'
+                        ]"
+                      ></span>
+                      <span>In Stock ({{ getSelectedProduct(item.productId)?.stock ?? 0 }})</span>
+                    </span>
+
+                    <!-- Not in Busy badge -->
+                    <span 
+                      v-if="item.isCustom || getSelectedProduct(item.productId)?.isBusySynced === false"
+                      class="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider bg-amber-100 text-amber-900 px-1.5 py-0.5 rounded border border-amber-300 shadow-2xs"
+                    >
+                      <AlertCircle class="w-2.5 h-2.5 text-amber-700 shrink-0" />
+                      Not in Busy
+                    </span>
+
+                    <!-- UoM badge -->
+                    <span v-if="!item.isCustom && getSelectedProduct(item.productId)?.unit" class="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] sm:text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200 uppercase tracking-wide">
+                      {{ getSelectedProduct(item.productId)?.unit }}
+                    </span>
+
+                    <!-- Category -->
+                    <span v-if="!item.isCustom && getSelectedProduct(item.productId)?.category?.name" class="hidden sm:inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-medium bg-gray-100 text-gray-600 border border-gray-200">
+                      {{ getSelectedProduct(item.productId)?.category?.name }}
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Trash button (stops propagation so modal doesn't open) -->
+                <button 
+                  type="button" 
+                  @click.stop="removeItem(idx)" 
+                  class="text-slate-300 hover:text-rose-500 p-1.5 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer shrink-0"
+                  title="Remove Item"
+                >
+                  <Trash2 class="w-4 h-4" />
+                </button>
+              </div>
+
+              <!-- Line 2: Pricing Math & Line Total (100% Mockup Match) -->
+              <div class="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
+                <div class="text-slate-600 text-[11px] font-semibold flex items-center gap-1.5 flex-wrap">
+                  <span class="font-bold text-slate-900">{{ item.quantity }} {{ !item.isCustom && getSelectedProduct(item.productId)?.unit ? getSelectedProduct(item.productId)?.unit : 'units' }}</span>
+                  <span>×</span>
+                  <span class="font-bold text-slate-900">{{ formatCurrency(item.unitPrice) }}</span>
+                  <span v-if="item.isTaxInclusive" class="text-[9px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.2 rounded border border-blue-200">
+                    INCL
                   </span>
-                  <h4 class="text-xs sm:text-sm font-black text-slate-900 leading-tight">
-                    {{ item.isCustom ? item.customProductName : (getSelectedProduct(item.productId)?.name || 'Product #' + (idx + 1)) }}
-                  </h4>
-                  <span v-if="!item.isCustom && getSelectedProduct(item.productId)?.sku && getSelectedProduct(item.productId)?.sku !== getSelectedProduct(item.productId)?.name" class="text-[10px] font-mono text-gray-400">
-                    ({{ getSelectedProduct(item.productId)?.sku }})
+                  <span v-else class="text-[9px] font-bold text-slate-600 bg-slate-100 px-1.5 py-0.2 rounded border border-slate-200">
+                    +{{ item.taxRate }}% Tax
                   </span>
                 </div>
 
-                <!-- Badges Row -->
-                <div class="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                  <!-- Live Stock badge for catalog item -->
-                  <span 
-                    v-if="!item.isCustom && getSelectedProduct(item.productId)"
-                    class="inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-md border"
-                    :class="[
-                      Number(getSelectedProduct(item.productId)?.stock ?? 0) <= 0 
-                        ? 'bg-rose-50 text-rose-700 border-rose-200' 
-                        : Number(getSelectedProduct(item.productId)?.stock ?? 0) < 10 
-                          ? 'bg-amber-50 text-amber-700 border-amber-200' 
-                          : 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                    ]"
-                  >
-                    <span 
-                      class="w-1.5 h-1.5 rounded-full"
-                      :class="[
-                        Number(getSelectedProduct(item.productId)?.stock ?? 0) <= 0 
-                          ? 'bg-rose-500' 
-                          : Number(getSelectedProduct(item.productId)?.stock ?? 0) < 10 
-                            ? 'bg-amber-500' 
-                            : 'bg-emerald-500'
-                      ]"
-                    ></span>
-                    <span>In Stock ({{ getSelectedProduct(item.productId)?.stock ?? 0 }})</span>
-                  </span>
+                <div class="text-right">
+                  <div class="font-black text-slate-900 text-xs sm:text-sm">
+                    {{ formatCurrency(calculateItemTotals(item).total) }}
+                  </div>
+                  <div class="text-[9px] text-slate-400">
+                    {{ item.isTaxInclusive ? 'GST incl.' : `+${formatCurrency(calculateItemTotals(item).taxAmount)} GST` }}
+                  </div>
+                </div>
+              </div>
 
-                  <!-- Not in Busy badge -->
+              <!-- Line 3: Item Note (if any) -->
+              <div v-if="item.itemNotes?.trim()" class="mt-2 pt-1.5 border-t border-dashed border-gray-100 text-[11px] text-gray-500 flex items-center gap-1.5">
+                <span class="font-bold text-gray-600 shrink-0">Note:</span>
+                <span class="truncate italic text-gray-700">{{ item.itemNotes }}</span>
+              </div>
+            </div>
+
+            <!-- Empty State Box -->
+            <div 
+              v-if="!form.items.length" 
+              class="my-3 px-4 py-8 sm:py-10 bg-slate-50/70 rounded-2xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-center transition-all"
+            >
+              <div class="w-12 h-12 rounded-2xl bg-white border border-slate-200/80 shadow-2xs flex items-center justify-center text-slate-400 mb-3">
+                <PackageSearch class="w-6 h-6 text-[#1b3b5f]/70" />
+              </div>
+              <p class="text-sm font-bold text-gray-800">No products added yet</p>
+              <p class="text-xs text-gray-500 mt-1 max-w-xs">
+                Tap below to search catalog or add custom items to your order.
+              </p>
+              <div class="mt-4 flex items-center gap-2.5 flex-wrap justify-center">
+                <button
+                  type="button"
+                  @click="openAddItemModal(false)"
+                  class="px-4 py-2 bg-[#1b3b5f] hover:bg-[#132c49] text-white rounded-xl text-xs font-bold shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer active:scale-95"
+                >
+                  <Plus class="w-3.5 h-3.5" />
+                  <span>Add Product</span>
+                </button>
+                <button
+                  type="button"
+                  @click="openAddItemModal(true)"
+                  class="px-4 py-2 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-xl text-xs font-bold shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer active:scale-95"
+                >
+                  <Plus class="w-3.5 h-3.5 text-amber-700" />
+                  <span>Add Custom Item (Not in Busy)</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Add Item Buttons directly below items in Modern Mode -->
+          <div v-if="form.items.length > 0" class="pt-2 flex items-center gap-2">
+            <button
+              type="button"
+              @click="openAddItemModal(false)"
+              class="flex-1 py-2.5 bg-[#1b3b5f] hover:bg-[#132c49] text-white text-xs font-bold rounded-xl shadow-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95"
+            >
+              <Plus class="w-3.5 h-3.5" />
+              <span>Add Product</span>
+            </button>
+            <button
+              type="button"
+              @click="openAddItemModal(true)"
+              class="py-2.5 px-3 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold rounded-xl shadow-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95"
+            >
+              <Plus class="w-3.5 h-3.5 text-amber-700" />
+              <span>Add Custom Item (Not in Busy)</span>
+            </button>
+          </div>
+        </template>
+
+        <!-- Mode B: Classic Inline Items Layout (Traditional full inline rows) -->
+        <template v-else>
+          <div ref="itemsContainerRef" class="space-y-4">
+            <div 
+              v-for="(item, idx) in form.items" 
+              :key="idx" 
+              class="bg-gray-50/80 p-3.5 sm:p-4 rounded-xl border border-gray-200 space-y-3"
+            >
+              <!-- Row Header: Index tag + Remove action -->
+              <div class="flex items-center justify-between pb-1.5 border-b border-gray-200/60">
+                <div class="flex items-center gap-1.5">
+                  <span class="text-xs font-bold font-mono text-gray-600 bg-gray-200/70 px-2 py-0.5 rounded">
+                    #{{ idx + 1 }} Item
+                  </span>
                   <span 
                     v-if="item.isCustom || getSelectedProduct(item.productId)?.isBusySynced === false"
                     class="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider bg-amber-100 text-amber-900 px-1.5 py-0.5 rounded border border-amber-300 shadow-2xs"
@@ -1305,116 +1555,321 @@ const getCustomerInitials = (name: string) => {
                     <AlertCircle class="w-2.5 h-2.5 text-amber-700 shrink-0" />
                     Not in Busy
                   </span>
+                </div>
+                <button 
+                  type="button" 
+                  @click="removeItem(idx)" 
+                  class="p-1 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors flex items-center gap-1 text-xs font-semibold cursor-pointer"
+                  title="Remove Item"
+                >
+                  <Trash2 class="w-3.5 h-3.5" />
+                  <span>Remove</span>
+                </button>
+              </div>
 
-                  <!-- UoM badge -->
-                  <span v-if="!item.isCustom && getSelectedProduct(item.productId)?.unit" class="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] sm:text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200 uppercase tracking-wide">
-                    {{ getSelectedProduct(item.productId)?.unit }}
-                  </span>
+              <div class="flex flex-col md:flex-row md:items-start gap-3 md:gap-4">
+                <!-- Product Select / Custom Item Entry -->
+                <div v-if="item.isCustom" class="flex-1 w-full min-w-0 space-y-2">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-1.5">
+                      <label class="block text-[10px] uppercase font-bold text-amber-800">Custom Item Name *</label>
+                      <span class="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider bg-amber-100 text-amber-900 px-1.5 py-0.2 rounded border border-amber-300 shadow-2xs">
+                        <AlertCircle class="w-2.5 h-2.5 text-amber-700 shrink-0" />
+                        Not in Busy
+                      </span>
+                    </div>
+                    <button 
+                      type="button" 
+                      @click="item.isCustom = false; item.productId = ''" 
+                      class="text-[10px] font-bold text-[#1b3b5f] hover:underline cursor-pointer flex items-center gap-1"
+                    >
+                      <Database class="w-3 h-3" />
+                      <span>Choose from Catalog</span>
+                    </button>
+                  </div>
+                  <input 
+                    type="text" 
+                    v-model="item.customProductName" 
+                    required
+                    placeholder="e.g. Custom Profile Handle 200mm / Labour Charges" 
+                    class="w-full border border-amber-300 rounded-lg p-2.5 bg-amber-50/30 text-sm font-semibold text-gray-900 focus:ring-amber-500 focus:border-amber-500 shadow-2xs"
+                  />
+                  <div class="flex items-center gap-2 text-[11px] text-gray-500">
+                    <span>SKU / Code:</span>
+                    <input 
+                      type="text" 
+                      v-model="item.customSku" 
+                      placeholder="Auto-generated if empty" 
+                      class="font-mono text-xs border border-gray-200 rounded px-2 py-0.5 w-48 bg-white text-gray-800"
+                    />
+                  </div>
+                </div>
 
-                  <!-- Category -->
-                  <span v-if="!item.isCustom && getSelectedProduct(item.productId)?.category?.name" class="hidden sm:inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-medium bg-gray-100 text-gray-600 border border-gray-200">
-                    {{ getSelectedProduct(item.productId)?.category?.name }}
-                  </span>
+                <!-- Catalog Product Select with Direct SearchCombobox -->
+                <div v-else class="flex-1 w-full min-w-0">
+                  <div class="flex items-center justify-between mb-1.5">
+                    <label class="block text-[10px] uppercase font-bold text-gray-500">Product *</label>
+                    <button 
+                      type="button" 
+                      @click="item.isCustom = true; item.productId = ''; item.customProductName = ''" 
+                      class="text-[10px] font-bold text-amber-700 hover:text-amber-900 flex items-center gap-0.5 hover:underline cursor-pointer"
+                    >
+                      <Plus class="w-3 h-3" />
+                      <span>Custom Item (Not in Busy)</span>
+                    </button>
+                  </div>
+                  <SearchCombobox 
+                    :modelValue="item.productId"
+                    @update:modelValue="val => { item.productId = val; onProductChange(idx) }"
+                    :options="productOptions"
+                    placeholder="Search product by SKU, name, brand..."
+                    class="w-full"
+                  />
+
+                  <!-- Live Stock Badge right below the product name -->
+                  <div v-if="getSelectedProduct(item.productId)" class="mt-2 flex flex-wrap items-center gap-2">
+                    <span 
+                      class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold border shadow-2xs transition-colors"
+                      :class="[
+                        Number(getSelectedProduct(item.productId)?.stock ?? 0) <= 0 
+                          ? 'bg-rose-50 text-rose-700 border-rose-200' 
+                          : Number(getSelectedProduct(item.productId)?.stock ?? 0) < 10 
+                            ? 'bg-amber-50 text-amber-700 border-amber-200' 
+                            : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                      ]"
+                    >
+                      <span 
+                        class="w-2 h-2 rounded-full"
+                        :class="[
+                          Number(getSelectedProduct(item.productId)?.stock ?? 0) <= 0 
+                            ? 'bg-rose-500' 
+                            : Number(getSelectedProduct(item.productId)?.stock ?? 0) < 10 
+                              ? 'bg-amber-500' 
+                              : 'bg-emerald-500'
+                        ]"
+                      ></span>
+                      <span>
+                        Stock: <strong class="font-bold">{{ getSelectedProduct(item.productId)?.stock ?? 0 }}</strong> {{ getSelectedProduct(item.productId)?.unit || 'units' }}
+                      </span>
+                      <span v-if="Number(getSelectedProduct(item.productId)?.stock ?? 0) <= 0" class="text-[10px] font-bold text-rose-600 uppercase tracking-wide">
+                        (Out of Stock)
+                      </span>
+                      <span v-else-if="Number(getSelectedProduct(item.productId)?.stock ?? 0) < 10" class="text-[10px] font-bold text-amber-600 uppercase tracking-wide">
+                        (Low Stock)
+                      </span>
+                    </span>
+
+                    <span 
+                      v-if="getSelectedProduct(item.productId)?.isBusySynced === false"
+                      class="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-900 px-2 py-0.5 rounded border border-amber-300 shadow-2xs"
+                    >
+                      <AlertCircle class="w-2.5 h-2.5 text-amber-700 shrink-0" />
+                      Not in Busy
+                    </span>
+
+                    <span v-if="getSelectedProduct(item.productId)?.category?.name" class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-gray-100 text-gray-600 border border-gray-200">
+                      {{ getSelectedProduct(item.productId)?.category?.name }}
+                    </span>
+
+                    <span v-if="getSelectedProduct(item.productId)?.unit" class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200 uppercase tracking-wide">
+                      {{ getSelectedProduct(item.productId)?.unit }}
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Qty Stepper -->
+                <div class="w-full md:w-28 shrink-0">
+                  <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1.5">Quantity *</label>
+                  <div class="flex items-center border border-gray-300 rounded-lg bg-white overflow-hidden shadow-2xs">
+                    <button 
+                      type="button" 
+                      @click="item.quantity = Math.max(1, (item.quantity || 1) - 1)" 
+                      class="w-8 h-9 bg-gray-50 hover:bg-gray-100 font-bold text-gray-700 flex items-center justify-center text-sm active:bg-gray-200 select-none cursor-pointer"
+                    >-</button>
+                    <input 
+                      type="number" 
+                      v-model.number="item.quantity" 
+                      min="1" 
+                      required 
+                      class="w-full text-center font-bold text-gray-900 text-sm focus:outline-none p-1" 
+                    />
+                    <button 
+                      type="button" 
+                      @click="item.quantity = (item.quantity || 0) + 1" 
+                      class="w-8 h-9 bg-gray-50 hover:bg-gray-100 font-bold text-gray-700 flex items-center justify-center text-sm active:bg-gray-200 select-none cursor-pointer"
+                    >+</button>
+                  </div>
+                </div>
+
+                <!-- Unit Price with Sq.ft Sheet Rate Calculator -->
+                <div class="w-full md:w-36 shrink-0">
+                  <div class="flex items-center justify-between mb-1.5">
+                    <label class="block text-[10px] uppercase font-bold text-gray-500 flex items-center gap-1 truncate">
+                      <IndianRupee class="w-3 h-3 text-gray-400 shrink-0" />
+                      <span>Rate *</span>
+                    </label>
+                    <button 
+                      type="button" 
+                      tabindex="-1"
+                      @click="openRateCalculator(idx)" 
+                      class="text-[9px] bg-[#1b3b5f] hover:bg-[#132c49] text-white font-bold flex items-center gap-1 px-2 py-0.5 rounded shadow-2xs transition-colors cursor-pointer"
+                      title="Calculate rate by Sheet Sq.ft (A × B × Rate)"
+                    >
+                      <Calculator class="w-2.5 h-2.5 text-white" />
+                      <span>Sq.ft Calc</span>
+                    </button>
+                  </div>
+                  <div class="relative flex items-center">
+                    <IndianRupee class="absolute left-2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+                    <input 
+                      type="number" 
+                      v-model.number="item.unitPrice" 
+                      min="0" 
+                      step="0.01" 
+                      required 
+                      class="w-full pl-6 pr-8 border border-gray-300 rounded-lg shadow-xs p-2 bg-white text-sm font-bold focus:ring-[#1b3b5f] focus:border-[#1b3b5f]" 
+                    />
+                    <button 
+                      type="button"
+                      tabindex="-1"
+                      @click="openRateCalculator(idx)"
+                      class="absolute right-1 px-1.5 py-1 bg-[#1b3b5f] hover:bg-[#132c49] text-white rounded-md transition-colors cursor-pointer shadow-2xs"
+                      title="Sq.ft Sheet Rate Calculator"
+                    >
+                      <Calculator class="w-3.5 h-3.5 text-white" />
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Tax % -->
+                <div class="w-full md:w-20 shrink-0">
+                  <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1.5">Tax %</label>
+                  <div class="relative flex items-center">
+                    <input type="number" v-model.number="item.taxRate" min="0" max="100" step="0.1" class="w-full pr-5 border border-gray-300 rounded-lg shadow-xs p-2 bg-white text-sm font-bold focus:ring-[#1b3b5f] focus:border-[#1b3b5f] text-right" />
+                    <span class="absolute right-1.5 text-xs font-semibold text-gray-400 pointer-events-none">%</span>
+                  </div>
+                </div>
+
+                <!-- Line Total -->
+                <div class="w-full md:w-28 shrink-0">
+                  <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1.5 flex items-center justify-between">
+                    <span>Total</span>
+                    <span v-if="item.isTaxInclusive" class="text-[8px] font-bold text-blue-700 bg-blue-50 px-1 py-0.2 rounded border border-blue-200">INCL</span>
+                    <span v-else class="text-[8px] font-bold text-gray-600 bg-gray-100 px-1 py-0.2 rounded border border-gray-200">+TAX</span>
+                  </label>
+                  <div class="p-2 bg-white text-gray-900 rounded-lg font-bold text-sm border border-gray-200 text-right">
+                    {{ formatCurrency(calculateItemTotals(item).total) }}
+                  </div>
                 </div>
               </div>
 
-              <!-- Trash button (stops propagation so modal doesn't open) -->
-              <button 
-                type="button" 
-                @click.stop="removeItem(idx)" 
-                class="text-slate-300 hover:text-rose-500 p-1.5 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer shrink-0"
-                title="Remove Item"
-              >
-                <Trash2 class="w-4 h-4" />
-              </button>
+              <!-- Item-Level Options & Notes -->
+              <div class="flex flex-wrap items-center gap-3 sm:gap-4 pt-2.5 border-t border-gray-200/60 text-xs">
+                <!-- Tax Inclusive Toggle -->
+                <label class="flex items-center gap-2 cursor-pointer select-none">
+                  <input 
+                    type="checkbox" 
+                    v-model="item.isTaxInclusive" 
+                    @change="onTaxInclusiveToggle(item)"
+                    class="w-3.5 h-3.5 rounded text-[#1b3b5f] focus:ring-[#1b3b5f]" 
+                  />
+                  <span class="text-gray-700 font-medium">Tax Inclusive Rate</span>
+                  <span v-if="item.isTaxInclusive" class="text-[10px] text-blue-600 font-semibold">(Tax incl.)</span>
+                  <span v-else class="text-[10px] text-gray-500">(+{{ item.taxRate }}% Tax)</span>
+                </label>
+
+                <!-- Last Billed Price Pill -->
+                <div v-if="form.customerId && item.productId && !item.isCustom" class="flex items-center">
+                  <div 
+                    v-if="historicalPricesMap[item.productId]" 
+                    @click="openPriceHistoryModal(item, idx)"
+                    class="inline-flex items-center gap-2 px-2.5 py-1 rounded-lg text-xs transition border cursor-pointer hover:shadow-xs select-none"
+                    :class="item.applyLastPrice 
+                      ? 'bg-emerald-50 text-emerald-900 border-emerald-300 shadow-xs ring-1 ring-emerald-400/30' 
+                      : 'bg-amber-50/90 text-amber-900 border-amber-200 hover:bg-amber-100/80'"
+                    title="Click to view complete price history for Current Party & All Parties"
+                  >
+                    <span class="w-1.5 h-1.5 rounded-full shrink-0" :class="item.applyLastPrice ? 'bg-emerald-600' : 'bg-amber-500'"></span>
+                    <span>
+                      Last Billed: 
+                      <strong class="font-bold text-gray-900">
+                        {{ formatCurrency(item.isTaxInclusive ? historicalPricesMap[item.productId].unitPrice : historicalPricesMap[item.productId].basePrice) }}
+                      </strong>
+                      <span class="text-[10px] text-gray-500 ml-1">
+                        ({{ item.isTaxInclusive ? 'Incl. Tax' : '+Tax' }} • {{ historicalPricesMap[item.productId].daysAgo }}d ago)
+                      </span>
+                    </span>
+
+                    <span class="text-[10px] text-sky-700 font-bold hover:underline flex items-center gap-0.5 ml-0.5">
+                      <span>History</span>
+                      <ChevronRight class="w-3 h-3 text-sky-700" />
+                    </span>
+
+                    <button
+                      type="button"
+                      @click.stop="applyHistoricalPrice(item, historicalPricesMap[item.productId])"
+                      class="ml-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase transition cursor-pointer select-none"
+                      :class="item.applyLastPrice 
+                        ? 'bg-emerald-600 text-white shadow-xs' 
+                        : 'bg-amber-200 text-amber-900 hover:bg-amber-300'"
+                    >
+                      {{ item.applyLastPrice ? '✓ Applied' : 'Apply' }}
+                    </button>
+                  </div>
+
+                  <div v-else-if="loadingPrices[item.productId]" class="text-[11px] text-gray-400 flex items-center gap-1.5 italic">
+                    <Loader2 class="w-3 h-3 animate-spin text-gray-400" />
+                    <span>Checking price history...</span>
+                  </div>
+
+                  <div v-else-if="historicalPricesMap[item.productId] === null" class="text-[11px] text-gray-400 italic">
+                    First time ordering this item
+                  </div>
+                </div>
+
+                <!-- Item Notes Input -->
+                <div class="flex-1 min-w-[200px]">
+                  <input 
+                    type="text" 
+                    v-model="item.itemNotes" 
+                    placeholder="Optional item note: e.g. 10% rate agreed, custom edge-banding..."
+                    class="w-full px-2.5 py-1 text-xs border border-gray-300 rounded-lg bg-white focus:ring-1 focus:ring-[#1b3b5f]"
+                  />
+                </div>
+              </div>
             </div>
 
-            <!-- Line 2: Pricing Math & Line Total (100% Mockup Match) -->
-            <div class="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
-              <div class="text-slate-600 text-[11px] font-semibold flex items-center gap-1.5 flex-wrap">
-                <span class="font-bold text-slate-900">{{ item.quantity }} {{ !item.isCustom && getSelectedProduct(item.productId)?.unit ? getSelectedProduct(item.productId)?.unit : 'units' }}</span>
-                <span>×</span>
-                <span class="font-bold text-slate-900">{{ formatCurrency(item.unitPrice) }}</span>
-                <span v-if="item.isTaxInclusive" class="text-[9px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.2 rounded border border-blue-200">
-                  INCL
-                </span>
-                <span v-else class="text-[9px] font-bold text-slate-600 bg-slate-100 px-1.5 py-0.2 rounded border border-slate-200">
-                  +{{ item.taxRate }}% Tax
-                </span>
-              </div>
-
-              <div class="text-right">
-                <div class="font-black text-slate-900 text-xs sm:text-sm">
-                  {{ formatCurrency(calculateItemTotals(item).total) }}
-                </div>
-                <div class="text-[9px] text-slate-400">
-                  {{ item.isTaxInclusive ? 'GST incl.' : `+${formatCurrency(calculateItemTotals(item).taxAmount)} GST` }}
-                </div>
-              </div>
-            </div>
-
-            <!-- Line 3: Item Note (if any) -->
-            <div v-if="item.itemNotes?.trim()" class="mt-2 pt-1.5 border-t border-dashed border-gray-100 text-[11px] text-gray-500 flex items-center gap-1.5">
-              <span class="font-bold text-gray-600 shrink-0">Note:</span>
-              <span class="truncate italic text-gray-700">{{ item.itemNotes }}</span>
+            <div v-if="!form.items.length" class="text-sm text-gray-500 text-center py-6 bg-gray-50 rounded-xl border border-dashed border-gray-300">
+              No products added yet. Click "+ Add Product" or "+ Custom Item" above to add items to this order.
             </div>
           </div>
 
-          <!-- Empty State Box -->
-          <div 
-            v-if="!form.items.length" 
-            class="my-3 px-4 py-8 sm:py-10 bg-slate-50/70 rounded-2xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-center transition-all"
-          >
-            <div class="w-12 h-12 rounded-2xl bg-white border border-slate-200/80 shadow-2xs flex items-center justify-center text-slate-400 mb-3">
-              <PackageSearch class="w-6 h-6 text-[#1b3b5f]/70" />
-            </div>
-            <p class="text-sm font-bold text-gray-800">No products added yet</p>
-            <p class="text-xs text-gray-500 mt-1 max-w-xs">
-              Tap below to search catalog or add custom items to your order.
-            </p>
-            <div class="mt-4 flex items-center gap-2.5 flex-wrap justify-center">
-              <button
-                type="button"
-                @click="openAddItemModal(false)"
-                class="px-4 py-2 bg-[#1b3b5f] hover:bg-[#132c49] text-white rounded-xl text-xs font-bold shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer active:scale-95"
-              >
-                <Plus class="w-3.5 h-3.5" />
-                <span>Add Product</span>
-              </button>
-              <button
-                type="button"
-                @click="openAddItemModal(true)"
-                class="px-4 py-2 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-xl text-xs font-bold shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer active:scale-95"
-              >
-                <Plus class="w-3.5 h-3.5 text-amber-700" />
-                <span>Add Custom Item (Not in Busy)</span>
-              </button>
-            </div>
+          <!-- Add Item Buttons directly below items in Classic Mode -->
+          <div class="pt-2 flex items-center gap-2">
+            <button
+              type="button"
+              @click="addItem(false)"
+              class="py-2.5 px-4 bg-[#1b3b5f] hover:bg-[#132c49] text-white text-xs font-bold rounded-xl shadow-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95"
+            >
+              <Plus class="w-3.5 h-3.5" />
+              <span>Add Product</span>
+            </button>
+            <button
+              type="button"
+              @click="addItem(true)"
+              class="py-2.5 px-3 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold rounded-xl shadow-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95"
+            >
+              <Plus class="w-3.5 h-3.5 text-amber-700" />
+              <span>Add Custom Item (Not in Busy)</span>
+            </button>
           </div>
-        </div>
+        </template>
 
-        <!-- Add Item Buttons directly below items (100% Mockup Match) -->
-        <div v-if="form.items.length > 0" class="pt-2 flex items-center gap-2">
-          <button
-            type="button"
-            @click="openAddItemModal(false)"
-            class="flex-1 py-2.5 bg-[#1b3b5f] hover:bg-[#132c49] text-white text-xs font-bold rounded-xl shadow-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95"
-          >
-            <Plus class="w-3.5 h-3.5" />
-            <span>Add Product</span>
-          </button>
-          <button
-            type="button"
-            @click="openAddItemModal(true)"
-            class="py-2.5 px-3 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold rounded-xl shadow-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95"
-          >
-            <Plus class="w-3.5 h-3.5 text-amber-700" />
-            <span>Add Custom Item (Not in Busy)</span>
-          </button>
-        </div>
-
-        <!-- Desktop Only: Order Totals & Tax Summary -->
-        <div class="hidden sm:flex flex-col sm:flex-row justify-between items-start sm:items-end pt-5 border-t border-gray-200 mt-6 gap-4">
+        <!-- Order Totals & Tax Summary -->
+        <div 
+          class="flex flex-col sm:flex-row justify-between items-start sm:items-end pt-5 border-t border-gray-200 mt-6 gap-4"
+          :class="uiMode === 'classic' ? 'flex' : 'hidden sm:flex'"
+        >
           <div class="text-xs text-gray-500 space-y-1">
             <p class="flex items-center gap-1.5 font-medium">
               <span class="w-2 h-2 rounded-full bg-blue-500 shrink-0"></span>
@@ -1445,9 +1900,9 @@ const getCustomerInitials = (name: string) => {
         </div>
       </div>
 
-      <!-- ── Collapsed Delivery Destination & Notes Card (100% Mockup Match) ── -->
+      <!-- ── Collapsed Delivery Destination & Notes Card (Only in Modern Mode when Collapsed) ── -->
       <div 
-        v-if="isLogisticsCollapsed && (selectedCustomer || (isCustomCustomer && customCustomer.name.trim()))" 
+        v-if="uiMode === 'modern' && isLogisticsCollapsed && (selectedCustomer || (isCustomCustomer && customCustomer.name.trim()))" 
         class="bg-white rounded-2xl p-3 sm:p-4 border border-slate-200/90 shadow-2xs space-y-2 text-xs"
       >
         <div class="flex items-center justify-between">
@@ -1470,21 +1925,24 @@ const getCustomerInitials = (name: string) => {
         </div>
       </div>
 
-      <!-- Desktop Actions (Hidden on Mobile) -->
-      <div class="hidden sm:flex justify-end gap-3 pt-4">
-        <NuxtLink to="/dashboard/orders" class="px-6 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors">
+      <!-- Actions: Visible on Desktop, and also on Mobile in Classic Mode -->
+      <div 
+        class="justify-end gap-3 pt-4"
+        :class="uiMode === 'classic' ? 'flex flex-col sm:flex-row' : 'hidden sm:flex'"
+      >
+        <NuxtLink to="/dashboard/orders" class="px-6 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors text-center">
           Cancel
         </NuxtLink>
-        <button type="submit" :disabled="!form.items.length" class="px-6 py-2.5 bg-[#1b3b5f] text-white text-sm font-bold rounded-lg hover:bg-[#1b3b5f]/90 disabled:opacity-50 transition-colors shadow-sm cursor-pointer">
+        <button type="submit" :disabled="!form.items.length" class="px-6 py-2.5 bg-[#1b3b5f] text-white text-sm font-bold rounded-lg hover:bg-[#1b3b5f]/90 disabled:opacity-50 transition-colors shadow-sm cursor-pointer text-center">
           Submit Order
         </button>
       </div>
 
     </form>
 
-    <!-- ── Mobile Sticky Bottom Bar (Total & Submit - 100% Mockup Match) ── -->
+    <!-- ── Mobile Sticky Bottom Bar (Total & Submit - Only in Modern Mode) ── -->
     <div 
-      v-if="form.items.length > 0" 
+      v-if="uiMode === 'modern' && form.items.length > 0" 
       class="fixed inset-x-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] md:hidden bg-white/95 backdrop-blur-md border-t border-slate-200 px-4 py-2.5 shadow-lg flex items-center justify-between z-[200] transition-all"
     >
       <div class="min-w-0 pr-2">
@@ -1603,13 +2061,12 @@ const getCustomerInitials = (name: string) => {
                 </button>
               </div>
 
-              <CustomSelect 
+              <SearchCombobox 
                 :modelValue="currentItem.productId"
                 @update:modelValue="val => { currentItem.productId = val; onModalProductChange() }"
+                @select="onModalProductChange"
                 :options="productOptions"
-                searchable
-                searchPlaceholder="Search product or alias..."
-                placeholder="Select Product"
+                placeholder="Search product by SKU, name, brand..."
                 class="w-full"
               />
 
