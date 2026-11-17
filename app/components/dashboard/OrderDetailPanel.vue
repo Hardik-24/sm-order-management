@@ -3853,36 +3853,8 @@ onUnmounted(() => {
       </div>
     </div>
   </Teleport>
-          </template>
-        </div>
 
-        <!-- Sticky Footer with Save & Total -->
-        <div class="px-4 py-3 sm:px-6 sm:py-4 bg-white border-t border-gray-200 flex items-center justify-between shrink-0">
-          <button 
-            type="button" 
-            @click="cancelEdit" 
-            class="px-4 py-2 text-xs sm:text-sm font-semibold text-gray-700 hover:bg-gray-100 rounded-lg border border-gray-300 transition-colors"
-          >
-            Cancel
-          </button>
-          <div class="flex items-center gap-3">
-            <div class="text-right">
-              <span class="text-xs text-gray-500 hidden sm:inline">Total: </span>
-              <span class="font-bold text-[#1b3b5f] text-sm sm:text-base">{{ formatCurrency(editOrderTotal) }}</span>
-            </div>
-            <button 
-              type="button" 
-              @click="saveEdit" 
-              class="px-5 py-2 text-xs sm:text-sm font-bold bg-[#1b3b5f] hover:bg-[#132c49] text-white rounded-lg shadow-sm transition-colors flex items-center gap-1.5"
-            >
-              <span>Save Changes</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Set Customer Delivery Pin Modal -->
+  <!-- Set Customer Delivery Pin Modal -->
     <SetDeliveryPinModal
       :isOpen="isPinModalOpen"
       :customerId="order?.customerId || order?.customer?.id"
@@ -4086,5 +4058,4 @@ onUnmounted(() => {
       :customer-name="selectedEditCustomerName"
       @apply-price="onApplyEditPriceHistory"
     />
-  </Teleport>
 </template>
