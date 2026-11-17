@@ -3128,7 +3128,45 @@ onUnmounted(() => {
                     Transport & Delivery Vehicle *
                   </label>
 
-                  <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <!-- Mobile Segmented Selector (All 3 in 1 line, exactly matching Create Order) -->
+                  <div class="sm:hidden grid grid-cols-3 gap-1.5 p-1 bg-gray-100 rounded-xl border border-gray-200 text-xs select-none">
+                    <button
+                      type="button"
+                      @click="editForm.vehicleMode = 'OUR_FLEET'"
+                      class="py-2.5 px-1 rounded-lg font-bold text-center flex flex-col items-center justify-center gap-1 transition-all cursor-pointer"
+                      :class="editForm.vehicleMode === 'OUR_FLEET'
+                        ? 'bg-[#1b3b5f] text-white shadow-xs'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-white/60'"
+                    >
+                      <Truck class="w-4 h-4" />
+                      <span class="text-[10px] leading-tight">Our Fleet</span>
+                    </button>
+                    <button
+                      type="button"
+                      @click="editForm.vehicleMode = 'PARTY_VEHICLE'"
+                      class="py-2.5 px-1 rounded-lg font-bold text-center flex flex-col items-center justify-center gap-1 transition-all cursor-pointer"
+                      :class="editForm.vehicleMode === 'PARTY_VEHICLE'
+                        ? 'bg-amber-600 text-white shadow-xs'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-white/60'"
+                    >
+                      <Car class="w-4 h-4" />
+                      <span class="text-[10px] leading-tight">Party Vehicle</span>
+                    </button>
+                    <button
+                      type="button"
+                      @click="editForm.vehicleMode = 'THIRD_PARTY'"
+                      class="py-2.5 px-1 rounded-lg font-bold text-center flex flex-col items-center justify-center gap-1 transition-all cursor-pointer"
+                      :class="editForm.vehicleMode === 'THIRD_PARTY'
+                        ? 'bg-indigo-600 text-white shadow-xs'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-white/60'"
+                    >
+                      <Package class="w-4 h-4" />
+                      <span class="text-[10px] leading-tight">Third Party</span>
+                    </button>
+                  </div>
+
+                  <!-- Desktop 3-Card Grid -->
+                  <div class="hidden sm:grid sm:grid-cols-3 gap-3">
                     <!-- Option 1: Our Fleet -->
                     <div
                       @click="editForm.vehicleMode = 'OUR_FLEET'"
