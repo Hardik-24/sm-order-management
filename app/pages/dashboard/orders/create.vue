@@ -24,7 +24,8 @@ const deliveryFieldRef = ref<HTMLElement | null>(null)
 const deliveryTextareaRef = ref<HTMLTextAreaElement | null>(null)
 
 // UI Mode State: 'modern' (Combobox + collapsing logistics + item sheet) vs 'classic' (Traditional full inline rows)
-const uiMode = ref<'modern' | 'classic'>('modern')
+// Defaults to 'classic'. If user switches to 'modern', preference is saved to localStorage.
+const uiMode = ref<'modern' | 'classic'>('classic')
 
 onMounted(() => {
   if (typeof window !== 'undefined') {
@@ -1897,31 +1898,6 @@ const getCustomerInitials = (name: string) => {
               </span>
             </div>
           </div>
-        </div>
-      </div>
-
-      <!-- ── Collapsed Delivery Destination & Notes Card (Only in Modern Mode when Collapsed) ── -->
-      <div 
-        v-if="uiMode === 'modern' && isLogisticsCollapsed && (selectedCustomer || (isCustomCustomer && customCustomer.name.trim()))" 
-        class="bg-white rounded-2xl p-3 sm:p-4 border border-slate-200/90 shadow-2xs space-y-2 text-xs"
-      >
-        <div class="flex items-center justify-between">
-          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Delivery Destination</span>
-          <button 
-            type="button" 
-            @click="onChangeDeliveryAddressClick" 
-            class="text-[10px] sm:text-xs text-blue-600 font-bold hover:underline cursor-pointer"
-          >
-            Change
-          </button>
-        </div>
-        <p v-if="form.deliveryAddress?.trim()" class="text-[11px] sm:text-xs text-slate-700 font-medium leading-relaxed">
-          {{ form.deliveryAddress }}
-        </p>
-        <p v-else class="text-[11px] text-slate-400 italic">No delivery destination address specified</p>
-        <div v-if="form.notes?.trim()" class="pt-2 border-t border-slate-100 flex items-start gap-1.5 text-[11px] text-slate-600">
-          <FileText class="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
-          <span class="italic">{{ form.notes }}</span>
         </div>
       </div>
 

@@ -820,7 +820,8 @@ const isEditModalOpen = ref(false)
 const isEditLoading = ref(false)
 
 // UI Mode State for Edit Order Modal: 'modern' (Combobox + cards + item sheet) vs 'classic' (Traditional full inline rows)
-const editUiMode = ref<'modern' | 'classic'>('modern')
+// Defaults to 'classic'. If user switches to 'modern', preference is saved to localStorage.
+const editUiMode = ref<'modern' | 'classic'>('classic')
 
 onMounted(() => {
   if (typeof window !== 'undefined') {
