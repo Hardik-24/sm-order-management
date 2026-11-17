@@ -1493,11 +1493,11 @@ const getCustomerInitials = (name: string) => {
               <p class="text-xs text-gray-500 mt-1 max-w-xs">
                 Tap below to search catalog or add custom items to your order.
               </p>
-              <div class="mt-4 flex items-center gap-2.5 flex-wrap justify-center">
+              <div class="mt-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 justify-center w-full sm:w-auto">
                 <button
                   type="button"
                   @click="openAddItemModal(false)"
-                  class="px-4 py-2 bg-[#1b3b5f] hover:bg-[#132c49] text-white rounded-xl text-xs font-bold shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer active:scale-95"
+                  class="w-full sm:w-auto px-4 py-2 bg-[#1b3b5f] hover:bg-[#132c49] text-white rounded-xl text-xs font-bold shadow-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer active:scale-95"
                 >
                   <Plus class="w-3.5 h-3.5" />
                   <span>Add Product</span>
@@ -1505,7 +1505,7 @@ const getCustomerInitials = (name: string) => {
                 <button
                   type="button"
                   @click="openAddItemModal(true)"
-                  class="px-4 py-2 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-xl text-xs font-bold shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer active:scale-95"
+                  class="w-full sm:w-auto px-4 py-2 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-xl text-xs font-bold shadow-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer active:scale-95"
                 >
                   <Plus class="w-3.5 h-3.5 text-amber-700" />
                   <span>Add Custom Item (Not in Busy)</span>
@@ -1514,12 +1514,12 @@ const getCustomerInitials = (name: string) => {
             </div>
           </div>
 
-          <!-- Add Item Buttons directly below items in Modern Mode -->
-          <div v-if="form.items.length > 0" class="pt-2 flex items-center gap-2">
+          <!-- Add Item Buttons directly below items in Modern Mode (One in each line on mobile) -->
+          <div v-if="form.items.length > 0" class="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
             <button
               type="button"
               @click="openAddItemModal(false)"
-              class="flex-1 py-2.5 bg-[#1b3b5f] hover:bg-[#132c49] text-white text-xs font-bold rounded-xl shadow-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95"
+              class="w-full sm:flex-1 py-2.5 bg-[#1b3b5f] hover:bg-[#132c49] text-white text-xs font-bold rounded-xl shadow-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95"
             >
               <Plus class="w-3.5 h-3.5" />
               <span>Add Product</span>
@@ -1527,7 +1527,7 @@ const getCustomerInitials = (name: string) => {
             <button
               type="button"
               @click="openAddItemModal(true)"
-              class="py-2.5 px-3 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold rounded-xl shadow-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95"
+              class="w-full sm:w-auto py-2.5 px-4 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold rounded-xl shadow-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95"
             >
               <Plus class="w-3.5 h-3.5 text-amber-700" />
               <span>Add Custom Item (Not in Busy)</span>
@@ -1848,12 +1848,12 @@ const getCustomerInitials = (name: string) => {
             </div>
           </div>
 
-          <!-- Add Item Buttons directly below items in Classic Mode -->
-          <div class="pt-2 flex items-center gap-2">
+          <!-- Add Item Buttons directly below items in Classic Mode (One in each line on mobile) -->
+          <div class="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
             <button
               type="button"
               @click="addItem(false)"
-              class="py-2.5 px-4 bg-[#1b3b5f] hover:bg-[#132c49] text-white text-xs font-bold rounded-xl shadow-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95"
+              class="w-full sm:w-auto py-2.5 px-4 bg-[#1b3b5f] hover:bg-[#132c49] text-white text-xs font-bold rounded-xl shadow-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95"
             >
               <Plus class="w-3.5 h-3.5" />
               <span>Add Product</span>
@@ -1861,7 +1861,7 @@ const getCustomerInitials = (name: string) => {
             <button
               type="button"
               @click="addItem(true)"
-              class="py-2.5 px-3 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold rounded-xl shadow-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95"
+              class="w-full sm:w-auto py-2.5 px-4 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold rounded-xl shadow-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95"
             >
               <Plus class="w-3.5 h-3.5 text-amber-700" />
               <span>Add Custom Item (Not in Busy)</span>
