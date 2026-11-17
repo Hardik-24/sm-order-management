@@ -1154,11 +1154,8 @@ const getCustomerInitials = (name: string) => {
 
           <!-- Transport / Vehicle Selection Mode -->
           <div class="md:col-span-2">
-            <label class="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-2 flex items-center justify-between">
-              <span>Transport & Delivery Vehicle *</span>
-              <span class="text-[11px] font-semibold" :class="form.vehicleMode === 'OUR_FLEET' ? 'text-[#1b3b5f]' : (form.vehicleMode === 'THIRD_PARTY' ? 'text-indigo-700' : 'text-amber-700')">
-                {{ form.vehicleMode === 'OUR_FLEET' ? '✓ Company Fleet Dispatch' : (form.vehicleMode === 'THIRD_PARTY' ? '📦 Third Party (Porter/Rapido Handover)' : '🚗 Party Transport (Direct Handover)') }}
-              </span>
+            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+              Transport & Delivery Vehicle *
             </label>
 
             <!-- Mobile Segmented Selector (Ultra-clean, saves 250px) -->

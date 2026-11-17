@@ -3021,11 +3021,8 @@ onUnmounted(() => {
                 </div>
                 <!-- Transport / Vehicle Selection Mode Tiles -->
                 <div class="col-span-1 sm:col-span-2">
-                  <label class="block text-[10px] sm:text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 flex items-center justify-between">
-                    <span>Transport & Delivery Vehicle *</span>
-                    <span class="text-[11px] font-semibold" :class="editForm.vehicleMode === 'OUR_FLEET' ? 'text-[#1b3b5f]' : (editForm.vehicleMode === 'THIRD_PARTY' ? 'text-indigo-700' : 'text-amber-700')">
-                      {{ editForm.vehicleMode === 'OUR_FLEET' ? '✓ Company Fleet Dispatch' : (editForm.vehicleMode === 'THIRD_PARTY' ? '📦 Third Party (Porter/Rapido Handover)' : '🚗 Party Transport (Direct Handover)') }}
-                    </span>
+                  <label class="block text-[10px] sm:text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+                    Transport & Delivery Vehicle *
                   </label>
 
                   <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
