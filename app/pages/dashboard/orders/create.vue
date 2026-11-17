@@ -774,7 +774,7 @@ const getCustomerInitials = (name: string) => {
         <div class="min-w-0">
           <div class="flex items-center gap-1.5">
             <h1 class="text-sm font-black text-slate-900 leading-tight">Create Order</h1>
-            <span class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-slate-100 text-slate-600 font-mono">#Draft</span>
+            <span v-if="uiMode === 'classic'" class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-slate-100 text-slate-600 font-mono">#Draft</span>
           </div>
           <p class="text-[10px] text-slate-400 truncate">Customer, items & delivery</p>
         </div>
@@ -820,7 +820,7 @@ const getCustomerInitials = (name: string) => {
       <div>
         <h1 class="text-2xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
           <span>Create New Order</span>
-          <span class="text-xs px-2.5 py-0.5 rounded-full font-bold bg-[#1b3b5f]/10 text-[#1b3b5f]">Draft</span>
+          <span v-if="uiMode === 'classic'" class="text-xs px-2.5 py-0.5 rounded-full font-bold bg-[#1b3b5f]/10 text-[#1b3b5f]">Draft</span>
         </h1>
         <p class="text-xs text-gray-500 mt-1">Capture customer requirements, choose delivery destinations, and specify rates.</p>
       </div>
@@ -1678,7 +1678,9 @@ const getCustomerInitials = (name: string) => {
                   </div>
                 </div>
 
-                <!-- Qty Stepper -->
+                <!-- Numerical Fields: Mobile has 2 columns (Qty & Rate in line 1, Tax & Total in line 2) -->
+                <div class="grid grid-cols-2 md:flex md:items-start gap-3 w-full md:w-auto">
+                  <!-- Qty Stepper -->
                 <div class="w-full md:w-28 shrink-0">
                   <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1.5">Quantity *</label>
                   <div class="flex items-center border border-gray-300 rounded-lg bg-white overflow-hidden shadow-2xs">
@@ -1761,6 +1763,7 @@ const getCustomerInitials = (name: string) => {
                   <div class="p-2 bg-white text-gray-900 rounded-lg font-bold text-sm border border-gray-200 text-right">
                     {{ formatCurrency(calculateItemTotals(item).total) }}
                   </div>
+                </div>
                 </div>
               </div>
 

@@ -3354,8 +3354,10 @@ onUnmounted(() => {
                         </div>
                       </div>
 
-                      <!-- Qty -->
-                      <div class="w-full md:w-20 shrink-0">
+                      <!-- Numerical Fields: Mobile has 2 columns (Qty & Rate in line 1, Tax & Total in line 2) -->
+                      <div class="grid grid-cols-2 md:flex md:items-start gap-3 w-full md:w-auto">
+                        <!-- Qty -->
+                        <div class="w-full md:w-20 shrink-0">
                         <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1.5">Qty *</label>
                         <input type="number" v-model.number="item.quantity" min="1" required class="w-full border border-gray-300 rounded-lg shadow-xs p-2 bg-white text-sm font-bold focus:ring-[#1b3b5f] focus:border-[#1b3b5f]" />
                       </div>
@@ -3419,6 +3421,7 @@ onUnmounted(() => {
                         <div class="p-2 bg-white text-gray-900 rounded-lg font-bold text-sm border border-gray-200 text-right">
                           {{ formatCurrency(calculateEditItemTotal(item)) }}
                         </div>
+                      </div>
                       </div>
 
                       <!-- Remove -->
