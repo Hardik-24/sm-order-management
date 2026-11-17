@@ -1588,91 +1588,62 @@ onUnmounted(() => {
         <div v-if="isLoading && !isSilentRefreshing" class="absolute inset-0 bg-white/20 backdrop-blur-[1px] z-50 pointer-events-none transition-opacity duration-200"></div>
 
         <!-- 1. Header Bar: Title & Action Controls -->
-        <div class="px-3.5 sm:px-6 py-3 border-b border-gray-150 flex items-center justify-between bg-white flex-shrink-0 z-20">
-          <!-- Left: Order Number, Copy & Converted Badge -->
-          <div class="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-wrap">
-            <h2 class="text-sm sm:text-lg font-bold font-mono tracking-tight text-gray-950 truncate">
-              {{ order.orderNumber }}
-            </h2>
+        <!-- Mobile Header Bar (<sm): 4-Line Structured Stack -->
+        <div class="sm:hidden px-3.5 py-2.5 border-b border-gray-150 bg-white flex flex-col gap-2 flex-shrink-0 z-20">
+          <!-- Line 1: Order Number + Copy Button on left, Close (✕) Button on right -->
+          <div class="flex items-center justify-between gap-2">
+            <div class="flex items-center gap-1.5 min-w-0">
+              <h2 class="text-base font-bold font-mono tracking-tight text-gray-950 truncate">
+                {{ order.orderNumber }}
+              </h2>
+              <button 
+                @click="copyOrderNumber" 
+                class="p-1 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded transition cursor-pointer shrink-0" 
+                :title="copiedOrderNumber ? 'Copied to clipboard!' : 'Copy Order Number'"
+              >
+                <Check v-if="copiedOrderNumber" class="w-4 h-4 text-emerald-600" />
+                <Copy v-else class="w-4 h-4" />
+              </button>
+            </div>
+
             <button 
-              @click="copyOrderNumber" 
-              class="p-1 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded transition cursor-pointer shrink-0" 
-              :title="copiedOrderNumber ? 'Copied to clipboard!' : 'Copy Order Number'"
+              @click="closePanel" 
+              class="p-1.5 text-gray-500 hover:text-gray-800 rounded-lg hover:bg-gray-100 active:bg-gray-200 transition-colors cursor-pointer shrink-0 -mr-1"
+              title="Close Panel"
+              data-modal-close="true"
             >
-              <Check v-if="copiedOrderNumber" class="w-3.5 h-3.5 text-emerald-600" />
-              <Copy v-else class="w-3.5 h-3.5" />
+              <X class="w-5 h-5" />
             </button>
-            <span 
-              v-if="isConvertedFromQuotation" 
-              class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] sm:text-[11px] font-semibold bg-violet-50 text-violet-700 border border-violet-200"
-              :title="`Order converted from quotation ${order.convertedQuotationNumber || ''}`"
-            >
-              <FileText class="w-3 h-3 text-violet-500 shrink-0" />
-              <span>From Quote{{ order.convertedQuotationNumber ? `: ${order.convertedQuotationNumber}` : '' }}</span>
-            </span>
           </div>
 
-          <!-- Right: Action Controls (On PC all buttons visible side-by-side; on Mobile Cancel & Delete tuck under '...') -->
-          <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
-            <!-- Converted Quotation Locked Notice (when user lacks permission) -->
-            <span 
-              v-if="isConvertedFromQuotation && !canEditConvertedQuotationOrders"
-              class="px-2 sm:px-2.5 py-1.5 text-xs font-semibold text-amber-800 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-1 sm:gap-1.5 shrink-0"
-              title="Sales orders converted from quotations are locked. Only Admins or users with quotation-edit permission can modify them."
-            >
-              <Lock class="w-3.5 h-3.5 text-amber-600 shrink-0" />
-              <span class="hidden sm:inline">Quotation Locked</span>
-            </span>
-
-            <!-- Edit Order Button (Always visible when editable) -->
+          <!-- Line 2: Action buttons row: Edit Order, Edit Status, and ... button -->
+          <div v-if="canEditCurrentOrder || canEditOrderStatus || canCancelOrder || (hasRole('ADMIN') && !isBillGenerated)" class="flex items-center gap-2 flex-wrap">
+            <!-- Edit Order Button -->
             <button 
               v-if="canEditCurrentOrder"
               @click="openEditModal" 
               title="Edit Full Order Details"
-              class="px-2 sm:px-3 py-1.5 text-xs font-bold text-white bg-[#1b3b5f] hover:bg-[#132c49] active:bg-[#0e2035] rounded-lg transition-all flex items-center gap-1 sm:gap-1.5 shadow-xs cursor-pointer active:scale-95"
+              class="px-2.5 py-1.5 text-xs font-bold text-white bg-[#1b3b5f] hover:bg-[#132c49] active:bg-[#0e2035] rounded-lg transition-all flex items-center gap-1.5 shadow-xs cursor-pointer active:scale-95"
             >
               <Edit class="w-3.5 h-3.5 shrink-0" />
               <span>Edit Order</span>
             </button>
 
-            <!-- Edit Status Button (Always visible) -->
+            <!-- Edit Status Button -->
             <button 
               v-if="canEditOrderStatus"
               @click="openAdminStatusModal" 
               title="Edit Status Across Departments"
-              class="px-2 sm:px-3 py-1.5 text-xs font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-lg transition-colors flex items-center gap-1 sm:gap-1.5 cursor-pointer"
+              class="px-2.5 py-1.5 text-xs font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer"
             >
               <SlidersHorizontal class="w-3.5 h-3.5 text-purple-600 shrink-0" />
               <span>Edit Status</span>
             </button>
 
-            <!-- Cancel Button (Direct on PC, hidden on mobile) -->
-            <button 
-              v-if="canCancelOrder"
-              @click="openCancelModal" 
-              title="Cancel Order (Mandatory Reason Required)"
-              class="hidden sm:inline-flex px-2.5 sm:px-3 py-1.5 text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200/80 rounded-lg transition-colors items-center gap-1.5 cursor-pointer"
-            >
-              <Ban class="w-3.5 h-3.5 text-rose-600 shrink-0" />
-              <span>Cancel</span>
-            </button>
-
-            <!-- Delete Button (Direct on PC, hidden on mobile) -->
-            <button 
-              v-if="hasRole('ADMIN') && !isBillGenerated"
-              @click="deleteOrder" 
-              :disabled="isDeleting"
-              title="Delete Order (Admin Only)"
-              class="hidden sm:inline-flex px-2.5 sm:px-3 py-1.5 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors items-center gap-1.5 cursor-pointer disabled:opacity-50"
-            >
-              <Trash2 class="w-3.5 h-3.5 text-red-500 shrink-0" />
-              <span>Delete</span>
-            </button>
-
-            <!-- Mobile More Actions Dropdown (•••) - Visible only on mobile (<sm) -->
+            <!-- Mobile More Actions Dropdown (•••) -->
             <div 
               v-if="canCancelOrder || (hasRole('ADMIN') && !isBillGenerated)" 
-              class="relative sm:hidden"
+              class="relative"
             >
               <button 
                 @click.stop="isHeaderMenuOpen = !isHeaderMenuOpen" 
@@ -1693,7 +1664,8 @@ onUnmounted(() => {
               <!-- Dropdown Content -->
               <div 
                 v-if="isHeaderMenuOpen" 
-                class="absolute right-0 top-full mt-1.5 w-48 bg-white rounded-xl shadow-xl border border-gray-200 py-1 z-40 text-xs divide-y divide-gray-100 animate-in fade-in zoom-in-95 duration-100"
+                class="absolute mt-1.5 w-48 bg-white rounded-xl shadow-xl border border-gray-200 py-1 z-40 text-xs divide-y divide-gray-100 animate-in fade-in zoom-in-95 duration-100"
+                :class="canEditCurrentOrder || canEditOrderStatus ? 'right-0' : 'left-0'"
               >
                 <div v-if="canCancelOrder" class="py-1">
                   <button 
@@ -1716,11 +1688,114 @@ onUnmounted(() => {
                 </div>
               </div>
             </div>
+          </div>
+
+          <!-- Line 3: From Quotation (if applicable) -->
+          <div v-if="isConvertedFromQuotation" class="flex items-center gap-1.5 flex-wrap pt-0.5">
+            <span 
+              class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-violet-50 text-violet-700 border border-violet-200"
+              :title="`Order converted from quotation ${order.convertedQuotationNumber || ''}`"
+            >
+              <FileText class="w-3.5 h-3.5 text-violet-500 shrink-0" />
+              <span>From Quote{{ order.convertedQuotationNumber ? `: ${order.convertedQuotationNumber}` : '' }}</span>
+            </span>
+            <span 
+              v-if="!canEditConvertedQuotationOrders"
+              class="px-2 py-0.5 text-[10px] font-semibold text-amber-800 bg-amber-50 border border-amber-200 rounded flex items-center gap-1"
+              title="Sales orders converted from quotations are locked. Only Admins or users with quotation-edit permission can modify them."
+            >
+              <Lock class="w-3 h-3 text-amber-600 shrink-0" />
+              <span>Quotation Locked</span>
+            </span>
+          </div>
+        </div>
+
+        <!-- Desktop Header Bar (sm+): Single Bar -->
+        <div class="hidden sm:flex px-6 py-3 border-b border-gray-150 items-center justify-between bg-white flex-shrink-0 z-20">
+          <!-- Left: Order Number, Copy & Converted Badge -->
+          <div class="flex items-center gap-2 min-w-0 flex-wrap">
+            <h2 class="text-lg font-bold font-mono tracking-tight text-gray-950 truncate">
+              {{ order.orderNumber }}
+            </h2>
+            <button 
+              @click="copyOrderNumber" 
+              class="p-1 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded transition cursor-pointer shrink-0" 
+              :title="copiedOrderNumber ? 'Copied to clipboard!' : 'Copy Order Number'"
+            >
+              <Check v-if="copiedOrderNumber" class="w-3.5 h-3.5 text-emerald-600" />
+              <Copy v-else class="w-3.5 h-3.5" />
+            </button>
+            <span 
+              v-if="isConvertedFromQuotation" 
+              class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-semibold bg-violet-50 text-violet-700 border border-violet-200"
+              :title="`Order converted from quotation ${order.convertedQuotationNumber || ''}`"
+            >
+              <FileText class="w-3 h-3 text-violet-500 shrink-0" />
+              <span>From Quote{{ order.convertedQuotationNumber ? `: ${order.convertedQuotationNumber}` : '' }}</span>
+            </span>
+          </div>
+
+          <!-- Right: Action Controls -->
+          <div class="flex items-center gap-2 shrink-0">
+            <!-- Converted Quotation Locked Notice (when user lacks permission) -->
+            <span 
+              v-if="isConvertedFromQuotation && !canEditConvertedQuotationOrders"
+              class="px-2.5 py-1.5 text-xs font-semibold text-amber-800 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-1.5 shrink-0"
+              title="Sales orders converted from quotations are locked. Only Admins or users with quotation-edit permission can modify them."
+            >
+              <Lock class="w-3.5 h-3.5 text-amber-600 shrink-0" />
+              <span>Quotation Locked</span>
+            </span>
+
+            <!-- Edit Order Button (Always visible when editable) -->
+            <button 
+              v-if="canEditCurrentOrder"
+              @click="openEditModal" 
+              title="Edit Full Order Details"
+              class="px-3 py-1.5 text-xs font-bold text-white bg-[#1b3b5f] hover:bg-[#132c49] active:bg-[#0e2035] rounded-lg transition-all flex items-center gap-1.5 shadow-xs cursor-pointer active:scale-95"
+            >
+              <Edit class="w-3.5 h-3.5 shrink-0" />
+              <span>Edit Order</span>
+            </button>
+
+            <!-- Edit Status Button (Always visible) -->
+            <button 
+              v-if="canEditOrderStatus"
+              @click="openAdminStatusModal" 
+              title="Edit Status Across Departments"
+              class="px-3 py-1.5 text-xs font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer"
+            >
+              <SlidersHorizontal class="w-3.5 h-3.5 text-purple-600 shrink-0" />
+              <span>Edit Status</span>
+            </button>
+
+            <!-- Cancel Button (Direct on PC) -->
+            <button 
+              v-if="canCancelOrder"
+              @click="openCancelModal" 
+              title="Cancel Order (Mandatory Reason Required)"
+              class="inline-flex px-3 py-1.5 text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200/80 rounded-lg transition-colors items-center gap-1.5 cursor-pointer"
+            >
+              <Ban class="w-3.5 h-3.5 text-rose-600 shrink-0" />
+              <span>Cancel</span>
+            </button>
+
+            <!-- Delete Button (Direct on PC) -->
+            <button 
+              v-if="hasRole('ADMIN') && !isBillGenerated"
+              @click="deleteOrder" 
+              :disabled="isDeleting"
+              title="Delete Order (Admin Only)"
+              class="inline-flex px-3 py-1.5 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors items-center gap-1.5 cursor-pointer disabled:opacity-50"
+            >
+              <Trash2 class="w-3.5 h-3.5 text-red-500 shrink-0" />
+              <span>Delete</span>
+            </button>
 
             <!-- Close Drawer Button -->
             <button 
               @click="closePanel" 
-              class="p-1.5 text-gray-400 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer ml-0.5 sm:ml-1"
+              class="p-1.5 text-gray-400 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer ml-1"
               title="Close Panel"
               data-modal-close="true"
             >
@@ -1729,8 +1804,8 @@ onUnmounted(() => {
           </div>
         </div>
 
-        <!-- 2. Badges & Status Strip (Dedicated second tier, never disrupts action buttons) -->
-        <div class="px-5 sm:px-6 py-2 bg-gray-50/80 border-b border-gray-200/80 flex items-center gap-2 flex-wrap flex-shrink-0">
+        <!-- 2. Badges & Status Strip (Dedicated second tier / Line 4 on mobile, never disrupts action buttons) -->
+        <div class="px-3.5 sm:px-6 py-2 bg-gray-50/80 border-b border-gray-200/80 flex items-center gap-2 flex-wrap flex-shrink-0">
           <!-- Primary Overall Status -->
           <span v-if="order.overallStatus === 'CANCELLED'" class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-300 uppercase tracking-wider">
             <Ban class="w-3.5 h-3.5 text-rose-600" /> CANCELLED
