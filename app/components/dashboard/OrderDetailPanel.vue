@@ -823,6 +823,35 @@ const isEditLoading = ref(false)
 // Defaults to 'classic'. If user switches to 'modern', preference is saved to localStorage.
 const editUiMode = ref<'modern' | 'classic'>('classic')
 
+// Auto-Collapsing Logistics (Customer, Transport & Address) in Modern Mode for Edit Order Modal
+const isEditLogisticsCollapsed = ref(true)
+
+const selectedEditCustomer = computed(() => {
+  return customersList.value.find((c: any) => c.id === editForm.value.customerId) || order.value?.customer || null
+})
+
+const getCustomerInitials = (name?: string) => {
+  if (!name || !name.trim()) return 'CU'
+  const clean = name.trim().replace(/[^\w\s]/g, '')
+  const words = clean.split(/\s+/)
+  if (words.length === 1) return words[0].slice(0, 2).toUpperCase()
+  return (words[0][0] + words[words.length - 1][0]).toUpperCase()
+}
+
+const getPrivilegeBadgeStyle = (tier?: string) => {
+  switch (tier) {
+    case 'PLATINUM':
+      return 'bg-purple-100 text-purple-900 border-purple-300'
+    case 'GOLD':
+      return 'bg-amber-100 text-amber-900 border-amber-300'
+    case 'SILVER':
+      return 'bg-slate-200 text-slate-900 border-slate-300'
+    case 'BRONZE':
+    default:
+      return 'bg-orange-100 text-orange-900 border-orange-300'
+  }
+}
+
 onMounted(() => {
   if (typeof window !== 'undefined') {
     const saved = localStorage.getItem('sm_order_form_layout')
@@ -986,6 +1015,7 @@ const openEditModal = async () => {
     return
   }
   isEditModalOpen.value = true
+  isEditLogisticsCollapsed.value = true
   isEditLoading.value = true
   nextTick(() => {
     if (editModalCardRef.value) animateModalOpen(editModalCardRef.value)
@@ -2897,10 +2927,10 @@ onUnmounted(() => {
 
   <!-- Edit Order Modal -->
   <Teleport to="body">
-    <div v-if="isEditModalOpen" data-modal-container class="fixed inset-x-0 top-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] md:bottom-0 md:inset-0 z-[600] flex items-center justify-center p-2 sm:p-4 pt-[calc(1rem+env(safe-area-inset-top,0px))] overflow-y-auto">
+    <div v-if="isEditModalOpen" data-modal-container class="fixed inset-0 z-[600] flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
       <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" @click="isEditModalOpen = false; hide()"></div>
       
-      <div ref="editModalCardRef" class="relative bg-[#faf8f5] w-full max-w-4xl rounded-xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[calc(100dvh-3.5rem-env(safe-area-inset-bottom,0px)-2rem)] md:max-h-[92vh] overflow-hidden transform transition-all border border-gray-200">
+      <div ref="editModalCardRef" class="relative bg-[#faf8f5] w-full max-w-4xl rounded-2xl shadow-2xl flex flex-col max-h-[94dvh] md:max-h-[92vh] overflow-hidden transform transition-all border border-gray-200">
         <div class="px-3.5 py-3 sm:px-6 sm:py-4 border-b border-gray-200 bg-white flex items-center justify-between shrink-0 gap-2">
           <h2 class="text-base sm:text-lg font-bold text-gray-900 truncate">Edit Order: {{ order?.orderNumber }}</h2>
           <div class="flex items-center gap-2 sm:gap-3 shrink-0">
@@ -2986,9 +3016,82 @@ onUnmounted(() => {
           </template>
 
           <template v-else>
-            <!-- Section 1: Order Info -->
-            <div class="bg-white p-4 sm:p-6 rounded-xl border border-gray-200 shadow-sm space-y-4">
-              <h3 class="text-xs sm:text-sm font-bold text-gray-900 uppercase tracking-wider border-b border-gray-100 pb-2">Order Info</h3>
+            <!-- Section 1: Order & Customer Info -->
+            <!-- Mode A: Collapsed Customer Summary Card (Only in Modern mode when collapsed) -->
+            <div 
+              v-if="editUiMode === 'modern' && isEditLogisticsCollapsed"
+              @click="isEditLogisticsCollapsed = false"
+              class="bg-gradient-to-r from-slate-50 via-white to-blue-50/30 rounded-2xl p-3 sm:p-4 border border-slate-200/90 shadow-2xs hover:shadow-xs hover:border-[#1b3b5f]/30 transition-all select-none cursor-pointer"
+            >
+              <div class="flex items-center justify-between gap-3">
+                <div class="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+                  <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-[#1b3b5f] text-white flex items-center justify-center font-black text-xs sm:text-sm shadow-xs shrink-0 tracking-wider">
+                    {{ getCustomerInitials(selectedEditCustomer?.name) }}
+                  </div>
+                  <div class="min-w-0 flex-1">
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                      <h3 class="text-xs sm:text-sm font-black text-slate-900 leading-snug break-words">
+                        {{ selectedEditCustomer?.name || 'Customer' }}
+                        <span v-if="selectedEditCustomer?.company && selectedEditCustomer?.company.trim().toLowerCase() !== selectedEditCustomer?.name?.trim().toLowerCase()" class="text-slate-500 font-semibold text-[11px] block sm:inline sm:ml-1">
+                          ({{ selectedEditCustomer?.company }})
+                        </span>
+                      </h3>
+                      <span 
+                        v-if="selectedEditCustomer?.privilegeTier"
+                        class="px-1.5 py-0.2 rounded font-extrabold text-[9px] uppercase tracking-wider border shadow-2xs"
+                        :class="getPrivilegeBadgeStyle(selectedEditCustomer?.privilegeTier)"
+                      >
+                        {{ selectedEditCustomer.privilegeTier }}
+                      </span>
+                      <span 
+                        v-if="selectedEditCustomer?.isBusySynced === false" 
+                        class="px-1.5 py-0.2 rounded font-extrabold text-[9px] uppercase tracking-wider bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs"
+                      >
+                        Not in Busy
+                      </span>
+                      <span class="px-1.5 py-0.2 rounded font-mono text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                        {{ editForm.orderNumber }}
+                      </span>
+                    </div>
+                    <p class="text-[10px] sm:text-xs text-slate-500 leading-normal mt-0.5 break-words">
+                      <span v-if="selectedEditCustomer?.city">{{ selectedEditCustomer.city }} • </span>
+                      <span class="font-medium text-slate-700">
+                        {{ editForm.vehicleMode === 'OUR_FLEET' ? 'Fleet Delivery' : (editForm.vehicleMode === 'PARTY_VEHICLE' ? 'Party Vehicle' : 'Third Party') }}
+                      </span>
+                      <span> • </span>
+                      <span>{{ editForm.paymentTerms || '30 Days Credit' }}</span>
+                    </p>
+                  </div>
+                </div>
+
+                <button 
+                  type="button" 
+                  @click="isEditLogisticsCollapsed = false" 
+                  class="text-[10px] sm:text-[11px] font-bold text-[#1b3b5f] bg-white px-2.5 py-1.5 rounded-xl border border-slate-200 shadow-2xs hover:bg-slate-50 transition-all cursor-pointer flex items-center gap-1 shrink-0"
+                >
+                  <span>Edit</span>
+                  <ChevronDown class="w-3.5 h-3.5 text-[#1b3b5f]" />
+                </button>
+              </div>
+            </div>
+
+            <!-- Mode B: Expanded Customer & Logistics Form (When not collapsed or Classic mode) -->
+            <div 
+              v-else 
+              class="bg-white p-4 sm:p-6 rounded-xl border border-gray-200 shadow-sm space-y-4 animate-in fade-in duration-150"
+            >
+              <div class="border-b border-gray-100 pb-2 mb-2 flex items-center justify-between">
+                <h3 class="text-xs sm:text-sm font-bold text-gray-900 uppercase tracking-wider">Order & Customer Info</h3>
+                <button 
+                  v-if="editUiMode === 'modern'"
+                  type="button" 
+                  @click="isEditLogisticsCollapsed = true" 
+                  class="text-xs font-bold text-[#1b3b5f] bg-blue-50 hover:bg-blue-100 px-3 py-1 rounded-lg border border-blue-200 flex items-center gap-1 transition-colors cursor-pointer"
+                >
+                  <span>Done</span>
+                  <ChevronUp class="w-3.5 h-3.5" />
+                </button>
+              </div>
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
                   <label class="block text-[10px] sm:text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Order Number</label>
@@ -3129,6 +3232,19 @@ onUnmounted(() => {
                 <div class="col-span-1 sm:col-span-2">
                   <label class="block text-[10px] sm:text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Internal Notes</label>
                   <textarea v-model="editForm.notes" rows="2" class="w-full text-sm border border-gray-300 rounded-lg p-2.5 focus:ring-[#1b3b5f] focus:border-[#1b3b5f] resize-none"></textarea>
+                </div>
+
+                <!-- Done Button below Internal Notes (Only in Modern Mode) -->
+                <div v-if="editUiMode === 'modern'" class="col-span-1 sm:col-span-2 pt-2 flex justify-end">
+                  <button 
+                    type="button" 
+                    @click="isEditLogisticsCollapsed = true" 
+                    class="w-full sm:w-auto py-2.5 px-6 bg-[#1b3b5f] hover:bg-[#132c49] text-white text-xs font-bold rounded-xl shadow-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95"
+                  >
+                    <Check class="w-4 h-4 text-white" />
+                    <span>Done</span>
+                    <ChevronUp class="w-3.5 h-3.5 text-white/80" />
+                  </button>
                 </div>
               </div>
             </div>
