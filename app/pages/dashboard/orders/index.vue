@@ -3,6 +3,7 @@ import { ref, computed, watch } from 'vue'
 import { refDebounced } from '@vueuse/core'
 import OrderTable from '~/components/dashboard/OrderTable.vue'
 import OrderDetailPanel from '~/components/dashboard/OrderDetailPanel.vue'
+import SplitOrderModal from '~/components/dashboard/SplitOrderModal.vue'
 import { getEffectiveActionPermissions } from '~/utils/permissions'
 
 definePageMeta({ layout: 'dashboard' })
@@ -103,6 +104,19 @@ const handlePanelUpdate = (updatedOrder?: any) => {
   refresh()
 }
 
+const isSplitModalOpen = ref(false)
+const splittingOrderId = ref<string | null>(null)
+
+const openSplitModal = (orderId: string) => {
+  splittingOrderId.value = orderId
+  isSplitModalOpen.value = true
+}
+
+const onOrderSplit = () => {
+  isSplitModalOpen.value = false
+  refresh()
+}
+
 // Realtime instant synchronization across all devices
 const { onOrderSync } = useRealtimeSync()
 onOrderSync((event) => {
@@ -144,6 +158,15 @@ onOrderSync((event) => {
       context="orders"
       @close="handlePanelClose"
       @updated="handlePanelUpdate"
+      @split-order="openSplitModal"
+    />
+
+    <!-- Batch Split Modal -->
+    <SplitOrderModal 
+      :isOpen="isSplitModalOpen"
+      :orderId="splittingOrderId"
+      @close="isSplitModalOpen = false"
+      @splitSuccess="onOrderSplit"
     />
   </div>
 </template>

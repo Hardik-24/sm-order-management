@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, computed, nextTick, onMounted, onUnmounted } from 'vue'
-import { X, MoreHorizontal, Lock, Edit, Package, PackageCheck, PackageX, Truck, Check, Box, Plus, Trash2, MapPin, AlertCircle, AlertTriangle, Ban, CheckCheck, CheckCircle2, Zap, User, IndianRupee, Clock, Building2, Phone, FileText, Calendar, Copy, ChevronRight, Car, GitFork, SlidersHorizontal, Loader2, Save, Link2, UserCheck, Calculator, LayoutList, ChevronUp, ChevronDown, Tag, PackageSearch } from 'lucide-vue-next'
+import { X, MoreHorizontal, Lock, Edit, Package, PackageCheck, PackageX, Truck, Check, Box, Plus, Trash2, MapPin, AlertCircle, AlertTriangle, Ban, CheckCheck, CheckCircle2, Zap, User, IndianRupee, Clock, Building2, Phone, FileText, Calendar, Copy, ChevronRight, Car, GitFork, SlidersHorizontal, Loader2, Save, Link2, UserCheck, Calculator, LayoutList, ChevronUp, ChevronDown, Tag, PackageSearch, Layers } from 'lucide-vue-next'
 import StatusBadge from '~/components/ui/StatusBadge.vue'
 import GenerateBillModal from '~/components/dashboard/GenerateBillModal.vue'
 import SetDeliveryPinModal from '~/components/dashboard/SetDeliveryPinModal.vue'
@@ -81,10 +81,42 @@ const emit = defineEmits<{
   (e: 'split-order', id: string): void
 }>()
 
-const { user, hasRole, canEditOrders, canCancelOrders, canEditOrderStatus, canLinkBusyData, canEditConvertedQuotationOrders } = useAuth()
+const { user, hasRole, canEditOrders, canCancelOrders, canEditOrderStatus, canLinkBusyData, canEditConvertedQuotationOrders, canAccessPage } = useAuth()
 const order = ref<Order | null>(null)
 const isLoading = ref(false)
 const activeTab = ref<'DETAILS' | 'TIMELINE' | 'NOTES'>('DETAILS')
+
+const canSplitCurrentOrder = computed(() => {
+  if (!order.value) return false
+  if (order.value.overallStatus === 'CANCELLED') return false
+  if (isBillGenerated.value) return false
+  if (order.value.deliveryStatus?.status === 'DISPATCHED' || order.value.deliveryStatus?.status === 'DELIVERED') return false
+  if (isConvertedFromQuotation.value && !canEditConvertedQuotationOrders.value) return false
+  return hasRole('ADMIN', 'SUPERVISOR') || canAccessPage('approve-orders')
+})
+
+const isReleasingBatch = ref(false)
+const releaseBatch = async (batchId: string) => {
+  if (isReleasingBatch.value) return
+  isReleasingBatch.value = true
+  try {
+    await $fetch(`/api/orders/${batchId}/release-batch`, { method: 'POST' })
+    showSaved('Batch released to packing queue!')
+    notifyChange({ action: 'BATCH_RELEASED', orderId: batchId })
+    await fetchOrder(order.value?.id || '', true)
+    emit('updated')
+  } catch (err: any) {
+    showError(err.data?.message || 'Failed to release batch')
+  } finally {
+    isReleasingBatch.value = false
+  }
+}
+
+const switchToOrder = (orderId: string) => {
+  if (orderId) {
+    fetchOrder(orderId)
+  }
+}
 
 const isConvertedFromQuotation = computed(() => {
   return Boolean(order.value?.isConvertedFromQuotation)
@@ -1617,7 +1649,7 @@ onUnmounted(() => {
           </div>
 
           <!-- Line 2: Action buttons row: Edit Order, Edit Status, and ... button -->
-          <div v-if="canEditCurrentOrder || canEditOrderStatus || canCancelOrder || (hasRole('ADMIN') && !isBillGenerated)" class="flex items-center gap-2 flex-wrap">
+          <div v-if="canEditCurrentOrder || canEditOrderStatus || canSplitCurrentOrder || canCancelOrder || (hasRole('ADMIN') && !isBillGenerated)" class="flex items-center gap-2 flex-wrap">
             <!-- Edit Order Button -->
             <button 
               v-if="canEditCurrentOrder"
@@ -1642,7 +1674,7 @@ onUnmounted(() => {
 
             <!-- Mobile More Actions Dropdown (•••) -->
             <div 
-              v-if="canCancelOrder || (hasRole('ADMIN') && !isBillGenerated)" 
+              v-if="canSplitCurrentOrder || canCancelOrder || (hasRole('ADMIN') && !isBillGenerated)" 
               class="relative"
             >
               <button 
@@ -1667,6 +1699,15 @@ onUnmounted(() => {
                 class="absolute mt-1.5 w-48 bg-white rounded-xl shadow-xl border border-gray-200 py-1 z-40 text-xs divide-y divide-gray-100 animate-in fade-in zoom-in-95 duration-100"
                 :class="canEditCurrentOrder || canEditOrderStatus ? 'right-0' : 'left-0'"
               >
+                <div v-if="canSplitCurrentOrder" class="py-1">
+                  <button 
+                    @click="emit('split-order', order.id); isHeaderMenuOpen = false"
+                    class="w-full text-left px-3.5 py-2 hover:bg-amber-50 text-amber-900 flex items-center gap-2 cursor-pointer font-medium transition-colors"
+                  >
+                    <Layers class="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                    <span>Split into Batches</span>
+                  </button>
+                </div>
                 <div v-if="canCancelOrder" class="py-1">
                   <button 
                     @click="openCancelModal(); isHeaderMenuOpen = false"
@@ -1769,6 +1810,17 @@ onUnmounted(() => {
               <span>Edit Status</span>
             </button>
 
+            <!-- Split Batches Button -->
+            <button 
+              v-if="canSplitCurrentOrder"
+              @click="emit('split-order', order.id)" 
+              title="Split order into fulfillment batches"
+              class="inline-flex px-3 py-1.5 text-xs font-bold text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-300 rounded-lg transition-all items-center gap-1.5 shadow-xs cursor-pointer active:scale-95"
+            >
+              <Layers class="w-3.5 h-3.5 text-amber-700 shrink-0" />
+              <span>Split Batches</span>
+            </button>
+
             <!-- Cancel Button (Direct on PC) -->
             <button 
               v-if="canCancelOrder"
@@ -1842,6 +1894,69 @@ onUnmounted(() => {
             <Lock class="w-3 h-3 text-emerald-600" />
             <span>Billed (Locked)</span>
           </span>
+        </div>
+
+        <!-- Batch Banner (When viewing a Child Batch) -->
+        <div v-if="order.parentOrderId" class="px-4 sm:px-6 py-2.5 bg-gradient-to-r from-blue-50 to-indigo-50/40 border-b border-blue-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2 flex-shrink-0">
+          <div class="flex items-center gap-2 min-w-0">
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-blue-600 text-white shadow-2xs shrink-0">
+              Batch {{ order.batchNumber }} of {{ order.batchCount || (order as any).parentOrder?.batchCount || '2' }}
+            </span>
+            <span class="text-xs text-blue-950 font-medium truncate">
+              Part of Master Order: <strong class="font-mono">{{ (order as any).parentOrder?.orderNumber }}</strong>
+            </span>
+          </div>
+
+          <div class="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+            <button 
+              type="button" 
+              @click="switchToOrder(order.parentOrderId)"
+              class="text-xs font-bold text-blue-800 hover:text-blue-950 hover:underline flex items-center gap-1 cursor-pointer"
+            >
+              <span>View Master Order</span>
+              <ArrowRight class="w-3 h-3" />
+            </button>
+          </div>
+        </div>
+
+        <!-- Sibling Batches Tab Bar (Fast switching between sibling batches) -->
+        <div v-if="(order as any).sisterBatches && (order as any).sisterBatches.length > 1" class="px-4 sm:px-6 py-2 bg-gray-50 border-b border-gray-200/80 flex items-center gap-1.5 overflow-x-auto flex-shrink-0 no-scrollbar">
+          <span class="text-[10px] uppercase font-bold text-gray-500 mr-1 shrink-0">Batches:</span>
+          <button 
+            v-for="b in (order as any).sisterBatches" 
+            :key="b.id"
+            type="button"
+            @click="switchToOrder(b.id)"
+            class="px-2.5 py-1 text-xs font-semibold rounded-lg border transition-all shrink-0 cursor-pointer flex items-center gap-1"
+            :class="b.id === order.id ? 'bg-[#1b3b5f] text-white border-[#1b3b5f] shadow-2xs font-bold' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-100'"
+          >
+            <span>Batch {{ b.batchNumber }}</span>
+            <span v-if="b.isBatchOnHold" class="text-[9px] opacity-90" title="On Hold">⏸️</span>
+            <span v-else-if="b.deliveryStatus?.status === 'DELIVERED'" class="text-[9px] opacity-90" title="Delivered">✅</span>
+            <span v-else-if="b.billingStatus?.status === 'GENERATED'" class="text-[9px] opacity-90" title="Invoiced">📄</span>
+            <span v-else-if="b.packingStatus?.status === 'PACKED'" class="text-[9px] opacity-90" title="Packed">📦</span>
+          </button>
+        </div>
+
+        <!-- On Hold Alert Banner (if batch on hold) -->
+        <div v-if="order.isBatchOnHold" class="px-4 sm:px-6 py-2.5 bg-amber-50 border-b border-amber-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs text-amber-950 flex-shrink-0">
+          <div class="flex items-center gap-2">
+            <Clock class="w-4 h-4 text-amber-700 shrink-0" />
+            <div>
+              <strong>Batch is On Hold:</strong> Stock pending. Hidden from warehouse packing queue.
+            </div>
+          </div>
+          <button 
+            v-if="hasRole('ADMIN', 'SUPERVISOR') || canAccessPage('approve-orders')"
+            type="button" 
+            @click="releaseBatch(order.id)"
+            :disabled="isReleasingBatch"
+            class="px-3 py-1.5 text-xs font-bold text-white bg-amber-700 hover:bg-amber-800 rounded-lg shadow-2xs transition flex items-center gap-1.5 cursor-pointer shrink-0 disabled:opacity-50 self-end sm:self-auto"
+          >
+            <Loader2 v-if="isReleasingBatch" class="w-3.5 h-3.5 animate-spin" />
+            <Check v-else class="w-3.5 h-3.5" />
+            <span>Release to Packing Queue</span>
+          </button>
         </div>
 
         <!-- 2. Sub-header Quick Snapshot -->
@@ -1964,6 +2079,79 @@ onUnmounted(() => {
                     <span class="block text-[9px] text-gray-500 uppercase tracking-tight mt-0.5 whitespace-nowrap">
                       {{ getStepStatus(step.id).replace(/_/g, ' ') }}
                     </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Master Order Batches Breakdown Card (When Order has fulfillment batches) -->
+            <div v-if="(order as any).batches && (order as any).batches.length > 0" class="bg-white rounded-xl border border-gray-200/90 shadow-2xs overflow-hidden">
+              <div class="px-4 py-3 bg-[#faf8f5] border-b border-gray-200 flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2 min-w-0">
+                  <Layers class="w-4 h-4 text-[#1b3b5f] shrink-0" />
+                  <h3 class="text-xs font-bold text-gray-900 uppercase tracking-wider truncate">
+                    Fulfillment Batches ({{ (order as any).batches.length }} Batches)
+                  </h3>
+                </div>
+                <span class="text-xs font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 shrink-0">
+                  {{ getDisplayStatus(order) }}
+                </span>
+              </div>
+
+              <div class="divide-y divide-gray-100 p-3 space-y-2">
+                <div 
+                  v-for="b in (order as any).batches" 
+                  :key="b.id" 
+                  class="p-3 rounded-xl border border-gray-200/80 bg-gray-50/50 hover:bg-gray-50 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                >
+                  <div class="min-w-0 flex-1">
+                    <div class="flex items-center gap-2 flex-wrap">
+                      <span class="font-bold text-xs text-gray-900 font-mono">{{ b.orderNumber }}</span>
+                      <span class="px-2 py-0.5 text-[10px] font-bold rounded-md bg-blue-50 text-blue-800 border border-blue-200">
+                        Batch {{ b.batchNumber }}
+                      </span>
+                      <span v-if="b.isBatchOnHold" class="px-2 py-0.5 text-[10px] font-bold rounded-md bg-amber-100 text-amber-900 border border-amber-300">
+                        ⏸️ On Hold (Stock pending)
+                      </span>
+                      <span v-else-if="b.deliveryStatus?.status === 'DELIVERED'" class="px-2 py-0.5 text-[10px] font-bold rounded-md bg-emerald-100 text-emerald-900 border border-emerald-300">
+                        ✅ Delivered
+                      </span>
+                      <span v-else-if="b.billingStatus?.status === 'GENERATED'" class="px-2 py-0.5 text-[10px] font-bold rounded-md bg-indigo-50 text-indigo-800 border border-indigo-200">
+                        📄 Invoiced (#{{ b.billingStatus.invoiceNumber || 'INV' }})
+                      </span>
+                      <span v-else-if="b.packingStatus?.status === 'PACKED'" class="px-2 py-0.5 text-[10px] font-bold rounded-md bg-teal-50 text-teal-800 border border-teal-200">
+                        📦 Packed
+                      </span>
+                      <span v-else class="px-2 py-0.5 text-[10px] font-bold rounded-md bg-gray-200 text-gray-700">
+                        ⏳ Packing Queue
+                      </span>
+                    </div>
+
+                    <div class="flex items-center gap-3 text-xs text-gray-500 mt-1.5 flex-wrap">
+                      <span>{{ b.items?.length || 0 }} line item(s)</span>
+                      <span>•</span>
+                      <span class="font-bold text-gray-800">{{ formatCurrency(b.totalAmount || 0) }}</span>
+                    </div>
+                  </div>
+
+                  <div class="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                    <button 
+                      v-if="b.isBatchOnHold && (hasRole('ADMIN', 'SUPERVISOR') || canAccessPage('approve-orders'))"
+                      type="button" 
+                      @click.stop="releaseBatch(b.id)"
+                      :disabled="isReleasingBatch"
+                      class="px-2.5 py-1 text-xs font-bold text-amber-900 bg-amber-100 hover:bg-amber-200 rounded-lg border border-amber-300 transition cursor-pointer"
+                    >
+                      Release to Packing
+                    </button>
+                    <button 
+                      type="button" 
+                      @click.stop="switchToOrder(b.id)"
+                      class="px-3 py-1 text-xs font-bold text-[#1b3b5f] bg-[#1b3b5f]/10 hover:bg-[#1b3b5f]/20 rounded-lg border border-[#1b3b5f]/20 transition flex items-center gap-1 cursor-pointer"
+                    >
+                      <span>View Batch</span>
+                      <ArrowRight class="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 </div>
               </div>

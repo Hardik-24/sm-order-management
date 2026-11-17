@@ -220,6 +220,9 @@ const getPackingProgress = (order: any) => {
                   <span class="text-xs font-bold text-gray-900 group-hover:text-[#1b3b5f] transition-colors">
                     {{ order.orderNumber }}
                   </span>
+                  <span v-if="order.batchNumber" class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-bold bg-blue-50 text-blue-800 border border-blue-200">
+                    Batch {{ order.batchNumber }}/{{ order.batchCount || order.parentOrder?.batchCount || '?' }}
+                  </span>
                   <span v-if="order.overallStatus === 'CANCELLED'" class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-bold bg-gray-200 !text-gray-600 border border-rose-500">
                     🚫 CANCELLED
                   </span>
@@ -370,6 +373,9 @@ const getPackingProgress = (order: any) => {
             <div class="flex items-center gap-1.5 min-w-0 flex-1">
               <span class="text-xs font-bold text-gray-900 shrink-0">
                 {{ order.orderNumber }}
+              </span>
+              <span v-if="order.batchNumber" class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[9px] font-bold bg-blue-50 text-blue-800 border border-blue-200 shrink-0">
+                Batch {{ order.batchNumber }}/{{ order.batchCount || order.parentOrder?.batchCount || '?' }}
               </span>
               <span v-if="order.overallStatus === 'CANCELLED'" class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-bold bg-gray-200 text-gray-600 border border-rose-500">
                 🚫 CANCELLED

@@ -126,6 +126,22 @@ export function formatStatus(status: string): string {
 export function getDisplayStatus(order: any): string {
   if (!order) return ''
   if (order.overallStatus === 'CANCELLED') return 'Cancelled'
+  if (order.isBatchOnHold) return `Batch ${order.batchNumber || ''} On Hold`
+
+  // Master Order with child batches: aggregate fulfillment progress
+  if (order.batches && order.batches.length > 0) {
+    const totalBatches = order.batches.length
+    const deliveredBatches = order.batches.filter((b: any) => b.deliveryStatus?.status === 'DELIVERED').length
+    if (deliveredBatches === totalBatches) return 'All Batches Delivered'
+    if (deliveredBatches > 0) return `${deliveredBatches}/${totalBatches} Batches Delivered`
+
+    const packedBatches = order.batches.filter((b: any) => b.packingStatus?.status === 'PACKED').length
+    if (packedBatches === totalBatches) return 'All Batches Packed'
+    if (packedBatches > 0) return `${packedBatches}/${totalBatches} Batches Packed`
+
+    return `${totalBatches} Batches In Progress`
+  }
+
   const delivery = order.deliveryStatus?.status
   const packing = order.packingStatus?.status
   const billing = order.billingStatus?.status
@@ -143,6 +159,16 @@ export function getDisplayStatus(order: any): string {
 export function getOverallColor(order: any): string {
   if (!order) return 'bg-gray-100 text-gray-600 border-gray-200'
   if (order.overallStatus === 'CANCELLED') return 'bg-gray-200 text-gray-700 border-gray-300'
+  if (order.isBatchOnHold) return 'bg-amber-100 text-amber-900 border-amber-300'
+
+  if (order.batches && order.batches.length > 0) {
+    const totalBatches = order.batches.length
+    const deliveredBatches = order.batches.filter((b: any) => b.deliveryStatus?.status === 'DELIVERED').length
+    if (deliveredBatches === totalBatches) return 'bg-gray-100 text-gray-500 border-gray-200'
+    if (deliveredBatches > 0) return 'bg-indigo-50 text-indigo-700 border-indigo-200'
+    return 'bg-amber-50 text-amber-800 border-amber-200'
+  }
+
   const delivery = order.deliveryStatus?.status
   const packing = order.packingStatus?.status
   const billing = order.billingStatus?.status

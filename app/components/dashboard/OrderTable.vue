@@ -371,6 +371,12 @@ const getItemsTotalQuantity = (order: Order) => {
                   <span class="text-xs font-bold text-gray-900 group-hover:text-[#1b3b5f] transition-colors">
                     {{ order.orderNumber }}
                   </span>
+                  <span v-if="order.batches && order.batches.length > 0" class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-bold bg-amber-50 text-amber-900 border border-amber-300 shadow-2xs" title="Order split into multiple fulfillment batches">
+                    ⚡ {{ order.batches.length }} Batches
+                  </span>
+                  <span v-else-if="order.batchNumber" class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-bold bg-blue-50 text-blue-800 border border-blue-200 shadow-2xs">
+                    Batch {{ order.batchNumber }}/{{ order.batchCount || order.parentOrder?.batchCount || '?' }}
+                  </span>
                   <span v-if="order.vehicleMode === 'PARTY_VEHICLE' && order.overallStatus !== 'CANCELLED'" class="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-50 text-amber-800 border border-amber-200" title="Customer Pickup / Party Vehicle">
                     🚗 Party
                   </span>
@@ -524,6 +530,12 @@ const getItemsTotalQuantity = (order: Order) => {
             <div class="flex items-center gap-1.5 min-w-0 flex-wrap">
               <span class="text-sm font-bold text-gray-950 shrink-0 font-mono">
                 {{ order.orderNumber }}
+              </span>
+              <span v-if="order.batches && order.batches.length > 0" class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-50 text-amber-900 border border-amber-300 shrink-0">
+                ⚡ {{ order.batches.length }} Batches
+              </span>
+              <span v-else-if="order.batchNumber" class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[9px] font-bold bg-blue-50 text-blue-800 border border-blue-200 shrink-0">
+                Batch {{ order.batchNumber }}/{{ order.batchCount || order.parentOrder?.batchCount || '?' }}
               </span>
               <span v-if="order.vehicleMode === 'PARTY_VEHICLE' && order.overallStatus !== 'CANCELLED'" class="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-50 text-amber-800 border border-amber-200" title="Customer Pickup / Party Vehicle">
                 🚗 Party

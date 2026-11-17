@@ -115,20 +115,9 @@
               <h3 class="text-xs font-bold text-gray-900 uppercase tracking-widest">
                 Reconcile & Adjust Billed Quantities
               </h3>
-              <div class="flex items-center gap-3">
-                <span class="text-xs text-gray-500">
-                  Ordered vs Physically Packed vs Billed
-                </span>
-                <button 
-                  type="button" 
-                  @click="emit('openSplit', order.id)"
-                  class="text-xs font-bold text-[#1b3b5f] hover:underline flex items-center gap-1 cursor-pointer"
-                  title="Split unbilled or shortage quantities into a separate order"
-                >
-                  <GitFork class="w-3.5 h-3.5" />
-                  <span>Split Order</span>
-                </button>
-              </div>
+              <span class="text-xs text-gray-500">
+                Ordered vs Physically Packed vs Billed
+              </span>
             </div>
             <!-- Desktop View: Full Spreadsheet Table -->
             <div class="hidden md:block border border-gray-200 rounded-xl overflow-x-auto">

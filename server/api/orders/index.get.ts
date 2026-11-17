@@ -85,6 +85,31 @@ export default defineEventHandler(async (event) => {
     }
   }
 
+  // Master Order vs Batch Scoping:
+  // - Orders & Approvals pages see only Master Orders (parentOrderId: null).
+  // - Execution queues (Packing, Billing, Delivery) see only active fulfillable units (child batches or unsplit orders).
+  const isExecutionQueue = Boolean(billingStatus || packingStatus || deliveryStatus || query.view === 'execution')
+
+  if (query.parentOrderId) {
+    andConditions.push({ parentOrderId: query.parentOrderId as string })
+  } else if (query.batchesOnly === 'true') {
+    andConditions.push({ parentOrderId: { not: null } })
+  } else if (isExecutionQueue) {
+    andConditions.push({
+      OR: [
+        { parentOrderId: { not: null } },
+        { batches: { none: {} } }
+      ]
+    })
+    // For packing queue, exclude batches placed on hold unless explicitly querying hold
+    if (packingStatus && query.includeOnHold !== 'true') {
+      andConditions.push({ isBatchOnHold: false })
+    }
+  } else {
+    // Default for Orders page, Approvals page, etc.: Only master orders (parentOrderId: null)
+    andConditions.push({ parentOrderId: null })
+  }
+
   // Salesperson scoping: Admin, Supervisors, and users with company view can filter by any rep
   const salesPersonId = (query.salesPersonId as string) || ''
   const scope = (query.scope as string) || ''
@@ -135,6 +160,22 @@ export default defineEventHandler(async (event) => {
         billingStatus: { select: { status: true, invoiceNumber: true, invoiceDate: true, invoicePdfUrl: true } },
         packingStatus: { select: { status: true } },
         deliveryStatus: { select: { status: true, driverName: true } },
+        parentOrder: { select: { id: true, orderNumber: true, batchCount: true } },
+        batches: {
+          select: {
+            id: true,
+            orderNumber: true,
+            batchNumber: true,
+            batchCount: true,
+            isBatchOnHold: true,
+            overallStatus: true,
+            totalAmount: true,
+            billingStatus: { select: { status: true, invoiceNumber: true } },
+            packingStatus: { select: { status: true } },
+            deliveryStatus: { select: { status: true } }
+          },
+          orderBy: { batchNumber: 'asc' }
+        },
         items: {
           include: {
             product: { select: { name: true, sku: true, unit: true, price: true, isBusySynced: true } }

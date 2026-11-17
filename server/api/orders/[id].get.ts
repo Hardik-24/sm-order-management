@@ -13,6 +13,25 @@ export default defineEventHandler(async (event) => {
     include: {
       customer: { include: { addresses: true } },
       salesPerson: true,
+      parentOrder: {
+        select: {
+          id: true,
+          orderNumber: true,
+          totalAmount: true,
+          overallStatus: true,
+          batchCount: true,
+          isApproved: true
+        }
+      },
+      batches: {
+        orderBy: { batchNumber: 'asc' },
+        include: {
+          billingStatus: { include: { generatedBy: true } },
+          packingStatus: { include: { assignedTo: true } },
+          deliveryStatus: true,
+          items: { include: { product: true } }
+        }
+      },
       items: { include: { product: true } },
       billingStatus: { include: { generatedBy: true } },
       packingStatus: { include: { assignedTo: true } },
@@ -29,6 +48,21 @@ export default defineEventHandler(async (event) => {
   })
 
   if (!order) throw createError({ statusCode: 404, message: 'Order not found' })
+
+  // If this order is a child batch, also load all its sister batches for easy switching in UI
+  let sisterBatches: any[] = []
+  if (order.parentOrderId) {
+    sisterBatches = await prisma.order.findMany({
+      where: { parentOrderId: order.parentOrderId },
+      orderBy: { batchNumber: 'asc' },
+      include: {
+        billingStatus: { select: { status: true, invoiceNumber: true, invoiceDate: true, invoicePdfUrl: true } },
+        packingStatus: { select: { status: true } },
+        deliveryStatus: { select: { status: true, driverName: true } },
+        items: { include: { product: true } }
+      }
+    })
+  }
 
   const pin = resolveDestinationPin(
     order.customerId,
@@ -70,6 +104,7 @@ export default defineEventHandler(async (event) => {
     convertedQuotationNumber: convertedQuotation?.quoteNumber || null,
     destinationCoords: pin ? { lat: pin.lat, lng: pin.lng, areaName: pin.areaName, landmark: pin.landmark } : null,
     hasDestinationPin: !!pin,
-    assignedTrip
+    assignedTrip,
+    sisterBatches
   }
 })

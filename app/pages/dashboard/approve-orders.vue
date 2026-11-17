@@ -26,7 +26,8 @@ import {
   IndianRupee,
   Loader2,
   Award,
-  Ban
+  Ban,
+  Layers
 } from 'lucide-vue-next'
 import { formatCurrency, formatDateTime, formatCustomerContact } from '~/lib/utils'
 import { useGsapAnimation } from '~/composables/useGsapAnimation'
@@ -36,6 +37,7 @@ import RowsPerPageSelect from '~/components/ui/RowsPerPageSelect.vue'
 import FloatingHorizontalScrollbar from '~/components/ui/FloatingHorizontalScrollbar.vue'
 import TableFilterButtons from '~/components/dashboard/TableFilterButtons.vue'
 import OrderDetailPanel from '~/components/dashboard/OrderDetailPanel.vue'
+import SplitOrderModal from '~/components/dashboard/SplitOrderModal.vue'
 
 definePageMeta({ layout: 'dashboard' })
 
@@ -162,6 +164,22 @@ const selectedOrder = ref<any | null>(null)
 const editableItems = ref<any[]>([])
 const approvalNotes = ref('')
 const isSubmittingApproval = ref(false)
+
+// Split into Batches state
+const isSplitModalOpen = ref(false)
+const splittingOrderId = ref<string | null>(null)
+
+const openSplitModal = (orderId: string) => {
+  splittingOrderId.value = orderId
+  isSplitModalOpen.value = true
+}
+
+const onOrderSplit = () => {
+  isSplitModalOpen.value = false
+  isReviewModalOpen.value = false
+  selectedOrder.value = null
+  handleRefresh()
+}
 
 // Cancel Modal state
 const isCancelModalOpen = ref(false)
@@ -1035,13 +1053,22 @@ const getTotalNos = (order: any) => {
           </div>
 
           <!-- Footer -->
-          <div class="p-4 border-t border-gray-100 bg-white flex flex-col-reverse sm:flex-row justify-end gap-2.5 sm:gap-3 shrink-0">
+          <div class="p-4 border-t border-gray-100 bg-white flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 shrink-0">
             <button 
               @click="isReviewModalOpen = false" 
               type="button"
               class="w-full sm:w-auto text-center px-4 py-2 text-xs font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
             >
               Cancel
+            </button>
+            <button 
+              v-if="selectedOrder"
+              type="button" 
+              @click="openSplitModal(selectedOrder.id)"
+              class="w-full sm:w-auto justify-center flex items-center gap-1.5 px-4 py-2 bg-amber-50 text-amber-900 border border-amber-300 text-xs font-bold rounded-lg hover:bg-amber-100 transition-colors cursor-pointer shadow-xs active:scale-95"
+            >
+              <Layers class="w-4 h-4 text-amber-700" />
+              <span>Split into Batches</span>
             </button>
             <button 
               @click="submitApproval" 
@@ -1108,6 +1135,15 @@ const getTotalNos = (order: any) => {
       @close="handleDrawerClose"
       @updated="handleDrawerUpdate"
       @review-approve="onDrawerReviewApprove"
+      @split-order="openSplitModal"
+    />
+
+    <!-- Batch Split Modal -->
+    <SplitOrderModal 
+      :isOpen="isSplitModalOpen"
+      :orderId="splittingOrderId"
+      @close="isSplitModalOpen = false"
+      @splitSuccess="onOrderSplit"
     />
   </div>
 </template>
