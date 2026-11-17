@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { ArrowLeft, X, Plus, Trash2, Zap, MapPin, UserCheck, ShieldAlert, Award, FileText, IndianRupee, Truck, Car, AlertCircle, Package, PackageSearch, Loader2, Clock, Crown, Check, Tag, Calculator, ChevronRight, Database, Pencil, ChevronDown, ChevronUp, LayoutList } from 'lucide-vue-next'
+import { ArrowLeft, X, Plus, Trash2, Zap, MapPin, UserCheck, ShieldAlert, Award, FileText, IndianRupee, Truck, Car, AlertCircle, Package, PackageSearch, Loader2, Clock, Crown, Check, Tag, Calculator, ChevronRight, Database, Pencil, ChevronDown, ChevronUp, LayoutList, UserPlus } from 'lucide-vue-next'
 import { formatCurrency, formatDate } from '~/lib/utils'
 import CustomSelect from '~/components/ui/CustomSelect.vue'
 import SearchCombobox from '~/components/ui/SearchCombobox.vue'
@@ -43,8 +43,8 @@ const setUiMode = (mode: 'modern' | 'classic') => {
   }
 }
 
-// Auto-Collapsing Logistics (Customer, Transport & Address) in Modern Mode
-const isLogisticsCollapsed = ref(false)
+// Auto-Collapsing Logistics (Customer, Transport & Address) in Modern Mode (Starts collapsed by default)
+const isLogisticsCollapsed = ref(true)
 
 const onChangeDeliveryAddressClick = () => {
   isLogisticsCollapsed.value = false
@@ -867,21 +867,24 @@ const getCustomerInitials = (name: string) => {
       
       <!-- ── Section 1: Customer Profile & Order Info ────────────────────── -->
       
-      <!-- Mode A: Collapsed Customer & Logistics Summary Card (Only in Modern mode) -->
+      <!-- Mode A1: Collapsed Customer Summary Card (When customer IS selected in Modern mode) -->
       <div 
         v-if="uiMode === 'modern' && isLogisticsCollapsed && (selectedCustomer || (isCustomCustomer && customCustomer.name.trim()))"
         @click="isLogisticsCollapsed = false"
         class="bg-gradient-to-r from-slate-50 via-white to-blue-50/30 rounded-2xl p-3 sm:p-4 border border-slate-200/90 shadow-2xs hover:shadow-xs hover:border-[#1b3b5f]/30 transition-all select-none cursor-pointer"
       >
         <div class="flex items-center justify-between gap-3">
-          <div class="flex items-center gap-2.5 sm:gap-3 min-w-0">
+          <div class="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
             <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-[#1b3b5f] text-white flex items-center justify-center font-black text-xs sm:text-sm shadow-xs shrink-0 tracking-wider">
               {{ isCustomCustomer ? getCustomerInitials(customCustomer.name) : getCustomerInitials(selectedCustomer.name) }}
             </div>
-            <div class="min-w-0">
+            <div class="min-w-0 flex-1">
               <div class="flex items-center gap-1.5 flex-wrap">
-                <h3 class="text-xs sm:text-sm font-black text-slate-900 truncate">
+                <h3 class="text-xs sm:text-sm font-black text-slate-900 leading-snug break-words">
                   {{ isCustomCustomer ? customCustomer.name : selectedCustomer.name }}
+                  <span v-if="!isCustomCustomer && selectedCustomer.company && selectedCustomer.company.trim().toLowerCase() !== selectedCustomer.name.trim().toLowerCase()" class="text-slate-500 font-semibold text-[11px] block sm:inline sm:ml-1">
+                    ({{ selectedCustomer.company }})
+                  </span>
                 </h3>
                 <span 
                   v-if="!isCustomCustomer"
@@ -900,7 +903,7 @@ const getCustomerInitials = (name: string) => {
                   Priority
                 </span>
               </div>
-              <p class="text-[10px] sm:text-xs text-slate-500 truncate mt-0.5">
+              <p class="text-[10px] sm:text-xs text-slate-500 leading-normal mt-0.5 break-words">
                 <span v-if="!isCustomCustomer && selectedCustomer.city">{{ selectedCustomer.city }}</span>
                 <span v-else-if="isCustomCustomer && customCustomer.city">{{ customCustomer.city }}</span>
                 <span v-if="(!isCustomCustomer && selectedCustomer.city) || (isCustomCustomer && customCustomer.city)"> • </span>
@@ -924,7 +927,40 @@ const getCustomerInitials = (name: string) => {
         </div>
       </div>
 
-      <!-- Mode B: Expanded Customer & Logistics Form (When not collapsed or no customer picked yet) -->
+      <!-- Mode A2: Collapsed Placeholder Card (When NO customer selected yet in Modern mode) -->
+      <div 
+        v-else-if="uiMode === 'modern' && isLogisticsCollapsed"
+        @click="isLogisticsCollapsed = false"
+        class="bg-white hover:bg-slate-50/80 rounded-2xl p-3 sm:p-4 border-2 border-dashed border-slate-300 hover:border-[#1b3b5f]/50 shadow-2xs hover:shadow-xs transition-all select-none cursor-pointer group"
+      >
+        <div class="flex items-center justify-between gap-3">
+          <div class="flex items-center gap-2.5 sm:gap-3 min-w-0">
+            <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-blue-50 text-[#1b3b5f] flex items-center justify-center border border-blue-100 transition-colors shrink-0">
+              <UserPlus class="w-4 h-4 sm:w-5 sm:h-5 text-[#1b3b5f]" />
+            </div>
+            <div class="min-w-0">
+              <h3 class="text-xs sm:text-sm font-bold text-slate-900 leading-tight flex items-center gap-1.5">
+                <span>Select Customer *</span>
+                <span class="text-[9px] font-extrabold text-amber-700 bg-amber-50 px-1.5 py-0.2 rounded border border-amber-200">Required</span>
+              </h3>
+              <p class="text-[10px] sm:text-xs text-slate-400 mt-0.5 truncate">
+                Tap to choose party, delivery destination & transport
+              </p>
+            </div>
+          </div>
+
+          <button 
+            type="button" 
+            @click.stop="isLogisticsCollapsed = false" 
+            class="text-[10px] sm:text-[11px] font-bold text-white bg-[#1b3b5f] hover:bg-[#132c49] px-3 py-1.5 rounded-xl shadow-xs transition-all cursor-pointer flex items-center gap-1 shrink-0 active:scale-95"
+          >
+            <Plus class="w-3.5 h-3.5" />
+            <span>Select</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Mode B: Expanded Customer & Logistics Form (When not collapsed) -->
       <div 
         v-else 
         class="bg-white p-4 sm:p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4 animate-in fade-in duration-150"
@@ -934,7 +970,7 @@ const getCustomerInitials = (name: string) => {
             Customer & Delivery Details
           </h3>
           <button 
-            v-if="uiMode === 'modern' && (selectedCustomer || (isCustomCustomer && customCustomer.name.trim()))"
+            v-if="uiMode === 'modern'"
             type="button" 
             @click="isLogisticsCollapsed = true" 
             class="text-xs font-bold text-[#1b3b5f] bg-blue-50 hover:bg-blue-100 px-3 py-1 rounded-lg border border-blue-200 flex items-center gap-1 transition-colors cursor-pointer"
@@ -1329,7 +1365,7 @@ const getCustomerInitials = (name: string) => {
           </div>
 
           <!-- Done Button below Internal Dispatch Notes to close/collapse Customer Details (Only in Modern Mode) -->
-          <div v-if="uiMode === 'modern' && (selectedCustomer || (isCustomCustomer && customCustomer.name.trim()))" class="md:col-span-2 pt-2 flex justify-end">
+          <div v-if="uiMode === 'modern'" class="md:col-span-2 pt-2 flex justify-end">
             <button 
               type="button" 
               @click="isLogisticsCollapsed = true" 
