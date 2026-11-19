@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { Search, Filter, MoreHorizontal, ChevronLeft, ChevronRight, Check, Calendar, X, ArrowRight, Clock, Package, Truck, IndianRupee, CheckCheck, Building2, User as UserIcon, AlertCircle } from 'lucide-vue-next'
-import { formatTime, getDisplayStatus, getOverallColor, getStatusColor, formatCustomerContact } from '~~/app/lib/utils'
+import { Search, Filter, MoreHorizontal, ChevronLeft, ChevronRight, Check, Calendar, X, ArrowRight, Clock, Package, Truck, IndianRupee, CheckCheck, Building2, User as UserIcon, AlertCircle, ChevronDown, ChevronUp, Layers, Pause, Plus } from 'lucide-vue-next'
+import { formatTime, formatCurrency, getDisplayStatus, getOverallColor, getStatusColor, formatCustomerContact } from '~~/app/lib/utils'
 import CustomSelect from '~/components/ui/CustomSelect.vue'
 import TableFilterButtons from '~/components/dashboard/TableFilterButtons.vue'
 import RowsPerPageSelect from '~/components/ui/RowsPerPageSelect.vue'
@@ -44,6 +44,7 @@ const emit = defineEmits<{
   (e: 'update:salesPersonId', val: string): void
   (e: 'update:scope', val: string): void
   (e: 'select', orderId: string): void
+  (e: 'split-order', orderId: string): void
 }>()
 
 import { ref, computed, nextTick, watch, onMounted, onUnmounted } from 'vue'
@@ -229,6 +230,94 @@ const getOrderPipeline = (order: Order): { steps: PipelineStep[], summary: strin
   }
 }
 
+// ── Batch Sub-Rows & Multi-Batch Helpers ──────────────────────────────
+const expandedOrderIds = ref<Record<string, boolean>>({})
+const toggleExpand = (orderId: string) => {
+  expandedOrderIds.value[orderId] = !expandedOrderIds.value[orderId]
+}
+const isExpanded = (orderId: string) => Boolean(expandedOrderIds.value[orderId])
+
+const hasBatches = (order: any) => Boolean(order.batches && order.batches.length > 0)
+const hasHoldBatches = (order: any) => Boolean(order.batches?.some((b: any) => b.isBatchOnHold))
+const getHoldBatchesCount = (order: any) => order.batches?.filter((b: any) => b.isBatchOnHold).length || 0
+const getBatchesDeliveredCount = (order: any) => order.batches?.filter((b: any) => b.deliveryStatus?.status === 'DELIVERED').length || 0
+const getBatchesPackedCount = (order: any) => order.batches?.filter((b: any) => b.packingStatus?.status === 'PACKED' || b.packingStatus?.status === 'COMPLETED').length || 0
+
+const getBatchUnits = (batch: any) => {
+  return batch.items?.reduce((sum: number, itm: any) => sum + (Number(itm.quantity) || 0), 0) || 0
+}
+
+const getOrderBatchedUnits = (order: any) => {
+  return order.batches?.reduce((sum: number, b: any) => sum + getBatchUnits(b), 0) || 0
+}
+
+const getOrderTotalOrderedUnits = (order: any) => {
+  return order.items?.reduce((sum: number, itm: any) => sum + (Number(itm.approvedQuantity ?? itm.quantity) || 0), 0) || 0
+}
+
+const getOrderPendingPoolUnits = (order: any) => {
+  return Math.max(0, getOrderTotalOrderedUnits(order) - getOrderBatchedUnits(order))
+}
+
+const getBatchPipeline = (batch: any) => {
+  // 1. Packing
+  const packStat = batch.packingStatus?.status
+  let packStatus: 'completed' | 'in_progress' | 'paused' | 'waiting' = 'waiting'
+  let packText = 'Pending'
+
+  if (batch.isBatchOnHold) {
+    packStatus = 'paused'
+    packText = 'On Hold'
+  } else if (packStat === 'PACKED' || packStat === 'COMPLETED') {
+    packStatus = 'completed'
+    packText = 'Packed'
+  } else if (packStat === 'IN_PROGRESS') {
+    packStatus = 'in_progress'
+    packText = 'Packing'
+  } else {
+    packStatus = 'in_progress'
+    packText = 'Pending'
+  }
+
+  // 2. Billing
+  const billStat = batch.billingStatus?.status
+  let billStatus: 'completed' | 'in_progress' | 'paused' | 'waiting' = 'waiting'
+  let billText = 'Waiting'
+
+  if (billStat === 'GENERATED' || batch.billingStatus?.invoiceNumber) {
+    billStatus = 'completed'
+    billText = 'Invoiced'
+  } else if (billStat === 'ERROR' || billStat === 'ON_HOLD') {
+    billStatus = 'paused'
+    billText = 'Error'
+  } else if (packStatus === 'completed') {
+    billStatus = 'in_progress'
+    billText = 'Pending'
+  }
+
+  // 3. Delivery
+  const delStat = batch.deliveryStatus?.status
+  let delStatus: 'completed' | 'in_progress' | 'paused' | 'waiting' = 'waiting'
+  let delText = 'Waiting'
+
+  if (delStat === 'DELIVERED') {
+    delStatus = 'completed'
+    delText = 'Delivered'
+  } else if (delStat === 'DISPATCHED' || delStat === 'ASSIGNED') {
+    delStatus = 'in_progress'
+    delText = 'Out for Delivery'
+  } else if (delStat === 'ON_HOLD') {
+    delStatus = 'paused'
+    delText = 'On Hold'
+  }
+
+  return [
+    { key: 'P', label: 'Packing', status: packStatus, statusText: packText },
+    { key: 'B', label: 'Billing', status: billStatus, statusText: billText },
+    { key: 'D', label: 'Delivery', status: delStatus, statusText: delText },
+  ]
+}
+
 const shouldShowCustomerCompany = (customer?: { name?: string | null; company?: string | null } | null) => {
   if (!customer?.company || !customer?.name) return false
   const nameNorm = customer.name.trim().toLowerCase()
@@ -371,9 +460,18 @@ const getItemsTotalQuantity = (order: Order) => {
                   <span class="text-xs font-bold text-gray-900 group-hover:text-[#1b3b5f] transition-colors">
                     {{ order.orderNumber }}
                   </span>
-                  <span v-if="order.batches && order.batches.length > 0" class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-bold bg-amber-50 text-amber-900 border border-amber-300 shadow-2xs" title="Order split into multiple fulfillment batches">
-                    ⚡ {{ order.batches.length }} Batches
-                  </span>
+                  <button 
+                    v-if="hasBatches(order)" 
+                    type="button"
+                    @click.stop="toggleExpand(order.id)"
+                    class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-bold transition shadow-2xs border cursor-pointer select-none"
+                    :class="isExpanded(order.id) ? 'bg-[#1b3b5f] text-white border-[#1b3b5f]' : 'bg-amber-50 text-amber-900 border-amber-300 hover:bg-amber-100'"
+                    title="Click to view fulfillment batches"
+                  >
+                    <span>⚡ {{ order.batches.length }} Batches</span>
+                    <span v-if="hasHoldBatches(order)" class="px-1 py-0.1 rounded text-[8px] bg-amber-500 text-white font-black">Hold</span>
+                    <ChevronDown class="w-3 h-3 transition-transform duration-200" :class="{ 'rotate-180': isExpanded(order.id) }" />
+                  </button>
                   <span v-else-if="order.batchNumber" class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-bold bg-blue-50 text-blue-800 border border-blue-200 shadow-2xs">
                     Batch {{ order.batchNumber }}/{{ order.batchCount || order.parentOrder?.batchCount || '?' }}
                   </span>
@@ -422,8 +520,69 @@ const getItemsTotalQuantity = (order: Order) => {
 
               <!-- 4. WORKFLOW PIPELINE -->
               <td class="px-5 py-3.5 min-w-0" :title="'Pipeline: ' + getOrderPipeline(order).summary">
-                <!-- Connected Step Icons from Sidebar Menu -->
-                <div class="flex items-start gap-1 sm:gap-2">
+                <!-- If order has batches: Show Batch Fulfillment Summary with Expand Button -->
+                <div v-if="hasBatches(order)" class="flex flex-col gap-1.5" @click.stop="toggleExpand(order.id)">
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <!-- Approval State Pill -->
+                    <span 
+                      class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold"
+                      :class="order.isApproved ? 'bg-emerald-50 text-emerald-700 border border-emerald-300' : 'bg-blue-50 text-blue-700 border border-blue-300 animate-pulse'"
+                    >
+                      <CheckCheck class="w-3 h-3" />
+                      <span>{{ order.isApproved ? 'Approved' : 'Pending' }}</span>
+                    </span>
+
+                    <!-- Batches Accordion Toggle Pill -->
+                    <button 
+                      type="button"
+                      @click.stop="toggleExpand(order.id)"
+                      class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition-all shadow-2xs border cursor-pointer select-none"
+                      :class="isExpanded(order.id) 
+                        ? 'bg-[#1b3b5f] text-white border-[#1b3b5f]' 
+                        : 'bg-indigo-50/80 text-[#1b3b5f] border-indigo-200/90 hover:bg-indigo-100'"
+                    >
+                      <Layers class="w-3.5 h-3.5" />
+                      <span>{{ order.batches.length }} Batches</span>
+                      
+                      <!-- On Hold Alert Badge -->
+                      <span 
+                        v-if="hasHoldBatches(order)" 
+                        class="px-1.5 py-0.2 rounded text-[9px] bg-amber-500 text-white font-black"
+                        :title="`${getHoldBatchesCount(order)} batch(es) currently on hold`"
+                      >
+                        {{ getHoldBatchesCount(order) }} On Hold
+                      </span>
+
+                      <ChevronDown 
+                        class="w-3.5 h-3.5 transition-transform duration-200" 
+                        :class="{ 'rotate-180': isExpanded(order.id) }" 
+                      />
+                    </button>
+                  </div>
+
+                  <!-- Micro Summary Line -->
+                  <div class="flex items-center gap-1.5 text-[10px] text-gray-500">
+                    <span v-if="getBatchesDeliveredCount(order) > 0" class="text-emerald-700 font-bold">
+                      {{ getBatchesDeliveredCount(order) }}/{{ order.batches.length }} Delivered
+                    </span>
+                    <span v-else-if="getBatchesPackedCount(order) > 0" class="text-blue-700 font-bold">
+                      {{ getBatchesPackedCount(order) }}/{{ order.batches.length }} Packed
+                    </span>
+                    <span v-else class="text-gray-500">
+                      {{ order.batches.length }} In Progress
+                    </span>
+
+                    <span v-if="getOrderPendingPoolUnits(order) > 0" class="text-amber-800 font-semibold">
+                      • {{ getOrderPendingPoolUnits(order) }} pcs Pool
+                    </span>
+                    <span v-else class="text-emerald-600 font-semibold">
+                      • Fully Batched
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Unsplit Orders: Standard Linear Stepper Icons -->
+                <div v-else class="flex items-start gap-1 sm:gap-2">
                   <template v-for="(step, idx) in getOrderPipeline(order).steps" :key="step.key">
                     <!-- Step Node (Icon + Micro-label) -->
                     <div class="flex flex-col items-center shrink-0">
@@ -501,6 +660,156 @@ const getItemsTotalQuantity = (order: Order) => {
                 </button>
               </td>
             </tr>
+
+            <!-- Expanded Sub-Row for Batches & Pending Pool (Desktop) -->
+            <tr v-if="hasBatches(order) && isExpanded(order.id)" :key="'batches-expand-' + order.id" class="bg-gray-50/70 border-b border-gray-200 animate-in fade-in duration-150">
+              <td colspan="6" class="p-0">
+                <div class="pl-8 sm:pl-12 pr-5 py-3.5 bg-gradient-to-r from-slate-50 via-gray-50 to-slate-50/70 border-y border-gray-200/90 space-y-2.5">
+                  <!-- Sub-row Header -->
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                      <Layers class="w-4 h-4 text-[#1b3b5f]" />
+                      <span class="text-xs font-bold text-gray-900 uppercase tracking-wider">
+                        Fulfillment Batches for {{ order.orderNumber }}
+                      </span>
+                      <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#1b3b5f]/10 text-[#1b3b5f]">
+                        {{ order.batches.length }} Created
+                      </span>
+                    </div>
+
+                    <div class="flex items-center gap-3 text-xs">
+                      <span class="text-gray-500">
+                        Batched: <strong class="text-gray-900 tabular-nums">{{ getOrderBatchedUnits(order) }} pcs</strong>
+                      </span>
+                      <span class="text-gray-300">&bull;</span>
+                      <span :class="getOrderPendingPoolUnits(order) > 0 ? 'text-amber-800 font-semibold' : 'text-emerald-700 font-semibold'">
+                        Pending Pool: <strong class="tabular-nums">{{ getOrderPendingPoolUnits(order) }} pcs</strong>
+                      </span>
+                    </div>
+                  </div>
+
+                  <!-- Batches Cards / Rows -->
+                  <div class="space-y-2">
+                    <div 
+                      v-for="b in order.batches" 
+                      :key="'sub-batch-' + b.id"
+                      @click.stop="emit('select', b.id)"
+                      class="bg-white rounded-xl border p-3 flex items-center justify-between gap-4 transition hover:border-[#1b3b5f]/50 hover:shadow-xs cursor-pointer group/batch"
+                      :class="b.isBatchOnHold ? 'border-amber-300 bg-amber-50/30' : 'border-gray-200'"
+                    >
+                      <!-- Left: Batch Number + Order Number + On Hold Badge + Units + Amount -->
+                      <div class="flex items-center gap-2.5 min-w-[200px]">
+                        <span class="px-2 py-1 rounded-md text-xs font-black bg-[#1b3b5f]/10 text-[#1b3b5f] border border-[#1b3b5f]/20 shrink-0">
+                          Batch {{ b.batchNumber }}
+                        </span>
+                        <div>
+                          <div class="flex items-center gap-1.5">
+                            <span class="font-bold text-xs text-gray-900 group-hover/batch:text-[#1b3b5f] transition-colors font-mono">
+                              {{ b.orderNumber }}
+                            </span>
+                            <!-- ON HOLD BADGE -->
+                            <span 
+                              v-if="b.isBatchOnHold" 
+                              class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-extrabold bg-amber-100 text-amber-800 border border-amber-300"
+                            >
+                              <Pause class="w-2.5 h-2.5 fill-current" />
+                              <span>On Hold</span>
+                            </span>
+                            <span 
+                              v-else
+                              class="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200"
+                            >
+                              Active
+                            </span>
+                          </div>
+                          <p class="text-[11px] text-gray-500 tabular-nums mt-0.5">
+                            {{ getBatchUnits(b) }} pcs &bull; {{ formatCurrency(b.totalAmount || 0) }}
+                          </p>
+                        </div>
+                      </div>
+
+                      <!-- Middle: Batch Pipeline (P -> B -> D) with exact step styling -->
+                      <div class="flex items-center gap-3 sm:gap-5 min-w-0">
+                        <template v-for="(step, sIdx) in getBatchPipeline(b)" :key="'batch-pipe-' + b.id + '-' + step.key">
+                          <div class="flex flex-col items-center shrink-0 min-w-[55px]">
+                            <div 
+                              class="relative flex items-center justify-center w-6 h-6 rounded-full text-xs shrink-0 transition-all shadow-2xs"
+                              :class="[
+                                step.status === 'completed' ? 'bg-emerald-50 text-emerald-700 border border-emerald-500' :
+                                step.status === 'in_progress' ? 'bg-blue-50 text-blue-700 border border-blue-400 animate-pulse ring-2 ring-blue-400/20' :
+                                step.status === 'paused' ? 'bg-amber-50 text-amber-700 border border-amber-400' :
+                                'bg-gray-50 text-gray-400 border border-gray-200/90 opacity-60'
+                              ]"
+                            >
+                              <Package v-if="step.key === 'P'" class="w-3.5 h-3.5" />
+                              <IndianRupee v-else-if="step.key === 'B'" class="w-3 h-3" />
+                              <Truck v-else-if="step.key === 'D'" class="w-3.5 h-3.5" />
+
+                              <!-- Completed mini check -->
+                              <span 
+                                v-if="step.status === 'completed'" 
+                                class="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[7px] font-black shadow-xs ring-1 ring-white"
+                              >
+                                ✓
+                              </span>
+                            </div>
+                            <!-- Status text under icon -->
+                            <span 
+                              class="text-[9px] font-semibold mt-1 tracking-tight"
+                              :class="[
+                                step.status === 'completed' ? 'text-emerald-700 font-bold' :
+                                step.status === 'in_progress' ? 'text-blue-700 font-bold' :
+                                step.status === 'paused' ? 'text-amber-700 font-bold' :
+                                'text-gray-400'
+                              ]"
+                            >
+                              {{ step.statusText }}
+                            </span>
+                          </div>
+
+                          <!-- Connector line -->
+                          <div 
+                            v-if="sIdx < getBatchPipeline(b).length - 1"
+                            class="w-4 sm:w-6 h-0.5 rounded-full shrink-0 -mt-4 transition-colors"
+                            :class="getBatchPipeline(b)[sIdx + 1].status !== 'waiting' ? 'bg-emerald-400' : 'bg-gray-200'"
+                          ></div>
+                        </template>
+                      </div>
+
+                      <!-- Right: Open Batch Drawer Button -->
+                      <div class="flex items-center gap-2 shrink-0">
+                        <span class="text-xs font-bold text-[#1b3b5f] group-hover/batch:underline flex items-center gap-1">
+                          <span>View Batch</span>
+                          <ArrowRight class="w-3.5 h-3.5 transition-transform group-hover/batch:translate-x-0.5" />
+                        </span>
+                      </div>
+                    </div>
+
+                    <!-- Pending Pool Action Row (if units remain unbatched) -->
+                    <div 
+                      v-if="getOrderPendingPoolUnits(order) > 0"
+                      class="bg-amber-50/50 rounded-xl border border-dashed border-amber-300 p-3 flex items-center justify-between gap-4"
+                    >
+                      <div class="flex items-center gap-2 text-xs text-amber-900 font-medium">
+                        <AlertCircle class="w-4 h-4 text-amber-600 shrink-0" />
+                        <span>
+                          <strong>{{ getOrderPendingPoolUnits(order) }} units</strong> remain in pending pool awaiting batch allocation.
+                        </span>
+                      </div>
+
+                      <button 
+                        type="button"
+                        @click.stop="emit('split-order', order.id)"
+                        class="px-3 py-1.5 bg-[#1b3b5f] hover:bg-[#132c49] text-white text-xs font-bold rounded-lg transition shadow-2xs flex items-center gap-1.5 cursor-pointer shrink-0 active:scale-95"
+                      >
+                        <Plus class="w-3.5 h-3.5" />
+                        <span>Create Batch</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </td>
+            </tr>
             <TableSkeletonRows v-if="isLoading && !orders?.length" :cols="6" :rows="6" />
             <tr v-else-if="!orders?.length && !isLoading">
               <td colspan="6" class="px-6 py-12 text-center text-sm text-gray-500">
@@ -531,9 +840,17 @@ const getItemsTotalQuantity = (order: Order) => {
               <span class="text-sm font-bold text-gray-950 shrink-0 font-mono">
                 {{ order.orderNumber }}
               </span>
-              <span v-if="order.batches && order.batches.length > 0" class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-50 text-amber-900 border border-amber-300 shrink-0">
-                ⚡ {{ order.batches.length }} Batches
-              </span>
+              <button 
+                v-if="hasBatches(order)" 
+                type="button"
+                @click.stop="toggleExpand(order.id)"
+                class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[9px] font-bold transition shadow-2xs border cursor-pointer select-none"
+                :class="isExpanded(order.id) ? 'bg-[#1b3b5f] text-white border-[#1b3b5f]' : 'bg-amber-50 text-amber-900 border-amber-300'"
+              >
+                <span>⚡ {{ order.batches.length }} Batches</span>
+                <span v-if="hasHoldBatches(order)" class="px-1 py-0.1 rounded text-[8px] bg-amber-500 text-white font-black">Hold</span>
+                <ChevronDown class="w-2.5 h-2.5 transition-transform duration-200" :class="{ 'rotate-180': isExpanded(order.id) }" />
+              </button>
               <span v-else-if="order.batchNumber" class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[9px] font-bold bg-blue-50 text-blue-800 border border-blue-200 shrink-0">
                 Batch {{ order.batchNumber }}/{{ order.batchCount || order.parentOrder?.batchCount || '?' }}
               </span>
@@ -583,11 +900,33 @@ const getItemsTotalQuantity = (order: Order) => {
             </div>
           </div>
 
-          <!-- LINE 4: Workflow Icon Stepper (Slightly bigger icons, color indicator, connecting lines, no text words, no tick badges) -->
+          <!-- LINE 4: Batched Order Pipeline vs Unsplit Pipeline -->
           <div class="flex items-center pt-1.5 mt-0.5 border-t border-gray-100">
-            <div class="flex items-center justify-between flex-1 min-w-0 pr-1">
+            <!-- If has batches: show Approval Badge + View Batches Pill -->
+            <div v-if="hasBatches(order)" class="flex items-center justify-between flex-1 min-w-0 pr-1" @click.stop="toggleExpand(order.id)">
+              <span 
+                class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold"
+                :class="order.isApproved ? 'bg-emerald-50 text-emerald-700 border border-emerald-300' : 'bg-blue-50 text-blue-700 border border-blue-300'"
+              >
+                <CheckCheck class="w-3 h-3" />
+                <span>{{ order.isApproved ? 'Approved' : 'Pending' }}</span>
+              </span>
+
+              <button 
+                type="button" 
+                @click.stop="toggleExpand(order.id)"
+                class="inline-flex items-center gap-1 text-[11px] font-bold text-[#1b3b5f] hover:underline cursor-pointer"
+              >
+                <span>{{ isExpanded(order.id) ? 'Hide Batches' : `${order.batches.length} Batches` }}</span>
+                <span v-if="hasHoldBatches(order)" class="px-1 py-0.2 rounded text-[8px] bg-amber-500 text-white font-extrabold">Hold</span>
+                <ChevronDown class="w-3.5 h-3.5 transition-transform duration-200" :class="{ 'rotate-180': isExpanded(order.id) }" />
+              </button>
+            </div>
+
+            <!-- Normal linear stepper if no batches -->
+            <div v-else class="flex items-center justify-between flex-1 min-w-0 pr-1">
               <template v-for="(step, idx) in getOrderPipeline(order).steps" :key="'mob-step-' + step.key">
-                <!-- Step Node (Slightly bigger icon with clean color indicator) -->
+                <!-- Step Node -->
                 <div 
                   class="flex items-center justify-center w-6 h-6 rounded-full text-xs shrink-0 transition-all shadow-2xs"
                   :class="[
@@ -596,7 +935,7 @@ const getItemsTotalQuantity = (order: Order) => {
                     step.status === 'alert' ? 'bg-rose-50 text-rose-700 border border-rose-400' :
                     'bg-gray-50 text-gray-400 border border-gray-200/90 opacity-60'
                   ]"
-                  :title="step.label + ': ' + (step.status === 'completed' ? 'Completed' : step.status === 'in_progress' ? 'In Progress' : step.status === 'alert' ? 'Action Needed' : 'Waiting')"
+                  :title="step.label"
                 >
                   <component 
                     :is="getStepIcon(step.key)" 
@@ -607,7 +946,7 @@ const getItemsTotalQuantity = (order: Order) => {
                   />
                 </div>
 
-                <!-- Connector Line between steps: flex-1 stretches to fit screen width -->
+                <!-- Connector Line -->
                 <div 
                   v-if="idx < getOrderPipeline(order).steps.length - 1"
                   class="flex-1 mx-1.5 h-0.5 rounded-full transition-colors"
@@ -617,6 +956,79 @@ const getItemsTotalQuantity = (order: Order) => {
             </div>
 
             <ChevronRight class="w-4 h-4 text-gray-300 shrink-0 ml-1" />
+          </div>
+
+          <!-- Mobile Expanded Sub-batches Section -->
+          <div v-if="hasBatches(order) && isExpanded(order.id)" class="mt-2 pt-2 border-t border-dashed border-gray-200 space-y-2 animate-in fade-in duration-150">
+            <div 
+              v-for="b in order.batches" 
+              :key="'mob-sub-batch-' + b.id"
+              @click.stop="emit('select', b.id)"
+              class="p-2.5 rounded-xl border bg-gray-50/70 space-y-2 cursor-pointer transition active:bg-gray-100"
+              :class="b.isBatchOnHold ? 'border-amber-300 bg-amber-50/40' : 'border-gray-200'"
+            >
+              <!-- Line A: Batch Number, On Hold badge, Units -->
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#1b3b5f]/10 text-[#1b3b5f]">
+                    Batch {{ b.batchNumber }}
+                  </span>
+                  <span class="font-bold text-xs text-gray-900 font-mono">{{ b.orderNumber }}</span>
+                  <!-- ON HOLD BADGE -->
+                  <span v-if="b.isBatchOnHold" class="px-1.5 py-0.2 rounded text-[9px] font-black bg-amber-100 text-amber-800 border border-amber-300">
+                    ⏸ On Hold
+                  </span>
+                  <span v-else class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    Active
+                  </span>
+                </div>
+                <span class="text-xs font-extrabold text-gray-800 tabular-nums">
+                  {{ getBatchUnits(b) }} pcs
+                </span>
+              </div>
+
+              <!-- Line B: 3-step pipeline icons for the batch -->
+              <div class="flex items-center justify-between pt-1 border-t border-gray-150">
+                <template v-for="(step, sIdx) in getBatchPipeline(b)" :key="'mob-b-pipe-' + b.id + '-' + step.key">
+                  <div class="flex items-center gap-1">
+                    <div 
+                      class="flex items-center justify-center w-5 h-5 rounded-full text-xs"
+                      :class="[
+                        step.status === 'completed' ? 'bg-emerald-100 text-emerald-800' :
+                        step.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                        step.status === 'paused' ? 'bg-amber-100 text-amber-800' :
+                        'bg-gray-100 text-gray-400 opacity-60'
+                      ]"
+                    >
+                      <Package v-if="step.key === 'P'" class="w-3 h-3" />
+                      <IndianRupee v-else-if="step.key === 'B'" class="w-2.5 h-2.5" />
+                      <Truck v-else-if="step.key === 'D'" class="w-3 h-3" />
+                    </div>
+                    <span 
+                      class="text-[10px] font-semibold" 
+                      :class="step.status === 'completed' ? 'text-emerald-700 font-bold' : (step.status === 'paused' ? 'text-amber-700 font-bold' : 'text-gray-500')"
+                    >
+                      {{ step.statusText }}
+                    </span>
+                  </div>
+                  <div v-if="sIdx < 2" class="w-3 h-0.5 bg-gray-200"></div>
+                </template>
+              </div>
+            </div>
+
+            <!-- Mobile Pending Pool Row -->
+            <div v-if="getOrderPendingPoolUnits(order) > 0" class="p-2 bg-amber-50 rounded-lg border border-dashed border-amber-300 flex items-center justify-between gap-2">
+              <span class="text-[11px] text-amber-900 font-semibold">
+                Pending Pool: <strong>{{ getOrderPendingPoolUnits(order) }} pcs</strong>
+              </span>
+              <button 
+                type="button" 
+                @click.stop="emit('split-order', order.id)" 
+                class="px-2 py-1 bg-[#1b3b5f] text-white text-[10px] font-bold rounded shadow-2xs active:scale-95 cursor-pointer"
+              >
+                + Create Batch
+              </button>
+            </div>
           </div>
         </div>
 

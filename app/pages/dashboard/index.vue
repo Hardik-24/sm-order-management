@@ -6,6 +6,7 @@ import { formatDate } from '~/lib/utils'
 import StatCards from '~/components/dashboard/StatCards.vue'
 import OrderVolumeChart from '~/components/dashboard/OrderVolumeChart.vue'
 import OrderTable from '~/components/dashboard/OrderTable.vue'
+import CreateBatchModal from '~/components/dashboard/CreateBatchModal.vue'
 
 import OrderDetailPanel from '~/components/dashboard/OrderDetailPanel.vue'
 import { rankAndFilter } from '~/utils/search'
@@ -202,6 +203,17 @@ onOrderSync(() => {
 const handleOrderSelect = (orderId: string) => {
   selectedOrderId.value = orderId
   isPanelOpen.value = true
+}
+
+const isCreateBatchModalOpen = ref(false)
+const batchOrderId = ref<string | null>(null)
+const openCreateBatchModal = (orderId: string) => {
+  batchOrderId.value = orderId
+  isCreateBatchModalOpen.value = true
+}
+const onBatchCreated = () => {
+  refreshOrders()
+  refreshDashboard()
 }
 </script>
 
@@ -483,6 +495,7 @@ const handleOrderSelect = (orderId: string) => {
       v-model:isApproved="isApproved"
       v-model:salesPersonId="tableSalesPersonId"
       @select="handleOrderSelect"
+      @split-order="openCreateBatchModal"
     />
     </div>
   </div>
@@ -499,6 +512,15 @@ const handleOrderSelect = (orderId: string) => {
     context="overview"
     @close="isPanelOpen = false"
     @updated="() => { refreshOrders(); refreshDashboard(); }"
+    @split-order="openCreateBatchModal"
+  />
+
+  <!-- Fulfillment Batch Modal -->
+  <CreateBatchModal 
+    :is-open="isCreateBatchModalOpen"
+    :order-id="batchOrderId"
+    @close="isCreateBatchModalOpen = false"
+    @batch-created="onBatchCreated"
   />
 </div>
 </template>

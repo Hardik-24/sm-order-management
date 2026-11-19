@@ -174,7 +174,15 @@ export default defineEventHandler(async (event) => {
             totalAmount: true,
             billingStatus: { select: { status: true, invoiceNumber: true } },
             packingStatus: { select: { status: true } },
-            deliveryStatus: { select: { status: true } }
+            deliveryStatus: { select: { status: true } },
+            items: {
+              select: {
+                id: true,
+                productId: true,
+                productName: true,
+                quantity: true
+              }
+            }
           },
           orderBy: { batchNumber: 'asc' }
         },

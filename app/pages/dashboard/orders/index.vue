@@ -149,6 +149,7 @@ onOrderSync((event) => {
       v-model:endDate="endDate"
       v-model:scope="scope"
       @select="handleSelect"
+      @split-order="openCreateBatchModal"
     />
 
     <!-- Detail Panel -->
