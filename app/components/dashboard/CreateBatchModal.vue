@@ -1,20 +1,32 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { 
-  X, Layers, AlertCircle, Check, Loader2, Plus, Minus, MapPin, Building2, Truck, Car, Package, Clock 
+  X, Layers, AlertCircle, Check, Loader2, Plus, Minus, MapPin, Building2, Truck, Car, Package, Clock, Save, Trash2, Tag, IndianRupee
 } from 'lucide-vue-next'
 import { formatCurrency } from '~/lib/utils'
 import { useSnackbar } from '~/composables/useSnackbar'
 import { useRealtimeSync } from '~/composables/useRealtimeSync'
+import SearchCombobox from '~/components/ui/SearchCombobox.vue'
 
-const props = defineProps<{
-  isOpen: boolean
-  orderId: string | null
-}>()
+const props = withDefaults(
+  defineProps<{
+    isOpen: boolean
+    orderId: string | null        // In create mode: masterOrderId. In edit mode: batchOrderId
+    mode?: 'create' | 'edit'      // Default 'create'
+    batchData?: any | null        // Existing batch object in edit mode
+    parentOrderId?: string | null // Master order id in edit mode
+  }>(),
+  {
+    mode: 'create',
+    batchData: null,
+    parentOrderId: null
+  }
+)
 
 const emit = defineEmits<{
   (e: 'close'): void
   (e: 'batchCreated', result: any): void
+  (e: 'batchUpdated', result: any): void
 }>()
 
 const { showSaved, showError } = useSnackbar()
@@ -25,7 +37,7 @@ const isSubmitting = ref(false)
 const poolData = ref<any | null>(null)
 
 interface BatchRow {
-  orderItemId: string
+  orderItemId?: string
   productId: string
   productName: string
   sku: string
@@ -36,7 +48,9 @@ interface BatchRow {
   orderedQty: number
   batchedQty: number
   pendingQty: number
+  maxQty: number
   batchQty: number
+  isNewProduct?: boolean
 }
 
 const batchRows = ref<BatchRow[]>([])
@@ -45,35 +59,154 @@ const batchNotes = ref('')
 const customDeliveryAddress = ref('')
 const selectedVehicleMode = ref<'OUR_FLEET' | 'PARTY_VEHICLE' | 'THIRD_PARTY'>('OUR_FLEET')
 
-// Fetch pool data when opened
-watch(() => [props.isOpen, props.orderId], async ([open, id]) => {
+// Extra product addition state
+const isAddingExtraProduct = ref(false)
+const allProducts = ref<any[]>([])
+const newProductSelection = ref({
+  productId: '',
+  unitPrice: 0,
+  quantity: 1,
+  discount: 0,
+  taxRate: 18,
+  isTaxInclusive: false
+})
+
+const productOptions = computed(() => {
+  return allProducts.value.map(p => ({
+    value: p.id,
+    label: p.name,
+    sku: p.sku || '',
+    subtitle: `${p.brand || ''} ${p.thickness || ''}`.trim(),
+    stock: p.stock ?? 0,
+    unit: p.unit || 'pcs'
+  }))
+})
+
+const fetchProducts = async () => {
+  if (allProducts.value.length > 0) return
+  try {
+    const res = await $fetch<any[]>('/api/products')
+    allProducts.value = res || []
+  } catch (err) {
+    console.error('Failed to load products:', err)
+  }
+}
+
+// Fetch pool data and initialize batchRows
+watch(() => [props.isOpen, props.orderId, props.mode], async ([open, id, mode]) => {
   if (open && id) {
     isLoading.value = true
+    isAddingExtraProduct.value = false
     try {
-      const data = await $fetch<any>(`/api/orders/${id}/pending-pool`)
-      poolData.value = data
-      isOnHold.value = false
-      batchNotes.value = ''
-      customDeliveryAddress.value = data.deliveryAddress || ''
-      selectedVehicleMode.value = (data.vehicleMode === 'PARTY_VEHICLE' || data.vehicleMode === 'THIRD_PARTY') 
-        ? data.vehicleMode 
-        : 'OUR_FLEET'
+      fetchProducts()
+      const masterId = mode === 'edit'
+        ? (props.parentOrderId || props.batchData?.parentOrderId || props.batchData?.parentOrder?.id || id)
+        : id
 
-      batchRows.value = (data.items || []).map((itm: any) => ({
-        orderItemId: itm.orderItemId,
-        productId: itm.productId,
-        productName: itm.productName,
-        sku: itm.sku,
-        unitPrice: Number(itm.unitPrice || 0),
-        discount: Number(itm.discount || 0),
-        taxRate: Number(itm.taxRate || 0),
-        isTaxInclusive: Boolean(itm.isTaxInclusive),
-        orderedQty: itm.orderedQty,
-        batchedQty: itm.batchedQty,
-        pendingQty: itm.pendingQty,
-        // Default to pending available quantity (or 0 if none left)
-        batchQty: itm.pendingQty
-      }))
+      const data = await $fetch<any>(`/api/orders/${masterId}/pending-pool`)
+      poolData.value = data
+
+      if (mode === 'edit') {
+        let b = props.batchData || {}
+        if (!b.items || b.items.length === 0) {
+          try {
+            const fetched = await $fetch<any>(`/api/orders/${props.orderId}`)
+            if (fetched) b = fetched
+          } catch (e) {
+            b = props.batchData || {}
+          }
+        }
+        isOnHold.value = Boolean(b.isBatchOnHold)
+        batchNotes.value = b.notes || ''
+        customDeliveryAddress.value = b.deliveryAddress || data.deliveryAddress || ''
+        selectedVehicleMode.value = (b.vehicleMode === 'PARTY_VEHICLE' || b.vehicleMode === 'THIRD_PARTY') 
+          ? b.vehicleMode 
+          : 'OUR_FLEET'
+
+        const existingItems = b.items || []
+        const matchedItemIds = new Set<string>()
+
+        // 1. Map master order pool items
+        const rows: BatchRow[] = (data.items || []).map((itm: any) => {
+          const matched = existingItems.find((bi: any) => 
+            (bi.productId && itm.productId && bi.productId === itm.productId) ||
+            (bi.productName && itm.productName && bi.productName.trim().toLowerCase() === itm.productName.trim().toLowerCase())
+          )
+
+          const currentBatchQty = Number(matched?.quantity || 0)
+          if (matched) matchedItemIds.add(matched.id || matched.productId)
+
+          const otherBatchesQty = Math.max(0, Number(itm.batchedQty || 0) - currentBatchQty)
+          const poolRemaining = Math.max(0, itm.orderedQty - otherBatchesQty - currentBatchQty)
+          const maxAllowable = currentBatchQty + poolRemaining
+
+          return {
+            orderItemId: matched?.id,
+            productId: itm.productId,
+            productName: itm.productName,
+            sku: itm.sku,
+            unitPrice: Number(matched?.unitPrice ?? itm.unitPrice ?? 0),
+            discount: Number(matched?.discount ?? itm.discount ?? 0),
+            taxRate: Number(matched?.taxRate ?? itm.taxRate ?? 0),
+            isTaxInclusive: Boolean(matched?.isTaxInclusive ?? itm.isTaxInclusive),
+            orderedQty: itm.orderedQty,
+            batchedQty: otherBatchesQty,
+            pendingQty: poolRemaining,
+            maxQty: maxAllowable,
+            batchQty: currentBatchQty,
+            isNewProduct: false
+          }
+        })
+
+        // 2. Include any items in the batch that are NOT in the master pool (custom/added products)
+        for (const bi of existingItems) {
+          if (!matchedItemIds.has(bi.id || bi.productId)) {
+            rows.push({
+              orderItemId: bi.id,
+              productId: bi.productId,
+              productName: bi.product?.name || bi.productName || 'Added Item',
+              sku: bi.product?.sku || bi.sku || '',
+              unitPrice: Number(bi.unitPrice || 0),
+              discount: Number(bi.discount || 0),
+              taxRate: Number(bi.taxRate || 0),
+              isTaxInclusive: Boolean(bi.isTaxInclusive),
+              orderedQty: Number(bi.quantity || 0),
+              batchedQty: 0,
+              pendingQty: 0,
+              maxQty: 99999,
+              batchQty: Number(bi.quantity || 0),
+              isNewProduct: true
+            })
+          }
+        }
+
+        batchRows.value = rows
+      } else {
+        // Create mode
+        isOnHold.value = false
+        batchNotes.value = ''
+        customDeliveryAddress.value = data.deliveryAddress || ''
+        selectedVehicleMode.value = (data.vehicleMode === 'PARTY_VEHICLE' || data.vehicleMode === 'THIRD_PARTY') 
+          ? data.vehicleMode 
+          : 'OUR_FLEET'
+
+        batchRows.value = (data.items || []).map((itm: any) => ({
+          orderItemId: itm.orderItemId,
+          productId: itm.productId,
+          productName: itm.productName,
+          sku: itm.sku,
+          unitPrice: Number(itm.unitPrice || 0),
+          discount: Number(itm.discount || 0),
+          taxRate: Number(itm.taxRate || 0),
+          isTaxInclusive: Boolean(itm.isTaxInclusive),
+          orderedQty: itm.orderedQty,
+          batchedQty: itm.batchedQty,
+          pendingQty: itm.pendingQty,
+          maxQty: itm.pendingQty,
+          batchQty: itm.pendingQty,
+          isNewProduct: false
+        }))
+      }
     } catch (err: any) {
       console.error('Failed to load pending pool:', err)
       showError(err.data?.message || 'Failed to load order pending pool')
@@ -93,28 +226,72 @@ const closeModal = () => {
   }
 }
 
-// Helpers for adjusting quantities safely
+// Adjust quantities safely
 const updateQty = (row: BatchRow, delta: number) => {
   const current = Number(row.batchQty || 0)
   const next = current + delta
-  row.batchQty = Math.max(0, Math.min(row.pendingQty, next))
+  row.batchQty = Math.max(0, Math.min(row.maxQty, next))
 }
 
 const onQtyInput = (row: BatchRow, event: Event) => {
   const target = event.target as HTMLInputElement
   let val = parseInt(target.value, 10)
   if (isNaN(val) || val < 0) val = 0
-  if (val > row.pendingQty) val = row.pendingQty
+  if (val > row.maxQty) val = row.maxQty
   row.batchQty = val
   target.value = String(val)
 }
 
-const setAllPending = (row: BatchRow) => {
-  row.batchQty = row.pendingQty
+// Extra Product Handling
+const onExtraProductSelect = (opt: any) => {
+  if (!opt) return
+  const prod = allProducts.value.find(p => p.id === opt.value)
+  if (prod) {
+    newProductSelection.value.unitPrice = Number(prod.basePrice || prod.price || 0)
+  }
 }
 
-const setZero = (row: BatchRow) => {
-  row.batchQty = 0
+const addExtraProductToBatch = () => {
+  if (!newProductSelection.value.productId) {
+    alert('Please select a product.')
+    return
+  }
+  if (newProductSelection.value.quantity <= 0) {
+    alert('Please enter a valid quantity.')
+    return
+  }
+
+  const prod = allProducts.value.find(p => p.id === newProductSelection.value.productId)
+  batchRows.value.push({
+    productId: newProductSelection.value.productId,
+    productName: prod?.name || 'New Item',
+    sku: prod?.sku || '',
+    unitPrice: Number(newProductSelection.value.unitPrice || 0),
+    discount: Number(newProductSelection.value.discount || 0),
+    taxRate: Number(newProductSelection.value.taxRate || 18),
+    isTaxInclusive: Boolean(newProductSelection.value.isTaxInclusive),
+    orderedQty: newProductSelection.value.quantity,
+    batchedQty: 0,
+    pendingQty: 0,
+    maxQty: 99999,
+    batchQty: newProductSelection.value.quantity,
+    isNewProduct: true
+  })
+
+  // Reset form
+  newProductSelection.value = {
+    productId: '',
+    unitPrice: 0,
+    quantity: 1,
+    discount: 0,
+    taxRate: 18,
+    isTaxInclusive: false
+  }
+  isAddingExtraProduct.value = false
+}
+
+const removeExtraRow = (idx: number) => {
+  batchRows.value.splice(idx, 1)
 }
 
 // Summary computations
@@ -135,46 +312,92 @@ const totalBatchAmount = computed(() => {
 })
 
 const remainingPoolAfterBatch = computed(() => {
+  if (props.mode === 'edit') {
+    return batchRows.value
+      .filter(r => !r.isNewProduct)
+      .reduce((sum, r) => sum + Math.max(0, r.maxQty - r.batchQty), 0)
+  }
   const totalPending = poolData.value?.totalPendingUnits || 0
   return Math.max(0, totalPending - totalBatchUnits.value)
 })
 
-const nextBatchNumber = computed(() => poolData.value?.nextBatchNumber || 1)
+const currentBatchNumber = computed(() => {
+  if (props.mode === 'edit') {
+    return props.batchData?.batchNumber || '1'
+  }
+  return poolData.value?.nextBatchNumber || 1
+})
 
-// Submit Batch Creation
-const submitCreateBatch = async () => {
+// Submit Batch Creation or Edit
+const submitBatch = async () => {
   if (totalBatchUnits.value === 0) {
-    alert('Please allocate at least 1 unit to create this batch.')
+    alert('Please allocate at least 1 unit to this batch.')
     return
   }
 
   isSubmitting.value = true
   try {
-    const payload = {
-      notes: batchNotes.value,
-      isOnHold: isOnHold.value,
-      deliveryAddress: customDeliveryAddress.value,
-      vehicleMode: selectedVehicleMode.value,
-      items: batchRows.value
-        .filter(r => r.batchQty > 0)
-        .map(r => ({
-          orderItemId: r.orderItemId,
-          quantity: r.batchQty
-        }))
+    if (props.mode === 'edit') {
+      const batchId = props.orderId || props.batchData?.id
+      const payload = {
+        notes: batchNotes.value,
+        isOnHold: isOnHold.value,
+        deliveryAddress: customDeliveryAddress.value,
+        vehicleMode: selectedVehicleMode.value,
+        items: batchRows.value
+          .filter(r => r.batchQty > 0)
+          .map(r => ({
+            id: r.orderItemId,
+            orderItemId: r.orderItemId,
+            productId: r.productId,
+            productName: r.productName,
+            sku: r.sku,
+            unitPrice: r.unitPrice,
+            discount: r.discount,
+            taxRate: r.taxRate,
+            isTaxInclusive: r.isTaxInclusive,
+            quantity: r.batchQty
+          }))
+      }
+
+      const res = await $fetch<any>(`/api/orders/${batchId}`, {
+        method: 'PATCH',
+        body: payload
+      })
+
+      showSaved(`Batch ${currentBatchNumber.value} updated successfully!`)
+      notifyChange({ action: 'BATCH_UPDATED', orderId: batchId })
+      emit('batchUpdated', res)
+      emit('batchCreated', res)
+      emit('close')
+    } else {
+      // Create mode
+      const payload = {
+        notes: batchNotes.value,
+        isOnHold: isOnHold.value,
+        deliveryAddress: customDeliveryAddress.value,
+        vehicleMode: selectedVehicleMode.value,
+        items: batchRows.value
+          .filter(r => r.batchQty > 0)
+          .map(r => ({
+            orderItemId: r.orderItemId,
+            quantity: r.batchQty
+          }))
+      }
+
+      const res = await $fetch<any>(`/api/orders/${props.orderId}/create-batch`, {
+        method: 'POST',
+        body: payload
+      })
+
+      showSaved(res.message || `Batch ${currentBatchNumber.value} created successfully!`)
+      notifyChange({ action: 'BATCH_CREATED', orderId: props.orderId || '' })
+      emit('batchCreated', res)
+      emit('close')
     }
-
-    const res = await $fetch<any>(`/api/orders/${props.orderId}/create-batch`, {
-      method: 'POST',
-      body: payload
-    })
-
-    showSaved(res.message || `Batch ${nextBatchNumber.value} created successfully!`)
-    notifyChange({ action: 'BATCH_CREATED', orderId: props.orderId || '' })
-    emit('batchCreated', res)
-    emit('close')
   } catch (err: any) {
-    console.error('Failed to create batch:', err)
-    showError(err.data?.message || 'Failed to create fulfillment batch')
+    console.error('Failed to save batch:', err)
+    showError(err.data?.message || 'Failed to save fulfillment batch')
   } finally {
     isSubmitting.value = false
   }
@@ -185,7 +408,7 @@ const submitCreateBatch = async () => {
   <Teleport to="body">
     <div 
       v-if="isOpen" 
-      data-modal-container="create-batch-modal"
+      data-modal-container="batch-modal"
       class="fixed inset-x-0 top-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] md:bottom-0 md:inset-0 z-[600] flex items-center justify-center p-2 sm:p-4 pt-[calc(1rem+env(safe-area-inset-top,0px))] overflow-y-auto"
     >
       <!-- Backdrop -->
@@ -207,7 +430,7 @@ const submitCreateBatch = async () => {
         </div>
 
         <template v-else-if="poolData">
-          <!-- Modal Header (Matching Admin & Invoice Modals) -->
+          <!-- Modal Header -->
           <div class="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-gray-100 bg-[#faf8f5] shrink-0">
             <div class="flex items-center gap-3 min-w-0">
               <div class="w-10 h-10 rounded-xl bg-[#1b3b5f]/10 text-[#1b3b5f] flex items-center justify-center font-bold shrink-0">
@@ -216,10 +439,10 @@ const submitCreateBatch = async () => {
               <div class="min-w-0">
                 <div class="flex items-center gap-2 flex-wrap">
                   <h2 class="text-base sm:text-lg font-bold text-gray-900 tracking-tight">
-                    Create Fulfillment Batch
+                    {{ mode === 'edit' ? 'Edit Fulfillment Batch' : 'Create Fulfillment Batch' }}
                   </h2>
                   <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black bg-[#1b3b5f] text-white tracking-wider uppercase">
-                    Batch {{ nextBatchNumber }}
+                    Batch {{ currentBatchNumber }}
                   </span>
                 </div>
                 <p class="text-xs text-gray-500 mt-0.5 flex items-center gap-1.5 flex-wrap truncate">
@@ -227,7 +450,9 @@ const submitCreateBatch = async () => {
                   <span>&bull;</span>
                   <span class="truncate">{{ poolData.customer?.company || poolData.customer?.name || 'Customer' }}</span>
                   <span>&bull;</span>
-                  <span class="font-bold text-[#1b3b5f]">{{ poolData.totalPendingUnits }} pcs available</span>
+                  <span class="font-bold text-[#1b3b5f]">
+                    {{ mode === 'edit' ? 'Adjusting allocation slice' : `${poolData.totalPendingUnits} pcs available` }}
+                  </span>
                 </p>
               </div>
             </div>
@@ -245,16 +470,21 @@ const submitCreateBatch = async () => {
           <!-- Pending Pool Ribbon -->
           <div class="bg-blue-50/70 border-b border-blue-100 px-5 sm:px-6 py-3 flex items-center justify-between gap-4 text-xs shrink-0 flex-wrap">
             <div class="flex items-center gap-3 sm:gap-4 flex-wrap text-gray-600">
-              <span>Total Ordered: <strong class="text-gray-900 font-bold">{{ poolData.totalOrderedUnits }} pcs</strong></span>
+              <span>Master Ordered: <strong class="text-gray-900 font-bold tabular-nums">{{ poolData.totalOrderedUnits }} pcs</strong></span>
               <span class="text-gray-300 hidden sm:inline">&bull;</span>
-              <span>Batched: <strong class="text-[#1b3b5f] font-bold">{{ poolData.totalBatchedUnits }} pcs</strong></span>
+              <span>
+                {{ mode === 'edit' ? 'Other Batches:' : 'Batched:' }}
+                <strong class="text-[#1b3b5f] font-bold tabular-nums">
+                  {{ mode === 'edit' ? Math.max(0, poolData.totalBatchedUnits - (props.batchData?.items || []).reduce((s: number, i: any) => s + (Number(i.quantity) || 0), 0)) : poolData.totalBatchedUnits }} pcs
+                </strong>
+              </span>
               <span class="text-gray-300 hidden sm:inline">&bull;</span>
-              <span class="text-emerald-800 font-bold bg-emerald-100/70 border border-emerald-200 px-2 py-0.5 rounded-md">
-                Available in Pool: {{ poolData.totalPendingUnits }} pcs
+              <span class="text-emerald-800 font-bold bg-emerald-100/70 border border-emerald-200 px-2 py-0.5 rounded-md tabular-nums">
+                {{ mode === 'edit' ? 'Live Pool Remaining:' : 'Available in Pool:' }} {{ remainingPoolAfterBatch }} pcs
               </span>
             </div>
             <span class="text-[11px] font-semibold text-[#1b3b5f] hidden md:inline-block">
-              Draw quantities for this fulfillment batch below
+              {{ mode === 'edit' ? 'Adjust batch quantities or add new items below' : 'Draw quantities for this fulfillment batch below' }}
             </span>
           </div>
 
@@ -268,46 +498,56 @@ const submitCreateBatch = async () => {
                   <tr>
                     <th class="p-3">Product Name & SKU</th>
                     <th class="p-3 text-center">Ordered</th>
-                    <th class="p-3 text-center">Batched</th>
-                    <th class="p-3 text-center text-emerald-800 bg-emerald-50/50">Available</th>
-                    <th class="p-3 text-center w-40 sm:w-48 bg-blue-50/40 text-[#1b3b5f]">Batch Quantity</th>
+                    <th class="p-3 text-center">{{ mode === 'edit' ? 'Other Batches' : 'Batched' }}</th>
+                    <th class="p-3 text-center text-emerald-800 bg-emerald-50/50">{{ mode === 'edit' ? 'Max Available' : 'Available' }}</th>
+                    <th class="p-3 text-center w-40 sm:w-48 bg-blue-50/40 text-[#1b3b5f]">This Batch Qty</th>
+                    <th v-if="mode === 'edit'" class="p-3 text-center w-12"></th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
                   <tr 
-                    v-for="row in batchRows" 
-                    :key="row.orderItemId"
+                    v-for="(row, rIdx) in batchRows" 
+                    :key="row.orderItemId || row.productId || rIdx"
                     class="hover:bg-gray-50/70 transition-colors"
-                    :class="row.pendingQty === 0 ? 'bg-gray-50/80 opacity-60' : ''"
+                    :class="row.maxQty === 0 && row.batchQty === 0 ? 'bg-gray-50/80 opacity-60' : ''"
                   >
                     <!-- Product Info -->
                     <td class="p-3">
-                      <p class="font-bold text-gray-900 leading-snug">{{ row.productName }}</p>
+                      <div class="flex items-center gap-1.5 flex-wrap">
+                        <p class="font-bold text-gray-900 leading-snug break-words whitespace-normal">{{ row.productName }}</p>
+                        <span 
+                          v-if="row.isNewProduct"
+                          class="px-1.5 py-0.2 rounded text-[9px] font-extrabold uppercase bg-sky-100 text-sky-800 border border-sky-300 shrink-0"
+                          title="New product will be added to this batch and automatically appended to the Master Order"
+                        >
+                          + Added to Master
+                        </span>
+                      </div>
                       <div class="flex items-center gap-2 text-[11px] text-gray-500 mt-0.5">
-                        <span class="text-gray-600">{{ row.sku }}</span>
-                        <span>&bull;</span>
-                        <span class="font-semibold text-gray-700">{{ formatCurrency(row.unitPrice) }}</span>
+                        <span v-if="row.sku" class="text-gray-600">{{ row.sku }}</span>
+                        <span v-if="row.sku">&bull;</span>
+                        <span class="font-semibold text-gray-700 tabular-nums">{{ formatCurrency(row.unitPrice) }}</span>
                       </div>
                     </td>
 
-                    <!-- Total Ordered -->
-                    <td class="p-3 text-center font-semibold text-gray-700">
+                    <!-- Total Ordered in Master -->
+                    <td class="p-3 text-center font-semibold text-gray-700 tabular-nums">
                       {{ row.orderedQty }}
                     </td>
 
-                    <!-- Already Batched -->
-                    <td class="p-3 text-center font-semibold text-[#1b3b5f]">
+                    <!-- Already Batched in Other Batches -->
+                    <td class="p-3 text-center font-semibold text-[#1b3b5f] tabular-nums">
                       {{ row.batchedQty }}
                     </td>
 
-                    <!-- Available in Pool -->
-                    <td class="p-3 text-center font-bold text-emerald-700 bg-emerald-50/30">
-                      {{ row.pendingQty }}
+                    <!-- Available / Max allowable -->
+                    <td class="p-3 text-center font-bold text-emerald-700 bg-emerald-50/30 tabular-nums">
+                      {{ mode === 'edit' ? row.maxQty : row.pendingQty }}
                     </td>
 
                     <!-- Batch Quantity Stepper -->
                     <td class="p-3 text-center bg-blue-50/20">
-                      <div v-if="row.pendingQty > 0" class="inline-flex items-center gap-1.5 justify-center">
+                      <div v-if="row.maxQty > 0 || row.batchQty > 0" class="inline-flex items-center gap-1.5 justify-center">
                         <div class="inline-flex items-center border border-gray-300 rounded-lg bg-white shadow-2xs overflow-hidden">
                           <button 
                             type="button"
@@ -324,14 +564,14 @@ const submitCreateBatch = async () => {
                             :value="row.batchQty"
                             @input="onQtyInput(row, $event)"
                             min="0"
-                            :max="row.pendingQty"
-                            class="w-12 h-7 text-center font-bold text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#1b3b5f] border-x border-gray-200"
+                            :max="row.maxQty"
+                            class="w-12 h-7 text-center font-bold text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#1b3b5f] border-x border-gray-200 tabular-nums"
                           />
 
                           <button 
                             type="button"
                             @click="updateQty(row, 1)"
-                            :disabled="row.batchQty >= row.pendingQty"
+                            :disabled="row.batchQty >= row.maxQty"
                             class="w-7 h-7 flex items-center justify-center text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-white cursor-pointer active:scale-95 transition-all"
                             title="Increase quantity"
                           >
@@ -343,9 +583,113 @@ const submitCreateBatch = async () => {
                         100% Fulfilled
                       </div>
                     </td>
+
+                    <!-- Remove new row button (in edit mode) -->
+                    <td v-if="mode === 'edit'" class="p-3 text-center">
+                      <button
+                        v-if="row.isNewProduct"
+                        type="button"
+                        @click="removeExtraRow(rIdx)"
+                        class="p-1 text-gray-400 hover:text-red-600 rounded transition cursor-pointer"
+                        title="Remove this extra product"
+                      >
+                        <Trash2 class="w-3.5 h-3.5" />
+                      </button>
+                    </td>
                   </tr>
                 </tbody>
               </table>
+            </div>
+
+            <!-- Add Item Not in Master Order Button & Inline Form -->
+            <div class="p-3.5 bg-gray-50/80 rounded-xl border border-dashed border-gray-300 space-y-3">
+              <div v-if="!isAddingExtraProduct" class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <Tag class="w-4 h-4 text-[#1b3b5f]" />
+                  <span class="text-xs font-bold text-gray-800">Need to add another product to this batch?</span>
+                  <span class="text-[10px] text-gray-500 hidden sm:inline">(Will automatically append to Master Order)</span>
+                </div>
+                <button
+                  type="button"
+                  @click="isAddingExtraProduct = true"
+                  class="px-3 py-1.5 bg-[#1b3b5f] hover:bg-[#132c49] text-white text-xs font-bold rounded-lg shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Plus class="w-3.5 h-3.5" />
+                  <span>Add Product to Batch</span>
+                </button>
+              </div>
+
+              <!-- Inline Add Form -->
+              <div v-else class="space-y-3 bg-white p-3.5 rounded-lg border border-gray-200 shadow-2xs">
+                <div class="flex items-center justify-between pb-1.5 border-b border-gray-100">
+                  <span class="text-xs font-bold text-gray-900 uppercase tracking-wider">
+                    Add Product (Will append to Master Order & Batch)
+                  </span>
+                  <button 
+                    type="button" 
+                    @click="isAddingExtraProduct = false" 
+                    class="text-gray-400 hover:text-gray-600 text-xs font-semibold cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <!-- Product Selection -->
+                  <div class="sm:col-span-2 space-y-1">
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase">Select Product *</label>
+                    <SearchCombobox
+                      v-model="newProductSelection.productId"
+                      :options="productOptions"
+                      placeholder="Search product by name or SKU..."
+                      @select="onExtraProductSelect"
+                    />
+                  </div>
+
+                  <!-- Rate & Quantity -->
+                  <div class="grid grid-cols-2 gap-2">
+                    <div class="space-y-1">
+                      <label class="block text-[10px] font-bold text-gray-500 uppercase">Rate (₹) *</label>
+                      <input 
+                        v-model.number="newProductSelection.unitPrice"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        placeholder="0.00"
+                        class="w-full text-xs font-bold p-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#1b3b5f] tabular-nums"
+                      />
+                    </div>
+                    <div class="space-y-1">
+                      <label class="block text-[10px] font-bold text-gray-500 uppercase">Qty (pcs) *</label>
+                      <input 
+                        v-model.number="newProductSelection.quantity"
+                        type="number"
+                        min="1"
+                        placeholder="1"
+                        class="w-full text-xs font-bold p-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#1b3b5f] tabular-nums"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div class="flex items-center justify-end gap-2 pt-1">
+                  <button
+                    type="button"
+                    @click="isAddingExtraProduct = false"
+                    class="px-3 py-1.5 border border-gray-300 text-gray-700 rounded-lg text-xs font-semibold hover:bg-gray-50 cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    @click="addExtraProductToBatch"
+                    class="px-4 py-1.5 bg-[#1b3b5f] hover:bg-[#132c49] text-white text-xs font-bold rounded-lg shadow-2xs transition flex items-center gap-1 cursor-pointer"
+                  >
+                    <Plus class="w-3.5 h-3.5" />
+                    <span>Append to Batch</span>
+                  </button>
+                </div>
+              </div>
             </div>
 
             <!-- Batch Hold Toggle & Transport Customization -->
@@ -439,12 +783,13 @@ const submitCreateBatch = async () => {
           <div class="px-5 sm:px-6 py-4 bg-gray-50 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
             <!-- Left: Batch Allocation Preview -->
             <div class="text-xs">
-              <span class="text-gray-600">Batch {{ nextBatchNumber }} Total: </span>
-              <strong class="text-gray-900 font-extrabold">{{ totalBatchUnits }} pcs</strong>
+              <span class="text-gray-600">Batch {{ currentBatchNumber }} Total: </span>
+              <strong class="text-gray-900 font-extrabold tabular-nums">{{ totalBatchUnits }} pcs</strong>
               <span class="text-gray-300 mx-1.5">&bull;</span>
-              <strong class="text-[#1b3b5f] font-black">{{ formatCurrency(totalBatchAmount) }}</strong>
+              <strong class="text-[#1b3b5f] font-black tabular-nums">{{ formatCurrency(totalBatchAmount) }}</strong>
               <span class="block text-[11px] text-gray-500 mt-0.5">
-                Pending pool after this batch: <strong>{{ remainingPoolAfterBatch }} pcs</strong>
+                {{ mode === 'edit' ? 'Units remaining in master pool:' : 'Pending pool after this batch:' }} 
+                <strong class="tabular-nums">{{ remainingPoolAfterBatch }} pcs</strong>
               </span>
             </div>
 
@@ -460,13 +805,16 @@ const submitCreateBatch = async () => {
               </button>
               <button 
                 type="button"
-                @click="submitCreateBatch" 
+                @click="submitBatch" 
                 :disabled="isSubmitting || totalBatchUnits === 0"
                 class="px-5 py-2.5 bg-[#1b3b5f] hover:bg-[#132c49] text-white rounded-xl text-xs font-bold shadow-sm disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer active:scale-95 transition-all"
               >
                 <Loader2 v-if="isSubmitting" class="w-3.5 h-3.5 animate-spin" />
-                <Plus v-else class="w-3.5 h-3.5" />
-                <span>Create Batch {{ nextBatchNumber }}</span>
+                <template v-else>
+                  <Save v-if="mode === 'edit'" class="w-3.5 h-3.5" />
+                  <Plus v-else class="w-3.5 h-3.5" />
+                </template>
+                <span>{{ mode === 'edit' ? `Save Batch ${currentBatchNumber} Changes` : `Create Batch ${currentBatchNumber}` }}</span>
               </button>
             </div>
           </div>

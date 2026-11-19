@@ -20,7 +20,11 @@ import { useRealtimeSync } from '~/composables/useRealtimeSync'
 const isPinModalOpen = ref(false)
 const isHandoverModalOpen = ref(false)
 const isAdminStatusModalOpen = ref(false)
-const isCreateBatchModalOpen = ref(false)
+const isBatchModalOpen = ref(false)
+const batchModalMode = ref<'create' | 'edit'>('create')
+const batchModalOrderId = ref<string | null>(null)
+const batchModalData = ref<any | null>(null)
+const batchModalParentOrderId = ref<string | null>(null)
 const isLinkModalOpen = ref(false)
 const isLinkItemModalOpen = ref(false)
 const isHeaderMenuOpen = ref(false)
@@ -123,6 +127,29 @@ const poolMetrics = computed(() => {
   }
 })
 
+const getItemPoolAllocated = (item: any) => {
+  if (!order.value) return 0
+  const batches = (order.value as any).batches || []
+  let allocated = 0
+  for (const b of batches) {
+    if (b.overallStatus === 'CANCELLED') continue
+    for (const bi of (b.items || [])) {
+      if (bi.productId && item.productId && bi.productId === item.productId) {
+        allocated += Number(bi.quantity || 0)
+      } else if (bi.productName && (item.productName || item.product?.name) && bi.productName.trim().toLowerCase() === (item.productName || item.product?.name || '').trim().toLowerCase()) {
+        allocated += Number(bi.quantity || 0)
+      }
+    }
+  }
+  return allocated
+}
+
+const getItemPoolPending = (item: any) => {
+  const ordered = Number(item.approvedQuantity ?? item.quantity ?? 0)
+  const allocated = getItemPoolAllocated(item)
+  return Math.max(0, ordered - allocated)
+}
+
 const canCreateBatch = computed(() => {
   if (!order.value) return false
   if (isChildBatch.value) return false
@@ -138,11 +165,15 @@ const canSplitCurrentOrder = computed(() => canCreateBatch.value)
 
 const openCreateBatchModal = () => {
   if (!order.value) return
-  isCreateBatchModalOpen.value = true
+  batchModalMode.value = 'create'
+  batchModalOrderId.value = order.value.parentOrderId || order.value.id
+  batchModalData.value = null
+  batchModalParentOrderId.value = null
+  isBatchModalOpen.value = true
 }
 
-const onBatchCreated = async (result: any) => {
-  isCreateBatchModalOpen.value = false
+const onBatchSuccess = async (result?: any) => {
+  isBatchModalOpen.value = false
   await fetchOrder(order.value?.id || '', true)
   emit('updated')
 }
@@ -174,14 +205,13 @@ const getBatchTotalQty = (batch: any) => {
   return (batch.items || []).reduce((sum: number, itm: any) => sum + (Number(itm.quantity) || 0), 0)
 }
 
-const editingOriginOrderId = ref<string | null>(null)
-
-const editBatchById = async (batch: any) => {
-  editingOriginOrderId.value = order.value?.id || null
-  if (batch.id !== order.value?.id) {
-    await fetchOrder(batch.id)
-  }
-  openEditModal()
+const editBatchById = (batch: any) => {
+  if (!batch) return
+  batchModalMode.value = 'edit'
+  batchModalOrderId.value = batch.id
+  batchModalData.value = batch
+  batchModalParentOrderId.value = isChildBatch.value ? order.value?.parentOrderId : order.value?.id
+  isBatchModalOpen.value = true
 }
 
 const getBatchPipeline = (batch: any) => {
@@ -1917,7 +1947,7 @@ onUnmounted(() => {
             <!-- Edit Order / Batch Button -->
             <button 
               v-if="canEditCurrentOrder"
-              @click="openEditModal" 
+              @click="isChildBatch ? editBatchById(order) : openEditModal()" 
               :title="isChildBatch ? 'Edit Batch Details' : 'Edit Full Order Details'"
               class="px-2.5 py-1.5 text-xs font-bold text-white bg-[#1b3b5f] hover:bg-[#132c49] active:bg-[#0e2035] rounded-lg transition-all flex items-center gap-1.5 shadow-xs cursor-pointer active:scale-95"
             >
@@ -2055,7 +2085,7 @@ onUnmounted(() => {
             <!-- Edit Order / Batch Button (Always visible when editable) -->
             <button 
               v-if="canEditCurrentOrder"
-              @click="openEditModal" 
+              @click="isChildBatch ? editBatchById(order) : openEditModal()" 
               :title="isChildBatch ? 'Edit Batch Details' : 'Edit Full Order Details'"
               class="px-3 py-1.5 text-xs font-bold text-white bg-[#1b3b5f] hover:bg-[#132c49] active:bg-[#0e2035] rounded-lg transition-all flex items-center gap-1.5 shadow-xs cursor-pointer active:scale-95"
             >
@@ -2323,7 +2353,7 @@ onUnmounted(() => {
                 </h3>
                 <button 
                   v-if="canEditCurrentOrder" 
-                  @click="openEditModal" 
+                  @click="isChildBatch ? editBatchById(order) : openEditModal()" 
                   class="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold text-white bg-[#1b3b5f] hover:bg-[#132c49] active:bg-[#0e2035] rounded-lg transition-all shadow-xs hover:shadow cursor-pointer active:scale-95"
                   :title="isChildBatch ? 'Edit Batch Details' : 'Edit Order Details'"
                 >
@@ -2414,226 +2444,6 @@ onUnmounted(() => {
                     <span>{{ order.deliveryAddress || 'No delivery address specified' }}</span>
                   </p>
                 </div>
-              </div>
-            </div>
-
-            <!-- C1. Party Vehicle or Third Party Transport Mode -->
-            <div v-if="order.vehicleMode === 'PARTY_VEHICLE' || order.vehicleMode === 'THIRD_PARTY'" class="bg-white rounded-xl border border-gray-200/80 p-4 shadow-2xs space-y-3">
-              <div class="flex justify-between items-center pb-2.5 border-b border-gray-100">
-                <h3 class="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-1.5">
-                  <Package v-if="order.vehicleMode === 'THIRD_PARTY'" class="w-3.5 h-3.5 text-indigo-600" />
-                  <Car v-else class="w-3.5 h-3.5 text-amber-600" />
-                  {{ order.vehicleMode === 'THIRD_PARTY' ? 'Third Party Transport (Porter/Rapido)' : 'Party Vehicle Transport' }}
-                </h3>
-                <span 
-                  class="font-mono text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded border"
-                  :class="order.deliveryStatus?.status === 'DELIVERED'
-                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                    : (order.vehicleMode === 'THIRD_PARTY' ? 'bg-indigo-50 text-indigo-800 border-indigo-200' : 'bg-amber-50 text-amber-800 border-amber-200')"
-                >
-                  {{ order.deliveryStatus?.status === 'DELIVERED' ? 'HANDED OVER' : (order.vehicleMode === 'THIRD_PARTY' ? 'PORTER / RAPIDO' : 'CUSTOMER PICKUP') }}
-                </span>
-              </div>
-
-              <!-- Delivered State -->
-              <div v-if="order.deliveryStatus?.status === 'DELIVERED'" class="space-y-3">
-                <div class="grid grid-cols-2 gap-y-3 gap-x-4 text-xs sm:text-sm">
-                  <div>
-                    <span class="block text-[10px] sm:text-[11px] uppercase font-bold text-gray-400 tracking-wider mb-0.5">Handover Info</span>
-                    <div class="flex items-center gap-1.5 font-bold text-gray-900">
-                      <Package v-if="order.vehicleMode === 'THIRD_PARTY'" class="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-                      <Car v-else class="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                      <span>{{ order.deliveryStatus?.driverName || (order.vehicleMode === 'THIRD_PARTY' ? 'Porter / Rapido' : 'Party Vehicle') }}</span>
-                    </div>
-                  </div>
-
-                  <div>
-                    <span class="block text-[10px] sm:text-[11px] uppercase font-bold text-gray-400 tracking-wider mb-0.5">Delivered At</span>
-                    <span class="font-semibold text-gray-800 block text-xs">
-                      {{ order.deliveryStatus?.deliveredAt ? formatDateTime(order.deliveryStatus.deliveredAt) : 'Recorded' }}
-                    </span>
-                    <span class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 mt-1">
-                      <CheckCircle2 class="w-3 h-3 text-emerald-600" /> Handover Complete
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Pending Handover State -->
-              <div 
-                v-else 
-                class="text-xs text-gray-600 rounded-xl p-3.5 border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
-                :class="order.vehicleMode === 'THIRD_PARTY' ? 'bg-indigo-50/60 border-indigo-200/80' : 'bg-amber-50/60 border-amber-200/80'"
-              >
-                <div class="space-y-0.5">
-                  <div 
-                    class="font-bold flex items-center gap-1.5"
-                    :class="order.vehicleMode === 'THIRD_PARTY' ? 'text-indigo-950' : 'text-amber-950'"
-                  >
-                    <Package v-if="order.vehicleMode === 'THIRD_PARTY'" class="w-4 h-4 text-indigo-600 shrink-0" />
-                    <AlertCircle v-else class="w-4 h-4 text-amber-600 shrink-0" />
-                    <span>{{ order.vehicleMode === 'THIRD_PARTY' ? 'Third Party Partner Handover' : 'Customer-Arranged Pickup' }}</span>
-                  </div>
-                  <p 
-                    class="text-[11px] leading-relaxed"
-                    :class="order.vehicleMode === 'THIRD_PARTY' ? 'text-indigo-900/80' : 'text-amber-900/80'"
-                  >
-                    {{ order.vehicleMode === 'THIRD_PARTY' 
-                      ? 'This order is dispatched via Porter, Rapido, or other courier. It is not bundled into fleet trips.'
-                      : 'This order is picked up via the customer\'s vehicle. It is not bundled into fleet trips.' }}
-                  </p>
-                </div>
-
-                <button
-                  v-if="context === 'delivery'"
-                  type="button"
-                  @click="isHandoverModalOpen = true"
-                  class="px-4 py-2 text-white font-bold text-xs rounded-lg shadow-sm transition flex items-center gap-1.5 shrink-0 cursor-pointer"
-                  :class="order.vehicleMode === 'THIRD_PARTY' ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-amber-600 hover:bg-amber-700'"
-                >
-                  <PackageCheck class="w-4 h-4" />
-                  <span>Hand Over</span>
-                </button>
-                <span
-                  v-else
-                  class="text-[11px] font-semibold px-2.5 py-1 rounded-md border shrink-0 self-start sm:self-center"
-                  :class="order.vehicleMode === 'THIRD_PARTY' ? 'text-indigo-800 bg-indigo-100/80 border-indigo-200/60' : 'text-amber-800 bg-amber-100/80 border-amber-200/60'"
-                >
-                  Pending Pickup
-                </span>
-              </div>
-            </div>
-
-            <!-- C2. Trip & Driver Manifest Assignment (Read-Only for Our Fleet) -->
-            <div v-else class="bg-white rounded-xl border border-gray-200/80 p-4 shadow-2xs space-y-3">
-              <div class="flex justify-between items-center pb-2.5 border-b border-gray-100">
-                <h3 class="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-1.5">
-                  <Truck class="w-3.5 h-3.5 text-gray-400" />
-                  Fleet Trip & Driver
-                </h3>
-                <span 
-                  v-if="(order as any).assignedTrip?.tripNumber"
-                  class="font-mono text-xs font-bold text-[#1b3b5f] bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200"
-                >
-                  {{ (order as any).assignedTrip.tripNumber }}
-                </span>
-                <span v-else class="text-[11px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
-                  Not Assigned to Trip
-                </span>
-              </div>
-
-              <!-- When assigned to a trip -->
-              <div v-if="(order as any).assignedTrip" class="space-y-3">
-                <div class="grid grid-cols-2 gap-y-3 gap-x-4 text-xs sm:text-sm">
-                  <div>
-                    <span class="block text-[10px] sm:text-[11px] uppercase font-bold text-gray-400 tracking-wider mb-0.5">Driver</span>
-                    <div class="flex items-center gap-1.5 font-bold text-gray-900">
-                      <User class="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                      <span>{{ (order as any).assignedTrip.driverName }}</span>
-                    </div>
-                    <a
-                      v-if="(order as any).assignedTrip.driverPhone"
-                      :href="`tel:${(order as any).assignedTrip.driverPhone}`"
-                      class="text-[11px] text-[#1b3b5f] font-medium hover:underline flex items-center gap-1 mt-0.5"
-                    >
-                      <Phone class="w-3 h-3 text-[#1b3b5f]" />
-                      <span>{{ (order as any).assignedTrip.driverPhone }}</span>
-                    </a>
-                  </div>
-
-                  <div>
-                    <span class="block text-[10px] sm:text-[11px] uppercase font-bold text-gray-400 tracking-wider mb-0.5">Vehicle / Status</span>
-                    <span class="font-semibold text-gray-800 block">
-                      {{ (order as any).assignedTrip.vehicleNumber || 'Standard Delivery' }}
-                    </span>
-                    <span 
-                      class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase mt-1"
-                      :class="[
-                        (order as any).assignedTrip.status === 'IN_TRANSIT'
-                          ? 'bg-emerald-100 text-emerald-800 animate-pulse'
-                          : (order as any).assignedTrip.status === 'COMPLETED'
-                          ? 'bg-gray-100 text-gray-700'
-                          : 'bg-blue-50 text-blue-800'
-                      ]"
-                    >
-                      Trip: {{ (order as any).assignedTrip.status }}
-                    </span>
-                  </div>
-
-                  <div class="col-span-2 pt-2 border-t border-gray-100 flex items-center justify-between text-xs">
-                    <div>
-                      <span class="text-gray-500 font-medium">Manifest Sequence: </span>
-                      <span class="font-bold text-gray-900">Stop #{{ (order as any).assignedTrip.stopSequence }}</span>
-                      <span class="text-gray-400 mx-1.5">•</span>
-                      <span class="text-gray-500 font-medium">Stop Status: </span>
-                      <span 
-                        class="font-bold"
-                        :class="[
-                          (order as any).assignedTrip.stopStatus === 'DELIVERED'
-                            ? 'text-emerald-700'
-                            : (order as any).assignedTrip.stopStatus === 'IN_TRANSIT'
-                            ? 'text-blue-700'
-                            : 'text-gray-700'
-                        ]"
-                      >
-                        {{ (order as any).assignedTrip.stopStatus }}
-                      </span>
-                    </div>
-
-                    <div class="flex items-center gap-2.5">
-                      <a
-                        v-if="order.deliveryStatus?.status === 'DISPATCHED' || (order as any).assignedTrip.status === 'IN_TRANSIT'"
-                        :href="`/track/${order.orderNumber}`"
-                        target="_blank"
-                        class="text-xs font-bold text-[#1b3b5f] hover:underline flex items-center gap-1"
-                      >
-                        <MapPin class="w-3.5 h-3.5" />
-                        <span>Live Track ↗</span>
-                      </a>
-
-                      <button
-                        v-if="order.deliveryStatus?.status !== 'DELIVERED'"
-                        type="button"
-                        @click="handleRemoveFromAssignedTrip"
-                        :disabled="isRemovingFromTrip"
-                        class="text-xs font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50 px-2 py-1 rounded border border-rose-200 transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50"
-                        title="Remove order from trip (returns to Waiting)"
-                      >
-                        <Loader2 v-if="isRemovingFromTrip" class="w-3 h-3 animate-spin text-rose-500" />
-                        <Trash2 v-else class="w-3 h-3 text-rose-500" />
-                        <span>Remove from Trip</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- When legacy driver assigned (before trips) -->
-              <div v-else-if="order.deliveryDriver || order.deliveryStatus?.driverName" class="text-xs">
-                <div class="flex items-center justify-between">
-                  <div>
-                    <span class="text-[10px] uppercase font-bold text-gray-400 block tracking-wider mb-0.5">Assigned Driver</span>
-                    <span class="font-bold text-gray-900 flex items-center gap-1.5">
-                      <User class="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                      <span>{{ order.deliveryDriver || order.deliveryStatus?.driverName }}</span>
-                    </span>
-                  </div>
-                  <StatusBadge v-if="order.deliveryStatus?.status" :status="order.deliveryStatus.status" />
-                </div>
-              </div>
-
-              <!-- When NOT assigned to any trip yet -->
-              <div v-else class="text-xs text-gray-500 bg-gray-50 rounded-lg p-3 border border-gray-100 flex items-center justify-between gap-3">
-                <p class="leading-relaxed">
-                  This order has not been assigned to a delivery trip yet. Driver assignment and dispatch are managed through <strong>Fleet Trips</strong>.
-                </p>
-                <button
-                  type="button"
-                  @click="isPinModalOpen = true"
-                  class="px-2.5 py-1 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded border border-emerald-200 transition cursor-pointer shrink-0"
-                >
-                  {{ (order as any)?.hasDestinationPin ? '📍 Pin Verified' : '📍 Set Pin' }}
-                </button>
               </div>
             </div>
 
@@ -3112,6 +2922,227 @@ onUnmounted(() => {
               </div>
             </div>
 
+            <!-- E. Fleet Trip, Driver & Logistics Assignment -->
+            <!-- E1. Party Vehicle or Third Party Transport Mode -->
+            <div v-if="order.vehicleMode === 'PARTY_VEHICLE' || order.vehicleMode === 'THIRD_PARTY'" class="bg-white rounded-xl border border-gray-200/80 p-4 shadow-2xs space-y-3">
+              <div class="flex justify-between items-center pb-2.5 border-b border-gray-100">
+                <h3 class="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-1.5">
+                  <Package v-if="order.vehicleMode === 'THIRD_PARTY'" class="w-3.5 h-3.5 text-indigo-600" />
+                  <Car v-else class="w-3.5 h-3.5 text-amber-600" />
+                  {{ order.vehicleMode === 'THIRD_PARTY' ? 'Third Party Transport (Porter/Rapido)' : 'Party Vehicle Transport' }}
+                </h3>
+                <span 
+                  class="font-mono text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded border"
+                  :class="order.deliveryStatus?.status === 'DELIVERED'
+                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                    : (order.vehicleMode === 'THIRD_PARTY' ? 'bg-indigo-50 text-indigo-800 border-indigo-200' : 'bg-amber-50 text-amber-800 border-amber-200')"
+                >
+                  {{ order.deliveryStatus?.status === 'DELIVERED' ? 'HANDED OVER' : (order.vehicleMode === 'THIRD_PARTY' ? 'PORTER / RAPIDO' : 'CUSTOMER PICKUP') }}
+                </span>
+              </div>
+
+              <!-- Delivered State -->
+              <div v-if="order.deliveryStatus?.status === 'DELIVERED'" class="space-y-3">
+                <div class="grid grid-cols-2 gap-y-3 gap-x-4 text-xs sm:text-sm">
+                  <div>
+                    <span class="block text-[10px] sm:text-[11px] uppercase font-bold text-gray-400 tracking-wider mb-0.5">Handover Info</span>
+                    <div class="flex items-center gap-1.5 font-bold text-gray-900">
+                      <Package v-if="order.vehicleMode === 'THIRD_PARTY'" class="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                      <Car v-else class="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                      <span>{{ order.deliveryStatus?.driverName || (order.vehicleMode === 'THIRD_PARTY' ? 'Porter / Rapido' : 'Party Vehicle') }}</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <span class="block text-[10px] sm:text-[11px] uppercase font-bold text-gray-400 tracking-wider mb-0.5">Delivered At</span>
+                    <span class="font-semibold text-gray-800 block text-xs">
+                      {{ order.deliveryStatus?.deliveredAt ? formatDateTime(order.deliveryStatus.deliveredAt) : 'Recorded' }}
+                    </span>
+                    <span class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 mt-1">
+                      <CheckCircle2 class="w-3 h-3 text-emerald-600" /> Handover Complete
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Pending Handover State -->
+              <div 
+                v-else 
+                class="text-xs text-gray-600 rounded-xl p-3.5 border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
+                :class="order.vehicleMode === 'THIRD_PARTY' ? 'bg-indigo-50/60 border-indigo-200/80' : 'bg-amber-50/60 border-amber-200/80'"
+              >
+                <div class="space-y-0.5">
+                  <div 
+                    class="font-bold flex items-center gap-1.5"
+                    :class="order.vehicleMode === 'THIRD_PARTY' ? 'text-indigo-950' : 'text-amber-950'"
+                  >
+                    <Package v-if="order.vehicleMode === 'THIRD_PARTY'" class="w-4 h-4 text-indigo-600 shrink-0" />
+                    <AlertCircle v-else class="w-4 h-4 text-amber-600 shrink-0" />
+                    <span>{{ order.vehicleMode === 'THIRD_PARTY' ? 'Third Party Partner Handover' : 'Customer-Arranged Pickup' }}</span>
+                  </div>
+                  <p 
+                    class="text-[11px] leading-relaxed"
+                    :class="order.vehicleMode === 'THIRD_PARTY' ? 'text-indigo-900/80' : 'text-amber-900/80'"
+                  >
+                    {{ order.vehicleMode === 'THIRD_PARTY' 
+                      ? 'This order is dispatched via Porter, Rapido, or other courier. It is not bundled into fleet trips.'
+                      : 'This order is picked up via the customer\'s vehicle. It is not bundled into fleet trips.' }}
+                  </p>
+                </div>
+
+                <button
+                  v-if="context === 'delivery'"
+                  type="button"
+                  @click="isHandoverModalOpen = true"
+                  class="px-4 py-2 text-white font-bold text-xs rounded-lg shadow-sm transition flex items-center gap-1.5 shrink-0 cursor-pointer"
+                  :class="order.vehicleMode === 'THIRD_PARTY' ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-amber-600 hover:bg-amber-700'"
+                >
+                  <PackageCheck class="w-4 h-4" />
+                  <span>Hand Over</span>
+                </button>
+                <span
+                  v-else
+                  class="text-[11px] font-semibold px-2.5 py-1 rounded-md border shrink-0 self-start sm:self-center"
+                  :class="order.vehicleMode === 'THIRD_PARTY' ? 'text-indigo-800 bg-indigo-100/80 border-indigo-200/60' : 'text-amber-800 bg-amber-100/80 border-amber-200/60'"
+                >
+                  Pending Pickup
+                </span>
+              </div>
+            </div>
+
+            <!-- E2. Trip & Driver Manifest Assignment (Read-Only for Our Fleet) -->
+            <div v-else class="bg-white rounded-xl border border-gray-200/80 p-4 shadow-2xs space-y-3">
+              <div class="flex justify-between items-center pb-2.5 border-b border-gray-100">
+                <h3 class="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-1.5">
+                  <Truck class="w-3.5 h-3.5 text-gray-400" />
+                  Fleet Trip & Driver
+                </h3>
+                <span 
+                  v-if="(order as any).assignedTrip?.tripNumber"
+                  class="font-mono text-xs font-bold text-[#1b3b5f] bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200"
+                >
+                  {{ (order as any).assignedTrip.tripNumber }}
+                </span>
+                <span v-else class="text-[11px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                  Not Assigned to Trip
+                </span>
+              </div>
+
+              <!-- When assigned to a trip -->
+              <div v-if="(order as any).assignedTrip" class="space-y-3">
+                <div class="grid grid-cols-2 gap-y-3 gap-x-4 text-xs sm:text-sm">
+                  <div>
+                    <span class="block text-[10px] sm:text-[11px] uppercase font-bold text-gray-400 tracking-wider mb-0.5">Driver</span>
+                    <div class="flex items-center gap-1.5 font-bold text-gray-900">
+                      <User class="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                      <span>{{ (order as any).assignedTrip.driverName }}</span>
+                    </div>
+                    <a
+                      v-if="(order as any).assignedTrip.driverPhone"
+                      :href="`tel:${(order as any).assignedTrip.driverPhone}`"
+                      class="text-[11px] text-[#1b3b5f] font-medium hover:underline flex items-center gap-1 mt-0.5"
+                    >
+                      <Phone class="w-3 h-3 text-[#1b3b5f]" />
+                      <span>{{ (order as any).assignedTrip.driverPhone }}</span>
+                    </a>
+                  </div>
+
+                  <div>
+                    <span class="block text-[10px] sm:text-[11px] uppercase font-bold text-gray-400 tracking-wider mb-0.5">Vehicle / Status</span>
+                    <span class="font-semibold text-gray-800 block">
+                      {{ (order as any).assignedTrip.vehicleNumber || 'Standard Delivery' }}
+                    </span>
+                    <span 
+                      class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase mt-1"
+                      :class="[
+                        (order as any).assignedTrip.status === 'IN_TRANSIT'
+                          ? 'bg-emerald-100 text-emerald-800 animate-pulse'
+                          : (order as any).assignedTrip.status === 'COMPLETED'
+                          ? 'bg-gray-100 text-gray-700'
+                          : 'bg-blue-50 text-blue-800'
+                      ]"
+                    >
+                      Trip: {{ (order as any).assignedTrip.status }}
+                    </span>
+                  </div>
+
+                  <div class="col-span-2 pt-2 border-t border-gray-100 flex items-center justify-between text-xs">
+                    <div>
+                      <span class="text-gray-500 font-medium">Manifest Sequence: </span>
+                      <span class="font-bold text-gray-900">Stop #{{ (order as any).assignedTrip.stopSequence }}</span>
+                      <span class="text-gray-400 mx-1.5">•</span>
+                      <span class="text-gray-500 font-medium">Stop Status: </span>
+                      <span 
+                        class="font-bold"
+                        :class="[
+                          (order as any).assignedTrip.stopStatus === 'DELIVERED'
+                            ? 'text-emerald-700'
+                            : (order as any).assignedTrip.stopStatus === 'IN_TRANSIT'
+                            ? 'text-blue-700'
+                            : 'text-gray-700'
+                        ]"
+                      >
+                        {{ (order as any).assignedTrip.stopStatus }}
+                      </span>
+                    </div>
+
+                    <div class="flex items-center gap-2.5">
+                      <a
+                        v-if="order.deliveryStatus?.status === 'DISPATCHED' || (order as any).assignedTrip.status === 'IN_TRANSIT'"
+                        :href="`/track/${order.orderNumber}`"
+                        target="_blank"
+                        class="text-xs font-bold text-[#1b3b5f] hover:underline flex items-center gap-1"
+                      >
+                        <MapPin class="w-3.5 h-3.5" />
+                        <span>Live Track ↗</span>
+                      </a>
+
+                      <button
+                        v-if="order.deliveryStatus?.status !== 'DELIVERED'"
+                        type="button"
+                        @click="handleRemoveFromAssignedTrip"
+                        :disabled="isRemovingFromTrip"
+                        class="text-xs font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50 px-2 py-1 rounded border border-rose-200 transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                        title="Remove order from trip (returns to Waiting)"
+                      >
+                        <Loader2 v-if="isRemovingFromTrip" class="w-3 h-3 animate-spin text-rose-500" />
+                        <Trash2 v-else class="w-3 h-3 text-rose-500" />
+                        <span>Remove from Trip</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- When legacy driver assigned (before trips) -->
+              <div v-else-if="order.deliveryDriver || order.deliveryStatus?.driverName" class="text-xs">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <span class="text-[10px] uppercase font-bold text-gray-400 block tracking-wider mb-0.5">Assigned Driver</span>
+                    <span class="font-bold text-gray-900 flex items-center gap-1.5">
+                      <User class="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                      <span>{{ order.deliveryDriver || order.deliveryStatus?.driverName }}</span>
+                    </span>
+                  </div>
+                  <StatusBadge v-if="order.deliveryStatus?.status" :status="order.deliveryStatus.status" />
+                </div>
+              </div>
+
+              <!-- When NOT assigned to any trip yet -->
+              <div v-else class="text-xs text-gray-500 bg-gray-50 rounded-lg p-3 border border-gray-100 flex items-center justify-between gap-3">
+                <p class="leading-relaxed">
+                  This order has not been assigned to a delivery trip yet. Driver assignment and dispatch are managed through <strong>Fleet Trips</strong>.
+                </p>
+                <button
+                  type="button"
+                  @click="isPinModalOpen = true"
+                  class="px-2.5 py-1 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded border border-emerald-200 transition cursor-pointer shrink-0"
+                >
+                  {{ (order as any)?.hasDestinationPin ? '📍 Pin Verified' : '📍 Set Pin' }}
+                </button>
+              </div>
+            </div>
+
           </div>
           <!-- END DETAILS TAB -->
 
@@ -3362,42 +3393,81 @@ onUnmounted(() => {
               </div>
             </div>
 
-            <!-- Pool Balance Ribbon (Master Order only) -->
+            <!-- Pending Pool Balance Table (Master Order only) -->
             <div v-if="isMasterOrder" class="bg-white rounded-xl border border-gray-200/90 p-4 shadow-2xs space-y-3">
               <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-gray-700 uppercase tracking-wider">Pending Pool Balance</span>
-                <span class="text-xs font-semibold px-2 py-0.5 rounded-md" :class="poolMetrics.totalPending === 0 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-blue-50 text-blue-700 border border-blue-200'">
+                <div>
+                  <h4 class="text-xs font-bold text-gray-800 uppercase tracking-wider">Pending Pool Allocation</h4>
+                  <p class="text-[11px] text-gray-500 mt-0.5">Live availability of ordered items across all fulfillment batches.</p>
+                </div>
+                <span class="text-xs font-semibold px-2.5 py-0.5 rounded-md shrink-0" :class="poolMetrics.totalPending === 0 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-blue-50 text-blue-700 border border-blue-200'">
                   {{ poolMetrics.batchedPercent }}% Batched
                 </span>
               </div>
 
-              <!-- 3 Metrics Columns -->
-              <div class="grid grid-cols-3 gap-2 sm:gap-3 text-center">
-                <div class="p-2.5 rounded-lg bg-gray-50 border border-gray-100">
-                  <span class="text-[10px] uppercase font-bold text-gray-500 tracking-wider block">Total Ordered</span>
-                  <span class="text-lg sm:text-xl font-bold text-gray-900 tabular-nums">{{ poolMetrics.totalOrdered }}</span>
-                  <span class="text-[10px] text-gray-400 block mt-0.5">{{ order.items?.length || 0 }} SKUs</span>
-                </div>
-                <div class="p-2.5 rounded-lg bg-blue-50/60 border border-blue-100">
-                  <span class="text-[10px] uppercase font-bold text-blue-700 tracking-wider block">Allocated</span>
-                  <span class="text-lg sm:text-xl font-bold text-blue-900 tabular-nums">{{ poolMetrics.totalBatched }}</span>
-                  <span class="text-[10px] text-blue-600 block mt-0.5">{{ (order as any).batches?.length || 0 }} batches</span>
-                </div>
-                <div class="p-2.5 rounded-lg" :class="poolMetrics.totalPending > 0 ? 'bg-amber-50/70 border border-amber-200' : 'bg-emerald-50/70 border border-emerald-200'">
-                  <span class="text-[10px] uppercase font-bold tracking-wider block" :class="poolMetrics.totalPending > 0 ? 'text-amber-800' : 'text-emerald-800'">
-                    Pending Pool
-                  </span>
-                  <span class="text-lg sm:text-xl font-bold tabular-nums" :class="poolMetrics.totalPending > 0 ? 'text-amber-900' : 'text-emerald-900'">
-                    {{ poolMetrics.totalPending }}
-                  </span>
-                  <span class="text-[10px] block mt-0.5" :class="poolMetrics.totalPending > 0 ? 'text-amber-700' : 'text-emerald-700'">
-                    {{ poolMetrics.totalPending > 0 ? 'Available for batch' : 'Fully allocated' }}
-                  </span>
-                </div>
+              <!-- Structured Per-Product Pool Table -->
+              <div class="overflow-x-auto rounded-lg border border-gray-200">
+                <table class="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr class="bg-gray-50/80 border-b border-gray-200 text-gray-500 font-bold uppercase tracking-wider text-[10px]">
+                      <th class="py-2.5 px-3">Product Name</th>
+                      <th class="py-2.5 px-3 text-right">Total Ordered</th>
+                      <th class="py-2.5 px-3 text-right">Allocated</th>
+                      <th class="py-2.5 px-3 text-right">Pending Pool</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-gray-100 bg-white">
+                    <tr v-for="item in (order.items || [])" :key="item.id" class="hover:bg-gray-50/60 transition">
+                      <td class="py-2.5 px-3">
+                        <!-- Line 1: Full Product Name (wraps to next line, never truncated) -->
+                        <div class="font-bold text-gray-900 leading-snug break-words whitespace-normal">
+                          {{ item.product?.name || item.productName || item.name || 'Item' }}
+                        </div>
+                        <!-- Line 2: Alias / SKU (shown only if unique and distinct from product name) -->
+                        <div 
+                          v-if="(item.product?.sku || item.sku) && (item.product?.sku || item.sku).trim().toLowerCase() !== (item.product?.name || item.productName || item.name || '').trim().toLowerCase()" 
+                          class="text-[10px] text-gray-500 mt-0.5 font-medium"
+                        >
+                          SKU: {{ item.product?.sku || item.sku }}
+                        </div>
+                      </td>
+                      <td class="py-2.5 px-3 text-right whitespace-nowrap">
+                        <span class="font-bold text-gray-900 tabular-nums">{{ item.approvedQuantity ?? item.quantity }}</span>
+                        <span class="text-[10px] text-gray-500 ml-1">{{ item.unit || 'pcs' }}</span>
+                      </td>
+                      <td class="py-2.5 px-3 text-right whitespace-nowrap">
+                        <span class="font-bold text-blue-800 tabular-nums">{{ getItemPoolAllocated(item) }}</span>
+                        <span class="text-[10px] text-blue-600 ml-1">{{ item.unit || 'pcs' }}</span>
+                      </td>
+                      <td class="py-2.5 px-3 text-right whitespace-nowrap">
+                        <span 
+                          class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold tabular-nums"
+                          :class="getItemPoolPending(item) > 0 ? 'bg-amber-50 text-amber-900 border border-amber-200' : 'bg-emerald-50 text-emerald-800 border border-emerald-200'"
+                        >
+                          {{ getItemPoolPending(item) }} {{ item.unit || 'pcs' }}
+                        </span>
+                      </td>
+                    </tr>
+                  </tbody>
+                  <tfoot class="bg-gray-50/90 border-t border-gray-200 font-bold text-gray-900">
+                    <tr>
+                      <td class="py-2 px-3 text-[11px] uppercase tracking-wide text-gray-600">Total Units</td>
+                      <td class="py-2 px-3 text-right text-xs tabular-nums">
+                        {{ poolMetrics.totalOrdered }} pcs
+                      </td>
+                      <td class="py-2 px-3 text-right text-xs text-blue-800 tabular-nums">
+                        {{ poolMetrics.totalBatched }} pcs
+                      </td>
+                      <td class="py-2 px-3 text-right text-xs tabular-nums" :class="poolMetrics.totalPending > 0 ? 'text-amber-900' : 'text-emerald-800'">
+                        {{ poolMetrics.totalPending }} pcs
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
               </div>
 
-              <!-- Progress bar -->
-              <div class="space-y-1">
+              <!-- Progress bar & context note -->
+              <div class="space-y-1 pt-1">
                 <div class="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
                   <div 
                     class="h-2 rounded-full transition-all duration-300"
@@ -5190,11 +5260,15 @@ onUnmounted(() => {
       @apply-price="onApplyEditPriceHistory"
     />
 
-    <!-- Create Fulfillment Batch Modal -->
+    <!-- Create / Edit Fulfillment Batch Modal -->
     <CreateBatchModal
-      :is-open="isCreateBatchModalOpen"
-      :order-id="order?.parentOrderId || order?.id || null"
-      @close="isCreateBatchModalOpen = false"
-      @batch-created="onBatchCreated"
+      :is-open="isBatchModalOpen"
+      :order-id="batchModalOrderId"
+      :mode="batchModalMode"
+      :batch-data="batchModalData"
+      :parent-order-id="batchModalParentOrderId"
+      @close="isBatchModalOpen = false"
+      @batch-created="onBatchSuccess"
+      @batch-updated="onBatchSuccess"
     />
 </template>
