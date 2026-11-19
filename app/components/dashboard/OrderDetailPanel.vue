@@ -162,6 +162,16 @@ const toggleBatchHold = async (batchId: string) => {
   }
 }
 
+// Expandable batch product details in Batches Tab
+const expandedBatchIds = ref<Record<string, boolean>>({})
+const toggleBatchExpanded = (batchId: string) => {
+  expandedBatchIds.value[batchId] = !expandedBatchIds.value[batchId]
+}
+
+const getBatchTotalQty = (batch: any) => {
+  return (batch.items || []).reduce((sum: number, itm: any) => sum + (Number(itm.quantity) || 0), 0)
+}
+
 const navigationTabs = computed(() => {
   const tabs: Array<{ id: 'DETAILS' | 'BATCHES' | 'TIMELINE' | 'NOTES', label: string, badge?: any }> = [
     { id: 'DETAILS', label: 'Details', badge: order.value?.items?.length }
@@ -3123,26 +3133,29 @@ onUnmounted(() => {
                   <span class="px-2.5 py-1 text-xs font-bold rounded-lg bg-blue-100 text-blue-900 border border-blue-300">
                     Current Batch: #{{ order.batchNumber }}
                   </span>
-                  <span v-if="order.isBatchOnHold" class="px-2 py-0.5 text-xs font-bold rounded-md bg-amber-100 text-amber-900 border border-amber-300">
-                    ⏸️ On Hold
-                  </span>
-                  <span v-else class="px-2 py-0.5 text-xs font-bold rounded-md bg-emerald-100 text-emerald-900 border border-emerald-300">
-                    ▶️ Active in Pipeline
-                  </span>
                 </div>
 
-                <!-- Hold / Activate Toggle -->
-                <button
-                  type="button"
-                  @click="toggleBatchHold(order.id)"
-                  :disabled="isTogglingHold === order.id"
-                  class="px-3 py-1.5 text-xs font-bold rounded-xl border transition shadow-2xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-                  :class="order.isBatchOnHold ? 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-700' : 'bg-amber-100 hover:bg-amber-200 text-amber-900 border-amber-300'"
-                >
-                  <Loader2 v-if="isTogglingHold === order.id" class="w-3.5 h-3.5 animate-spin" />
-                  <span v-else-if="order.isBatchOnHold">▶️ Activate Batch (Send to Packing)</span>
-                  <span v-else>⏸️ Put Batch On Hold</span>
-                </button>
+                <!-- Active / On Hold Segmented Toggle -->
+                <div class="inline-flex items-center p-0.5 bg-white rounded-lg border border-blue-200 text-xs select-none shadow-2xs">
+                  <button
+                    type="button"
+                    @click="order.isBatchOnHold ? toggleBatchHold(order.id) : null"
+                    :disabled="isTogglingHold === order.id"
+                    class="px-3 py-1.5 rounded-md font-bold transition-all text-xs cursor-pointer"
+                    :class="!order.isBatchOnHold ? 'bg-emerald-600 text-white shadow-2xs' : 'text-gray-500 hover:text-gray-900'"
+                  >
+                    Active
+                  </button>
+                  <button
+                    type="button"
+                    @click="!order.isBatchOnHold ? toggleBatchHold(order.id) : null"
+                    :disabled="isTogglingHold === order.id"
+                    class="px-3 py-1.5 rounded-md font-bold transition-all text-xs cursor-pointer"
+                    :class="order.isBatchOnHold ? 'bg-amber-500 text-white shadow-2xs' : 'text-gray-500 hover:text-gray-900'"
+                  >
+                    On Hold
+                  </button>
+                </div>
               </div>
               <p class="text-xs text-blue-900">
                 This batch moves independently through packing, invoicing, and delivery. Edits to its item quantities automatically recalculate the master order's pending pool.
@@ -3181,29 +3194,40 @@ onUnmounted(() => {
                       </span>
                     </div>
 
-                    <!-- 1-Click Active / On Hold Toggle -->
+                    <!-- Right Actions: Active / On Hold Segmented Toggle + View Details + Delete -->
                     <div class="flex items-center gap-2">
-                      <button
-                        type="button"
-                        @click.stop="toggleBatchHold(b.id)"
-                        :disabled="isTogglingHold === b.id"
-                        class="px-2.5 py-1 text-xs font-bold rounded-lg border transition shadow-2xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-                        :class="b.isBatchOnHold ? 'bg-amber-100 hover:bg-amber-200 text-amber-900 border-amber-300' : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-300'"
-                        :title="b.isBatchOnHold ? 'Click to release batch to active packing queue' : 'Click to hold batch (pause fulfillment)'"
-                      >
-                        <Loader2 v-if="isTogglingHold === b.id" class="w-3.5 h-3.5 animate-spin" />
-                        <span v-if="b.isBatchOnHold">⏸️ On Hold (Paused)</span>
-                        <span v-else>▶️ Active in Pipeline</span>
-                      </button>
+                      <!-- Active / On Hold Segmented Toggle -->
+                      <div class="inline-flex items-center p-0.5 bg-gray-100 rounded-lg border border-gray-200 select-none">
+                        <button
+                          type="button"
+                          @click.stop="b.isBatchOnHold ? toggleBatchHold(b.id) : null"
+                          :disabled="isTogglingHold === b.id"
+                          class="px-2.5 py-1 rounded-md font-bold transition-all text-[11px] cursor-pointer"
+                          :class="!b.isBatchOnHold ? 'bg-emerald-600 text-white shadow-2xs' : 'text-gray-500 hover:text-gray-900'"
+                        >
+                          Active
+                        </button>
+                        <button
+                          type="button"
+                          @click.stop="!b.isBatchOnHold ? toggleBatchHold(b.id) : null"
+                          :disabled="isTogglingHold === b.id"
+                          class="px-2.5 py-1 rounded-md font-bold transition-all text-[11px] cursor-pointer"
+                          :class="b.isBatchOnHold ? 'bg-amber-500 text-white shadow-2xs' : 'text-gray-500 hover:text-gray-900'"
+                        >
+                          On Hold
+                        </button>
+                      </div>
 
+                      <!-- View Products Details Toggle -->
                       <button
-                        v-if="b.id !== order.id"
                         type="button"
-                        @click.stop="switchToOrder(b.id)"
-                        class="px-3 py-1 text-xs font-bold text-[#1b3b5f] bg-[#1b3b5f]/10 hover:bg-[#1b3b5f]/20 rounded-lg border border-[#1b3b5f]/20 transition flex items-center gap-1 cursor-pointer"
+                        @click.stop="toggleBatchExpanded(b.id)"
+                        class="px-2.5 py-1 text-xs font-bold text-[#1b3b5f] bg-[#1b3b5f]/10 hover:bg-[#1b3b5f]/20 rounded-lg border border-[#1b3b5f]/20 transition flex items-center gap-1 cursor-pointer select-none"
+                        :title="expandedBatchIds[b.id] ? 'Hide product details' : 'View product details'"
                       >
-                        <span>View</span>
-                        <ArrowRight class="w-3.5 h-3.5" />
+                        <span>{{ expandedBatchIds[b.id] ? 'Hide' : 'View' }}</span>
+                        <ChevronUp v-if="expandedBatchIds[b.id]" class="w-3.5 h-3.5" />
+                        <ChevronDown v-else class="w-3.5 h-3.5" />
                       </button>
 
                       <!-- Direct Delete Batch Button (Admin only, when bill not generated) -->
@@ -3224,60 +3248,136 @@ onUnmounted(() => {
                   <!-- Department Status Steps for this Batch -->
                   <div class="grid grid-cols-3 gap-2 pt-1 border-t border-gray-100 text-center">
                     <!-- Packing -->
-                    <div class="p-2 rounded-lg bg-gray-50/70 border border-gray-100">
-                      <span class="text-[9px] uppercase font-bold text-gray-500 block">Packing</span>
-                      <span v-if="b.packingStatus?.status === 'PACKED'" class="text-[11px] font-bold text-emerald-700 flex items-center justify-center gap-1">
-                        <Check class="w-3 h-3" /> Packed
+                    <div 
+                      class="p-2 rounded-lg border transition-all"
+                      :class="b.packingStatus?.status === 'PACKED' ? 'bg-emerald-50 border-emerald-200' : (b.isBatchOnHold ? 'bg-amber-50 border-amber-200' : 'bg-blue-50 border-blue-200')"
+                    >
+                      <span class="text-[9px] uppercase font-bold text-gray-500 block mb-1">Packing</span>
+                      <span v-if="b.packingStatus?.status === 'PACKED'" class="text-[11px] font-bold flex items-center justify-center gap-1.5 text-emerald-700">
+                        <Package class="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                        <span>Packed</span>
                       </span>
-                      <span v-else-if="b.isBatchOnHold" class="text-[11px] font-bold text-amber-700">
-                        ⏸️ Paused
+                      <span v-else-if="b.isBatchOnHold" class="text-[11px] font-bold flex items-center justify-center gap-1.5 text-amber-700">
+                        <Package class="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                        <span>Paused</span>
                       </span>
-                      <span v-else class="text-[11px] font-bold text-blue-700">
-                        ⏳ Packing Queue
+                      <span v-else class="text-[11px] font-bold flex items-center justify-center gap-1.5 text-blue-700">
+                        <Package class="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                        <span>Queue</span>
                       </span>
                     </div>
 
                     <!-- Billing -->
-                    <div class="p-2 rounded-lg bg-gray-50/70 border border-gray-100">
-                      <span class="text-[9px] uppercase font-bold text-gray-500 block">Billing</span>
-                      <span v-if="b.billingStatus?.status === 'GENERATED'" class="text-[11px] font-bold text-indigo-700 flex items-center justify-center gap-1">
-                        <Check class="w-3 h-3" /> Invoiced
+                    <div 
+                      class="p-2 rounded-lg border transition-all"
+                      :class="b.billingStatus?.status === 'GENERATED' ? 'bg-emerald-50 border-emerald-200' : 'bg-gray-50/70 border-gray-100'"
+                    >
+                      <span class="text-[9px] uppercase font-bold text-gray-500 block mb-1">Billing</span>
+                      <span v-if="b.billingStatus?.status === 'GENERATED'" class="text-[11px] font-bold flex items-center justify-center gap-1.5 text-emerald-700">
+                        <IndianRupee class="w-3 h-3 text-emerald-600 shrink-0" />
+                        <span>Invoiced</span>
                       </span>
-                      <span v-else class="text-[11px] font-bold text-gray-500">
-                        ⏳ Awaiting
+                      <span v-else class="text-[11px] font-bold flex items-center justify-center gap-1.5 text-gray-500">
+                        <IndianRupee class="w-3 h-3 text-gray-400 shrink-0" />
+                        <span>Awaiting</span>
                       </span>
                     </div>
 
                     <!-- Delivery -->
-                    <div class="p-2 rounded-lg bg-gray-50/70 border border-gray-100">
-                      <span class="text-[9px] uppercase font-bold text-gray-500 block">Delivery</span>
-                      <span v-if="b.deliveryStatus?.status === 'DELIVERED'" class="text-[11px] font-bold text-emerald-700 flex items-center justify-center gap-1">
-                        ✅ Delivered
+                    <div 
+                      class="p-2 rounded-lg border transition-all"
+                      :class="b.deliveryStatus?.status === 'DELIVERED' ? 'bg-emerald-50 border-emerald-200' : ((b.deliveryStatus?.status === 'OUT_FOR_DELIVERY' || b.deliveryStatus?.status === 'DISPATCHED') ? 'bg-blue-50 border-blue-200' : 'bg-gray-50/70 border-gray-100')"
+                    >
+                      <span class="text-[9px] uppercase font-bold text-gray-500 block mb-1">Delivery</span>
+                      <span v-if="b.deliveryStatus?.status === 'DELIVERED'" class="text-[11px] font-bold flex items-center justify-center gap-1.5 text-emerald-700">
+                        <Truck class="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                        <span>Delivered</span>
                       </span>
-                      <span v-else-if="b.deliveryStatus?.status === 'OUT_FOR_DELIVERY'" class="text-[11px] font-bold text-teal-700">
-                        🚚 On Road
+                      <span v-else-if="b.deliveryStatus?.status === 'OUT_FOR_DELIVERY' || b.deliveryStatus?.status === 'DISPATCHED'" class="text-[11px] font-bold flex items-center justify-center gap-1.5 text-blue-700">
+                        <Truck class="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                        <span>On Road</span>
                       </span>
-                      <span v-else class="text-[11px] font-bold text-gray-500">
-                        ⏳ Pending
+                      <span v-else class="text-[11px] font-bold flex items-center justify-center gap-1.5 text-gray-500">
+                        <Truck class="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                        <span>Pending</span>
                       </span>
                     </div>
                   </div>
 
-                  <!-- Line Items in Batch Preview -->
-                  <div class="pt-2 border-t border-gray-100">
-                    <div class="flex items-center justify-between text-xs text-gray-500 mb-1.5">
-                      <span class="font-semibold text-gray-700">{{ b.items?.length || 0 }} Item(s) in this batch</span>
-                      <span class="font-bold text-gray-900">{{ formatCurrency(b.totalAmount || 0) }}</span>
-                    </div>
-                    <div class="flex flex-wrap gap-1.5">
-                      <span 
-                        v-for="item in (b.items || [])" 
-                        :key="item.id" 
-                        class="px-2 py-0.5 bg-gray-100 hover:bg-gray-200 rounded-md text-[11px] text-gray-700 font-medium"
-                      >
-                        {{ item.product?.name || item.productName || 'Item' }} &times; <strong>{{ item.quantity }}</strong>
+                  <!-- Product Details (Expanded via View button or Collapsed Summary) -->
+                  <div v-if="expandedBatchIds[b.id]" class="pt-3 border-t border-gray-100 space-y-2.5">
+                    <div class="flex items-center justify-between">
+                      <span class="text-[11px] font-bold uppercase tracking-wider text-gray-600">
+                        Batch Products ({{ b.items?.length || 0 }})
                       </span>
+                      <button
+                        v-if="b.id !== order.id"
+                        type="button"
+                        @click.stop="switchToOrder(b.id)"
+                        class="text-[11px] font-bold text-[#1b3b5f] hover:underline flex items-center gap-1 cursor-pointer"
+                        title="Open this batch in the main order drawer"
+                      >
+                        <span>Open Batch in Drawer</span>
+                        <ArrowRight class="w-3 h-3" />
+                      </button>
                     </div>
+
+                    <div class="overflow-x-auto rounded-lg border border-gray-200">
+                      <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                          <tr class="bg-gray-50/80 border-b border-gray-200 text-gray-500 font-bold uppercase tracking-wider text-[10px]">
+                            <th class="py-2 px-3">Product Name</th>
+                            <th class="py-2 px-3 text-right">Rate</th>
+                            <th class="py-2 px-3 text-right">Quantity</th>
+                            <th class="py-2 px-3 text-right">Total for Batch</th>
+                          </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100 bg-white">
+                          <tr v-for="item in (b.items || [])" :key="item.id" class="hover:bg-gray-50/60 transition">
+                            <td class="py-2.5 px-3">
+                              <div class="font-bold text-gray-900 leading-tight">
+                                {{ item.product?.name || item.productName || 'Item' }}
+                              </div>
+                              <div v-if="item.sku || item.product?.sku" class="text-[10px] text-gray-400 font-mono mt-0.5">
+                                SKU: {{ item.sku || item.product?.sku }}
+                              </div>
+                            </td>
+                            <td class="py-2.5 px-3 text-right font-medium text-gray-700 whitespace-nowrap">
+                              {{ formatCurrency(item.unitPrice || 0) }}
+                            </td>
+                            <td class="py-2.5 px-3 text-right whitespace-nowrap">
+                              <span class="font-bold text-gray-900">{{ item.quantity }}</span>
+                              <span class="text-[10px] text-gray-500 ml-1">pcs</span>
+                            </td>
+                            <td class="py-2.5 px-3 text-right font-bold text-gray-900 whitespace-nowrap">
+                              {{ formatCurrency(getItemTotal(item)) }}
+                            </td>
+                          </tr>
+                        </tbody>
+                        <tfoot class="bg-gray-50/90 border-t border-gray-200 font-bold text-gray-900">
+                          <tr>
+                            <td class="py-2 px-3 text-[11px] uppercase tracking-wide text-gray-600">Batch Total</td>
+                            <td class="py-2 px-3"></td>
+                            <td class="py-2 px-3 text-right text-xs">
+                              {{ getBatchTotalQty(b) }} pcs
+                            </td>
+                            <td class="py-2 px-3 text-right text-xs text-[#1b3b5f]">
+                              {{ formatCurrency(b.totalAmount || 0) }}
+                            </td>
+                          </tr>
+                        </tfoot>
+                      </table>
+                    </div>
+                  </div>
+
+                  <!-- Collapsed Preview when View is NOT clicked -->
+                  <div v-else class="pt-2 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
+                    <div class="flex items-center gap-1.5">
+                      <span class="font-semibold text-gray-700">{{ b.items?.length || 0 }} item(s)</span>
+                      <span>•</span>
+                      <span>{{ getBatchTotalQty(b) }} pcs</span>
+                    </div>
+                    <span class="font-bold text-gray-900">{{ formatCurrency(b.totalAmount || 0) }}</span>
                   </div>
                 </div>
               </div>
