@@ -220,6 +220,85 @@ export default defineEventHandler(async (event) => {
     }
   })
 
+  // If editing a child batch, ensure any new products added are also reflected in the master order
+  if (existingOrder.parentOrderId && items && Array.isArray(items)) {
+    try {
+      const masterOrder = await prisma.order.findUnique({
+        where: { id: existingOrder.parentOrderId },
+        include: { items: true }
+      })
+
+      if (masterOrder) {
+        let masterOrderUpdated = false
+        for (const item of items) {
+          const existingMasterItem = masterOrder.items.find(mi => mi.productId === item.productId)
+          if (!existingMasterItem) {
+            const product = await prisma.product.findUnique({ where: { id: item.productId } })
+            if (product) {
+              const unitPrice = item.unitPrice !== undefined ? Number(item.unitPrice) : Number(product.price)
+              const qty = Number(item.quantity) || 1
+              const taxRate = item.taxRate !== undefined ? Number(item.taxRate) : 18
+              const isTaxInclusive = Boolean(item.isTaxInclusive)
+              let taxableAmount = 0
+              let taxAmount = 0
+              let lineTotal = 0
+
+              if (isTaxInclusive) {
+                lineTotal = Number((qty * unitPrice).toFixed(2))
+                taxableAmount = taxRate > 0 ? Number((lineTotal / (1 + (taxRate / 100))).toFixed(2)) : lineTotal
+                taxAmount = Number((lineTotal - taxableAmount).toFixed(2))
+              } else {
+                taxableAmount = Number((qty * unitPrice).toFixed(2))
+                taxAmount = Number((taxableAmount * (taxRate / 100)).toFixed(2))
+                lineTotal = Number((taxableAmount + taxAmount).toFixed(2))
+              }
+
+              await prisma.orderItem.create({
+                data: {
+                  orderId: masterOrder.id,
+                  productId: product.id,
+                  sku: product.sku,
+                  productName: product.name,
+                  quantity: qty,
+                  approvedQuantity: qty,
+                  packedQuantity: 0,
+                  unitPrice,
+                  taxRate,
+                  taxAmount,
+                  totalPrice: lineTotal,
+                  isTaxInclusive,
+                  applyLastPrice: Boolean(item.applyLastPrice),
+                  itemNotes: item.itemNotes ? String(item.itemNotes) : null
+                }
+              })
+              masterOrderUpdated = true
+            }
+          }
+        }
+
+        if (masterOrderUpdated) {
+          const allMasterItems = await prisma.orderItem.findMany({ where: { orderId: masterOrder.id } })
+          const newMasterTotal = allMasterItems.reduce((sum, itm) => sum + Number(itm.totalPrice || 0), 0)
+          await prisma.order.update({
+            where: { id: masterOrder.id },
+            data: {
+              totalAmount: Number(newMasterTotal.toFixed(2)),
+              timeline: {
+                create: {
+                  action: 'Master Order Updated',
+                  description: `New item(s) added via Batch ${existingOrder.batchNumber || ''}`,
+                  performedById: user.id
+                }
+              }
+            }
+          })
+        }
+      }
+    } catch (syncErr) {
+      console.error('[Batch Sync] Failed to sync new items to master order:', syncErr)
+    }
+  }
+
   // Non-blocking Push Notification dispatch when order is edited
   if (await isNotificationEnabled('order_edits')) {
     try {

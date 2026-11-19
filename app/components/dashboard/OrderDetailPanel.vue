@@ -82,6 +82,7 @@ const emit = defineEmits<{
   (e: 'reviewApprove', order: Order): void
   (e: 'create-batch', id: string): void
   (e: 'split-order', id: string): void
+  (e: 'update:orderId', id: string): void
 }>()
 
 const { user, hasRole, canEditOrders, canCancelOrders, canEditOrderStatus, canLinkBusyData, canEditConvertedQuotationOrders, canAccessPage } = useAuth()
@@ -173,11 +174,78 @@ const getBatchTotalQty = (batch: any) => {
   return (batch.items || []).reduce((sum: number, itm: any) => sum + (Number(itm.quantity) || 0), 0)
 }
 
+const editingOriginOrderId = ref<string | null>(null)
+
 const editBatchById = async (batch: any) => {
+  editingOriginOrderId.value = order.value?.id || null
   if (batch.id !== order.value?.id) {
     await fetchOrder(batch.id)
   }
   openEditModal()
+}
+
+const getBatchPipeline = (batch: any) => {
+  // 1. Packing
+  const packStat = batch.packingStatus?.status
+  let packStatus: 'completed' | 'in_progress' | 'paused' | 'waiting' = 'waiting'
+  let packText = 'Pending'
+  if (packStat === 'PACKED' || packStat === 'COMPLETED') {
+    packStatus = 'completed'
+    packText = 'Packed'
+  } else if (batch.isBatchOnHold) {
+    packStatus = 'paused'
+    packText = 'Paused'
+  } else {
+    packStatus = 'in_progress'
+    packText = 'Queue'
+  }
+
+  // 2. Billing
+  const billStat = batch.billingStatus?.status
+  let billStatus: 'completed' | 'in_progress' | 'waiting' = 'waiting'
+  let billText = 'Awaiting'
+  if (billStat === 'GENERATED' || Boolean(batch.billingStatus?.invoiceNumber)) {
+    billStatus = 'completed'
+    billText = 'Invoiced'
+  } else if (packStatus === 'completed') {
+    billStatus = 'in_progress'
+    billText = 'Ready'
+  }
+
+  // 3. Delivery
+  const delvStat = batch.deliveryStatus?.status
+  let delvStatus: 'completed' | 'in_progress' | 'waiting' = 'waiting'
+  let delvText = 'Pending'
+  if (delvStat === 'DELIVERED') {
+    delvStatus = 'completed'
+    delvText = 'Delivered'
+  } else if (delvStat === 'OUT_FOR_DELIVERY' || delvStat === 'DISPATCHED') {
+    delvStatus = 'in_progress'
+    delvText = 'On Road'
+  }
+
+  return [
+    { key: 'P', label: 'Packing', status: packStatus, statusText: packText },
+    { key: 'B', label: 'Billing', status: billStatus, statusText: billText },
+    { key: 'D', label: 'Delivery', status: delvStatus, statusText: delvText }
+  ]
+}
+
+// Per-tab scroll position persistence
+const drawerBodyRef = ref<HTMLElement | null>(null)
+const tabScrollPositions = ref<Record<string, number>>({})
+
+const switchTab = async (newTab: 'DETAILS' | 'MASTER_ORDER' | 'BATCHES' | 'TIMELINE' | 'NOTES') => {
+  if (activeTab.value === newTab) return
+  if (drawerBodyRef.value) {
+    tabScrollPositions.value[activeTab.value] = drawerBodyRef.value.scrollTop
+  }
+  activeTab.value = newTab
+  await nextTick()
+  if (drawerBodyRef.value) {
+    const savedPos = tabScrollPositions.value[newTab] ?? 0
+    drawerBodyRef.value.scrollTop = savedPos
+  }
 }
 
 const navigationTabs = computed(() => {
@@ -201,6 +269,10 @@ const navigationTabs = computed(() => {
 })
 
 watch(() => order.value?.id, () => {
+  tabScrollPositions.value = {}
+  if (drawerBodyRef.value) {
+    drawerBodyRef.value.scrollTop = 0
+  }
   if (isChildBatch.value && activeTab.value === 'BATCHES') {
     activeTab.value = 'DETAILS'
   } else if (!isChildBatch.value && activeTab.value === 'MASTER_ORDER') {
@@ -226,8 +298,9 @@ const releaseBatch = async (batchId: string) => {
 }
 
 const switchToOrder = (orderId: string) => {
-  if (orderId) {
+  if (orderId && orderId !== order.value?.id) {
     fetchOrder(orderId)
+    emit('update:orderId', orderId)
   }
 }
 
@@ -344,7 +417,7 @@ const copyOrderNumber = () => {
 onOrderSync((event) => {
   if (event?.type === 'HEARTBEAT_SYNC') return
 
-  if (!props.isOpen || !props.orderId) return
+  if (!props.isOpen) return
 
   // Do not clobber order data while the user has an action modal open
   if (
@@ -366,9 +439,12 @@ onOrderSync((event) => {
     || event?.record?.orderId 
     || (event?.table === 'orders' ? event?.record?.id : null)
 
+  const activeId = order.value?.id || props.orderId
+  if (!activeId) return
+
   // If this specific order was modified, or if a general order change broadcast arrived without an orderId
-  if (!affectedId || affectedId === props.orderId) {
-    fetchOrder(props.orderId, true)
+  if (!affectedId || affectedId === activeId || affectedId === props.orderId) {
+    fetchOrder(activeId, true)
   }
 })
 
@@ -409,7 +485,7 @@ const isSavingPacking = ref(false)
 
 watch(() => props.orderId, async (newId) => {
   isHeaderMenuOpen.value = false
-  if (newId && props.isOpen) {
+  if (newId && props.isOpen && newId !== order.value?.id) {
     await fetchOrder(newId)
   }
 })
@@ -1185,9 +1261,15 @@ const productsList = ref<any[]>([])
 
 const initialFormState = ref('')
 
-const cancelEdit = () => {
+const cancelEdit = async () => {
   isEditModalOpen.value = false
   hide()
+  if (editingOriginOrderId.value && editingOriginOrderId.value !== order.value?.id) {
+    const returnId = editingOriginOrderId.value
+    editingOriginOrderId.value = null
+    await fetchOrder(returnId)
+    activeTab.value = 'BATCHES'
+  }
 }
 
 const openEditModal = async () => {
@@ -1508,14 +1590,33 @@ const saveEdit = async () => {
       method: 'PATCH',
       body: editForm.value
     })
-    showSaved('Order updated successfully')
+    showSaved(isChildBatch.value ? 'Batch updated successfully' : 'Order updated successfully')
     isEditModalOpen.value = false
     notifyChange({ orderId: order.value.id, action: 'ORDER_EDITED', order: updatedOrder })
     emit('updated', updatedOrder)
-    await fetchOrder(order.value.id)
-  } catch (err) {
+
+    if (editingOriginOrderId.value && editingOriginOrderId.value !== order.value.id) {
+      const returnId = editingOriginOrderId.value
+      editingOriginOrderId.value = null
+      await fetchOrder(returnId)
+      activeTab.value = 'BATCHES'
+    } else {
+      editingOriginOrderId.value = null
+      await fetchOrder(order.value.id)
+    }
+  } catch (err: any) {
     console.error(err)
-    alert('Failed to update order')
+    alert(err.data?.message || (isChildBatch.value ? 'Failed to update batch' : 'Failed to update order'))
+  }
+}
+
+const cancelOrCloseEditModal = async () => {
+  isEditModalOpen.value = false
+  if (editingOriginOrderId.value && editingOriginOrderId.value !== order.value?.id) {
+    const returnId = editingOriginOrderId.value
+    editingOriginOrderId.value = null
+    await fetchOrder(returnId)
+    activeTab.value = 'BATCHES'
   }
 }
 
@@ -2155,7 +2256,7 @@ onUnmounted(() => {
           <button 
             v-for="tab in navigationTabs" 
             :key="tab.id"
-            @click="activeTab = tab.id as any"
+            @click="switchTab(tab.id as any)"
             :class="[
               'py-3 border-b-2 transition-all flex items-center gap-2 cursor-pointer',
               activeTab === tab.id 
@@ -2175,7 +2276,7 @@ onUnmounted(() => {
         </div>
 
         <!-- 4. Scrollable Drawer Body -->
-        <div class="flex-grow overflow-y-auto bg-white p-5 sm:p-6 pb-36 space-y-6">
+        <div ref="drawerBodyRef" class="flex-grow overflow-y-auto bg-white p-5 sm:p-6 pb-36 space-y-6">
           
           <!-- DETAILS TAB -->
           <div v-if="activeTab === 'DETAILS'" class="space-y-6 flex flex-col">
@@ -3427,62 +3528,59 @@ onUnmounted(() => {
                     </div>
                   </div>
 
-                  <!-- Department Status Steps for this Batch -->
-                  <div class="grid grid-cols-3 gap-2 pt-1 border-t border-gray-100 text-center">
-                    <!-- Packing -->
-                    <div 
-                      class="p-2 rounded-lg border transition-all"
-                      :class="b.packingStatus?.status === 'PACKED' ? 'bg-emerald-50 border-emerald-200' : (b.isBatchOnHold ? 'bg-amber-50 border-amber-200' : 'bg-blue-50 border-blue-200')"
-                    >
-                      <span class="text-[9px] uppercase font-bold text-gray-500 block mb-1">Packing</span>
-                      <span v-if="b.packingStatus?.status === 'PACKED'" class="text-[11px] font-bold flex items-center justify-center gap-1.5 text-emerald-700">
-                        <Package class="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                        <span>Packed</span>
-                      </span>
-                      <span v-else-if="b.isBatchOnHold" class="text-[11px] font-bold flex items-center justify-center gap-1.5 text-amber-700">
-                        <Package class="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                        <span>Paused</span>
-                      </span>
-                      <span v-else class="text-[11px] font-bold flex items-center justify-center gap-1.5 text-blue-700">
-                        <Package class="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                        <span>Queue</span>
-                      </span>
-                    </div>
+                  <!-- Connected Workflow Pipeline for this Batch (Packing -> Billing -> Delivery) -->
+                  <div class="pt-3 pb-1 border-t border-gray-100">
+                    <div class="flex items-center justify-between sm:justify-start sm:gap-6 px-1">
+                      <template v-for="(step, sIdx) in getBatchPipeline(b)" :key="step.key">
+                        <div class="flex flex-col items-center min-w-[62px] text-center">
+                          <!-- Circle Icon with status styling -->
+                          <div 
+                            class="relative flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-full text-xs shrink-0 transition-all shadow-2xs"
+                            :class="[
+                              step.status === 'completed' ? 'bg-emerald-50 text-emerald-700 border-2 border-emerald-500' :
+                              step.status === 'in_progress' ? 'bg-blue-50 text-blue-700 border-2 border-blue-500 animate-pulse ring-2 ring-blue-400/20' :
+                              step.status === 'paused' ? 'bg-amber-50 text-amber-700 border-2 border-amber-500' :
+                              'bg-gray-50 text-gray-400 border-2 border-gray-200 opacity-60'
+                            ]"
+                          >
+                            <Package v-if="step.key === 'P'" class="w-3.5 h-3.5" />
+                            <IndianRupee v-else-if="step.key === 'B'" class="w-3 h-3" />
+                            <Truck v-else-if="step.key === 'D'" class="w-3.5 h-3.5" />
 
-                    <!-- Billing -->
-                    <div 
-                      class="p-2 rounded-lg border transition-all"
-                      :class="b.billingStatus?.status === 'GENERATED' ? 'bg-emerald-50 border-emerald-200' : 'bg-gray-50/70 border-gray-100'"
-                    >
-                      <span class="text-[9px] uppercase font-bold text-gray-500 block mb-1">Billing</span>
-                      <span v-if="b.billingStatus?.status === 'GENERATED'" class="text-[11px] font-bold flex items-center justify-center gap-1.5 text-emerald-700">
-                        <IndianRupee class="w-3 h-3 text-emerald-600 shrink-0" />
-                        <span>Invoiced</span>
-                      </span>
-                      <span v-else class="text-[11px] font-bold flex items-center justify-center gap-1.5 text-gray-500">
-                        <IndianRupee class="w-3 h-3 text-gray-400 shrink-0" />
-                        <span>Awaiting</span>
-                      </span>
-                    </div>
+                            <!-- Completed mini check badge -->
+                            <span 
+                              v-if="step.status === 'completed'" 
+                              class="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[7px] font-black shadow-xs ring-1 ring-white"
+                            >
+                              ✓
+                            </span>
+                          </div>
 
-                    <!-- Delivery -->
-                    <div 
-                      class="p-2 rounded-lg border transition-all"
-                      :class="b.deliveryStatus?.status === 'DELIVERED' ? 'bg-emerald-50 border-emerald-200' : ((b.deliveryStatus?.status === 'OUT_FOR_DELIVERY' || b.deliveryStatus?.status === 'DISPATCHED') ? 'bg-blue-50 border-blue-200' : 'bg-gray-50/70 border-gray-100')"
-                    >
-                      <span class="text-[9px] uppercase font-bold text-gray-500 block mb-1">Delivery</span>
-                      <span v-if="b.deliveryStatus?.status === 'DELIVERED'" class="text-[11px] font-bold flex items-center justify-center gap-1.5 text-emerald-700">
-                        <Truck class="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                        <span>Delivered</span>
-                      </span>
-                      <span v-else-if="b.deliveryStatus?.status === 'OUT_FOR_DELIVERY' || b.deliveryStatus?.status === 'DISPATCHED'" class="text-[11px] font-bold flex items-center justify-center gap-1.5 text-blue-700">
-                        <Truck class="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                        <span>On Road</span>
-                      </span>
-                      <span v-else class="text-[11px] font-bold flex items-center justify-center gap-1.5 text-gray-500">
-                        <Truck class="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                        <span>Pending</span>
-                      </span>
+                          <!-- Step Label (Packing, Billing, Delivery) -->
+                          <span class="text-[10px] font-bold mt-1 text-gray-800 tracking-tight">
+                            {{ step.label }}
+                          </span>
+                          <!-- Status Text (Packed, Invoiced, Delivered, etc.) -->
+                          <span 
+                            class="text-[9px] font-semibold tracking-tight"
+                            :class="[
+                              step.status === 'completed' ? 'text-emerald-700 font-bold' :
+                              step.status === 'in_progress' ? 'text-blue-700 font-bold' :
+                              step.status === 'paused' ? 'text-amber-700 font-bold' :
+                              'text-gray-400'
+                            ]"
+                          >
+                            {{ step.statusText }}
+                          </span>
+                        </div>
+
+                        <!-- Connector Line between steps -->
+                        <div 
+                          v-if="sIdx < getBatchPipeline(b).length - 1"
+                          class="flex-1 h-0.5 rounded-full min-w-[24px] max-w-[80px] -mt-5 transition-colors"
+                          :class="getBatchPipeline(b)[sIdx + 1].status !== 'waiting' ? 'bg-emerald-400' : 'bg-gray-200'"
+                        ></div>
+                      </template>
                     </div>
                   </div>
 
@@ -3825,7 +3923,7 @@ onUnmounted(() => {
   <!-- Edit Order Modal -->
   <Teleport to="body">
     <div v-if="isEditModalOpen" data-modal-container class="fixed inset-0 z-[600] flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
-      <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" @click="isEditModalOpen = false; hide()"></div>
+      <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" @click="cancelEdit"></div>
       
       <div ref="editModalCardRef" class="relative bg-[#faf8f5] w-full max-w-4xl rounded-2xl shadow-2xl flex flex-col max-h-[94dvh] md:max-h-[92vh] overflow-hidden transform transition-all border border-gray-200">
         <div class="px-3.5 py-3 sm:px-6 sm:py-4 border-b border-gray-200 bg-white flex items-center justify-between shrink-0 gap-2">
@@ -3866,7 +3964,7 @@ onUnmounted(() => {
               </div>
             </label>
 
-            <button @click="isEditModalOpen = false; hide()" data-modal-close="true" class="p-1.5 sm:p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors">
+            <button @click="cancelEdit" data-modal-close="true" class="p-1.5 sm:p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors">
               <X class="w-5 h-5" />
             </button>
           </div>
