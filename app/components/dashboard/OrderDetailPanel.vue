@@ -1715,7 +1715,10 @@ const saveEdit = async () => {
     }
   } catch (err: any) {
     console.error(err)
-    alert(err.data?.message || (isChildBatch.value ? 'Failed to update batch' : 'Failed to update order'))
+    hide()
+    const errorMsg = err.data?.message || err.data?.statusMessage || err.message || (isChildBatch.value ? 'Failed to update batch' : 'Failed to update order')
+    showError(errorMsg)
+    alert(errorMsg)
   }
 }
 

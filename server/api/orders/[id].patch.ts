@@ -144,7 +144,7 @@ export default defineEventHandler(async (event) => {
             sku: product.sku,
             productName: product.name,
             quantity: qty,
-            ...(Boolean(existingOrder.parentOrderId || existingOrder.isApproved) && { approvedQuantity: qty }),
+            approvedQuantity: qty,
             unitPrice: unitPrice,
             taxRate: taxRate,
             taxAmount: taxAmount,
