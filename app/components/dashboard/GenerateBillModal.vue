@@ -71,7 +71,7 @@
                   <input 
                     type="text" 
                     v-model="invoiceNumber" 
-                    placeholder="e.g. INV-2026-001 or Busy No." 
+                    placeholder="e.g. SMG1234" 
                     class="w-full text-xs font-mono font-bold border border-gray-300 rounded-lg p-2 bg-white focus:ring-[#1b3b5f] focus:border-[#1b3b5f]" 
                   />
                 </div>
@@ -477,7 +477,7 @@
         </button>
         <button 
           @click="confirmGenerate" 
-          :disabled="isGenerating || (!isBusyBlocked && !invoiceNumber.trim())"
+          :disabled="isGenerating || (!isBusyBlocked && (!invoiceNumber.trim() || invoiceNumber.trim().toUpperCase() === 'SMG'))"
           class="w-full sm:w-auto justify-center flex items-center gap-2 px-6 py-2.5 text-xs font-bold rounded-lg transition-colors shadow-sm cursor-pointer"
           :class="isBusyBlocked 
             ? 'bg-amber-600 hover:bg-amber-700 text-white' 
@@ -567,7 +567,7 @@ const handleItemLinked = (updatedOrder: any) => {
   }
 }
 
-const invoiceNumber = ref('')
+const invoiceNumber = ref('SMG')
 const invoiceDate = ref(new Date().toISOString().split('T')[0])
 const invoicePdfUrl = ref('')
 
@@ -585,7 +585,7 @@ watch(() => props.isOpen, async (isOpen) => {
       const data = await $fetch<any>(`/api/orders/${props.orderId}`)
       order.value = data
       
-      invoiceNumber.value = data.billingStatus?.invoiceNumber || `INV-${new Date().getFullYear()}-${data.orderNumber?.replace('SO-', '') || '001'}`
+      invoiceNumber.value = data.billingStatus?.invoiceNumber || 'SMG'
       invoiceDate.value = data.billingStatus?.invoiceDate 
         ? new Date(data.billingStatus.invoiceDate).toISOString().split('T')[0] 
         : new Date().toISOString().split('T')[0]
@@ -709,8 +709,8 @@ const confirmGenerate = async () => {
     alert('Cannot generate bill: Please link products with real Busy data first.')
     return
   }
-  if (!invoiceNumber.value.trim()) {
-    alert('Please enter an Invoice / Bill Number')
+  if (!invoiceNumber.value.trim() || invoiceNumber.value.trim().toUpperCase() === 'SMG') {
+    alert('Please complete the Invoice / Bill Number after SMG')
     return
   }
   isGenerating.value = true
