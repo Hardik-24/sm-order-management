@@ -10,14 +10,14 @@ export default defineEventHandler((event) => {
   // 1. Production-Grade HTTP Security Headers (Zero performance overhead)
   const cspDirectives = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.vercel-scripts.com https://va.vercel-scripts.com",
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.vercel-scripts.com https://va.vercel-scripts.com https://maps.googleapis.com https://*.googleapis.com https://unpkg.com",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com",
     "font-src 'self' data: https://fonts.gstatic.com",
     "img-src 'self' data: blob: https:",
     "media-src 'self' data: blob:",
     "worker-src 'self' blob:",
-    "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.google.com https://1.1.1.1 https://*.vercel-insights.com https://va.vercel-scripts.com",
-    "frame-src 'self' about: blob:",
+    "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.google.com https://maps.googleapis.com https://*.googleapis.com https://nominatim.openstreetmap.org https://1.1.1.1 https://*.vercel-insights.com https://va.vercel-scripts.com",
+    "frame-src 'self' about: blob: https://www.google.com",
     "frame-ancestors 'self'",
     "object-src 'none'",
     "base-uri 'self'",

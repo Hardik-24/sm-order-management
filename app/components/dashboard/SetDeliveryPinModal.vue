@@ -496,10 +496,33 @@ function loadGoogleMaps(apiKey: string): Promise<any> {
     if ((window as any).google && (window as any).google.maps) {
       return resolve((window as any).google.maps)
     }
+
+    const existing = document.querySelector('script[src*="maps.googleapis.com/maps/api/js"]') as HTMLScriptElement
+    if (existing) {
+      if ((window as any).google?.maps) return resolve((window as any).google.maps)
+      const prevOnload = existing.onload as any
+      existing.onload = (e) => {
+        if (prevOnload) prevOnload(e)
+        resolve((window as any).google?.maps)
+      }
+      existing.onerror = reject
+      return
+    }
+
+    const timeout = setTimeout(() => {
+      reject(new Error('Google Maps script load timed out'))
+    }, 8000)
+
     const script = document.createElement('script')
     script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=geometry,places`
-    script.onload = () => resolve((window as any).google.maps)
-    script.onerror = reject
+    script.onload = () => {
+      clearTimeout(timeout)
+      resolve((window as any).google?.maps)
+    }
+    script.onerror = (err) => {
+      clearTimeout(timeout)
+      reject(err)
+    }
     document.head.appendChild(script)
   })
 }
@@ -537,6 +560,7 @@ async function initMap() {
         mapTypeControl: false,
         streetViewControl: false,
         fullscreenControl: false,
+        gestureHandling: 'greedy',
       })
 
       const destSvg = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
