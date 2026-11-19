@@ -2167,28 +2167,9 @@ onUnmounted(() => {
               Batch {{ order.batchNumber }} of {{ order.batchCount || (order as any).parentOrder?.batchCount || '2' }}
             </span>
             <span class="text-xs text-blue-950 font-medium truncate">
-              Part of Master Order: <strong class="font-mono">{{ (order as any).parentOrder?.orderNumber }}</strong>
+              Part of Master Order: <strong class="font-bold">{{ (order as any).parentOrder?.orderNumber }}</strong>
             </span>
           </div>
-        </div>
-
-        <!-- Sibling Batches Tab Bar (Fast switching between sibling batches) -->
-        <div v-if="(order as any).sisterBatches && (order as any).sisterBatches.length > 1" class="px-4 sm:px-6 py-2 bg-gray-50 border-b border-gray-200/80 flex items-center gap-1.5 overflow-x-auto flex-shrink-0 no-scrollbar">
-          <span class="text-[10px] uppercase font-bold text-gray-500 mr-1 shrink-0">Batches:</span>
-          <button 
-            v-for="b in (order as any).sisterBatches" 
-            :key="b.id"
-            type="button"
-            @click="switchToOrder(b.id)"
-            class="px-2.5 py-1 text-xs font-semibold rounded-lg border transition-all shrink-0 cursor-pointer flex items-center gap-1"
-            :class="b.id === order.id ? 'bg-[#1b3b5f] text-white border-[#1b3b5f] shadow-2xs font-bold' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-100'"
-          >
-            <span>Batch {{ b.batchNumber }}</span>
-            <span v-if="b.isBatchOnHold" class="text-[9px] opacity-90" title="On Hold">⏸️</span>
-            <span v-else-if="b.deliveryStatus?.status === 'DELIVERED'" class="text-[9px] opacity-90" title="Delivered">✅</span>
-            <span v-else-if="b.billingStatus?.status === 'GENERATED'" class="text-[9px] opacity-90" title="Invoiced">📄</span>
-            <span v-else-if="b.packingStatus?.status === 'PACKED'" class="text-[9px] opacity-90" title="Packed">📦</span>
-          </button>
         </div>
 
         <!-- On Hold Alert Banner (if batch on hold) -->
@@ -3146,7 +3127,7 @@ onUnmounted(() => {
                   <div>
                     <div class="flex items-center gap-2 flex-wrap">
                       <span class="text-xs font-bold uppercase tracking-wider text-gray-500">Master Order</span>
-                      <h3 class="text-base font-bold font-mono text-gray-900">{{ (order as any).parentOrder?.orderNumber }}</h3>
+                      <h3 class="text-base font-bold text-gray-900">{{ (order as any).parentOrder?.orderNumber }}</h3>
                       <StatusBadge 
                         v-if="(order as any).parentOrder?.overallStatus"
                         :status="(order as any).parentOrder.overallStatus" 
@@ -3265,7 +3246,7 @@ onUnmounted(() => {
                         <div class="font-bold text-gray-900 leading-tight">
                           {{ mi.product?.name || mi.productName || 'Item' }}
                         </div>
-                        <div v-if="mi.sku || mi.product?.sku" class="text-[10px] text-gray-400 font-mono mt-0.5">
+                        <div v-if="mi.sku || mi.product?.sku" class="text-[10px] text-gray-400 mt-0.5">
                           SKU: {{ mi.sku || mi.product?.sku }}
                         </div>
                       </td>
@@ -3323,7 +3304,7 @@ onUnmounted(() => {
                 >
                   <div class="flex items-center justify-between">
                     <div class="flex items-center gap-1.5">
-                      <span class="font-bold text-xs font-mono text-gray-900">{{ sb.orderNumber }}</span>
+                      <span class="font-bold text-xs text-gray-900">{{ sb.orderNumber }}</span>
                       <span class="px-1.5 py-0.2 text-[10px] font-bold rounded bg-[#1b3b5f]/10 text-[#1b3b5f]">
                         Batch {{ sb.batchNumber }}
                       </span>
@@ -3338,7 +3319,7 @@ onUnmounted(() => {
 
                   <div class="flex items-center justify-between text-xs text-gray-500 pt-1 border-t border-gray-200/60">
                     <span>{{ sb.items?.length || 0 }} items • {{ getBatchTotalQty(sb) }} pcs</span>
-                    <span class="font-bold text-gray-900">{{ formatCurrency(sb.totalAmount || 0) }}</span>
+                    <span class="font-bold text-gray-900 tabular-nums">{{ formatCurrency(sb.totalAmount || 0) }}</span>
                   </div>
                 </div>
               </div>
@@ -3394,19 +3375,19 @@ onUnmounted(() => {
               <div class="grid grid-cols-3 gap-2 sm:gap-3 text-center">
                 <div class="p-2.5 rounded-lg bg-gray-50 border border-gray-100">
                   <span class="text-[10px] uppercase font-bold text-gray-500 tracking-wider block">Total Ordered</span>
-                  <span class="text-lg sm:text-xl font-bold font-mono text-gray-900">{{ poolMetrics.totalOrdered }}</span>
+                  <span class="text-lg sm:text-xl font-bold text-gray-900 tabular-nums">{{ poolMetrics.totalOrdered }}</span>
                   <span class="text-[10px] text-gray-400 block mt-0.5">{{ order.items?.length || 0 }} SKUs</span>
                 </div>
                 <div class="p-2.5 rounded-lg bg-blue-50/60 border border-blue-100">
                   <span class="text-[10px] uppercase font-bold text-blue-700 tracking-wider block">Allocated</span>
-                  <span class="text-lg sm:text-xl font-bold font-mono text-blue-900">{{ poolMetrics.totalBatched }}</span>
+                  <span class="text-lg sm:text-xl font-bold text-blue-900 tabular-nums">{{ poolMetrics.totalBatched }}</span>
                   <span class="text-[10px] text-blue-600 block mt-0.5">{{ (order as any).batches?.length || 0 }} batches</span>
                 </div>
                 <div class="p-2.5 rounded-lg" :class="poolMetrics.totalPending > 0 ? 'bg-amber-50/70 border border-amber-200' : 'bg-emerald-50/70 border border-emerald-200'">
                   <span class="text-[10px] uppercase font-bold tracking-wider block" :class="poolMetrics.totalPending > 0 ? 'text-amber-800' : 'text-emerald-800'">
                     Pending Pool
                   </span>
-                  <span class="text-lg sm:text-xl font-bold font-mono" :class="poolMetrics.totalPending > 0 ? 'text-amber-900' : 'text-emerald-900'">
+                  <span class="text-lg sm:text-xl font-bold tabular-nums" :class="poolMetrics.totalPending > 0 ? 'text-amber-900' : 'text-emerald-900'">
                     {{ poolMetrics.totalPending }}
                   </span>
                   <span class="text-[10px] block mt-0.5" :class="poolMetrics.totalPending > 0 ? 'text-amber-700' : 'text-emerald-700'">
@@ -3455,9 +3436,9 @@ onUnmounted(() => {
                   :class="b.id === order.id ? 'border-[#1b3b5f] ring-1 ring-[#1b3b5f]/30' : 'border-gray-200/90'"
                 >
                   <!-- Batch Top Row -->
-                  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                  <div class="flex items-center justify-between gap-2.5 flex-wrap">
                     <div class="flex items-center gap-2 flex-wrap">
-                      <span class="font-bold text-sm font-mono text-gray-900">{{ b.orderNumber }}</span>
+                      <span class="font-bold text-sm text-gray-900">{{ b.orderNumber }}</span>
                       <span class="px-2 py-0.5 text-xs font-bold rounded-md bg-[#1b3b5f]/10 text-[#1b3b5f] border border-[#1b3b5f]/20">
                         Batch {{ b.batchNumber }}
                       </span>
@@ -3466,8 +3447,8 @@ onUnmounted(() => {
                       </span>
                     </div>
 
-                    <!-- Right Actions: Active / On Hold Segmented Toggle + View Details + Delete -->
-                    <div class="flex items-center gap-2">
+                    <!-- Right Actions: Active / On Hold Segmented Toggle + Edit Button (Icon + "Edit" text) + Delete Trash Icon -->
+                    <div class="flex items-center gap-2 justify-end ml-auto">
                       <!-- Active / On Hold Segmented Toggle -->
                       <div class="inline-flex items-center p-0.5 bg-gray-100 rounded-lg border border-gray-200 select-none">
                         <button
@@ -3490,27 +3471,16 @@ onUnmounted(() => {
                         </button>
                       </div>
 
-                      <!-- View Products Details Toggle -->
-                      <button
-                        type="button"
-                        @click.stop="toggleBatchExpanded(b.id)"
-                        class="px-2.5 py-1 text-xs font-bold text-[#1b3b5f] bg-[#1b3b5f]/10 hover:bg-[#1b3b5f]/20 rounded-lg border border-[#1b3b5f]/20 transition flex items-center gap-1 cursor-pointer select-none"
-                        :title="expandedBatchIds[b.id] ? 'Hide product details' : 'View product details'"
-                      >
-                        <span>{{ expandedBatchIds[b.id] ? 'Hide' : 'View' }}</span>
-                        <ChevronUp v-if="expandedBatchIds[b.id]" class="w-3.5 h-3.5" />
-                        <ChevronDown v-else class="w-3.5 h-3.5" />
-                      </button>
-
-                      <!-- Edit Batch Button (before delete bin icon) -->
+                      <!-- Edit Batch Button (with Edit Icon + "Edit" text on both PC and mobile) -->
                       <button
                         v-if="canEditOrders && (!b.billingStatus || b.billingStatus.status !== 'GENERATED')"
                         type="button"
                         @click.stop="editBatchById(b)"
                         title="Edit Batch (Modify batch quantities or items)"
-                        class="p-1.5 text-gray-400 hover:text-[#1b3b5f] hover:bg-[#1b3b5f]/10 rounded-lg border border-transparent hover:border-[#1b3b5f]/20 transition cursor-pointer"
+                        class="px-2.5 py-1 text-xs font-bold text-[#1b3b5f] bg-[#1b3b5f]/10 hover:bg-[#1b3b5f]/20 rounded-lg border border-[#1b3b5f]/20 transition flex items-center gap-1.5 cursor-pointer"
                       >
                         <Edit class="w-3.5 h-3.5" />
+                        <span>Edit</span>
                       </button>
 
                       <!-- Direct Delete Batch Button (Admin only, when bill not generated) -->
@@ -3584,7 +3554,7 @@ onUnmounted(() => {
                     </div>
                   </div>
 
-                  <!-- Product Details (Expanded via View button or Collapsed Summary) -->
+                  <!-- Product Details (Expanded via View button) -->
                   <div v-if="expandedBatchIds[b.id]" class="pt-3 border-t border-gray-100 space-y-2.5">
                     <div class="flex items-center justify-between">
                       <span class="text-[11px] font-bold uppercase tracking-wider text-gray-600">
@@ -3618,18 +3588,18 @@ onUnmounted(() => {
                               <div class="font-bold text-gray-900 leading-tight">
                                 {{ item.product?.name || item.productName || 'Item' }}
                               </div>
-                              <div v-if="item.sku || item.product?.sku" class="text-[10px] text-gray-400 font-mono mt-0.5">
+                              <div v-if="item.sku || item.product?.sku" class="text-[10px] text-gray-400 mt-0.5">
                                 SKU: {{ item.sku || item.product?.sku }}
                               </div>
                             </td>
-                            <td class="py-2.5 px-3 text-right font-medium text-gray-700 whitespace-nowrap">
+                            <td class="py-2.5 px-3 text-right font-medium text-gray-700 whitespace-nowrap tabular-nums">
                               {{ formatCurrency(item.unitPrice || 0) }}
                             </td>
                             <td class="py-2.5 px-3 text-right whitespace-nowrap">
-                              <span class="font-bold text-gray-900">{{ item.quantity }}</span>
+                              <span class="font-bold text-gray-900 tabular-nums">{{ item.quantity }}</span>
                               <span class="text-[10px] text-gray-500 ml-1">pcs</span>
                             </td>
-                            <td class="py-2.5 px-3 text-right font-bold text-gray-900 whitespace-nowrap">
+                            <td class="py-2.5 px-3 text-right font-bold text-gray-900 whitespace-nowrap tabular-nums">
                               {{ formatCurrency(getItemTotal(item)) }}
                             </td>
                           </tr>
@@ -3638,10 +3608,10 @@ onUnmounted(() => {
                           <tr>
                             <td class="py-2 px-3 text-[11px] uppercase tracking-wide text-gray-600">Batch Total</td>
                             <td class="py-2 px-3"></td>
-                            <td class="py-2 px-3 text-right text-xs">
+                            <td class="py-2 px-3 text-right text-xs tabular-nums">
                               {{ getBatchTotalQty(b) }} pcs
                             </td>
-                            <td class="py-2 px-3 text-right text-xs text-[#1b3b5f]">
+                            <td class="py-2 px-3 text-right text-xs text-[#1b3b5f] tabular-nums">
                               {{ formatCurrency(b.totalAmount || 0) }}
                             </td>
                           </tr>
@@ -3650,14 +3620,26 @@ onUnmounted(() => {
                     </div>
                   </div>
 
-                  <!-- Collapsed Preview when View is NOT clicked -->
-                  <div v-else class="pt-2 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
+                  <!-- Bottom Summary Row: Items, Qty and Grand Total with View/Hide Button -->
+                  <div class="pt-2 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
                     <div class="flex items-center gap-1.5">
                       <span class="font-semibold text-gray-700">{{ b.items?.length || 0 }} item(s)</span>
                       <span>•</span>
-                      <span>{{ getBatchTotalQty(b) }} pcs</span>
+                      <span class="tabular-nums font-medium text-gray-700">{{ getBatchTotalQty(b) }} pcs</span>
                     </div>
-                    <span class="font-bold text-gray-900">{{ formatCurrency(b.totalAmount || 0) }}</span>
+                    <div class="flex items-center gap-2.5">
+                      <span class="font-bold text-gray-900 text-sm tabular-nums">{{ formatCurrency(b.totalAmount || 0) }}</span>
+                      <button
+                        type="button"
+                        @click.stop="toggleBatchExpanded(b.id)"
+                        class="px-2.5 py-1 text-xs font-bold text-[#1b3b5f] bg-[#1b3b5f]/10 hover:bg-[#1b3b5f]/20 rounded-lg border border-[#1b3b5f]/20 transition flex items-center gap-1 cursor-pointer select-none"
+                        :title="expandedBatchIds[b.id] ? 'Hide product details' : 'View product details'"
+                      >
+                        <span>{{ expandedBatchIds[b.id] ? 'Hide' : 'View' }}</span>
+                        <ChevronUp v-if="expandedBatchIds[b.id]" class="w-3.5 h-3.5" />
+                        <ChevronDown v-else class="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -5175,7 +5157,7 @@ onUnmounted(() => {
           <!-- Live Calculated Preview Box -->
           <div class="p-3 bg-emerald-50/80 border border-emerald-200/90 rounded-xl text-center space-y-0.5">
             <span class="text-[10px] font-bold text-emerald-800 uppercase tracking-wider block">Calculated Total Sheet Rate</span>
-            <div class="text-2xl font-mono font-black text-[#1b3b5f]">
+            <div class="text-2xl font-black text-[#1b3b5f] tabular-nums">
               ₹{{ editCalcTotalRate.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
             </div>
             <p class="text-[10px] text-emerald-700 font-medium">

@@ -223,7 +223,7 @@ const submitCreateBatch = async () => {
                   </span>
                 </div>
                 <p class="text-xs text-gray-500 mt-0.5 flex items-center gap-1.5 flex-wrap truncate">
-                  <span class="font-mono font-bold text-gray-900">{{ poolData.orderNumber }}</span>
+                  <span class="font-bold text-gray-900">{{ poolData.orderNumber }}</span>
                   <span>&bull;</span>
                   <span class="truncate">{{ poolData.customer?.company || poolData.customer?.name || 'Customer' }}</span>
                   <span>&bull;</span>
@@ -284,7 +284,7 @@ const submitCreateBatch = async () => {
                     <td class="p-3">
                       <p class="font-bold text-gray-900 leading-snug">{{ row.productName }}</p>
                       <div class="flex items-center gap-2 text-[11px] text-gray-500 mt-0.5">
-                        <span class="font-mono text-gray-600">{{ row.sku }}</span>
+                        <span class="text-gray-600">{{ row.sku }}</span>
                         <span>&bull;</span>
                         <span class="font-semibold text-gray-700">{{ formatCurrency(row.unitPrice) }}</span>
                       </div>
