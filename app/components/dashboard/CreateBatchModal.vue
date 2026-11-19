@@ -434,37 +434,37 @@ const submitBatch = async () => {
 
       <!-- Modal Card -->
       <div 
-        class="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl flex flex-col max-h-[calc(100dvh-3.5rem-env(safe-area-inset-bottom,0px)-2rem)] md:max-h-[92vh] overflow-hidden border border-gray-200"
+        class="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl flex flex-col max-h-[calc(100dvh-4rem-env(safe-area-inset-bottom,0px))] md:max-h-[92vh] overflow-hidden border border-gray-200"
         @click.stop
       >
         <!-- Loading Overlay -->
-        <div v-if="isLoading" class="p-16 flex flex-col items-center justify-center space-y-3">
+        <div v-if="isLoading" class="p-12 sm:p-16 flex flex-col items-center justify-center space-y-3">
           <Loader2 class="w-8 h-8 text-[#1b3b5f] animate-spin" />
           <p class="text-xs font-semibold text-gray-500">Loading order pending pool...</p>
         </div>
 
         <template v-else-if="poolData">
           <!-- Modal Header -->
-          <div class="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-gray-100 bg-[#faf8f5] shrink-0">
-            <div class="flex items-center gap-3 min-w-0">
-              <div class="w-10 h-10 rounded-xl bg-[#1b3b5f]/10 text-[#1b3b5f] flex items-center justify-center font-bold shrink-0">
+          <div class="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-100 bg-[#faf8f5] shrink-0">
+            <div class="flex items-center gap-2.5 sm:gap-3 min-w-0">
+              <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#1b3b5f]/10 text-[#1b3b5f] flex items-center justify-center font-bold shrink-0">
                 <Layers class="w-5 h-5" />
               </div>
               <div class="min-w-0">
-                <div class="flex items-center gap-2 flex-wrap">
-                  <h2 class="text-base sm:text-lg font-bold text-gray-900 tracking-tight">
+                <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                  <h2 class="text-sm sm:text-lg font-bold text-gray-900 tracking-tight leading-tight">
                     {{ mode === 'edit' ? 'Edit Fulfillment Batch' : 'Create Fulfillment Batch' }}
                   </h2>
-                  <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black bg-[#1b3b5f] text-white tracking-wider uppercase">
+                  <span class="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] sm:text-[10px] font-black bg-[#1b3b5f] text-white tracking-wider uppercase">
                     Batch {{ currentBatchNumber }}
                   </span>
                 </div>
-                <p class="text-xs text-gray-500 mt-0.5 flex items-center gap-1.5 flex-wrap truncate">
-                  <span class="font-bold text-gray-900">{{ poolData.orderNumber }}</span>
+                <p class="text-[11px] sm:text-xs text-gray-500 mt-0.5 flex items-center gap-1 sm:gap-1.5 flex-wrap truncate">
+                  <span class="font-bold text-gray-900 font-mono">{{ poolData.orderNumber }}</span>
                   <span>&bull;</span>
                   <span class="truncate">{{ poolData.customer?.company || poolData.customer?.name || 'Customer' }}</span>
-                  <span>&bull;</span>
-                  <span class="font-bold text-[#1b3b5f]">
+                  <span class="hidden sm:inline">&bull;</span>
+                  <span class="font-bold text-[#1b3b5f] hidden sm:inline">
                     {{ mode === 'edit' ? 'Adjusting allocation slice' : `${poolData.totalPendingUnits} pcs available` }}
                   </span>
                 </p>
@@ -475,16 +475,16 @@ const submitBatch = async () => {
               @click="closeModal" 
               data-modal-close="true" 
               title="Close" 
-              class="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-200 transition-colors cursor-pointer shrink-0 ml-2"
+              class="p-1.5 sm:p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-200 transition-colors cursor-pointer shrink-0 ml-1.5 sm:ml-2"
             >
               <X class="w-5 h-5" />
             </button>
           </div>
 
           <!-- Pending Pool Ribbon -->
-          <div class="bg-blue-50/70 border-b border-blue-100 px-5 sm:px-6 py-3 flex items-center justify-between gap-4 text-xs shrink-0 flex-wrap">
-            <div class="flex items-center gap-3 sm:gap-4 flex-wrap text-gray-600">
-              <span>Master Ordered: <strong class="text-gray-900 font-bold tabular-nums">{{ poolData.totalOrderedUnits }} pcs</strong></span>
+          <div class="bg-blue-50/70 border-b border-blue-100 px-4 sm:px-6 py-2 sm:py-3 flex items-center justify-between gap-2.5 sm:gap-4 text-xs shrink-0 flex-wrap">
+            <div class="flex items-center gap-2 sm:gap-4 flex-wrap text-gray-600 text-[11px] sm:text-xs">
+              <span>Ordered: <strong class="text-gray-900 font-bold tabular-nums">{{ poolData.totalOrderedUnits }} pcs</strong></span>
               <span class="text-gray-300 hidden sm:inline">&bull;</span>
               <span>
                 {{ mode === 'edit' ? 'Other Batches:' : 'Batched:' }}
@@ -493,8 +493,8 @@ const submitBatch = async () => {
                 </strong>
               </span>
               <span class="text-gray-300 hidden sm:inline">&bull;</span>
-              <span class="text-emerald-800 font-bold bg-emerald-100/70 border border-emerald-200 px-2 py-0.5 rounded-md tabular-nums">
-                {{ mode === 'edit' ? 'Live Pool Remaining:' : 'Available in Pool:' }} {{ remainingPoolAfterBatch }} pcs
+              <span class="text-emerald-800 font-bold bg-emerald-100/70 border border-emerald-200 px-1.5 py-0.2 rounded-md tabular-nums text-[10px] sm:text-xs">
+                {{ mode === 'edit' ? 'Live Pool:' : 'Pool Remaining:' }} {{ remainingPoolAfterBatch }} pcs
               </span>
             </div>
             <span class="text-[11px] font-semibold text-[#1b3b5f] hidden md:inline-block">
@@ -503,10 +503,10 @@ const submitBatch = async () => {
           </div>
 
           <!-- Scrollable Body -->
-          <div class="p-4 sm:p-6 overflow-y-auto space-y-5 custom-scrollbar flex-1">
+          <div class="p-3 sm:p-6 overflow-y-auto space-y-4 sm:space-y-5 custom-scrollbar flex-1">
 
-            <!-- Items Table -->
-            <div class="border border-gray-200 rounded-xl overflow-hidden shadow-2xs">
+            <!-- Items Desktop Table (md screens and up) -->
+            <div class="hidden md:block border border-gray-200 rounded-xl overflow-hidden shadow-2xs">
               <table class="w-full text-left text-xs border-collapse">
                 <thead class="bg-gray-50 border-b border-gray-200 font-bold text-gray-600 uppercase text-[10px] tracking-wider">
                   <tr>
@@ -620,18 +620,117 @@ const submitBatch = async () => {
               </table>
             </div>
 
+            <!-- Items Mobile High-Density Cards (< md screens) -->
+            <div class="block md:hidden space-y-2.5">
+              <div 
+                v-for="(row, rIdx) in batchRows" 
+                :key="'mob-row-' + (row.orderItemId || row.productId || rIdx)"
+                class="p-3 bg-white rounded-xl border transition-all"
+                :class="row.maxQty === 0 && row.batchQty === 0 ? 'border-gray-200 bg-gray-50/70 opacity-60' : 'border-gray-200/90 shadow-2xs'"
+              >
+                <!-- Line 1: Product Title & SKU + Trash button -->
+                <div class="flex items-start justify-between gap-2">
+                  <div class="min-w-0 flex-1">
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                      <p class="font-bold text-gray-900 text-xs leading-snug break-words">{{ row.productName }}</p>
+                      <span 
+                        v-if="row.isNewProduct"
+                        class="px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-sky-100 text-sky-800 border border-sky-300 shrink-0"
+                      >
+                        + Added
+                      </span>
+                    </div>
+                    <div class="flex items-center gap-2 text-[10px] text-gray-500 mt-0.5">
+                      <span v-if="row.sku" class="text-gray-600 font-mono">{{ row.sku }}</span>
+                      <span v-if="row.sku">&bull;</span>
+                      <span class="font-semibold text-gray-700 tabular-nums">{{ formatCurrency(row.unitPrice) }}</span>
+                    </div>
+                  </div>
+
+                  <!-- Remove extra item button (in edit mode) -->
+                  <button
+                    v-if="mode === 'edit' && row.isNewProduct"
+                    type="button"
+                    @click="removeExtraRow(rIdx)"
+                    class="p-1.5 text-gray-400 hover:text-red-600 active:bg-red-50 rounded-lg transition cursor-pointer shrink-0"
+                    title="Remove this extra product"
+                  >
+                    <Trash2 class="w-4 h-4" />
+                  </button>
+                </div>
+
+                <!-- Line 2: 3-Pill Metric Ribbon (Ordered, Other/Batched, Max Available) -->
+                <div class="grid grid-cols-3 gap-1.5 p-2 bg-gray-50/80 rounded-lg border border-gray-150 text-[10px] my-2">
+                  <div class="text-center">
+                    <span class="block text-gray-500 font-medium">Ordered</span>
+                    <strong class="text-gray-900 font-bold tabular-nums text-[11px]">{{ row.orderedQty }}</strong>
+                  </div>
+                  <div class="text-center border-x border-gray-200">
+                    <span class="block text-gray-500 font-medium">{{ mode === 'edit' ? 'Other' : 'Batched' }}</span>
+                    <strong class="text-[#1b3b5f] font-bold tabular-nums text-[11px]">{{ row.batchedQty }}</strong>
+                  </div>
+                  <div class="text-center">
+                    <span class="block text-emerald-800 font-medium">{{ mode === 'edit' ? 'Max Avail' : 'Available' }}</span>
+                    <span v-if="row.isNewProduct" class="inline-flex items-center gap-0.5 text-[10px] font-bold text-sky-700">
+                      {{ row.batchQty }} <span class="text-[8px] bg-sky-100 px-0.5 py-0.1 rounded font-bold uppercase">New</span>
+                    </span>
+                    <strong v-else class="text-emerald-700 font-bold tabular-nums text-[11px]">{{ mode === 'edit' ? row.maxQty : row.pendingQty }}</strong>
+                  </div>
+                </div>
+
+                <!-- Line 3: Stepper Allocation Controls -->
+                <div class="flex items-center justify-between pt-1">
+                  <span class="text-xs font-bold text-gray-700">This Batch Qty:</span>
+
+                  <div v-if="row.maxQty > 0 || row.batchQty > 0 || row.isNewProduct" class="inline-flex items-center border border-gray-300 rounded-lg bg-white shadow-2xs overflow-hidden">
+                    <button 
+                      type="button"
+                      @click="updateQty(row, -1)"
+                      :disabled="row.batchQty <= (row.isNewProduct ? 1 : 0)"
+                      class="w-8 h-8 flex items-center justify-center text-gray-700 active:bg-gray-100 disabled:opacity-30 cursor-pointer"
+                      title="Decrease quantity"
+                    >
+                      <Minus class="w-3.5 h-3.5" />
+                    </button>
+                    
+                    <input 
+                      type="number"
+                      :value="row.batchQty"
+                      @input="onQtyInput(row, $event)"
+                      :min="row.isNewProduct ? 1 : 0"
+                      :max="row.isNewProduct ? undefined : row.maxQty"
+                      class="w-14 h-8 text-center font-bold text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#1b3b5f] border-x border-gray-200 tabular-nums"
+                    />
+
+                    <button 
+                      type="button"
+                      @click="updateQty(row, 1)"
+                      :disabled="!row.isNewProduct && row.batchQty >= row.maxQty"
+                      class="w-8 h-8 flex items-center justify-center text-gray-700 active:bg-gray-100 disabled:opacity-30 cursor-pointer"
+                      title="Increase quantity"
+                    >
+                      <Plus class="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  <div v-else class="text-[11px] font-bold text-gray-400 bg-gray-100 px-2 py-1 rounded">
+                    100% Fulfilled
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <!-- Add Item Not in Master Order Button & Inline Form -->
-            <div class="p-3.5 bg-gray-50/80 rounded-xl border border-dashed border-gray-300 space-y-3">
-              <div v-if="!isAddingExtraProduct" class="flex items-center justify-between">
+            <div class="p-3 sm:p-3.5 bg-gray-50/80 rounded-xl border border-dashed border-gray-300 space-y-3">
+              <div v-if="!isAddingExtraProduct" class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                 <div class="flex items-center gap-2">
-                  <Tag class="w-4 h-4 text-[#1b3b5f]" />
+                  <Tag class="w-4 h-4 text-[#1b3b5f] shrink-0" />
                   <span class="text-xs font-bold text-gray-800">Need to add another product to this batch?</span>
                   <span class="text-[10px] text-gray-500 hidden sm:inline">(Will automatically append to Master Order)</span>
                 </div>
                 <button
                   type="button"
                   @click="isAddingExtraProduct = true"
-                  class="px-3 py-1.5 bg-[#1b3b5f] hover:bg-[#132c49] text-white text-xs font-bold rounded-lg shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+                  class="w-full sm:w-auto justify-center px-3 py-1.5 bg-[#1b3b5f] hover:bg-[#132c49] active:bg-[#0e2035] text-white text-xs font-bold rounded-lg shadow-xs transition flex items-center gap-1.5 cursor-pointer"
                 >
                   <Plus class="w-3.5 h-3.5" />
                   <span>Add Product to Batch</span>
@@ -799,18 +898,18 @@ const submitBatch = async () => {
           </div>
 
           <!-- Modal Action Footer -->
-          <div class="px-4 sm:px-6 py-3 sm:py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between gap-2.5 sm:gap-3 shrink-0">
+          <div class="px-3 sm:px-6 py-2.5 sm:py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between gap-2 sm:gap-3 shrink-0">
             <!-- Left: Batch Allocation Preview (Done in 2 Lines) -->
-            <div class="text-xs min-w-0 flex-1 leading-snug">
+            <div class="text-[11px] sm:text-xs min-w-0 flex-1 leading-snug">
               <!-- Line 1: Batch Total & Amount -->
               <div class="truncate text-gray-700">
-                <span class="text-gray-500 font-medium">Batch {{ currentBatchNumber }} Total: </span>
+                <span class="text-gray-500 font-medium">Batch {{ currentBatchNumber }}: </span>
                 <strong class="text-gray-950 font-extrabold tabular-nums">{{ totalBatchUnits }} pcs</strong>
                 <span class="text-gray-300 mx-1">&bull;</span>
                 <strong class="text-[#1b3b5f] font-black tabular-nums">{{ formatCurrency(totalBatchAmount) }}</strong>
               </div>
               <!-- Line 2: Pending Pool Remaining -->
-              <div class="text-[11px] text-gray-500 mt-0.5 truncate">
+              <div class="text-[10px] sm:text-[11px] text-gray-500 mt-0.5 truncate">
                 <span class="hidden sm:inline">{{ mode === 'edit' ? 'Units remaining in master pool:' : 'Pending pool after this batch:' }} </span>
                 <span class="sm:hidden">{{ mode === 'edit' ? 'Pool remaining:' : 'Pending pool:' }} </span>
                 <strong class="tabular-nums text-gray-800 font-bold">{{ remainingPoolAfterBatch }} pcs</strong>
@@ -823,7 +922,7 @@ const submitBatch = async () => {
                 type="button"
                 @click="closeModal" 
                 :disabled="isSubmitting"
-                class="px-3 sm:px-4 py-2 border border-gray-300 text-gray-700 bg-white hover:bg-gray-100 rounded-xl text-xs font-bold disabled:opacity-50 transition cursor-pointer shadow-2xs"
+                class="px-2.5 sm:px-4 py-2 border border-gray-300 text-gray-700 bg-white hover:bg-gray-100 rounded-xl text-xs font-bold disabled:opacity-50 transition cursor-pointer shadow-2xs"
               >
                 Cancel
               </button>
@@ -831,7 +930,7 @@ const submitBatch = async () => {
                 type="button"
                 @click="submitBatch" 
                 :disabled="isSubmitting || totalBatchUnits === 0"
-                class="px-3.5 sm:px-5 py-2 sm:py-2.5 bg-[#1b3b5f] hover:bg-[#132c49] active:bg-[#0e2035] text-white rounded-xl text-xs font-bold shadow-sm disabled:opacity-50 flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-all"
+                class="px-3 sm:px-5 py-2 sm:py-2.5 bg-[#1b3b5f] hover:bg-[#132c49] active:bg-[#0e2035] text-white rounded-xl text-xs font-bold shadow-sm disabled:opacity-50 flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-all"
               >
                 <Loader2 v-if="isSubmitting" class="w-3.5 h-3.5 animate-spin" />
                 <template v-else>
