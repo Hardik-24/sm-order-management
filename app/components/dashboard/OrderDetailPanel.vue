@@ -155,6 +155,7 @@ const canCreateBatch = computed(() => {
   if (isChildBatch.value) return false
   if (order.value.overallStatus === 'CANCELLED') return false
   if (order.value.deliveryStatus?.status === 'DELIVERED') return false
+  if (!order.value.isApproved) return false
   if (isBillGenerated.value && (!order.value?.batches || order.value.batches.length === 0)) return false
   // If master order and has pending pool
   if (poolMetrics.value.totalPending <= 0 && ((order.value as any)?.batches?.length || 0) > 0) return false
@@ -3552,8 +3553,8 @@ onUnmounted(() => {
               </div>
             </div>
 
-            <!-- Pending Pool Balance Table (Master Order only) -->
-            <div v-if="isMasterOrder" class="bg-white rounded-xl border border-gray-200/90 p-4 shadow-2xs space-y-3">
+            <!-- Pending Pool Balance Table (Master Order only, shown only when at least one batch has been created) -->
+            <div v-if="isMasterOrder && ((order as any)?.batches?.length || 0) > 0" class="bg-white rounded-xl border border-gray-200/90 p-4 shadow-2xs space-y-3">
               <div class="flex items-center justify-between">
                 <div>
                   <h4 class="text-xs font-bold text-gray-800 uppercase tracking-wider">Pending Pool Allocation</h4>
@@ -3893,7 +3894,13 @@ onUnmounted(() => {
                     This order is currently set to be fulfilled in a single standard shipment. If stock is arriving in stages or the customer needs partial delivery, create a fulfillment batch from the pending pool.
                   </p>
                 </div>
-                <div v-if="canCreateBatch" class="pt-2">
+                <div v-if="order && !order.isApproved" class="pt-2">
+                  <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+                    <ShieldAlert class="w-4 h-4 text-amber-600 shrink-0" />
+                    <span>Master order must be approved before fulfillment batches can be created</span>
+                  </span>
+                </div>
+                <div v-else-if="canCreateBatch" class="pt-2">
                   <button
                     type="button"
                     @click="openCreateBatchModal"

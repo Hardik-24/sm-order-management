@@ -86,6 +86,13 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: 'Master order is already completely delivered' })
   }
 
+  if (!masterOrder.isApproved) {
+    throw createError({
+      statusCode: 400,
+      message: 'Master order must be approved before fulfillment batches can be created.'
+    })
+  }
+
   // 2. Map master items and compute already-batched quantities across active batches
   const masterItemMap = new Map<string, typeof masterOrder.items[0]>()
   for (const itm of masterOrder.items) {

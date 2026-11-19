@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { 
-  X, Layers, AlertCircle, Check, Loader2, Plus, Minus, MapPin, Building2, Truck, Car, Package, Clock, Save, Trash2, Tag, IndianRupee
+  X, Layers, AlertCircle, Check, Loader2, Plus, Minus, MapPin, Building2, Truck, Car, Package, Clock, Save, Trash2, Tag, IndianRupee, ShieldAlert
 } from 'lucide-vue-next'
 import { formatCurrency } from '~/lib/utils'
 import { useSnackbar } from '~/composables/useSnackbar'
@@ -344,6 +344,10 @@ const currentBatchNumber = computed(() => {
 
 // Submit Batch Creation or Edit
 const submitBatch = async () => {
+  if (props.mode !== 'edit' && poolData.value && poolData.value.isApproved === false) {
+    alert('Master order must be approved before fulfillment batches can be created.')
+    return
+  }
   if (totalBatchUnits.value === 0) {
     alert('Please allocate at least 1 unit to this batch.')
     return
@@ -479,6 +483,12 @@ const submitBatch = async () => {
             >
               <X class="w-5 h-5" />
             </button>
+          </div>
+
+          <!-- Unapproved Master Order Notice Banner -->
+          <div v-if="mode !== 'edit' && poolData?.isApproved === false" class="bg-amber-50 border-b border-amber-200 px-4 sm:px-6 py-2.5 flex items-center gap-2 text-xs text-amber-800 font-semibold shrink-0">
+            <ShieldAlert class="w-4 h-4 text-amber-600 shrink-0" />
+            <span>Master order is pending sales approval. Fulfillment batches can only be created once the order is approved.</span>
           </div>
 
           <!-- Pending Pool Ribbon -->
@@ -929,7 +939,7 @@ const submitBatch = async () => {
               <button 
                 type="button"
                 @click="submitBatch" 
-                :disabled="isSubmitting || totalBatchUnits === 0"
+                :disabled="isSubmitting || totalBatchUnits === 0 || (mode !== 'edit' && poolData?.isApproved === false)"
                 class="px-3 sm:px-5 py-2 sm:py-2.5 bg-[#1b3b5f] hover:bg-[#132c49] active:bg-[#0e2035] text-white rounded-xl text-xs font-bold shadow-sm disabled:opacity-50 flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-all"
               >
                 <Loader2 v-if="isSubmitting" class="w-3.5 h-3.5 animate-spin" />

@@ -81,11 +81,13 @@ export default defineEventHandler(async (event) => {
 
   const isCancelled = masterOrder.overallStatus === 'CANCELLED'
   const isDelivered = masterOrder.deliveryStatus?.status === 'DELIVERED'
-  const canCreateBatch = !isCancelled && !isDelivered && totalPendingUnits > 0
+  const isApproved = Boolean(masterOrder.isApproved)
+  const canCreateBatch = !isCancelled && !isDelivered && isApproved && totalPendingUnits > 0
 
   return {
     masterOrderId: masterOrder.id,
     orderNumber: masterOrder.orderNumber,
+    isApproved,
     customer: masterOrder.customer,
     deliveryAddress: masterOrder.deliveryAddress,
     deliveryAddressId: masterOrder.deliveryAddressId,

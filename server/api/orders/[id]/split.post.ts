@@ -61,6 +61,13 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: 'Cannot split a cancelled order' })
   }
 
+  if (!targetOrder.isApproved) {
+    throw createError({
+      statusCode: 400,
+      message: 'The master order must be approved before it can be split into batches.'
+    })
+  }
+
   if (targetOrder.deliveryStatus?.status === 'DISPATCHED' || targetOrder.deliveryStatus?.status === 'DELIVERED') {
     throw createError({ statusCode: 400, message: 'Cannot split an order that is already dispatched or delivered' })
   }

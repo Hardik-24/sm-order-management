@@ -797,7 +797,7 @@ const getItemsTotalQuantity = (order: Order) => {
                       </div>
 
                       <button 
-                        v-if="canManageBatches"
+                        v-if="canManageBatches && order.isApproved"
                         type="button"
                         @click.stop="emit('split-order', order.id)"
                         class="px-3 py-1.5 bg-[#1b3b5f] hover:bg-[#132c49] text-white text-xs font-bold rounded-lg transition shadow-2xs flex items-center gap-1.5 cursor-pointer shrink-0 active:scale-95"
@@ -1023,7 +1023,7 @@ const getItemsTotalQuantity = (order: Order) => {
                 Pending Pool: <strong>{{ getOrderPendingPoolUnits(order) }} pcs</strong>
               </span>
               <button 
-                v-if="canManageBatches"
+                v-if="canManageBatches && order.isApproved"
                 type="button" 
                 @click.stop="emit('split-order', order.id)" 
                 class="px-2 py-1 bg-[#1b3b5f] text-white text-[10px] font-bold rounded shadow-2xs active:scale-95 cursor-pointer"
