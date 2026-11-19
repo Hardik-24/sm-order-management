@@ -31,7 +31,6 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const isChildBatch = Boolean(order.parentOrderId)
   const parentOrderId = order.parentOrderId
 
   await prisma.order.delete({ where: { id } })
