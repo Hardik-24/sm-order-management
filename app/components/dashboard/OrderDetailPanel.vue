@@ -505,7 +505,42 @@ onOrderSync((event) => {
 
   if (!props.isOpen) return
 
-  // Do not clobber order data while the user has an action modal open
+  const affectedId = event?.orderId 
+    || event?.payload?.orderId 
+    || event?.order?.id 
+    || event?.record?.order_id 
+    || event?.record?.orderId 
+    || (event?.table === 'orders' ? event?.record?.id : null)
+
+  const activeId = order.value?.id || props.orderId
+  if (!activeId) return
+
+  // Handle deletion of the open order across devices
+  const isDeletedAction = event?.action === 'ORDER_DELETED' || event?.eventType === 'DELETE'
+  if (isDeletedAction && affectedId && (affectedId === activeId || affectedId === props.orderId)) {
+    // If the currently open drawer was viewing a batch that got deleted, return to master order
+    if (isChildBatch.value && (event?.parentOrderId || order.value?.parentOrderId)) {
+      const parentId = event?.parentOrderId || order.value?.parentOrderId
+      showSaved(`Batch #${order.value?.batchNumber || ''} was deleted. Returning to master order.`)
+      fetchOrder(parentId)
+      return
+    }
+
+    // Master order was deleted: close any open action modal and close the drawer with a notice
+    isEditModalOpen.value = false
+    isAdminStatusModalOpen.value = false
+    isCancelModalOpen.value = false
+    isBatchModalOpen.value = false
+    isPinModalOpen.value = false
+    isHandoverModalOpen.value = false
+    isLinkModalOpen.value = false
+    isLinkItemModalOpen.value = false
+    showError(`Order ${order.value?.orderNumber || ''} was deleted`)
+    emit('close')
+    return
+  }
+
+  // Do not clobber order data while the user has an action modal open for edits/status changes
   if (
     isEditModalOpen.value ||
     isAdminStatusModalOpen.value || 
@@ -517,16 +552,6 @@ onOrderSync((event) => {
   ) {
     return
   }
-
-  const affectedId = event?.orderId 
-    || event?.payload?.orderId 
-    || event?.order?.id 
-    || event?.record?.order_id 
-    || event?.record?.orderId 
-    || (event?.table === 'orders' ? event?.record?.id : null)
-
-  const activeId = order.value?.id || props.orderId
-  if (!activeId) return
 
   // Refresh if this specific order, its parent master order, or any of its child batches was modified
   const isRelated = 
@@ -748,8 +773,13 @@ const fetchOrder = async (id: string, silent = false) => {
         }
       })
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to fetch order:', error)
+    const status = error?.statusCode || error?.status || error?.response?.status || error?.data?.statusCode
+    if (status === 404) {
+      showError('This order has been deleted')
+      emit('close')
+    }
   } finally {
     isLoading.value = false
     isSilentRefreshing.value = false
