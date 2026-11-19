@@ -141,6 +141,7 @@ export default defineEventHandler(async (event) => {
             sku: product.sku,
             productName: product.name,
             quantity: qty,
+            ...(Boolean(existingOrder.parentOrderId || existingOrder.isApproved) && { approvedQuantity: qty }),
             unitPrice: unitPrice,
             taxRate: taxRate,
             taxAmount: taxAmount,
@@ -198,8 +199,10 @@ export default defineEventHandler(async (event) => {
 
   updateData.timeline = {
     create: {
-      action: 'Order Edited',
-      description: 'Order details were modified.',
+      action: existingOrder.parentOrderId ? 'Batch Edited' : 'Order Edited',
+      description: existingOrder.parentOrderId
+        ? `Batch ${existingOrder.batchNumber || ''} details were modified.`
+        : 'Order details were modified.',
       performedById: user.id
     }
   }

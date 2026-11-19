@@ -87,7 +87,7 @@ const emit = defineEmits<{
 const { user, hasRole, canEditOrders, canCancelOrders, canEditOrderStatus, canLinkBusyData, canEditConvertedQuotationOrders, canAccessPage } = useAuth()
 const order = ref<Order | null>(null)
 const isLoading = ref(false)
-const activeTab = ref<'DETAILS' | 'BATCHES' | 'TIMELINE' | 'NOTES'>('DETAILS')
+const activeTab = ref<'DETAILS' | 'MASTER_ORDER' | 'BATCHES' | 'TIMELINE' | 'NOTES'>('DETAILS')
 
 // Master Order & Batch Pools
 const isMasterOrder = computed(() => Boolean(order.value && !order.value.parentOrderId))
@@ -124,11 +124,12 @@ const poolMetrics = computed(() => {
 
 const canCreateBatch = computed(() => {
   if (!order.value) return false
+  if (isChildBatch.value) return false
   if (order.value.overallStatus === 'CANCELLED') return false
   if (order.value.deliveryStatus?.status === 'DELIVERED') return false
   if (isBillGenerated.value && (!order.value.batches || order.value.batches.length === 0)) return false
   // If master order and has pending pool
-  if (isMasterOrder.value && poolMetrics.value.totalPending <= 0 && (order.value.batches?.length || 0) > 0) return false
+  if (poolMetrics.value.totalPending <= 0 && (order.value.batches?.length || 0) > 0) return false
   return hasRole('ADMIN', 'SUPERVISOR') || canAccessPage('approve-orders')
 })
 
@@ -172,22 +173,39 @@ const getBatchTotalQty = (batch: any) => {
   return (batch.items || []).reduce((sum: number, itm: any) => sum + (Number(itm.quantity) || 0), 0)
 }
 
-const navigationTabs = computed(() => {
-  const tabs: Array<{ id: 'DETAILS' | 'BATCHES' | 'TIMELINE' | 'NOTES', label: string, badge?: any }> = [
-    { id: 'DETAILS', label: 'Details', badge: order.value?.items?.length }
-  ]
-  const batchesCount = (order.value as any)?.batches?.length || 0
-  if (batchesCount > 0 || isMasterOrder.value || isChildBatch.value) {
-    const batchBadge = batchesCount > 0 
-      ? String(batchesCount) 
-      : (isChildBatch.value ? `B${order.value?.batchNumber}` : null)
-    tabs.push({ id: 'BATCHES', label: 'Batches', badge: batchBadge })
+const editBatchById = async (batch: any) => {
+  if (batch.id !== order.value?.id) {
+    await fetchOrder(batch.id)
   }
-  tabs.push(
-    { id: 'TIMELINE', label: 'Timeline', badge: order.value?.timeline?.length },
-    { id: 'NOTES', label: 'Notes', badge: order.value?.notes ? '•' : null }
-  )
+  openEditModal()
+}
+
+const navigationTabs = computed(() => {
+  const tabs: Array<{ id: 'DETAILS' | 'MASTER_ORDER' | 'BATCHES' | 'TIMELINE' | 'NOTES', label: string, badge?: any }> = []
+
+  if (isChildBatch.value) {
+    tabs.push({ id: 'DETAILS', label: 'Batch Details', badge: order.value?.items?.length })
+    const masterItemsCount = (order.value as any)?.parentOrder?.items?.length
+    tabs.push({ id: 'MASTER_ORDER', label: 'Master Order Details', badge: masterItemsCount || undefined })
+    tabs.push({ id: 'TIMELINE', label: 'Timeline', badge: order.value?.timeline?.length })
+    tabs.push({ id: 'NOTES', label: 'Notes', badge: order.value?.notes ? '•' : null })
+  } else {
+    tabs.push({ id: 'DETAILS', label: 'Details', badge: order.value?.items?.length })
+    const batchesCount = (order.value as any)?.batches?.length || 0
+    tabs.push({ id: 'BATCHES', label: 'Batches', badge: batchesCount > 0 ? String(batchesCount) : undefined })
+    tabs.push({ id: 'TIMELINE', label: 'Timeline', badge: order.value?.timeline?.length })
+    tabs.push({ id: 'NOTES', label: 'Notes', badge: order.value?.notes ? '•' : null })
+  }
+
   return tabs
+})
+
+watch(() => order.value?.id, () => {
+  if (isChildBatch.value && activeTab.value === 'BATCHES') {
+    activeTab.value = 'DETAILS'
+  } else if (!isChildBatch.value && activeTab.value === 'MASTER_ORDER') {
+    activeTab.value = 'DETAILS'
+  }
 })
 
 const isReleasingBatch = ref(false)
@@ -1793,17 +1811,17 @@ onUnmounted(() => {
             </button>
           </div>
 
-          <!-- Line 2: Action buttons row: Edit Order, Edit Status, and ... button -->
+          <!-- Line 2: Action buttons row: Edit Order / Batch, Edit Status, and ... button -->
           <div v-if="canEditCurrentOrder || canEditOrderStatus || canSplitCurrentOrder || canCancelOrder || (hasRole('ADMIN') && !isBillGenerated)" class="flex items-center gap-2 flex-wrap">
-            <!-- Edit Order Button -->
+            <!-- Edit Order / Batch Button -->
             <button 
               v-if="canEditCurrentOrder"
               @click="openEditModal" 
-              title="Edit Full Order Details"
+              :title="isChildBatch ? 'Edit Batch Details' : 'Edit Full Order Details'"
               class="px-2.5 py-1.5 text-xs font-bold text-white bg-[#1b3b5f] hover:bg-[#132c49] active:bg-[#0e2035] rounded-lg transition-all flex items-center gap-1.5 shadow-xs cursor-pointer active:scale-95"
             >
               <Edit class="w-3.5 h-3.5 shrink-0" />
-              <span>Edit Order</span>
+              <span>{{ isChildBatch ? 'Edit Batch' : 'Edit Order' }}</span>
             </button>
 
             <!-- Edit Status Button -->
@@ -1933,15 +1951,15 @@ onUnmounted(() => {
               <span>Quotation Locked</span>
             </span>
 
-            <!-- Edit Order Button (Always visible when editable) -->
+            <!-- Edit Order / Batch Button (Always visible when editable) -->
             <button 
               v-if="canEditCurrentOrder"
               @click="openEditModal" 
-              title="Edit Full Order Details"
+              :title="isChildBatch ? 'Edit Batch Details' : 'Edit Full Order Details'"
               class="px-3 py-1.5 text-xs font-bold text-white bg-[#1b3b5f] hover:bg-[#132c49] active:bg-[#0e2035] rounded-lg transition-all flex items-center gap-1.5 shadow-xs cursor-pointer active:scale-95"
             >
               <Edit class="w-3.5 h-3.5 shrink-0" />
-              <span>Edit Order</span>
+              <span>{{ isChildBatch ? 'Edit Batch' : 'Edit Order' }}</span>
             </button>
 
             <!-- Edit Status Button (Always visible) -->
@@ -2042,7 +2060,7 @@ onUnmounted(() => {
         </div>
 
         <!-- Batch Banner (When viewing a Child Batch) -->
-        <div v-if="order.parentOrderId" class="px-4 sm:px-6 py-2.5 bg-gradient-to-r from-blue-50 to-indigo-50/40 border-b border-blue-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2 flex-shrink-0">
+        <div v-if="order.parentOrderId" class="px-4 sm:px-6 py-2 bg-gradient-to-r from-blue-50 to-indigo-50/40 border-b border-blue-200/80 flex items-center justify-between gap-2 flex-shrink-0">
           <div class="flex items-center gap-2 min-w-0">
             <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-blue-600 text-white shadow-2xs shrink-0">
               Batch {{ order.batchNumber }} of {{ order.batchCount || (order as any).parentOrder?.batchCount || '2' }}
@@ -2050,17 +2068,6 @@ onUnmounted(() => {
             <span class="text-xs text-blue-950 font-medium truncate">
               Part of Master Order: <strong class="font-mono">{{ (order as any).parentOrder?.orderNumber }}</strong>
             </span>
-          </div>
-
-          <div class="flex items-center gap-2 shrink-0 self-end sm:self-auto">
-            <button 
-              type="button" 
-              @click="switchToOrder(order.parentOrderId)"
-              class="text-xs font-bold text-blue-800 hover:text-blue-950 hover:underline flex items-center gap-1 cursor-pointer"
-            >
-              <span>View Master Order</span>
-              <ArrowRight class="w-3 h-3" />
-            </button>
           </div>
         </div>
 
@@ -2236,10 +2243,10 @@ onUnmounted(() => {
                   v-if="canEditCurrentOrder" 
                   @click="openEditModal" 
                   class="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold text-white bg-[#1b3b5f] hover:bg-[#132c49] active:bg-[#0e2035] rounded-lg transition-all shadow-xs hover:shadow cursor-pointer active:scale-95"
-                  title="Edit Order Details"
+                  :title="isChildBatch ? 'Edit Batch Details' : 'Edit Order Details'"
                 >
                   <Edit class="w-3.5 h-3.5" /> 
-                  <span>Edit Order</span>
+                  <span>{{ isChildBatch ? 'Edit Batch' : 'Edit Order' }}</span>
                 </button>
                 <span 
                   v-else-if="isConvertedFromQuotation && !canEditConvertedQuotationOrders"
@@ -3026,6 +3033,217 @@ onUnmounted(() => {
           </div>
           <!-- END DETAILS TAB -->
 
+          <!-- MASTER ORDER DETAILS TAB (When viewing a Child Batch) -->
+          <div v-else-if="activeTab === 'MASTER_ORDER'" class="space-y-6 flex flex-col">
+            <!-- 1. Master Order Header Card -->
+            <div class="bg-[#faf8f5] rounded-xl border border-gray-200/90 p-4 shadow-2xs">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-xl bg-[#1b3b5f]/10 text-[#1b3b5f] flex items-center justify-center shrink-0">
+                    <FileText class="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div class="flex items-center gap-2 flex-wrap">
+                      <span class="text-xs font-bold uppercase tracking-wider text-gray-500">Master Order</span>
+                      <h3 class="text-base font-bold font-mono text-gray-900">{{ (order as any).parentOrder?.orderNumber }}</h3>
+                      <StatusBadge 
+                        v-if="(order as any).parentOrder?.overallStatus"
+                        :status="(order as any).parentOrder.overallStatus" 
+                        :display="getDisplayStatus((order as any).parentOrder)" 
+                        :class="getOverallColor((order as any).parentOrder)" 
+                      />
+                    </div>
+                    <p class="text-xs text-gray-500 mt-0.5">
+                      Placed on {{ formatDate((order as any).parentOrder?.createdAt || order.createdAt) }} • Master order from which Batch #{{ order.batchNumber }} was created
+                    </p>
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    @click="switchToOrder(order.parentOrderId)"
+                    class="px-3.5 py-1.5 bg-[#1b3b5f] hover:bg-[#132c49] text-white text-xs font-bold rounded-xl transition shadow-2xs flex items-center gap-1.5 cursor-pointer"
+                    title="Switch full drawer context to the master order"
+                  >
+                    <span>Open Master in Drawer</span>
+                    <ArrowRight class="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 2. Master Customer & Order Details Grid -->
+            <div class="bg-white rounded-xl border border-gray-200/80 p-4 shadow-2xs space-y-3">
+              <div class="flex justify-between items-center pb-2.5 border-b border-gray-100">
+                <h3 class="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-1.5">
+                  <User class="w-3.5 h-3.5 text-gray-400" />
+                  Master Customer & Order Details
+                </h3>
+              </div>
+              
+              <div class="grid grid-cols-2 gap-y-3.5 gap-x-4 text-xs sm:text-sm">
+                <div>
+                  <span class="block text-[10px] sm:text-[11px] uppercase font-bold text-gray-400 tracking-wider mb-0.5">Customer</span>
+                  <span class="font-semibold text-gray-900">{{ (order as any).parentOrder?.customer?.name || order.customer?.name || '—' }}</span>
+                  <span v-if="(order as any).parentOrder?.customer?.company && (order as any).parentOrder?.customer?.company.trim().toLowerCase() !== ((order as any).parentOrder?.customer?.name || '').trim().toLowerCase()" class="block text-xs text-gray-500">
+                    {{ (order as any).parentOrder.customer.company }}
+                  </span>
+                </div>
+
+                <div>
+                  <span class="block text-[10px] sm:text-[11px] uppercase font-bold text-gray-400 tracking-wider mb-0.5">Placed By</span>
+                  <div class="flex items-center gap-1.5 font-medium text-gray-900">
+                    <User class="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                    <span class="truncate">{{ (order as any).parentOrder?.salesPerson?.name || order.salesPerson?.name || '—' }}</span>
+                  </div>
+                </div>
+
+                <!-- Payment Terms -->
+                <div class="col-span-1">
+                  <span class="block text-[10px] sm:text-[11px] uppercase font-bold text-gray-400 tracking-wider mb-1">Payment Terms</span>
+                  <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-gray-100 text-gray-800 border border-gray-200">
+                    {{ (order as any).parentOrder?.paymentTerms || order.paymentTerms || '—' }}
+                  </span>
+                </div>
+
+                <!-- Transport Mode -->
+                <div class="col-span-1 min-w-0">
+                  <span class="block text-[10px] sm:text-[11px] uppercase font-bold text-gray-400 tracking-wider mb-1">Transport Mode</span>
+                  <div 
+                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-semibold border max-w-full flex-wrap leading-tight"
+                    :class="(order as any).parentOrder?.vehicleMode === 'PARTY_VEHICLE' 
+                      ? 'bg-amber-50 text-amber-800 border-amber-200' 
+                      : ((order as any).parentOrder?.vehicleMode === 'THIRD_PARTY' 
+                        ? 'bg-indigo-50 text-indigo-800 border-indigo-200' 
+                        : 'bg-[#1b3b5f]/10 text-[#1b3b5f] border-[#1b3b5f]/20')"
+                  >
+                    <Car v-if="(order as any).parentOrder?.vehicleMode === 'PARTY_VEHICLE'" class="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                    <Package v-else-if="(order as any).parentOrder?.vehicleMode === 'THIRD_PARTY'" class="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                    <Truck v-else class="w-3.5 h-3.5 text-[#1b3b5f] shrink-0" />
+                    <span>{{ (order as any).parentOrder?.vehicleMode === 'PARTY_VEHICLE' ? 'Party Vehicle / Pickup' : ((order as any).parentOrder?.vehicleMode === 'THIRD_PARTY' ? 'Third Party' : 'Our Delivery Fleet') }}</span>
+                  </div>
+                </div>
+
+                <div class="col-span-2 pt-2 border-t border-gray-100">
+                  <span class="block text-[10px] sm:text-[11px] uppercase font-bold text-gray-400 tracking-wider mb-0.5">Delivery Address</span>
+                  <p class="text-xs sm:text-sm text-gray-800 leading-relaxed flex items-start gap-1.5">
+                    <MapPin class="w-3.5 h-3.5 text-gray-400 mt-0.5 shrink-0" />
+                    <span>{{ (order as any).parentOrder?.deliveryAddress || order.deliveryAddress || 'No delivery address specified' }}</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- 3. Master Order Items Breakdown -->
+            <div class="bg-white rounded-xl border border-gray-200/80 p-4 shadow-2xs space-y-3">
+              <div class="flex items-center justify-between pb-2.5 border-b border-gray-100">
+                <h3 class="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-1.5">
+                  <Package class="w-3.5 h-3.5 text-gray-400" />
+                  Master Order Items ({{ (order as any).parentOrder?.items?.length || 0 }})
+                </h3>
+                <span class="text-xs font-bold text-[#1b3b5f]">
+                  {{ formatCurrency((order as any).parentOrder?.totalAmount || 0) }}
+                </span>
+              </div>
+
+              <div class="overflow-x-auto rounded-lg border border-gray-200">
+                <table class="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr class="bg-gray-50/80 border-b border-gray-200 text-gray-500 font-bold uppercase tracking-wider text-[10px]">
+                      <th class="py-2.5 px-3">Product Name</th>
+                      <th class="py-2.5 px-3 text-right">Master Qty</th>
+                      <th class="py-2.5 px-3 text-right">In This Batch</th>
+                      <th class="py-2.5 px-3 text-right">Rate</th>
+                      <th class="py-2.5 px-3 text-right">Line Total</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-gray-100 bg-white">
+                    <tr v-for="mi in ((order as any).parentOrder?.items || [])" :key="mi.id" class="hover:bg-gray-50/60 transition">
+                      <td class="py-2.5 px-3">
+                        <div class="font-bold text-gray-900 leading-tight">
+                          {{ mi.product?.name || mi.productName || 'Item' }}
+                        </div>
+                        <div v-if="mi.sku || mi.product?.sku" class="text-[10px] text-gray-400 font-mono mt-0.5">
+                          SKU: {{ mi.sku || mi.product?.sku }}
+                        </div>
+                      </td>
+                      <td class="py-2.5 px-3 text-right whitespace-nowrap font-bold text-gray-900">
+                        {{ mi.approvedQuantity ?? mi.quantity }} <span class="text-[10px] text-gray-500 font-normal">pcs</span>
+                      </td>
+                      <td class="py-2.5 px-3 text-right whitespace-nowrap">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-blue-50 text-blue-800 border border-blue-200">
+                          {{ order.items?.find((bi: any) => bi.productId === mi.productId)?.quantity || 0 }} pcs
+                        </span>
+                      </td>
+                      <td class="py-2.5 px-3 text-right whitespace-nowrap font-medium text-gray-700">
+                        {{ formatCurrency(mi.unitPrice || 0) }}
+                      </td>
+                      <td class="py-2.5 px-3 text-right whitespace-nowrap font-bold text-gray-900">
+                        {{ formatCurrency(getItemTotal(mi)) }}
+                      </td>
+                    </tr>
+                  </tbody>
+                  <tfoot class="bg-gray-50/90 border-t border-gray-200 font-bold text-gray-900">
+                    <tr>
+                      <td class="py-2 px-3 text-[11px] uppercase tracking-wide text-gray-600">Total</td>
+                      <td class="py-2 px-3 text-right text-xs">
+                        {{ ((order as any).parentOrder?.items || []).reduce((s: number, i: any) => s + (Number(i.approvedQuantity ?? i.quantity) || 0), 0) }} pcs
+                      </td>
+                      <td class="py-2 px-3 text-right text-xs text-blue-800">
+                        {{ getBatchTotalQty(order) }} pcs
+                      </td>
+                      <td class="py-2 px-3"></td>
+                      <td class="py-2 px-3 text-right text-xs text-[#1b3b5f]">
+                        {{ formatCurrency((order as any).parentOrder?.totalAmount || 0) }}
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+
+            <!-- 4. Sister Batches Overview -->
+            <div v-if="(order as any).sisterBatches?.length > 0" class="bg-white rounded-xl border border-gray-200/80 p-4 shadow-2xs space-y-3">
+              <div class="flex items-center justify-between pb-2 border-b border-gray-100">
+                <h4 class="text-xs font-bold text-gray-800 uppercase tracking-wider flex items-center gap-1.5">
+                  <Layers class="w-3.5 h-3.5 text-gray-400" />
+                  All Batches in this Order ({{ (order as any).sisterBatches.length }})
+                </h4>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div
+                  v-for="sb in (order as any).sisterBatches"
+                  :key="sb.id"
+                  class="p-3 rounded-xl border transition-all space-y-2 cursor-pointer"
+                  :class="sb.id === order.id ? 'bg-blue-50/40 border-[#1b3b5f] ring-1 ring-[#1b3b5f]/30' : 'bg-gray-50/60 border-gray-200 hover:bg-white'"
+                  @click="sb.id !== order.id ? switchToOrder(sb.id) : null"
+                >
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-1.5">
+                      <span class="font-bold text-xs font-mono text-gray-900">{{ sb.orderNumber }}</span>
+                      <span class="px-1.5 py-0.2 text-[10px] font-bold rounded bg-[#1b3b5f]/10 text-[#1b3b5f]">
+                        Batch {{ sb.batchNumber }}
+                      </span>
+                    </div>
+                    <span v-if="sb.id === order.id" class="px-1.5 py-0.2 text-[10px] font-bold rounded bg-blue-600 text-white">
+                      Current
+                    </span>
+                    <span v-else class="text-[11px] font-bold text-[#1b3b5f] flex items-center gap-0.5 hover:underline">
+                      View <ArrowRight class="w-3 h-3" />
+                    </span>
+                  </div>
+
+                  <div class="flex items-center justify-between text-xs text-gray-500 pt-1 border-t border-gray-200/60">
+                    <span>{{ sb.items?.length || 0 }} items • {{ getBatchTotalQty(sb) }} pcs</span>
+                    <span class="font-bold text-gray-900">{{ formatCurrency(sb.totalAmount || 0) }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- BATCHES TAB -->
           <div v-else-if="activeTab === 'BATCHES'" class="space-y-6">
             <!-- Header card -->
@@ -3049,16 +3267,6 @@ onUnmounted(() => {
                 </div>
 
                 <div class="flex items-center gap-2 shrink-0">
-                  <button
-                    v-if="isChildBatch && order.parentOrderId"
-                    type="button"
-                    @click="switchToOrder(order.parentOrderId)"
-                    class="px-3 py-1.5 bg-white hover:bg-gray-50 text-gray-700 text-xs font-bold rounded-xl border border-gray-200 transition shadow-2xs flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <ArrowLeft class="w-3.5 h-3.5" />
-                    <span>View Master Order</span>
-                  </button>
-
                   <button
                     v-if="canCreateBatch"
                     type="button"
@@ -3126,58 +3334,21 @@ onUnmounted(() => {
               </div>
             </div>
 
-            <!-- Child Order Status Banner (if this drawer is currently viewing a child batch) -->
-            <div v-if="isChildBatch" class="bg-blue-50/60 border border-blue-200/90 rounded-xl p-4 shadow-2xs space-y-3">
-              <div class="flex items-center justify-between flex-wrap gap-2">
-                <div class="flex items-center gap-2">
-                  <span class="px-2.5 py-1 text-xs font-bold rounded-lg bg-blue-100 text-blue-900 border border-blue-300">
-                    Current Batch: #{{ order.batchNumber }}
-                  </span>
-                </div>
-
-                <!-- Active / On Hold Segmented Toggle -->
-                <div class="inline-flex items-center p-0.5 bg-white rounded-lg border border-blue-200 text-xs select-none shadow-2xs">
-                  <button
-                    type="button"
-                    @click="order.isBatchOnHold ? toggleBatchHold(order.id) : null"
-                    :disabled="isTogglingHold === order.id"
-                    class="px-3 py-1.5 rounded-md font-bold transition-all text-xs cursor-pointer"
-                    :class="!order.isBatchOnHold ? 'bg-emerald-600 text-white shadow-2xs' : 'text-gray-500 hover:text-gray-900'"
-                  >
-                    Active
-                  </button>
-                  <button
-                    type="button"
-                    @click="!order.isBatchOnHold ? toggleBatchHold(order.id) : null"
-                    :disabled="isTogglingHold === order.id"
-                    class="px-3 py-1.5 rounded-md font-bold transition-all text-xs cursor-pointer"
-                    :class="order.isBatchOnHold ? 'bg-amber-500 text-white shadow-2xs' : 'text-gray-500 hover:text-gray-900'"
-                  >
-                    On Hold
-                  </button>
-                </div>
-              </div>
-              <p class="text-xs text-blue-900">
-                This batch moves independently through packing, invoicing, and delivery. Edits to its item quantities automatically recalculate the master order's pending pool.
-              </p>
-            </div>
-
             <!-- Batches List -->
             <div class="space-y-3">
               <div class="flex items-center justify-between pb-1">
                 <h4 class="text-xs font-bold text-gray-800 uppercase tracking-wider">
-                  {{ isMasterOrder ? 'Created Batches' : 'All Batches in this Order' }}
-                  ({{ (isMasterOrder ? (order as any).batches?.length : (order as any).sisterBatches?.length) || 0 }})
+                  Created Batches ({{ (order as any).batches?.length || 0 }})
                 </h4>
               </div>
 
               <!-- Batches Cards -->
               <div 
-                v-if="(isMasterOrder ? (order as any).batches : (order as any).sisterBatches)?.length > 0"
+                v-if="(order as any).batches?.length > 0"
                 class="space-y-3"
               >
                 <div
-                  v-for="b in (isMasterOrder ? (order as any).batches : (order as any).sisterBatches)"
+                  v-for="b in (order as any).batches"
                   :key="b.id"
                   class="bg-white rounded-xl border p-4 shadow-2xs transition hover:shadow-xs space-y-3"
                   :class="b.id === order.id ? 'border-[#1b3b5f] ring-1 ring-[#1b3b5f]/30' : 'border-gray-200/90'"
@@ -3228,6 +3399,17 @@ onUnmounted(() => {
                         <span>{{ expandedBatchIds[b.id] ? 'Hide' : 'View' }}</span>
                         <ChevronUp v-if="expandedBatchIds[b.id]" class="w-3.5 h-3.5" />
                         <ChevronDown v-else class="w-3.5 h-3.5" />
+                      </button>
+
+                      <!-- Edit Batch Button (before delete bin icon) -->
+                      <button
+                        v-if="canEditOrders && (!b.billingStatus || b.billingStatus.status !== 'GENERATED')"
+                        type="button"
+                        @click.stop="editBatchById(b)"
+                        title="Edit Batch (Modify batch quantities or items)"
+                        class="p-1.5 text-gray-400 hover:text-[#1b3b5f] hover:bg-[#1b3b5f]/10 rounded-lg border border-transparent hover:border-[#1b3b5f]/20 transition cursor-pointer"
+                      >
+                        <Edit class="w-3.5 h-3.5" />
                       </button>
 
                       <!-- Direct Delete Batch Button (Admin only, when bill not generated) -->
@@ -3482,9 +3664,9 @@ onUnmounted(() => {
 
         </div>
 
-        <!-- 5. Sticky Bottom Action Footer -->
+        <!-- 5. Sticky Bottom Action Footer (Hidden on Batches & Master Order tabs) -->
         <div 
-          v-if="order"
+          v-if="order && activeTab !== 'BATCHES' && activeTab !== 'MASTER_ORDER'"
           class="px-4 sm:px-6 py-2.5 sm:py-3.5 bg-white border-t border-gray-200 flex items-center justify-between gap-2.5 sm:gap-3 shrink-0 shadow-lg z-20"
         >
           <div 
@@ -3647,7 +3829,7 @@ onUnmounted(() => {
       
       <div ref="editModalCardRef" class="relative bg-[#faf8f5] w-full max-w-4xl rounded-2xl shadow-2xl flex flex-col max-h-[94dvh] md:max-h-[92vh] overflow-hidden transform transition-all border border-gray-200">
         <div class="px-3.5 py-3 sm:px-6 sm:py-4 border-b border-gray-200 bg-white flex items-center justify-between shrink-0 gap-2">
-          <h2 class="text-base sm:text-lg font-bold text-gray-900 truncate">Edit Order: {{ order?.orderNumber }}</h2>
+          <h2 class="text-base sm:text-lg font-bold text-gray-900 truncate">{{ isChildBatch ? 'Edit Batch:' : 'Edit Order:' }} {{ order?.orderNumber }}</h2>
           <div class="flex items-center gap-2 sm:gap-3 shrink-0">
             <!-- UI Mode Toggle: Modern vs Classic -->
             <div class="inline-flex items-center p-0.5 sm:p-1 bg-slate-100 rounded-xl border border-slate-200 text-[10px] sm:text-xs font-bold shadow-2xs select-none">

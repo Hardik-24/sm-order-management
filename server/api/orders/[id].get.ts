@@ -14,13 +14,22 @@ export default defineEventHandler(async (event) => {
       customer: { include: { addresses: true } },
       salesPerson: true,
       parentOrder: {
-        select: {
-          id: true,
-          orderNumber: true,
-          totalAmount: true,
-          overallStatus: true,
-          batchCount: true,
-          isApproved: true
+        include: {
+          customer: { include: { addresses: true } },
+          salesPerson: true,
+          billingStatus: { include: { generatedBy: true } },
+          packingStatus: { include: { assignedTo: true } },
+          deliveryStatus: true,
+          items: { include: { product: true } },
+          batches: {
+            orderBy: { batchNumber: 'asc' },
+            include: {
+              items: { include: { product: true } },
+              billingStatus: true,
+              packingStatus: true,
+              deliveryStatus: true
+            }
+          }
         }
       },
       batches: {
