@@ -2,7 +2,7 @@
 import { ref, computed, nextTick, watch, onMounted } from 'vue'
 import { 
   Search, X, FileText, CheckCircle2, AlertCircle, ChevronLeft, ChevronRight, 
-  Ban, Zap, IndianRupee, Clock, CheckCheck, GitFork, Lock 
+  Ban, Zap, IndianRupee, Clock, CheckCheck, Lock 
 } from 'lucide-vue-next'
 import { formatCurrency, formatDateTime, formatDate, formatTime, formatCustomerContact } from '~~/app/lib/utils'
 import RowsPerPageSelect from '~/components/ui/RowsPerPageSelect.vue'
@@ -42,7 +42,6 @@ const emit = defineEmits<{
   (e: 'update:salesPersonId', val: string): void
   (e: 'select', id: string): void
   (e: 'generate-invoice', id: string): void
-  (e: 'split-order', id: string): void
 }>()
 
 const { animateStagger } = useGsapAnimation()
@@ -285,16 +284,6 @@ const getTotalNos = (order: any) => {
               <td class="px-5 py-3.5 text-right whitespace-nowrap pr-5">
                 <div class="flex items-center justify-end gap-2">
                   <button 
-                    v-if="order.billingStatus?.status !== 'GENERATED' && order.overallStatus !== 'CANCELLED' && order.deliveryStatus?.status !== 'DISPATCHED' && order.deliveryStatus?.status !== 'DELIVERED'"
-                    @click.stop="emit('split-order', order.id)"
-                    title="Split this order into multiple orders"
-                    class="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-gray-700 bg-white hover:bg-gray-100 border border-gray-200 shadow-2xs transition-colors flex items-center justify-center gap-1 cursor-pointer whitespace-nowrap"
-                  >
-                    <GitFork class="w-3.5 h-3.5 text-[#1b3b5f]" />
-                    <span>Split</span>
-                  </button>
-
-                  <button 
                     v-if="order.billingStatus?.status === 'PENDING' && order.overallStatus !== 'CANCELLED'"
                     @click.stop="emit('generate-invoice', order.id)"
                     class="px-3 py-1.5 rounded-lg text-xs font-semibold shadow-2xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap"
@@ -399,18 +388,7 @@ const getTotalNos = (order: any) => {
               </span>
             </div>
 
-            <!-- In place of generate bill button, place the Split button -->
             <div class="flex items-center gap-1.5 shrink-0">
-              <button 
-                v-if="order.billingStatus?.status !== 'GENERATED' && order.overallStatus !== 'CANCELLED' && order.deliveryStatus?.status !== 'DISPATCHED' && order.deliveryStatus?.status !== 'DELIVERED'"
-                @click.stop="emit('split-order', order.id)"
-                class="px-2.5 py-1 border border-gray-200 bg-white text-gray-700 text-[11px] font-semibold rounded-md hover:bg-gray-100 transition-colors flex items-center gap-1 cursor-pointer"
-                title="Split this order into multiple orders"
-              >
-                <GitFork class="w-3 h-3 text-[#1b3b5f]" />
-                <span>Split</span>
-              </button>
-
               <button 
                 v-if="order.billingStatus?.status !== 'PENDING' || order.overallStatus === 'CANCELLED'"
                 @click.stop="emit('select', order.id)"
