@@ -6,9 +6,15 @@ export default defineEventHandler(async (event) => {
   await requireAuth(event)
   const query = getQuery(event)
   
+  const fulfillableUnits = [
+    { parentOrderId: { not: null } },
+    { batches: { none: {} } }
+  ]
+  
   const where: any = {
     overallStatus: { not: 'CANCELLED' },
-    isApproved: true
+    isApproved: true,
+    OR: fulfillableUnits
   }
   
   if (query.startDate || query.endDate) {
@@ -22,25 +28,38 @@ export default defineEventHandler(async (event) => {
       if (!isNaN(ed.getTime())) dateCondition.lte = ed
     }
     if (dateCondition.gte || dateCondition.lte) {
-      where.OR = [
-        { orderDate: dateCondition },
-        { createdAt: dateCondition }
+      where.AND = [
+        {
+          OR: [
+            { orderDate: dateCondition },
+            { createdAt: dateCondition }
+          ]
+        }
       ]
     }
   }
 
   const [pending, urgent, inProgress, packed, onHold, total] = await Promise.all([
-    prisma.order.count({ where: { ...where, packingStatus: { status: 'PENDING' } } }),
+    prisma.order.count({ where: { ...where, isBatchOnHold: false, packingStatus: { status: 'PENDING' } } }),
     prisma.order.count({ 
       where: { 
         ...where, 
+        isBatchOnHold: false,
         isUrgent: true,
         packingStatus: { status: { not: 'PACKED' } }
       } 
     }),
-    prisma.order.count({ where: { ...where, packingStatus: { status: 'IN_PROGRESS' } } }),
+    prisma.order.count({ where: { ...where, isBatchOnHold: false, packingStatus: { status: 'IN_PROGRESS' } } }),
     prisma.order.count({ where: { ...where, packingStatus: { status: 'PACKED' } } }),
-    prisma.order.count({ where: { ...where, packingStatus: { status: 'ON_HOLD' } } }),
+    prisma.order.count({ 
+      where: { 
+        ...where, 
+        OR: [
+          { packingStatus: { status: 'ON_HOLD' } },
+          { isBatchOnHold: true }
+        ] 
+      } 
+    }),
     prisma.order.count({ where })
   ])
 

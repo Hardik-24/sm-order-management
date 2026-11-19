@@ -71,6 +71,8 @@ export default defineEventHandler(async (event) => {
   if (packingStatus) {
     if (packingStatus === '!PACKED' || packingStatus === 'NOT_PACKED') {
       andConditions.push({ packingStatus: { status: { not: 'PACKED' } } })
+    } else if (packingStatus === 'IN_PACKING') {
+      andConditions.push({ packingStatus: { status: { in: ['PENDING', 'IN_PROGRESS'] } } })
     } else {
       andConditions.push({ packingStatus: { status: packingStatus } })
     }

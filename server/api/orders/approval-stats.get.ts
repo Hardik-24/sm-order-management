@@ -6,7 +6,9 @@ export default defineEventHandler(async (event) => {
   await requireAuth(event)
   const query = getQuery(event)
 
-  const where: any = {}
+  const where: any = {
+    parentOrderId: null
+  }
 
   if (query.startDate || query.endDate) {
     const dateCondition: any = {}

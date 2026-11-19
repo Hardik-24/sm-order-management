@@ -6,10 +6,16 @@ export default defineEventHandler(async (event) => {
   await requireAuth(event)
   const query = getQuery(event)
   
+  const fulfillableUnits = [
+    { parentOrderId: { not: null } },
+    { batches: { none: {} } }
+  ]
+
   const where: any = {
     overallStatus: { not: 'CANCELLED' },
     isApproved: true,
-    packingStatus: { status: 'PACKED' }
+    packingStatus: { status: 'PACKED' },
+    OR: fulfillableUnits
   }
   
   if (query.startDate || query.endDate) {
@@ -23,9 +29,13 @@ export default defineEventHandler(async (event) => {
       if (!isNaN(ed.getTime())) dateCondition.lte = ed
     }
     if (dateCondition.gte || dateCondition.lte) {
-      where.OR = [
-        { orderDate: dateCondition },
-        { createdAt: dateCondition }
+      where.AND = [
+        {
+          OR: [
+            { orderDate: dateCondition },
+            { createdAt: dateCondition }
+          ]
+        }
       ]
     }
   }

@@ -31,6 +31,15 @@ export default defineEventHandler(async (event) => {
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 29)
   thirtyDaysAgo.setHours(0, 0, 0, 0)
 
+  // Scoping condition for active fulfillable units (unsplit master orders or child batches):
+  // Master orders that have been split into batches are excluded from operational execution queues
+  const fulfillableUnitCondition = {
+    OR: [
+      { parentOrderId: { not: null } },
+      { batches: { none: {} } }
+    ]
+  }
+
   const [
     ordersToday,
     ordersYesterday,
@@ -45,47 +54,84 @@ export default defineEventHandler(async (event) => {
     readyOrders,
     recentOrders
   ] = await Promise.all([
-    prisma.order.count({ where: { createdAt: { gte: today, lt: tomorrow }, overallStatus: { not: 'CANCELLED' }, ...personFilter } }),
-    prisma.order.count({ where: { createdAt: { gte: yesterday, lt: today }, overallStatus: { not: 'CANCELLED' }, ...personFilter } }),
+    // 1. Orders Placed Today (Master orders only to reflect actual customer intake, not batch count)
+    prisma.order.count({ 
+      where: { 
+        parentOrderId: null,
+        createdAt: { gte: today, lt: tomorrow }, 
+        overallStatus: { not: 'CANCELLED' }, 
+        ...personFilter 
+      } 
+    }),
+    // Orders Placed Yesterday (Master orders only)
+    prisma.order.count({ 
+      where: { 
+        parentOrderId: null,
+        createdAt: { gte: yesterday, lt: today }, 
+        overallStatus: { not: 'CANCELLED' }, 
+        ...personFilter 
+      } 
+    }),
+    // 2. Pending Approval (Master orders awaiting review)
     prisma.order.count({
       where: {
+        parentOrderId: null,
         isApproved: false,
         overallStatus: { notIn: ['CANCELLED', 'DELIVERED'] },
         ...personFilter
       }
     }),
+    // 3. Awaiting Billing (Fulfillable units awaiting invoice generation)
     prisma.order.count({ 
       where: { 
         isApproved: true,
         billingStatus: { status: 'PENDING' },
         overallStatus: { notIn: ['DELIVERED', 'CANCELLED'] },
+        ...fulfillableUnitCondition,
         ...personFilter
       } 
     }),
+    // 4. In Packing (Fulfillable units currently in warehouse packing, excluding on-hold batches)
     prisma.order.count({ 
       where: { 
         isApproved: true,
+        isBatchOnHold: false,
         packingStatus: { status: { in: ['PENDING', 'IN_PROGRESS'] } },
         overallStatus: { notIn: ['DELIVERED', 'CANCELLED'] },
+        ...fulfillableUnitCondition,
         ...personFilter
       } 
     }),
+    // 5. Ready for Delivery / Awaiting Dispatch (Fulfillable units packed + billed, waiting for transit)
     prisma.order.count({
       where: { 
         isApproved: true,
-        deliveryStatus: { status: 'WAITING' },
+        deliveryStatus: { status: { in: ['WAITING', 'ASSIGNED'] } },
         billingStatus: { status: 'GENERATED' },
         packingStatus: { status: 'PACKED' },
         overallStatus: { notIn: ['DELIVERED', 'CANCELLED'] },
+        ...fulfillableUnitCondition,
         ...personFilter
       }
     }),
     prisma.order.count({
-      where: { overallStatus: 'DELIVERED', createdAt: { gte: today, lt: tomorrow }, ...personFilter }
+      where: { 
+        overallStatus: 'DELIVERED', 
+        createdAt: { gte: today, lt: tomorrow }, 
+        ...fulfillableUnitCondition,
+        ...personFilter 
+      }
     }),
-    prisma.order.count({ where: { overallStatus: 'DISPATCHED', ...personFilter } }),
+    prisma.order.count({ 
+      where: { 
+        overallStatus: 'DISPATCHED', 
+        ...fulfillableUnitCondition,
+        ...personFilter 
+      } 
+    }),
     prisma.order.findMany({
       where: {
+        parentOrderId: null,
         isApproved: false,
         overallStatus: { notIn: ['CANCELLED', 'DELIVERED'] },
         ...personFilter
@@ -94,17 +140,34 @@ export default defineEventHandler(async (event) => {
       take: 5
     }),
     prisma.order.findMany({
-      where: { isApproved: true, billingStatus: { status: 'PENDING' }, overallStatus: { notIn: ['DELIVERED', 'CANCELLED'] }, createdAt: { lt: oneHourAgo }, ...personFilter },
+      where: { 
+        isApproved: true, 
+        billingStatus: { status: 'PENDING' }, 
+        overallStatus: { notIn: ['DELIVERED', 'CANCELLED'] }, 
+        createdAt: { lt: oneHourAgo }, 
+        ...fulfillableUnitCondition,
+        ...personFilter 
+      },
       include: { customer: true },
       take: 5
     }),
     prisma.order.findMany({
-      where: { isApproved: true, deliveryStatus: { status: 'WAITING' }, billingStatus: { status: 'GENERATED' }, packingStatus: { status: 'PACKED' }, overallStatus: { notIn: ['DELIVERED', 'CANCELLED'] }, ...personFilter },
+      where: { 
+        isApproved: true, 
+        deliveryStatus: { status: { in: ['WAITING', 'ASSIGNED'] } }, 
+        billingStatus: { status: 'GENERATED' }, 
+        packingStatus: { status: 'PACKED' }, 
+        overallStatus: { notIn: ['DELIVERED', 'CANCELLED'] }, 
+        ...fulfillableUnitCondition,
+        ...personFilter 
+      },
       include: { customer: true },
       take: 5
     }),
+    // 30-Day Velocity & Trends (Master orders only so batch splitting never inflates revenue or order count)
     prisma.order.findMany({
       where: {
+        parentOrderId: null,
         createdAt: { gte: thirtyDaysAgo },
         overallStatus: { not: 'CANCELLED' },
         ...personFilter
