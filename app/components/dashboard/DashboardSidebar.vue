@@ -156,7 +156,7 @@
           </div>
         </div>
       </div>
-      <button @click="logout" title="Logout" class="flex w-full items-center gap-3 rounded-lg py-2.5 text-sm text-red-400 transition-colors hover:bg-red-500/10 hover:text-red-300 cursor-pointer" :class="isSidebarCollapsed ? 'justify-center px-0' : 'px-4'">
+      <button @click="openLogoutModal" title="Logout" class="flex w-full items-center gap-3 rounded-lg py-2.5 text-sm text-red-400 transition-colors hover:bg-red-500/10 hover:text-red-300 cursor-pointer" :class="isSidebarCollapsed ? 'justify-center px-0' : 'px-4'">
         <LogOut class="shrink-0 w-4 h-4 text-red-400" />
         <span v-if="!isSidebarCollapsed" class="font-medium whitespace-nowrap text-red-400">Logout</span>
       </button>
@@ -611,7 +611,7 @@
 
             <!-- Logout button -->
             <button
-              @click="logout"
+              @click="openLogoutModal"
               type="button"
               class="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 font-medium text-xs transition-colors cursor-pointer active:scale-[0.99] mt-0.5"
             >
@@ -736,6 +736,69 @@
       </button>
     </div>
   </aside>
+
+  <!-- Logout Confirmation Modal (Stacked on top of all modals) -->
+  <Teleport to="body">
+    <div 
+      v-if="isLogoutConfirmOpen" 
+      data-modal-container="logout-confirm-modal"
+      class="fixed inset-0 z-[9999] flex items-center justify-center p-4 overflow-y-auto"
+    >
+      <!-- Backdrop -->
+      <div 
+        class="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity duration-200"
+        @click="isLogoutConfirmOpen = false"
+        data-modal-backdrop="true"
+      ></div>
+
+      <!-- Dialog Card -->
+      <div 
+        class="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm sm:max-w-md overflow-hidden border border-gray-200 transform transition-all p-6 text-center space-y-4"
+        @click.stop
+      >
+        <!-- Top Icon -->
+        <div class="w-14 h-14 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mx-auto border border-rose-100 shadow-2xs">
+          <LogOut class="w-7 h-7" />
+        </div>
+
+        <!-- Text Header -->
+        <div class="space-y-1">
+          <h3 class="text-lg font-bold text-gray-900 tracking-tight">Confirm Sign Out</h3>
+          <p class="text-xs text-gray-500 leading-relaxed">
+            Are you sure you want to log out of your session, <strong class="text-gray-800 font-semibold">{{ user?.name || 'User' }}</strong>? Any unsaved edits will be lost.
+          </p>
+        </div>
+
+        <!-- User Role Tag / Details -->
+        <div class="p-3 bg-gray-50 rounded-xl border border-gray-100 text-xs flex items-center justify-between text-gray-600">
+          <span class="font-medium">Signed in as</span>
+          <span class="font-bold text-[#1b3b5f] font-mono">{{ user?.phone || user?.email || user?.name }}</span>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex items-center gap-3 pt-2">
+          <button 
+            type="button"
+            @click="isLogoutConfirmOpen = false"
+            :disabled="isLoggingOut"
+            class="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-xl text-xs font-bold hover:bg-gray-100 transition cursor-pointer disabled:opacity-50"
+          >
+            Stay Logged In
+          </button>
+          <button 
+            type="button"
+            @click="confirmLogout"
+            :disabled="isLoggingOut"
+            class="flex-1 px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50"
+          >
+            <Loader2 v-if="isLoggingOut" class="w-4 h-4 animate-spin" />
+            <LogOut v-else class="w-4 h-4" />
+            <span>Yes, Log Out</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
@@ -760,6 +823,7 @@ import {
   Menu, 
   X, 
   LogOut,
+  Loader2,
   MessageSquare,
   Inbox,
   CheckCheck,
@@ -779,6 +843,26 @@ const route = useRoute()
 const { user, logout, canAccessRoute } = useAuth()
 const isSidebarCollapsed = useState('sidebarCollapsed', () => false)
 const isMobileMenuOpen = useState('mobileMenuOpen', () => false)
+
+// Logout confirmation modal state
+const isLogoutConfirmOpen = ref(false)
+const isLoggingOut = ref(false)
+
+const openLogoutModal = () => {
+  isLogoutConfirmOpen.value = true
+}
+
+const confirmLogout = async () => {
+  isLoggingOut.value = true
+  try {
+    await logout()
+  } catch (err) {
+    console.error('Logout error:', err)
+  } finally {
+    isLoggingOut.value = false
+    isLogoutConfirmOpen.value = false
+  }
+}
 
 type MobileSheetType = 'operations' | 'create' | 'data' | 'more' | null
 const activeMobileSheet = ref<MobileSheetType>(null)
