@@ -109,16 +109,69 @@ const getTotalNos = (order: any) => {
   return `${totalUnits} nos.`
 }
 
-const getPackingProgress = (order: any) => {
+interface PackingProgress {
+  packedUnits: number
+  totalUnits: number
+  percent: number
+  completedSkus: number
+  partialSkus: number
+  totalSkus: number
+}
+
+const getPackingProgress = (order: any): PackingProgress => {
   const items = order.items || []
-  if (!items.length) return { packed: 0, total: 0, percent: 0 }
+  if (!items.length) {
+    return {
+      packedUnits: 0,
+      totalUnits: 0,
+      percent: 0,
+      completedSkus: 0,
+      partialSkus: 0,
+      totalSkus: 0
+    }
+  }
+
   const isOrderPacked = order.packingStatus?.status === 'PACKED'
-  const packedCount = items.filter((i: any) => {
-    if (isOrderPacked) return true
-    return Boolean(i.isPacked) || (i.packedQuantity !== null && i.packedQuantity !== undefined && Number(i.packedQuantity) > 0)
-  }).length
-  const percent = isOrderPacked ? 100 : Math.min(100, Math.round((packedCount / items.length) * 100))
-  return { packed: isOrderPacked ? items.length : packedCount, total: items.length, percent }
+  let totalUnits = 0
+  let packedUnits = 0
+  let completedSkus = 0
+  let partialSkus = 0
+
+  for (const itm of items) {
+    const requiredQty = Number(itm.approvedQuantity ?? itm.quantity ?? 0)
+    totalUnits += requiredQty
+
+    if (isOrderPacked) {
+      packedUnits += requiredQty
+      completedSkus++
+    } else {
+      const pQty = itm.packedQuantity !== null && itm.packedQuantity !== undefined
+        ? Number(itm.packedQuantity)
+        : (itm.isPacked ? requiredQty : 0)
+
+      const safePacked = Math.min(requiredQty, Math.max(0, pQty))
+      packedUnits += safePacked
+
+      if (itm.isPacked || (requiredQty > 0 && safePacked >= requiredQty)) {
+        completedSkus++
+      } else if (safePacked > 0) {
+        partialSkus++
+      }
+    }
+  }
+
+  const percent = totalUnits > 0
+    ? Math.min(100, Math.round((packedUnits / totalUnits) * 100))
+    : (isOrderPacked ? 100 : 0)
+
+  return {
+    packedUnits,
+    totalUnits,
+    percent,
+    completedSkus,
+    partialSkus,
+    totalSkus: items.length
+  }
 }
 </script>
 
@@ -265,12 +318,12 @@ const getPackingProgress = (order: any) => {
 
               <!-- 4. Packing Progress -->
               <td class="px-5 py-3.5 whitespace-nowrap">
-                <div class="flex flex-col gap-1 w-32">
+                <div class="flex flex-col gap-1 w-44">
                   <div class="flex items-center justify-between text-xs font-bold">
-                    <span :class="getPackingProgress(order).percent === 100 && (order.items?.length || 0) > 0 ? 'text-emerald-700' : 'text-gray-800'">
-                      {{ getPackingProgress(order).packed }} / {{ getPackingProgress(order).total }} SKUs
+                    <span :class="getPackingProgress(order).percent === 100 && (order.items?.length || 0) > 0 ? 'text-emerald-700' : 'text-gray-900'">
+                      {{ getPackingProgress(order).packedUnits }} / {{ getPackingProgress(order).totalUnits }} pcs
                     </span>
-                    <span class="text-[11px] text-gray-400 tabular-nums">
+                    <span class="text-[11px] font-bold tabular-nums" :class="getPackingProgress(order).percent === 100 ? 'text-emerald-700' : 'text-blue-700'">
                       {{ getPackingProgress(order).percent }}%
                     </span>
                   </div>
@@ -280,10 +333,27 @@ const getPackingProgress = (order: any) => {
                       class="h-full rounded-full transition-all duration-300"
                       :class="[
                         getPackingProgress(order).percent === 100 && (order.items?.length || 0) > 0 ? 'bg-emerald-500' :
-                        getPackingProgress(order).percent > 0 ? 'bg-blue-500' : 'bg-gray-300'
+                        getPackingProgress(order).percent > 0 ? 'bg-blue-600' : 'bg-gray-200'
                       ]"
                       :style="{ width: `${getPackingProgress(order).percent}%` }"
                     ></div>
+                  </div>
+                  <!-- SKU Breakdown Subtitle -->
+                  <div class="text-[10.5px] text-gray-500 truncate flex items-center gap-1">
+                    <span v-if="getPackingProgress(order).percent === 100" class="text-emerald-700 font-semibold">
+                      All {{ getPackingProgress(order).totalSkus }} SKUs complete
+                    </span>
+                    <template v-else-if="getPackingProgress(order).partialSkus > 0">
+                      <span class="font-medium text-gray-700">{{ getPackingProgress(order).completedSkus }}/{{ getPackingProgress(order).totalSkus }} SKUs done</span>
+                      <span class="text-gray-300">•</span>
+                      <span class="font-semibold text-amber-600">{{ getPackingProgress(order).partialSkus }} in progress</span>
+                    </template>
+                    <span v-else-if="getPackingProgress(order).completedSkus > 0" class="font-medium text-gray-700">
+                      {{ getPackingProgress(order).completedSkus }}/{{ getPackingProgress(order).totalSkus }} SKUs complete
+                    </span>
+                    <span v-else class="text-gray-400">
+                      0/{{ getPackingProgress(order).totalSkus }} SKUs packed
+                    </span>
                   </div>
                 </div>
               </td>
@@ -413,33 +483,64 @@ const getPackingProgress = (order: any) => {
             </p>
           </div>
 
-          <!-- LINE 3: Progress, Items, Time & View Action -->
-          <div class="flex items-center justify-between gap-2 min-w-0 pt-0.5">
-            <div class="flex items-baseline gap-1.5 shrink-0">
-              <span 
-                class="text-xs font-bold"
-                :class="getPackingProgress(order).percent === 100 && (order.items?.length || 0) > 0 ? 'text-emerald-700' : 'text-gray-900'"
-              >
-                {{ getPackingProgress(order).packed }}/{{ getPackingProgress(order).total }} SKUs
-              </span>
-              <span class="text-[11px] text-gray-400 font-normal">
-                ({{ getTotalNos(order) }})
-              </span>
-              <span class="text-gray-300 text-[10px]">&bull;</span>
-              <span class="text-[11px] text-gray-400 tabular-nums">
-                {{ formatDateTime(order.createdAt) }}
+          <!-- LINE 3: Dual Metric Progress & SKU Status -->
+          <div class="flex flex-col gap-1.5 pt-0.5">
+            <div class="flex items-center justify-between text-xs font-bold">
+              <div class="flex items-baseline gap-1.5">
+                <span :class="getPackingProgress(order).percent === 100 && (order.items?.length || 0) > 0 ? 'text-emerald-700' : 'text-gray-900'">
+                  {{ getPackingProgress(order).packedUnits }} / {{ getPackingProgress(order).totalUnits }} pcs
+                </span>
+                <span class="text-gray-300 text-[10px]">&bull;</span>
+                <span class="text-[11px] font-normal text-gray-400 tabular-nums">
+                  {{ formatDateTime(order.createdAt) }}
+                </span>
+              </div>
+              <span class="text-[11px] font-bold tabular-nums" :class="getPackingProgress(order).percent === 100 ? 'text-emerald-700' : 'text-blue-700'">
+                {{ getPackingProgress(order).percent }}%
               </span>
             </div>
 
-            <!-- View Button when already packed or cancelled -->
-            <div v-if="order.overallStatus === 'CANCELLED' || order.packingStatus?.status === 'PACKED'" class="flex items-center gap-1.5 shrink-0">
-              <button 
-                @click.stop="emit('select', order.id)"
-                class="px-2.5 py-1 bg-gray-100 text-gray-700 text-[11px] font-medium rounded-md hover:bg-gray-200 transition-colors flex items-center gap-0.5 cursor-pointer"
-              >
-                <span>View</span>
-                <ChevronRight class="w-3.5 h-3.5 text-gray-400" />
-              </button>
+            <!-- Mini Progress Bar on Mobile -->
+            <div class="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
+              <div 
+                class="h-full rounded-full transition-all duration-300"
+                :class="[
+                  getPackingProgress(order).percent === 100 && (order.items?.length || 0) > 0 ? 'bg-emerald-500' :
+                  getPackingProgress(order).percent > 0 ? 'bg-blue-600' : 'bg-gray-200'
+                ]"
+                :style="{ width: `${getPackingProgress(order).percent}%` }"
+              ></div>
+            </div>
+
+            <!-- SKU Breakdown Line & View Action -->
+            <div class="flex items-center justify-between text-[11px] text-gray-500">
+              <div class="flex items-center gap-1 min-w-0 truncate">
+                <span v-if="getPackingProgress(order).percent === 100" class="text-emerald-700 font-semibold truncate">
+                  All {{ getPackingProgress(order).totalSkus }} SKUs complete
+                </span>
+                <template v-else-if="getPackingProgress(order).partialSkus > 0">
+                  <span class="font-medium text-gray-700 truncate">{{ getPackingProgress(order).completedSkus }}/{{ getPackingProgress(order).totalSkus }} SKUs done</span>
+                  <span class="text-gray-300">•</span>
+                  <span class="font-semibold text-amber-600 shrink-0">{{ getPackingProgress(order).partialSkus }} in progress</span>
+                </template>
+                <span v-else-if="getPackingProgress(order).completedSkus > 0" class="font-medium text-gray-700 truncate">
+                  {{ getPackingProgress(order).completedSkus }}/{{ getPackingProgress(order).totalSkus }} SKUs complete
+                </span>
+                <span v-else class="text-gray-400 truncate">
+                  0/{{ getPackingProgress(order).totalSkus }} SKUs packed
+                </span>
+              </div>
+
+              <!-- View Button when already packed or cancelled -->
+              <div v-if="order.overallStatus === 'CANCELLED' || order.packingStatus?.status === 'PACKED'" class="shrink-0 ml-2">
+                <button 
+                  @click.stop="emit('select', order.id)"
+                  class="px-2 py-0.5 bg-gray-100 text-gray-700 text-[11px] font-medium rounded hover:bg-gray-200 transition-colors flex items-center gap-0.5 cursor-pointer"
+                >
+                  <span>View</span>
+                  <ChevronRight class="w-3.5 h-3.5 text-gray-400" />
+                </button>
+              </div>
             </div>
           </div>
 
