@@ -237,22 +237,22 @@ const toggleExpand = (orderId: string) => {
 }
 const isExpanded = (orderId: string) => Boolean(expandedOrderIds.value[orderId])
 
-const hasBatches = (order: any) => Boolean(order.batches && order.batches.length > 0)
-const hasHoldBatches = (order: any) => Boolean(order.batches?.some((b: any) => b.isBatchOnHold))
-const getHoldBatchesCount = (order: any) => order.batches?.filter((b: any) => b.isBatchOnHold).length || 0
-const getBatchesDeliveredCount = (order: any) => order.batches?.filter((b: any) => b.deliveryStatus?.status === 'DELIVERED').length || 0
-const getBatchesPackedCount = (order: any) => order.batches?.filter((b: any) => b.packingStatus?.status === 'PACKED' || b.packingStatus?.status === 'COMPLETED').length || 0
+const hasBatches = (order: any) => Boolean(order?.batches && order.batches.length > 0)
+const hasHoldBatches = (order: any) => Boolean(order?.batches?.some((b: any) => b?.isBatchOnHold))
+const getHoldBatchesCount = (order: any) => order?.batches?.filter((b: any) => b?.isBatchOnHold).length || 0
+const getBatchesDeliveredCount = (order: any) => order?.batches?.filter((b: any) => b?.deliveryStatus?.status === 'DELIVERED').length || 0
+const getBatchesPackedCount = (order: any) => order?.batches?.filter((b: any) => b?.packingStatus?.status === 'PACKED' || b?.packingStatus?.status === 'COMPLETED').length || 0
 
 const getBatchUnits = (batch: any) => {
-  return batch.items?.reduce((sum: number, itm: any) => sum + (Number(itm.quantity) || 0), 0) || 0
+  return batch?.items?.reduce((sum: number, itm: any) => sum + (Number(itm?.quantity) || 0), 0) || 0
 }
 
 const getOrderBatchedUnits = (order: any) => {
-  return order.batches?.reduce((sum: number, b: any) => sum + getBatchUnits(b), 0) || 0
+  return order?.batches?.reduce((sum: number, b: any) => sum + getBatchUnits(b), 0) || 0
 }
 
 const getOrderTotalOrderedUnits = (order: any) => {
-  return order.items?.reduce((sum: number, itm: any) => sum + (Number(itm.approvedQuantity ?? itm.quantity) || 0), 0) || 0
+  return order?.items?.reduce((sum: number, itm: any) => sum + (Number(itm?.approvedQuantity ?? itm?.quantity) || 0), 0) || 0
 }
 
 const getOrderPendingPoolUnits = (order: any) => {
@@ -445,15 +445,14 @@ const getItemsTotalQuantity = (order: Order) => {
             </tr>
           </thead>
           <tbody ref="tbodyRef" class="divide-y divide-gray-200 bg-white">
-            <tr 
-              v-for="order in orders" 
-              :key="order.id"
-              @click="emit('select', order.id)"
-              class="cursor-pointer transition-colors group"
-              :class="order.overallStatus === 'CANCELLED' 
-                ? 'bg-gray-100/75 hover:bg-gray-200/60 text-gray-400 [&_td]:!text-gray-400 [&_span]:!text-gray-400 [&_div]:!text-gray-400 opacity-60 border-l-4 border-l-gray-400' 
-                : ((order as any).isUrgent ? 'bg-rose-50/20 hover:bg-gray-50 border-l-4 border-l-rose-500' : 'hover:bg-gray-50')"
-            >
+            <template v-for="order in orders" :key="order.id">
+              <tr 
+                @click="emit('select', order.id)"
+                class="cursor-pointer transition-colors group"
+                :class="order.overallStatus === 'CANCELLED' 
+                  ? 'bg-gray-100/75 hover:bg-gray-200/60 text-gray-400 [&_td]:!text-gray-400 [&_span]:!text-gray-400 [&_div]:!text-gray-400 opacity-60 border-l-4 border-l-gray-400' 
+                  : ((order as any).isUrgent ? 'bg-rose-50/20 hover:bg-gray-50 border-l-4 border-l-rose-500' : 'hover:bg-gray-50')"
+              >
               <!-- 1. ORDER -->
               <td class="px-5 py-3.5 whitespace-nowrap">
                 <div class="flex items-center gap-1.5 flex-wrap">
@@ -468,7 +467,7 @@ const getItemsTotalQuantity = (order: Order) => {
                     :class="isExpanded(order.id) ? 'bg-[#1b3b5f] text-white border-[#1b3b5f]' : 'bg-amber-50 text-amber-900 border-amber-300 hover:bg-amber-100'"
                     title="Click to view fulfillment batches"
                   >
-                    <span>⚡ {{ order.batches.length }} Batches</span>
+                    <span>⚡ {{ order?.batches?.length || 0 }} Batches</span>
                     <span v-if="hasHoldBatches(order)" class="px-1 py-0.1 rounded text-[8px] bg-amber-500 text-white font-black">Hold</span>
                     <ChevronDown class="w-3 h-3 transition-transform duration-200" :class="{ 'rotate-180': isExpanded(order.id) }" />
                   </button>
@@ -542,7 +541,7 @@ const getItemsTotalQuantity = (order: Order) => {
                         : 'bg-indigo-50/80 text-[#1b3b5f] border-indigo-200/90 hover:bg-indigo-100'"
                     >
                       <Layers class="w-3.5 h-3.5" />
-                      <span>{{ order.batches.length }} Batches</span>
+                      <span>{{ order?.batches?.length || 0 }} Batches</span>
                       
                       <!-- On Hold Alert Badge -->
                       <span 
@@ -563,13 +562,13 @@ const getItemsTotalQuantity = (order: Order) => {
                   <!-- Micro Summary Line -->
                   <div class="flex items-center gap-1.5 text-[10px] text-gray-500">
                     <span v-if="getBatchesDeliveredCount(order) > 0" class="text-emerald-700 font-bold">
-                      {{ getBatchesDeliveredCount(order) }}/{{ order.batches.length }} Delivered
+                      {{ getBatchesDeliveredCount(order) }}/{{ order?.batches?.length || 0 }} Delivered
                     </span>
                     <span v-else-if="getBatchesPackedCount(order) > 0" class="text-blue-700 font-bold">
-                      {{ getBatchesPackedCount(order) }}/{{ order.batches.length }} Packed
+                      {{ getBatchesPackedCount(order) }}/{{ order?.batches?.length || 0 }} Packed
                     </span>
                     <span v-else class="text-gray-500">
-                      {{ order.batches.length }} In Progress
+                      {{ order?.batches?.length || 0 }} In Progress
                     </span>
 
                     <span v-if="getOrderPendingPoolUnits(order) > 0" class="text-amber-800 font-semibold">
@@ -670,10 +669,10 @@ const getItemsTotalQuantity = (order: Order) => {
                     <div class="flex items-center gap-2">
                       <Layers class="w-4 h-4 text-[#1b3b5f]" />
                       <span class="text-xs font-bold text-gray-900 uppercase tracking-wider">
-                        Fulfillment Batches for {{ order.orderNumber }}
+                        Fulfillment Batches for {{ order?.orderNumber }}
                       </span>
                       <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#1b3b5f]/10 text-[#1b3b5f]">
-                        {{ order.batches.length }} Created
+                        {{ order?.batches?.length || 0 }} Created
                       </span>
                     </div>
 
@@ -691,7 +690,7 @@ const getItemsTotalQuantity = (order: Order) => {
                   <!-- Batches Cards / Rows -->
                   <div class="space-y-2">
                     <div 
-                      v-for="b in order.batches" 
+                      v-for="b in (order?.batches || [])" 
                       :key="'sub-batch-' + b.id"
                       @click.stop="emit('select', b.id)"
                       class="bg-white rounded-xl border p-3 flex items-center justify-between gap-4 transition hover:border-[#1b3b5f]/50 hover:shadow-xs cursor-pointer group/batch"
@@ -811,6 +810,7 @@ const getItemsTotalQuantity = (order: Order) => {
                 </div>
               </td>
             </tr>
+          </template>
             <TableSkeletonRows v-if="isLoading && !orders?.length" :cols="6" :rows="6" />
             <tr v-else-if="!orders?.length && !isLoading">
               <td colspan="6" class="px-6 py-12 text-center text-sm text-gray-500">
@@ -848,7 +848,7 @@ const getItemsTotalQuantity = (order: Order) => {
                 class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[9px] font-bold transition shadow-2xs border cursor-pointer select-none"
                 :class="isExpanded(order.id) ? 'bg-[#1b3b5f] text-white border-[#1b3b5f]' : 'bg-amber-50 text-amber-900 border-amber-300'"
               >
-                <span>⚡ {{ order.batches.length }} Batches</span>
+                <span>⚡ {{ order?.batches?.length || 0 }} Batches</span>
                 <span v-if="hasHoldBatches(order)" class="px-1 py-0.1 rounded text-[8px] bg-amber-500 text-white font-black">Hold</span>
                 <ChevronDown class="w-2.5 h-2.5 transition-transform duration-200" :class="{ 'rotate-180': isExpanded(order.id) }" />
               </button>
@@ -918,7 +918,7 @@ const getItemsTotalQuantity = (order: Order) => {
                 @click.stop="toggleExpand(order.id)"
                 class="inline-flex items-center gap-1 text-[11px] font-bold text-[#1b3b5f] hover:underline cursor-pointer"
               >
-                <span>{{ isExpanded(order.id) ? 'Hide Batches' : `${order.batches.length} Batches` }}</span>
+                <span>{{ isExpanded(order.id) ? 'Hide Batches' : `${order?.batches?.length || 0} Batches` }}</span>
                 <span v-if="hasHoldBatches(order)" class="px-1 py-0.2 rounded text-[8px] bg-amber-500 text-white font-extrabold">Hold</span>
                 <ChevronDown class="w-3.5 h-3.5 transition-transform duration-200" :class="{ 'rotate-180': isExpanded(order.id) }" />
               </button>
@@ -962,7 +962,7 @@ const getItemsTotalQuantity = (order: Order) => {
           <!-- Mobile Expanded Sub-batches Section -->
           <div v-if="hasBatches(order) && isExpanded(order.id)" class="mt-2 pt-2 border-t border-dashed border-gray-200 space-y-2 animate-in fade-in duration-150">
             <div 
-              v-for="b in order.batches" 
+              v-for="b in (order?.batches || [])" 
               :key="'mob-sub-batch-' + b.id"
               @click.stop="emit('select', b.id)"
               class="p-2.5 rounded-xl border bg-gray-50/70 space-y-2 cursor-pointer transition active:bg-gray-100"

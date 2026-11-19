@@ -101,7 +101,7 @@ const isChildBatch = computed(() => Boolean(order.value?.parentOrderId))
 const poolMetrics = computed(() => {
   if (!order.value) return { totalOrdered: 0, totalBatched: 0, totalPending: 0, batchedPercent: 0 }
   const masterItems = order.value.items || []
-  const batches = (order.value as any).batches || []
+  const batches = (order.value as any)?.batches || []
 
   let totalOrdered = 0
   for (const itm of masterItems) {
@@ -129,7 +129,7 @@ const poolMetrics = computed(() => {
 
 const getItemPoolAllocated = (item: any) => {
   if (!order.value) return 0
-  const batches = (order.value as any).batches || []
+  const batches = (order.value as any)?.batches || []
   let allocated = 0
   for (const b of batches) {
     if (b.overallStatus === 'CANCELLED') continue
@@ -155,9 +155,9 @@ const canCreateBatch = computed(() => {
   if (isChildBatch.value) return false
   if (order.value.overallStatus === 'CANCELLED') return false
   if (order.value.deliveryStatus?.status === 'DELIVERED') return false
-  if (isBillGenerated.value && (!order.value.batches || order.value.batches.length === 0)) return false
+  if (isBillGenerated.value && (!order.value?.batches || order.value.batches.length === 0)) return false
   // If master order and has pending pool
-  if (poolMetrics.value.totalPending <= 0 && (order.value.batches?.length || 0) > 0) return false
+  if (poolMetrics.value.totalPending <= 0 && ((order.value as any)?.batches?.length || 0) > 0) return false
   return canManageBatches.value
 })
 
@@ -3470,8 +3470,8 @@ onUnmounted(() => {
                   <div>
                     <h3 class="text-sm font-bold text-gray-900 tracking-tight flex items-center gap-2">
                       <span>Fulfillment Batches</span>
-                      <span v-if="(order as any).batches?.length" class="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 font-semibold">
-                        {{ (order as any).batches.length }} Created
+                      <span v-if="(order as any)?.batches?.length" class="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 font-semibold">
+                        {{ (order as any)?.batches?.length || 0 }} Created
                       </span>
                     </h3>
                     <p class="text-xs text-gray-500 mt-0.5">
@@ -3597,11 +3597,11 @@ onUnmounted(() => {
 
               <!-- Batches Cards -->
               <div 
-                v-if="(order as any).batches?.length > 0"
+                v-if="((order as any)?.batches?.length || 0) > 0"
                 class="space-y-3"
               >
                 <div
-                  v-for="b in (order as any).batches"
+                  v-for="b in ((order as any)?.batches || [])"
                   :key="b.id"
                   class="bg-white rounded-xl border p-4 shadow-2xs transition hover:shadow-xs space-y-3"
                   :class="b.id === order.id ? 'border-[#1b3b5f] ring-1 ring-[#1b3b5f]/30' : 'border-gray-200/90'"
