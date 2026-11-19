@@ -65,8 +65,8 @@ export default defineEventHandler(async (event) => {
       },
       timeline: {
         create: {
-          action: 'Order Cancelled',
-          description: `Order marked as Cancelled by ${user.name}. Reason: ${reason}`,
+          action: order.parentOrderId ? 'Batch Cancelled' : 'Order Cancelled',
+          description: `${order.parentOrderId ? `Batch #${order.batchNumber || ''} (${order.orderNumber})` : 'Order'} marked as Cancelled by ${user.name}. Reason: ${reason}`,
           performedById: user.id
         }
       }
@@ -80,6 +80,24 @@ export default defineEventHandler(async (event) => {
       timeline: { include: { performedBy: true }, orderBy: { timestamp: 'desc' } }
     }
   })
+
+  // If this was a child batch, also log a timeline event on the parent order and broadcast update
+  if (order.parentOrderId) {
+    await prisma.orderTimeline.create({
+      data: {
+        orderId: order.parentOrderId,
+        action: 'BATCH_CANCELLED',
+        description: `Batch #${order.batchNumber || ''} (${order.orderNumber}) was cancelled by ${user.name}. Reason: ${reason}. All allocated items returned to the pending pool.`,
+        performedById: user.id
+      }
+    })
+
+    await broadcastRealtimeEvent('sm_orders_realtime', 'ORDER_CHANGE', {
+      type: 'ORDER_CHANGE',
+      action: 'ORDER_UPDATED',
+      orderId: order.parentOrderId
+    })
+  }
 
   // Non-blocking Push Notification dispatch with await for Serverless container safety
   if (await isNotificationEnabled('orders')) {

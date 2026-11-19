@@ -398,22 +398,63 @@ const isDeleting = ref(false)
 const deleteOrder = async () => {
   if (!order.value) return
   if (isBillGenerated.value) {
-    alert('This order cannot be deleted because its bill/invoice has already been generated.')
+    alert(`This ${isChildBatch.value ? 'batch' : 'order'} cannot be deleted because its bill/invoice has already been generated.`)
     return
   }
-  if (!confirm('Are you sure you want to completely delete this order? This action cannot be undone.')) return
+
+  const confirmMsg = isChildBatch.value
+    ? `Are you sure you want to completely delete Batch #${order.value.batchNumber} (${order.value.orderNumber})?\n\n• This will ONLY delete this single fulfillment batch.\n• All allocated units will immediately return to the master order's pending pool.\n• Master order and any sister batches will NOT be affected.\n\nProceed with deleting this batch?`
+    : `Are you sure you want to completely delete Order ${order.value.orderNumber}? This action cannot be undone.`
+
+  if (!confirm(confirmMsg)) return
   isDeleting.value = true
   try {
     const deletedId = order.value.id
-    await $fetch(`/api/orders/${deletedId}`, { method: 'DELETE' })
+    const parentId = order.value.parentOrderId
+    const res = await $fetch<any>(`/api/orders/${deletedId}`, { method: 'DELETE' })
+    showSaved(res.message || (isChildBatch.value ? 'Batch deleted! Units returned to pending pool.' : 'Order deleted successfully.'))
     notifyChange({ orderId: deletedId, action: 'ORDER_DELETED' })
     emit('updated')
-    closePanel()
+    if (parentId) {
+      await switchToOrder(parentId)
+    } else {
+      closePanel()
+    }
   } catch (err: any) {
     console.error(err)
-    alert(err.data?.message || 'Failed to delete order')
+    alert(err.data?.message || 'Failed to delete')
   } finally {
     isDeleting.value = false
+  }
+}
+
+// Delete a specific batch directly from the Batches tab
+const isDeletingBatchId = ref<string | null>(null)
+const deleteBatchById = async (batch: any) => {
+  if (batch.billingStatus?.status === 'GENERATED' || batch.billingStatus?.invoiceNumber) {
+    alert('This batch cannot be deleted because its bill/invoice has already been generated.')
+    return
+  }
+  const confirmMsg = `Are you sure you want to completely delete Batch #${batch.batchNumber} (${batch.orderNumber})?\n\n` +
+    `• This will ONLY delete this single fulfillment batch.\n` +
+    `• All allocated items in this batch will immediately return to the pending pool.\n` +
+    `• Master order and any sister batches will NOT be deleted.\n\n` +
+    `Proceed with deleting this batch?`
+  if (!confirm(confirmMsg)) return
+
+  isDeletingBatchId.value = batch.id
+  try {
+    const res = await $fetch<any>(`/api/orders/${batch.id}`, { method: 'DELETE' })
+    showSaved(res.message || `Batch #${batch.batchNumber} deleted! Units returned to pending pool.`)
+    notifyChange({ orderId: batch.id, action: 'ORDER_DELETED' })
+    if (order.value?.id) {
+      await fetchOrder(order.value.id, true)
+    }
+    emit('updated')
+  } catch (err: any) {
+    showError(err.data?.message || 'Failed to delete batch')
+  } finally {
+    isDeletingBatchId.value = null
   }
 }
 
@@ -423,7 +464,7 @@ const isCancelling = ref(false)
 
 const openCancelModal = () => {
   if (isBillGenerated.value) {
-    alert('This order cannot be cancelled because its bill/invoice has already been generated.')
+    alert(`This ${isChildBatch.value ? 'batch' : 'order'} cannot be cancelled because its bill/invoice has already been generated.`)
     return
   }
   cancelReason.value = ''
@@ -436,7 +477,7 @@ const openCancelModal = () => {
 const confirmCancelOrder = async () => {
   if (!order.value) return
   if (!cancelReason.value.trim()) {
-    alert('Please enter a cancellation reason')
+    alert(`Please enter a cancellation reason for this ${isChildBatch.value ? 'batch' : 'order'}`)
     return
   }
   isCancelling.value = true
@@ -445,14 +486,14 @@ const confirmCancelOrder = async () => {
       method: 'POST',
       body: { reason: cancelReason.value.trim() }
     })
-    showSaved('Order cancelled and permanently logged in timeline')
+    showSaved(isChildBatch.value ? 'Batch cancelled! Units returned to pending pool.' : 'Order cancelled and permanently logged in timeline')
     isCancelModalOpen.value = false
     notifyChange({ orderId: order.value.id, action: 'ORDER_CANCELLED' })
     emit('updated')
     await fetchOrder(order.value.id)
   } catch (err: any) {
     console.error(err)
-    alert(err.data?.message || 'Failed to cancel order')
+    alert(err.data?.message || 'Failed to cancel')
   } finally {
     isCancelling.value = false
   }
@@ -1545,16 +1586,25 @@ onUnmounted(() => {
           <div class="w-12 h-12 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center mb-4 border border-rose-100">
             <Ban class="w-6 h-6" />
           </div>
-          <h3 class="text-lg font-bold text-gray-900 mb-1">Cancel Order {{ order?.orderNumber }}?</h3>
+          <h3 class="text-lg font-bold text-gray-900 mb-1">
+            {{ isChildBatch ? `Cancel Batch #${order?.batchNumber} (${order?.orderNumber})?` : `Cancel Order ${order?.orderNumber}?` }}
+          </h3>
           <p class="text-xs text-gray-500 mb-4">
-            Under company policy, orders cannot be deleted without audit. This will permanently mark the order as Cancelled and record your audit log in the timeline.
+            <template v-if="isChildBatch">
+              Cancelling this batch will mark it as Cancelled and return all its allocated units back to the parent order's pending pool. The master order and any other batches will remain active.
+            </template>
+            <template v-else>
+              Under company policy, orders cannot be deleted without audit. This will permanently mark the order as Cancelled and record your audit log in the timeline.
+            </template>
           </p>
 
-          <label class="block text-xs font-bold text-gray-700 mb-1">Mandatory Cancellation Reason *</label>
+          <label class="block text-xs font-bold text-gray-700 mb-1">
+            {{ isChildBatch ? 'Batch Cancellation Reason *' : 'Mandatory Cancellation Reason *' }}
+          </label>
           <textarea 
             v-model="cancelReason" 
             rows="3"
-            placeholder="e.g. Client requested cancellation due to site delay, duplicate entry, out of stock..."
+            :placeholder="isChildBatch ? 'e.g. Batch postponed, customer requested regrouping into next batch...' : 'e.g. Client requested cancellation due to site delay, duplicate entry, out of stock...'"
             class="w-full p-2.5 border border-gray-300 rounded-lg text-xs focus:ring-2 focus:ring-rose-500 focus:outline-none"
           ></textarea>
         </div>
@@ -1572,7 +1622,7 @@ onUnmounted(() => {
             :disabled="isCancelling || !cancelReason.trim()"
             class="px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-lg shadow-sm flex items-center gap-2 disabled:opacity-50"
           >
-            <span>Confirm Cancellation</span>
+            <span>Confirm {{ isChildBatch ? 'Batch Cancellation' : 'Cancellation' }}</span>
           </button>
         </div>
       </div>
@@ -1799,7 +1849,7 @@ onUnmounted(() => {
                     class="w-full text-left px-3.5 py-2 hover:bg-rose-50 text-rose-700 flex items-center gap-2 cursor-pointer font-medium transition-colors"
                   >
                     <Ban class="w-3.5 h-3.5 text-rose-600 shrink-0" />
-                    <span>Cancel Order</span>
+                    <span>{{ isChildBatch ? 'Cancel Batch' : 'Cancel Order' }}</span>
                   </button>
                 </div>
                 <div v-if="hasRole('ADMIN') && !isBillGenerated" class="py-1">
@@ -1809,7 +1859,7 @@ onUnmounted(() => {
                     class="w-full text-left px-3.5 py-2 hover:bg-red-50 text-red-600 flex items-center gap-2 cursor-pointer font-medium transition-colors disabled:opacity-50"
                   >
                     <Trash2 class="w-3.5 h-3.5 text-red-500 shrink-0" />
-                    <span>Delete Order</span>
+                    <span>{{ isChildBatch ? 'Delete Batch' : 'Delete Order' }}</span>
                   </button>
                 </div>
               </div>
@@ -1910,11 +1960,11 @@ onUnmounted(() => {
             <button 
               v-if="canCancelOrder"
               @click="openCancelModal" 
-              title="Cancel Order (Mandatory Reason Required)"
+              :title="isChildBatch ? 'Cancel Batch (Returns allocated units to pending pool)' : 'Cancel Order (Mandatory Reason Required)'"
               class="inline-flex px-3 py-1.5 text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200/80 rounded-lg transition-colors items-center gap-1.5 cursor-pointer"
             >
               <Ban class="w-3.5 h-3.5 text-rose-600 shrink-0" />
-              <span>Cancel</span>
+              <span>{{ isChildBatch ? 'Cancel Batch' : 'Cancel' }}</span>
             </button>
 
             <!-- Delete Button (Direct on PC) -->
@@ -1922,11 +1972,11 @@ onUnmounted(() => {
               v-if="hasRole('ADMIN') && !isBillGenerated"
               @click="deleteOrder" 
               :disabled="isDeleting"
-              title="Delete Order (Admin Only)"
+              :title="isChildBatch ? 'Delete Batch (Admin Only - Returns units to pool)' : 'Delete Order (Admin Only)'"
               class="inline-flex px-3 py-1.5 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors items-center gap-1.5 cursor-pointer disabled:opacity-50"
             >
               <Trash2 class="w-3.5 h-3.5 text-red-500 shrink-0" />
-              <span>Delete</span>
+              <span>{{ isChildBatch ? 'Delete Batch' : 'Delete' }}</span>
             </button>
 
             <!-- Close Drawer Button -->
@@ -2843,7 +2893,7 @@ onUnmounted(() => {
                         class="px-3 py-1.5 text-xs font-semibold text-rose-600 bg-white border border-rose-200 hover:bg-rose-50 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
                       >
                         <Ban class="w-3.5 h-3.5" />
-                        <span>Cancel Order</span>
+                        <span>{{ isChildBatch ? 'Cancel Batch' : 'Cancel Order' }}</span>
                       </button>
 
                       <button 
@@ -3154,6 +3204,19 @@ onUnmounted(() => {
                       >
                         <span>View</span>
                         <ArrowRight class="w-3.5 h-3.5" />
+                      </button>
+
+                      <!-- Direct Delete Batch Button (Admin only, when bill not generated) -->
+                      <button
+                        v-if="hasRole('ADMIN') && (!b.billingStatus || b.billingStatus.status !== 'GENERATED')"
+                        type="button"
+                        @click.stop="deleteBatchById(b)"
+                        :disabled="isDeletingBatchId === b.id"
+                        title="Delete Batch (Only deletes this batch and returns units to pending pool)"
+                        class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg border border-transparent hover:border-red-200 transition cursor-pointer disabled:opacity-50"
+                      >
+                        <Loader2 v-if="isDeletingBatchId === b.id" class="w-3.5 h-3.5 animate-spin text-red-600" />
+                        <Trash2 v-else class="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </div>
