@@ -159,7 +159,7 @@ export async function requireActionPermission(
     if (permission === 'canEditProducts' && dbUser.role === 'SUPERVISOR') hasPerm = true
     if (permission === 'canViewAllCompanyOrders') hasPerm = true
     if (permission === 'canLinkBusyData' && (dbUser.role === 'BILLING' || dbUser.role === 'ADMIN' || dbUser.role === 'SUPERVISOR')) hasPerm = true
-    if (permission === 'canManageBatches' && (dbUser.role === 'SALES' || dbUser.role === 'SUPERVISOR')) hasPerm = true
+    if (permission === 'canManageBatches' && dbUser.role === 'SUPERVISOR') hasPerm = true
   }
 
   if (!hasPerm) {

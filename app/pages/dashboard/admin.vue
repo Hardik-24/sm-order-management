@@ -1931,7 +1931,7 @@ const openModal = (u: any = null) => {
       canViewAllCompanyOrders: true,
       canLinkBusyData: false,
       canEditConvertedQuotationOrders: false,
-      canManageBatches: true,
+      canManageBatches: false,
     }
     form.value = {
       name: '',

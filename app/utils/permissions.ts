@@ -180,7 +180,7 @@ export const DEFAULT_ROLE_ACTION_PERMISSIONS: Record<UserRole, UserActionPermiss
     canViewAllCompanyOrders: true,
     canLinkBusyData: false,
     canEditConvertedQuotationOrders: false,
-    canManageBatches: true,
+    canManageBatches: false,
   },
   BILLING: {
     canEditOrders: false,
