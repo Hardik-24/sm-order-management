@@ -1,10 +1,10 @@
-import { requireRole, getUserFromEvent } from '~~/server/utils/auth'
+import { getUserFromEvent, requireActionPermission } from '~~/server/utils/auth'
 import { prisma } from '~~/server/utils/prisma'
 import { broadcastRealtimeEvent } from '~~/server/utils/realtimeBroadcast'
 
 export default defineEventHandler(async (event) => {
   const user = await getUserFromEvent(event)
-  await requireRole(event, ['ADMIN', 'SUPERVISOR', 'SALES'])
+  await requireActionPermission(event, 'canManageBatches')
 
   const id = event.context.params?.id
   if (!id) throw createError({ statusCode: 400, message: 'Missing order ID' })

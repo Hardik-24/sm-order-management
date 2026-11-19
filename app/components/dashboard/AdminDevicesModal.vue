@@ -272,9 +272,20 @@
               <span class="font-bold uppercase tracking-wider">
                 Accounts & Enrolled Hardware ({{ filteredUsersWithDevices.length }} {{ filteredUsersWithDevices.length === 1 ? 'Account' : 'Accounts' }})
               </span>
-              <span>
-                {{ totalApprovedDevicesCount }} Total Devices Whitelisted
-              </span>
+              <div class="flex items-center gap-2.5">
+                <button
+                  v-if="filteredUsersWithDevices.length > 0"
+                  type="button"
+                  @click="toggleAllUsersExpanded"
+                  class="text-xs text-[#1b3b5f] hover:underline font-bold cursor-pointer"
+                >
+                  {{ areAllUsersExpanded ? 'Collapse All' : 'Expand All' }}
+                </button>
+                <span v-if="filteredUsersWithDevices.length > 0">•</span>
+                <span>
+                  {{ totalApprovedDevicesCount }} Total Devices Whitelisted
+                </span>
+              </div>
             </div>
 
             <!-- Empty search state -->
@@ -298,7 +309,11 @@
               :class="u.hasPending ? 'border-amber-300 ring-2 ring-amber-300/30' : 'border-gray-200'"
             >
               <!-- User Account Header -->
-              <div class="flex items-center justify-between gap-3 flex-wrap border-b border-gray-100 pb-3">
+              <div 
+                class="flex items-center justify-between gap-3 flex-wrap cursor-pointer select-none transition-all"
+                :class="isUserExpanded(u.id) ? 'border-b border-gray-100 pb-3' : 'pb-0'"
+                @click="toggleUserExpanded(u.id)"
+              >
                 <div class="flex items-center gap-3 min-w-0">
                   <!-- Avatar Initial -->
                   <div class="w-10 h-10 rounded-full bg-[#1b3b5f]/10 text-[#1b3b5f] font-black text-sm flex items-center justify-center border border-[#1b3b5f]/20 shrink-0">
@@ -306,7 +321,21 @@
                   </div>
                   <div class="min-w-0">
                     <div class="flex items-center gap-2 flex-wrap">
-                      <h5 class="text-sm font-bold text-gray-900 truncate">{{ u.name }}</h5>
+                      <div class="flex items-center gap-1.5 min-w-0">
+                        <h5 class="text-sm font-bold text-gray-900 truncate">{{ u.name }}</h5>
+                        <!-- Bottom Chevron Arrow next to name -->
+                        <button
+                          type="button"
+                          @click.stop="toggleUserExpanded(u.id)"
+                          class="p-0.5 text-gray-400 hover:text-gray-800 hover:bg-gray-100 rounded-md transition-all duration-200 cursor-pointer inline-flex items-center justify-center"
+                          :title="isUserExpanded(u.id) ? 'Collapse authorized devices' : 'Expand authorized devices'"
+                        >
+                          <ChevronDown 
+                            class="w-4 h-4 transition-transform duration-200" 
+                            :class="{ 'rotate-180 text-[#1b3b5f]': isUserExpanded(u.id) }" 
+                          />
+                        </button>
+                      </div>
                       <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border" :class="userRoleColors[u.role] || 'bg-gray-100 text-gray-700'">
                         {{ u.role }}
                       </span>
@@ -336,7 +365,7 @@
                   </span>
                   <button
                     type="button"
-                    @click="openPairingModal(u.id)"
+                    @click.stop="openPairingModal(u.id)"
                     class="px-2.5 py-1 text-xs font-bold text-[#1b3b5f] bg-[#1b3b5f]/10 hover:bg-[#1b3b5f]/20 rounded-lg transition flex items-center gap-1 cursor-pointer"
                     title="Generate pairing code for this account"
                   >
@@ -346,12 +375,13 @@
                 </div>
               </div>
 
-              <!-- User's Enrolled Devices -->
-              <div v-if="u.devices.length === 0" class="text-center py-5 bg-gray-50/70 rounded-xl border border-dashed border-gray-200 text-xs text-gray-400">
-                No physical devices enrolled for {{ u.name }} yet.
-              </div>
+              <!-- User's Enrolled Devices (Only shown when expanded) -->
+              <div v-if="isUserExpanded(u.id)" class="pt-1 space-y-2 animate-in fade-in duration-150">
+                <div v-if="u.devices.length === 0" class="text-center py-5 bg-gray-50/70 rounded-xl border border-dashed border-gray-200 text-xs text-gray-400">
+                  No physical devices enrolled for {{ u.name }} yet.
+                </div>
 
-              <div v-else class="space-y-2">
+                <div v-else class="space-y-2">
                 <div 
                   v-for="dev in u.devices" 
                   :key="dev.id"
@@ -472,6 +502,7 @@
               </div>
             </div>
           </div>
+        </div>
 
         </div>
 
@@ -702,6 +733,26 @@ const totalBlockedCount = computed(() => devicesList.value.filter(d => d.isBlock
 const selectedStaffUser = computed(() => {
   return usersList.value.find(u => u.id === pairingUserId.value)
 })
+
+// User Devices Expansion State (Default collapsed, only expanded reveals authorized devices)
+const expandedUserIds = ref<Record<string, boolean>>({})
+const toggleUserExpanded = (userId: string) => {
+  expandedUserIds.value[userId] = !expandedUserIds.value[userId]
+}
+const isUserExpanded = (userId: string) => Boolean(expandedUserIds.value[userId])
+
+const areAllUsersExpanded = computed(() => {
+  if (filteredUsersWithDevices.value.length === 0) return false
+  return filteredUsersWithDevices.value.every(u => expandedUserIds.value[u.id])
+})
+const toggleAllUsersExpanded = () => {
+  const target = !areAllUsersExpanded.value
+  const next: Record<string, boolean> = {}
+  filteredUsersWithDevices.value.forEach(u => {
+    next[u.id] = target
+  })
+  expandedUserIds.value = next
+}
 
 const filteredStaffList = computed(() => {
   const q = staffSearchQuery.value.trim().toLowerCase()

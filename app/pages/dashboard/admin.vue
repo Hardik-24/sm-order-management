@@ -893,7 +893,7 @@
                       class="text-xs font-semibold px-2.5 py-0.5 rounded-full"
                       :class="form.role === 'ADMIN' ? 'bg-purple-100 text-purple-800 border border-purple-200' : 'bg-emerald-50 text-[#1b3b5f] border border-emerald-200'"
                     >
-                      {{ form.role === 'ADMIN' ? 'All 8 Operations Granted' : `${activeActionCount} of 8 Actions Permitted` }}
+                      {{ form.role === 'ADMIN' ? 'All 10 Operations Granted' : `${activeActionCount} of 10 Actions Permitted` }}
                     </span>
                   </div>
                   <p class="text-xs text-gray-500 mt-1">
@@ -1218,6 +1218,41 @@
                     </p>
                   </div>
                 </div>
+
+                <!-- 10. Create, Edit & Delete Batches -->
+                <div
+                  @click="toggleActionPermission('canManageBatches')"
+                  class="p-3 rounded-lg border text-left transition-all flex items-start gap-2.5 select-none"
+                  :class="[
+                    form.role === 'ADMIN' ? 'cursor-not-allowed bg-purple-50/30 border-purple-200' : 'cursor-pointer',
+                    form.actionPermissions.canManageBatches 
+                      ? 'border-[#1b3b5f] bg-[#1b3b5f]/5 text-[#1a1a1a] shadow-2xs' 
+                      : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50/60'
+                  ]"
+                >
+                  <div class="mt-0.5 shrink-0">
+                    <div 
+                      class="w-4 h-4 rounded border flex items-center justify-center transition-colors"
+                      :class="form.actionPermissions.canManageBatches ? 'bg-[#1b3b5f] border-[#1b3b5f] text-white' : 'border-gray-300 bg-white'"
+                    >
+                      <Check v-if="form.actionPermissions.canManageBatches" class="w-3 h-3 stroke-[3]" />
+                    </div>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center justify-between gap-1">
+                      <span class="text-xs font-semibold text-gray-900">Create, Edit & Delete Batches</span>
+                      <span 
+                        class="text-[10px] font-semibold px-1.5 py-0.2 rounded"
+                        :class="form.actionPermissions.canManageBatches ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-500'"
+                      >
+                        {{ form.actionPermissions.canManageBatches ? 'Granted' : 'Blocked' }}
+                      </span>
+                    </div>
+                    <p class="text-[11px] text-gray-500 mt-0.5 leading-snug">
+                      Allow splitting orders into batches, creating fulfillment batches, editing batch quantities, placing batches on hold, and deleting batches.
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -1525,6 +1560,7 @@ const form = ref<{
     canViewAllCompanyOrders: true,
     canLinkBusyData: false,
     canEditConvertedQuotationOrders: false,
+    canManageBatches: false,
   }
 })
 
@@ -1634,7 +1670,7 @@ onMounted(() => {
 
 // Action Permissions helpers
 const activeActionCount = computed(() => {
-  if (form.value.role === 'ADMIN') return 9
+  if (form.value.role === 'ADMIN') return 10
   const a = form.value.actionPermissions
   return (a.canEditOrders ? 1 : 0) + 
          (a.canEditOrderStatus ? 1 : 0) + 
@@ -1644,7 +1680,8 @@ const activeActionCount = computed(() => {
          (a.canDeleteQuotations ? 1 : 0) +
          (a.canViewAllCompanyOrders ? 1 : 0) +
          (a.canLinkBusyData ? 1 : 0) +
-         (a.canEditConvertedQuotationOrders ? 1 : 0)
+         (a.canEditConvertedQuotationOrders ? 1 : 0) +
+         (a.canManageBatches ? 1 : 0)
 })
 
 const toggleActionPermission = (key: keyof UserActionPermissions) => {
@@ -1720,6 +1757,7 @@ const onRoleChanged = (newRole: any) => {
       canViewAllCompanyOrders: true,
       canLinkBusyData: true,
       canEditConvertedQuotationOrders: true,
+      canManageBatches: true,
     }
   } else {
     form.value.allowedPages = form.value.allowedPages.filter(k => k !== 'ADMIN')
@@ -1734,6 +1772,9 @@ const onRoleChanged = (newRole: any) => {
       canEditProducts: false,
       canDeleteQuotations: false,
       canViewAllCompanyOrders: true,
+      canLinkBusyData: false,
+      canEditConvertedQuotationOrders: false,
+      canManageBatches: false,
     }
     form.value.actionPermissions = { ...defaultActions }
   }
@@ -1874,7 +1915,7 @@ const openModal = (u: any = null) => {
       isActive: u.isActive !== false,
       allowedPages: u.role === 'ADMIN' ? APP_PAGES.map(p => p.key) : [...effective],
       actionPermissions: u.role === 'ADMIN' 
-        ? { canEditOrders: true, canEditOrderStatus: true, canCancelOrders: true, canEditCustomers: true, canEditProducts: true, canDeleteQuotations: true, canViewAllCompanyOrders: true, canLinkBusyData: true, canEditConvertedQuotationOrders: true }
+        ? { canEditOrders: true, canEditOrderStatus: true, canCancelOrders: true, canEditCustomers: true, canEditProducts: true, canDeleteQuotations: true, canViewAllCompanyOrders: true, canLinkBusyData: true, canEditConvertedQuotationOrders: true, canManageBatches: true }
         : { ...effectiveActions }
     }
   } else {
@@ -1888,6 +1929,9 @@ const openModal = (u: any = null) => {
       canEditProducts: false,
       canDeleteQuotations: false,
       canViewAllCompanyOrders: true,
+      canLinkBusyData: false,
+      canEditConvertedQuotationOrders: false,
+      canManageBatches: true,
     }
     form.value = {
       name: '',

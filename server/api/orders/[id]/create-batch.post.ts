@@ -1,4 +1,4 @@
-import { requireRole, getUserFromEvent } from '~~/server/utils/auth'
+import { requireRole, getUserFromEvent, requireActionPermission } from '~~/server/utils/auth'
 import { prisma } from '~~/server/utils/prisma'
 import { broadcastRealtimeEvent } from '~~/server/utils/realtimeBroadcast'
 
@@ -18,8 +18,8 @@ function computeItemTotal(qty: number, unitPrice: number, discountPct: number, t
 
 export default defineEventHandler(async (event) => {
   const user = await getUserFromEvent(event)
-  // Admin, Supervisor, or Sales/Approval users can create fulfillment batches
-  await requireRole(event, ['ADMIN', 'SUPERVISOR', 'SALES'])
+  // Ensure user has batch management permission
+  await requireActionPermission(event, 'canManageBatches')
 
   const id = event.context.params?.id
   if (!id) throw createError({ statusCode: 400, message: 'Missing order ID' })

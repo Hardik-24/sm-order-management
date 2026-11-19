@@ -57,7 +57,10 @@ export default defineEventHandler(async (event) => {
   const body = await readBody(event)
   const { orderNumber, customerId, deliveryAddress, deliveryAddressId, paymentTerms, notes, isUrgent, vehicleMode, items } = body
   
-  // If editing a child fulfillment batch, validate that quantities do not exceed available master order pool
+  // If editing a child fulfillment batch, validate batch permission and that quantities do not exceed available master order pool
+  if (existingOrder.parentOrderId) {
+    await requireActionPermission(event, 'canManageBatches')
+  }
   if (existingOrder.parentOrderId && items && Array.isArray(items)) {
     const masterOrder = await prisma.order.findUnique({
       where: { id: existingOrder.parentOrderId },

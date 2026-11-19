@@ -89,7 +89,7 @@ const emit = defineEmits<{
   (e: 'update:orderId', id: string): void
 }>()
 
-const { user, hasRole, canEditOrders, canCancelOrders, canEditOrderStatus, canLinkBusyData, canEditConvertedQuotationOrders, canAccessPage } = useAuth()
+const { user, hasRole, canEditOrders, canCancelOrders, canEditOrderStatus, canLinkBusyData, canEditConvertedQuotationOrders, canManageBatches, canAccessPage } = useAuth()
 const order = ref<Order | null>(null)
 const isLoading = ref(false)
 const activeTab = ref<'DETAILS' | 'MASTER_ORDER' | 'BATCHES' | 'TIMELINE' | 'NOTES'>('DETAILS')
@@ -158,7 +158,7 @@ const canCreateBatch = computed(() => {
   if (isBillGenerated.value && (!order.value.batches || order.value.batches.length === 0)) return false
   // If master order and has pending pool
   if (poolMetrics.value.totalPending <= 0 && (order.value.batches?.length || 0) > 0) return false
-  return hasRole('ADMIN', 'SUPERVISOR') || canAccessPage('approve-orders')
+  return canManageBatches.value
 })
 
 const canSplitCurrentOrder = computed(() => canCreateBatch.value)
@@ -3624,19 +3624,25 @@ onUnmounted(() => {
                       <div class="inline-flex items-center p-0.5 bg-gray-100 rounded-lg border border-gray-200 select-none">
                         <button
                           type="button"
-                          @click.stop="b.isBatchOnHold ? toggleBatchHold(b.id) : null"
-                          :disabled="isTogglingHold === b.id"
-                          class="px-2.5 py-1 rounded-md font-bold transition-all text-[11px] cursor-pointer"
-                          :class="!b.isBatchOnHold ? 'bg-emerald-600 text-white shadow-2xs' : 'text-gray-500 hover:text-gray-900'"
+                          @click.stop="canManageBatches && b.isBatchOnHold ? toggleBatchHold(b.id) : null"
+                          :disabled="!canManageBatches || isTogglingHold === b.id"
+                          class="px-2.5 py-1 rounded-md font-bold transition-all text-[11px]"
+                          :class="[
+                            !b.isBatchOnHold ? 'bg-emerald-600 text-white shadow-2xs' : 'text-gray-500 hover:text-gray-900',
+                            !canManageBatches ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'
+                          ]"
                         >
                           Active
                         </button>
                         <button
                           type="button"
-                          @click.stop="!b.isBatchOnHold ? toggleBatchHold(b.id) : null"
-                          :disabled="isTogglingHold === b.id"
-                          class="px-2.5 py-1 rounded-md font-bold transition-all text-[11px] cursor-pointer"
-                          :class="b.isBatchOnHold ? 'bg-amber-500 text-white shadow-2xs' : 'text-gray-500 hover:text-gray-900'"
+                          @click.stop="canManageBatches && !b.isBatchOnHold ? toggleBatchHold(b.id) : null"
+                          :disabled="!canManageBatches || isTogglingHold === b.id"
+                          class="px-2.5 py-1 rounded-md font-bold transition-all text-[11px]"
+                          :class="[
+                            b.isBatchOnHold ? 'bg-amber-500 text-white shadow-2xs' : 'text-gray-500 hover:text-gray-900',
+                            !canManageBatches ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'
+                          ]"
                         >
                           On Hold
                         </button>
@@ -3644,7 +3650,7 @@ onUnmounted(() => {
 
                       <!-- Edit Batch Button (with Edit Icon + "Edit" text on both PC and mobile) -->
                       <button
-                        v-if="canEditOrders && (!b.billingStatus || b.billingStatus.status !== 'GENERATED')"
+                        v-if="canManageBatches && (!b.billingStatus || b.billingStatus.status !== 'GENERATED')"
                         type="button"
                         @click.stop="editBatchById(b)"
                         title="Edit Batch (Modify batch quantities or items)"
@@ -3654,9 +3660,9 @@ onUnmounted(() => {
                         <span>Edit</span>
                       </button>
 
-                      <!-- Direct Delete Batch Button (Admin only, when bill not generated) -->
+                      <!-- Direct Delete Batch Button (when bill not generated) -->
                       <button
-                        v-if="hasRole('ADMIN') && (!b.billingStatus || b.billingStatus.status !== 'GENERATED')"
+                        v-if="canManageBatches && (!b.billingStatus || b.billingStatus.status !== 'GENERATED')"
                         type="button"
                         @click.stop="deleteBatchById(b)"
                         :disabled="isDeletingBatchId === b.id"

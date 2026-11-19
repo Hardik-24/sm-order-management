@@ -18,6 +18,7 @@ export interface UserActionPermissions {
   canViewAllCompanyOrders: boolean
   canLinkBusyData: boolean
   canEditConvertedQuotationOrders: boolean
+  canManageBatches?: boolean
 }
 
 export interface SessionUser {

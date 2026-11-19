@@ -119,7 +119,7 @@ export function requireRole(event: H3Event, allowedRoles: string[]): SessionUser
 /** Require specific action permission (e.g. canEditOrders, canEditOrderStatus, canCancelOrders, canEditCustomers, canEditProducts, canDeleteQuotations) */
 export async function requireActionPermission(
   event: H3Event,
-  permission: 'canEditOrders' | 'canEditOrderStatus' | 'canCancelOrders' | 'canEditCustomers' | 'canEditProducts' | 'canDeleteQuotations' | 'canViewAllCompanyOrders' | 'canLinkBusyData' | 'canEditConvertedQuotationOrders'
+  permission: 'canEditOrders' | 'canEditOrderStatus' | 'canCancelOrders' | 'canEditCustomers' | 'canEditProducts' | 'canDeleteQuotations' | 'canViewAllCompanyOrders' | 'canLinkBusyData' | 'canEditConvertedQuotationOrders' | 'canManageBatches'
 ): Promise<SessionUser> {
   const sessionUser = requireAuth(event)
   if (sessionUser.role === 'ADMIN') {
@@ -150,7 +150,7 @@ export async function requireActionPermission(
   } else {
     // Default role capabilities
     if (dbUser.role === 'SUPERVISOR') {
-      if (['canEditOrders', 'canEditOrderStatus', 'canCancelOrders', 'canEditCustomers', 'canEditProducts', 'canDeleteQuotations', 'canViewAllCompanyOrders', 'canLinkBusyData'].includes(permission)) {
+      if (['canEditOrders', 'canEditOrderStatus', 'canCancelOrders', 'canEditCustomers', 'canEditProducts', 'canDeleteQuotations', 'canViewAllCompanyOrders', 'canLinkBusyData', 'canManageBatches'].includes(permission)) {
         hasPerm = true
       }
     }
@@ -159,6 +159,7 @@ export async function requireActionPermission(
     if (permission === 'canEditProducts' && dbUser.role === 'SUPERVISOR') hasPerm = true
     if (permission === 'canViewAllCompanyOrders') hasPerm = true
     if (permission === 'canLinkBusyData' && (dbUser.role === 'BILLING' || dbUser.role === 'ADMIN' || dbUser.role === 'SUPERVISOR')) hasPerm = true
+    if (permission === 'canManageBatches' && (dbUser.role === 'SALES' || dbUser.role === 'SUPERVISOR')) hasPerm = true
   }
 
   if (!hasPerm) {

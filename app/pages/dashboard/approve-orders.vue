@@ -42,7 +42,7 @@ import CreateBatchModal from '~/components/dashboard/CreateBatchModal.vue'
 definePageMeta({ layout: 'dashboard' })
 
 const router = useRouter()
-const { user } = useAuth()
+const { user, canManageBatches } = useAuth()
 const { showSnackbar } = useSnackbar()
 
 // Filters
@@ -1062,7 +1062,7 @@ const getTotalNos = (order: any) => {
               Cancel
             </button>
             <button 
-              v-if="selectedOrder"
+              v-if="selectedOrder && canManageBatches"
               type="button" 
               @click="openCreateBatchModal(selectedOrder.id)"
               class="w-full sm:w-auto justify-center flex items-center gap-1.5 px-4 py-2 bg-amber-50 text-amber-900 border border-amber-300 text-xs font-bold rounded-lg hover:bg-amber-100 transition-colors cursor-pointer shadow-xs active:scale-95"
