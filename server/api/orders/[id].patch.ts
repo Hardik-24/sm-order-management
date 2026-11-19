@@ -335,5 +335,13 @@ export default defineEventHandler(async (event) => {
     order
   })
 
+  if (existingOrder.parentOrderId) {
+    await broadcastRealtimeEvent('sm_orders_realtime', 'ORDER_CHANGE', {
+      type: 'ORDER_CHANGE',
+      action: 'BATCH_UPDATED',
+      orderId: existingOrder.parentOrderId
+    })
+  }
+
   return order
 })

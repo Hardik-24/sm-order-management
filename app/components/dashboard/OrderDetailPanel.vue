@@ -527,8 +527,17 @@ onOrderSync((event) => {
   const activeId = order.value?.id || props.orderId
   if (!activeId) return
 
-  // If this specific order was modified, or if a general order change broadcast arrived without an orderId
-  if (!affectedId || affectedId === activeId || affectedId === props.orderId) {
+  // Refresh if this specific order, its parent master order, or any of its child batches was modified
+  const isRelated = 
+    !affectedId ||
+    affectedId === activeId ||
+    affectedId === props.orderId ||
+    (order.value as any)?.batches?.some((b: any) => b.id === affectedId) ||
+    event?.order?.parentOrderId === activeId ||
+    event?.parentOrderId === activeId ||
+    order.value?.parentOrderId === affectedId
+
+  if (isRelated) {
     fetchOrder(activeId, true)
   }
 })

@@ -58,6 +58,14 @@ export default defineEventHandler(async (event) => {
     order: updatedBatch
   })
 
+  if (updatedBatch.parentOrderId) {
+    await broadcastRealtimeEvent('sm_orders_realtime', 'ORDER_CHANGE', {
+      type: 'ORDER_CHANGE',
+      action: 'BATCH_RELEASED',
+      orderId: updatedBatch.parentOrderId
+    })
+  }
+
   return {
     success: true,
     message: `Batch ${batchOrder.batchNumber || ''} successfully released for packing!`,

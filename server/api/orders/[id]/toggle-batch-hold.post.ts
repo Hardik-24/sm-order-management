@@ -71,6 +71,14 @@ export default defineEventHandler(async (event) => {
     order: updatedBatch
   })
 
+  if (updatedBatch.parentOrderId) {
+    await broadcastRealtimeEvent('sm_orders_realtime', 'ORDER_CHANGE', {
+      type: 'ORDER_CHANGE',
+      action: newHoldState ? 'BATCH_HELD' : 'BATCH_RELEASED',
+      orderId: updatedBatch.parentOrderId
+    })
+  }
+
   return {
     success: true,
     isBatchOnHold: updatedBatch.isBatchOnHold,
