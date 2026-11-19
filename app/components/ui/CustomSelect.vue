@@ -317,8 +317,9 @@ const updatePosition = (force = false) => {
   const spaceBelow = viewportHeight - rect.bottom - 12
   const spaceAbove = rect.top - 12
 
-  // Open upward only if space below is really restricted (< 220px) AND above has more space
-  const flipUp = spaceBelow < 220 && spaceAbove > spaceBelow
+  // Open upward only on desktop when space below is restricted (< 220px) AND above has more space
+  const isMobile = viewportWidth < 768
+  const flipUp = !isMobile && spaceBelow < 220 && spaceAbove > spaceBelow
   isFlippedUp.value = flipUp
   
   const style: Record<string, string> = {
@@ -383,6 +384,7 @@ watch(isOpen, (newVal) => {
       window.addEventListener('resize', onWindowResize)
       if (window.visualViewport) {
         window.visualViewport.addEventListener('resize', onWindowResize)
+        window.visualViewport.addEventListener('scroll', onWindowResize)
       }
     }
   } else {
@@ -392,6 +394,7 @@ watch(isOpen, (newVal) => {
       window.removeEventListener('resize', onWindowResize)
       if (window.visualViewport) {
         window.visualViewport.removeEventListener('resize', onWindowResize)
+        window.visualViewport.removeEventListener('scroll', onWindowResize)
       }
     }
   }

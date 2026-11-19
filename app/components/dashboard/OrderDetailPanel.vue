@@ -3799,16 +3799,6 @@ onUnmounted(() => {
               </button>
             </template>
 
-            <!-- Split Order button (Strictly Billing context only) -->
-            <button 
-              v-if="context === 'billing' && hasRole('ADMIN', 'BILLING') && order.billingStatus?.status !== 'GENERATED' && order.overallStatus !== 'CANCELLED' && order.deliveryStatus?.status !== 'DISPATCHED' && order.deliveryStatus?.status !== 'DELIVERED'"
-              @click="emit('split-order', order.id)"
-              class="px-2.5 sm:px-3.5 py-1.5 sm:py-2 text-[11px] sm:text-xs font-semibold text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs whitespace-nowrap"
-            >
-              <GitFork class="w-3.5 h-3.5 text-[#1b3b5f]" />
-              <span>Split Order</span>
-            </button>
-
             <!-- Generate Bill button (Strictly Billing context only) -->
             <button 
               v-if="context === 'billing' && canGenerateBill"

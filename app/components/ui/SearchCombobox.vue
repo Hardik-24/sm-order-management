@@ -76,6 +76,7 @@
         v-if="isOpen"
         ref="dropdownRef"
         class="fixed bg-white border border-slate-200/90 rounded-2xl shadow-2xl z-[99999] overflow-hidden flex flex-col will-change-transform animate-in fade-in zoom-in-95 duration-100"
+        :class="isFlippedUp ? 'origin-bottom' : 'origin-top'"
         :style="dropdownStyle"
         @click.stop
       >
@@ -295,33 +296,64 @@ const filteredOptions = computed(() => {
 
 // Calculate exact fixed position for Teleported menu
 const updatePosition = () => {
-  if (!containerRef.value) return
+  if (!containerRef.value || typeof window === 'undefined') return
   const rect = containerRef.value.getBoundingClientRect()
-  const viewportHeight = window.innerHeight
-  const viewportWidth = window.innerWidth
-  const spaceBelow = viewportHeight - rect.bottom
-  const spaceAbove = rect.top
-  const menuHeight = Math.min(320, Math.max(160, filteredOptions.value.length * 54 + 40))
+  
+  // Use visualViewport when available to accurately account for virtual keyboards and mobile browser bars
+  const viewportHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight
+  const viewportWidth = window.visualViewport ? window.visualViewport.width : window.innerWidth
+  const isMobile = viewportWidth < 768
 
-  const shouldFlip = spaceBelow < menuHeight && spaceAbove > spaceBelow
+  const width = Math.min(rect.width, viewportWidth - 16)
+  const left = Math.min(Math.max(8, rect.left), viewportWidth - width - 8)
+
+  // On mobile devices, NEVER flip above the search bar so what is being typed remains 100% visible.
+  // On desktop, only flip if space below is severely restricted (< 220px) and space above has more room.
+  const spaceBelow = viewportHeight - rect.bottom - 8
+  const spaceAbove = rect.top - 8
+  const shouldFlip = !isMobile && spaceBelow < 220 && spaceAbove > spaceBelow
+
   isFlippedUp.value = shouldFlip
 
-  const width = Math.min(rect.width, viewportWidth - 20)
-  const left = Math.min(Math.max(10, rect.left), viewportWidth - width - 10)
-
-  const availableHeight = shouldFlip ? spaceAbove - 12 : spaceBelow - 12
-  const finalMaxHeight = Math.min(320, Math.max(120, availableHeight))
-  const finalTop = shouldFlip 
-    ? Math.max(10, rect.top - Math.min(menuHeight, finalMaxHeight) - 6) 
-    : (rect.bottom + 6)
-
-  dropdownStyle.value = {
-    position: 'fixed',
-    left: `${left}px`,
-    width: `${width}px`,
-    maxHeight: `${finalMaxHeight}px`,
-    top: `${finalTop}px`
+  if (shouldFlip) {
+    const maxHeight = Math.max(120, Math.min(spaceAbove, 320))
+    dropdownStyle.value = {
+      position: 'fixed',
+      left: `${Math.round(left)}px`,
+      width: `${Math.round(width)}px`,
+      bottom: `${Math.round(viewportHeight - rect.top + 4)}px`,
+      maxHeight: `${Math.round(maxHeight)}px`,
+      top: 'auto'
+    }
+  } else {
+    // Dropdown always sits cleanly BELOW the search bar
+    const maxHeight = Math.max(120, Math.min(spaceBelow, 320))
+    dropdownStyle.value = {
+      position: 'fixed',
+      left: `${Math.round(left)}px`,
+      width: `${Math.round(width)}px`,
+      top: `${Math.round(rect.bottom + 4)}px`,
+      maxHeight: `${Math.round(maxHeight)}px`,
+      bottom: 'auto'
+    }
   }
+}
+
+// Ensure the search bar is comfortably centered/visible when tapping on mobile
+const ensureVisibleOnMobile = () => {
+  if (typeof window === 'undefined') return
+  const isMobile = window.innerWidth < 768
+  if (!isMobile || !containerRef.value) return
+
+  setTimeout(() => {
+    if (!containerRef.value) return
+    const r = containerRef.value.getBoundingClientRect()
+    const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight
+    if (r.bottom > vh - 140) {
+      containerRef.value.scrollIntoView({ block: 'center', behavior: 'smooth' })
+      setTimeout(updatePosition, 160)
+    }
+  }, 120)
 }
 
 const openDropdown = () => {
@@ -349,6 +381,7 @@ const toggleDropdown = () => {
     searchQuery.value = ''
     openDropdown()
     inputRef.value?.focus()
+    ensureVisibleOnMobile()
   }
 }
 
@@ -358,6 +391,7 @@ const onFocus = () => {
   searchQuery.value = ''
   focusedIndex.value = 0
   openDropdown()
+  ensureVisibleOnMobile()
 }
 
 const onInput = (e: Event) => {
@@ -438,10 +472,18 @@ const onScrollOrResize = () => {
 onMounted(() => {
   window.addEventListener('resize', onScrollOrResize)
   window.addEventListener('scroll', onScrollOrResize, true)
+  if (typeof window !== 'undefined' && window.visualViewport) {
+    window.visualViewport.addEventListener('resize', onScrollOrResize)
+    window.visualViewport.addEventListener('scroll', onScrollOrResize)
+  }
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', onScrollOrResize)
   window.removeEventListener('scroll', onScrollOrResize, true)
+  if (typeof window !== 'undefined' && window.visualViewport) {
+    window.visualViewport.removeEventListener('resize', onScrollOrResize)
+    window.visualViewport.removeEventListener('scroll', onScrollOrResize)
+  }
 })
 </script>
