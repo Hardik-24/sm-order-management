@@ -3,7 +3,7 @@ import { ref, computed, watch } from 'vue'
 import { refDebounced } from '@vueuse/core'
 import OrderTable from '~/components/dashboard/OrderTable.vue'
 import OrderDetailPanel from '~/components/dashboard/OrderDetailPanel.vue'
-import SplitOrderModal from '~/components/dashboard/SplitOrderModal.vue'
+import CreateBatchModal from '~/components/dashboard/CreateBatchModal.vue'
 import { getEffectiveActionPermissions } from '~/utils/permissions'
 
 definePageMeta({ layout: 'dashboard' })
@@ -104,16 +104,16 @@ const handlePanelUpdate = (updatedOrder?: any) => {
   refresh()
 }
 
-const isSplitModalOpen = ref(false)
-const splittingOrderId = ref<string | null>(null)
+const isCreateBatchModalOpen = ref(false)
+const batchOrderId = ref<string | null>(null)
 
-const openSplitModal = (orderId: string) => {
-  splittingOrderId.value = orderId
-  isSplitModalOpen.value = true
+const openCreateBatchModal = (orderId: string) => {
+  batchOrderId.value = orderId
+  isCreateBatchModalOpen.value = true
 }
 
-const onOrderSplit = () => {
-  isSplitModalOpen.value = false
+const onBatchCreated = () => {
+  isCreateBatchModalOpen.value = false
   refresh()
 }
 
@@ -158,15 +158,15 @@ onOrderSync((event) => {
       context="orders"
       @close="handlePanelClose"
       @updated="handlePanelUpdate"
-      @split-order="openSplitModal"
+      @split-order="openCreateBatchModal"
     />
 
-    <!-- Batch Split Modal -->
-    <SplitOrderModal 
-      :isOpen="isSplitModalOpen"
-      :orderId="splittingOrderId"
-      @close="isSplitModalOpen = false"
-      @splitSuccess="onOrderSplit"
+    <!-- Fulfillment Batch Modal -->
+    <CreateBatchModal 
+      :is-open="isCreateBatchModalOpen"
+      :order-id="batchOrderId"
+      @close="isCreateBatchModalOpen = false"
+      @batch-created="onBatchCreated"
     />
   </div>
 </template>

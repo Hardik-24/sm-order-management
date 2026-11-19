@@ -57,6 +57,45 @@ export default defineEventHandler(async (event) => {
   const body = await readBody(event)
   const { orderNumber, customerId, deliveryAddress, deliveryAddressId, paymentTerms, notes, isUrgent, vehicleMode, items } = body
   
+  // If editing a child fulfillment batch, validate that quantities do not exceed available master order pool
+  if (existingOrder.parentOrderId && items && Array.isArray(items)) {
+    const masterOrder = await prisma.order.findUnique({
+      where: { id: existingOrder.parentOrderId },
+      include: {
+        items: true,
+        batches: {
+          where: { id: { not: existingOrder.id }, overallStatus: { not: 'CANCELLED' } },
+          include: { items: true }
+        }
+      }
+    })
+
+    if (masterOrder) {
+      for (const item of items) {
+        const masterItem = masterOrder.items.find(mi => mi.productId === item.productId)
+        if (masterItem) {
+          const masterQty = Number(masterItem.approvedQuantity ?? masterItem.quantity ?? 0)
+          let sisterBatchesQty = 0
+          for (const b of masterOrder.batches) {
+            for (const bi of b.items) {
+              if (bi.productId === item.productId) {
+                sisterBatchesQty += Number(bi.quantity || 0)
+              }
+            }
+          }
+          const availableMax = Math.max(0, masterQty - sisterBatchesQty)
+          const newQty = Number(item.quantity) || 0
+          if (newQty > availableMax) {
+            throw createError({
+              statusCode: 400,
+              message: `Quantity for ${masterItem.productName} (${newQty}) exceeds maximum available quantity in master order pool (${availableMax}).`
+            })
+          }
+        }
+      }
+    }
+  }
+
   let totalAmount = 0
   const itemsToCreate = []
   const itemsToUpdate = []

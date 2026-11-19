@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, computed, nextTick, onMounted, onUnmounted } from 'vue'
-import { X, MoreHorizontal, Lock, Edit, Package, PackageCheck, PackageX, Truck, Check, Box, Plus, Trash2, MapPin, AlertCircle, AlertTriangle, Ban, CheckCheck, CheckCircle2, Zap, User, IndianRupee, Clock, Building2, Phone, FileText, Calendar, Copy, ChevronRight, Car, GitFork, SlidersHorizontal, Loader2, Save, Link2, UserCheck, Calculator, LayoutList, ChevronUp, ChevronDown, Tag, PackageSearch, Layers } from 'lucide-vue-next'
+import { X, MoreHorizontal, Lock, Edit, Package, PackageCheck, PackageX, Truck, Check, Box, Plus, Trash2, MapPin, AlertCircle, AlertTriangle, Ban, CheckCheck, CheckCircle2, Zap, User, IndianRupee, Clock, Building2, Phone, FileText, Calendar, Copy, ChevronRight, Car, GitFork, SlidersHorizontal, Loader2, Save, Link2, UserCheck, Calculator, LayoutList, ChevronUp, ChevronDown, Tag, PackageSearch, Layers, ArrowLeft, ArrowRight } from 'lucide-vue-next'
 import StatusBadge from '~/components/ui/StatusBadge.vue'
 import GenerateBillModal from '~/components/dashboard/GenerateBillModal.vue'
 import SetDeliveryPinModal from '~/components/dashboard/SetDeliveryPinModal.vue'
@@ -8,6 +8,7 @@ import PartyVehicleHandoverModal from '~/components/dashboard/PartyVehicleHandov
 import AdminOrderStatusModal from '~/components/dashboard/AdminOrderStatusModal.vue'
 import LinkCustomerModal from '~/components/dashboard/LinkCustomerModal.vue'
 import LinkItemModal from '~/components/dashboard/LinkItemModal.vue'
+import CreateBatchModal from '~/components/dashboard/CreateBatchModal.vue'
 import LoadingTopBar from '~/components/ui/LoadingTopBar.vue'
 import CustomSelect from '~/components/ui/CustomSelect.vue'
 import SearchCombobox from '~/components/ui/SearchCombobox.vue'
@@ -19,6 +20,7 @@ import { useRealtimeSync } from '~/composables/useRealtimeSync'
 const isPinModalOpen = ref(false)
 const isHandoverModalOpen = ref(false)
 const isAdminStatusModalOpen = ref(false)
+const isCreateBatchModalOpen = ref(false)
 const isLinkModalOpen = ref(false)
 const isLinkItemModalOpen = ref(false)
 const isHeaderMenuOpen = ref(false)
@@ -78,21 +80,104 @@ const emit = defineEmits<{
   (e: 'close'): void
   (e: 'updated', updatedOrder?: any): void
   (e: 'reviewApprove', order: Order): void
+  (e: 'create-batch', id: string): void
   (e: 'split-order', id: string): void
 }>()
 
 const { user, hasRole, canEditOrders, canCancelOrders, canEditOrderStatus, canLinkBusyData, canEditConvertedQuotationOrders, canAccessPage } = useAuth()
 const order = ref<Order | null>(null)
 const isLoading = ref(false)
-const activeTab = ref<'DETAILS' | 'TIMELINE' | 'NOTES'>('DETAILS')
+const activeTab = ref<'DETAILS' | 'BATCHES' | 'TIMELINE' | 'NOTES'>('DETAILS')
 
-const canSplitCurrentOrder = computed(() => {
+// Master Order & Batch Pools
+const isMasterOrder = computed(() => Boolean(order.value && !order.value.parentOrderId))
+const isChildBatch = computed(() => Boolean(order.value?.parentOrderId))
+
+const poolMetrics = computed(() => {
+  if (!order.value) return { totalOrdered: 0, totalBatched: 0, totalPending: 0, batchedPercent: 0 }
+  const masterItems = order.value.items || []
+  const batches = (order.value as any).batches || []
+
+  let totalOrdered = 0
+  for (const itm of masterItems) {
+    totalOrdered += Number(itm.approvedQuantity ?? itm.quantity ?? 0)
+  }
+
+  let totalBatched = 0
+  for (const b of batches) {
+    if (b.overallStatus === 'CANCELLED') continue
+    for (const bi of (b.items || [])) {
+      totalBatched += Number(bi.quantity || 0)
+    }
+  }
+
+  const totalPending = Math.max(0, totalOrdered - totalBatched)
+  const batchedPercent = totalOrdered > 0 ? Math.min(100, Math.round((totalBatched / totalOrdered) * 100)) : 0
+
+  return {
+    totalOrdered,
+    totalBatched,
+    totalPending,
+    batchedPercent
+  }
+})
+
+const canCreateBatch = computed(() => {
   if (!order.value) return false
   if (order.value.overallStatus === 'CANCELLED') return false
-  if (isBillGenerated.value) return false
-  if (order.value.deliveryStatus?.status === 'DISPATCHED' || order.value.deliveryStatus?.status === 'DELIVERED') return false
-  if (isConvertedFromQuotation.value && !canEditConvertedQuotationOrders.value) return false
+  if (order.value.deliveryStatus?.status === 'DELIVERED') return false
+  if (isBillGenerated.value && (!order.value.batches || order.value.batches.length === 0)) return false
+  // If master order and has pending pool
+  if (isMasterOrder.value && poolMetrics.value.totalPending <= 0 && (order.value.batches?.length || 0) > 0) return false
   return hasRole('ADMIN', 'SUPERVISOR') || canAccessPage('approve-orders')
+})
+
+const canSplitCurrentOrder = computed(() => canCreateBatch.value)
+
+const openCreateBatchModal = () => {
+  if (!order.value) return
+  isCreateBatchModalOpen.value = true
+}
+
+const onBatchCreated = async (result: any) => {
+  isCreateBatchModalOpen.value = false
+  await fetchOrder(order.value?.id || '', true)
+  emit('updated')
+}
+
+const isTogglingHold = ref<string | null>(null)
+const toggleBatchHold = async (batchId: string) => {
+  if (isTogglingHold.value) return
+  isTogglingHold.value = batchId
+  try {
+    const res = await $fetch<any>(`/api/orders/${batchId}/toggle-batch-hold`, { method: 'POST' })
+    showSaved(res.message || 'Batch status updated!')
+    notifyChange({ action: res.isBatchOnHold ? 'BATCH_HELD' : 'BATCH_RELEASED', orderId: batchId })
+    await fetchOrder(order.value?.id || '', true)
+    emit('updated')
+  } catch (err: any) {
+    showError(err.data?.message || 'Failed to toggle batch hold status')
+  } finally {
+    isTogglingHold.value = null
+  }
+}
+
+const navigationTabs = computed(() => {
+  const tabs: Array<{ id: 'DETAILS' | 'BATCHES' | 'TIMELINE' | 'NOTES', label: string, badge?: any }> = [
+    { id: 'DETAILS', label: 'Details', badge: order.value?.items?.length }
+  ]
+  const batchesCount = (order.value as any)?.batches?.length || 0
+  if (batchesCount > 0 || isMasterOrder.value || isChildBatch.value) {
+    const batchBadge = batchesCount > 0 
+      ? String(batchesCount) 
+      : (isChildBatch.value ? `B${order.value?.batchNumber}` : null)
+    tabs.push({ id: 'BATCHES', label: 'Batches', badge: batchBadge })
+  }
+  tabs.push(
+    { id: 'TIMELINE', label: 'Timeline', badge: order.value?.timeline?.length },
+    { id: 'NOTES', label: 'Notes', badge: order.value?.notes ? '•' : null }
+  )
+  return tabs
 })
 
 const isReleasingBatch = ref(false)
@@ -1699,13 +1784,13 @@ onUnmounted(() => {
                 class="absolute mt-1.5 w-48 bg-white rounded-xl shadow-xl border border-gray-200 py-1 z-40 text-xs divide-y divide-gray-100 animate-in fade-in zoom-in-95 duration-100"
                 :class="canEditCurrentOrder || canEditOrderStatus ? 'right-0' : 'left-0'"
               >
-                <div v-if="canSplitCurrentOrder" class="py-1">
+                <div v-if="canCreateBatch" class="py-1">
                   <button 
-                    @click="emit('split-order', order.id); isHeaderMenuOpen = false"
+                    @click="openCreateBatchModal(); isHeaderMenuOpen = false"
                     class="w-full text-left px-3.5 py-2 hover:bg-amber-50 text-amber-900 flex items-center gap-2 cursor-pointer font-medium transition-colors"
                   >
                     <Layers class="w-3.5 h-3.5 text-amber-700 shrink-0" />
-                    <span>Split into Batches</span>
+                    <span>+ Create Batch</span>
                   </button>
                 </div>
                 <div v-if="canCancelOrder" class="py-1">
@@ -1810,15 +1895,15 @@ onUnmounted(() => {
               <span>Edit Status</span>
             </button>
 
-            <!-- Split Batches Button -->
+            <!-- Create Batch Button -->
             <button 
-              v-if="canSplitCurrentOrder"
-              @click="emit('split-order', order.id)" 
-              title="Split order into fulfillment batches"
+              v-if="canCreateBatch"
+              @click="openCreateBatchModal" 
+              title="Create a fulfillment batch from pending order pool"
               class="inline-flex px-3 py-1.5 text-xs font-bold text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-300 rounded-lg transition-all items-center gap-1.5 shadow-xs cursor-pointer active:scale-95"
             >
               <Layers class="w-3.5 h-3.5 text-amber-700 shrink-0" />
-              <span>Split Batches</span>
+              <span>+ Create Batch</span>
             </button>
 
             <!-- Cancel Button (Direct on PC) -->
@@ -2001,11 +2086,7 @@ onUnmounted(() => {
         <!-- 3. Navigation Tabs -->
         <div class="px-5 sm:px-6 border-b border-gray-200/80 bg-white flex gap-6 text-xs sm:text-sm font-semibold text-gray-500 flex-shrink-0">
           <button 
-            v-for="tab in ([
-              { id: 'DETAILS', label: 'Details', badge: order.items?.length },
-              { id: 'TIMELINE', label: 'Timeline', badge: order.timeline?.length },
-              { id: 'NOTES', label: 'Notes', badge: order.notes ? '•' : null }
-            ] as const)" 
+            v-for="tab in navigationTabs" 
             :key="tab.id"
             @click="activeTab = tab.id as any"
             :class="[
@@ -2079,79 +2160,6 @@ onUnmounted(() => {
                     <span class="block text-[9px] text-gray-500 uppercase tracking-tight mt-0.5 whitespace-nowrap">
                       {{ getStepStatus(step.id).replace(/_/g, ' ') }}
                     </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Master Order Batches Breakdown Card (When Order has fulfillment batches) -->
-            <div v-if="(order as any).batches && (order as any).batches.length > 0" class="bg-white rounded-xl border border-gray-200/90 shadow-2xs overflow-hidden">
-              <div class="px-4 py-3 bg-[#faf8f5] border-b border-gray-200 flex items-center justify-between gap-2">
-                <div class="flex items-center gap-2 min-w-0">
-                  <Layers class="w-4 h-4 text-[#1b3b5f] shrink-0" />
-                  <h3 class="text-xs font-bold text-gray-900 uppercase tracking-wider truncate">
-                    Fulfillment Batches ({{ (order as any).batches.length }} Batches)
-                  </h3>
-                </div>
-                <span class="text-xs font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 shrink-0">
-                  {{ getDisplayStatus(order) }}
-                </span>
-              </div>
-
-              <div class="divide-y divide-gray-100 p-3 space-y-2">
-                <div 
-                  v-for="b in (order as any).batches" 
-                  :key="b.id" 
-                  class="p-3 rounded-xl border border-gray-200/80 bg-gray-50/50 hover:bg-gray-50 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-                >
-                  <div class="min-w-0 flex-1">
-                    <div class="flex items-center gap-2 flex-wrap">
-                      <span class="font-bold text-xs text-gray-900 font-mono">{{ b.orderNumber }}</span>
-                      <span class="px-2 py-0.5 text-[10px] font-bold rounded-md bg-blue-50 text-blue-800 border border-blue-200">
-                        Batch {{ b.batchNumber }}
-                      </span>
-                      <span v-if="b.isBatchOnHold" class="px-2 py-0.5 text-[10px] font-bold rounded-md bg-amber-100 text-amber-900 border border-amber-300">
-                        ⏸️ On Hold (Stock pending)
-                      </span>
-                      <span v-else-if="b.deliveryStatus?.status === 'DELIVERED'" class="px-2 py-0.5 text-[10px] font-bold rounded-md bg-emerald-100 text-emerald-900 border border-emerald-300">
-                        ✅ Delivered
-                      </span>
-                      <span v-else-if="b.billingStatus?.status === 'GENERATED'" class="px-2 py-0.5 text-[10px] font-bold rounded-md bg-indigo-50 text-indigo-800 border border-indigo-200">
-                        📄 Invoiced (#{{ b.billingStatus.invoiceNumber || 'INV' }})
-                      </span>
-                      <span v-else-if="b.packingStatus?.status === 'PACKED'" class="px-2 py-0.5 text-[10px] font-bold rounded-md bg-teal-50 text-teal-800 border border-teal-200">
-                        📦 Packed
-                      </span>
-                      <span v-else class="px-2 py-0.5 text-[10px] font-bold rounded-md bg-gray-200 text-gray-700">
-                        ⏳ Packing Queue
-                      </span>
-                    </div>
-
-                    <div class="flex items-center gap-3 text-xs text-gray-500 mt-1.5 flex-wrap">
-                      <span>{{ b.items?.length || 0 }} line item(s)</span>
-                      <span>•</span>
-                      <span class="font-bold text-gray-800">{{ formatCurrency(b.totalAmount || 0) }}</span>
-                    </div>
-                  </div>
-
-                  <div class="flex items-center gap-2 shrink-0 self-end sm:self-center">
-                    <button 
-                      v-if="b.isBatchOnHold && (hasRole('ADMIN', 'SUPERVISOR') || canAccessPage('approve-orders'))"
-                      type="button" 
-                      @click.stop="releaseBatch(b.id)"
-                      :disabled="isReleasingBatch"
-                      class="px-2.5 py-1 text-xs font-bold text-amber-900 bg-amber-100 hover:bg-amber-200 rounded-lg border border-amber-300 transition cursor-pointer"
-                    >
-                      Release to Packing
-                    </button>
-                    <button 
-                      type="button" 
-                      @click.stop="switchToOrder(b.id)"
-                      class="px-3 py-1 text-xs font-bold text-[#1b3b5f] bg-[#1b3b5f]/10 hover:bg-[#1b3b5f]/20 rounded-lg border border-[#1b3b5f]/20 transition flex items-center gap-1 cursor-pointer"
-                    >
-                      <span>View Batch</span>
-                      <ArrowRight class="w-3.5 h-3.5" />
-                    </button>
                   </div>
                 </div>
               </div>
@@ -2957,6 +2965,287 @@ onUnmounted(() => {
 
           </div>
           <!-- END DETAILS TAB -->
+
+          <!-- BATCHES TAB -->
+          <div v-else-if="activeTab === 'BATCHES'" class="space-y-6">
+            <!-- Header card -->
+            <div class="bg-[#faf8f5] rounded-xl border border-gray-200/90 p-4 shadow-2xs">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-9 h-9 rounded-xl bg-[#1b3b5f]/10 flex items-center justify-center text-[#1b3b5f] shrink-0">
+                    <Layers class="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 class="text-sm font-bold text-gray-900 tracking-tight flex items-center gap-2">
+                      <span>Fulfillment Batches</span>
+                      <span v-if="(order as any).batches?.length" class="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 font-semibold">
+                        {{ (order as any).batches.length }} Created
+                      </span>
+                    </h3>
+                    <p class="text-xs text-gray-500 mt-0.5">
+                      {{ isChildBatch ? `Viewing Batch #${order.batchNumber} of parent order ${order.parentOrder?.orderNumber || ''}` : 'Fulfill partial quantities in independent batches drawn from pending pool.' }}
+                    </p>
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-2 shrink-0">
+                  <button
+                    v-if="isChildBatch && order.parentOrderId"
+                    type="button"
+                    @click="switchToOrder(order.parentOrderId)"
+                    class="px-3 py-1.5 bg-white hover:bg-gray-50 text-gray-700 text-xs font-bold rounded-xl border border-gray-200 transition shadow-2xs flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <ArrowLeft class="w-3.5 h-3.5" />
+                    <span>View Master Order</span>
+                  </button>
+
+                  <button
+                    v-if="canCreateBatch"
+                    type="button"
+                    @click="openCreateBatchModal"
+                    class="px-3.5 py-1.5 bg-[#1b3b5f] hover:bg-[#132c49] text-white text-xs font-bold rounded-xl transition shadow-2xs flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Plus class="w-4 h-4" />
+                    <span>+ Create Batch</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Pool Balance Ribbon (Master Order only) -->
+            <div v-if="isMasterOrder" class="bg-white rounded-xl border border-gray-200/90 p-4 shadow-2xs space-y-3">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-gray-700 uppercase tracking-wider">Pending Pool Balance</span>
+                <span class="text-xs font-semibold px-2 py-0.5 rounded-md" :class="poolMetrics.totalPending === 0 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-blue-50 text-blue-700 border border-blue-200'">
+                  {{ poolMetrics.batchedPercent }}% Batched
+                </span>
+              </div>
+
+              <!-- 3 Metrics Columns -->
+              <div class="grid grid-cols-3 gap-2 sm:gap-3 text-center">
+                <div class="p-2.5 rounded-lg bg-gray-50 border border-gray-100">
+                  <span class="text-[10px] uppercase font-bold text-gray-500 tracking-wider block">Total Ordered</span>
+                  <span class="text-lg sm:text-xl font-bold font-mono text-gray-900">{{ poolMetrics.totalOrdered }}</span>
+                  <span class="text-[10px] text-gray-400 block mt-0.5">{{ order.items?.length || 0 }} SKUs</span>
+                </div>
+                <div class="p-2.5 rounded-lg bg-blue-50/60 border border-blue-100">
+                  <span class="text-[10px] uppercase font-bold text-blue-700 tracking-wider block">Allocated</span>
+                  <span class="text-lg sm:text-xl font-bold font-mono text-blue-900">{{ poolMetrics.totalBatched }}</span>
+                  <span class="text-[10px] text-blue-600 block mt-0.5">{{ (order as any).batches?.length || 0 }} batches</span>
+                </div>
+                <div class="p-2.5 rounded-lg" :class="poolMetrics.totalPending > 0 ? 'bg-amber-50/70 border border-amber-200' : 'bg-emerald-50/70 border border-emerald-200'">
+                  <span class="text-[10px] uppercase font-bold tracking-wider block" :class="poolMetrics.totalPending > 0 ? 'text-amber-800' : 'text-emerald-800'">
+                    Pending Pool
+                  </span>
+                  <span class="text-lg sm:text-xl font-bold font-mono" :class="poolMetrics.totalPending > 0 ? 'text-amber-900' : 'text-emerald-900'">
+                    {{ poolMetrics.totalPending }}
+                  </span>
+                  <span class="text-[10px] block mt-0.5" :class="poolMetrics.totalPending > 0 ? 'text-amber-700' : 'text-emerald-700'">
+                    {{ poolMetrics.totalPending > 0 ? 'Available for batch' : 'Fully allocated' }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- Progress bar -->
+              <div class="space-y-1">
+                <div class="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+                  <div 
+                    class="h-2 rounded-full transition-all duration-300"
+                    :class="poolMetrics.batchedPercent === 100 ? 'bg-emerald-500' : 'bg-blue-600'"
+                    :style="{ width: `${poolMetrics.batchedPercent}%` }"
+                  ></div>
+                </div>
+                <p class="text-[11px] text-gray-500">
+                  <span v-if="poolMetrics.totalPending > 0">
+                    💡 <strong>{{ poolMetrics.totalPending }} units</strong> remain in the pending pool and can be allocated to a new batch anytime.
+                  </span>
+                  <span v-else>
+                    ✅ All ordered quantities have been allocated across {{ (order as any).batches?.length || 0 }} fulfillment batches.
+                  </span>
+                </p>
+              </div>
+            </div>
+
+            <!-- Child Order Status Banner (if this drawer is currently viewing a child batch) -->
+            <div v-if="isChildBatch" class="bg-blue-50/60 border border-blue-200/90 rounded-xl p-4 shadow-2xs space-y-3">
+              <div class="flex items-center justify-between flex-wrap gap-2">
+                <div class="flex items-center gap-2">
+                  <span class="px-2.5 py-1 text-xs font-bold rounded-lg bg-blue-100 text-blue-900 border border-blue-300">
+                    Current Batch: #{{ order.batchNumber }}
+                  </span>
+                  <span v-if="order.isBatchOnHold" class="px-2 py-0.5 text-xs font-bold rounded-md bg-amber-100 text-amber-900 border border-amber-300">
+                    ⏸️ On Hold
+                  </span>
+                  <span v-else class="px-2 py-0.5 text-xs font-bold rounded-md bg-emerald-100 text-emerald-900 border border-emerald-300">
+                    ▶️ Active in Pipeline
+                  </span>
+                </div>
+
+                <!-- Hold / Activate Toggle -->
+                <button
+                  type="button"
+                  @click="toggleBatchHold(order.id)"
+                  :disabled="isTogglingHold === order.id"
+                  class="px-3 py-1.5 text-xs font-bold rounded-xl border transition shadow-2xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  :class="order.isBatchOnHold ? 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-700' : 'bg-amber-100 hover:bg-amber-200 text-amber-900 border-amber-300'"
+                >
+                  <Loader2 v-if="isTogglingHold === order.id" class="w-3.5 h-3.5 animate-spin" />
+                  <span v-else-if="order.isBatchOnHold">▶️ Activate Batch (Send to Packing)</span>
+                  <span v-else>⏸️ Put Batch On Hold</span>
+                </button>
+              </div>
+              <p class="text-xs text-blue-900">
+                This batch moves independently through packing, invoicing, and delivery. Edits to its item quantities automatically recalculate the master order's pending pool.
+              </p>
+            </div>
+
+            <!-- Batches List -->
+            <div class="space-y-3">
+              <div class="flex items-center justify-between pb-1">
+                <h4 class="text-xs font-bold text-gray-800 uppercase tracking-wider">
+                  {{ isMasterOrder ? 'Created Batches' : 'All Batches in this Order' }}
+                  ({{ (isMasterOrder ? (order as any).batches?.length : (order as any).sisterBatches?.length) || 0 }})
+                </h4>
+              </div>
+
+              <!-- Batches Cards -->
+              <div 
+                v-if="(isMasterOrder ? (order as any).batches : (order as any).sisterBatches)?.length > 0"
+                class="space-y-3"
+              >
+                <div
+                  v-for="b in (isMasterOrder ? (order as any).batches : (order as any).sisterBatches)"
+                  :key="b.id"
+                  class="bg-white rounded-xl border p-4 shadow-2xs transition hover:shadow-xs space-y-3"
+                  :class="b.id === order.id ? 'border-[#1b3b5f] ring-1 ring-[#1b3b5f]/30' : 'border-gray-200/90'"
+                >
+                  <!-- Batch Top Row -->
+                  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                    <div class="flex items-center gap-2 flex-wrap">
+                      <span class="font-bold text-sm font-mono text-gray-900">{{ b.orderNumber }}</span>
+                      <span class="px-2 py-0.5 text-xs font-bold rounded-md bg-[#1b3b5f]/10 text-[#1b3b5f] border border-[#1b3b5f]/20">
+                        Batch {{ b.batchNumber }}
+                      </span>
+                      <span v-if="b.id === order.id" class="px-2 py-0.5 text-[10px] font-bold rounded-md bg-blue-500 text-white">
+                        Currently Viewing
+                      </span>
+                    </div>
+
+                    <!-- 1-Click Active / On Hold Toggle -->
+                    <div class="flex items-center gap-2">
+                      <button
+                        type="button"
+                        @click.stop="toggleBatchHold(b.id)"
+                        :disabled="isTogglingHold === b.id"
+                        class="px-2.5 py-1 text-xs font-bold rounded-lg border transition shadow-2xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                        :class="b.isBatchOnHold ? 'bg-amber-100 hover:bg-amber-200 text-amber-900 border-amber-300' : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-300'"
+                        :title="b.isBatchOnHold ? 'Click to release batch to active packing queue' : 'Click to hold batch (pause fulfillment)'"
+                      >
+                        <Loader2 v-if="isTogglingHold === b.id" class="w-3.5 h-3.5 animate-spin" />
+                        <span v-if="b.isBatchOnHold">⏸️ On Hold (Paused)</span>
+                        <span v-else>▶️ Active in Pipeline</span>
+                      </button>
+
+                      <button
+                        v-if="b.id !== order.id"
+                        type="button"
+                        @click.stop="switchToOrder(b.id)"
+                        class="px-3 py-1 text-xs font-bold text-[#1b3b5f] bg-[#1b3b5f]/10 hover:bg-[#1b3b5f]/20 rounded-lg border border-[#1b3b5f]/20 transition flex items-center gap-1 cursor-pointer"
+                      >
+                        <span>View</span>
+                        <ArrowRight class="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Department Status Steps for this Batch -->
+                  <div class="grid grid-cols-3 gap-2 pt-1 border-t border-gray-100 text-center">
+                    <!-- Packing -->
+                    <div class="p-2 rounded-lg bg-gray-50/70 border border-gray-100">
+                      <span class="text-[9px] uppercase font-bold text-gray-500 block">Packing</span>
+                      <span v-if="b.packingStatus?.status === 'PACKED'" class="text-[11px] font-bold text-emerald-700 flex items-center justify-center gap-1">
+                        <Check class="w-3 h-3" /> Packed
+                      </span>
+                      <span v-else-if="b.isBatchOnHold" class="text-[11px] font-bold text-amber-700">
+                        ⏸️ Paused
+                      </span>
+                      <span v-else class="text-[11px] font-bold text-blue-700">
+                        ⏳ Packing Queue
+                      </span>
+                    </div>
+
+                    <!-- Billing -->
+                    <div class="p-2 rounded-lg bg-gray-50/70 border border-gray-100">
+                      <span class="text-[9px] uppercase font-bold text-gray-500 block">Billing</span>
+                      <span v-if="b.billingStatus?.status === 'GENERATED'" class="text-[11px] font-bold text-indigo-700 flex items-center justify-center gap-1">
+                        <Check class="w-3 h-3" /> Invoiced
+                      </span>
+                      <span v-else class="text-[11px] font-bold text-gray-500">
+                        ⏳ Awaiting
+                      </span>
+                    </div>
+
+                    <!-- Delivery -->
+                    <div class="p-2 rounded-lg bg-gray-50/70 border border-gray-100">
+                      <span class="text-[9px] uppercase font-bold text-gray-500 block">Delivery</span>
+                      <span v-if="b.deliveryStatus?.status === 'DELIVERED'" class="text-[11px] font-bold text-emerald-700 flex items-center justify-center gap-1">
+                        ✅ Delivered
+                      </span>
+                      <span v-else-if="b.deliveryStatus?.status === 'OUT_FOR_DELIVERY'" class="text-[11px] font-bold text-teal-700">
+                        🚚 On Road
+                      </span>
+                      <span v-else class="text-[11px] font-bold text-gray-500">
+                        ⏳ Pending
+                      </span>
+                    </div>
+                  </div>
+
+                  <!-- Line Items in Batch Preview -->
+                  <div class="pt-2 border-t border-gray-100">
+                    <div class="flex items-center justify-between text-xs text-gray-500 mb-1.5">
+                      <span class="font-semibold text-gray-700">{{ b.items?.length || 0 }} Item(s) in this batch</span>
+                      <span class="font-bold text-gray-900">{{ formatCurrency(b.totalAmount || 0) }}</span>
+                    </div>
+                    <div class="flex flex-wrap gap-1.5">
+                      <span 
+                        v-for="item in (b.items || [])" 
+                        :key="item.id" 
+                        class="px-2 py-0.5 bg-gray-100 hover:bg-gray-200 rounded-md text-[11px] text-gray-700 font-medium"
+                      >
+                        {{ item.product?.name || item.productName || 'Item' }} &times; <strong>{{ item.quantity }}</strong>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Empty State -->
+              <div 
+                v-else 
+                class="text-center py-12 px-4 bg-gray-50/60 rounded-xl border border-dashed border-gray-200 space-y-3"
+              >
+                <div class="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mx-auto">
+                  <Layers class="w-6 h-6" />
+                </div>
+                <div class="max-w-md mx-auto">
+                  <h4 class="text-sm font-bold text-gray-900">No Batches Created Yet</h4>
+                  <p class="text-xs text-gray-500 mt-1">
+                    This order is currently set to be fulfilled in a single standard shipment. If stock is arriving in stages or the customer needs partial delivery, create a fulfillment batch from the pending pool.
+                  </p>
+                </div>
+                <div v-if="canCreateBatch" class="pt-2">
+                  <button
+                    type="button"
+                    @click="openCreateBatchModal"
+                    class="px-4 py-2 bg-[#1b3b5f] hover:bg-[#132c49] text-white text-xs font-bold rounded-xl transition shadow-sm inline-flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Plus class="w-4 h-4" />
+                    <span>Create First Batch</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
 
           <!-- TIMELINE TAB -->
           <div v-else-if="activeTab === 'TIMELINE'" class="space-y-4">
@@ -4484,5 +4773,13 @@ onUnmounted(() => {
       :customer-id="editForm.customerId"
       :customer-name="selectedEditCustomerName"
       @apply-price="onApplyEditPriceHistory"
+    />
+
+    <!-- Create Fulfillment Batch Modal -->
+    <CreateBatchModal
+      :is-open="isCreateBatchModalOpen"
+      :order-id="order?.parentOrderId || order?.id || null"
+      @close="isCreateBatchModalOpen = false"
+      @batch-created="onBatchCreated"
     />
 </template>

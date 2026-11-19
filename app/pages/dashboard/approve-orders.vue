@@ -37,7 +37,7 @@ import RowsPerPageSelect from '~/components/ui/RowsPerPageSelect.vue'
 import FloatingHorizontalScrollbar from '~/components/ui/FloatingHorizontalScrollbar.vue'
 import TableFilterButtons from '~/components/dashboard/TableFilterButtons.vue'
 import OrderDetailPanel from '~/components/dashboard/OrderDetailPanel.vue'
-import SplitOrderModal from '~/components/dashboard/SplitOrderModal.vue'
+import CreateBatchModal from '~/components/dashboard/CreateBatchModal.vue'
 
 definePageMeta({ layout: 'dashboard' })
 
@@ -165,17 +165,17 @@ const editableItems = ref<any[]>([])
 const approvalNotes = ref('')
 const isSubmittingApproval = ref(false)
 
-// Split into Batches state
-const isSplitModalOpen = ref(false)
-const splittingOrderId = ref<string | null>(null)
+// Fulfillment Batch state
+const isCreateBatchModalOpen = ref(false)
+const batchOrderId = ref<string | null>(null)
 
-const openSplitModal = (orderId: string) => {
-  splittingOrderId.value = orderId
-  isSplitModalOpen.value = true
+const openCreateBatchModal = (orderId: string) => {
+  batchOrderId.value = orderId
+  isCreateBatchModalOpen.value = true
 }
 
-const onOrderSplit = () => {
-  isSplitModalOpen.value = false
+const onBatchCreated = () => {
+  isCreateBatchModalOpen.value = false
   isReviewModalOpen.value = false
   selectedOrder.value = null
   handleRefresh()
@@ -1064,11 +1064,11 @@ const getTotalNos = (order: any) => {
             <button 
               v-if="selectedOrder"
               type="button" 
-              @click="openSplitModal(selectedOrder.id)"
+              @click="openCreateBatchModal(selectedOrder.id)"
               class="w-full sm:w-auto justify-center flex items-center gap-1.5 px-4 py-2 bg-amber-50 text-amber-900 border border-amber-300 text-xs font-bold rounded-lg hover:bg-amber-100 transition-colors cursor-pointer shadow-xs active:scale-95"
             >
               <Layers class="w-4 h-4 text-amber-700" />
-              <span>Split into Batches</span>
+              <span>+ Create Batch</span>
             </button>
             <button 
               @click="submitApproval" 
@@ -1135,15 +1135,15 @@ const getTotalNos = (order: any) => {
       @close="handleDrawerClose"
       @updated="handleDrawerUpdate"
       @review-approve="onDrawerReviewApprove"
-      @split-order="openSplitModal"
+      @split-order="openCreateBatchModal"
     />
 
-    <!-- Batch Split Modal -->
-    <SplitOrderModal 
-      :isOpen="isSplitModalOpen"
-      :orderId="splittingOrderId"
-      @close="isSplitModalOpen = false"
-      @splitSuccess="onOrderSplit"
+    <!-- Fulfillment Batch Modal -->
+    <CreateBatchModal 
+      :is-open="isCreateBatchModalOpen"
+      :order-id="batchOrderId"
+      @close="isCreateBatchModalOpen = false"
+      @batch-created="onBatchCreated"
     />
   </div>
 </template>
