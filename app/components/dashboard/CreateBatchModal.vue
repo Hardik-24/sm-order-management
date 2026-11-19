@@ -780,26 +780,31 @@ const submitBatch = async () => {
           </div>
 
           <!-- Modal Action Footer -->
-          <div class="px-5 sm:px-6 py-4 bg-gray-50 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
-            <!-- Left: Batch Allocation Preview -->
-            <div class="text-xs">
-              <span class="text-gray-600">Batch {{ currentBatchNumber }} Total: </span>
-              <strong class="text-gray-900 font-extrabold tabular-nums">{{ totalBatchUnits }} pcs</strong>
-              <span class="text-gray-300 mx-1.5">&bull;</span>
-              <strong class="text-[#1b3b5f] font-black tabular-nums">{{ formatCurrency(totalBatchAmount) }}</strong>
-              <span class="block text-[11px] text-gray-500 mt-0.5">
-                {{ mode === 'edit' ? 'Units remaining in master pool:' : 'Pending pool after this batch:' }} 
-                <strong class="tabular-nums">{{ remainingPoolAfterBatch }} pcs</strong>
-              </span>
+          <div class="px-4 sm:px-6 py-3 sm:py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between gap-2.5 sm:gap-3 shrink-0">
+            <!-- Left: Batch Allocation Preview (Done in 2 Lines) -->
+            <div class="text-xs min-w-0 flex-1 leading-snug">
+              <!-- Line 1: Batch Total & Amount -->
+              <div class="truncate text-gray-700">
+                <span class="text-gray-500 font-medium">Batch {{ currentBatchNumber }} Total: </span>
+                <strong class="text-gray-950 font-extrabold tabular-nums">{{ totalBatchUnits }} pcs</strong>
+                <span class="text-gray-300 mx-1">&bull;</span>
+                <strong class="text-[#1b3b5f] font-black tabular-nums">{{ formatCurrency(totalBatchAmount) }}</strong>
+              </div>
+              <!-- Line 2: Pending Pool Remaining -->
+              <div class="text-[11px] text-gray-500 mt-0.5 truncate">
+                <span class="hidden sm:inline">{{ mode === 'edit' ? 'Units remaining in master pool:' : 'Pending pool after this batch:' }} </span>
+                <span class="sm:hidden">{{ mode === 'edit' ? 'Pool remaining:' : 'Pending pool:' }} </span>
+                <strong class="tabular-nums text-gray-800 font-bold">{{ remainingPoolAfterBatch }} pcs</strong>
+              </div>
             </div>
 
-            <!-- Right: Action Buttons -->
-            <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+            <!-- Right: Action Buttons (Cancel + Save/Create) -->
+            <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
               <button 
                 type="button"
                 @click="closeModal" 
                 :disabled="isSubmitting"
-                class="px-4 py-2 border border-gray-300 text-gray-700 rounded-xl text-xs font-bold hover:bg-gray-100 disabled:opacity-50 transition cursor-pointer"
+                class="px-3 sm:px-4 py-2 border border-gray-300 text-gray-700 bg-white hover:bg-gray-100 rounded-xl text-xs font-bold disabled:opacity-50 transition cursor-pointer shadow-2xs"
               >
                 Cancel
               </button>
@@ -807,14 +812,15 @@ const submitBatch = async () => {
                 type="button"
                 @click="submitBatch" 
                 :disabled="isSubmitting || totalBatchUnits === 0"
-                class="px-5 py-2.5 bg-[#1b3b5f] hover:bg-[#132c49] text-white rounded-xl text-xs font-bold shadow-sm disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer active:scale-95 transition-all"
+                class="px-3.5 sm:px-5 py-2 sm:py-2.5 bg-[#1b3b5f] hover:bg-[#132c49] active:bg-[#0e2035] text-white rounded-xl text-xs font-bold shadow-sm disabled:opacity-50 flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-all"
               >
                 <Loader2 v-if="isSubmitting" class="w-3.5 h-3.5 animate-spin" />
                 <template v-else>
-                  <Save v-if="mode === 'edit'" class="w-3.5 h-3.5" />
-                  <Plus v-else class="w-3.5 h-3.5" />
+                  <Save v-if="mode === 'edit'" class="w-3.5 h-3.5 shrink-0" />
+                  <Plus v-else class="w-3.5 h-3.5 shrink-0" />
                 </template>
-                <span>{{ mode === 'edit' ? `Save Batch ${currentBatchNumber} Changes` : `Create Batch ${currentBatchNumber}` }}</span>
+                <span class="sm:hidden">{{ mode === 'edit' ? 'Save' : 'Create' }}</span>
+                <span class="hidden sm:inline">{{ mode === 'edit' ? `Save Batch ${currentBatchNumber} Changes` : `Create Batch ${currentBatchNumber}` }}</span>
               </button>
             </div>
           </div>
