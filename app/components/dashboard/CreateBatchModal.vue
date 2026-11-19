@@ -173,7 +173,7 @@ watch(() => [props.isOpen, props.orderId, props.mode], async ([open, id, mode]) 
               orderedQty: Number(bi.quantity || 0),
               batchedQty: 0,
               pendingQty: 0,
-              maxQty: 99999,
+              maxQty: Number(bi.quantity || 0),
               batchQty: Number(bi.quantity || 0),
               isNewProduct: true
             })
@@ -230,15 +230,28 @@ const closeModal = () => {
 const updateQty = (row: BatchRow, delta: number) => {
   const current = Number(row.batchQty || 0)
   const next = current + delta
-  row.batchQty = Math.max(0, Math.min(row.maxQty, next))
+  if (row.isNewProduct) {
+    row.batchQty = Math.max(1, next)
+    row.orderedQty = row.batchQty
+    row.maxQty = row.batchQty
+  } else {
+    row.batchQty = Math.max(0, Math.min(row.maxQty, next))
+  }
 }
 
 const onQtyInput = (row: BatchRow, event: Event) => {
   const target = event.target as HTMLInputElement
   let val = parseInt(target.value, 10)
   if (isNaN(val) || val < 0) val = 0
-  if (val > row.maxQty) val = row.maxQty
-  row.batchQty = val
+  if (row.isNewProduct) {
+    if (val < 1) val = 1
+    row.batchQty = val
+    row.orderedQty = val
+    row.maxQty = val
+  } else {
+    if (val > row.maxQty) val = row.maxQty
+    row.batchQty = val
+  }
   target.value = String(val)
 }
 
@@ -262,6 +275,7 @@ const addExtraProductToBatch = () => {
   }
 
   const prod = allProducts.value.find(p => p.id === newProductSelection.value.productId)
+  const chosenQty = Number(newProductSelection.value.quantity) || 1
   batchRows.value.push({
     productId: newProductSelection.value.productId,
     productName: prod?.name || 'New Item',
@@ -270,11 +284,11 @@ const addExtraProductToBatch = () => {
     discount: Number(newProductSelection.value.discount || 0),
     taxRate: Number(newProductSelection.value.taxRate || 18),
     isTaxInclusive: Boolean(newProductSelection.value.isTaxInclusive),
-    orderedQty: newProductSelection.value.quantity,
+    orderedQty: chosenQty,
     batchedQty: 0,
     pendingQty: 0,
-    maxQty: 99999,
-    batchQty: newProductSelection.value.quantity,
+    maxQty: chosenQty,
+    batchQty: chosenQty,
     isNewProduct: true
   })
 
@@ -542,17 +556,22 @@ const submitBatch = async () => {
 
                     <!-- Available / Max allowable -->
                     <td class="p-3 text-center font-bold text-emerald-700 bg-emerald-50/30 tabular-nums">
-                      {{ mode === 'edit' ? row.maxQty : row.pendingQty }}
+                      <span v-if="row.isNewProduct" class="inline-flex items-center gap-1 text-xs text-sky-700 font-bold" title="Newly added product appended to Master Order">
+                        {{ row.batchQty }} <span class="text-[9px] font-semibold text-sky-600 bg-sky-100/90 px-1 py-0.2 rounded border border-sky-200 uppercase">New</span>
+                      </span>
+                      <span v-else>
+                        {{ mode === 'edit' ? row.maxQty : row.pendingQty }}
+                      </span>
                     </td>
 
                     <!-- Batch Quantity Stepper -->
                     <td class="p-3 text-center bg-blue-50/20">
-                      <div v-if="row.maxQty > 0 || row.batchQty > 0" class="inline-flex items-center gap-1.5 justify-center">
+                      <div v-if="row.maxQty > 0 || row.batchQty > 0 || row.isNewProduct" class="inline-flex items-center gap-1.5 justify-center">
                         <div class="inline-flex items-center border border-gray-300 rounded-lg bg-white shadow-2xs overflow-hidden">
                           <button 
                             type="button"
                             @click="updateQty(row, -1)"
-                            :disabled="row.batchQty <= 0"
+                            :disabled="row.batchQty <= (row.isNewProduct ? 1 : 0)"
                             class="w-7 h-7 flex items-center justify-center text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-white cursor-pointer active:scale-95 transition-all"
                             title="Decrease quantity"
                           >
@@ -563,15 +582,15 @@ const submitBatch = async () => {
                             type="number"
                             :value="row.batchQty"
                             @input="onQtyInput(row, $event)"
-                            min="0"
-                            :max="row.maxQty"
+                            :min="row.isNewProduct ? 1 : 0"
+                            :max="row.isNewProduct ? undefined : row.maxQty"
                             class="w-12 h-7 text-center font-bold text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#1b3b5f] border-x border-gray-200 tabular-nums"
                           />
 
                           <button 
                             type="button"
                             @click="updateQty(row, 1)"
-                            :disabled="row.batchQty >= row.maxQty"
+                            :disabled="!row.isNewProduct && row.batchQty >= row.maxQty"
                             class="w-7 h-7 flex items-center justify-center text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-white cursor-pointer active:scale-95 transition-all"
                             title="Increase quantity"
                           >
