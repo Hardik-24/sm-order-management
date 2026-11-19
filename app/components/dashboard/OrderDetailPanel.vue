@@ -1190,6 +1190,7 @@ const getStepColor = (step: string) => {
 
 const isEditModalOpen = ref(false)
 const isEditLoading = ref(false)
+const editingOriginOrderId = ref<string | null>(null)
 
 // UI Mode State for Edit Order Modal: 'modern' (Combobox + cards + item sheet) vs 'classic' (Traditional full inline rows)
 // Defaults to 'classic'. If user switches to 'modern', preference is saved to localStorage.
