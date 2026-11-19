@@ -2398,14 +2398,69 @@ onUnmounted(() => {
               <div class="flex items-center justify-between mb-3.5">
                 <span class="text-[11px] font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
                   <Clock class="w-3.5 h-3.5 text-gray-400" />
-                  Workflow Pipeline
+                  <span>{{ isChildBatch ? `Batch #${order.batchNumber} Fulfillment Pipeline` : 'Workflow Pipeline' }}</span>
                 </span>
                 <span class="text-[11px] font-semibold text-gray-600 bg-white px-2 py-0.5 rounded-md border border-gray-200">
                   {{ getDisplayStatus(order) }}
                 </span>
               </div>
               
-              <div class="relative flex items-start justify-between px-2">
+              <!-- 3-Step Pipeline for Child Fulfillment Batch (Packing -> Billing -> Delivery) -->
+              <div v-if="isChildBatch" class="flex items-center justify-between sm:justify-around px-2 sm:px-6">
+                <template v-for="(step, sIdx) in getBatchPipeline(order)" :key="'batch-pipe-' + step.key">
+                  <div class="flex flex-col items-center min-w-[70px] text-center">
+                    <!-- Circle Icon with status styling -->
+                    <div 
+                      class="relative flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-full text-xs shrink-0 transition-all shadow-2xs"
+                      :class="[
+                        step.status === 'completed' ? 'bg-emerald-50 text-emerald-700 border-2 border-emerald-500' :
+                        step.status === 'in_progress' ? 'bg-blue-50 text-blue-700 border-2 border-blue-500 animate-pulse ring-2 ring-blue-400/20' :
+                        step.status === 'paused' ? 'bg-amber-50 text-amber-700 border-2 border-amber-500' :
+                        'bg-gray-50 text-gray-400 border-2 border-gray-200 opacity-60'
+                      ]"
+                    >
+                      <Package v-if="step.key === 'P'" class="w-4 h-4" />
+                      <IndianRupee v-else-if="step.key === 'B'" class="w-3.5 h-3.5" />
+                      <Truck v-else-if="step.key === 'D'" class="w-4 h-4" />
+
+                      <!-- Completed mini check badge -->
+                      <span 
+                        v-if="step.status === 'completed'" 
+                        class="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[8px] font-black shadow-xs ring-1 ring-white"
+                      >
+                        ✓
+                      </span>
+                    </div>
+
+                    <!-- Step Label (Packing, Billing, Delivery) -->
+                    <span class="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider mt-1.5 text-gray-800">
+                      {{ step.label }}
+                    </span>
+                    <!-- Status Text (Packed, Invoiced, Delivered, etc.) -->
+                    <span 
+                      class="text-[9px] uppercase tracking-tight mt-0.5 whitespace-nowrap font-semibold"
+                      :class="[
+                        step.status === 'completed' ? 'text-emerald-700 font-bold' :
+                        step.status === 'in_progress' ? 'text-blue-700 font-bold' :
+                        step.status === 'paused' ? 'text-amber-700 font-bold' :
+                        'text-gray-400'
+                      ]"
+                    >
+                      {{ step.statusText }}
+                    </span>
+                  </div>
+
+                  <!-- Connector Line between steps -->
+                  <div 
+                    v-if="sIdx < getBatchPipeline(order).length - 1"
+                    class="flex-1 h-0.5 rounded-full min-w-[32px] max-w-[120px] -mt-5 transition-colors mx-2"
+                    :class="getBatchPipeline(order)[sIdx + 1].status !== 'waiting' ? 'bg-emerald-400' : 'bg-gray-200'"
+                  ></div>
+                </template>
+              </div>
+
+              <!-- Standard 5-Step Pipeline for Master / Unsplit Orders -->
+              <div v-else class="relative flex items-start justify-between px-2">
                 <!-- Background Connecting Line -->
                 <div class="absolute top-4 left-[10%] right-[10%] h-0.5 bg-gray-200/90 z-0"></div>
                 
