@@ -81,10 +81,11 @@ export default defineEventHandler(async (event) => {
         ...personFilter
       }
     }),
-    // 3. Awaiting Billing (Fulfillable units awaiting invoice generation)
+    // 3. Awaiting Billing (Fulfillable units packed by warehouse and awaiting invoice generation)
     prisma.order.count({ 
       where: { 
         isApproved: true,
+        packingStatus: { status: 'PACKED' },
         billingStatus: { status: 'PENDING' },
         overallStatus: { notIn: ['DELIVERED', 'CANCELLED'] },
         ...fulfillableUnitCondition,
@@ -142,6 +143,7 @@ export default defineEventHandler(async (event) => {
     prisma.order.findMany({
       where: { 
         isApproved: true, 
+        packingStatus: { status: 'PACKED' },
         billingStatus: { status: 'PENDING' }, 
         overallStatus: { notIn: ['DELIVERED', 'CANCELLED'] }, 
         createdAt: { lt: oneHourAgo }, 

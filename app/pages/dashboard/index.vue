@@ -148,6 +148,7 @@ const handleStatCardClick = (cardKey: string) => {
     packingStatus.value = 'IN_PACKING'
   } else if (cardKey === 'awaitingBilling') {
     isApproved.value = 'true'
+    packingStatus.value = 'PACKED'
     billingStatus.value = 'PENDING'
   } else if (cardKey === 'awaitingDispatch' || cardKey === 'delivered') {
     isApproved.value = 'true'
