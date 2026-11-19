@@ -1068,7 +1068,7 @@ const getTotalNos = (order: any) => {
               class="w-full sm:w-auto justify-center flex items-center gap-1.5 px-4 py-2 bg-amber-50 text-amber-900 border border-amber-300 text-xs font-bold rounded-lg hover:bg-amber-100 transition-colors cursor-pointer shadow-xs active:scale-95"
             >
               <Layers class="w-4 h-4 text-amber-700" />
-              <span>+ Create Batch</span>
+              <span>Create Batch</span>
             </button>
             <button 
               @click="submitApproval" 

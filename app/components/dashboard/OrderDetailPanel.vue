@@ -1840,7 +1840,7 @@ onUnmounted(() => {
                     class="w-full text-left px-3.5 py-2 hover:bg-amber-50 text-amber-900 flex items-center gap-2 cursor-pointer font-medium transition-colors"
                   >
                     <Layers class="w-3.5 h-3.5 text-amber-700 shrink-0" />
-                    <span>+ Create Batch</span>
+                    <span>Create Batch</span>
                   </button>
                 </div>
                 <div v-if="canCancelOrder" class="py-1">
@@ -1953,7 +1953,7 @@ onUnmounted(() => {
               class="inline-flex px-3 py-1.5 text-xs font-bold text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-300 rounded-lg transition-all items-center gap-1.5 shadow-xs cursor-pointer active:scale-95"
             >
               <Layers class="w-3.5 h-3.5 text-amber-700 shrink-0" />
-              <span>+ Create Batch</span>
+              <span>Create Batch</span>
             </button>
 
             <!-- Cancel Button (Direct on PC) -->
@@ -3056,7 +3056,7 @@ onUnmounted(() => {
                     class="px-3.5 py-1.5 bg-[#1b3b5f] hover:bg-[#132c49] text-white text-xs font-bold rounded-xl transition shadow-2xs flex items-center gap-1.5 cursor-pointer"
                   >
                     <Plus class="w-4 h-4" />
-                    <span>+ Create Batch</span>
+                    <span>Create Batch</span>
                   </button>
                 </div>
               </div>

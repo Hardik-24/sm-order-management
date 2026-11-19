@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { 
-  X, Layers, AlertCircle, Check, Loader2, Plus, Minus, MapPin, Building2, Truck, Clock 
+  X, Layers, AlertCircle, Check, Loader2, Plus, Minus, MapPin, Building2, Truck, Car, Package, Clock 
 } from 'lucide-vue-next'
 import { formatCurrency } from '~/lib/utils'
 import { useSnackbar } from '~/composables/useSnackbar'
@@ -338,17 +338,6 @@ const submitCreateBatch = async () => {
                             <Plus class="w-3.5 h-3.5" />
                           </button>
                         </div>
-
-                        <!-- All Chip -->
-                        <button 
-                          type="button"
-                          @click="setAllPending(row)"
-                          class="px-2.5 py-1 text-[10px] font-bold rounded-md transition-colors cursor-pointer"
-                          :class="row.batchQty === row.pendingQty ? 'bg-[#1b3b5f] text-white shadow-2xs' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
-                          title="Fulfill all available units for this SKU"
-                        >
-                          All
-                        </button>
                       </div>
                       <div v-else class="text-[11px] font-bold text-gray-400">
                         100% Fulfilled
@@ -367,16 +356,13 @@ const submitCreateBatch = async () => {
                 :class="isOnHold ? 'bg-amber-50/80 border-amber-300' : 'bg-gray-50/80 border-gray-200'"
               >
                 <div class="flex items-center justify-between">
-                  <div class="flex items-center gap-2.5">
-                    <span class="text-lg">{{ isOnHold ? '⏸️' : '▶️' }}</span>
-                    <div>
-                      <label class="text-xs font-bold text-gray-900 cursor-pointer" @click="isOnHold = !isOnHold">
-                        {{ isOnHold ? 'Batch is On Hold' : 'Batch is Active (Ready for Packing)' }}
-                      </label>
-                      <p class="text-[11px] text-gray-500 mt-0.5">
-                        {{ isOnHold ? 'Paused from packing queue until released' : 'Moves to warehouse packing queue immediately' }}
-                      </p>
-                    </div>
+                  <div>
+                    <label class="text-xs font-bold text-gray-900 cursor-pointer" @click="isOnHold = !isOnHold">
+                      {{ isOnHold ? 'Batch is On Hold' : 'Batch is Active (Ready for Packing)' }}
+                    </label>
+                    <p class="text-[11px] text-gray-500 mt-0.5">
+                      {{ isOnHold ? 'Paused from packing queue until released' : 'Moves to warehouse packing queue immediately' }}
+                    </p>
                   </div>
                   <!-- Switch Toggle -->
                   <button 
@@ -393,36 +379,45 @@ const submitCreateBatch = async () => {
                 </div>
               </div>
 
-              <!-- Transport Mode -->
-              <div class="border border-gray-200 bg-gray-50/80 rounded-xl p-3.5 space-y-1.5">
+              <!-- Transport Mode (Matching Order Creation) -->
+              <div class="border border-gray-200 bg-gray-50/80 rounded-xl p-3.5 space-y-2">
                 <label class="text-xs font-bold text-gray-900 flex items-center gap-1.5">
                   <Truck class="w-3.5 h-3.5 text-gray-500" />
                   <span>Transport Mode for this Batch</span>
                 </label>
-                <div class="flex items-center gap-1.5 text-xs">
-                  <button 
+                <div class="grid grid-cols-3 gap-1.5 p-1 bg-gray-100 rounded-xl border border-gray-200 text-xs select-none">
+                  <button
                     type="button"
                     @click="selectedVehicleMode = 'OUR_FLEET'"
-                    class="flex-1 py-1.5 px-2 rounded-lg font-bold border text-center transition-all cursor-pointer text-[11px]"
-                    :class="selectedVehicleMode === 'OUR_FLEET' ? 'bg-[#1b3b5f] text-white border-[#1b3b5f] shadow-2xs' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-100'"
+                    class="py-2.5 px-1 rounded-lg font-bold text-center flex flex-col items-center justify-center gap-1 transition-all cursor-pointer"
+                    :class="selectedVehicleMode === 'OUR_FLEET'
+                      ? 'bg-[#1b3b5f] text-white shadow-xs'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-white/60'"
                   >
-                    Our Fleet
+                    <Truck class="w-4 h-4" />
+                    <span class="text-[10px] leading-tight">Our Fleet</span>
                   </button>
-                  <button 
+                  <button
                     type="button"
                     @click="selectedVehicleMode = 'PARTY_VEHICLE'"
-                    class="flex-1 py-1.5 px-2 rounded-lg font-bold border text-center transition-all cursor-pointer text-[11px]"
-                    :class="selectedVehicleMode === 'PARTY_VEHICLE' ? 'bg-[#1b3b5f] text-white border-[#1b3b5f] shadow-2xs' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-100'"
+                    class="py-2.5 px-1 rounded-lg font-bold text-center flex flex-col items-center justify-center gap-1 transition-all cursor-pointer"
+                    :class="selectedVehicleMode === 'PARTY_VEHICLE'
+                      ? 'bg-amber-600 text-white shadow-xs'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-white/60'"
                   >
-                    Customer Pickup
+                    <Car class="w-4 h-4" />
+                    <span class="text-[10px] leading-tight">Party Vehicle</span>
                   </button>
-                  <button 
+                  <button
                     type="button"
                     @click="selectedVehicleMode = 'THIRD_PARTY'"
-                    class="flex-1 py-1.5 px-2 rounded-lg font-bold border text-center transition-all cursor-pointer text-[11px]"
-                    :class="selectedVehicleMode === 'THIRD_PARTY' ? 'bg-[#1b3b5f] text-white border-[#1b3b5f] shadow-2xs' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-100'"
+                    class="py-2.5 px-1 rounded-lg font-bold text-center flex flex-col items-center justify-center gap-1 transition-all cursor-pointer"
+                    :class="selectedVehicleMode === 'THIRD_PARTY'
+                      ? 'bg-indigo-600 text-white shadow-xs'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-white/60'"
                   >
-                    Third Party
+                    <Package class="w-4 h-4" />
+                    <span class="text-[10px] leading-tight">Third Party</span>
                   </button>
                 </div>
               </div>
