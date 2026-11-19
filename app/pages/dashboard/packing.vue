@@ -320,7 +320,7 @@ onMounted(() => {
 
     <!-- Detail Panel -->
     <OrderDetailPanel 
-      :orderId="selectedOrderId"
+      v-model:orderId="selectedOrderId"
       :isOpen="isPanelOpen"
       context="packing"
       @close="handlePanelClose"

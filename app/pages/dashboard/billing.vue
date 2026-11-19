@@ -342,7 +342,7 @@ onMounted(() => {
 
     <!-- Order Detail Drawer -->
     <OrderDetailPanel 
-      :orderId="selectedOrderId"
+      v-model:orderId="selectedOrderId"
       :isOpen="isPanelOpen"
       context="billing"
       @close="handlePanelClose"

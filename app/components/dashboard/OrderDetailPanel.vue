@@ -327,10 +327,65 @@ const releaseBatch = async (batchId: string) => {
   }
 }
 
-const switchToOrder = (orderId: string) => {
+interface NavigationEntry {
+  orderId: string
+  activeTab: 'DETAILS' | 'MASTER_ORDER' | 'BATCHES' | 'TIMELINE' | 'NOTES'
+  scrollTop?: number
+}
+
+const navigationStack = ref<NavigationEntry[]>([])
+
+const canGoBack = computed(() => {
+  return navigationStack.value.length > 0 || (isChildBatch.value && Boolean(order.value?.parentOrderId))
+})
+
+const backButtonLabel = computed(() => {
+  if (navigationStack.value.length > 0) {
+    if (isChildBatch.value) {
+      const parentNum = (order.value as any)?.parentOrder?.orderNumber
+      return parentNum ? `Back to ${parentNum}` : 'Back to Master'
+    }
+    return 'Back'
+  }
+  if (isChildBatch.value && order.value?.parentOrderId) {
+    const parentNum = (order.value as any)?.parentOrder?.orderNumber
+    return parentNum ? `Back to ${parentNum}` : 'Back to Master'
+  }
+  return 'Back'
+})
+
+const switchToOrder = async (orderId: string, pushToStack = true) => {
   if (orderId && orderId !== order.value?.id) {
-    fetchOrder(orderId)
+    if (pushToStack && order.value?.id) {
+      navigationStack.value.push({
+        orderId: order.value.id,
+        activeTab: activeTab.value,
+        scrollTop: drawerBodyRef.value ? drawerBodyRef.value.scrollTop : 0
+      })
+    }
+    await fetchOrder(orderId)
     emit('update:orderId', orderId)
+  }
+}
+
+const goBack = async () => {
+  if (navigationStack.value.length > 0) {
+    const prev = navigationStack.value.pop()!
+    await fetchOrder(prev.orderId)
+    emit('update:orderId', prev.orderId)
+    if (prev.activeTab) {
+      activeTab.value = prev.activeTab
+    }
+    nextTick(() => {
+      if (drawerBodyRef.value && prev.scrollTop !== undefined) {
+        drawerBodyRef.value.scrollTop = prev.scrollTop
+      }
+    })
+  } else if (order.value?.parentOrderId) {
+    const parentId = order.value.parentOrderId
+    await fetchOrder(parentId)
+    emit('update:orderId', parentId)
+    activeTab.value = 'BATCHES'
   }
 }
 
@@ -513,17 +568,26 @@ const packingForm = ref({ status: '', items: [] as any[], holdReason: '' })
 const hasPackingChanges = ref(false)
 const isSavingPacking = ref(false)
 
-watch(() => props.orderId, async (newId) => {
+watch(() => props.isOpen, async (open) => {
   isHeaderMenuOpen.value = false
-  if (newId && props.isOpen && newId !== order.value?.id) {
-    await fetchOrder(newId)
+  if (open) {
+    navigationStack.value = []
+    if (props.orderId) {
+      await fetchOrder(props.orderId)
+    }
+  } else {
+    navigationStack.value = []
   }
 })
 
-watch(() => props.isOpen, async (open) => {
+watch(() => props.orderId, async (newId) => {
   isHeaderMenuOpen.value = false
-  if (open && props.orderId) {
-    await fetchOrder(props.orderId)
+  if (newId && props.isOpen && newId !== order.value?.id) {
+    const isInternalNavigation = navigationStack.value.some(entry => entry.orderId === newId)
+    if (!isInternalNavigation) {
+      navigationStack.value = []
+    }
+    await fetchOrder(newId)
   }
 })
 
@@ -550,9 +614,10 @@ const deleteOrder = async () => {
     notifyChange({ orderId: deletedId, action: 'ORDER_DELETED' })
     emit('updated')
     if (parentId) {
-      await switchToOrder(parentId)
+      navigationStack.value = []
+      await switchToOrder(parentId, false)
     } else {
-      closePanel()
+      closePanel(true)
     }
   } catch (err: any) {
     console.error(err)
@@ -770,13 +835,18 @@ const productOptions = computed(() => {
   }))
 })
 
-const closePanel = () => {
+const closePanel = (forceClose = false) => {
   isHeaderMenuOpen.value = false
   if (hasPackingChanges.value) {
     const discard = confirm('You have unsaved packing changes. Are you sure you want to discard them?')
     if (!discard) return
     hasPackingChanges.value = false
   }
+  if (!forceClose && canGoBack.value) {
+    goBack()
+    return
+  }
+  navigationStack.value = []
   hide()
   showBillingForm.value = false
   emit('close')
@@ -1919,6 +1989,17 @@ onUnmounted(() => {
           <!-- Line 1: Order Number + Copy Button on left, Close (✕) Button on right -->
           <div class="flex items-center justify-between gap-2">
             <div class="flex items-center gap-1.5 min-w-0">
+              <!-- Back button when drilled down from master order or child batch -->
+              <button 
+                v-if="canGoBack"
+                type="button"
+                @click="goBack"
+                class="p-1 -ml-1 text-[#1b3b5f] hover:text-[#132c49] active:bg-gray-100 rounded-lg transition-colors cursor-pointer shrink-0"
+                :title="backButtonLabel"
+              >
+                <ArrowLeft class="w-5 h-5 text-[#1b3b5f]" />
+              </button>
+
               <h2 class="text-base font-bold font-mono tracking-tight text-gray-950 truncate">
                 {{ order.orderNumber }}
               </h2>
@@ -1933,7 +2014,7 @@ onUnmounted(() => {
             </div>
 
             <button 
-              @click="closePanel" 
+              @click="closePanel()" 
               class="p-1.5 text-gray-500 hover:text-gray-800 rounded-lg hover:bg-gray-100 active:bg-gray-200 transition-colors cursor-pointer shrink-0 -mr-1"
               title="Close Panel"
               data-modal-close="true"
@@ -2047,8 +2128,19 @@ onUnmounted(() => {
 
         <!-- Desktop Header Bar (sm+): Single Bar -->
         <div class="hidden sm:flex px-6 py-3 border-b border-gray-150 items-center justify-between bg-white flex-shrink-0 z-20">
-          <!-- Left: Order Number, Copy & Converted Badge -->
+          <!-- Left: Back Button (if canGoBack), Order Number, Copy & Converted Badge -->
           <div class="flex items-center gap-2 min-w-0 flex-wrap">
+            <button 
+              v-if="canGoBack"
+              type="button" 
+              @click="goBack"
+              class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold text-[#1b3b5f] bg-[#1b3b5f]/10 hover:bg-[#1b3b5f]/20 active:bg-[#1b3b5f]/30 rounded-lg transition-colors cursor-pointer mr-1 shrink-0 border border-[#1b3b5f]/20 shadow-2xs active:scale-95"
+              :title="backButtonLabel"
+            >
+              <ArrowLeft class="w-3.5 h-3.5 text-[#1b3b5f]" />
+              <span>{{ backButtonLabel }}</span>
+            </button>
+
             <h2 class="text-lg font-bold font-mono tracking-tight text-gray-950 truncate">
               {{ order.orderNumber }}
             </h2>

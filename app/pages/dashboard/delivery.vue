@@ -821,7 +821,7 @@ onUnmounted(() => {
 
     <!-- Detail Panel -->
     <OrderDetailPanel 
-      :orderId="selectedOrderId"
+      v-model:orderId="selectedOrderId"
       :isOpen="isPanelOpen"
       context="delivery"
       @close="handlePanelClose"

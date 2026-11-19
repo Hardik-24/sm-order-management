@@ -1129,7 +1129,7 @@ const getTotalNos = (order: any) => {
 
     <!-- Order Detail Panel (Slide-over drawer at the right) -->
     <OrderDetailPanel 
-      :orderId="selectedDrawerOrderId"
+      v-model:orderId="selectedDrawerOrderId"
       :isOpen="isDrawerOpen"
       context="approval"
       @close="handleDrawerClose"

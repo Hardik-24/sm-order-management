@@ -494,7 +494,7 @@ const handleOrderSelect = (orderId: string) => {
 
   <!-- Slide-out Order Detail Panel -->
   <OrderDetailPanel 
-    :order-id="selectedOrderId"
+    v-model:order-id="selectedOrderId"
     :is-open="isPanelOpen"
     context="overview"
     @close="isPanelOpen = false"
