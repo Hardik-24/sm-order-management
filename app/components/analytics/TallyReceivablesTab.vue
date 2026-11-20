@@ -426,13 +426,63 @@
           </div>
         </div>
 
-        <!-- Open Bills Section Header & Search -->
-        <div class="p-3.5 border-b border-gray-200 bg-gray-50/50 flex items-center justify-between gap-3">
-          <div class="text-xs font-bold text-gray-900 flex items-center gap-1.5">
-            <span>Open Invoices Awaiting Clearance</span>
-            <span class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-800">
-              {{ selectedParty.billsCount }} bills
-            </span>
+        <!-- Sub-Tabs: Pending vs Cleared vs All Invoices -->
+        <div class="px-5 py-2.5 border-b border-gray-200 bg-white flex items-center justify-between gap-2 overflow-x-auto">
+          <div class="flex items-center gap-1.5 p-1 bg-gray-100 rounded-xl">
+            <button
+              @click="selectedBillTab = 'pending'"
+              class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+              :class="selectedBillTab === 'pending' ? 'bg-white text-amber-900 shadow-xs' : 'text-gray-600 hover:text-gray-900'"
+            >
+              <Clock3 class="w-3.5 h-3.5 text-amber-600" />
+              <span>Pending Bills</span>
+              <span class="px-1.5 py-0.2 rounded-full text-[10px] bg-amber-100 text-amber-800 font-extrabold">
+                {{ partyBillsData?.summary?.pendingCount ?? selectedParty.billsCount }}
+              </span>
+            </button>
+
+            <button
+              @click="selectedBillTab = 'cleared'"
+              class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+              :class="selectedBillTab === 'cleared' ? 'bg-white text-emerald-900 shadow-xs' : 'text-gray-600 hover:text-gray-900'"
+            >
+              <CheckCircle2 class="w-3.5 h-3.5 text-emerald-600" />
+              <span>Cleared Bills</span>
+              <span class="px-1.5 py-0.2 rounded-full text-[10px] bg-emerald-100 text-emerald-800 font-extrabold">
+                {{ partyBillsLoading ? '...' : (partyBillsData?.summary?.clearedCount ?? 0) }}
+              </span>
+            </button>
+
+            <button
+              @click="selectedBillTab = 'all'"
+              class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+              :class="selectedBillTab === 'all' ? 'bg-white text-gray-900 shadow-xs' : 'text-gray-600 hover:text-gray-900'"
+            >
+              <FileText class="w-3.5 h-3.5 text-blue-600" />
+              <span>All Invoices</span>
+              <span class="px-1.5 py-0.2 rounded-full text-[10px] bg-gray-200 text-gray-800 font-extrabold">
+                {{ partyBillsLoading ? '...' : (partyBillsData?.summary?.totalCount ?? selectedParty.billsCount) }}
+              </span>
+            </button>
+          </div>
+
+          <button
+            @click="exportCurrentPartyBillsCsv"
+            :disabled="!activeBillsList.length"
+            class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-lg text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 cursor-pointer disabled:opacity-50 shrink-0"
+            title="Export bills in current view to CSV"
+          >
+            <Download class="w-3.5 h-3.5 text-gray-500" />
+            <span class="hidden sm:inline">Export</span>
+          </button>
+        </div>
+
+        <!-- Search Bar within Drawer -->
+        <div class="p-3 border-b border-gray-200 bg-gray-50/50 flex items-center justify-between gap-3">
+          <div class="text-xs text-gray-600 font-medium">
+            <span v-if="selectedBillTab === 'pending'">Invoices pending payment clearance</span>
+            <span v-else-if="selectedBillTab === 'cleared'">Historical invoices settled in full</span>
+            <span v-else>All customer sales invoices</span>
           </div>
 
           <div class="relative w-48 sm:w-64">
@@ -440,7 +490,7 @@
             <input
               v-model="billSearchQuery"
               type="text"
-              placeholder="Search invoice #..."
+              placeholder="Search ref # or date..."
               class="w-full pl-8 pr-2.5 py-1 text-xs rounded-lg border border-gray-200 bg-white focus:outline-none focus:ring-1 focus:ring-amber-500"
             />
           </div>
@@ -448,27 +498,53 @@
 
         <!-- Bills List -->
         <div class="flex-1 overflow-y-auto divide-y divide-gray-100 p-2">
+          <!-- Loading State for detailed party bills -->
+          <div v-if="partyBillsLoading && selectedBillTab !== 'pending'" class="py-12 text-center space-y-2">
+            <RefreshCw class="w-5 h-5 text-amber-600 animate-spin mx-auto" />
+            <p class="text-xs text-gray-500 font-medium">Retrieving invoice settlement ledger...</p>
+          </div>
+
           <div
+            v-else
             v-for="(bill, bIdx) in filteredPartyBills"
             :key="bIdx"
             class="p-3.5 hover:bg-gray-50/80 rounded-xl transition-colors flex items-center justify-between gap-3 text-xs sm:text-sm"
           >
             <div class="space-y-1">
-              <div class="flex items-center gap-2">
-                <span class="font-bold text-gray-900 font-mono text-xs sm:text-sm bg-gray-100 px-2 py-0.5 rounded">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="font-bold text-gray-900 font-mono text-xs sm:text-sm bg-gray-100 px-2 py-0.5 rounded border border-gray-200">
                   {{ bill.ref || 'ON ACCOUNT' }}
                 </span>
-                <span class="text-gray-400 text-xs">Date: {{ bill.date }}</span>
+                <span class="text-gray-500 text-xs flex items-center gap-1">
+                  <Calendar class="w-3 h-3 text-gray-400" />
+                  {{ bill.date }}
+                </span>
+                <span v-if="bill.itemCount" class="text-[10.5px] text-gray-500 bg-gray-100 px-1.5 py-0.2 rounded">
+                  {{ bill.itemCount }} item{{ bill.itemCount > 1 ? 's' : '' }}
+                </span>
               </div>
               <div class="text-[11px] text-gray-500 flex items-center gap-2">
-                <span>Due: {{ bill.dueDate }}</span>
-                <span>•</span>
-                <span
-                  class="font-semibold"
-                  :class="bill.overdueDays > 90 ? 'text-rose-600' : bill.overdueDays > 30 ? 'text-amber-600' : 'text-emerald-600'"
-                >
-                  {{ bill.overdueDays }} days overdue
-                </span>
+                <template v-if="bill.status !== 'CLEARED'">
+                  <span v-if="bill.dueDate">Due: {{ bill.dueDate }}</span>
+                  <span v-if="bill.dueDate">•</span>
+                  <span
+                    class="font-semibold"
+                    :class="bill.overdueDays > 90 ? 'text-rose-600' : bill.overdueDays > 30 ? 'text-amber-600' : 'text-emerald-600'"
+                  >
+                    {{ bill.overdueDays }} days overdue
+                  </span>
+                  <span v-if="bill.paidAmount > 0" class="text-emerald-700 font-medium">
+                    (₹{{ Number(bill.paidAmount).toLocaleString('en-IN') }} paid)
+                  </span>
+                </template>
+                <template v-else>
+                  <span class="text-emerald-700 font-semibold flex items-center gap-1">
+                    <CheckCircle2 class="w-3 h-3 text-emerald-600" />
+                    Settled in Accounts
+                  </span>
+                  <span>•</span>
+                  <span>Invoice Amount: {{ formatCurrency(bill.amount) }}</span>
+                </template>
               </div>
             </div>
 
@@ -476,21 +552,41 @@
               <div class="font-bold text-gray-900 text-sm sm:text-base">
                 {{ formatCurrency(bill.amount) }}
               </div>
-              <span class="text-[10px] text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded font-semibold border border-amber-200">
+              <span
+                v-if="bill.status === 'CLEARED'"
+                class="inline-flex items-center gap-1 text-[10px] text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full font-bold border border-emerald-200"
+              >
+                <CheckCircle2 class="w-3 h-3 text-emerald-600" />
+                Paid in Full
+              </span>
+              <span
+                v-else-if="bill.status === 'PARTIAL'"
+                class="inline-flex items-center gap-1 text-[10px] text-blue-800 bg-blue-50 px-2 py-0.5 rounded-full font-bold border border-blue-200"
+              >
+                Partially Paid
+              </span>
+              <span
+                v-else
+                class="inline-flex items-center gap-1 text-[10px] text-amber-800 bg-amber-50 px-2 py-0.5 rounded-full font-bold border border-amber-200"
+              >
+                <Clock3 class="w-3 h-3 text-amber-600" />
                 Pending Clearance
               </span>
             </div>
           </div>
 
-          <div v-if="filteredPartyBills.length === 0" class="py-12 text-center text-gray-400 text-xs">
-            <span v-if="selectedParty.billsCount === 0">No open bills pending clearance. Account is settled!</span>
-            <span v-else>No bills match your invoice search.</span>
+          <div v-if="!partyBillsLoading && filteredPartyBills.length === 0" class="py-12 text-center text-gray-400 text-xs">
+            <span v-if="selectedBillTab === 'pending'">No open bills pending clearance. Account is 100% settled!</span>
+            <span v-else-if="selectedBillTab === 'cleared'">No cleared bills recorded yet for this customer.</span>
+            <span v-else>No invoices match your search.</span>
           </div>
         </div>
 
         <!-- Drawer Footer -->
         <div class="p-4 border-t border-gray-200 bg-gray-50 flex items-center justify-between text-xs">
-          <span class="text-gray-500">Showing {{ filteredPartyBills.length }} of {{ selectedParty.billsCount }} bills</span>
+          <span class="text-gray-500">
+            Showing {{ filteredPartyBills.length }} {{ selectedBillTab }} invoice{{ filteredPartyBills.length === 1 ? '' : 's' }}
+          </span>
           <button
             @click="selectedParty = null"
             class="px-4 py-2 rounded-xl bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300 cursor-pointer"
@@ -508,7 +604,7 @@ import { ref, computed, onMounted } from 'vue'
 import {
   IndianRupee, Users, AlertTriangle, ShieldCheck, Lock,
   Building2, Clock, RefreshCw, Download, Search, X, ChevronRight,
-  CheckCircle2, AlertCircle
+  CheckCircle2, AlertCircle, Clock3, FileText, Calendar
 } from 'lucide-vue-next'
 
 const loading = ref(true)
@@ -527,6 +623,9 @@ const pageSize = 25
 // Drill-down Modal
 const selectedParty = ref<any | null>(null)
 const billSearchQuery = ref('')
+const selectedBillTab = ref<'pending' | 'cleared' | 'all'>('pending')
+const partyBillsLoading = ref(false)
+const partyBillsData = ref<any | null>(null)
 
 const fetchTallyReceivables = async () => {
   loading.value = true
@@ -616,16 +715,39 @@ const paginatedParties = computed(() => {
   return filteredParties.value.slice(start, start + pageSize)
 })
 
-const openDebtorDetails = (party: any) => {
+const openDebtorDetails = async (party: any) => {
   selectedParty.value = party
   billSearchQuery.value = ''
+  selectedBillTab.value = 'pending'
+  partyBillsLoading.value = true
+  partyBillsData.value = null
+
+  try {
+    const res = await $fetch<any>(`/api/admin/tally/party-bills?party=${encodeURIComponent(party.party)}`)
+    if (res && res.success && res.data) {
+      partyBillsData.value = res.data
+    }
+  } catch (err: any) {
+    console.error('Failed to load detailed party bills:', err)
+  } finally {
+    partyBillsLoading.value = false
+  }
 }
 
+const activeBillsList = computed(() => {
+  if (partyBillsData.value) {
+    if (selectedBillTab.value === 'pending') return partyBillsData.value.pendingBills || []
+    if (selectedBillTab.value === 'cleared') return partyBillsData.value.clearedBills || []
+    return partyBillsData.value.allBills || []
+  }
+  return selectedParty.value?.bills || []
+})
+
 const filteredPartyBills = computed(() => {
-  if (!selectedParty.value?.bills) return []
-  if (!billSearchQuery.value.trim()) return selectedParty.value.bills
+  const list = activeBillsList.value
+  if (!billSearchQuery.value.trim()) return list
   const q = billSearchQuery.value.toLowerCase().trim()
-  return selectedParty.value.bills.filter((b: any) =>
+  return list.filter((b: any) =>
     (b.ref && b.ref.toLowerCase().includes(q)) ||
     (b.date && b.date.toLowerCase().includes(q))
   )
@@ -671,6 +793,23 @@ const exportAllDebtorsCsv = () => {
 
   const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n')
   downloadBlob(csv, `Tally_Debtors_Financials_${new Date().toISOString().slice(0, 10)}.csv`, 'text/csv;charset=utf-8;')
+}
+
+const exportCurrentPartyBillsCsv = () => {
+  if (!activeBillsList.value.length || !selectedParty.value) return
+  const headers = ['Party Name', 'Invoice / Bill Ref', 'Bill Date', 'Due Date', 'Status', 'Amount (INR)', 'Overdue Days']
+  const rows = activeBillsList.value.map((b: any) => [
+    `"${selectedParty.value.party.replace(/"/g, '""')}"`,
+    `"${(b.ref || '').replace(/"/g, '""')}"`,
+    b.date,
+    b.dueDate || b.date,
+    b.status || (b.isPending ? 'PENDING' : 'CLEARED'),
+    b.amount,
+    b.overdueDays || 0
+  ])
+
+  const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n')
+  downloadBlob(csv, `${selectedParty.value.party.replace(/[^a-zA-Z0-9]/g, '_')}_${selectedBillTab.value}_Bills_${new Date().toISOString().slice(0, 10)}.csv`, 'text/csv;charset=utf-8;')
 }
 
 const exportDebtorBillsCsv = (party: any) => {

@@ -202,22 +202,9 @@ export function parseMergedTallyData(ledgersXml: string, billsXml: string): Tall
       agingBuckets.overOneEighty += amount
     }
 
+    // Option 1: Strictly associate bills with genuine Sundry Debtors (discard suppliers/creditors with debit balances)
     if (!partiesMap.has(cleanParty)) {
-      partiesMap.set(cleanParty, {
-        party: cleanParty,
-        parent: 'Sundry Debtors',
-        openingBalance: 0,
-        totalBilled: 0,
-        totalPaid: 0,
-        netPending: Math.round(amount * 100) / 100,
-        advance: 0,
-        collectionRate: 0,
-        totalReceivable: Math.round(amount * 100) / 100,
-        billsCount: 0,
-        maxOverdueDays: 0,
-        minOverdueDays: 999999,
-        bills: []
-      })
+      continue
     }
 
     const p = partiesMap.get(cleanParty)!
