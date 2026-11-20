@@ -1013,8 +1013,10 @@ const loading = ref(true)
 const error = ref<string | null>(null)
 const data = ref<any | null>(null)
 
+const route = useRoute()
+
 // Navigation state
-const mainTab = ref<'sales' | 'movement' | 'purchases' | 'receivables'>('sales')
+const mainTab = ref<'sales' | 'movement' | 'purchases' | 'receivables'>((route.query.tab as any) === 'receivables' ? 'receivables' : 'sales')
 const skuRankingMode = ref<'revenue' | 'volume'>('revenue')
 const movementSubTab = ref<'fast' | 'dead' | 'risk' | 'negative'>('fast')
 

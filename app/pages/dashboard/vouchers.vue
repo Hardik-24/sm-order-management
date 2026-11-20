@@ -155,6 +155,20 @@
           {{ activeTab === 'purchases' ? (stats?.totalCount || pagination.total || 0).toLocaleString() : 'Purchases' }}
         </span>
       </button>
+
+      <!-- Tally Reconciliation Audit Quick Link -->
+      <NuxtLink
+        to="/dashboard/analytics?tab=receivables&sub=recon"
+        class="ml-auto flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200 transition-all shadow-2xs"
+        title="Check Busy vs Tally discrepancies and unposted vouchers"
+      >
+        <Scale class="w-3.5 h-3.5 text-amber-600" />
+        <span class="hidden sm:inline">Tally Reconciliation Audit</span>
+        <span class="sm:hidden">Tally Audit</span>
+        <span class="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200 ml-0.5">
+          ₹66.0L Gap
+        </span>
+      </NuxtLink>
     </div>
 
     <!-- Search & Filter Controls Toolbar (Matching BillingTable.vue:104-145) -->
@@ -854,7 +868,8 @@ import {
   Loader2,
   ShoppingBag,
   Building2,
-  TrendingUp
+  TrendingUp,
+  Scale
 } from 'lucide-vue-next'
 import { useGsapAnimation } from '~/composables/useGsapAnimation'
 import OdometerNumber from '~/components/ui/OdometerNumber.vue'
