@@ -362,6 +362,134 @@
       <!-- SUB-ENGINE 2: TRENDS & DEMAND FORECASTING -->
       <!-- ========================================================================= -->
       <div v-if="subEngineTab === 'trends'" class="space-y-4">
+        <!-- LIVE WEEKLY FORECAST VALIDATION SCORECARD (Improvement #5) -->
+        <div v-if="data?.weeklyScorecard" class="bg-gradient-to-r from-emerald-500/10 via-teal-500/5 to-transparent border border-emerald-200 rounded-2xl p-4 sm:p-5 shadow-2xs space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div class="flex items-center gap-2.5">
+              <div class="w-9 h-9 rounded-xl bg-emerald-100 border border-emerald-300 text-emerald-800 flex items-center justify-center shrink-0">
+                <Target class="w-5 h-5 text-emerald-700" />
+              </div>
+              <div>
+                <div class="flex items-center gap-2 flex-wrap">
+                  <h3 class="text-sm sm:text-base font-bold text-gray-900">Weekly Forecast Validation Scorecard</h3>
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-200">
+                    Live Realized Tracking
+                  </span>
+                </div>
+                <p class="text-xs text-gray-600 mt-0.5">
+                  Validates the past 7-day predicted demand against actual invoices received this week to verify algorithm precision.
+                </p>
+              </div>
+            </div>
+
+            <!-- Toggle Audit Table -->
+            <button
+              @click="showScorecardAudit = !showScorecardAudit"
+              type="button"
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border border-emerald-200 bg-white hover:bg-emerald-50 text-emerald-800 transition-colors cursor-pointer shrink-0 shadow-2xs self-end sm:self-center"
+            >
+              <span>{{ showScorecardAudit ? 'Hide Audit Details' : 'View Item-by-Item Audit' }}</span>
+              <ChevronUp v-if="showScorecardAudit" class="w-3.5 h-3.5" />
+              <ChevronDown v-else class="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          <!-- 4 Scorecard KPI Metrics -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <!-- 1. Catalog Accuracy -->
+            <div class="bg-white rounded-xl p-3 border border-emerald-200 shadow-2xs">
+              <span class="text-[10px] font-bold text-gray-500 uppercase">Catalog Volume Accuracy</span>
+              <div class="mt-1 text-xl sm:text-2xl font-black text-emerald-700">
+                {{ data.weeklyScorecard.catalogAccuracy }}%
+              </div>
+              <span class="text-[10px] text-gray-400">Past 7 days aggregate</span>
+            </div>
+
+            <!-- 2. Predicted Units -->
+            <div class="bg-white rounded-xl p-3 border border-gray-200 shadow-2xs">
+              <span class="text-[10px] font-bold text-gray-500 uppercase">Predicted 7-Day Units</span>
+              <div class="mt-1 text-xl sm:text-2xl font-black text-indigo-900">
+                {{ formatNumber(data.weeklyScorecard.totalPredictedUnits) }}
+              </div>
+              <span class="text-[10px] text-indigo-600 font-medium">Prior baseline pace</span>
+            </div>
+
+            <!-- 3. Actual Units Sold -->
+            <div class="bg-white rounded-xl p-3 border border-gray-200 shadow-2xs">
+              <span class="text-[10px] font-bold text-gray-500 uppercase">Actual Realized Units</span>
+              <div class="mt-1 text-xl sm:text-2xl font-black text-gray-900">
+                {{ formatNumber(data.weeklyScorecard.totalActualUnits) }}
+              </div>
+              <span class="text-[10px] text-gray-500">Live BUSY invoices</span>
+            </div>
+
+            <!-- 4. Demand Matches -->
+            <div class="bg-white rounded-xl p-3 border border-gray-200 shadow-2xs">
+              <span class="text-[10px] font-bold text-gray-500 uppercase">On-Target SKUs</span>
+              <div class="mt-1 text-xl sm:text-2xl font-black text-teal-800">
+                {{ data.weeklyScorecard.matchCount }}
+              </div>
+              <span class="text-[10px] text-teal-600 font-medium">Within target runway</span>
+            </div>
+          </div>
+
+          <!-- Expandable Line-by-Line Audit Table -->
+          <div v-if="showScorecardAudit" class="bg-white rounded-xl border border-emerald-200 overflow-hidden shadow-2xs animate-in fade-in duration-200">
+            <div class="p-3 bg-emerald-50/50 border-b border-emerald-100 flex items-center justify-between">
+              <span class="text-xs font-bold uppercase text-emerald-900">Top Validated Products This Week</span>
+              <span class="text-[11px] text-gray-500">Predicted (prior pace) vs Actual (billed this week)</span>
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs divide-y divide-gray-100">
+                <thead class="bg-gray-50/70 text-gray-500 font-semibold uppercase tracking-wider">
+                  <tr>
+                    <th class="py-2 px-3">Product</th>
+                    <th class="py-2 px-3 text-right">Predicted</th>
+                    <th class="py-2 px-3 text-right">Actual Realized</th>
+                    <th class="py-2 px-3 text-right">Variance</th>
+                    <th class="py-2 px-3 text-center">Accuracy %</th>
+                    <th class="py-2 px-3 text-center">Status Signal</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                  <tr v-for="(it, iIdx) in data.weeklyScorecard.topValidatedItems" :key="iIdx" class="hover:bg-emerald-50/30">
+                    <td class="py-2.5 px-3 font-semibold text-gray-900 max-w-[200px] truncate" :title="it.name">
+                      {{ it.name }}
+                    </td>
+                    <td class="py-2.5 px-3 text-right font-medium text-indigo-700">
+                      {{ formatNumber(it.predicted) }}
+                    </td>
+                    <td class="py-2.5 px-3 text-right font-bold text-gray-900">
+                      {{ formatNumber(it.actual) }}
+                    </td>
+                    <td class="py-2.5 px-3 text-right font-bold" :class="it.variance >= 0 ? 'text-emerald-700' : 'text-rose-700'">
+                      {{ it.variance > 0 ? '+' : '' }}{{ formatNumber(it.variance) }}
+                    </td>
+                    <td class="py-2.5 px-3 text-center">
+                      <span 
+                        class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black"
+                        :class="it.accuracyPct >= 80 ? 'bg-emerald-100 text-emerald-800' : it.accuracyPct >= 50 ? 'bg-teal-100 text-teal-800' : 'bg-gray-100 text-gray-700'"
+                      >
+                        {{ it.accuracyPct }}%
+                      </span>
+                    </td>
+                    <td class="py-2.5 px-3 text-center">
+                      <span 
+                        class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase"
+                        :class="it.status === 'EXACT_MATCH' ? 'bg-emerald-100 text-emerald-800' : it.status === 'CLOSE' ? 'bg-teal-100 text-teal-800' : it.status === 'DEMAND_SURGE' ? 'bg-purple-100 text-purple-800' : 'bg-amber-100 text-amber-800'"
+                      >
+                        <CheckCircle2 v-if="it.status === 'EXACT_MATCH'" class="w-3 h-3" />
+                        <span>{{ it.status.replace('_', ' ') }}</span>
+                      </span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
         <!-- Trend Filters -->
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3.5 rounded-xl border border-gray-200">
           <div class="flex items-center gap-2 overflow-x-auto no-scrollbar">
@@ -758,13 +886,18 @@ import {
   Truck,
   IndianRupee,
   Users,
-  Search
+  Search,
+  Target,
+  ChevronDown,
+  ChevronUp,
+  CheckCircle2
 } from 'lucide-vue-next'
 import POSimulatorModal from './POSimulatorModal.vue'
 
 const loading = ref(false)
 const error = ref<string | null>(null)
 const data = ref<any>(null)
+const showScorecardAudit = ref(false)
 
 // Sub-Engine Tab State
 const subEngineTab = ref<'replenishment' | 'trends' | 'profitability' | 'customers' | 'anomalies'>('replenishment')

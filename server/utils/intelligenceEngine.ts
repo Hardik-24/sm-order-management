@@ -39,34 +39,74 @@ export async function calculateIntelligence(forceRefresh = false) {
   `)
 
   // 2. Aggregate sales velocities across intervals (14 days, 30 days, 60 days, 90 days)
+  // Incorporating Outlier Clipping (Winsorization) to prevent one-off bulk orders from skewing velocity
   const salesAggregates: any[] = await prisma.$queryRawUnsafe(`
+    WITH raw_items AS (
+      SELECT 
+        LOWER(TRIM(item->>'name')) AS item_key,
+        item->>'name' AS original_name,
+        (item->>'qty')::numeric AS qty,
+        (item->>'amount')::numeric AS amount,
+        v."voucherDate" AS voucher_date,
+        v.id AS voucher_id
+      FROM busy_vouchers v,
+      LATERAL jsonb_array_elements(v.items::jsonb) AS item
+      WHERE v."voucherDate" >= NOW() - INTERVAL '90 days'
+        AND (item->>'qty')::numeric > 0
+        AND item->>'name' NOT ILIKE '%freight%'
+        AND item->>'name' NOT ILIKE '%round off%'
+        AND item->>'name' NOT ILIKE '%discount%'
+    ),
+    item_medians AS (
+      SELECT 
+        item_key,
+        PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY qty) AS median_qty
+      FROM raw_items
+      GROUP BY item_key
+    )
     SELECT 
-      LOWER(TRIM(item->>'name')) AS item_key,
-      item->>'name' AS original_name,
-      SUM(CASE WHEN v."voucherDate" >= NOW() - INTERVAL '14 days' THEN (item->>'qty')::numeric ELSE 0 END) AS qty_14,
-      SUM(CASE WHEN v."voucherDate" >= NOW() - INTERVAL '30 days' THEN (item->>'qty')::numeric ELSE 0 END) AS qty_30,
-      SUM(CASE WHEN v."voucherDate" >= NOW() - INTERVAL '60 days' THEN (item->>'qty')::numeric ELSE 0 END) AS qty_60,
-      SUM(CASE WHEN v."voucherDate" >= NOW() - INTERVAL '90 days' THEN (item->>'qty')::numeric ELSE 0 END) AS qty_90,
-      SUM((item->>'amount')::numeric) AS revenue_90,
-      COUNT(DISTINCT v.id) AS voucher_count_90,
-      MAX(v."voucherDate") AS last_sale_date
-    FROM busy_vouchers v,
-    LATERAL jsonb_array_elements(v.items::jsonb) AS item
-    WHERE v."voucherDate" >= NOW() - INTERVAL '90 days'
-      AND (item->>'qty')::numeric > 0
-      AND item->>'name' NOT ILIKE '%freight%'
-      AND item->>'name' NOT ILIKE '%round off%'
-      AND item->>'name' NOT ILIKE '%discount%'
-    GROUP BY LOWER(TRIM(item->>'name')), item->>'name'
+      r.item_key,
+      MAX(r.original_name) AS original_name,
+      -- Raw actual quantities
+      SUM(CASE WHEN r.voucher_date >= NOW() - INTERVAL '14 days' THEN r.qty ELSE 0 END) AS qty_14,
+      SUM(CASE WHEN r.voucher_date >= NOW() - INTERVAL '30 days' THEN r.qty ELSE 0 END) AS qty_30,
+      SUM(CASE WHEN r.voucher_date >= NOW() - INTERVAL '60 days' THEN r.qty ELSE 0 END) AS qty_60,
+      SUM(CASE WHEN r.voucher_date >= NOW() - INTERVAL '90 days' THEN r.qty ELSE 0 END) AS qty_90,
+      -- Outlier-capped velocity quantities (caps orders > 3.5x median or 25 units)
+      SUM(CASE WHEN r.voucher_date >= NOW() - INTERVAL '14 days' 
+               THEN LEAST(r.qty, GREATEST(COALESCE(m.median_qty, 10) * 3.5, 25)) 
+               ELSE 0 END) AS capped_qty_14,
+      SUM(CASE WHEN r.voucher_date >= NOW() - INTERVAL '30 days' 
+               THEN LEAST(r.qty, GREATEST(COALESCE(m.median_qty, 10) * 3.5, 25)) 
+               ELSE 0 END) AS capped_qty_30,
+      SUM(CASE WHEN r.voucher_date >= NOW() - INTERVAL '60 days' 
+               THEN LEAST(r.qty, GREATEST(COALESCE(m.median_qty, 10) * 3.5, 25)) 
+               ELSE 0 END) AS capped_qty_60,
+      -- Historical validation metrics: Past 7-day actual vs prior 14d pace
+      SUM(CASE WHEN r.voucher_date >= NOW() - INTERVAL '7 days' THEN r.qty ELSE 0 END) AS actual_qty_7,
+      SUM(CASE WHEN r.voucher_date >= NOW() - INTERVAL '21 days' AND r.voucher_date < NOW() - INTERVAL '7 days' 
+               THEN r.qty ELSE 0 END) AS prior_qty_14_to_7,
+      SUM(r.amount) AS revenue_90,
+      COUNT(DISTINCT r.voucher_id) AS voucher_count_90,
+      MAX(r.voucher_date) AS last_sale_date
+    FROM raw_items r
+    JOIN item_medians m ON r.item_key = m.item_key
+    GROUP BY r.item_key
   `)
 
   const salesMap = new Map<string, any>()
   for (const row of salesAggregates) {
     salesMap.set(row.item_key, {
+      name: row.original_name,
       qty14: Number(row.qty_14 || 0),
       qty30: Number(row.qty_30 || 0),
       qty60: Number(row.qty_60 || 0),
       qty90: Number(row.qty_90 || 0),
+      cappedQty14: Number(row.capped_qty_14 || 0),
+      cappedQty30: Number(row.capped_qty_30 || 0),
+      cappedQty60: Number(row.capped_qty_60 || 0),
+      actualQty7: Number(row.actual_qty_7 || 0),
+      priorQty14to7: Number(row.prior_qty_14_to_7 || 0),
       revenue90: Number(row.revenue_90 || 0),
       voucherCount: Number(row.voucher_count_90 || 0),
       lastSaleDate: row.last_sale_date
@@ -89,17 +129,27 @@ export async function calculateIntelligence(forceRefresh = false) {
 
   for (const prod of products) {
     const key = (prod.name || '').trim().toLowerCase()
-    const sales = salesMap.get(key) || { qty14: 0, qty30: 0, qty60: 0, qty90: 0, revenue90: 0, voucherCount: 0, lastSaleDate: null }
+    const sales = salesMap.get(key) || { 
+      qty14: 0, qty30: 0, qty60: 0, qty90: 0, 
+      cappedQty14: 0, cappedQty30: 0, cappedQty60: 0, 
+      actualQty7: 0, priorQty14to7: 0,
+      revenue90: 0, voucherCount: 0, lastSaleDate: null 
+    }
     
     const stock = Number(prod.stock || 0)
     const costPrice = Number(prod.cost_price || 0)
     const salePrice = Number(prod.sale_price || 0)
 
-    // Velocities
-    const ads14 = Number((sales.qty14 / 14).toFixed(2))
-    const ads30 = Number((sales.qty30 / 30).toFixed(2))
-    const ads60 = Number((sales.qty60 / 60).toFixed(2))
-    const activeAds = ads30 > 0 ? ads30 : (ads14 > 0 ? ads14 : Number((sales.qty90 / 90).toFixed(2)))
+    // Velocities: Use outlier-capped quantities for future forecast rate
+    const ads14 = Number((sales.cappedQty14 / 14).toFixed(2))
+    const ads30 = Number((sales.cappedQty30 / 30).toFixed(2))
+    const ads60 = Number((sales.cappedQty60 / 60).toFixed(2))
+    const isIntermittent = sales.voucherCount <= 3 && sales.voucherCount > 0
+
+    // Active ADS for replenishment buffer
+    const activeAds = isIntermittent
+      ? Number((sales.qty90 / 90).toFixed(2))
+      : (ads30 > 0 ? ads30 : (ads14 > 0 ? ads14 : Number((sales.qty90 / 90).toFixed(2))))
 
     // --- Engine 2: Sales Trend Classification ---
     let trend: 'GROWING' | 'STABLE' | 'DECLINING' | 'NOT_MOVING' = 'NOT_MOVING'
@@ -121,8 +171,14 @@ export async function calculateIntelligence(forceRefresh = false) {
     if (trend === 'GROWING') growingCount++
     if (trend === 'DECLINING') decliningCount++
 
-    // --- Demand Forecasting (7, 15, 30 days) ---
-    const blendRate = trend === 'DECLINING' ? ads14 : Number(((ads14 * 0.6) + (ads30 * 0.4)).toFixed(2))
+    // --- Demand Forecasting (7, 15, 30 days) with Outlier Resilience ---
+    let blendRate = 0
+    if (isIntermittent) {
+      blendRate = Number((sales.qty90 / 90).toFixed(2))
+    } else {
+      blendRate = trend === 'DECLINING' ? ads14 : Number(((ads14 * 0.6) + (ads30 * 0.4)).toFixed(2))
+    }
+
     const forecast7d = Math.ceil(blendRate * 7)
     const forecast15d = Math.ceil(blendRate * 15)
     const forecast30d = Math.ceil(blendRate * 30)
@@ -386,6 +442,61 @@ export async function calculateIntelligence(forceRefresh = false) {
     }
   }
 
+  // 6. Live Weekly Forecast Validation Scorecard (Past 7 Days Realized vs Prior Week Forecast)
+  let totalPredicted7d = 0
+  let totalActual7d = 0
+  const validatedItems: any[] = []
+
+  for (const [key, s] of salesMap.entries()) {
+    const act7 = Number(s.actualQty7 || 0)
+    let pred7 = 0
+    if (s.voucherCount <= 3) {
+      pred7 = Math.ceil((Number(s.qty90 || 0) / 90) * 7)
+    } else {
+      pred7 = Math.ceil((Number(s.priorQty14to7 || 0) / 14) * 7)
+    }
+
+    if (pred7 > 0 || act7 > 0) {
+      totalPredicted7d += pred7
+      totalActual7d += act7
+
+      const diff = act7 - pred7
+      const maxVal = Math.max(act7, pred7)
+      const accuracyPct = maxVal > 0 ? Math.round((1 - Math.abs(diff) / maxVal) * 100) : 100
+
+      let status: 'EXACT_MATCH' | 'CLOSE' | 'DEMAND_SURGE' | 'DEMAND_DIP' = 'CLOSE'
+      if (accuracyPct >= 85) status = 'EXACT_MATCH'
+      else if (accuracyPct >= 70) status = 'CLOSE'
+      else if (act7 > pred7) status = 'DEMAND_SURGE'
+      else status = 'DEMAND_DIP'
+
+      validatedItems.push({
+        name: s.name || key,
+        predicted: pred7,
+        actual: act7,
+        variance: diff,
+        accuracyPct,
+        status,
+        isSpike: act7 > (pred7 * 3.5) && act7 >= 40
+      })
+    }
+  }
+
+  validatedItems.sort((a, b) => b.actual - a.actual)
+  const catalogAccuracy = totalActual7d > 0
+    ? Math.round((1 - Math.abs(totalActual7d - totalPredicted7d) / Math.max(totalActual7d, totalPredicted7d)) * 100)
+    : 100
+
+  const weeklyScorecard = {
+    period: 'Past 7-Day Performance (Forecast vs Actual Invoices)',
+    catalogAccuracy,
+    totalPredictedUnits: totalPredicted7d,
+    totalActualUnits: totalActual7d,
+    surgeCount: validatedItems.filter(i => i.status === 'DEMAND_SURGE').length,
+    matchCount: validatedItems.filter(i => i.status === 'EXACT_MATCH' || i.status === 'CLOSE').length,
+    topValidatedItems: validatedItems.slice(0, 15)
+  }
+
   const result = {
     success: true,
     timestamp: new Date().toISOString(),
@@ -398,6 +509,7 @@ export async function calculateIntelligence(forceRefresh = false) {
       decliningCount,
       activeAnomaliesCount: anomalies.length
     },
+    weeklyScorecard,
     replenishment: replenishmentList,
     trends: trendsList,
     profitability: profitabilityList,
