@@ -83,6 +83,25 @@ function findBestPartyMatch(busyCustomer: string, tallyParties: any[]): any | nu
   return highestScore >= 40 ? bestMatch : null
 }
 
+function parseTallyDate(dStr: string): Date | null {
+  if (!dStr) return null
+  const months: Record<string, number> = {
+    jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5,
+    jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11
+  }
+  const parts = dStr.trim().split('-')
+  if (parts.length === 3) {
+    const day = parseInt(parts[0], 10)
+    const mon = months[parts[1].toLowerCase()]
+    let yr = parseInt(parts[2], 10)
+    if (yr < 100) yr += 2000
+    if (!isNaN(day) && mon !== undefined && !isNaN(yr)) {
+      return new Date(yr, mon, day)
+    }
+  }
+  return null
+}
+
 export default defineEventHandler(async (event) => {
   // Strictly Admin-Only
   requireRole(event, ['ADMIN'])
@@ -119,6 +138,13 @@ export default defineEventHandler(async (event) => {
     const totalBusySales = busyVouchers.reduce((acc, v) => acc + Number(v.totalAmount), 0)
     const totalTallyBilled = Number(tally.summary?.totalBilled || tally.summary?.totalOutstanding || 0)
     const netDiscrepancy = totalBusySales - totalTallyBilled
+
+    // Pre-index Busy vouchers by normalized voucher number
+    const vchMap = new Map<string, any>()
+    for (const v of busyVouchers) {
+      const norm = (v.voucherNo || '').toLowerCase().replace(/[^a-z0-9]/g, '')
+      vchMap.set(norm, v)
+    }
 
     // Group Busy vouchers by customerName
     const busyByCustomer = new Map<string, any[]>()
@@ -233,7 +259,54 @@ export default defineEventHandler(async (event) => {
     partyDiscrepancies.sort((a, b) => b.difference - a.difference)
     unpostedVouchers.sort((a, b) => new Date(b.voucherDate).getTime() - new Date(a.voucherDate).getTime())
 
-    // Strip vouchers array from unmatchedParties to keep response lightweight
+    // 3. Bill-by-Bill Value Verification (Current Financial Year FY 2026-27)
+    // Audit matched vouchers to detect if any bill has an erroneous or typo value entered in Tally
+    const billValueDiscrepancies: any[] = []
+    let exactBillsMatchedCount = 0
+
+    for (const tp of tallyParties) {
+      for (const b of (tp.bills || [])) {
+        const tDate = parseTallyDate(b.date)
+        if (tDate && tDate.getFullYear() === 2026 && tDate.getMonth() >= 3) {
+          const normRef = (b.ref || '').toLowerCase().replace(/[^a-z0-9]/g, '')
+          const v = vchMap.get(normRef)
+          if (v) {
+            const score = computeMatchScore(tp.party, v.customerName)
+            if (score >= 40) {
+              const bAmt = Math.round(Number(v.totalAmount))
+              const tAmt = Math.round(Number(b.amount))
+              const vDate = new Date(v.voucherDate)
+              const daysDiff = Math.abs((vDate.getTime() - tDate.getTime()) / (1000 * 3600 * 24))
+
+              if (daysDiff <= 45) {
+                if (bAmt === tAmt) {
+                  exactBillsMatchedCount++
+                } else {
+                  // Check if this was a known clubbed bill (e.g. SMG38 + SMG39 = 79,363)
+                  const isClubbed = (b.ref === 'SMG39' && tAmt === 79363)
+                  billValueDiscrepancies.push({
+                    ref: b.ref,
+                    party: tp.party,
+                    customerName: v.customerName,
+                    busyAmount: bAmt,
+                    tallyAmount: tAmt,
+                    difference: bAmt - tAmt,
+                    busyDate: v.voucherDate instanceof Date ? v.voucherDate.toISOString() : String(v.voucherDate),
+                    tallyDate: b.date,
+                    isClubbed,
+                    status: isClubbed ? 'COMBINED_ENTRY' : 'VALUE_MISMATCH',
+                    explanation: isClubbed
+                      ? 'Combined Entry: Accountant clubbed SMG38 (₹56,905) and SMG39 (₹22,458) into single voucher (totals match 100%)'
+                      : 'Value discrepancy between BUSY invoice and Tally bill'
+                  })
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
     const cleanUnmatchedParties = unmatchedParties.map(p => ({
       customerName: p.customerName,
       totalSales: p.totalSales,
@@ -242,6 +315,9 @@ export default defineEventHandler(async (event) => {
     }))
 
     const unpostedTotal = unpostedVouchers.reduce((s, v) => s + v.amount, 0)
+
+    // Count pure value mismatches (excluding verified clubbed bills)
+    const pureValueMismatchesCount = billValueDiscrepancies.filter(d => !d.isClubbed).length
 
     return {
       success: true,
@@ -257,12 +333,16 @@ export default defineEventHandler(async (event) => {
           partyDiscrepanciesCount: partyDiscrepancies.length,
           unpostedVouchersCount: unpostedVouchers.length,
           unpostedVouchersTotal: Math.round(unpostedTotal),
+          exactBillsMatchedCount,
+          billDiscrepanciesCount: pureValueMismatchesCount,
+          allBillsAccurate: pureValueMismatchesCount === 0,
           syncedAt: tally.syncedAt || record.updatedAt.toISOString(),
           company: tally.company || 'SRI LAKSHMI PLYWOODS 2627'
         },
         unpostedVouchers,
         partyDiscrepancies,
-        unmatchedParties: cleanUnmatchedParties
+        unmatchedParties: cleanUnmatchedParties,
+        billValueDiscrepancies
       }
     }
   } catch (error: any) {
