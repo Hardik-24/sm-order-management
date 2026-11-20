@@ -112,6 +112,19 @@
             Admin
           </span>
         </button>
+
+        <!-- PILLAR 5: BUSINESS INTELLIGENCE SUITE -->
+        <button
+          @click="switchTab('intelligence')"
+          class="py-3 px-1 border-b-2 font-bold text-sm sm:text-base flex items-center gap-2 whitespace-nowrap transition-all cursor-pointer"
+          :class="mainTab === 'intelligence' ? 'border-purple-600 text-purple-900' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+        >
+          <Sparkles class="w-4 h-4 text-purple-600" />
+          <span>Business Intelligence</span>
+          <span class="px-2 py-0.5 text-xs rounded-full bg-purple-100 text-purple-800 font-bold ml-1">
+            5 Engines
+          </span>
+        </button>
       </nav>
     </div>
 
@@ -978,6 +991,13 @@
     <div v-if="isAdmin && mainTab === 'receivables'" ref="tabContentRef" class="space-y-6">
       <TallyReceivablesTab />
     </div>
+
+    <!-- ========================================================================================= -->
+    <!-- PILLAR 5: BUSINESS INTELLIGENCE SUITE (DETERMINISTIC ENGINES + PO AUDITOR) -->
+    <!-- ========================================================================================= -->
+    <div v-if="mainTab === 'intelligence'" ref="tabContentRef" class="space-y-6">
+      <IntelligenceTab />
+    </div>
   </div>
 </template>
 
@@ -990,7 +1010,7 @@ import { ref, computed, onMounted, nextTick } from 'vue'
 import { 
   IndianRupee, Boxes, Users, AlertTriangle, Tag, Clock, 
   RefreshCw, AlertCircle, Crown, Search, Building2, Truck, 
-  TrendingUp, Flame, Zap, Activity, ShieldCheck, X, PieChart 
+  TrendingUp, Flame, Zap, Activity, ShieldCheck, X, PieChart, Sparkles
 } from 'lucide-vue-next'
 import { useGsapAnimation } from '~/composables/useGsapAnimation'
 import { useAuth } from '~/composables/useAuth'
@@ -1002,6 +1022,7 @@ import WarehouseVelocityChart from '~/components/analytics/WarehouseVelocityChar
 import CategoryCapitalSpreadChart from '~/components/analytics/CategoryCapitalSpreadChart.vue'
 import StockRunwaySegmentBar from '~/components/analytics/StockRunwaySegmentBar.vue'
 import TallyReceivablesTab from '~/components/analytics/TallyReceivablesTab.vue'
+import IntelligenceTab from '~/components/analytics/IntelligenceTab.vue'
 
 const { user, hasRole } = useAuth()
 const isAdmin = computed(() => user.value?.role === 'ADMIN' || hasRole('ADMIN'))
@@ -1016,7 +1037,10 @@ const data = ref<any | null>(null)
 const route = useRoute()
 
 // Navigation state
-const mainTab = ref<'sales' | 'movement' | 'purchases' | 'receivables'>((route.query.tab as any) === 'receivables' ? 'receivables' : 'sales')
+const mainTab = ref<'sales' | 'movement' | 'purchases' | 'receivables' | 'intelligence'>(
+  (route.query.tab as any) === 'receivables' ? 'receivables' : 
+  (route.query.tab as any) === 'intelligence' ? 'intelligence' : 'sales'
+)
 const skuRankingMode = ref<'revenue' | 'volume'>('revenue')
 const movementSubTab = ref<'fast' | 'dead' | 'risk' | 'negative'>('fast')
 
@@ -1032,7 +1056,7 @@ const handleSelectTier = (tier: 'all' | 'vip' | 'gold') => {
   selectedCustomerTierFilter.value = tier
 }
 
-const switchTab = (tab: 'sales' | 'movement' | 'purchases' | 'receivables') => {
+const switchTab = (tab: 'sales' | 'movement' | 'purchases' | 'receivables' | 'intelligence') => {
   if (mainTab.value === tab) return
   mainTab.value = tab
   nextTick(() => {
