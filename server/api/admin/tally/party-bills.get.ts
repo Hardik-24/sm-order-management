@@ -13,6 +13,25 @@ function cleanPartyName(s: string): string {
     .trim()
 }
 
+function parseTallyDate(dStr: string): Date | null {
+  if (!dStr) return null
+  const months: Record<string, number> = {
+    jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5,
+    jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11
+  }
+  const parts = dStr.trim().split('-')
+  if (parts.length === 3) {
+    const day = parseInt(parts[0], 10)
+    const mon = months[parts[1].toLowerCase()]
+    let yr = parseInt(parts[2], 10)
+    if (yr < 100) yr += 2000
+    if (!isNaN(day) && mon !== undefined && !isNaN(yr)) {
+      return new Date(yr, mon, day)
+    }
+  }
+  return null
+}
+
 export default defineEventHandler(async (event) => {
   // Strictly Admin-Only
   requireRole(event, ['ADMIN'])
@@ -100,11 +119,26 @@ export default defineEventHandler(async (event) => {
       const originalAmt = Math.round(Number(v.totalAmount))
       const dStr = v.voucherDate instanceof Date ? v.voucherDate.toISOString().slice(0, 10) : String(v.voucherDate)
 
+      let isSameVoucher = false
       if (pendingMatch) {
+        const tDate = parseTallyDate(pendingMatch.date)
+        const vDate = new Date(v.voucherDate)
+        if (tDate) {
+          const daysDiff = Math.abs((vDate.getTime() - tDate.getTime()) / (1000 * 3600 * 24))
+          // Vouchers must be within 45 days to be considered the same invoice (prevents cross-year number collisions)
+          if (daysDiff <= 45) {
+            isSameVoucher = true
+          }
+        } else {
+          isSameVoucher = Math.round(Number(pendingMatch.amount)) <= originalAmt
+        }
+      }
+
+      if (isSameVoucher && pendingMatch) {
         matchedPendingRefs.add(normVNo)
         const pendingAmt = Math.round(Number(pendingMatch.amount))
         const paidAmt = Math.max(0, originalAmt - pendingAmt)
-        const isPartial = paidAmt > 0 && pendingAmt < originalAmt
+        const isPartial = paidAmt > 5 && pendingAmt < (originalAmt - 5)
 
         pendingBills.push({
           ref: v.voucherNo,
@@ -151,6 +185,9 @@ export default defineEventHandler(async (event) => {
     // Sort pending bills by overdue days descending (most overdue first)
     pendingBills.sort((a, b) => (b.overdueDays || 0) - (a.overdueDays || 0))
 
+    const fullyPendingBills = pendingBills.filter(b => b.status === 'PENDING')
+    const partialBills = pendingBills.filter(b => b.status === 'PARTIAL')
+
     // Sort cleared bills by date descending (newest first)
     clearedBills.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
@@ -171,11 +208,13 @@ export default defineEventHandler(async (event) => {
           netPending: party.netPending,
           openingBalance: party.openingBalance,
           collectionRate: party.collectionRate,
-          pendingCount: pendingBills.length,
+          pendingCount: fullyPendingBills.length,
+          partialCount: partialBills.length,
           clearedCount: clearedBills.length,
           totalCount: allBills.length
         },
-        pendingBills,
+        pendingBills: fullyPendingBills,
+        partialBills,
         clearedBills,
         allBills
       }
