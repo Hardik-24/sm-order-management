@@ -231,6 +231,16 @@ export default defineEventHandler(async (event) => {
       ...clearedBills.map(b => ({ ...b, isPending: false }))
     ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
+    // Calculate Days Sales Outstanding (average payment completion days) & overdue metrics
+    const now = new Date()
+    const fyStartYear = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1
+    const fyStart = new Date(fyStartYear, 3, 1)
+    const daysElapsed = Math.max(1, Math.round((now.getTime() - fyStart.getTime()) / (1000 * 60 * 60 * 24)))
+    const avgPaymentDays = party.totalBilled > 0 ? Math.round((party.netPending / party.totalBilled) * daysElapsed) : 0
+    const avgOverdueDays = pendingBills.length > 0
+      ? Math.round(pendingBills.reduce((acc, b) => acc + (b.overdueDays || 0), 0) / pendingBills.length)
+      : 0
+
     return {
       success: true,
       data: {
@@ -242,6 +252,8 @@ export default defineEventHandler(async (event) => {
           netPending: party.netPending,
           openingBalance: party.openingBalance,
           collectionRate: party.collectionRate,
+          avgPaymentDays,
+          avgOverdueDays,
           pendingCount: fullyPendingBills.length,
           partialCount: partialBills.length,
           clearedCount: clearedBills.length,

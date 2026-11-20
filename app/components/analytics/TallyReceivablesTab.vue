@@ -207,6 +207,8 @@
               <option value="rate_asc">Lowest Collection Rate (Risk)</option>
               <option value="rate_desc">Highest Collection Rate</option>
               <option value="bills_desc">Most Unadjusted Bills</option>
+              <option value="speed_asc">Fastest Payers (Lowest Days)</option>
+              <option value="speed_desc">Slowest Payers (Highest Days)</option>
             </select>
           </div>
         </div>
@@ -222,6 +224,7 @@
                 <th class="py-3 px-4 text-right">Total Paid</th>
                 <th class="py-3 px-4 text-right">Net Pending</th>
                 <th class="py-3 px-4 text-center">Collection %</th>
+                <th class="py-3 px-4 text-center">Avg Pay Time</th>
                 <th class="py-3 px-4 text-center">Open Bills</th>
                 <th class="py-3 px-4 text-center">Action</th>
               </tr>
@@ -261,6 +264,16 @@
                 </td>
                 <td class="py-3.5 px-4 text-center">
                   <span
+                    class="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full"
+                    :class="getAvgPaymentBadgeClass(party)"
+                    :title="'Turnaround completion cycle: ' + getAvgPaymentDaysText(party)"
+                  >
+                    <Clock class="w-3 h-3 shrink-0" />
+                    <span>{{ getAvgPaymentDaysText(party) }}</span>
+                  </span>
+                </td>
+                <td class="py-3.5 px-4 text-center">
+                  <span
                     v-if="party.billsCount > 0"
                     class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200"
                   >
@@ -279,7 +292,7 @@
               </tr>
 
               <tr v-if="filteredParties.length === 0">
-                <td colspan="8" class="py-12 text-center text-gray-500">
+                <td colspan="9" class="py-12 text-center text-gray-500">
                   <Search class="w-8 h-8 mx-auto text-gray-300 mb-2" />
                   <p class="font-medium">No debtor accounts match your search.</p>
                   <button @click="searchQuery = ''" class="text-xs text-amber-700 underline mt-1">Clear search</button>
@@ -379,19 +392,48 @@
               <span class="truncate">Pending: <strong class="text-amber-700">{{ formatCurrency(selectedParty.netPending) }}</strong></span>
             </div>
 
-            <!-- Collection Progress Bar -->
-            <div class="p-2.5 sm:p-3 rounded-xl bg-gray-50 border border-gray-200 space-y-1.5">
-              <div class="flex items-center justify-between text-xs">
-                <span class="font-bold text-gray-700">Collection Rate:</span>
-                <span class="font-extrabold" :class="selectedParty.collectionRate >= 80 ? 'text-emerald-700' : 'text-amber-700'">
-                  {{ selectedParty.collectionRate }}% Paid
-                </span>
+            <!-- Collection Progress Bar & Average Payment Completion Time -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <!-- Card 1: Collection Rate -->
+              <div class="p-2.5 sm:p-3 rounded-xl bg-gray-50 border border-gray-200 space-y-1.5">
+                <div class="flex items-center justify-between text-xs">
+                  <span class="font-bold text-gray-700">Collection Rate:</span>
+                  <span class="font-extrabold" :class="selectedParty.collectionRate >= 80 ? 'text-emerald-700' : 'text-amber-700'">
+                    {{ selectedParty.collectionRate }}% Paid
+                  </span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                  <div class="bg-emerald-500 h-full rounded-full transition-all duration-300" :style="{ width: `${Math.min(100, selectedParty.collectionRate)}%` }"></div>
+                </div>
+                <div v-if="selectedParty.openingBalance > 0" class="text-[10.5px] text-gray-500 pt-0.5 truncate">
+                  Opening: {{ formatCurrency(selectedParty.openingBalance) }}
+                </div>
               </div>
-              <div class="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-                <div class="bg-emerald-500 h-full rounded-full transition-all duration-300" :style="{ width: `${Math.min(100, selectedParty.collectionRate)}%` }"></div>
-              </div>
-              <div v-if="selectedParty.openingBalance > 0" class="text-[11px] text-gray-500 pt-0.5 break-words">
-                Opening brought forward from prior year: {{ formatCurrency(selectedParty.openingBalance) }}
+
+              <!-- Card 2: Average Payment Completion Time -->
+              <div class="p-2.5 sm:p-3 rounded-xl bg-gray-50 border border-gray-200 space-y-1">
+                <div class="flex items-center justify-between text-xs">
+                  <span class="font-bold text-gray-700 flex items-center gap-1">
+                    <Clock class="w-3.5 h-3.5 text-gray-400" />
+                    Avg Payment Time:
+                  </span>
+                  <span
+                    class="font-extrabold px-1.5 py-0.2 rounded text-[10px]"
+                    :class="getAvgPaymentBadgeClass(selectedParty)"
+                  >
+                    {{ getPaymentSpeedLabel(selectedParty) }}
+                  </span>
+                </div>
+                <div class="text-sm sm:text-base font-extrabold text-gray-900 flex items-baseline gap-1.5">
+                  <span :class="getAvgPaymentColor(selectedParty)">{{ getAvgPaymentDaysText(selectedParty) }}</span>
+                  <span class="text-[10px] text-gray-400 font-normal">turnaround cycle</span>
+                </div>
+                <div v-if="selectedParty.billsCount > 0" class="text-[10.5px] text-gray-500 truncate">
+                  Pending bills avg: <span class="font-semibold text-gray-700">{{ partyBillsData?.summary?.avgOverdueDays ?? getPartyAvgOverdue(selectedParty) }}d overdue</span>
+                </div>
+                <div v-else class="text-[10.5px] text-emerald-700 font-medium truncate">
+                  All invoices cleared in full
+                </div>
               </div>
             </div>
           </div>
@@ -600,7 +642,7 @@ const tallyData = ref<any | null>(null)
 
 // Search & Sorting
 const searchQuery = ref('')
-const sortBy = ref<'pending_desc' | 'billed_desc' | 'paid_desc' | 'rate_asc' | 'rate_desc' | 'bills_desc'>('pending_desc')
+const sortBy = ref<'pending_desc' | 'billed_desc' | 'paid_desc' | 'rate_asc' | 'rate_desc' | 'bills_desc' | 'speed_asc' | 'speed_desc'>('pending_desc')
 
 // Pagination
 const currentPage = ref(1)
@@ -659,6 +701,10 @@ const filteredParties = computed(() => {
     list.sort((a, b) => (b.collectionRate || 0) - (a.collectionRate || 0))
   } else if (sortBy.value === 'bills_desc') {
     list.sort((a, b) => (b.billsCount || 0) - (a.billsCount || 0))
+  } else if (sortBy.value === 'speed_asc') {
+    list.sort((a, b) => getAvgPaymentDays(a) - getAvgPaymentDays(b))
+  } else if (sortBy.value === 'speed_desc') {
+    list.sort((a, b) => getAvgPaymentDays(b) - getAvgPaymentDays(a))
   }
 
   return list
@@ -731,6 +777,63 @@ function formatCrores(val: number | string | undefined): string {
     return '₹' + (n / 100000).toFixed(2) + ' L'
   }
   return formatCurrency(n)
+}
+
+// Average Payment Turnaround (DSO) & Performance Helpers
+function getAvgPaymentDays(party: any): number {
+  if (!party || !party.totalBilled || Number(party.totalBilled) <= 0) return 0
+  const pending = Number(party.netPending || 0)
+  if (pending <= 0) return 0
+
+  const now = new Date()
+  const currentYear = now.getFullYear()
+  const fyStartYear = now.getMonth() >= 3 ? currentYear : currentYear - 1
+  const fyStart = new Date(fyStartYear, 3, 1)
+  const daysElapsed = Math.max(1, Math.round((now.getTime() - fyStart.getTime()) / (1000 * 60 * 60 * 24)))
+
+  return Math.round((pending / Number(party.totalBilled)) * daysElapsed)
+}
+
+function getAvgPaymentDaysText(party: any): string {
+  if (!party) return '-'
+  if (Number(party.netPending || 0) <= 0) {
+    return 'Immediate / Clear'
+  }
+  const days = getAvgPaymentDays(party)
+  if (days <= 0) return 'Immediate'
+  return `~${days} Days`
+}
+
+function getAvgPaymentBadgeClass(party: any): string {
+  if (!party || Number(party.netPending || 0) <= 0) {
+    return 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+  }
+  const days = getAvgPaymentDays(party)
+  if (days <= 30) return 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+  if (days <= 60) return 'bg-amber-50 text-amber-800 border border-amber-200'
+  return 'bg-rose-50 text-rose-800 border border-rose-200'
+}
+
+function getAvgPaymentColor(party: any): string {
+  if (!party || Number(party.netPending || 0) <= 0) return 'text-emerald-700'
+  const days = getAvgPaymentDays(party)
+  if (days <= 30) return 'text-emerald-700'
+  if (days <= 60) return 'text-amber-700'
+  return 'text-rose-700'
+}
+
+function getPaymentSpeedLabel(party: any): string {
+  if (!party || Number(party.netPending || 0) <= 0) return 'Immediate'
+  const days = getAvgPaymentDays(party)
+  if (days <= 30) return 'Prompt'
+  if (days <= 60) return 'Moderate'
+  return 'Slow Payer'
+}
+
+function getPartyAvgOverdue(party: any): number {
+  if (!party?.bills || party.bills.length === 0) return 0
+  const total = party.bills.reduce((sum: number, b: any) => sum + (Number(b.overdueDays) || 0), 0)
+  return Math.round(total / party.bills.length)
 }
 
 onMounted(() => {
