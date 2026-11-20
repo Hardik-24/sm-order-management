@@ -10,6 +10,18 @@ export default defineEventHandler(async (event) => {
   
   const where: any = {}
   if (categoryId) where.categoryId = categoryId
+
+  // Exclude non-trade internal categories (vehicles, expenses, showroom displays) from standard trade catalog
+  const includeNonTrade = query.includeNonTrade === 'true'
+  if (!includeNonTrade && !categoryId) {
+    const nonTradeCategories = ['GENERAL', 'Services', 'DISPLAY SHOWROOM', 'MACHINE']
+    if (!where.AND) where.AND = []
+    where.AND.push({
+      category: {
+        name: { notIn: nonTradeCategories }
+      }
+    })
+  }
   
   if (search) {
     const multiTokenFilter = buildMultiTokenPrismaOr(search, (token) => [

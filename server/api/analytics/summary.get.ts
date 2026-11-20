@@ -41,18 +41,22 @@ export default defineEventHandler(async (event) => {
       salesMonthlyTrend,
       categoryRevenueShare
     ] = await Promise.all([
-      // 1. Inventory KPIs & Health Status
+      // 1. Inventory KPIs & Health Status (Excludes internal fixed assets, showroom displays & non-trade services)
       prisma.$queryRawUnsafe(`
         SELECT 
           COUNT(*)::int AS total_products,
-          COUNT(CASE WHEN stock > 0 THEN 1 END)::int AS in_stock_count,
-          COUNT(CASE WHEN stock = 0 THEN 1 END)::int AS zero_stock_count,
-          COUNT(CASE WHEN stock < 0 THEN 1 END)::int AS negative_stock_count,
-          COUNT(CASE WHEN stock > 0 AND stock <= 10 THEN 1 END)::int AS low_stock_count,
-          COALESCE(SUM(CASE WHEN stock > 0 THEN stock * COALESCE("costPrice", price, 0) ELSE 0 END), 0)::numeric AS total_cost_value,
-          COALESCE(SUM(CASE WHEN stock > 0 THEN stock * COALESCE(NULLIF(price, 0), "costPrice", 0) ELSE 0 END), 0)::numeric AS total_sale_value
-        FROM products
-        WHERE "isActive" = true
+          COUNT(CASE WHEN p.stock > 0 THEN 1 END)::int AS in_stock_count,
+          COUNT(CASE WHEN p.stock = 0 THEN 1 END)::int AS zero_stock_count,
+          COUNT(CASE WHEN p.stock < 0 THEN 1 END)::int AS negative_stock_count,
+          COUNT(CASE WHEN p.stock > 0 AND p.stock <= 10 THEN 1 END)::int AS low_stock_count,
+          COALESCE(SUM(CASE WHEN p.stock > 0 THEN p.stock * COALESCE(p."costPrice", p.price, 0) ELSE 0 END), 0)::numeric AS total_cost_value,
+          COALESCE(SUM(CASE WHEN p.stock > 0 THEN p.stock * COALESCE(NULLIF(p.price, 0), p."costPrice", 0) ELSE 0 END), 0)::numeric AS total_sale_value
+        FROM products p
+        LEFT JOIN categories c ON p."categoryId" = c.id
+        WHERE p."isActive" = true
+          AND (c.name IS NULL OR c.name NOT IN ('GENERAL', 'Services', 'DISPLAY SHOWROOM', 'MACHINE'))
+          AND p.name NOT ILIKE '%KIA CARNES%'
+          AND p.name NOT ILIKE '%FORK LIFT%'
       `),
 
       // 2. Categories with margin spread and stock valuation
@@ -68,6 +72,9 @@ export default defineEventHandler(async (event) => {
         FROM categories c
         JOIN products p ON p."categoryId" = c.id
         WHERE p."isActive" = true
+          AND c.name NOT IN ('GENERAL', 'Services', 'DISPLAY SHOWROOM', 'MACHINE')
+          AND p.name NOT ILIKE '%KIA CARNES%'
+          AND p.name NOT ILIKE '%FORK LIFT%'
         GROUP BY c.name
         HAVING SUM(CASE WHEN p.stock > 0 THEN p.stock * COALESCE(p."costPrice", p.price, 0) ELSE 0 END) > 0
         ORDER BY cost_value DESC
@@ -114,7 +121,7 @@ export default defineEventHandler(async (event) => {
         LIMIT 20
       `),
 
-      // 5. Non-Moving Dead Stock (High stock, 0 sales in vouchers)
+      // 5. Non-Moving Dead Stock (High stock, 0 sales in vouchers - excludes fixed assets and non-trade accounts)
       prisma.$queryRawUnsafe(`
         WITH sold_items AS (
           SELECT DISTINCT item->>'name' AS name
@@ -134,6 +141,9 @@ export default defineEventHandler(async (event) => {
         WHERE p.stock > 0 
           AND p."isActive" = true 
           AND s.name IS NULL
+          AND c.name NOT IN ('GENERAL', 'Services', 'DISPLAY SHOWROOM', 'MACHINE')
+          AND p.name NOT ILIKE '%KIA CARNES%'
+          AND p.name NOT ILIKE '%FORK LIFT%'
         ORDER BY capital_locked DESC
         LIMIT 20
       `),
@@ -211,7 +221,11 @@ export default defineEventHandler(async (event) => {
         FROM products p
         JOIN categories c ON p."categoryId" = c.id
         JOIN demand d ON LOWER(TRIM(p.name)) = LOWER(TRIM(d.name))
-        WHERE p.stock <= 10 AND p."isActive" = true
+        WHERE p.stock <= 10 
+          AND p."isActive" = true
+          AND c.name NOT IN ('GENERAL', 'Services', 'DISPLAY SHOWROOM', 'MACHINE')
+          AND p.name NOT ILIKE '%KIA CARNES%'
+          AND p.name NOT ILIKE '%FORK LIFT%'
         ORDER BY d.voucher_count DESC, p.stock ASC
         LIMIT 15
       `),
@@ -225,7 +239,11 @@ export default defineEventHandler(async (event) => {
           c.name AS category_name
         FROM products p
         JOIN categories c ON p."categoryId" = c.id
-        WHERE p.stock < 0 AND p."isActive" = true
+        WHERE p.stock < 0 
+          AND p."isActive" = true
+          AND c.name NOT IN ('GENERAL', 'Services', 'DISPLAY SHOWROOM', 'MACHINE')
+          AND p.name NOT ILIKE '%KIA CARNES%'
+          AND p.name NOT ILIKE '%FORK LIFT%'
         ORDER BY p.stock ASC
         LIMIT 15
       `),
@@ -275,6 +293,9 @@ export default defineEventHandler(async (event) => {
       FROM products p
       LEFT JOIN categories c ON p."categoryId" = c.id
       WHERE p."isActive" = true
+        AND (c.name IS NULL OR c.name NOT IN ('GENERAL', 'Services', 'DISPLAY SHOWROOM', 'MACHINE'))
+        AND p.name NOT ILIKE '%KIA CARNES%'
+        AND p.name NOT ILIKE '%FORK LIFT%'
     `)
     const stockMap = new Map<string, { stock: number; costPrice: number; category: string }>()
     for (const p of productStocks) {
