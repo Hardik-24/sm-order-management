@@ -24,48 +24,16 @@
         </div>
       </div>
 
-      <!-- Sync Action & Timestamp -->
+      <!-- Timestamp -->
       <div class="flex items-center gap-3 shrink-0 self-end md:self-center">
-        <div class="text-right hidden sm:block">
+        <div class="text-right">
           <div class="text-[11px] text-gray-500">Last Synced</div>
           <div class="text-xs font-semibold text-gray-800 flex items-center gap-1 justify-end">
-            <Clock class="w-3 h-3 text-gray-400" />
+            <Clock class="w-3.5 h-3.5 text-gray-400" />
             {{ formattedSyncTime }}
           </div>
         </div>
-
-        <button
-          @click="syncTallyNow"
-          :disabled="syncing"
-          class="inline-flex items-center gap-2 px-3.5 py-2 text-xs sm:text-sm font-semibold rounded-xl text-white bg-amber-600 hover:bg-amber-700 active:scale-95 transition-all shadow-xs disabled:opacity-60 cursor-pointer"
-        >
-          <RefreshCw class="w-4 h-4" :class="{ 'animate-spin': syncing }" />
-          <span>{{ syncing ? 'Syncing...' : 'Sync Tally' }}</span>
-        </button>
-
-        <button
-          @click="exportAllDebtorsCsv"
-          :disabled="!tallyData?.parties?.length"
-          class="inline-flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm font-medium rounded-xl text-gray-700 bg-white hover:bg-gray-50 border border-gray-200 shadow-2xs active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
-          title="Export All Debtors to CSV"
-        >
-          <Download class="w-4 h-4 text-gray-500" />
-          <span class="hidden md:inline">Export CSV</span>
-        </button>
       </div>
-    </div>
-
-    <!-- Alert / Sync Message Banner if any -->
-    <div v-if="syncMessage" class="p-3.5 rounded-xl border flex items-start gap-2.5 text-xs sm:text-sm" :class="syncMessage.isError ? 'bg-red-50 border-red-200 text-red-800' : 'bg-emerald-50 border-emerald-200 text-emerald-800'">
-      <AlertCircle v-if="syncMessage.isError" class="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
-      <CheckCircle2 v-else class="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-      <div class="flex-1">
-        <p class="font-medium">{{ syncMessage.text }}</p>
-        <p v-if="syncMessage.subtext" class="text-xs mt-0.5 opacity-90">{{ syncMessage.subtext }}</p>
-      </div>
-      <button @click="syncMessage = null" class="text-gray-400 hover:text-gray-600">
-        <X class="w-4 h-4" />
-      </button>
     </div>
 
     <!-- Loading State -->
@@ -348,38 +316,32 @@
     </div>
 
     <!-- Debtor Financials & Bills Slide-over Modal / Drawer -->
-    <div
-      v-if="selectedParty"
-      class="fixed inset-0 z-50 overflow-hidden bg-black/40 backdrop-blur-xs flex justify-end"
-      @click.self="selectedParty = null"
-    >
-      <div class="w-full max-w-2xl bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-200">
-        <!-- Drawer Header -->
-        <div class="p-5 border-b border-gray-200 bg-gray-50/70 flex items-start justify-between gap-3">
-          <div>
-            <div class="flex items-center gap-2">
-              <span class="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-100 text-amber-800 uppercase tracking-wide">Customer Financial Overview</span>
-              <span v-if="selectedParty.parent" class="text-xs text-gray-500">{{ selectedParty.parent }}</span>
+    <Teleport to="body">
+      <div
+        v-if="selectedParty"
+        class="fixed inset-0 z-[9999] overflow-hidden bg-black/50 backdrop-blur-xs flex justify-end"
+        @click.self="selectedParty = null"
+      >
+        <div class="w-full max-w-2xl bg-white h-screen shadow-2xl flex flex-col animate-in slide-in-from-right duration-200">
+          <!-- Drawer Header -->
+          <div class="p-5 border-b border-gray-200 bg-gray-50/70 flex items-start justify-between gap-3">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-100 text-amber-800 uppercase tracking-wide">Customer Financial Overview</span>
+                <span v-if="selectedParty.parent" class="text-xs text-gray-500">{{ selectedParty.parent }}</span>
+              </div>
+              <h3 class="text-lg font-bold text-gray-900 mt-1">{{ selectedParty.party }}</h3>
             </div>
-            <h3 class="text-lg font-bold text-gray-900 mt-1">{{ selectedParty.party }}</h3>
-          </div>
 
-          <div class="flex items-center gap-2">
-            <button
-              @click="exportDebtorBillsCsv(selectedParty)"
-              class="p-2 rounded-xl text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
-              title="Download Bills as CSV"
-            >
-              <Download class="w-4 h-4" />
-            </button>
-            <button
-              @click="selectedParty = null"
-              class="p-2 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
-            >
-              <X class="w-5 h-5" />
-            </button>
+            <div class="flex items-center gap-2">
+              <button
+                @click="selectedParty = null"
+                class="p-2 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
+              >
+                <X class="w-5 h-5" />
+              </button>
+            </div>
           </div>
-        </div>
 
         <!-- Financial Summary Cards (Billed, Paid, Net Pending) -->
         <div class="p-5 border-b border-gray-200 bg-white space-y-4">
@@ -465,16 +427,6 @@
               </span>
             </button>
           </div>
-
-          <button
-            @click="exportCurrentPartyBillsCsv"
-            :disabled="!activeBillsList.length"
-            class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-lg text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 cursor-pointer disabled:opacity-50 shrink-0"
-            title="Export bills in current view to CSV"
-          >
-            <Download class="w-3.5 h-3.5 text-gray-500" />
-            <span class="hidden sm:inline">Export</span>
-          </button>
         </div>
 
         <!-- Search Bar within Drawer -->
@@ -596,20 +548,19 @@
         </div>
       </div>
     </div>
-  </div>
+  </Teleport>
+</div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import {
   IndianRupee, Users, AlertTriangle, ShieldCheck, Lock,
-  Building2, Clock, RefreshCw, Download, Search, X, ChevronRight,
+  Building2, Clock, Search, X, ChevronRight,
   CheckCircle2, AlertCircle, Clock3, FileText, Calendar
 } from 'lucide-vue-next'
 
 const loading = ref(true)
-const syncing = ref(false)
-const syncMessage = ref<{ text: string; subtext?: string; isError?: boolean } | null>(null)
 const tallyData = ref<any | null>(null)
 
 // Search & Sorting
@@ -638,36 +589,6 @@ const fetchTallyReceivables = async () => {
     console.error('Failed to load Tally receivables:', err)
   } finally {
     loading.value = false
-  }
-}
-
-const syncTallyNow = async () => {
-  syncing.value = true
-  syncMessage.value = null
-  try {
-    const res = await $fetch<any>('/api/admin/tally/sync', { method: 'POST' })
-    if (res && res.success) {
-      tallyData.value = res.data
-      syncMessage.value = {
-        text: 'Tally financial position successfully synchronized!',
-        subtext: `Updated ${res.data?.summary?.totalParties || 0} accounts. Billed: ₹${(res.data?.summary?.totalBilled / 10000000).toFixed(2)} Cr, Paid: ₹${(res.data?.summary?.totalPaid / 10000000).toFixed(2)} Cr.`,
-        isError: false
-      }
-    } else {
-      syncMessage.value = {
-        text: res.message || 'Could not connect to Tally Prime on localhost.',
-        subtext: res.isLocalOnly ? 'Run the desktop "sync_tally.bat" shortcut or "npm run sync:tally" on your PC.' : res.details,
-        isError: true
-      }
-    }
-  } catch (err: any) {
-    syncMessage.value = {
-      text: 'Sync request failed',
-      subtext: err.data?.message || err.message,
-      isError: true
-    }
-  } finally {
-    syncing.value = false
   }
 }
 
@@ -774,70 +695,6 @@ function formatCrores(val: number | string | undefined): string {
     return '₹' + (n / 100000).toFixed(2) + ' L'
   }
   return formatCurrency(n)
-}
-
-// CSV Export Helpers
-const exportAllDebtorsCsv = () => {
-  if (!tallyData.value?.parties?.length) return
-  const headers = ['Rank', 'Party Name', 'Sub Group', 'Total Billed (INR)', 'Total Paid (INR)', 'Net Pending (INR)', 'Collection Rate (%)', 'Unadjusted Bills']
-  const rows = tallyData.value.parties.map((p: any, idx: number) => [
-    idx + 1,
-    `"${p.party.replace(/"/g, '""')}"`,
-    `"${(p.parent || '').replace(/"/g, '""')}"`,
-    p.totalBilled,
-    p.totalPaid,
-    p.netPending,
-    p.collectionRate,
-    p.billsCount
-  ])
-
-  const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n')
-  downloadBlob(csv, `Tally_Debtors_Financials_${new Date().toISOString().slice(0, 10)}.csv`, 'text/csv;charset=utf-8;')
-}
-
-const exportCurrentPartyBillsCsv = () => {
-  if (!activeBillsList.value.length || !selectedParty.value) return
-  const headers = ['Party Name', 'Invoice / Bill Ref', 'Bill Date', 'Due Date', 'Status', 'Amount (INR)', 'Overdue Days']
-  const rows = activeBillsList.value.map((b: any) => [
-    `"${selectedParty.value.party.replace(/"/g, '""')}"`,
-    `"${(b.ref || '').replace(/"/g, '""')}"`,
-    b.date,
-    b.dueDate || b.date,
-    b.status || (b.isPending ? 'PENDING' : 'CLEARED'),
-    b.amount,
-    b.overdueDays || 0
-  ])
-
-  const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n')
-  downloadBlob(csv, `${selectedParty.value.party.replace(/[^a-zA-Z0-9]/g, '_')}_${selectedBillTab.value}_Bills_${new Date().toISOString().slice(0, 10)}.csv`, 'text/csv;charset=utf-8;')
-}
-
-const exportDebtorBillsCsv = (party: any) => {
-  if (!party?.bills?.length) return
-  const headers = ['Party Name', 'Invoice / Bill Ref', 'Bill Date', 'Due Date', 'Overdue Days', 'Pending Balance (INR)']
-  const rows = party.bills.map((b: any) => [
-    `"${party.party.replace(/"/g, '""')}"`,
-    `"${(b.ref || '').replace(/"/g, '""')}"`,
-    b.date,
-    b.dueDate,
-    b.overdueDays,
-    b.amount
-  ])
-
-  const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n')
-  downloadBlob(csv, `${party.party.replace(/[^a-zA-Z0-9]/g, '_')}_Bills_${new Date().toISOString().slice(0, 10)}.csv`, 'text/csv;charset=utf-8;')
-}
-
-function downloadBlob(content: string, filename: string, mime: string) {
-  const blob = new Blob([content], { type: mime })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = filename
-  document.body.appendChild(a)
-  a.click()
-  document.body.removeChild(a)
-  URL.revokeObjectURL(url)
 }
 
 onMounted(() => {
