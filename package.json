@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "test": "node scripts/run_automated_tests.cjs",
+    "sync:tally": "node scripts/sync_tally_receivables.cjs",
     "build": "prisma generate && nuxt build",
     "dev": "nuxt dev",
     "generate": "nuxt generate",

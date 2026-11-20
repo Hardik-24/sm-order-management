@@ -98,6 +98,20 @@
             {{ data.purchases.totalSuppliers }} Vendors
           </span>
         </button>
+
+        <!-- PILLAR 4: TALLY RECEIVABLES (STRICTLY ADMIN ONLY) -->
+        <button
+          v-if="isAdmin"
+          @click="switchTab('receivables')"
+          class="py-3 px-1 border-b-2 font-bold text-sm sm:text-base flex items-center gap-2 whitespace-nowrap transition-all cursor-pointer"
+          :class="mainTab === 'receivables' ? 'border-amber-600 text-amber-800' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+        >
+          <ShieldCheck class="w-4 h-4 text-amber-600" />
+          <span>Tally Receivables</span>
+          <span class="px-2 py-0.5 text-xs rounded-full bg-amber-100 text-amber-800 font-bold ml-1">
+            Admin
+          </span>
+        </button>
       </nav>
     </div>
 
@@ -957,6 +971,13 @@
         </div>
       </div>
     </div>
+
+    <!-- ========================================================================================= -->
+    <!-- PILLAR 4: TALLY RECEIVABLES (STRICTLY ADMIN ONLY) -->
+    <!-- ========================================================================================= -->
+    <div v-if="isAdmin && mainTab === 'receivables'" ref="tabContentRef" class="space-y-6">
+      <TallyReceivablesTab />
+    </div>
   </div>
 </template>
 
@@ -972,6 +993,7 @@ import {
   TrendingUp, Flame, Zap, Activity, ShieldCheck, X, PieChart 
 } from 'lucide-vue-next'
 import { useGsapAnimation } from '~/composables/useGsapAnimation'
+import { useAuth } from '~/composables/useAuth'
 import OdometerNumber from '~/components/ui/OdometerNumber.vue'
 import RevenueTrendChart from '~/components/analytics/RevenueTrendChart.vue'
 import CategoryShareDonut from '~/components/analytics/CategoryShareDonut.vue'
@@ -979,6 +1001,10 @@ import CustomerParetoChart from '~/components/analytics/CustomerParetoChart.vue'
 import WarehouseVelocityChart from '~/components/analytics/WarehouseVelocityChart.vue'
 import CategoryCapitalSpreadChart from '~/components/analytics/CategoryCapitalSpreadChart.vue'
 import StockRunwaySegmentBar from '~/components/analytics/StockRunwaySegmentBar.vue'
+import TallyReceivablesTab from '~/components/analytics/TallyReceivablesTab.vue'
+
+const { user, hasRole } = useAuth()
+const isAdmin = computed(() => user.value?.role === 'ADMIN' || hasRole('ADMIN'))
 
 const { animateStagger, animateTabSwitch, initContext } = useGsapAnimation()
 const tabContentRef = ref<HTMLElement | null>(null)
@@ -988,7 +1014,7 @@ const error = ref<string | null>(null)
 const data = ref<any | null>(null)
 
 // Navigation state
-const mainTab = ref<'sales' | 'movement' | 'purchases'>('sales')
+const mainTab = ref<'sales' | 'movement' | 'purchases' | 'receivables'>('sales')
 const skuRankingMode = ref<'revenue' | 'volume'>('revenue')
 const movementSubTab = ref<'fast' | 'dead' | 'risk' | 'negative'>('fast')
 
@@ -1004,7 +1030,7 @@ const handleSelectTier = (tier: 'all' | 'vip' | 'gold') => {
   selectedCustomerTierFilter.value = tier
 }
 
-const switchTab = (tab: 'sales' | 'movement' | 'purchases') => {
+const switchTab = (tab: 'sales' | 'movement' | 'purchases' | 'receivables') => {
   if (mainTab.value === tab) return
   mainTab.value = tab
   nextTick(() => {
