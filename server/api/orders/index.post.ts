@@ -148,8 +148,6 @@ export default defineEventHandler(async (event) => {
         }
       })
       isItemBusySynced = false
-    } else if (product.isBusySynced === false) {
-      isItemBusySynced = false
     }
     
     const unitPrice = item.unitPrice !== undefined && item.unitPrice !== null && !isNaN(Number(item.unitPrice))

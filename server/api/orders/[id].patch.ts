@@ -136,6 +136,8 @@ export default defineEventHandler(async (event) => {
 
       totalAmount += lineTotal
 
+      const isItemBusySynced = item.isCustom ? false : true
+
       if (item.id) {
         itemsToUpdate.push({
           where: { id: item.id },
@@ -151,7 +153,8 @@ export default defineEventHandler(async (event) => {
             totalPrice: lineTotal,
             isTaxInclusive: isTaxInclusive,
             applyLastPrice: Boolean(item.applyLastPrice),
-            itemNotes: item.itemNotes ? String(item.itemNotes) : null
+            itemNotes: item.itemNotes ? String(item.itemNotes) : null,
+            isBusySynced: isItemBusySynced
           }
         })
       } else {
@@ -168,7 +171,8 @@ export default defineEventHandler(async (event) => {
           approvedQuantity: qty,
           isTaxInclusive: isTaxInclusive,
           applyLastPrice: Boolean(item.applyLastPrice),
-          itemNotes: item.itemNotes ? String(item.itemNotes) : null
+          itemNotes: item.itemNotes ? String(item.itemNotes) : null,
+          isBusySynced: isItemBusySynced
         })
       }
     }

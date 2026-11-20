@@ -570,7 +570,7 @@ onOrderSync((event) => {
 
 const unsyncedBusyItems = computed(() => {
   if (!order.value?.items) return []
-  return order.value.items.filter((i: any) => (i as any).isBusySynced === false || i.product?.isBusySynced === false)
+  return order.value.items.filter((i: any) => (i as any).isBusySynced === false)
 })
 
 const hasUnsyncedBusyItems = computed(() => {
@@ -2818,7 +2818,7 @@ onUnmounted(() => {
                             </span>
 
                             <!-- Not in Busy Badge, Link Button & Copy Button -->
-                            <div v-if="(item as any)?.isBusySynced === false || item.product?.isBusySynced === false" class="inline-flex items-center gap-1 flex-wrap">
+                            <div v-if="(item as any)?.isBusySynced === false" class="inline-flex items-center gap-1 flex-wrap">
                               <span 
                                 class="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider bg-amber-100 text-amber-900 px-1.5 py-0.5 rounded border border-amber-300 shadow-2xs" 
                                 title="Product not in Busy. Operations & delivery are unaffected."

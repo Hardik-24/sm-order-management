@@ -148,7 +148,7 @@
                       <div class="flex flex-wrap items-center gap-1.5 mt-1">
                         <!-- Not in Busy Badge & Link Action -->
                         <span 
-                          v-if="item.isBusySynced === false || item.product?.isBusySynced === false"
+                          v-if="item.isBusySynced === false"
                           class="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider bg-amber-100 text-amber-900 px-1.5 py-0.5 rounded border border-amber-300 shadow-2xs"
                           title="Product not yet created in Busy."
                         >
@@ -156,7 +156,7 @@
                           Not in Busy
                         </span>
                         <button
-                          v-if="(item.isBusySynced === false || item.product?.isBusySynced === false) && canLinkBusyData"
+                          v-if="item.isBusySynced === false && canLinkBusyData"
                           type="button"
                           @click="openLinkProductModal(item)"
                           class="inline-flex items-center gap-1 text-[9px] font-bold text-[#1b3b5f] bg-[#1b3b5f]/10 hover:bg-[#1b3b5f]/20 px-1.5 py-0.5 rounded border border-[#1b3b5f]/20 transition cursor-pointer"
@@ -289,7 +289,7 @@
 
                 <!-- Not in Busy Callout & One-Tap Link Action -->
                 <div 
-                  v-if="item.isBusySynced === false || item.product?.isBusySynced === false"
+                  v-if="item.isBusySynced === false"
                   class="p-2.5 bg-amber-100 border border-amber-300 rounded-lg flex items-center justify-between gap-2 shadow-2xs"
                 >
                   <div class="flex items-center gap-1.5 min-w-0 text-amber-950">
@@ -687,11 +687,11 @@ const roundOffAmount = computed(() => {
 const isCustomerUnsynced = computed(() => order.value?.customer?.isBusySynced === false)
 
 const hasUnsyncedItems = computed(() => {
-  return editableItems.value.some((i: any) => i.isBusySynced === false || i.product?.isBusySynced === false)
+  return editableItems.value.some((i: any) => i.isBusySynced === false)
 })
 
 const unsyncedItemsCount = computed(() => {
-  return editableItems.value.filter((i: any) => i.isBusySynced === false || i.product?.isBusySynced === false).length
+  return editableItems.value.filter((i: any) => i.isBusySynced === false).length
 })
 
 const isBusyBlocked = computed(() => isCustomerUnsynced.value || hasUnsyncedItems.value)

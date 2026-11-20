@@ -160,8 +160,6 @@ export default defineEventHandler(async (event) => {
           }
         })
         isItemBusySynced = false
-      } else if (product.isBusySynced === false) {
-        isItemBusySynced = false
       }
 
       const qty = Math.max(1, parseInt(String(it.quantity), 10) || 1)
