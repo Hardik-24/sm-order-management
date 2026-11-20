@@ -136,15 +136,15 @@
 
       <!-- Overall Collection Progress Bar -->
       <div class="bg-white rounded-2xl p-4 sm:p-5 border border-gray-200/80 shadow-xs space-y-2.5">
-        <div class="flex items-center justify-between text-xs sm:text-sm">
-          <div class="flex items-center gap-2 font-bold text-gray-900">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div class="flex items-center gap-2 font-bold text-gray-900 text-xs sm:text-sm">
             <span>Overall Collection Health</span>
-            <span class="text-xs font-normal text-gray-500">(Total Payments vs Total Billing Demand)</span>
+            <span class="text-xs font-normal text-gray-500 hidden md:inline">(Total Payments vs Total Billing Demand)</span>
           </div>
-          <div class="flex items-center gap-3 text-xs">
-            <span class="text-emerald-700 font-bold">Paid: {{ formatCrores(tallyData.summary.totalPaid) }}</span>
-            <span class="text-gray-300">•</span>
-            <span class="text-amber-700 font-bold">Pending: {{ formatCrores(tallyData.summary.totalNetPending) }}</span>
+          <div class="flex items-center justify-between sm:justify-end gap-2 text-xs">
+            <span class="text-emerald-700 font-bold bg-emerald-50 sm:bg-transparent px-2 sm:px-0 py-0.5 sm:py-0 rounded-md">Paid: {{ formatCrores(tallyData.summary.totalPaid) }}</span>
+            <span class="text-gray-300 hidden sm:inline">•</span>
+            <span class="text-amber-700 font-bold bg-amber-50 sm:bg-transparent px-2 sm:px-0 py-0.5 sm:py-0 rounded-md">Pending: {{ formatCrores(tallyData.summary.totalNetPending) }}</span>
           </div>
         </div>
 
@@ -199,7 +199,7 @@
 
             <select
               v-model="sortBy"
-              class="px-2.5 py-1.5 text-xs sm:text-sm rounded-xl border border-gray-200 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 cursor-pointer"
+              class="w-full sm:w-auto px-2.5 py-1.5 text-xs sm:text-sm rounded-xl border border-gray-200 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 cursor-pointer"
             >
               <option value="pending_desc">Highest Net Pending</option>
               <option value="billed_desc">Highest Total Billed</option>
@@ -324,229 +324,240 @@
       >
         <div class="w-full max-w-2xl bg-white h-screen shadow-2xl flex flex-col animate-in slide-in-from-right duration-200">
           <!-- Drawer Header -->
-          <div class="p-5 border-b border-gray-200 bg-gray-50/70 flex items-start justify-between gap-3">
-            <div>
-              <div class="flex items-center gap-2">
-                <span class="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-100 text-amber-800 uppercase tracking-wide">Customer Financial Overview</span>
-                <span v-if="selectedParty.parent" class="text-xs text-gray-500">{{ selectedParty.parent }}</span>
+          <div class="p-4 sm:p-5 border-b border-gray-200 bg-gray-50/70 flex items-start justify-between gap-3">
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="px-2 py-0.5 rounded text-[10px] sm:text-[11px] font-bold bg-amber-100 text-amber-800 uppercase tracking-wide shrink-0">Customer Financial Overview</span>
+                <span v-if="selectedParty.parent" class="text-xs text-gray-500 truncate max-w-[200px]">{{ selectedParty.parent }}</span>
               </div>
-              <h3 class="text-lg font-bold text-gray-900 mt-1">{{ selectedParty.party }}</h3>
+              <h3 class="text-base sm:text-lg font-bold text-gray-900 mt-1 break-words leading-snug">{{ selectedParty.party }}</h3>
             </div>
 
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 shrink-0">
               <button
                 @click="selectedParty = null"
                 class="p-2 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
+                title="Close drawer"
               >
                 <X class="w-5 h-5" />
               </button>
             </div>
           </div>
 
-        <!-- Financial Summary Cards (Billed, Paid, Net Pending) -->
-        <div class="p-5 border-b border-gray-200 bg-white space-y-4">
-          <div class="grid grid-cols-3 gap-3">
-            <div class="p-3 rounded-xl bg-blue-50/70 border border-blue-200">
-              <div class="text-[11px] font-semibold text-blue-700 uppercase tracking-wider">Total Billed</div>
-              <div class="text-base sm:text-lg font-extrabold text-blue-950 mt-0.5">
-                {{ formatCurrency(selectedParty.totalBilled) }}
+          <!-- Financial Summary Cards (Billed, Paid, Net Pending) -->
+          <div class="p-3.5 sm:p-5 border-b border-gray-200 bg-white space-y-3 sm:space-y-4">
+            <div class="grid grid-cols-3 gap-2 sm:gap-3">
+              <div class="p-2.5 sm:p-3 rounded-xl bg-blue-50/70 border border-blue-200 overflow-hidden">
+                <div class="text-[10px] sm:text-[11px] font-bold text-blue-700 uppercase tracking-wider truncate">Total Billed</div>
+                <div class="text-xs sm:text-base md:text-lg font-extrabold text-blue-950 mt-0.5 truncate" :title="formatCurrency(selectedParty.totalBilled)">
+                  {{ formatCrores(selectedParty.totalBilled) }}
+                </div>
+                <div class="text-[9.5px] sm:text-[10.5px] text-blue-600 mt-0.5 truncate hidden sm:block">Invoiced (Debits)</div>
               </div>
-              <div class="text-[10.5px] text-blue-600 mt-0.5">Invoiced (Debits)</div>
-            </div>
 
-            <div class="p-3 rounded-xl bg-emerald-50/70 border border-emerald-200">
-              <div class="text-[11px] font-semibold text-emerald-700 uppercase tracking-wider">Total Paid</div>
-              <div class="text-base sm:text-lg font-extrabold text-emerald-950 mt-0.5">
-                {{ formatCurrency(selectedParty.totalPaid) }}
+              <div class="p-2.5 sm:p-3 rounded-xl bg-emerald-50/70 border border-emerald-200 overflow-hidden">
+                <div class="text-[10px] sm:text-[11px] font-bold text-emerald-700 uppercase tracking-wider truncate">Total Paid</div>
+                <div class="text-xs sm:text-base md:text-lg font-extrabold text-emerald-950 mt-0.5 truncate" :title="formatCurrency(selectedParty.totalPaid)">
+                  {{ formatCrores(selectedParty.totalPaid) }}
+                </div>
+                <div class="text-[9.5px] sm:text-[10.5px] text-emerald-600 mt-0.5 truncate hidden sm:block">Receipts Received</div>
               </div>
-              <div class="text-[10.5px] text-emerald-600 mt-0.5">Receipts Received</div>
-            </div>
 
-            <div class="p-3 rounded-xl bg-amber-50/70 border border-amber-200">
-              <div class="text-[11px] font-semibold text-amber-700 uppercase tracking-wider">Net Balance</div>
-              <div class="text-base sm:text-lg font-extrabold text-amber-950 mt-0.5">
-                {{ formatCurrency(selectedParty.netPending) }}
+              <div class="p-2.5 sm:p-3 rounded-xl bg-amber-50/70 border border-amber-200 overflow-hidden">
+                <div class="text-[10px] sm:text-[11px] font-bold text-amber-700 uppercase tracking-wider truncate">Net Pending</div>
+                <div class="text-xs sm:text-base md:text-lg font-extrabold text-amber-950 mt-0.5 truncate" :title="formatCurrency(selectedParty.netPending)">
+                  {{ formatCrores(selectedParty.netPending) }}
+                </div>
+                <div class="text-[9.5px] sm:text-[10.5px] text-amber-600 mt-0.5 truncate hidden sm:block">Current Pending</div>
               </div>
-              <div class="text-[10.5px] text-amber-600 mt-0.5">Current Pending</div>
             </div>
-          </div>
 
-          <!-- Collection Progress Bar -->
-          <div class="p-3 rounded-xl bg-gray-50 border border-gray-200 space-y-1.5">
-            <div class="flex items-center justify-between text-xs">
-              <span class="font-bold text-gray-700">Collection Rate:</span>
-              <span class="font-extrabold" :class="selectedParty.collectionRate >= 80 ? 'text-emerald-700' : 'text-amber-700'">
-                {{ selectedParty.collectionRate }}% Paid
-              </span>
+            <!-- Exact Rupee Breakdown for Mobile & Quick Inspection -->
+            <div class="text-[10.5px] sm:text-xs text-gray-500 flex items-center justify-between flex-wrap gap-1 px-1 bg-gray-50/80 p-2 rounded-lg border border-gray-100">
+              <span class="truncate">Billed: <strong class="text-gray-800">{{ formatCurrency(selectedParty.totalBilled) }}</strong></span>
+              <span class="truncate">Paid: <strong class="text-emerald-700">{{ formatCurrency(selectedParty.totalPaid) }}</strong></span>
+              <span class="truncate">Pending: <strong class="text-amber-700">{{ formatCurrency(selectedParty.netPending) }}</strong></span>
             </div>
-            <div class="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-              <div class="bg-emerald-500 h-full rounded-full transition-all duration-300" :style="{ width: `${Math.min(100, selectedParty.collectionRate)}%` }"></div>
-            </div>
-            <div v-if="selectedParty.openingBalance > 0" class="text-[11px] text-gray-500 pt-0.5">
-              Opening brought forward from prior year: {{ formatCurrency(selectedParty.openingBalance) }}
-            </div>
-          </div>
-        </div>
 
-        <!-- Sub-Tabs: Pending vs Cleared vs All Invoices -->
-        <div class="px-5 py-2.5 border-b border-gray-200 bg-white flex items-center justify-between gap-2 overflow-x-auto">
-          <div class="flex items-center gap-1.5 p-1 bg-gray-100 rounded-xl">
-            <button
-              @click="selectedBillTab = 'pending'"
-              class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
-              :class="selectedBillTab === 'pending' ? 'bg-white text-amber-900 shadow-xs' : 'text-gray-600 hover:text-gray-900'"
-            >
-              <Clock3 class="w-3.5 h-3.5 text-amber-600" />
-              <span>Pending Bills</span>
-              <span class="px-1.5 py-0.2 rounded-full text-[10px] bg-amber-100 text-amber-800 font-extrabold">
-                {{ partyBillsData?.summary?.pendingCount ?? selectedParty.billsCount }}
-              </span>
-            </button>
-
-            <button
-              @click="selectedBillTab = 'cleared'"
-              class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
-              :class="selectedBillTab === 'cleared' ? 'bg-white text-emerald-900 shadow-xs' : 'text-gray-600 hover:text-gray-900'"
-            >
-              <CheckCircle2 class="w-3.5 h-3.5 text-emerald-600" />
-              <span>Cleared Bills</span>
-              <span class="px-1.5 py-0.2 rounded-full text-[10px] bg-emerald-100 text-emerald-800 font-extrabold">
-                {{ partyBillsLoading ? '...' : (partyBillsData?.summary?.clearedCount ?? 0) }}
-              </span>
-            </button>
-
-            <button
-              @click="selectedBillTab = 'all'"
-              class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
-              :class="selectedBillTab === 'all' ? 'bg-white text-gray-900 shadow-xs' : 'text-gray-600 hover:text-gray-900'"
-            >
-              <FileText class="w-3.5 h-3.5 text-blue-600" />
-              <span>All Invoices</span>
-              <span class="px-1.5 py-0.2 rounded-full text-[10px] bg-gray-200 text-gray-800 font-extrabold">
-                {{ partyBillsLoading ? '...' : (partyBillsData?.summary?.totalCount ?? selectedParty.billsCount) }}
-              </span>
-            </button>
-          </div>
-        </div>
-
-        <!-- Search Bar within Drawer -->
-        <div class="p-3 border-b border-gray-200 bg-gray-50/50 flex items-center justify-between gap-3">
-          <div class="text-xs text-gray-600 font-medium">
-            <span v-if="selectedBillTab === 'pending'">Invoices pending payment clearance</span>
-            <span v-else-if="selectedBillTab === 'cleared'">Historical invoices settled in full</span>
-            <span v-else>All customer sales invoices</span>
-          </div>
-
-          <div class="relative w-48 sm:w-64">
-            <Search class="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
-            <input
-              v-model="billSearchQuery"
-              type="text"
-              placeholder="Search ref # or date..."
-              class="w-full pl-8 pr-2.5 py-1 text-xs rounded-lg border border-gray-200 bg-white focus:outline-none focus:ring-1 focus:ring-amber-500"
-            />
-          </div>
-        </div>
-
-        <!-- Bills List -->
-        <div class="flex-1 overflow-y-auto divide-y divide-gray-100 p-2">
-          <!-- Loading State for detailed party bills -->
-          <div v-if="partyBillsLoading && selectedBillTab !== 'pending'" class="py-12 text-center space-y-2">
-            <RefreshCw class="w-5 h-5 text-amber-600 animate-spin mx-auto" />
-            <p class="text-xs text-gray-500 font-medium">Retrieving invoice settlement ledger...</p>
-          </div>
-
-          <div
-            v-else
-            v-for="(bill, bIdx) in filteredPartyBills"
-            :key="bIdx"
-            class="p-3.5 hover:bg-gray-50/80 rounded-xl transition-colors flex items-center justify-between gap-3 text-xs sm:text-sm"
-          >
-            <div class="space-y-1">
-              <div class="flex items-center gap-2 flex-wrap">
-                <span class="font-bold text-gray-900 font-mono text-xs sm:text-sm bg-gray-100 px-2 py-0.5 rounded border border-gray-200">
-                  {{ bill.ref || 'ON ACCOUNT' }}
-                </span>
-                <span class="text-gray-500 text-xs flex items-center gap-1">
-                  <Calendar class="w-3 h-3 text-gray-400" />
-                  {{ bill.date }}
-                </span>
-                <span v-if="bill.itemCount" class="text-[10.5px] text-gray-500 bg-gray-100 px-1.5 py-0.2 rounded">
-                  {{ bill.itemCount }} item{{ bill.itemCount > 1 ? 's' : '' }}
+            <!-- Collection Progress Bar -->
+            <div class="p-2.5 sm:p-3 rounded-xl bg-gray-50 border border-gray-200 space-y-1.5">
+              <div class="flex items-center justify-between text-xs">
+                <span class="font-bold text-gray-700">Collection Rate:</span>
+                <span class="font-extrabold" :class="selectedParty.collectionRate >= 80 ? 'text-emerald-700' : 'text-amber-700'">
+                  {{ selectedParty.collectionRate }}% Paid
                 </span>
               </div>
-              <div class="text-[11px] text-gray-500 flex items-center gap-2">
-                <template v-if="bill.status !== 'CLEARED'">
-                  <span v-if="bill.dueDate">Due: {{ bill.dueDate }}</span>
-                  <span v-if="bill.dueDate">•</span>
-                  <span
-                    class="font-semibold"
-                    :class="bill.overdueDays > 90 ? 'text-rose-600' : bill.overdueDays > 30 ? 'text-amber-600' : 'text-emerald-600'"
-                  >
-                    {{ bill.overdueDays }} days overdue
-                  </span>
-                  <span v-if="bill.paidAmount > 0" class="text-emerald-700 font-medium">
-                    (₹{{ Number(bill.paidAmount).toLocaleString('en-IN') }} paid)
-                  </span>
-                </template>
-                <template v-else>
-                  <span class="text-emerald-700 font-semibold flex items-center gap-1">
-                    <CheckCircle2 class="w-3 h-3 text-emerald-600" />
-                    Settled in Accounts
-                  </span>
-                  <span>•</span>
-                  <span>Invoice Amount: {{ formatCurrency(bill.amount) }}</span>
-                </template>
+              <div class="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                <div class="bg-emerald-500 h-full rounded-full transition-all duration-300" :style="{ width: `${Math.min(100, selectedParty.collectionRate)}%` }"></div>
               </div>
-            </div>
-
-            <div class="text-right shrink-0">
-              <div class="font-bold text-gray-900 text-sm sm:text-base">
-                {{ formatCurrency(bill.amount) }}
+              <div v-if="selectedParty.openingBalance > 0" class="text-[11px] text-gray-500 pt-0.5 break-words">
+                Opening brought forward from prior year: {{ formatCurrency(selectedParty.openingBalance) }}
               </div>
-              <span
-                v-if="bill.status === 'CLEARED'"
-                class="inline-flex items-center gap-1 text-[10px] text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full font-bold border border-emerald-200"
-              >
-                <CheckCircle2 class="w-3 h-3 text-emerald-600" />
-                Paid in Full
-              </span>
-              <span
-                v-else-if="bill.status === 'PARTIAL'"
-                class="inline-flex items-center gap-1 text-[10px] text-blue-800 bg-blue-50 px-2 py-0.5 rounded-full font-bold border border-blue-200"
-              >
-                Partially Paid
-              </span>
-              <span
-                v-else
-                class="inline-flex items-center gap-1 text-[10px] text-amber-800 bg-amber-50 px-2 py-0.5 rounded-full font-bold border border-amber-200"
-              >
-                <Clock3 class="w-3 h-3 text-amber-600" />
-                Pending Clearance
-              </span>
             </div>
           </div>
 
-          <div v-if="!partyBillsLoading && filteredPartyBills.length === 0" class="py-12 text-center text-gray-400 text-xs">
-            <span v-if="selectedBillTab === 'pending'">No open bills pending clearance. Account is 100% settled!</span>
-            <span v-else-if="selectedBillTab === 'cleared'">No cleared bills recorded yet for this customer.</span>
-            <span v-else>No invoices match your search.</span>
+          <!-- Sub-Tabs: Pending vs Cleared vs All Invoices -->
+          <div class="px-3 sm:px-5 py-2 sm:py-2.5 border-b border-gray-200 bg-white">
+            <div class="grid grid-cols-3 gap-1 p-1 bg-gray-100 rounded-xl">
+              <button
+                @click="selectedBillTab = 'pending'"
+                class="px-1.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 sm:gap-1.5 cursor-pointer"
+                :class="selectedBillTab === 'pending' ? 'bg-white text-amber-900 shadow-xs' : 'text-gray-600 hover:text-gray-900'"
+              >
+                <Clock3 class="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                <span class="hidden sm:inline">Pending Bills</span>
+                <span class="sm:hidden">Pending</span>
+                <span class="px-1 sm:px-1.5 py-0.2 rounded-full text-[10px] bg-amber-100 text-amber-800 font-extrabold">
+                  {{ partyBillsData?.summary?.pendingCount ?? selectedParty.billsCount }}
+                </span>
+              </button>
+
+              <button
+                @click="selectedBillTab = 'cleared'"
+                class="px-1.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 sm:gap-1.5 cursor-pointer"
+                :class="selectedBillTab === 'cleared' ? 'bg-white text-emerald-900 shadow-xs' : 'text-gray-600 hover:text-gray-900'"
+              >
+                <CheckCircle2 class="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <span class="hidden sm:inline">Cleared Bills</span>
+                <span class="sm:hidden">Cleared</span>
+                <span class="px-1 sm:px-1.5 py-0.2 rounded-full text-[10px] bg-emerald-100 text-emerald-800 font-extrabold">
+                  {{ partyBillsLoading ? '...' : (partyBillsData?.summary?.clearedCount ?? 0) }}
+                </span>
+              </button>
+
+              <button
+                @click="selectedBillTab = 'all'"
+                class="px-1.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 sm:gap-1.5 cursor-pointer"
+                :class="selectedBillTab === 'all' ? 'bg-white text-gray-900 shadow-xs' : 'text-gray-600 hover:text-gray-900'"
+              >
+                <FileText class="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                <span class="hidden sm:inline">All Invoices</span>
+                <span class="sm:hidden">All</span>
+                <span class="px-1 sm:px-1.5 py-0.2 rounded-full text-[10px] bg-gray-200 text-gray-800 font-extrabold">
+                  {{ partyBillsLoading ? '...' : (partyBillsData?.summary?.totalCount ?? selectedParty.billsCount) }}
+                </span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Search Bar within Drawer -->
+          <div class="p-3 border-b border-gray-200 bg-gray-50/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div class="text-xs text-gray-600 font-medium truncate">
+              <span v-if="selectedBillTab === 'pending'">Invoices pending payment clearance</span>
+              <span v-else-if="selectedBillTab === 'cleared'">Historical invoices settled in full</span>
+              <span v-else>All customer sales invoices</span>
+            </div>
+
+            <div class="relative w-full sm:w-64">
+              <Search class="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+              <input
+                v-model="billSearchQuery"
+                type="text"
+                placeholder="Search ref # or date..."
+                class="w-full pl-8 pr-2.5 py-1.5 sm:py-1 text-xs rounded-lg border border-gray-200 bg-white focus:outline-none focus:ring-1 focus:ring-amber-500"
+              />
+            </div>
+          </div>
+
+          <!-- Bills List -->
+          <div class="flex-1 overflow-y-auto divide-y divide-gray-100 p-2">
+            <!-- Loading State for detailed party bills -->
+            <div v-if="partyBillsLoading && selectedBillTab !== 'pending'" class="py-12 text-center space-y-2">
+              <RefreshCw class="w-5 h-5 text-amber-600 animate-spin mx-auto" />
+              <p class="text-xs text-gray-500 font-medium">Retrieving invoice settlement ledger...</p>
+            </div>
+
+            <div
+              v-else
+              v-for="(bill, bIdx) in filteredPartyBills"
+              :key="bIdx"
+              class="p-3 sm:p-3.5 hover:bg-gray-50/80 rounded-xl transition-colors flex items-start sm:items-center justify-between gap-2.5 text-xs sm:text-sm"
+            >
+              <div class="min-w-0 flex-1 space-y-1">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <span class="font-bold text-gray-900 font-mono text-xs sm:text-sm bg-gray-100 px-2 py-0.5 rounded border border-gray-200">
+                    {{ bill.ref || 'ON ACCOUNT' }}
+                  </span>
+                  <span class="text-gray-500 text-xs flex items-center gap-1">
+                    <Calendar class="w-3 h-3 text-gray-400" />
+                    {{ bill.date }}
+                  </span>
+                  <span v-if="bill.itemCount" class="text-[10.5px] text-gray-500 bg-gray-100 px-1.5 py-0.2 rounded">
+                    {{ bill.itemCount }} item{{ bill.itemCount > 1 ? 's' : '' }}
+                  </span>
+                </div>
+                <div class="text-[11px] text-gray-500 flex items-center gap-1.5 flex-wrap">
+                  <template v-if="bill.status !== 'CLEARED'">
+                    <span v-if="bill.dueDate">Due: {{ bill.dueDate }}</span>
+                    <span v-if="bill.dueDate">•</span>
+                    <span
+                      class="font-semibold"
+                      :class="bill.overdueDays > 90 ? 'text-rose-600' : bill.overdueDays > 30 ? 'text-amber-600' : 'text-emerald-600'"
+                    >
+                      {{ bill.overdueDays }}d overdue
+                    </span>
+                    <span v-if="bill.paidAmount > 0" class="text-emerald-700 font-medium">
+                      (₹{{ Number(bill.paidAmount).toLocaleString('en-IN') }} paid)
+                    </span>
+                  </template>
+                  <template v-else>
+                    <span class="text-emerald-700 font-semibold flex items-center gap-1">
+                      <CheckCircle2 class="w-3 h-3 text-emerald-600" />
+                      Settled
+                    </span>
+                    <span>•</span>
+                    <span>Inv: {{ formatCurrency(bill.amount) }}</span>
+                  </template>
+                </div>
+              </div>
+
+              <div class="text-right shrink-0">
+                <div class="font-bold text-gray-900 text-sm sm:text-base">
+                  {{ formatCurrency(bill.amount) }}
+                </div>
+                <span
+                  v-if="bill.status === 'CLEARED'"
+                  class="inline-flex items-center gap-1 text-[10px] text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full font-bold border border-emerald-200"
+                >
+                  <CheckCircle2 class="w-3 h-3 text-emerald-600" />
+                  Paid in Full
+                </span>
+                <span
+                  v-else-if="bill.status === 'PARTIAL'"
+                  class="inline-flex items-center gap-1 text-[10px] text-blue-800 bg-blue-50 px-2 py-0.5 rounded-full font-bold border border-blue-200"
+                >
+                  Partially Paid
+                </span>
+                <span
+                  v-else
+                  class="inline-flex items-center gap-1 text-[10px] text-amber-800 bg-amber-50 px-2 py-0.5 rounded-full font-bold border border-amber-200"
+                >
+                  <Clock3 class="w-3 h-3 text-amber-600" />
+                  Pending
+                </span>
+              </div>
+            </div>
+
+            <div v-if="!partyBillsLoading && filteredPartyBills.length === 0" class="py-12 text-center text-gray-400 text-xs">
+              <span v-if="selectedBillTab === 'pending'">No open bills pending clearance. Account is 100% settled!</span>
+              <span v-else-if="selectedBillTab === 'cleared'">No cleared bills recorded yet for this customer.</span>
+              <span v-else>No invoices match your search.</span>
+            </div>
+          </div>
+
+          <!-- Drawer Footer -->
+          <div class="p-3 sm:p-4 border-t border-gray-200 bg-gray-50 flex items-center justify-between text-xs">
+            <span class="text-gray-500">
+              Showing {{ filteredPartyBills.length }} {{ selectedBillTab }} invoice{{ filteredPartyBills.length === 1 ? '' : 's' }}
+            </span>
+            <button
+              @click="selectedParty = null"
+              class="px-4 py-2 rounded-xl bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300 cursor-pointer"
+            >
+              Close
+            </button>
           </div>
         </div>
-
-        <!-- Drawer Footer -->
-        <div class="p-4 border-t border-gray-200 bg-gray-50 flex items-center justify-between text-xs">
-          <span class="text-gray-500">
-            Showing {{ filteredPartyBills.length }} {{ selectedBillTab }} invoice{{ filteredPartyBills.length === 1 ? '' : 's' }}
-          </span>
-          <button
-            @click="selectedParty = null"
-            class="px-4 py-2 rounded-xl bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300 cursor-pointer"
-          >
-            Close
-          </button>
-        </div>
-      </div>
     </div>
   </Teleport>
 </div>
@@ -557,7 +568,7 @@ import { ref, computed, onMounted } from 'vue'
 import {
   IndianRupee, Users, AlertTriangle, ShieldCheck, Lock,
   Building2, Clock, Search, X, ChevronRight,
-  CheckCircle2, AlertCircle, Clock3, FileText, Calendar
+  CheckCircle2, AlertCircle, Clock3, FileText, Calendar, RefreshCw
 } from 'lucide-vue-next'
 
 const loading = ref(true)
