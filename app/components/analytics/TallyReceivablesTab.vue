@@ -8,7 +8,7 @@
         </div>
         <div>
           <div class="flex items-center gap-2 flex-wrap">
-            <h2 class="text-base sm:text-lg font-bold text-gray-900">Tally Prime Financial Receivables</h2>
+            <h2 class="text-base sm:text-lg font-bold text-gray-900">Tally Prime Financial Intelligence</h2>
             <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
               <Lock class="w-3 h-3" />
               Strictly Read-Only
@@ -19,7 +19,7 @@
             </span>
           </div>
           <p class="text-xs sm:text-sm text-gray-600 mt-1">
-            Real-time debtor ledger balances, bill-by-bill aging brackets, and overdue tracking extracted directly from Tally Prime.
+            Complete 360° financial overview: Total Billed, Total Paid Receipts, Net Pending Balance, and Open Bill Aging.
           </p>
         </div>
       </div>
@@ -47,7 +47,7 @@
           @click="exportAllDebtorsCsv"
           :disabled="!tallyData?.parties?.length"
           class="inline-flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm font-medium rounded-xl text-gray-700 bg-white hover:bg-gray-50 border border-gray-200 shadow-2xs active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
-          title="Export All Receivables to CSV"
+          title="Export All Debtors to CSV"
         >
           <Download class="w-4 h-4 text-gray-500" />
           <span class="hidden md:inline">Export CSV</span>
@@ -75,35 +75,79 @@
 
     <!-- Content when loaded -->
     <div v-else-if="tallyData" class="space-y-6">
-      <!-- 4 Executive KPI Cards -->
+      <!-- 4 Executive KPI Cards (Billed vs Paid vs Pending) -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <!-- 1. Total Outstanding Receivables -->
+        <!-- 1. Total Invoiced (Billed) -->
         <div class="bg-white rounded-2xl p-5 border border-gray-200/80 shadow-xs relative overflow-hidden group hover:border-gray-300 transition-all">
           <div class="flex items-center justify-between">
-            <span class="text-xs font-semibold uppercase tracking-wider text-gray-500">Total Receivables</span>
-            <div class="w-9 h-9 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center border border-amber-200/80">
+            <span class="text-xs font-semibold uppercase tracking-wider text-gray-500">Total Billed (Debits)</span>
+            <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center border border-blue-200/80">
               <IndianRupee class="w-5 h-5" />
             </div>
           </div>
           <div class="mt-3">
             <div class="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
-              {{ formatCrores(tallyData.summary.totalOutstanding) }}
+              {{ formatCrores(tallyData.summary.totalBilled || tallyData.summary.totalOutstanding) }}
             </div>
             <div class="flex items-center justify-between text-xs text-gray-500 mt-2">
-              <span>{{ formatCurrency(tallyData.summary.totalOutstanding) }}</span>
+              <span>{{ formatCurrency(tallyData.summary.totalBilled || tallyData.summary.totalOutstanding) }}</span>
+              <span class="text-blue-700 font-semibold bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200 text-[11px]">
+                Invoiced Sales
+              </span>
+            </div>
+          </div>
+          <div class="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-indigo-500"></div>
+        </div>
+
+        <!-- 2. Total Paid (Receipts) -->
+        <div class="bg-white rounded-2xl p-5 border border-gray-200/80 shadow-xs relative overflow-hidden group hover:border-gray-300 transition-all">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold uppercase tracking-wider text-gray-500">Total Collected (Paid)</span>
+            <div class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center border border-emerald-200/80">
+              <CheckCircle2 class="w-5 h-5" />
+            </div>
+          </div>
+          <div class="mt-3">
+            <div class="text-2xl sm:text-3xl font-extrabold text-emerald-700 tracking-tight">
+              {{ formatCrores(tallyData.summary.totalPaid) }}
+            </div>
+            <div class="flex items-center justify-between text-xs text-gray-500 mt-2">
+              <span>{{ formatCurrency(tallyData.summary.totalPaid) }}</span>
+              <span class="text-emerald-800 font-bold bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-200 text-[11px]">
+                {{ tallyData.summary.overallCollectionRate }}% Collected
+              </span>
+            </div>
+          </div>
+          <div class="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 to-teal-500"></div>
+        </div>
+
+        <!-- 3. Net Receivables Pending -->
+        <div class="bg-white rounded-2xl p-5 border border-gray-200/80 shadow-xs relative overflow-hidden group hover:border-gray-300 transition-all">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold uppercase tracking-wider text-gray-500">Net Pending Balance</span>
+            <div class="w-9 h-9 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center border border-amber-200/80">
+              <AlertTriangle class="w-5 h-5" />
+            </div>
+          </div>
+          <div class="mt-3">
+            <div class="text-2xl sm:text-3xl font-extrabold text-amber-700 tracking-tight">
+              {{ formatCrores(tallyData.summary.totalNetPending || tallyData.summary.totalOutstanding) }}
+            </div>
+            <div class="flex items-center justify-between text-xs text-gray-500 mt-2">
+              <span>{{ formatCurrency(tallyData.summary.totalNetPending || tallyData.summary.totalOutstanding) }}</span>
               <span class="text-amber-800 font-semibold bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 text-[11px]">
-                {{ formatNumber(tallyData.summary.totalBills) }} Unpaid Bills
+                {{ formatNumber(tallyData.summary.totalBills) }} Open Bills
               </span>
             </div>
           </div>
           <div class="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500 to-orange-500"></div>
         </div>
 
-        <!-- 2. Unique Debtors Count -->
+        <!-- 4. Active Accounts -->
         <div class="bg-white rounded-2xl p-5 border border-gray-200/80 shadow-xs relative overflow-hidden group hover:border-gray-300 transition-all">
           <div class="flex items-center justify-between">
-            <span class="text-xs font-semibold uppercase tracking-wider text-gray-500">Debtor Accounts</span>
-            <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center border border-blue-200/80">
+            <span class="text-xs font-semibold uppercase tracking-wider text-gray-500">Active Debtors</span>
+            <div class="w-9 h-9 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center border border-purple-200/80">
               <Users class="w-5 h-5" />
             </div>
           </div>
@@ -112,53 +156,9 @@
               {{ formatNumber(tallyData.summary.totalParties) }}
             </div>
             <div class="flex items-center justify-between text-xs text-gray-500 mt-2">
-              <span>Average Outstanding</span>
+              <span>Avg Pending / Debtor</span>
               <span class="font-semibold text-gray-700">
-                {{ formatCurrency(tallyData.summary.totalParties > 0 ? Math.round(tallyData.summary.totalOutstanding / tallyData.summary.totalParties) : 0) }}
-              </span>
-            </div>
-          </div>
-          <div class="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-indigo-500"></div>
-        </div>
-
-        <!-- 3. Overdue > 180 Days -->
-        <div class="bg-white rounded-2xl p-5 border border-gray-200/80 shadow-xs relative overflow-hidden group hover:border-gray-300 transition-all">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-semibold uppercase tracking-wider text-gray-500">Aged > 180 Days</span>
-            <div class="w-9 h-9 rounded-xl bg-rose-50 text-rose-700 flex items-center justify-center border border-rose-200/80">
-              <AlertTriangle class="w-5 h-5" />
-            </div>
-          </div>
-          <div class="mt-3">
-            <div class="text-2xl sm:text-3xl font-extrabold text-rose-700 tracking-tight">
-              {{ formatCrores(tallyData.summary.agingBuckets.overOneEighty) }}
-            </div>
-            <div class="flex items-center justify-between text-xs text-gray-500 mt-2">
-              <span>Risk Share</span>
-              <span class="text-rose-700 font-semibold bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200 text-[11px]">
-                {{ tallyData.summary.totalOutstanding > 0 ? ((tallyData.summary.agingBuckets.overOneEighty / tallyData.summary.totalOutstanding) * 100).toFixed(1) : 0 }}% of Total
-              </span>
-            </div>
-          </div>
-          <div class="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-rose-500 to-red-600"></div>
-        </div>
-
-        <!-- 4. Top Exposure Account -->
-        <div class="bg-white rounded-2xl p-5 border border-gray-200/80 shadow-xs relative overflow-hidden group hover:border-gray-300 transition-all">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-semibold uppercase tracking-wider text-gray-500">Top Debtor Concentration</span>
-            <div class="w-9 h-9 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center border border-purple-200/80">
-              <Crown class="w-5 h-5" />
-            </div>
-          </div>
-          <div class="mt-3">
-            <div class="text-lg sm:text-xl font-bold text-gray-900 tracking-tight truncate" :title="topDebtor?.party">
-              {{ topDebtor?.party || 'None' }}
-            </div>
-            <div class="flex items-center justify-between text-xs text-gray-500 mt-2">
-              <span class="font-bold text-gray-900">{{ formatCurrency(topDebtor?.totalReceivable || 0) }}</span>
-              <span class="text-purple-700 font-semibold bg-purple-50 px-2 py-0.5 rounded-full border border-purple-200 text-[11px]">
-                {{ tallyData.summary.totalOutstanding > 0 && topDebtor ? ((topDebtor.totalReceivable / tallyData.summary.totalOutstanding) * 100).toFixed(1) : 0 }}% Book
+                {{ formatCurrency(tallyData.summary.totalParties > 0 ? Math.round((tallyData.summary.totalNetPending || tallyData.summary.totalOutstanding) / tallyData.summary.totalParties) : 0) }}
               </span>
             </div>
           </div>
@@ -166,58 +166,37 @@
         </div>
       </div>
 
-      <!-- Aging Buckets Distribution Bar -->
-      <div class="bg-white rounded-2xl p-5 border border-gray-200/80 shadow-xs space-y-3">
-        <div class="flex items-center justify-between flex-wrap gap-2">
-          <div>
-            <h3 class="text-sm font-bold text-gray-900 flex items-center gap-1.5">
-              <span>Aging Profile Breakdown</span>
-              <span class="text-xs font-normal text-gray-500">(Overdue from Invoice Due Date)</span>
-            </h3>
+      <!-- Overall Collection Progress Bar -->
+      <div class="bg-white rounded-2xl p-4 sm:p-5 border border-gray-200/80 shadow-xs space-y-2.5">
+        <div class="flex items-center justify-between text-xs sm:text-sm">
+          <div class="flex items-center gap-2 font-bold text-gray-900">
+            <span>Overall Collection Health</span>
+            <span class="text-xs font-normal text-gray-500">(Total Payments vs Total Billing Demand)</span>
           </div>
-          <span class="text-xs text-gray-500 font-medium">Total: {{ formatCurrency(tallyData.summary.totalOutstanding) }}</span>
+          <div class="flex items-center gap-3 text-xs">
+            <span class="text-emerald-700 font-bold">Paid: {{ formatCrores(tallyData.summary.totalPaid) }}</span>
+            <span class="text-gray-300">•</span>
+            <span class="text-amber-700 font-bold">Pending: {{ formatCrores(tallyData.summary.totalNetPending) }}</span>
+          </div>
         </div>
 
-        <div class="grid grid-cols-2 sm:grid-cols-5 gap-2.5 pt-1">
-          <div class="p-3 rounded-xl bg-emerald-50/70 border border-emerald-200/80">
-            <div class="text-[11px] font-semibold text-emerald-800 uppercase tracking-wider">0 - 30 Days</div>
-            <div class="text-sm sm:text-base font-bold text-emerald-950 mt-1">{{ formatCurrency(tallyData.summary.agingBuckets.current) }}</div>
-            <div class="text-[10.5px] text-emerald-700 font-medium mt-0.5">
-              {{ tallyData.summary.totalOutstanding > 0 ? ((tallyData.summary.agingBuckets.current / tallyData.summary.totalOutstanding) * 100).toFixed(1) : 0 }}%
-            </div>
-          </div>
+        <div class="w-full bg-gray-100 rounded-full h-3 overflow-hidden flex">
+          <div
+            class="bg-emerald-500 h-full rounded-l-full transition-all duration-500"
+            :style="{ width: `${Math.min(100, tallyData.summary.overallCollectionRate)}%` }"
+            :title="`Paid: ${tallyData.summary.overallCollectionRate}%`"
+          ></div>
+          <div
+            class="bg-amber-400 h-full rounded-r-full transition-all duration-500"
+            :style="{ width: `${Math.max(0, 100 - tallyData.summary.overallCollectionRate)}%` }"
+            :title="`Pending: ${(100 - tallyData.summary.overallCollectionRate).toFixed(1)}%`"
+          ></div>
+        </div>
 
-          <div class="p-3 rounded-xl bg-blue-50/70 border border-blue-200/80">
-            <div class="text-[11px] font-semibold text-blue-800 uppercase tracking-wider">31 - 60 Days</div>
-            <div class="text-sm sm:text-base font-bold text-blue-950 mt-1">{{ formatCurrency(tallyData.summary.agingBuckets.thirtyToSixty) }}</div>
-            <div class="text-[10.5px] text-blue-700 font-medium mt-0.5">
-              {{ tallyData.summary.totalOutstanding > 0 ? ((tallyData.summary.agingBuckets.thirtyToSixty / tallyData.summary.totalOutstanding) * 100).toFixed(1) : 0 }}%
-            </div>
-          </div>
-
-          <div class="p-3 rounded-xl bg-amber-50/70 border border-amber-200/80">
-            <div class="text-[11px] font-semibold text-amber-800 uppercase tracking-wider">61 - 90 Days</div>
-            <div class="text-sm sm:text-base font-bold text-amber-950 mt-1">{{ formatCurrency(tallyData.summary.agingBuckets.sixtyToNinety) }}</div>
-            <div class="text-[10.5px] text-amber-700 font-medium mt-0.5">
-              {{ tallyData.summary.totalOutstanding > 0 ? ((tallyData.summary.agingBuckets.sixtyToNinety / tallyData.summary.totalOutstanding) * 100).toFixed(1) : 0 }}%
-            </div>
-          </div>
-
-          <div class="p-3 rounded-xl bg-orange-50/70 border border-orange-200/80">
-            <div class="text-[11px] font-semibold text-orange-800 uppercase tracking-wider">91 - 180 Days</div>
-            <div class="text-sm sm:text-base font-bold text-orange-950 mt-1">{{ formatCurrency(tallyData.summary.agingBuckets.ninetyToOneEighty) }}</div>
-            <div class="text-[10.5px] text-orange-700 font-medium mt-0.5">
-              {{ tallyData.summary.totalOutstanding > 0 ? ((tallyData.summary.agingBuckets.ninetyToOneEighty / tallyData.summary.totalOutstanding) * 100).toFixed(1) : 0 }}%
-            </div>
-          </div>
-
-          <div class="p-3 rounded-xl bg-rose-50/70 border border-rose-200/80 col-span-2 sm:col-span-1">
-            <div class="text-[11px] font-semibold text-rose-800 uppercase tracking-wider">> 180 Days</div>
-            <div class="text-sm sm:text-base font-bold text-rose-950 mt-1">{{ formatCurrency(tallyData.summary.agingBuckets.overOneEighty) }}</div>
-            <div class="text-[10.5px] text-rose-700 font-medium mt-0.5">
-              {{ tallyData.summary.totalOutstanding > 0 ? ((tallyData.summary.agingBuckets.overOneEighty / tallyData.summary.totalOutstanding) * 100).toFixed(1) : 0 }}%
-            </div>
-          </div>
+        <div class="flex items-center justify-between text-[11px] text-gray-500 pt-0.5">
+          <span>0%</span>
+          <span class="font-bold text-emerald-700">{{ tallyData.summary.overallCollectionRate }}% Collected</span>
+          <span>100% Demand</span>
         </div>
       </div>
 
@@ -238,7 +217,7 @@
               <input
                 v-model="searchQuery"
                 type="text"
-                placeholder="Search debtor name..."
+                placeholder="Search debtor name or group..."
                 class="w-full pl-9 pr-3.5 py-1.5 text-xs sm:text-sm rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
               />
               <button
@@ -252,12 +231,14 @@
 
             <select
               v-model="sortBy"
-              class="px-2.5 py-1.5 text-xs sm:text-sm rounded-xl border border-gray-200 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+              class="px-2.5 py-1.5 text-xs sm:text-sm rounded-xl border border-gray-200 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 cursor-pointer"
             >
-              <option value="amount_desc">Highest Outstanding</option>
-              <option value="amount_asc">Lowest Outstanding</option>
-              <option value="bills_desc">Most Unpaid Bills</option>
-              <option value="overdue_desc">Oldest Overdue Days</option>
+              <option value="pending_desc">Highest Net Pending</option>
+              <option value="billed_desc">Highest Total Billed</option>
+              <option value="paid_desc">Highest Total Paid</option>
+              <option value="rate_asc">Lowest Collection Rate (Risk)</option>
+              <option value="rate_desc">Highest Collection Rate</option>
+              <option value="bills_desc">Most Unadjusted Bills</option>
             </select>
           </div>
         </div>
@@ -269,10 +250,11 @@
               <tr>
                 <th class="py-3 px-4 w-12 text-center">#</th>
                 <th class="py-3 px-4">Debtor Party / Ledger</th>
-                <th class="py-3 px-4 text-right">Outstanding (₹)</th>
-                <th class="py-3 px-4 text-center">Unpaid Bills</th>
-                <th class="py-3 px-4 text-center">Overdue Days</th>
-                <th class="py-3 px-4 text-right">% of Total</th>
+                <th class="py-3 px-4 text-right">Total Billed</th>
+                <th class="py-3 px-4 text-right">Total Paid</th>
+                <th class="py-3 px-4 text-right">Net Pending</th>
+                <th class="py-3 px-4 text-center">Collection %</th>
+                <th class="py-3 px-4 text-center">Open Bills</th>
                 <th class="py-3 px-4 text-center">Action</th>
               </tr>
             </thead>
@@ -286,40 +268,50 @@
                 <td class="py-3.5 px-4 text-center font-bold text-gray-400 text-xs">
                   {{ (currentPage - 1) * pageSize + idx + 1 }}
                 </td>
-                <td class="py-3.5 px-4 font-bold text-gray-900 group-hover:text-amber-900 flex items-center gap-2">
-                  <span>{{ party.party }}</span>
+                <td class="py-3.5 px-4 font-bold text-gray-900 group-hover:text-amber-900">
+                  <div class="font-bold text-gray-900">{{ party.party }}</div>
+                  <div v-if="party.parent" class="text-[11px] text-gray-400 font-normal">{{ party.parent }}</div>
                 </td>
-                <td class="py-3.5 px-4 text-right font-extrabold text-gray-900">
-                  {{ formatCurrency(party.totalReceivable) }}
+                <td class="py-3.5 px-4 text-right font-medium text-gray-700">
+                  {{ formatCurrency(party.totalBilled) }}
+                </td>
+                <td class="py-3.5 px-4 text-right font-bold text-emerald-700">
+                  {{ formatCurrency(party.totalPaid) }}
+                </td>
+                <td class="py-3.5 px-4 text-right font-extrabold" :class="party.netPending > 0 ? 'text-amber-700' : 'text-emerald-700'">
+                  {{ party.netPending > 0 ? formatCurrency(party.netPending) : (party.advance > 0 ? '+' + formatCurrency(party.advance) + ' CR' : '₹0') }}
                 </td>
                 <td class="py-3.5 px-4 text-center">
-                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">
-                    {{ party.billsCount }} bills
-                  </span>
+                  <div class="flex items-center justify-center gap-1.5">
+                    <div class="w-12 bg-gray-200 rounded-full h-1.5 overflow-hidden">
+                      <div class="bg-emerald-500 h-full rounded-full" :style="{ width: `${Math.min(100, party.collectionRate)}%` }"></div>
+                    </div>
+                    <span class="text-xs font-bold" :class="party.collectionRate >= 80 ? 'text-emerald-700' : party.collectionRate >= 50 ? 'text-amber-700' : 'text-rose-700'">
+                      {{ party.collectionRate }}%
+                    </span>
+                  </div>
                 </td>
                 <td class="py-3.5 px-4 text-center">
                   <span
-                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold"
-                    :class="getOverdueBadgeClass(party.maxOverdueDays)"
+                    v-if="party.billsCount > 0"
+                    class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200"
                   >
-                    {{ party.maxOverdueDays }} days
+                    {{ party.billsCount }} bills
                   </span>
-                </td>
-                <td class="py-3.5 px-4 text-right text-xs font-semibold text-gray-600">
-                  {{ tallyData.summary.totalOutstanding > 0 ? ((party.totalReceivable / tallyData.summary.totalOutstanding) * 100).toFixed(1) : 0 }}%
+                  <span v-else class="text-gray-400 text-xs">-</span>
                 </td>
                 <td class="py-3.5 px-4 text-center">
                   <button
                     class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold text-amber-700 bg-amber-50 group-hover:bg-amber-100 transition-colors"
                   >
-                    <span>View Bills</span>
+                    <span>View Financials</span>
                     <ChevronRight class="w-3 h-3" />
                   </button>
                 </td>
               </tr>
 
               <tr v-if="filteredParties.length === 0">
-                <td colspan="7" class="py-12 text-center text-gray-500">
+                <td colspan="8" class="py-12 text-center text-gray-500">
                   <Search class="w-8 h-8 mx-auto text-gray-300 mb-2" />
                   <p class="font-medium">No debtor accounts match your search.</p>
                   <button @click="searchQuery = ''" class="text-xs text-amber-700 underline mt-1">Clear search</button>
@@ -355,7 +347,7 @@
       </div>
     </div>
 
-    <!-- Bill-by-Bill Slide-over Modal / Drawer -->
+    <!-- Debtor Financials & Bills Slide-over Modal / Drawer -->
     <div
       v-if="selectedParty"
       class="fixed inset-0 z-50 overflow-hidden bg-black/40 backdrop-blur-xs flex justify-end"
@@ -363,18 +355,13 @@
     >
       <div class="w-full max-w-2xl bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-200">
         <!-- Drawer Header -->
-        <div class="p-5 border-b border-gray-200 bg-gray-50/50 flex items-start justify-between gap-3">
+        <div class="p-5 border-b border-gray-200 bg-gray-50/70 flex items-start justify-between gap-3">
           <div>
             <div class="flex items-center gap-2">
-              <span class="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-100 text-amber-800 uppercase tracking-wide">Sundry Debtor</span>
-              <span class="text-xs text-gray-500">{{ selectedParty.billsCount }} Unpaid Bills</span>
+              <span class="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-100 text-amber-800 uppercase tracking-wide">Customer Financial Overview</span>
+              <span v-if="selectedParty.parent" class="text-xs text-gray-500">{{ selectedParty.parent }}</span>
             </div>
             <h3 class="text-lg font-bold text-gray-900 mt-1">{{ selectedParty.party }}</h3>
-            <div class="flex items-center gap-3 mt-2 text-xs">
-              <span class="font-extrabold text-base text-gray-900">{{ formatCurrency(selectedParty.totalReceivable) }}</span>
-              <span class="text-gray-400">•</span>
-              <span class="text-rose-700 font-semibold">Oldest Overdue: {{ selectedParty.maxOverdueDays }} days</span>
-            </div>
           </div>
 
           <div class="flex items-center gap-2">
@@ -394,15 +381,67 @@
           </div>
         </div>
 
-        <!-- Filter within Bills -->
-        <div class="p-3.5 border-b border-gray-200 bg-white">
-          <div class="relative">
-            <Search class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+        <!-- Financial Summary Cards (Billed, Paid, Net Pending) -->
+        <div class="p-5 border-b border-gray-200 bg-white space-y-4">
+          <div class="grid grid-cols-3 gap-3">
+            <div class="p-3 rounded-xl bg-blue-50/70 border border-blue-200">
+              <div class="text-[11px] font-semibold text-blue-700 uppercase tracking-wider">Total Billed</div>
+              <div class="text-base sm:text-lg font-extrabold text-blue-950 mt-0.5">
+                {{ formatCurrency(selectedParty.totalBilled) }}
+              </div>
+              <div class="text-[10.5px] text-blue-600 mt-0.5">Invoiced (Debits)</div>
+            </div>
+
+            <div class="p-3 rounded-xl bg-emerald-50/70 border border-emerald-200">
+              <div class="text-[11px] font-semibold text-emerald-700 uppercase tracking-wider">Total Paid</div>
+              <div class="text-base sm:text-lg font-extrabold text-emerald-950 mt-0.5">
+                {{ formatCurrency(selectedParty.totalPaid) }}
+              </div>
+              <div class="text-[10.5px] text-emerald-600 mt-0.5">Receipts Received</div>
+            </div>
+
+            <div class="p-3 rounded-xl bg-amber-50/70 border border-amber-200">
+              <div class="text-[11px] font-semibold text-amber-700 uppercase tracking-wider">Net Balance</div>
+              <div class="text-base sm:text-lg font-extrabold text-amber-950 mt-0.5">
+                {{ formatCurrency(selectedParty.netPending) }}
+              </div>
+              <div class="text-[10.5px] text-amber-600 mt-0.5">Current Pending</div>
+            </div>
+          </div>
+
+          <!-- Collection Progress Bar -->
+          <div class="p-3 rounded-xl bg-gray-50 border border-gray-200 space-y-1.5">
+            <div class="flex items-center justify-between text-xs">
+              <span class="font-bold text-gray-700">Collection Rate:</span>
+              <span class="font-extrabold" :class="selectedParty.collectionRate >= 80 ? 'text-emerald-700' : 'text-amber-700'">
+                {{ selectedParty.collectionRate }}% Paid
+              </span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+              <div class="bg-emerald-500 h-full rounded-full transition-all duration-300" :style="{ width: `${Math.min(100, selectedParty.collectionRate)}%` }"></div>
+            </div>
+            <div v-if="selectedParty.openingBalance > 0" class="text-[11px] text-gray-500 pt-0.5">
+              Opening brought forward from prior year: {{ formatCurrency(selectedParty.openingBalance) }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Open Bills Section Header & Search -->
+        <div class="p-3.5 border-b border-gray-200 bg-gray-50/50 flex items-center justify-between gap-3">
+          <div class="text-xs font-bold text-gray-900 flex items-center gap-1.5">
+            <span>Open Invoices Awaiting Clearance</span>
+            <span class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-800">
+              {{ selectedParty.billsCount }} bills
+            </span>
+          </div>
+
+          <div class="relative w-48 sm:w-64">
+            <Search class="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
             <input
               v-model="billSearchQuery"
               type="text"
-              placeholder="Search by Bill Ref / Invoice # (e.g. SMG231)..."
-              class="w-full pl-9 pr-3.5 py-1.5 text-xs rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+              placeholder="Search invoice #..."
+              class="w-full pl-8 pr-2.5 py-1 text-xs rounded-lg border border-gray-200 bg-white focus:outline-none focus:ring-1 focus:ring-amber-500"
             />
           </div>
         </div>
@@ -437,23 +476,24 @@
               <div class="font-bold text-gray-900 text-sm sm:text-base">
                 {{ formatCurrency(bill.amount) }}
               </div>
-              <span class="text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-semibold border border-emerald-200">
-                DR / Unpaid
+              <span class="text-[10px] text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded font-semibold border border-amber-200">
+                Pending Clearance
               </span>
             </div>
           </div>
 
           <div v-if="filteredPartyBills.length === 0" class="py-12 text-center text-gray-400 text-xs">
-            No bills match your invoice search.
+            <span v-if="selectedParty.billsCount === 0">No open bills pending clearance. Account is settled!</span>
+            <span v-else>No bills match your invoice search.</span>
           </div>
         </div>
 
         <!-- Drawer Footer -->
         <div class="p-4 border-t border-gray-200 bg-gray-50 flex items-center justify-between text-xs">
-          <span class="text-gray-500">Total {{ filteredPartyBills.length }} bills displayed</span>
+          <span class="text-gray-500">Showing {{ filteredPartyBills.length }} of {{ selectedParty.billsCount }} bills</span>
           <button
             @click="selectedParty = null"
-            class="px-4 py-2 rounded-xl bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300"
+            class="px-4 py-2 rounded-xl bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300 cursor-pointer"
           >
             Close
           </button>
@@ -466,7 +506,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import {
-  IndianRupee, Users, AlertTriangle, Crown, ShieldCheck, Lock,
+  IndianRupee, Users, AlertTriangle, ShieldCheck, Lock,
   Building2, Clock, RefreshCw, Download, Search, X, ChevronRight,
   CheckCircle2, AlertCircle
 } from 'lucide-vue-next'
@@ -478,7 +518,7 @@ const tallyData = ref<any | null>(null)
 
 // Search & Sorting
 const searchQuery = ref('')
-const sortBy = ref<'amount_desc' | 'amount_asc' | 'bills_desc' | 'overdue_desc'>('amount_desc')
+const sortBy = ref<'pending_desc' | 'billed_desc' | 'paid_desc' | 'rate_asc' | 'rate_desc' | 'bills_desc'>('pending_desc')
 
 // Pagination
 const currentPage = ref(1)
@@ -510,8 +550,8 @@ const syncTallyNow = async () => {
     if (res && res.success) {
       tallyData.value = res.data
       syncMessage.value = {
-        text: 'Tally receivables successfully synchronized!',
-        subtext: `Updated ${res.data?.summary?.totalParties || 0} accounts and ${res.data?.summary?.totalBills || 0} unpaid bills.`,
+        text: 'Tally financial position successfully synchronized!',
+        subtext: `Updated ${res.data?.summary?.totalParties || 0} accounts. Billed: ₹${(res.data?.summary?.totalBilled / 10000000).toFixed(2)} Cr, Paid: ₹${(res.data?.summary?.totalPaid / 10000000).toFixed(2)} Cr.`,
         isError: false
       }
     } else {
@@ -532,11 +572,6 @@ const syncTallyNow = async () => {
   }
 }
 
-const topDebtor = computed(() => {
-  if (!tallyData.value?.parties?.length) return null
-  return tallyData.value.parties[0]
-})
-
 const formattedSyncTime = computed(() => {
   if (!tallyData.value?.syncedAt) return 'Never'
   const d = new Date(tallyData.value.syncedAt)
@@ -550,18 +585,25 @@ const filteredParties = computed(() => {
 
   if (searchQuery.value.trim()) {
     const q = searchQuery.value.toLowerCase().trim()
-    list = list.filter((p: any) => p.party.toLowerCase().includes(q))
+    list = list.filter((p: any) =>
+      p.party.toLowerCase().includes(q) ||
+      (p.parent && p.parent.toLowerCase().includes(q))
+    )
   }
 
   // Sort
-  if (sortBy.value === 'amount_desc') {
-    list.sort((a, b) => b.totalReceivable - a.totalReceivable)
-  } else if (sortBy.value === 'amount_asc') {
-    list.sort((a, b) => a.totalReceivable - b.totalReceivable)
+  if (sortBy.value === 'pending_desc') {
+    list.sort((a, b) => (b.netPending || 0) - (a.netPending || 0))
+  } else if (sortBy.value === 'billed_desc') {
+    list.sort((a, b) => (b.totalBilled || 0) - (a.totalBilled || 0))
+  } else if (sortBy.value === 'paid_desc') {
+    list.sort((a, b) => (b.totalPaid || 0) - (a.totalPaid || 0))
+  } else if (sortBy.value === 'rate_asc') {
+    list.sort((a, b) => (a.collectionRate || 0) - (b.collectionRate || 0))
+  } else if (sortBy.value === 'rate_desc') {
+    list.sort((a, b) => (b.collectionRate || 0) - (a.collectionRate || 0))
   } else if (sortBy.value === 'bills_desc') {
-    list.sort((a, b) => b.billsCount - a.billsCount)
-  } else if (sortBy.value === 'overdue_desc') {
-    list.sort((a, b) => b.maxOverdueDays - a.maxOverdueDays)
+    list.sort((a, b) => (b.billsCount || 0) - (a.billsCount || 0))
   }
 
   return list
@@ -589,13 +631,6 @@ const filteredPartyBills = computed(() => {
   )
 })
 
-function getOverdueBadgeClass(days: number): string {
-  if (days > 180) return 'bg-rose-100 text-rose-800 border border-rose-200'
-  if (days > 90) return 'bg-orange-100 text-orange-800 border border-orange-200'
-  if (days > 30) return 'bg-amber-100 text-amber-800 border border-amber-200'
-  return 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-}
-
 // Number & Currency helpers
 function formatNumber(num: number | string | undefined): string {
   if (num === undefined || num === null) return '0'
@@ -622,18 +657,20 @@ function formatCrores(val: number | string | undefined): string {
 // CSV Export Helpers
 const exportAllDebtorsCsv = () => {
   if (!tallyData.value?.parties?.length) return
-  const headers = ['Rank', 'Party Name', 'Total Outstanding (INR)', 'Unpaid Bills Count', 'Oldest Overdue Days', 'Share of Total Receivables (%)']
+  const headers = ['Rank', 'Party Name', 'Sub Group', 'Total Billed (INR)', 'Total Paid (INR)', 'Net Pending (INR)', 'Collection Rate (%)', 'Unadjusted Bills']
   const rows = tallyData.value.parties.map((p: any, idx: number) => [
     idx + 1,
     `"${p.party.replace(/"/g, '""')}"`,
-    p.totalReceivable,
-    p.billsCount,
-    p.maxOverdueDays,
-    tallyData.value.summary.totalOutstanding > 0 ? ((p.totalReceivable / tallyData.value.summary.totalOutstanding) * 100).toFixed(2) : 0
+    `"${(p.parent || '').replace(/"/g, '""')}"`,
+    p.totalBilled,
+    p.totalPaid,
+    p.netPending,
+    p.collectionRate,
+    p.billsCount
   ])
 
   const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n')
-  downloadBlob(csv, `Tally_Debtors_Receivables_${new Date().toISOString().slice(0, 10)}.csv`, 'text/csv;charset=utf-8;')
+  downloadBlob(csv, `Tally_Debtors_Financials_${new Date().toISOString().slice(0, 10)}.csv`, 'text/csv;charset=utf-8;')
 }
 
 const exportDebtorBillsCsv = (party: any) => {

@@ -1,7 +1,7 @@
 import { defineEventHandler, readBody } from 'h3'
 import { requireRole } from '~~/server/utils/auth'
 import { prisma } from '~~/server/utils/prisma'
-import { queryTally, parseBillsXml } from '~~/server/utils/tallySync'
+import { fetchFullTallyData } from '~~/server/utils/tallySync'
 
 export default defineEventHandler(async (event) => {
   // Strictly Admin-Only
@@ -23,15 +23,14 @@ export default defineEventHandler(async (event) => {
       })
       return {
         success: true,
-        message: 'Tally receivables updated successfully from payload.',
+        message: 'Tally financial position updated successfully from payload.',
         data: JSON.parse(payloadString)
       }
     }
 
     // Otherwise, try querying Tally directly on local port 9000
     try {
-      const xml = await queryTally('Bills Receivable', '127.0.0.1', 9000)
-      const parsed = parseBillsXml(xml)
+      const parsed = await fetchFullTallyData('127.0.0.1', 9000)
       const payloadString = JSON.stringify(parsed)
 
       await prisma.systemSetting.upsert({
@@ -42,7 +41,7 @@ export default defineEventHandler(async (event) => {
 
       return {
         success: true,
-        message: 'Synced fresh receivables directly from Tally Prime.',
+        message: 'Synced fresh ledger balances and bills directly from Tally Prime.',
         data: parsed
       }
     } catch (netErr: any) {
