@@ -215,7 +215,9 @@ const hasUnsyncedBusyItems = computed(() => {
 })
 
 const productOptions = computed(() => {
-  return productsList.value.map(p => ({
+  return productsList.value
+    .filter(p => p.isBusySynced !== false)
+    .map(p => ({
     label: p.sku === p.name ? p.name : `${p.sku} - ${p.name}`,
     value: p.id,
     stock: p.stock ?? 0,

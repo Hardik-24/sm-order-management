@@ -119,7 +119,9 @@ const customerOptions = computed(() => {
 })
 
 const productOptions = computed(() => {
-  return productsList.value.map(p => {
+  return productsList.value
+    .filter(p => p.isBusySynced !== false)
+    .map(p => {
     const hasAlias = p.sku && p.sku !== p.name
     return {
       label: hasAlias ? `${p.sku} - ${p.name}` : p.name,

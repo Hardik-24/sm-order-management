@@ -160,7 +160,9 @@ const getSelectedProduct = (productId: string) => {
 }
 
 const productOptions = computed(() => {
-  return (products.value as any[] || []).map(p => ({
+  return (products.value as any[] || [])
+    .filter(p => p.isBusySynced !== false)
+    .map(p => ({
     label: p.name,
     sku: p.sku,
     value: p.id,

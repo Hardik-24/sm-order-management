@@ -72,7 +72,9 @@ const newProductSelection = ref({
 })
 
 const productOptions = computed(() => {
-  return allProducts.value.map(p => ({
+  return allProducts.value
+    .filter(p => p.isBusySynced !== false)
+    .map(p => ({
     value: p.id,
     label: p.name,
     sku: p.sku || '',

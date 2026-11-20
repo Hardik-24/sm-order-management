@@ -863,7 +863,9 @@ const customerOptions = computed(() => {
 })
 
 const productOptions = computed(() => {
-  return (productsList.value || []).map(p => ({
+  return (productsList.value || [])
+    .filter(p => p.isBusySynced !== false)
+    .map(p => ({
     label: p.name,
     sku: p.sku,
     value: p.id,
