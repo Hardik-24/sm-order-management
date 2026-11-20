@@ -13,6 +13,53 @@ function cleanPartyName(s: string): string {
     .trim()
 }
 
+const STOP_WORDS = new Set([
+  'plywood', 'plywoods', 'ply', 'hardware', 'hardwares', 'timber', 'timbers',
+  'interiors', 'interior', 'associates', 'associate', 'enterprises', 'enterprise',
+  'traders', 'trader', 'trading', 'industries', 'industry', 'pvt', 'ltd', 'private',
+  'limited', 'and', 'co', 'the', 'glass', 'studio', 'creations', 'corporation',
+  'marketing', 'solutions', 'doors', 'steels', 'steel'
+])
+
+function stem(w: string): string {
+  return w.replace(/(s|es)$/g, '')
+}
+
+function getDistinctiveWords(s: string): string[] {
+  const clean = cleanPartyName(s)
+  return clean.split(' ').map(stem).filter(w => w.length > 2 && !STOP_WORDS.has(w))
+}
+
+function isCustomerMatch(tallyParty: string, busyCustomer: string): boolean {
+  const tClean = cleanPartyName(tallyParty)
+  const bClean = cleanPartyName(busyCustomer)
+  if (tClean === bClean) return true
+
+  const tWords = getDistinctiveWords(tClean)
+  const bWords = getDistinctiveWords(bClean)
+
+  if (tWords.length === 0 || bWords.length === 0) {
+    return tClean.replace(/\s+/g, '') === bClean.replace(/\s+/g, '')
+  }
+
+  let common = 0
+  const bSet = new Set(bWords)
+  for (const w of tWords) {
+    if (bSet.has(w)) {
+      common++
+    } else {
+      for (const bw of bWords) {
+        if (w.length >= 4 && bw.length >= 4 && (w.startsWith(bw) || bw.startsWith(w))) {
+          common++
+          break
+        }
+      }
+    }
+  }
+
+  return common >= 1 && (common / Math.max(tWords.length, bWords.length)) >= 0.5
+}
+
 function parseTallyDate(dStr: string): Date | null {
   if (!dStr) return null
   const months: Record<string, number> = {
@@ -85,21 +132,8 @@ export default defineEventHandler(async (event) => {
       orderBy: { voucherDate: 'desc' }
     })
 
-    // Filter vouchers belonging to this party
-    const partyVouchers = allVouchers.filter(v => {
-      const vClean = cleanPartyName(v.customerName)
-      if (vClean === pClean || vClean.includes(pClean) || pClean.includes(vClean)) return true
-      const vWords = vClean.split(' ').filter(w => w.length > 2)
-      if (pWords.length > 0 && vWords.length > 0) {
-        let common = 0
-        const vSet = new Set(vWords)
-        for (const w of pWords) {
-          if (vSet.has(w)) common++
-        }
-        return (common / Math.max(pWords.length, vWords.length)) >= 0.5
-      }
-      return false
-    })
+    // Filter vouchers belonging strictly to this party
+    const partyVouchers = allVouchers.filter(v => isCustomerMatch(party.party, v.customerName))
 
     // Index pending bills by normalized reference number
     const pendingMap = new Map<string, any>()
