@@ -982,35 +982,51 @@
               </div>
 
               <div class="overflow-x-auto border border-gray-200 rounded-xl shadow-xs">
-                <table class="w-full text-left text-xs sm:text-sm">
+                <table class="w-full text-left text-xs sm:text-sm md:table-fixed min-w-[700px] md:min-w-full">
                   <thead class="bg-gray-50 text-gray-600 text-[11px] font-bold uppercase tracking-wider border-b border-gray-200">
                     <tr>
-                      <th class="py-2.5 sm:py-3 px-2 sm:px-3 min-w-[90px] whitespace-nowrap">Tally Ref</th>
-                      <th class="py-2.5 sm:py-3 px-2 sm:px-3 min-w-[90px] whitespace-nowrap">BUSY Bill</th>
-                      <th class="py-2.5 sm:py-3 px-2 sm:px-3 min-w-[140px]">{{ activeEntityMode === 'debtors' ? 'Party / Customer' : 'Party / Supplier' }}</th>
-                      <th class="py-2.5 sm:py-3 px-2 sm:px-3 text-right whitespace-nowrap min-w-[90px]">BUSY Amt</th>
-                      <th class="py-2.5 sm:py-3 px-2 sm:px-3 text-right whitespace-nowrap min-w-[90px]">Tally Amt</th>
-                      <th class="py-2.5 sm:py-3 px-2 sm:px-3 text-center whitespace-nowrap min-w-[110px]">Status</th>
-                      <th class="py-2.5 sm:py-3 px-2.5 sm:px-3 min-w-[220px]">Issue / Error Detected</th>
-                      <th class="py-2.5 sm:py-3 px-2.5 sm:px-3 min-w-[240px]">How to Correct</th>
+                      <th class="py-2.5 sm:py-3 px-2 sm:px-3 w-[14%] whitespace-nowrap">Bill Reference</th>
+                      <th class="py-2.5 sm:py-3 px-2 sm:px-3 w-[18%]">{{ activeEntityMode === 'debtors' ? 'Party / Customer' : 'Party / Supplier' }}</th>
+                      <th class="py-2.5 sm:py-3 px-2 sm:px-3 w-[14%] text-right whitespace-nowrap">Amount (BUSY / Tally)</th>
+                      <th class="py-2.5 sm:py-3 px-2 sm:px-3 w-[14%] text-center whitespace-nowrap">Status</th>
+                      <th class="py-2.5 sm:py-3 px-2.5 sm:px-3 w-[20%]">Issue / Error Detected</th>
+                      <th class="py-2.5 sm:py-3 px-2.5 sm:px-3 w-[20%]">How to Correct</th>
                     </tr>
                   </thead>
                   <tbody class="divide-y divide-gray-100">
                     <tr v-for="bill in filteredBillDiscrepancies" :key="bill.ref + bill.party" class="hover:bg-amber-50/20 transition-colors">
-                      <td class="py-2.5 sm:py-3 px-2 sm:px-3 font-mono font-bold text-gray-900 whitespace-nowrap">{{ bill.ref }}</td>
-                      <td class="py-2.5 sm:py-3 px-2 sm:px-3 font-mono font-semibold text-blue-700 whitespace-nowrap">{{ bill.actualBusyRef || bill.ref }}</td>
+                      <!-- Bill Reference -->
+                      <td class="py-2.5 sm:py-3 px-2 sm:px-3 font-mono">
+                        <div class="font-bold text-gray-900 whitespace-nowrap">{{ bill.ref }}</div>
+                        <div v-if="bill.actualBusyRef && bill.actualBusyRef !== bill.ref" class="text-[11px] font-semibold text-blue-700 whitespace-nowrap mt-0.5">
+                          BUSY: {{ bill.actualBusyRef }}
+                        </div>
+                      </td>
+
+                      <!-- Party / Customer -->
                       <td class="py-2.5 sm:py-3 px-2 sm:px-3 font-bold text-gray-900">
-                        <div class="truncate max-w-[130px] lg:max-w-[170px]" :title="bill.party">{{ bill.party }}</div>
-                        <div v-if="(bill.customerName || bill.supplierName) && (bill.customerName || bill.supplierName) !== bill.party" class="text-[11px] text-gray-400 font-normal truncate max-w-[130px] lg:max-w-[170px]" :title="bill.customerName || bill.supplierName">
+                        <div class="truncate max-w-[130px] lg:max-w-[180px]" :title="bill.party">{{ bill.party }}</div>
+                        <div v-if="(bill.customerName || bill.supplierName) && (bill.customerName || bill.supplierName) !== bill.party" class="text-[11px] text-gray-400 font-normal truncate max-w-[130px] lg:max-w-[180px] mt-0.5" :title="bill.customerName || bill.supplierName">
                           BUSY: {{ bill.customerName || bill.supplierName }}
                         </div>
                       </td>
-                      <td class="py-2.5 sm:py-3 px-2 sm:px-3 text-right font-medium text-gray-700 whitespace-nowrap">
-                        {{ formatCurrency(bill.busyAmount) }}
+
+                      <!-- Amount (BUSY / Tally) -->
+                      <td class="py-2.5 sm:py-3 px-2 sm:px-3 text-right whitespace-nowrap">
+                        <div class="font-bold text-gray-900">
+                          {{ formatCurrency(bill.tallyAmount) }}
+                          <span class="text-[10px] font-normal text-gray-400 ml-0.5">Tally</span>
+                        </div>
+                        <div class="text-[11px] font-medium text-gray-500 mt-0.5">
+                          {{ formatCurrency(bill.busyAmount) }}
+                          <span class="text-[10px] text-gray-400 ml-0.5">BUSY</span>
+                        </div>
+                        <div v-if="bill.difference && Math.abs(bill.difference) > 0" class="text-[10px] font-bold text-rose-600 mt-0.5">
+                          Diff: {{ formatCurrency(bill.difference) }}
+                        </div>
                       </td>
-                      <td class="py-2.5 sm:py-3 px-2 sm:px-3 text-right font-bold text-gray-900 whitespace-nowrap">
-                        {{ formatCurrency(bill.tallyAmount) }}
-                      </td>
+
+                      <!-- Status -->
                       <td class="py-2.5 sm:py-3 px-2 sm:px-3 text-center whitespace-nowrap">
                         <span
                           class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap"
@@ -1023,9 +1039,13 @@
                           {{ bill.status === 'AMEND_REFERENCE' ? 'Reference Typo' : bill.status === 'COMBINED_ENTRY' ? 'Combined Entry' : 'Amount Mismatch' }}
                         </span>
                       </td>
+
+                      <!-- Issue / Error Detected -->
                       <td class="py-2.5 sm:py-3 px-2.5 sm:px-3 text-xs text-gray-700 leading-relaxed font-normal break-words">
                         {{ bill.issueDetected }}
                       </td>
+
+                      <!-- How to Correct -->
                       <td class="py-2.5 sm:py-3 px-2.5 sm:px-3 text-xs leading-relaxed break-words">
                         <div
                           class="p-2 rounded-lg border text-xs break-words"
@@ -1037,6 +1057,12 @@
                         >
                           {{ bill.howToCorrect }}
                         </div>
+                      </td>
+                    </tr>
+
+                    <tr v-if="filteredBillDiscrepancies.length === 0">
+                      <td colspan="6" class="py-12 text-center text-gray-500">
+                        <p class="font-medium">No bill audit items match your filter.</p>
                       </td>
                     </tr>
                   </tbody>
