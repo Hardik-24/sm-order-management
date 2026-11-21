@@ -666,14 +666,12 @@
               <thead class="bg-gray-50 text-gray-600 text-[11px] font-bold uppercase tracking-wider border-b border-gray-200">
                 <tr>
                   <th class="py-2.5 sm:py-3 px-1 sm:px-2 w-8 sm:w-10 text-center">#</th>
-                  <th class="py-2.5 sm:py-3 px-2 sm:px-3 min-w-[110px] whitespace-nowrap">Voucher #</th>
-                  <th class="py-2.5 sm:py-3 px-2 sm:px-3 min-w-[90px] whitespace-nowrap">Date</th>
-                  <th class="py-2.5 sm:py-3 px-2 sm:px-3 min-w-[140px]">{{ activeEntityMode === 'debtors' ? 'Customer Name' : 'Supplier Name' }}</th>
-                  <th class="py-2.5 sm:py-3 px-2 sm:px-3 text-right whitespace-nowrap min-w-[100px]">Taxable Base</th>
-                  <th class="py-2.5 sm:py-3 px-2 sm:px-3 text-right whitespace-nowrap min-w-[80px]">GST Tax</th>
-                  <th class="py-2.5 sm:py-3 px-2 sm:px-3 text-right whitespace-nowrap min-w-[100px]">Total Value</th>
-                  <th class="py-2.5 sm:py-3 px-3 min-w-[190px]">Status / Reason</th>
-                  <th class="py-2.5 sm:py-3 px-3 text-center whitespace-nowrap min-w-[130px]">Action</th>
+                  <th class="py-2.5 sm:py-3 px-2 sm:px-3 whitespace-nowrap w-28">Voucher #</th>
+                  <th class="py-2.5 sm:py-3 px-2 sm:px-3 whitespace-nowrap w-24">Date</th>
+                  <th class="py-2.5 sm:py-3 px-2 sm:px-3 min-w-[140px] max-w-[220px]">{{ activeEntityMode === 'debtors' ? 'Customer Name' : 'Supplier Name' }}</th>
+                  <th class="py-2.5 sm:py-3 px-2 sm:px-3 text-right whitespace-nowrap w-28">Total Value</th>
+                  <th class="py-2.5 sm:py-3 px-3">Status / Reason</th>
+                  <th class="py-2.5 sm:py-3 px-3 text-center whitespace-nowrap w-32">Action</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-100">
@@ -707,26 +705,19 @@
                       Tally: {{ vch.tallyParty }}
                     </div>
                   </td>
-                  <td class="py-2.5 sm:py-3 px-2 sm:px-3 text-right text-gray-600 whitespace-nowrap">
-                    {{ formatCurrency(vch.taxableAmount) }}
-                  </td>
-                  <td class="py-2.5 sm:py-3 px-2 sm:px-3 text-right text-gray-600 whitespace-nowrap">
-                    {{ formatCurrency(vch.taxAmount) }}
-                  </td>
                   <td class="py-2.5 sm:py-3 px-2 sm:px-3 text-right font-extrabold text-amber-900 whitespace-nowrap">
                     {{ formatCurrency(vch.amount) }}
                   </td>
-                  <td class="py-2.5 sm:py-3 px-3 min-w-[190px]">
+                  <td class="py-2.5 sm:py-3 px-3">
                     <div
-                      class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold max-w-full"
+                      class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold leading-snug"
                       :class="vch.category === 'MISSING_CUSTOMER' || vch.category === 'MISSING_SUPPLIER' ? 'bg-rose-50 text-rose-800 border border-rose-200' : 'bg-amber-50 text-amber-800 border border-amber-200'"
-                      :title="vch.reason"
                     >
                       <AlertCircle class="w-3.5 h-3.5 shrink-0" />
-                      <span class="truncate block min-w-0 max-w-[160px] sm:max-w-[200px]">{{ vch.reason }}</span>
+                      <span>{{ vch.reason }}</span>
                     </div>
                   </td>
-                  <td class="py-2.5 sm:py-3 px-3 text-center whitespace-nowrap min-w-[130px]">
+                  <td class="py-2.5 sm:py-3 px-3 text-center whitespace-nowrap w-32">
                     <button
                       v-if="vch.tallyParty"
                       @click="viewPartyDebtorDetails(vch.tallyParty)"
@@ -739,7 +730,7 @@
                 </tr>
 
                 <tr v-if="filteredUnpostedVouchers.length === 0">
-                  <td colspan="9" class="py-12 text-center text-gray-500">
+                  <td colspan="7" class="py-12 text-center text-gray-500">
                     <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center mx-auto mb-3">
                       <CheckCircle2 class="w-6 h-6" />
                     </div>
