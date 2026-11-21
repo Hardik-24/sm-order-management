@@ -195,7 +195,8 @@ const filteredProducts = computed(() => {
     const skuMatch = (p.sku || '').toLowerCase().includes(q)
     const brandMatch = (p.brand || '').toLowerCase().includes(q)
     const catMatch = pCat.toLowerCase().includes(q)
-    return nameMatch || skuMatch || brandMatch || catMatch
+    const aliasMatch = (p.alias || '').toLowerCase().includes(q)
+    return nameMatch || skuMatch || brandMatch || catMatch || aliasMatch
   })
 })
 
@@ -722,26 +723,38 @@ const confirmAndPlaceOrder = async () => {
             </div>
 
             <!-- Product Title & Details -->
-            <h4 class="font-bold text-slate-900 text-xs sm:text-sm mt-1 truncate" :title="item.name">
+            <h4 class="font-bold text-slate-900 text-xs sm:text-sm mt-1 break-words leading-snug">
               {{ item.name }}
             </h4>
-            <p v-if="item.sku || item.category?.name" class="text-[11px] text-slate-500 truncate">
+
+            <!-- Unique Alias (Show only if unique and distinct from name) -->
+            <div 
+              v-if="item.alias && item.alias.trim().toLowerCase() !== item.name.trim().toLowerCase()" 
+              class="mt-0.5"
+            >
+              <span class="inline-flex items-center gap-1 text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
+                <span class="text-slate-400 font-sans">Alias:</span>
+                <span>{{ item.alias }}</span>
+              </span>
+            </div>
+
+            <p v-if="item.sku || item.category?.name" class="text-[11px] text-slate-500 mt-0.5">
               {{ [item.sku, item.category?.name].filter(Boolean).join(' • ') }}
             </p>
 
             <!-- Price & Tax -->
-            <div class="flex items-center gap-2 mt-1">
-              <div class="text-xs font-mono font-bold text-blue-900">
+            <div class="flex items-center gap-2 mt-1.5">
+              <div class="text-sm sm:text-base font-mono font-bold text-blue-950">
                 ₹{{ (cart[item.id] ? cart[item.id].customPrice : Number(item.price)).toLocaleString('en-IN') }}
-                <span class="text-[10px] font-normal text-slate-400 font-sans">/ {{ item.unit || 'Sheet' }}</span>
+                <span class="text-xs font-normal text-slate-500 font-sans">/ {{ item.unit || 'Sheet' }}</span>
               </div>
               <span 
                 v-if="cart[item.id]?.isTaxInclusive" 
-                class="text-[9px] font-bold px-1 py-0.2 rounded bg-blue-100 text-blue-800"
+                class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-800"
               >
                 Incl. Tax
               </span>
-              <span v-else class="text-[9px] font-medium text-slate-400">
+              <span v-else class="text-[10px] font-medium text-slate-400">
                 + {{ item.taxRate ?? 18 }}% GST
               </span>
             </div>
@@ -755,9 +768,9 @@ const confirmAndPlaceOrder = async () => {
             >
               <button 
                 @click="addToCart(item, -1)" 
-                class="w-7 h-7 rounded-lg bg-white text-emerald-700 hover:bg-emerald-100 flex items-center justify-center text-xs font-bold transition-colors cursor-pointer"
+                class="w-8 h-8 rounded-lg bg-white text-emerald-800 hover:bg-emerald-100 flex items-center justify-center text-sm font-bold transition-colors cursor-pointer"
               >
-                <Minus class="w-3.5 h-3.5" />
+                <Minus class="w-4 h-4" />
               </button>
               
               <input 
@@ -765,24 +778,24 @@ const confirmAndPlaceOrder = async () => {
                 min="1"
                 :value="cart[item.id].qty"
                 @change="setDirectCartQty(item.id, ($event.target as HTMLInputElement).value)"
-                class="w-14 h-7 text-center font-mono font-bold text-xs text-emerald-950 bg-white border border-emerald-200 rounded-md focus:outline-hidden focus:border-emerald-500"
+                class="w-14 sm:w-16 h-8 text-center font-mono font-bold text-sm sm:text-base text-emerald-950 bg-white border border-emerald-300 rounded-md focus:outline-hidden focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600"
                 title="Type any quantity directly"
               />
 
               <button 
                 @click="addToCart(item, 1)" 
-                class="w-7 h-7 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 flex items-center justify-center text-xs font-bold transition-colors cursor-pointer"
+                class="w-8 h-8 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 flex items-center justify-center text-sm font-bold transition-colors cursor-pointer"
               >
-                <Plus class="w-3.5 h-3.5" />
+                <Plus class="w-4 h-4" />
               </button>
             </div>
 
             <button 
               v-else
               @click="addToCart(item, 1)"
-              class="h-8 px-3.5 rounded-xl bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white border border-blue-200 hover:border-blue-600 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
+              class="h-9 px-4 rounded-xl bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white border border-blue-200 hover:border-blue-600 text-xs sm:text-sm font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs active:scale-95"
             >
-              <Plus class="w-3.5 h-3.5" />
+              <Plus class="w-4 h-4" />
               <span>Add</span>
             </button>
           </div>
@@ -815,14 +828,14 @@ const confirmAndPlaceOrder = async () => {
             <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-md">
               <ShoppingBag class="w-5 h-5" />
             </div>
-            <span class="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-emerald-500 text-white text-[10px] font-bold flex items-center justify-center border-2 border-slate-900">
+            <span class="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-emerald-500 text-white text-[11px] font-bold flex items-center justify-center border-2 border-slate-900 shadow-xs">
               {{ totalUnitsCount }}
             </span>
           </div>
 
           <div class="min-w-0">
             <div class="text-[10px] text-slate-400 font-medium leading-none">ORDER TOTAL</div>
-            <div class="text-sm font-bold font-mono text-emerald-400">
+            <div class="text-base sm:text-lg font-black font-mono text-emerald-400 tracking-tight">
               ₹{{ cartTotals.grandTotal.toLocaleString('en-IN') }}
             </div>
           </div>
@@ -831,13 +844,13 @@ const confirmAndPlaceOrder = async () => {
         <div class="flex items-center gap-2 shrink-0">
           <button 
             @click="isCartDrawerOpen = true"
-            class="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold text-white transition-colors cursor-pointer"
+            class="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs sm:text-sm font-semibold text-white transition-colors cursor-pointer"
           >
             Review Cart
           </button>
           <button 
             @click="proceedToCheckout"
-            class="px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition-all shadow-md cursor-pointer"
+            class="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black text-xs sm:text-sm flex items-center gap-1.5 transition-all shadow-md active:scale-95 cursor-pointer"
           >
             <span>Proceed</span>
             <ChevronDown class="w-3.5 h-3.5 rotate-270" />
@@ -892,7 +905,7 @@ const confirmAndPlaceOrder = async () => {
                     <span v-if="c.isCustom" class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 border border-amber-300">
                       Custom Item
                     </span>
-                    <h5 class="text-xs font-bold text-slate-900 truncate">
+                    <h5 class="text-xs sm:text-sm font-bold text-slate-900 break-words leading-snug">
                       {{ c.isCustom ? c.customName : ((rawProducts || []).find(x => x.id === c.id)?.name || 'Product') }}
                     </h5>
                     <span v-if="c.applyLastPrice" class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-purple-100 text-purple-800">
@@ -902,35 +915,35 @@ const confirmAndPlaceOrder = async () => {
                       Incl. Tax
                     </span>
                   </div>
-                  <div class="text-[11px] text-slate-500 font-mono mt-0.5">
+                  <div class="text-xs sm:text-sm text-slate-600 font-mono mt-1">
                     ₹{{ c.customPrice.toLocaleString('en-IN') }} × {{ c.qty }} = 
-                    <span class="font-bold text-slate-900 font-mono">₹{{ (c.customPrice * c.qty).toLocaleString('en-IN') }}</span>
+                    <span class="font-bold text-blue-950 font-mono text-sm sm:text-base">₹{{ (c.customPrice * c.qty).toLocaleString('en-IN') }}</span>
                   </div>
                 </div>
 
                 <!-- Quantity Stepper -->
                 <div class="flex items-center gap-2 shrink-0">
-                  <div class="flex items-center bg-white border border-slate-200 rounded-lg p-0.5 shadow-2xs">
+                  <div class="flex items-center bg-white border border-slate-300 rounded-xl p-0.5 shadow-2xs">
                     <button 
                       @click="c.isCustom ? (c.qty > 1 ? c.qty-- : deleteCartItem(c.id)) : addToCart({ id: c.id }, -1)" 
-                      class="w-6 h-6 rounded bg-slate-100 text-slate-700 flex items-center justify-center text-xs font-bold cursor-pointer"
+                      class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center text-sm font-bold cursor-pointer transition-colors"
                     >
-                      <Minus class="w-3 h-3" />
+                      <Minus class="w-3.5 h-3.5" />
                     </button>
                     
                     <input 
                       type="number" 
                       min="1"
                       v-model.number="c.qty"
-                      class="w-12 h-6 text-center font-mono font-bold text-xs text-slate-900 bg-transparent border-0 focus:outline-hidden"
+                      class="w-14 h-7 text-center font-mono font-bold text-sm sm:text-base text-slate-950 bg-transparent border-0 focus:outline-hidden"
                       title="Type any quantity directly"
                     />
 
                     <button 
                       @click="c.isCustom ? c.qty++ : addToCart({ id: c.id }, 1)" 
-                      class="w-6 h-6 rounded bg-blue-600 text-white flex items-center justify-center text-xs font-bold cursor-pointer"
+                      class="w-7 h-7 rounded-lg bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center text-sm font-bold cursor-pointer transition-colors"
                     >
-                      <Plus class="w-3 h-3" />
+                      <Plus class="w-3.5 h-3.5" />
                     </button>
                   </div>
 
@@ -970,11 +983,11 @@ const confirmAndPlaceOrder = async () => {
                       </button>
                     </div>
                     <div class="relative">
-                      <span class="absolute left-2.5 top-1.5 text-slate-400 font-mono text-xs">₹</span>
+                      <span class="absolute left-2.5 top-2 text-slate-400 font-mono text-xs font-bold">₹</span>
                       <input 
                         type="number" 
                         v-model.number="c.customPrice"
-                        class="w-full bg-white border border-slate-300 rounded-xl py-1.5 pl-6 pr-2 font-mono font-bold text-xs text-slate-900 focus:outline-hidden focus:border-blue-500"
+                        class="w-full bg-white border border-slate-300 rounded-xl py-2 pl-6 pr-2 font-mono font-bold text-sm text-slate-900 focus:outline-hidden focus:border-blue-500"
                       />
                     </div>
                   </div>
@@ -1045,7 +1058,7 @@ const confirmAndPlaceOrder = async () => {
 
           <!-- Drawer Footer -->
           <div class="p-4 pb-[calc(1.25rem+env(safe-area-inset-bottom,0px))] bg-slate-50 border-t border-slate-200 shrink-0 space-y-3">
-            <div class="space-y-1 text-xs">
+            <div class="space-y-1.5 text-xs sm:text-sm">
               <div class="flex justify-between text-slate-500">
                 <span>Taxable Subtotal</span>
                 <span class="font-mono font-medium text-slate-800">₹{{ cartTotals.taxableTotal.toLocaleString('en-IN') }}</span>
@@ -1054,18 +1067,18 @@ const confirmAndPlaceOrder = async () => {
                 <span>GST (18% Estimated)</span>
                 <span class="font-mono font-medium text-slate-800">₹{{ cartTotals.gstTotal.toLocaleString('en-IN') }}</span>
               </div>
-              <div class="flex justify-between text-sm font-bold text-slate-900 pt-1.5 border-t border-slate-200">
+              <div class="flex justify-between text-sm sm:text-base font-bold text-slate-900 pt-1.5 border-t border-slate-200">
                 <span>Grand Total</span>
-                <span class="font-mono text-base font-black text-blue-900">₹{{ cartTotals.grandTotal.toLocaleString('en-IN') }}</span>
+                <span class="font-mono text-lg sm:text-xl font-black text-blue-950">₹{{ cartTotals.grandTotal.toLocaleString('en-IN') }}</span>
               </div>
             </div>
 
             <button 
               @click="proceedToCheckout"
-              class="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-md cursor-pointer"
+              class="w-full py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 cursor-pointer"
             >
               <span>Proceed to Delivery & Logistics</span>
-              <ChevronDown class="w-3.5 h-3.5 rotate-270" />
+              <ChevronDown class="w-4 h-4 rotate-270" />
             </button>
           </div>
 
@@ -1136,16 +1149,16 @@ const confirmAndPlaceOrder = async () => {
                   v-for="c in filteredDbCustomers" 
                   :key="c.id"
                   @click="selectDbCustomer(c)"
-                  class="p-2.5 rounded-xl border border-slate-200 hover:border-blue-400 hover:bg-blue-50/50 cursor-pointer transition-all flex items-center justify-between gap-2"
+                  class="p-2.5 rounded-xl border border-slate-200 hover:border-blue-400 hover:bg-blue-50/50 cursor-pointer transition-all flex items-start justify-between gap-2.5"
                   :class="selectedCustomerId === c.id && !isCustomCustomer ? 'border-blue-500 bg-blue-50/70' : ''"
                 >
                   <div class="min-w-0 flex-1">
-                    <div class="font-bold text-xs text-slate-900 truncate">{{ c.company || c.name }}</div>
-                    <div class="text-[10px] text-slate-500 truncate">
+                    <div class="font-bold text-xs sm:text-sm text-slate-900 break-words leading-snug">{{ c.company || c.name }}</div>
+                    <div class="text-[10px] sm:text-[11px] text-slate-500 mt-0.5 break-words">
                       {{ [c.city, c.phone, c.paymentTerms].filter(Boolean).join(' • ') }}
                     </div>
                   </div>
-                  <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 shrink-0">
+                  <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 shrink-0 mt-0.5">
                     Active
                   </span>
                 </div>
@@ -1227,14 +1240,14 @@ const confirmAndPlaceOrder = async () => {
             </button>
           </div>
 
-          <div class="p-4 space-y-3 text-xs">
+          <div class="p-4 space-y-3.5 text-xs sm:text-sm">
             <div>
               <label class="text-[11px] font-bold text-slate-700 block mb-1">Item Title / Description *</label>
               <input 
                 v-model="customItemForm.name"
                 type="text" 
                 placeholder="e.g. 19mm Calibrated Birch Plywood (Cut Size)" 
-                class="w-full bg-white border border-slate-300 rounded-xl p-2 text-xs font-bold text-slate-900 focus:outline-hidden focus:border-amber-600" 
+                class="w-full bg-white border border-slate-300 rounded-xl p-2.5 text-xs sm:text-sm font-bold text-slate-900 focus:outline-hidden focus:border-amber-600" 
               />
             </div>
 
@@ -1244,38 +1257,38 @@ const confirmAndPlaceOrder = async () => {
                 v-model="customItemForm.spec"
                 type="text" 
                 placeholder="e.g. 8x2 ft edge-banded strip" 
-                class="w-full bg-white border border-slate-300 rounded-xl p-2 text-xs text-slate-700 focus:outline-hidden focus:border-amber-600" 
+                class="w-full bg-white border border-slate-300 rounded-xl p-2.5 text-xs sm:text-sm text-slate-700 focus:outline-hidden focus:border-amber-600" 
               />
             </div>
 
-            <div class="grid grid-cols-2 gap-2">
+            <div class="grid grid-cols-2 gap-2.5">
               <div>
                 <label class="text-[11px] font-bold text-slate-700 block mb-1">Quantity</label>
                 <div class="flex items-center bg-slate-100 border border-slate-300 rounded-xl p-1 gap-1">
                   <button 
                     @click="customItemForm.qty > 1 ? customItemForm.qty-- : 1" 
-                    class="w-7 h-7 rounded-lg bg-white text-slate-700 flex items-center justify-center font-bold text-xs cursor-pointer shadow-2xs"
+                    class="w-8 h-8 rounded-lg bg-white text-slate-800 flex items-center justify-center font-bold text-sm cursor-pointer shadow-2xs"
                   >
-                    <Minus class="w-3 h-3" />
+                    <Minus class="w-3.5 h-3.5" />
                   </button>
                   <input 
                     type="number" 
                     v-model.number="customItemForm.qty"
                     min="1" 
-                    class="w-full text-center font-mono font-bold text-xs text-slate-900 bg-transparent border-0 focus:outline-hidden" 
+                    class="w-full text-center font-mono font-bold text-sm sm:text-base text-slate-900 bg-transparent border-0 focus:outline-hidden" 
                   />
                   <button 
                     @click="customItemForm.qty++" 
-                    class="w-7 h-7 rounded-lg bg-amber-600 text-white flex items-center justify-center font-bold text-xs cursor-pointer shadow-2xs"
+                    class="w-8 h-8 rounded-lg bg-amber-600 text-white flex items-center justify-center font-bold text-sm cursor-pointer shadow-2xs"
                   >
-                    <Plus class="w-3 h-3" />
+                    <Plus class="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>
 
               <div>
                 <label class="text-[11px] font-bold text-slate-700 block mb-1">Unit</label>
-                <select v-model="customItemForm.unit" class="w-full bg-white border border-slate-300 rounded-xl p-2 text-xs font-bold text-slate-800">
+                <select v-model="customItemForm.unit" class="w-full bg-white border border-slate-300 rounded-xl p-2.5 text-xs sm:text-sm font-bold text-slate-800 cursor-pointer">
                   <option>Sheets</option>
                   <option>Sq.ft</option>
                   <option>Pcs</option>
@@ -1285,7 +1298,7 @@ const confirmAndPlaceOrder = async () => {
               </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-2">
+            <div class="grid grid-cols-2 gap-2.5">
               <div>
                 <div class="flex items-center justify-between mb-1">
                   <label class="text-[11px] font-bold text-slate-700">Billing Rate (₹)</label>
@@ -1298,22 +1311,22 @@ const confirmAndPlaceOrder = async () => {
                   </button>
                 </div>
                 <div class="relative">
-                  <span class="absolute left-2.5 top-2 text-slate-400 font-mono text-xs">₹</span>
+                  <span class="absolute left-2.5 top-2.5 text-slate-400 font-mono text-sm font-bold">₹</span>
                   <input 
                     type="number" 
                     v-model.number="customItemForm.rate"
-                    class="w-full bg-white border border-slate-300 rounded-xl py-2 pl-6 pr-2 font-mono font-bold text-xs text-slate-900 focus:outline-hidden focus:border-amber-600" 
+                    class="w-full bg-white border border-slate-300 rounded-xl py-2 pl-6 pr-2 font-mono font-bold text-sm sm:text-base text-slate-900 focus:outline-hidden focus:border-amber-600" 
                   />
                 </div>
               </div>
 
               <div>
                 <label class="text-[11px] font-bold text-slate-700 block mb-1">Tax Mode</label>
-                <div class="grid grid-cols-2 bg-slate-200/80 p-0.5 rounded-xl text-[10px] font-bold text-center h-[38px] items-center">
+                <div class="grid grid-cols-2 bg-slate-200/80 p-0.5 rounded-xl text-[10px] sm:text-[11px] font-bold text-center h-[42px] items-center">
                   <button 
                     type="button"
                     @click="customItemForm.isTaxInclusive = false"
-                    class="py-1 rounded-lg transition-all cursor-pointer"
+                    class="py-1.5 rounded-lg transition-all cursor-pointer"
                     :class="!customItemForm.isTaxInclusive ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600 hover:text-slate-900'"
                   >
                     +18% GST
@@ -1321,7 +1334,7 @@ const confirmAndPlaceOrder = async () => {
                   <button 
                     type="button"
                     @click="customItemForm.isTaxInclusive = true"
-                    class="py-1 rounded-lg transition-all cursor-pointer"
+                    class="py-1.5 rounded-lg transition-all cursor-pointer"
                     :class="customItemForm.isTaxInclusive ? 'bg-amber-600 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'"
                   >
                     Incl. Tax
@@ -1383,13 +1396,13 @@ const confirmAndPlaceOrder = async () => {
               </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-2">
+            <div class="grid grid-cols-2 gap-2.5">
               <div>
                 <label class="text-[10px] font-bold text-slate-600 block mb-1">Length (ft)</label>
                 <input 
                   type="number" 
                   v-model.number="rateCalcState.length"
-                  class="w-full bg-white border border-slate-300 rounded-lg py-1 pl-2.5 pr-2 font-bold text-xs text-slate-900 text-center" 
+                  class="w-full bg-white border border-slate-300 rounded-xl py-2 pl-2.5 pr-2 font-bold text-sm sm:text-base text-slate-900 text-center" 
                 />
               </div>
               <div>
@@ -1397,7 +1410,7 @@ const confirmAndPlaceOrder = async () => {
                 <input 
                   type="number" 
                   v-model.number="rateCalcState.width"
-                  class="w-full bg-white border border-slate-300 rounded-lg py-1 pl-2.5 pr-2 font-bold text-xs text-slate-900 text-center" 
+                  class="w-full bg-white border border-slate-300 rounded-xl py-2 pl-2.5 pr-2 font-bold text-sm sm:text-base text-slate-900 text-center" 
                 />
               </div>
             </div>
@@ -1410,24 +1423,24 @@ const confirmAndPlaceOrder = async () => {
                 </span>
               </div>
               <div class="relative">
-                <span class="absolute left-3 top-2 text-slate-400 font-mono text-sm">₹</span>
+                <span class="absolute left-3 top-2 text-slate-400 font-mono text-sm font-bold">₹</span>
                 <input 
                   type="number" 
                   v-model.number="rateCalcState.sqftRate"
-                  class="w-full bg-white border border-slate-300 rounded-xl py-2 pl-7 pr-3 font-mono font-bold text-sm text-slate-900 focus:outline-hidden focus:border-blue-500" 
+                  class="w-full bg-white border border-slate-300 rounded-xl py-2 pl-7 pr-3 font-mono font-bold text-sm sm:text-base text-slate-900 focus:outline-hidden focus:border-blue-500" 
                 />
               </div>
             </div>
 
             <div class="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200/90 rounded-2xl p-3 text-center space-y-0.5">
               <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-800">Calculated Sheet Rate</span>
-              <div class="text-xl font-black font-mono text-emerald-700">₹{{ calculatedSheetRate.toLocaleString('en-IN') }}.00</div>
-              <div class="text-[10px] text-emerald-600/80 font-mono">{{ calculatedSheetArea }} sq.ft × ₹{{ rateCalcState.sqftRate }} / sq.ft</div>
+              <div class="text-2xl font-black font-mono text-emerald-700">₹{{ calculatedSheetRate.toLocaleString('en-IN') }}.00</div>
+              <div class="text-xs text-emerald-600/80 font-mono">{{ calculatedSheetArea }} sq.ft × ₹{{ rateCalcState.sqftRate }} / sq.ft</div>
             </div>
 
             <button 
               @click="applyCalculatedRate"
-              class="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-all shadow-md cursor-pointer"
+              class="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm transition-all shadow-md cursor-pointer active:scale-95"
             >
               Apply Rate to Item
             </button>
@@ -1552,7 +1565,7 @@ const confirmAndPlaceOrder = async () => {
               v-model="deliveryAddress"
               rows="2" 
               placeholder="Delivery address, site, or landmark..."
-              class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs text-slate-800 focus:outline-hidden focus:border-blue-500 font-medium resize-none"
+              class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs sm:text-sm text-slate-800 focus:outline-hidden focus:border-blue-500 font-medium resize-none"
             ></textarea>
           </div>
 
@@ -1561,7 +1574,7 @@ const confirmAndPlaceOrder = async () => {
             <label class="text-[10px] font-bold text-slate-600 block">Payment Terms</label>
             <select 
               v-model="paymentTerms"
-              class="w-full bg-white border border-slate-300 rounded-xl p-2.5 text-xs text-slate-800 font-bold"
+              class="w-full bg-white border border-slate-300 rounded-xl p-3 text-xs sm:text-sm text-slate-800 font-bold cursor-pointer"
             >
               <option>30 Days Credit</option>
               <option>15 Days Credit</option>
@@ -1571,15 +1584,15 @@ const confirmAndPlaceOrder = async () => {
           </div>
 
           <!-- Urgent Priority Flag -->
-          <div class="flex items-center gap-2 p-2 bg-amber-50/70 border border-amber-200 rounded-xl text-xs">
+          <div class="flex items-center gap-2 p-2.5 bg-amber-50/70 border border-amber-200 rounded-xl text-xs sm:text-sm">
             <input 
               type="checkbox" 
               id="urgent-check-modal" 
               v-model="isUrgent"
-              class="rounded text-amber-600 cursor-pointer" 
+              class="rounded text-amber-600 cursor-pointer w-4 h-4" 
             />
-            <label for="urgent-check-modal" class="font-bold text-amber-950 flex items-center gap-1 cursor-pointer">
-              <Zap class="w-3.5 h-3.5 text-amber-500" />
+            <label for="urgent-check-modal" class="font-bold text-amber-950 flex items-center gap-1.5 cursor-pointer">
+              <Zap class="w-4 h-4 text-amber-500 fill-amber-500" />
               <span>Mark as High-Priority / Urgent Dispatch</span>
             </label>
           </div>
@@ -1591,70 +1604,70 @@ const confirmAndPlaceOrder = async () => {
               v-model="orderNotes"
               type="text" 
               placeholder="e.g. Call before loading / Handle sheets with care..."
-              class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2 text-xs text-slate-800"
+              class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs sm:text-sm text-slate-800 focus:outline-hidden focus:border-blue-500"
             />
           </div>
 
           <!-- SECTION 4: FULL ITEMIZED SUMMARY ON DELIVERY PAGE -->
           <div class="pt-2 border-t border-slate-200 space-y-2.5">
             <div class="flex items-center justify-between">
-              <h4 class="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+              <h4 class="text-xs sm:text-sm font-bold text-slate-900 flex items-center gap-1.5">
                 <CheckCircle2 class="w-4 h-4 text-blue-600" />
                 <span>Order Items Summary</span>
               </h4>
-              <span class="text-[10px] font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full">
+              <span class="text-[11px] font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full font-mono">
                 {{ totalItemsCount }} items
               </span>
             </div>
 
-            <div class="bg-slate-50 border border-slate-200 rounded-2xl p-3 space-y-2">
-              <div class="space-y-1.5 divide-y divide-slate-200/70 text-xs">
+            <div class="bg-slate-50 border border-slate-200 rounded-2xl p-3 sm:p-4 space-y-2.5">
+              <div class="space-y-2 divide-y divide-slate-200/70 text-xs">
                 <div 
                   v-for="(c, idx) in cartItemsList" 
                   :key="c.id"
-                  class="py-1.5 flex items-start justify-between gap-2"
+                  class="py-2 flex items-start justify-between gap-3"
                 >
                   <div class="flex-1 min-w-0">
-                    <div class="flex items-center gap-1.5">
+                    <div class="flex items-center gap-1.5 flex-wrap">
                       <span class="text-[10px] font-bold text-slate-400 font-mono">#{{ idx + 1 }}</span>
-                      <span class="font-bold text-slate-900 text-xs truncate">
+                      <span class="font-bold text-slate-900 text-xs sm:text-sm break-words leading-snug">
                         {{ c.isCustom ? c.customName : ((rawProducts || []).find(x => x.id === c.id)?.name || 'Product') }}
                       </span>
-                      <span v-if="c.isCustom" class="text-[8px] font-bold px-1 rounded bg-amber-100 text-amber-800">
+                      <span v-if="c.isCustom" class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 border border-amber-300">
                         Custom
                       </span>
                     </div>
-                    <div class="text-[10px] text-slate-500 font-mono">
+                    <div class="text-xs text-slate-600 font-mono mt-0.5">
                       {{ c.qty }} {{ c.isCustom ? c.customUnit : ((rawProducts || []).find(x => x.id === c.id)?.unit || 'Sheet') }} × ₹{{ c.customPrice.toLocaleString('en-IN') }} 
                       <span v-if="c.isTaxInclusive" class="text-blue-700 font-bold">(Tax Incl)</span>
-                      <span v-else>+ 18% GST</span>
+                      <span v-else class="text-slate-400">+ 18% GST</span>
                     </div>
                   </div>
-                  <div class="font-mono font-bold text-xs text-slate-900 text-right shrink-0">
+                  <div class="font-mono font-bold text-sm sm:text-base text-blue-950 text-right shrink-0">
                     ₹{{ (c.qty * c.customPrice).toLocaleString('en-IN') }}
                   </div>
                 </div>
               </div>
 
               <!-- Subtotal Breakdown -->
-              <div class="pt-2 border-t border-slate-200 space-y-1 text-[11px]">
+              <div class="pt-2.5 border-t border-slate-200 space-y-1.5 text-xs sm:text-sm">
                 <div class="flex justify-between text-slate-600">
                   <span>Taxable Amount</span>
-                  <span class="font-mono font-medium">₹{{ cartTotals.taxableTotal.toLocaleString('en-IN') }}</span>
+                  <span class="font-mono font-medium text-slate-800">₹{{ cartTotals.taxableTotal.toLocaleString('en-IN') }}</span>
                 </div>
                 <div class="flex justify-between text-slate-600">
                   <span>Estimated GST (18%)</span>
-                  <span class="font-mono font-medium">₹{{ cartTotals.gstTotal.toLocaleString('en-IN') }}</span>
+                  <span class="font-mono font-medium text-slate-800">₹{{ cartTotals.gstTotal.toLocaleString('en-IN') }}</span>
                 </div>
-                <div class="flex justify-between text-xs font-bold text-slate-900 pt-1 border-t border-slate-200">
+                <div class="flex justify-between text-sm sm:text-base font-bold text-slate-900 pt-1.5 border-t border-slate-200">
                   <span>Grand Total (Payable)</span>
-                  <span class="font-mono text-sm text-blue-900 font-black">₹{{ cartTotals.grandTotal.toLocaleString('en-IN') }}</span>
+                  <span class="font-mono text-base sm:text-lg text-blue-950 font-black">₹{{ cartTotals.grandTotal.toLocaleString('en-IN') }}</span>
                 </div>
               </div>
             </div>
           </div>
 
-        </div>
+          </div>
 
           <!-- Sticky Confirmation Footer -->
           <div class="p-3.5 sm:p-4 pb-[calc(1.25rem+env(safe-area-inset-bottom,0px))] border-t border-slate-200 bg-slate-50/80 shrink-0">
