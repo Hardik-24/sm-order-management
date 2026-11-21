@@ -544,16 +544,32 @@
         </div>
 
         <!-- Discrepancy Breakdown Insight Box -->
-        <div class="bg-amber-50/50 border border-amber-200 rounded-2xl p-4 sm:p-5 flex items-start gap-3.5">
+        <div v-if="discrepancyInsight" class="bg-amber-50/50 border border-amber-200 rounded-2xl p-4 sm:p-5 flex items-start gap-3.5">
           <div class="w-8 h-8 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center shrink-0 mt-0.5">
             <Scale class="w-4 h-4" />
           </div>
           <div class="text-xs sm:text-sm text-gray-700">
             <p class="font-bold text-gray-900">
-              Why does BUSY have {{ formatCrores(Math.abs(reconData.summary.netDiscrepancy)) }} {{ reconData.summary.netDiscrepancy >= 0 ? 'more' : 'less' }} {{ activeEntityMode === 'debtors' ? 'sales' : 'purchases' }} than Tally?
+              {{ discrepancyInsight.title }}
             </p>
-            <p class="mt-0.5 text-gray-600">
-              <strong>{{ formatCrores(reconData.summary.missingPartiesSales || reconData.summary.missingPartiesPurchases) }}</strong> ({{ reconData.summary.missingPartiesCount }} {{ activeEntityMode === 'debtors' ? 'customers' : 'suppliers' }}) is from accounts missing in Tally's {{ activeEntityMode === 'debtors' ? 'Debtors' : 'Creditors' }} list, and the remaining <strong>{{ formatCrores(Math.abs(reconData.summary.netDiscrepancy - (reconData.summary.missingPartiesSales || reconData.summary.missingPartiesPurchases))) }}</strong> is from recent/unposted vouchers in active accounts.
+            <p v-if="discrepancyInsight.type === 'exact'" class="mt-0.5 text-gray-600">
+              {{ discrepancyInsight.description }}
+            </p>
+            <p v-else-if="discrepancyInsight.type === 'busy_higher'" class="mt-0.5 text-gray-600">
+              <span v-if="discrepancyInsight.missingAmt">
+                <strong>{{ discrepancyInsight.missingAmt }}</strong> ({{ discrepancyInsight.missingCount }} {{ discrepancyInsight.entityLabel }}) is from accounts missing in Tally's {{ discrepancyInsight.groupLabel }} list<span v-if="discrepancyInsight.activeAmt">, and the remaining <strong>{{ discrepancyInsight.activeAmt }}</strong> is from unposted vouchers in active accounts waiting to be entered in Tally.</span><span v-else>.</span>
+              </span>
+              <span v-else>
+                All <strong>{{ discrepancyInsight.netFormatted }}</strong> is from unposted vouchers in active accounts waiting to be entered in Tally.
+              </span>
+            </p>
+            <p v-else-if="discrepancyInsight.type === 'tally_higher'" class="mt-0.5 text-gray-600">
+              <span v-if="discrepancyInsight.missingAmt">
+                <strong>{{ discrepancyInsight.tallyActiveAmt }}</strong> is from {{ discrepancyInsight.transName }} recorded directly in Tally across active accounts that are not in BUSY, partially offset by <strong>{{ discrepancyInsight.missingAmt }}</strong> ({{ discrepancyInsight.missingCount }} {{ discrepancyInsight.entityLabel }}) recorded in BUSY that are missing in Tally's {{ discrepancyInsight.groupLabel }} list.
+              </span>
+              <span v-else>
+                All <strong>{{ discrepancyInsight.netFormatted }}</strong> is from {{ discrepancyInsight.transName }} recorded directly in Tally across active accounts that are not recorded in BUSY.
+              </span>
             </p>
           </div>
         </div>
@@ -1502,6 +1518,61 @@ const paginatedParties = computed(() => {
 // ==========================================
 // RECONCILIATION FILTERING & PAGINATION
 // ==========================================
+const discrepancyInsight = computed(() => {
+  if (!reconData.value?.summary) return null
+  const summary = reconData.value.summary
+  const isDebtors = activeEntityMode.value === 'debtors'
+  const entityLabel = isDebtors
+    ? (summary.missingPartiesCount === 1 ? 'customer' : 'customers')
+    : (summary.missingPartiesCount === 1 ? 'supplier' : 'suppliers')
+  const groupLabel = isDebtors ? 'Debtors' : 'Creditors'
+  const transName = isDebtors ? 'sales' : 'purchases'
+
+  const net = summary.netDiscrepancy || 0
+  const missingVal = isDebtors
+    ? (summary.missingPartiesSales || 0)
+    : (summary.missingPartiesPurchases || summary.missingPartiesSales || 0)
+  const missingCount = summary.missingPartiesCount || 0
+
+  if (Math.abs(net) < 100) {
+    return {
+      type: 'exact',
+      title: 'BUSY and Tally are in 100% agreement',
+      description: `Total ${transName} match perfectly to the single rupee across both systems.`
+    }
+  }
+
+  if (net > 0) {
+    const activeVal = Math.max(0, net - missingVal)
+    return {
+      type: 'busy_higher',
+      title: `Why does BUSY have ${formatCrores(net)} more ${transName} than Tally?`,
+      netFormatted: formatCrores(net),
+      missingAmt: missingVal > 0 ? formatCrores(missingVal) : null,
+      missingCount,
+      activeAmt: activeVal > 0 ? formatCrores(activeVal) : null,
+      entityLabel,
+      groupLabel,
+      transName
+    }
+  }
+
+  // Tally is higher (net < 0)
+  const tallyHigher = Math.abs(net)
+  const tallyActiveVal = tallyHigher + missingVal
+  return {
+    type: 'tally_higher',
+    title: `Why does Tally have ${formatCrores(tallyHigher)} more ${transName} than BUSY?`,
+    netFormatted: formatCrores(tallyHigher),
+    tallyActiveAmt: formatCrores(tallyActiveVal),
+    missingAmt: missingVal > 0 ? formatCrores(missingVal) : null,
+    missingCount,
+    entityLabel,
+    groupLabel,
+    transName
+  }
+})
+
 const filteredUnpostedVouchers = computed(() => {
   if (!reconData.value?.unpostedVouchers) return []
   let list = reconData.value.unpostedVouchers
