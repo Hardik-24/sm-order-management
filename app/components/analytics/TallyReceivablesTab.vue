@@ -46,17 +46,17 @@
     </div>
 
     <!-- TOP ENTITY TOGGLE: Sales & Debtors vs Purchases & Creditors -->
-    <div class="bg-gray-100/90 p-1.5 rounded-2xl flex items-center gap-1.5 border border-gray-200/90 shadow-2xs">
+    <div class="bg-gray-100/90 p-1.5 rounded-2xl flex items-center gap-1.5 border border-gray-200/90 shadow-2xs overflow-x-auto no-scrollbar">
       <button
         type="button"
         @click="switchEntityMode('debtors')"
-        class="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 sm:px-4 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer"
+        class="flex-1 min-w-max flex items-center justify-center gap-2 py-2.5 px-3.5 sm:px-4 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 sm:shrink sm:min-w-0"
         :class="activeEntityMode === 'debtors' ? 'bg-white text-gray-900 shadow-sm border border-gray-200/80' : 'text-gray-500 hover:text-gray-900 hover:bg-white/40'"
       >
         <Users class="w-4 h-4 text-blue-600 shrink-0" />
-        <span class="truncate">Sales & Debtors (Customers / Receivables)</span>
+        <span class="whitespace-nowrap">Sales & Debtors (Customers / Receivables)</span>
         <span
-          class="px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 hidden sm:inline-flex"
+          class="px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 inline-flex"
           :class="activeEntityMode === 'debtors' ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-gray-200 text-gray-600'"
         >
           {{ debtorsData?.summary?.totalParties || 354 }} Parties
@@ -66,13 +66,13 @@
       <button
         type="button"
         @click="switchEntityMode('creditors')"
-        class="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 sm:px-4 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer"
+        class="flex-1 min-w-max flex items-center justify-center gap-2 py-2.5 px-3.5 sm:px-4 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 sm:shrink sm:min-w-0"
         :class="activeEntityMode === 'creditors' ? 'bg-white text-gray-900 shadow-sm border border-gray-200/80' : 'text-gray-500 hover:text-gray-900 hover:bg-white/40'"
       >
         <Building2 class="w-4 h-4 text-purple-600 shrink-0" />
-        <span class="truncate">Purchases & Creditors (Suppliers / Payables)</span>
+        <span class="whitespace-nowrap">Purchases & Creditors (Suppliers / Payables)</span>
         <span
-          class="px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 hidden sm:inline-flex"
+          class="px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 inline-flex"
           :class="activeEntityMode === 'creditors' ? 'bg-purple-50 text-purple-700 border border-purple-200' : 'bg-gray-200 text-gray-600'"
         >
           {{ creditorsData?.summary?.totalParties || 202 }} Suppliers
@@ -82,11 +82,11 @@
 
     <!-- MAIN SEGMENT SWITCHER: Accounts vs Busy-Tally Reconciliation -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-200 pb-2">
-      <div class="flex items-center gap-2 overflow-x-auto md:overflow-x-visible flex-wrap no-scrollbar">
+      <div class="flex items-center gap-2 overflow-x-auto no-scrollbar w-full sm:w-auto pb-1 sm:pb-0">
         <button
           type="button"
           @click="activeMainView = 'debtors'"
-          class="flex items-center gap-2 px-3.5 sm:px-4 py-2 text-xs sm:text-sm font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap"
+          class="flex items-center gap-2 px-3.5 sm:px-4 py-2 text-xs sm:text-sm font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap shrink-0"
           :class="activeMainView === 'debtors' ? 'bg-[#1b3b5f] text-white shadow-sm' : 'bg-white text-gray-600 hover:text-gray-900 hover:bg-gray-50 border border-gray-200'"
         >
           <component :is="activeEntityMode === 'debtors' ? Users : Building2" class="w-4 h-4" />
@@ -99,7 +99,7 @@
         <button
           type="button"
           @click="activeMainView = 'reconciliation'"
-          class="flex items-center gap-2 px-3.5 sm:px-4 py-2 text-xs sm:text-sm font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap"
+          class="flex items-center gap-2 px-3.5 sm:px-4 py-2 text-xs sm:text-sm font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap shrink-0"
           :class="activeMainView === 'reconciliation' ? 'bg-amber-600 text-white shadow-sm' : 'bg-white text-amber-900 hover:bg-amber-50/60 border border-amber-300'"
         >
           <Scale class="w-4 h-4" />
