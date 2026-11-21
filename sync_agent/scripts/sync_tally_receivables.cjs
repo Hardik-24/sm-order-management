@@ -1,6 +1,6 @@
 const http = require('http');
 const { PrismaClient } = require('@prisma/client');
-require('dotenv').config();
+try { require('dotenv').config(); } catch (_) {}
 
 const directUrl = process.env.DIRECT_URL || process.env.DATABASE_URL || "postgresql://postgres.xfzvkqjkbwwdqtxgasrh:csYX9pwTCZyZC5IZ@aws-0-ap-south-1.pooler.supabase.com:5432/postgres";
 const prisma = new PrismaClient({
