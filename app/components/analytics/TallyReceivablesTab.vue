@@ -574,6 +574,31 @@
           </div>
         </div>
 
+        <!-- 360° Cross-Group Party Matching Banner -->
+        <div
+          v-if="reconData.summary.dualRolePartiesCount > 0"
+          class="bg-purple-50/80 border border-purple-200/90 rounded-2xl p-4 sm:p-4.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs sm:text-sm text-purple-900 shadow-2xs"
+        >
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center shrink-0">
+              <RefreshCw class="w-4 h-4 text-purple-600" />
+            </div>
+            <div>
+              <p class="font-bold text-purple-950 flex items-center gap-2">
+                <span>360° Cross-Group Matching Active</span>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-purple-200/70 text-purple-800">
+                  {{ reconData.summary.dualRolePartiesCount }} Dual-Role Accounts Rescued
+                </span>
+              </p>
+              <p class="text-xs text-purple-700 mt-0.5">
+                These dealers conduct two-way trade and have their single ledger maintained in Tally under
+                <strong>{{ activeEntityMode === 'debtors' ? 'Sundry Creditors' : 'Sundry Debtors' }}</strong>.
+                OMS automatically cross-reconciled <strong>{{ formatCrores(reconData.summary.dualRolePartiesTotal) }}</strong> against those existing ledgers without false alarms.
+              </p>
+            </div>
+          </div>
+        </div>
+
         <!-- RECONCILIATION SUB-TABS (Clean 2-Row Layout) -->
         <div class="bg-white rounded-2xl border border-gray-200/80 shadow-xs overflow-hidden">
           <div class="p-4 sm:p-5 border-b border-gray-200 space-y-3.5">
@@ -658,6 +683,7 @@
               >
                 <option value="all">All Unposted {{ activeEntityMode === 'debtors' ? 'Invoices' : 'Purchases' }}</option>
                 <option :value="activeEntityMode === 'debtors' ? 'UNPOSTED_INVOICE' : 'UNPOSTED_PURCHASE'">In Active Accounts</option>
+                <option value="DUAL_ROLE">🔄 Dual-Role Accounts Only</option>
                 <option :value="activeEntityMode === 'debtors' ? 'MISSING_CUSTOMER' : 'MISSING_SUPPLIER'">From Missing {{ activeEntityMode === 'debtors' ? 'Customers' : 'Suppliers' }}</option>
               </select>
 
@@ -668,6 +694,7 @@
                 class="w-full sm:w-auto px-3 py-1.5 text-xs sm:text-sm rounded-xl border border-gray-200 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 cursor-pointer"
               >
                 <option value="all">All Discrepant Accounts</option>
+                <option value="DUAL_ROLE">🔄 Dual-Role Accounts Only</option>
                 <option value="BUSY_HIGHER">Busy Higher (Under-reported in Tally)</option>
                 <option value="TALLY_HIGHER">Tally Higher</option>
               </select>
@@ -717,8 +744,14 @@
                   </td>
                   <td class="py-2.5 sm:py-3 px-2 sm:px-3 font-bold text-gray-900">
                     <div class="truncate max-w-[160px] lg:max-w-xs" :title="vch.customerName || vch.supplierName">{{ vch.customerName || vch.supplierName }}</div>
-                    <div v-if="vch.tallyParty" class="text-[11px] text-gray-400 font-normal truncate max-w-[160px] lg:max-w-xs" :title="vch.tallyParty">
-                      Tally: {{ vch.tallyParty }}
+                    <div v-if="vch.tallyParty" class="text-[11px] text-gray-400 font-normal truncate max-w-[160px] lg:max-w-xs flex items-center gap-1.5 flex-wrap" :title="vch.tallyParty">
+                      <span>Tally: {{ vch.tallyParty }}</span>
+                      <span
+                        v-if="vch.isDualRole"
+                        class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200"
+                      >
+                        🔄 {{ vch.dualRoleTag }}
+                      </span>
                     </div>
                   </td>
                   <td class="py-2.5 sm:py-3 px-2 sm:px-3 text-right font-extrabold text-amber-900 whitespace-nowrap">
@@ -814,6 +847,11 @@
                   </td>
                   <td class="py-2.5 sm:py-3 px-2 sm:px-3 font-bold text-gray-700">
                     <div class="truncate max-w-[150px] lg:max-w-[200px]" :title="party.tallyParty">{{ party.tallyParty }}</div>
+                    <div v-if="party.isDualRole" class="mt-0.5">
+                      <span class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
+                        🔄 {{ party.dualRoleTag }}
+                      </span>
+                    </div>
                   </td>
                   <td class="py-2.5 sm:py-3 px-2 sm:px-3 text-right font-medium text-gray-800 whitespace-nowrap">
                     {{ formatCurrency(party.busySales || party.busyPurchases) }}
@@ -882,9 +920,14 @@
           <!-- SUB-TAB 3: MISSING PARTIES IN TALLY -->
           <!-- ========================================== -->
           <div v-else-if="activeReconSubTab === 'missing_parties'" class="overflow-x-auto">
-            <div class="p-4 bg-rose-50/70 border-b border-rose-100 text-xs text-rose-900 flex items-center gap-2">
-              <UserX class="w-4 h-4 text-rose-600 shrink-0" />
-              <span>These accounts have transactions recorded in BUSY, but no corresponding ledger exists in Tally's {{ activeEntityMode === 'debtors' ? 'Sundry Debtors' : 'Sundry Creditors' }} group.</span>
+            <div class="p-4 bg-rose-50/70 border-b border-rose-100 text-xs text-rose-900 flex items-center justify-between flex-wrap gap-2">
+              <div class="flex items-center gap-2">
+                <UserX class="w-4 h-4 text-rose-600 shrink-0" />
+                <span>These accounts have transactions recorded in BUSY, but no corresponding ledger exists in Tally under either Sundry Debtors or Sundry Creditors.</span>
+              </div>
+              <span class="text-[11px] font-bold text-purple-700 bg-purple-50 border border-purple-200 px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+                ✓ 360° Cross-Group Verified
+              </span>
             </div>
 
             <table class="w-full text-left text-xs sm:text-sm">
@@ -1577,7 +1620,9 @@ const filteredUnpostedVouchers = computed(() => {
   if (!reconData.value?.unpostedVouchers) return []
   let list = reconData.value.unpostedVouchers
 
-  if (unpostedCategoryFilter.value !== 'all') {
+  if (unpostedCategoryFilter.value === 'DUAL_ROLE') {
+    list = list.filter((v: any) => v.isDualRole)
+  } else if (unpostedCategoryFilter.value !== 'all') {
     list = list.filter((v: any) => v.category === unpostedCategoryFilter.value)
   }
 
@@ -1604,7 +1649,9 @@ const filteredPartyDiscrepancies = computed(() => {
   if (!reconData.value?.partyDiscrepancies) return []
   let list = reconData.value.partyDiscrepancies
 
-  if (partyDiscrepancyFilter.value !== 'all') {
+  if (partyDiscrepancyFilter.value === 'DUAL_ROLE') {
+    list = list.filter((p: any) => p.isDualRole)
+  } else if (partyDiscrepancyFilter.value !== 'all') {
     list = list.filter((p: any) => p.status === partyDiscrepancyFilter.value)
   }
 

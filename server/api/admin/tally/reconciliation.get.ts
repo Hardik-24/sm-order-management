@@ -19,8 +19,9 @@ const STOP_WORDS = new Set([
   'interiors', 'interior', 'associates', 'associate', 'enterprises', 'enterprise',
   'traders', 'trader', 'trading', 'industries', 'industry', 'pvt', 'ltd', 'private',
   'limited', 'and', 'co', 'the', 'glass', 'studio', 'creations', 'corporation',
-  'marketing', 'solutions', 'doors', 'steels', 'steel', 'others', 'other', 'sons',
-  'son', 'brothers', 'brother', 'group', 'groups', 'decor', 'decors', 'agencies', 'agency'
+  'marketing', 'solutions', 'doors', 'door', 'steels', 'steel', 'others', 'other', 'sons',
+  'son', 'brothers', 'brother', 'group', 'groups', 'decor', 'decors', 'agencies', 'agency',
+  'world', 'india'
 ])
 
 function stem(w: string): string {
@@ -29,7 +30,7 @@ function stem(w: string): string {
 
 function getDistinctiveWords(s: string): string[] {
   const clean = cleanPartyName(s)
-  return clean.split(' ').map(stem).filter(w => w.length > 2 && !STOP_WORDS.has(w))
+  return clean.split(' ').map(stem).filter(w => w.length > 2 && !STOP_WORDS.has(w) && !STOP_WORDS.has(stem(w)))
 }
 
 function computeMatchScore(tallyParty: string, busyParty: string): number {
@@ -69,7 +70,7 @@ function computeMatchScore(tallyParty: string, busyParty: string): number {
   return score >= 40 ? score : 0
 }
 
-function findBestPartyMatch(busyParty: string, tallyParties: any[]): any | null {
+function findBestPartyMatchWithScore(busyParty: string, tallyParties: any[]): { match: any | null, score: number } {
   let bestMatch: any = null
   let highestScore = 0
 
@@ -81,7 +82,69 @@ function findBestPartyMatch(busyParty: string, tallyParties: any[]): any | null 
     }
   }
 
-  return highestScore >= 40 ? bestMatch : null
+  return { match: highestScore >= 40 ? bestMatch : null, score: highestScore }
+}
+
+function resolveParty360(
+  busyParty: string,
+  primaryParties: any[],
+  secondaryParties: any[],
+  isPurchases: boolean
+): {
+  match: any | null
+  score: number
+  isDualRole: boolean
+  dualRoleGroup: 'SUNDRY_DEBTORS' | 'SUNDRY_CREDITORS' | null
+  dualRoleTag: string | null
+} {
+  const primary = findBestPartyMatchWithScore(busyParty, primaryParties)
+  const secondary = findBestPartyMatchWithScore(busyParty, secondaryParties)
+
+  // 1. If primary group (Debtors for Sales, Creditors for Purchases) has a strong match (>= 75), keep primary
+  if (primary.match && primary.score >= 75) {
+    return {
+      match: primary.match,
+      score: primary.score,
+      isDualRole: false,
+      dualRoleGroup: null,
+      dualRoleTag: null
+    }
+  }
+
+  // 2. If secondary group has a decisive match (>= 75) that is significantly higher than a weak primary match
+  if (secondary.match && secondary.score >= 75 && (!primary.match || secondary.score > primary.score + 15)) {
+    return {
+      match: secondary.match,
+      score: secondary.score,
+      isDualRole: true,
+      dualRoleGroup: isPurchases ? 'SUNDRY_DEBTORS' : 'SUNDRY_CREDITORS',
+      dualRoleTag: isPurchases ? 'Dual Account: In Debtors' : 'Dual Account: In Creditors'
+    }
+  }
+
+  // 3. Fallback to primary match if acceptable (>= 40)
+  if (primary.match) {
+    return {
+      match: primary.match,
+      score: primary.score,
+      isDualRole: false,
+      dualRoleGroup: null,
+      dualRoleTag: null
+    }
+  }
+
+  // 4. Fallback to secondary match if acceptable (>= 40)
+  if (secondary.match) {
+    return {
+      match: secondary.match,
+      score: secondary.score,
+      isDualRole: true,
+      dualRoleGroup: isPurchases ? 'SUNDRY_DEBTORS' : 'SUNDRY_CREDITORS',
+      dualRoleTag: isPurchases ? 'Dual Account: In Debtors' : 'Dual Account: In Creditors'
+    }
+  }
+
+  return { match: null, score: 0, isDualRole: false, dualRoleGroup: null, dualRoleTag: null }
 }
 
 function parseTallyDate(dStr: string): Date | null {
@@ -112,20 +175,30 @@ export default defineEventHandler(async (event) => {
   const isPurchases = entityType === 'purchases'
 
   try {
-    const settingKey = isPurchases ? 'tally_payables_data' : 'tally_receivables_data'
-    const record = await prisma.systemSetting.findUnique({
-      where: { key: settingKey }
-    })
+    const [recRecord, payRecord] = await Promise.all([
+      prisma.systemSetting.findUnique({ where: { key: 'tally_receivables_data' } }),
+      prisma.systemSetting.findUnique({ where: { key: 'tally_payables_data' } })
+    ])
 
-    if (!record || !record.value) {
+    const primaryRecord = isPurchases ? payRecord : recRecord
+    const secondaryRecord = isPurchases ? recRecord : payRecord
+
+    if (!primaryRecord || !primaryRecord.value) {
       throw createError({
         statusCode: 404,
         statusMessage: `No Tally ${isPurchases ? 'payables' : 'receivables'} snapshot found in system settings.`
       })
     }
 
-    const tally = typeof record.value === 'string' ? JSON.parse(record.value) : record.value
-    const tallyParties: any[] = tally.parties || []
+    const tally = typeof primaryRecord.value === 'string' ? JSON.parse(primaryRecord.value) : primaryRecord.value
+    const secondaryTally = secondaryRecord && secondaryRecord.value
+      ? (typeof secondaryRecord.value === 'string' ? JSON.parse(secondaryRecord.value) : secondaryRecord.value)
+      : null
+
+    const primaryParties: any[] = tally.parties || []
+    const secondaryParties: any[] = secondaryTally?.parties || []
+    const allTallyParties: any[] = [...primaryParties, ...secondaryParties]
+    const tallyParties: any[] = primaryParties
 
     // Fetch BUSY vouchers (sales or purchases)
     let busyVouchers: any[] = []
@@ -187,17 +260,29 @@ export default defineEventHandler(async (event) => {
       busyByCustomer.get(name)!.push(v)
     }
 
-    // Match Busy parties to Tally parties
+    // Match Busy parties to Tally parties using 360° Cross-Group Matching
     const partyMatches = new Map<string, any>()
     const unmatchedParties: any[] = []
+    let dualRolePartiesCount = 0
+    let dualRolePartiesTotal = 0
 
     for (const [busyName, vouchers] of busyByCustomer.entries()) {
-      const match = findBestPartyMatch(busyName, tallyParties)
+      const resolved = resolveParty360(busyName, primaryParties, secondaryParties, isPurchases)
       const total = vouchers.reduce((acc, v) => acc + Number(v.totalAmount), 0)
       const latestDate = vouchers[vouchers.length - 1].voucherDate
 
-      if (match) {
-        partyMatches.set(busyName, match)
+      if (resolved.match) {
+        if (resolved.isDualRole) {
+          dualRolePartiesCount++
+          dualRolePartiesTotal += total
+        }
+        partyMatches.set(busyName, {
+          ...resolved.match,
+          isDualRole: resolved.isDualRole,
+          dualRoleGroup: resolved.dualRoleGroup,
+          dualRoleTag: resolved.dualRoleTag,
+          matchScore: resolved.score
+        })
       } else {
         unmatchedParties.push({
           customerName: busyName,
@@ -217,7 +302,7 @@ export default defineEventHandler(async (event) => {
     // Identify Unposted Vouchers
     const unpostedVouchers: any[] = []
 
-    // 1. All vouchers for parties that do not exist in Tally's ledger list
+    // 1. All vouchers for parties that do not exist anywhere in Tally (neither Debtors nor Creditors)
     for (const u of unmatchedParties) {
       for (const v of u.vouchers) {
         unpostedVouchers.push({
@@ -230,11 +315,14 @@ export default defineEventHandler(async (event) => {
           taxAmount: Math.round(Number(v.taxAmount)),
           itemCount: v.itemCount || 0,
           tallyParty: null,
-          reason: isPurchases ? 'Supplier Account Not in Tally Creditors' : 'Customer Account Not in Tally Debtors',
+          isDualRole: false,
+          dualRoleGroup: null,
+          dualRoleTag: null,
+          reason: isPurchases ? 'Supplier Account Not in Tally (Debtors or Creditors)' : 'Customer Account Not in Tally (Debtors or Creditors)',
           category: isPurchases ? 'MISSING_SUPPLIER' : 'MISSING_CUSTOMER',
           issueDetected: isPurchases
-            ? `Missing Supplier in Tally: Supplier '${v.supplierName}' does not exist under Sundry Creditors in Tally.`
-            : `Missing Customer in Tally: Customer '${v.customerName}' does not exist under Sundry Debtors in Tally.`,
+            ? `Missing Supplier in Tally: Supplier '${v.supplierName}' does not exist under Sundry Creditors or Debtors in Tally.`
+            : `Missing Customer in Tally: Customer '${v.customerName}' does not exist under Sundry Debtors or Creditors in Tally.`,
           howToCorrect: isPurchases
             ? `In Tally, create Sundry Creditor ledger for '${v.supplierName}', then enter purchase invoice ${v.voucherNo}.`
             : `In Tally, create Sundry Debtor ledger for '${v.customerName}', then post sales invoice ${v.voucherNo}.`
@@ -248,7 +336,7 @@ export default defineEventHandler(async (event) => {
     for (const [busyName, tp] of partyMatches.entries()) {
       const vouchers = busyByCustomer.get(busyName)!
       const busyTotal = vouchers.reduce((acc, v) => acc + Number(v.totalAmount), 0)
-      const tallyBilled = Number(isPurchases ? (tp.totalPurchased || tp.totalBilled || 0) : (tp.totalBilled || 0))
+      const tallyBilled = Number(isPurchases ? (tp.totalPurchased || tp.totalBilled || 0) : (tp.totalBilled || tp.totalPurchased || 0))
       const diff = Math.round(busyTotal - tallyBilled)
 
       if (Math.abs(diff) > 100) {
@@ -276,16 +364,19 @@ export default defineEventHandler(async (event) => {
                 taxAmount: Math.round(Number(v.taxAmount)),
                 itemCount: v.itemCount || 0,
                 tallyParty: tp.party,
+                isDualRole: !!tp.isDualRole,
+                dualRoleGroup: tp.dualRoleGroup || null,
+                dualRoleTag: tp.dualRoleTag || null,
                 reason: isPurchases
-                  ? `Unposted Purchase (Busy purchases exceed Tally ledger by ₹${diff.toLocaleString('en-IN')})`
-                  : `Unposted Invoice (Busy sales exceed Tally ledger by ₹${diff.toLocaleString('en-IN')})`,
+                  ? `Unposted Purchase (${tp.isDualRole ? `${tp.dualRoleTag}: ` : ''}Busy purchases exceed Tally ledger by ₹${diff.toLocaleString('en-IN')})`
+                  : `Unposted Invoice (${tp.isDualRole ? `${tp.dualRoleTag}: ` : ''}Busy sales exceed Tally ledger by ₹${diff.toLocaleString('en-IN')})`,
                 category: isPurchases ? 'UNPOSTED_PURCHASE' : 'UNPOSTED_INVOICE',
                 issueDetected: isPurchases
-                  ? `Unposted Purchase Voucher: BUSY shows invoice ${v.voucherNo} (₹${amt.toLocaleString('en-IN')}), not reflected in Tally.`
-                  : `Unposted Sales Invoice: BUSY shows invoice ${v.voucherNo} (₹${amt.toLocaleString('en-IN')}), not reflected in Tally.`,
+                  ? `Unposted Purchase Voucher: BUSY shows invoice ${v.voucherNo} (₹${amt.toLocaleString('en-IN')}), not reflected in Tally${tp.isDualRole ? ` (Ledger maintained under Sundry Debtors as '${tp.party}')` : ''}.`
+                  : `Unposted Sales Invoice: BUSY shows invoice ${v.voucherNo} (₹${amt.toLocaleString('en-IN')}), not reflected in Tally${tp.isDualRole ? ` (Ledger maintained under Sundry Creditors as '${tp.party}')` : ''}.`,
                 howToCorrect: isPurchases
-                  ? `In Tally, post purchase voucher ${v.voucherNo} for supplier '${tp.party}' for ₹${amt.toLocaleString('en-IN')}.`
-                  : `In Tally, post sales invoice ${v.voucherNo} for customer '${tp.party}' for ₹${amt.toLocaleString('en-IN')}.`
+                  ? `In Tally, post purchase voucher ${v.voucherNo} for supplier '${tp.party}' (${tp.isDualRole ? 'under Sundry Debtors ledger' : 'Sundry Creditor'}) for ₹${amt.toLocaleString('en-IN')}.`
+                  : `In Tally, post sales invoice ${v.voucherNo} for customer '${tp.party}' (${tp.isDualRole ? 'under Sundry Creditors ledger' : 'Sundry Debtor'}) for ₹${amt.toLocaleString('en-IN')}.`
               })
               remainingDiff -= amt
             }
@@ -296,6 +387,9 @@ export default defineEventHandler(async (event) => {
           customerName: busyName,
           supplierName: busyName,
           tallyParty: tp.party,
+          isDualRole: !!tp.isDualRole,
+          dualRoleGroup: tp.dualRoleGroup || null,
+          dualRoleTag: tp.dualRoleTag || null,
           busySales: Math.round(busyTotal),
           busyPurchases: Math.round(busyTotal),
           tallyBilled: Math.round(tallyBilled),
@@ -327,7 +421,10 @@ export default defineEventHandler(async (event) => {
     const usedBusyVouchers = new Set<string>()
 
     // PASS 0: Direct match against Tally Register Vouchers (Sales / Purchase Register) if available
-    const tallyVchList: any[] = tally.vouchers || []
+    const tallyVchList: any[] = [
+      ...(tally.vouchers || []),
+      ...(secondaryTally?.vouchers || [])
+    ]
     const tallyVchMap = new Map<string, any>()
     for (const tv of tallyVchList) {
       const normVch = (tv.voucherNo || tv.ref || '').toLowerCase().replace(/[^a-z0-9]/g, '')
@@ -348,8 +445,8 @@ export default defineEventHandler(async (event) => {
       }
     }
 
-    // PASS 1 (Direct match on voucher number and amount)
-    for (const tp of tallyParties) {
+    // PASS 1 (Direct match on voucher number and amount across all parties in both groups)
+    for (const tp of allTallyParties) {
       for (const b of (tp.bills || [])) {
         const normRef = (b.ref || '').toLowerCase().replace(/[^a-z0-9]/g, '')
         const vDirect = vchMap.get(normRef)
@@ -368,7 +465,7 @@ export default defineEventHandler(async (event) => {
     // In Running Accounts ("On Account"), bill allocation tags in Tally can default or repeat
     // (e.g. SMG23 across multiple accounts), while the actual voucher in the Sales Register is typed correctly.
     // When Party, Rupee Amount, and Date (±3 days) match, it represents a verified transaction match.
-    for (const tp of tallyParties) {
+    for (const tp of allTallyParties) {
       const cleanTpName = cleanPartyName(tp.party)
       const partyVouchers = busyByParty.get(cleanTpName) || []
 
@@ -397,7 +494,7 @@ export default defineEventHandler(async (event) => {
       }
     }
 
-    for (const tp of tallyParties) {
+    for (const tp of allTallyParties) {
       const cleanTpName = cleanPartyName(tp.party)
       const partyVouchers = busyByParty.get(cleanTpName) || []
 
@@ -507,8 +604,10 @@ export default defineEventHandler(async (event) => {
           totalTallyPurchased: Math.round(totalTallyBilled),
           netDiscrepancy: Math.round(netDiscrepancy),
           busyVoucherCount: busyVouchers.length,
-          tallyDebtorCount: tallyParties.length,
-          tallyCreditorCount: tallyParties.length,
+          tallyDebtorCount: isPurchases ? secondaryParties.length : primaryParties.length,
+          tallyCreditorCount: isPurchases ? primaryParties.length : secondaryParties.length,
+          dualRolePartiesCount,
+          dualRolePartiesTotal: Math.round(dualRolePartiesTotal),
           missingPartiesCount: cleanUnmatchedParties.length,
           missingPartiesSales: Math.round(missingPartiesSales),
           missingPartiesPurchases: Math.round(missingPartiesSales),
@@ -520,7 +619,7 @@ export default defineEventHandler(async (event) => {
           referenceTyposCount,
           clubbedEntriesCount,
           allBillsAccurate: pureValueMismatchesCount === 0,
-          syncedAt: tally.syncedAt || record.updatedAt.toISOString(),
+          syncedAt: tally.syncedAt || primaryRecord.updatedAt.toISOString(),
           company: tally.company || 'SRI LAKSHMI PLYWOODS 2627'
         },
         unpostedVouchers,
