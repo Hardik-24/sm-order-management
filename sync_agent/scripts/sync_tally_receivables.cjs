@@ -415,6 +415,12 @@ async function getActiveCompany() {
   const fromDate = startMatch ? formatTallyDate(startMatch[1].trim()) : '';
   const toDate = endMatch ? formatTallyDate(endMatch[1].trim()) : '';
 
+  // Safety Guard: Ensure nobody accidentally syncs the wrong company into OMS
+  const expectedKeyword = process.env.TALLY_EXPECTED_COMPANY || 'SRI LAKSHMI PLYWOODS';
+  if (!name.toUpperCase().includes(expectedKeyword.toUpperCase())) {
+    throw new Error(`SAFETY BLOCK: Currently open company in Tally is "${name}", which does NOT match "${expectedKeyword}"! Sync aborted to prevent overwriting OMS with wrong company data.`);
+  }
+
   return { name, fromDate, toDate };
 }
 
