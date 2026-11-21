@@ -99,7 +99,7 @@
           </span>
         </button>
 
-        <!-- PILLAR 4: TALLY RECEIVABLES (STRICTLY ADMIN ONLY) -->
+        <!-- PILLAR 4: TALLY BOOKS & RECO (STRICTLY ADMIN ONLY) -->
         <button
           v-if="isAdmin"
           @click="switchTab('receivables')"
@@ -107,7 +107,7 @@
           :class="mainTab === 'receivables' ? 'border-amber-600 text-amber-800' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
         >
           <ShieldCheck class="w-4 h-4 text-amber-600" />
-          <span>Tally Receivables</span>
+          <span>Tally Books & Reco</span>
           <span class="px-2 py-0.5 text-xs rounded-full bg-amber-100 text-amber-800 font-bold ml-1">
             Admin
           </span>

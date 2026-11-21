@@ -82,11 +82,11 @@
 
     <!-- MAIN SEGMENT SWITCHER: Accounts vs Busy-Tally Reconciliation -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-200 pb-2">
-      <div class="flex items-center gap-2 overflow-x-auto no-scrollbar">
+      <div class="flex items-center gap-2 overflow-x-auto md:overflow-x-visible flex-wrap no-scrollbar">
         <button
           type="button"
           @click="activeMainView = 'debtors'"
-          class="flex items-center gap-2 px-4 py-2 text-xs sm:text-sm font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap"
+          class="flex items-center gap-2 px-3.5 sm:px-4 py-2 text-xs sm:text-sm font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap"
           :class="activeMainView === 'debtors' ? 'bg-[#1b3b5f] text-white shadow-sm' : 'bg-white text-gray-600 hover:text-gray-900 hover:bg-gray-50 border border-gray-200'"
         >
           <component :is="activeEntityMode === 'debtors' ? Users : Building2" class="w-4 h-4" />
@@ -99,7 +99,7 @@
         <button
           type="button"
           @click="activeMainView = 'reconciliation'"
-          class="flex items-center gap-2 px-4 py-2 text-xs sm:text-sm font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap"
+          class="flex items-center gap-2 px-3.5 sm:px-4 py-2 text-xs sm:text-sm font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap"
           :class="activeMainView === 'reconciliation' ? 'bg-amber-600 text-white shadow-sm' : 'bg-white text-amber-900 hover:bg-amber-50/60 border border-amber-300'"
         >
           <Scale class="w-4 h-4" />
@@ -318,19 +318,19 @@
           </div>
 
           <!-- Table -->
-          <div class="overflow-x-auto">
-            <table class="w-full text-left text-xs sm:text-sm">
+          <div class="overflow-x-auto lg:overflow-x-visible">
+            <table class="w-full text-left text-xs sm:text-sm table-auto xl:table-fixed">
               <thead class="bg-gray-50/80 text-gray-500 text-[11px] font-semibold uppercase tracking-wider border-b border-gray-200">
                 <tr>
-                  <th class="py-3 px-4 w-12 text-center">#</th>
-                  <th class="py-3 px-4">{{ activeEntityMode === 'debtors' ? 'Debtor Party / Ledger' : 'Supplier Creditor / Ledger' }}</th>
-                  <th class="py-3 px-4 text-right">{{ activeEntityMode === 'debtors' ? 'Total Billed' : 'Total Purchased' }}</th>
-                  <th class="py-3 px-4 text-right">Total Paid</th>
-                  <th class="py-3 px-4 text-right">{{ activeEntityMode === 'debtors' ? 'Net Pending' : 'Net Payable' }}</th>
-                  <th class="py-3 px-4 text-center">{{ activeEntityMode === 'debtors' ? 'Collection %' : 'Payment %' }}</th>
-                  <th class="py-3 px-4 text-center">Avg Pay Time</th>
-                  <th class="py-3 px-4 text-center">Open Bills</th>
-                  <th class="py-3 px-4 text-center">Action</th>
+                  <th class="py-2.5 sm:py-3 px-1 sm:px-2 w-8 sm:w-10 text-center">#</th>
+                  <th class="py-2.5 sm:py-3 px-2 sm:px-3">{{ activeEntityMode === 'debtors' ? 'Debtor Party / Ledger' : 'Supplier Creditor / Ledger' }}</th>
+                  <th class="py-2.5 sm:py-3 px-2 sm:px-3 text-right whitespace-nowrap w-24 sm:w-28">{{ activeEntityMode === 'debtors' ? 'Total Billed' : 'Total Purchased' }}</th>
+                  <th class="py-2.5 sm:py-3 px-2 sm:px-3 text-right whitespace-nowrap w-24 sm:w-28">Total Paid</th>
+                  <th class="py-2.5 sm:py-3 px-2 sm:px-3 text-right whitespace-nowrap w-24 sm:w-28">{{ activeEntityMode === 'debtors' ? 'Net Pending' : 'Net Payable' }}</th>
+                  <th class="py-2.5 sm:py-3 px-2 sm:px-3 text-center whitespace-nowrap w-24 sm:w-28">{{ activeEntityMode === 'debtors' ? 'Collection %' : 'Payment %' }}</th>
+                  <th class="py-2.5 sm:py-3 px-2 sm:px-3 text-center whitespace-nowrap w-24 sm:w-28">Avg Pay Time</th>
+                  <th class="py-2.5 sm:py-3 px-2 sm:px-3 text-center whitespace-nowrap w-16 sm:w-20">Open Bills</th>
+                  <th class="py-2.5 sm:py-3 px-2 sm:px-3 text-center whitespace-nowrap w-24 sm:w-28">Action</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-100">
@@ -340,25 +340,25 @@
                   @click="openDebtorDetails(party)"
                   class="hover:bg-amber-50/30 transition-colors cursor-pointer group"
                 >
-                  <td class="py-3.5 px-4 text-center font-bold text-gray-400 text-xs">
+                  <td class="py-2.5 sm:py-3 px-1 sm:px-2 text-center font-bold text-gray-400 text-xs">
                     {{ (currentPage - 1) * pageSize + idx + 1 }}
                   </td>
-                  <td class="py-3.5 px-4 font-bold text-gray-900 group-hover:text-amber-900">
-                    <div class="font-bold text-gray-900">{{ party.party }}</div>
-                    <div v-if="party.parent" class="text-[11px] text-gray-400 font-normal">{{ party.parent }}</div>
+                  <td class="py-2.5 sm:py-3 px-2 sm:px-3 font-bold text-gray-900 group-hover:text-amber-900">
+                    <div class="font-bold text-gray-900 truncate max-w-[170px] lg:max-w-xs" :title="party.party">{{ party.party }}</div>
+                    <div v-if="party.parent" class="text-[11px] text-gray-400 font-normal truncate max-w-[170px] lg:max-w-xs" :title="party.parent">{{ party.parent }}</div>
                   </td>
-                  <td class="py-3.5 px-4 text-right font-medium text-gray-700">
+                  <td class="py-2.5 sm:py-3 px-2 sm:px-3 text-right font-medium text-gray-700 whitespace-nowrap">
                     {{ formatCurrency(activeEntityMode === 'debtors' ? party.totalBilled : (party.totalPurchased || party.totalBilled)) }}
                   </td>
-                  <td class="py-3.5 px-4 text-right font-bold text-emerald-700">
+                  <td class="py-2.5 sm:py-3 px-2 sm:px-3 text-right font-bold text-emerald-700 whitespace-nowrap">
                     {{ formatCurrency(party.totalPaid) }}
                   </td>
-                  <td class="py-3.5 px-4 text-right font-extrabold" :class="party.netPending > 0 ? 'text-amber-700' : 'text-emerald-700'">
+                  <td class="py-2.5 sm:py-3 px-2 sm:px-3 text-right font-extrabold whitespace-nowrap" :class="party.netPending > 0 ? 'text-amber-700' : 'text-emerald-700'">
                     {{ party.netPending > 0 ? formatCurrency(party.netPending) : (party.advance > 0 ? '+' + formatCurrency(party.advance) + ' CR' : '₹0') }}
                   </td>
-                  <td class="py-3.5 px-4 text-center">
+                  <td class="py-2.5 sm:py-3 px-2 sm:px-3 text-center whitespace-nowrap">
                     <div class="flex items-center justify-center gap-1.5">
-                      <div class="w-12 bg-gray-200 rounded-full h-1.5 overflow-hidden">
+                      <div class="w-10 sm:w-12 bg-gray-200 rounded-full h-1.5 overflow-hidden shrink-0">
                         <div class="bg-emerald-500 h-full rounded-full" :style="{ width: `${Math.min(100, activeEntityMode === 'debtors' ? party.collectionRate : party.paymentRate)}%` }"></div>
                       </div>
                       <span class="text-xs font-bold" :class="(activeEntityMode === 'debtors' ? party.collectionRate : party.paymentRate) >= 80 ? 'text-emerald-700' : (activeEntityMode === 'debtors' ? party.collectionRate : party.paymentRate) >= 50 ? 'text-amber-700' : 'text-rose-700'">
@@ -366,7 +366,7 @@
                       </span>
                     </div>
                   </td>
-                  <td class="py-3.5 px-4 text-center">
+                  <td class="py-2.5 sm:py-3 px-2 sm:px-3 text-center whitespace-nowrap">
                     <span
                       class="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full"
                       :class="getAvgPaymentBadgeClass(party)"
@@ -376,7 +376,7 @@
                       <span>{{ getAvgPaymentDaysText(party) }}</span>
                     </span>
                   </td>
-                  <td class="py-3.5 px-4 text-center">
+                  <td class="py-2.5 sm:py-3 px-2 sm:px-3 text-center whitespace-nowrap">
                     <span
                       v-if="party.billsCount > 0"
                       class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200"
@@ -385,9 +385,9 @@
                     </span>
                     <span v-else class="text-gray-400 text-xs">-</span>
                   </td>
-                  <td class="py-3.5 px-4 text-center">
+                  <td class="py-2.5 sm:py-3 px-2 sm:px-3 text-center whitespace-nowrap">
                     <button
-                      class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold text-amber-700 bg-amber-50 group-hover:bg-amber-100 transition-colors"
+                      class="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold text-amber-700 bg-amber-50 group-hover:bg-amber-100 transition-colors whitespace-nowrap"
                     >
                       <span>View Financials</span>
                       <ChevronRight class="w-3 h-3" />
@@ -562,7 +562,7 @@
         <div class="bg-white rounded-2xl border border-gray-200/80 shadow-xs overflow-hidden">
           <div class="p-4 sm:p-5 border-b border-gray-200 space-y-3.5">
             <!-- ROW 1: Sub-tab Buttons -->
-            <div class="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+            <div class="flex items-center gap-2 overflow-x-auto md:overflow-x-visible flex-wrap no-scrollbar pb-1">
               <button
                 @click="activeReconSubTab = 'unposted'"
                 class="px-3.5 py-2 text-xs sm:text-sm font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap flex items-center gap-2"
@@ -661,19 +661,19 @@
           <!-- ========================================== -->
           <!-- SUB-TAB 1: UNPOSTED VOUCHERS TABLE -->
           <!-- ========================================== -->
-          <div v-if="activeReconSubTab === 'unposted'" class="overflow-x-auto">
-            <table class="w-full text-left text-xs sm:text-sm">
+          <div v-if="activeReconSubTab === 'unposted'" class="overflow-x-auto lg:overflow-x-visible">
+            <table class="w-full text-left text-xs sm:text-sm table-auto xl:table-fixed">
               <thead class="bg-gray-50 text-gray-600 text-[11px] font-bold uppercase tracking-wider border-b border-gray-200">
                 <tr>
-                  <th class="py-3 px-4 w-12 text-center">#</th>
-                  <th class="py-3 px-4">Voucher #</th>
-                  <th class="py-3 px-4">Date</th>
-                  <th class="py-3 px-4">{{ activeEntityMode === 'debtors' ? 'Customer Name' : 'Supplier Name' }}</th>
-                  <th class="py-3 px-4 text-right">Taxable Base</th>
-                  <th class="py-3 px-4 text-right">GST Tax</th>
-                  <th class="py-3 px-4 text-right">Total Value</th>
-                  <th class="py-3 px-4">Status / Reason</th>
-                  <th class="py-3 px-4 text-center">Action</th>
+                  <th class="py-2.5 sm:py-3 px-1 sm:px-2 w-8 sm:w-10 text-center">#</th>
+                  <th class="py-2.5 sm:py-3 px-2 sm:px-3 w-28 whitespace-nowrap">Voucher #</th>
+                  <th class="py-2.5 sm:py-3 px-2 sm:px-3 w-24 whitespace-nowrap">Date</th>
+                  <th class="py-2.5 sm:py-3 px-2 sm:px-3">{{ activeEntityMode === 'debtors' ? 'Customer Name' : 'Supplier Name' }}</th>
+                  <th class="py-2.5 sm:py-3 px-2 sm:px-3 text-right whitespace-nowrap w-24 sm:w-28">Taxable Base</th>
+                  <th class="py-2.5 sm:py-3 px-2 sm:px-3 text-right whitespace-nowrap w-20 sm:w-24">GST Tax</th>
+                  <th class="py-2.5 sm:py-3 px-2 sm:px-3 text-right whitespace-nowrap w-24 sm:w-28">Total Value</th>
+                  <th class="py-2.5 sm:py-3 px-2 sm:px-3 w-40 sm:w-48">Status / Reason</th>
+                  <th class="py-2.5 sm:py-3 px-2 sm:px-3 text-center whitespace-nowrap w-24 sm:w-28">Action</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-100">
@@ -682,10 +682,10 @@
                   :key="vch.voucherNo"
                   class="hover:bg-amber-50/20 transition-colors"
                 >
-                  <td class="py-3.5 px-4 text-center font-bold text-gray-400 text-xs">
+                  <td class="py-2.5 sm:py-3 px-1 sm:px-2 text-center font-bold text-gray-400 text-xs">
                     {{ (unpostedPage - 1) * unpostedPageSize + idx + 1 }}
                   </td>
-                  <td class="py-3.5 px-4 font-mono font-bold text-gray-900 flex items-center gap-1.5">
+                  <td class="py-2.5 sm:py-3 px-2 sm:px-3 font-mono font-bold text-gray-900 whitespace-nowrap flex items-center gap-1.5">
                     <span>{{ vch.voucherNo }}</span>
                     <button
                       @click="copyVoucherNo(vch.voucherNo)"
@@ -696,34 +696,35 @@
                       <Copy v-else class="w-3.5 h-3.5" />
                     </button>
                   </td>
-                  <td class="py-3.5 px-4 text-gray-600 whitespace-nowrap">
+                  <td class="py-2.5 sm:py-3 px-2 sm:px-3 text-gray-600 whitespace-nowrap">
                     {{ formatDate(vch.voucherDate) }}
                   </td>
-                  <td class="py-3.5 px-4 font-bold text-gray-900">
-                    <div>{{ vch.customerName || vch.supplierName }}</div>
-                    <div v-if="vch.tallyParty" class="text-[11px] text-gray-400 font-normal">
+                  <td class="py-2.5 sm:py-3 px-2 sm:px-3 font-bold text-gray-900">
+                    <div class="truncate max-w-[150px] lg:max-w-xs" :title="vch.customerName || vch.supplierName">{{ vch.customerName || vch.supplierName }}</div>
+                    <div v-if="vch.tallyParty" class="text-[11px] text-gray-400 font-normal truncate max-w-[150px] lg:max-w-xs" :title="vch.tallyParty">
                       Tally: {{ vch.tallyParty }}
                     </div>
                   </td>
-                  <td class="py-3.5 px-4 text-right text-gray-600">
+                  <td class="py-2.5 sm:py-3 px-2 sm:px-3 text-right text-gray-600 whitespace-nowrap">
                     {{ formatCurrency(vch.taxableAmount) }}
                   </td>
-                  <td class="py-3.5 px-4 text-right text-gray-600">
+                  <td class="py-2.5 sm:py-3 px-2 sm:px-3 text-right text-gray-600 whitespace-nowrap">
                     {{ formatCurrency(vch.taxAmount) }}
                   </td>
-                  <td class="py-3.5 px-4 text-right font-extrabold text-amber-900 whitespace-nowrap">
+                  <td class="py-2.5 sm:py-3 px-2 sm:px-3 text-right font-extrabold text-amber-900 whitespace-nowrap">
                     {{ formatCurrency(vch.amount) }}
                   </td>
-                  <td class="py-3.5 px-4">
+                  <td class="py-2.5 sm:py-3 px-2 sm:px-3">
                     <span
-                      class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold"
+                      class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold truncate max-w-[170px] lg:max-w-xs"
                       :class="vch.category === 'MISSING_CUSTOMER' || vch.category === 'MISSING_SUPPLIER' ? 'bg-rose-50 text-rose-800 border border-rose-200' : 'bg-amber-50 text-amber-800 border border-amber-200'"
+                      :title="vch.reason"
                     >
                       <AlertCircle class="w-3 h-3 shrink-0" />
-                      <span>{{ vch.reason }}</span>
+                      <span class="truncate">{{ vch.reason }}</span>
                     </span>
                   </td>
-                  <td class="py-3.5 px-4 text-center">
+                  <td class="py-2.5 sm:py-3 px-2 sm:px-3 text-center whitespace-nowrap">
                     <button
                       v-if="vch.tallyParty"
                       @click="viewPartyDebtorDetails(vch.tallyParty)"
@@ -775,18 +776,18 @@
           <!-- ========================================== -->
           <!-- SUB-TAB 2: PARTY DISCREPANCIES TABLE -->
           <!-- ========================================== -->
-          <div v-else-if="activeReconSubTab === 'discrepancies'" class="overflow-x-auto">
-            <table class="w-full text-left text-xs sm:text-sm">
+          <div v-else-if="activeReconSubTab === 'discrepancies'" class="overflow-x-auto lg:overflow-x-visible">
+            <table class="w-full text-left text-xs sm:text-sm table-auto xl:table-fixed">
               <thead class="bg-gray-50 text-gray-600 text-[11px] font-bold uppercase tracking-wider border-b border-gray-200">
                 <tr>
-                  <th class="py-3 px-4 w-12 text-center">#</th>
-                  <th class="py-3 px-4">{{ activeEntityMode === 'debtors' ? 'Customer Account (BUSY)' : 'Supplier Account (BUSY)' }}</th>
-                  <th class="py-3 px-4">{{ activeEntityMode === 'debtors' ? 'Matched Tally Debtor' : 'Matched Tally Creditor' }}</th>
-                  <th class="py-3 px-4 text-right">{{ activeEntityMode === 'debtors' ? 'BUSY Sales' : 'BUSY Purchases' }}</th>
-                  <th class="py-3 px-4 text-right">{{ activeEntityMode === 'debtors' ? 'Tally Billed' : 'Tally Purchased' }}</th>
-                  <th class="py-3 px-4 text-right">Difference (Gap)</th>
-                  <th class="py-3 px-4 text-center">Status</th>
-                  <th class="py-3 px-4 text-center">Action</th>
+                  <th class="py-2.5 sm:py-3 px-1 sm:px-2 w-8 sm:w-10 text-center">#</th>
+                  <th class="py-2.5 sm:py-3 px-2 sm:px-3">{{ activeEntityMode === 'debtors' ? 'Customer Account (BUSY)' : 'Supplier Account (BUSY)' }}</th>
+                  <th class="py-2.5 sm:py-3 px-2 sm:px-3">{{ activeEntityMode === 'debtors' ? 'Matched Tally Debtor' : 'Matched Tally Creditor' }}</th>
+                  <th class="py-2.5 sm:py-3 px-2 sm:px-3 text-right whitespace-nowrap w-24 sm:w-28">{{ activeEntityMode === 'debtors' ? 'BUSY Sales' : 'BUSY Purchases' }}</th>
+                  <th class="py-2.5 sm:py-3 px-2 sm:px-3 text-right whitespace-nowrap w-24 sm:w-28">{{ activeEntityMode === 'debtors' ? 'Tally Billed' : 'Tally Purchased' }}</th>
+                  <th class="py-2.5 sm:py-3 px-2 sm:px-3 text-right whitespace-nowrap w-24 sm:w-28">Difference (Gap)</th>
+                  <th class="py-2.5 sm:py-3 px-2 sm:px-3 text-center whitespace-nowrap w-24 sm:w-28">Status</th>
+                  <th class="py-2.5 sm:py-3 px-2 sm:px-3 text-center whitespace-nowrap w-24 sm:w-28">Action</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-100">
@@ -795,29 +796,29 @@
                   :key="party.customerName || party.supplierName"
                   class="hover:bg-amber-50/20 transition-colors"
                 >
-                  <td class="py-3.5 px-4 text-center font-bold text-gray-400 text-xs">
+                  <td class="py-2.5 sm:py-3 px-1 sm:px-2 text-center font-bold text-gray-400 text-xs">
                     {{ (discrepancyPage - 1) * discrepancyPageSize + idx + 1 }}
                   </td>
-                  <td class="py-3.5 px-4 font-bold text-gray-900">
-                    {{ party.customerName || party.supplierName }}
+                  <td class="py-2.5 sm:py-3 px-2 sm:px-3 font-bold text-gray-900">
+                    <div class="truncate max-w-[150px] lg:max-w-[200px]" :title="party.customerName || party.supplierName">{{ party.customerName || party.supplierName }}</div>
                     <div class="text-[11px] text-gray-400 font-normal">{{ party.busyVoucherCount }} BUSY vouchers</div>
                   </td>
-                  <td class="py-3.5 px-4 font-bold text-gray-700">
-                    {{ party.tallyParty }}
+                  <td class="py-2.5 sm:py-3 px-2 sm:px-3 font-bold text-gray-700">
+                    <div class="truncate max-w-[150px] lg:max-w-[200px]" :title="party.tallyParty">{{ party.tallyParty }}</div>
                   </td>
-                  <td class="py-3.5 px-4 text-right font-medium text-gray-800">
+                  <td class="py-2.5 sm:py-3 px-2 sm:px-3 text-right font-medium text-gray-800 whitespace-nowrap">
                     {{ formatCurrency(party.busySales || party.busyPurchases) }}
                   </td>
-                  <td class="py-3.5 px-4 text-right font-medium text-gray-800">
+                  <td class="py-2.5 sm:py-3 px-2 sm:px-3 text-right font-medium text-gray-800 whitespace-nowrap">
                     {{ formatCurrency(party.tallyBilled || party.tallyPurchased) }}
                   </td>
                   <td
-                    class="py-3.5 px-4 text-right font-extrabold whitespace-nowrap"
+                    class="py-2.5 sm:py-3 px-2 sm:px-3 text-right font-extrabold whitespace-nowrap"
                     :class="party.difference > 0 ? 'text-rose-700' : 'text-blue-700'"
                   >
                     {{ party.difference > 0 ? '+' : '' }}{{ formatCurrency(party.difference) }}
                   </td>
-                  <td class="py-3.5 px-4 text-center">
+                  <td class="py-2.5 sm:py-3 px-2 sm:px-3 text-center whitespace-nowrap">
                     <span
                       class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold"
                       :class="party.status === 'BUSY_HIGHER' ? 'bg-rose-50 text-rose-800 border border-rose-200' : 'bg-blue-50 text-blue-800 border border-blue-200'"
@@ -825,10 +826,10 @@
                       {{ party.status === 'BUSY_HIGHER' ? 'Busy Higher' : 'Tally Higher' }}
                     </span>
                   </td>
-                  <td class="py-3.5 px-4 text-center">
+                  <td class="py-2.5 sm:py-3 px-2 sm:px-3 text-center whitespace-nowrap">
                     <button
                       @click="viewPartyDebtorDetails(party.tallyParty)"
-                      class="px-2.5 py-1 rounded-lg text-xs font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 transition-colors cursor-pointer"
+                      class="px-2.5 py-1 rounded-lg text-xs font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 transition-colors cursor-pointer whitespace-nowrap"
                     >
                       View Ledger
                     </button>
@@ -871,21 +872,21 @@
           <!-- ========================================== -->
           <!-- SUB-TAB 3: MISSING PARTIES IN TALLY -->
           <!-- ========================================== -->
-          <div v-else-if="activeReconSubTab === 'missing_parties'" class="overflow-x-auto">
+          <div v-else-if="activeReconSubTab === 'missing_parties'" class="overflow-x-auto lg:overflow-x-visible">
             <div class="p-4 bg-rose-50/70 border-b border-rose-100 text-xs text-rose-900 flex items-center gap-2">
               <UserX class="w-4 h-4 text-rose-600 shrink-0" />
               <span>These accounts have transactions recorded in BUSY, but no corresponding ledger exists in Tally's {{ activeEntityMode === 'debtors' ? 'Sundry Debtors' : 'Sundry Creditors' }} group.</span>
             </div>
 
-            <table class="w-full text-left text-xs sm:text-sm">
+            <table class="w-full text-left text-xs sm:text-sm table-auto xl:table-fixed">
               <thead class="bg-gray-50 text-gray-600 text-[11px] font-bold uppercase tracking-wider border-b border-gray-200">
                 <tr>
-                  <th class="py-3 px-4 w-12 text-center">#</th>
-                  <th class="py-3 px-4">{{ activeEntityMode === 'debtors' ? 'Customer Name (BUSY)' : 'Supplier Name (BUSY)' }}</th>
-                  <th class="py-3 px-4 text-right">{{ activeEntityMode === 'debtors' ? 'Total Sales' : 'Total Purchases' }}</th>
-                  <th class="py-3 px-4 text-center">Vouchers</th>
-                  <th class="py-3 px-4 text-center">Latest Transaction</th>
-                  <th class="py-3 px-4 text-center">Suggested Action</th>
+                  <th class="py-2.5 sm:py-3 px-1 sm:px-2 w-8 sm:w-10 text-center">#</th>
+                  <th class="py-2.5 sm:py-3 px-2 sm:px-3">{{ activeEntityMode === 'debtors' ? 'Customer Name (BUSY)' : 'Supplier Name (BUSY)' }}</th>
+                  <th class="py-2.5 sm:py-3 px-2 sm:px-3 text-right whitespace-nowrap w-28 sm:w-32">{{ activeEntityMode === 'debtors' ? 'Total Sales' : 'Total Purchases' }}</th>
+                  <th class="py-2.5 sm:py-3 px-2 sm:px-3 text-center whitespace-nowrap w-20 sm:w-24">Vouchers</th>
+                  <th class="py-2.5 sm:py-3 px-2 sm:px-3 text-center whitespace-nowrap w-24 sm:w-28">Latest Transaction</th>
+                  <th class="py-2.5 sm:py-3 px-2 sm:px-3 text-center whitespace-nowrap w-auto sm:w-48">Suggested Action</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-100">
@@ -894,22 +895,22 @@
                   :key="party.customerName || party.supplierName"
                   class="hover:bg-amber-50/20 transition-colors"
                 >
-                  <td class="py-3.5 px-4 text-center font-bold text-gray-400 text-xs">
+                  <td class="py-2.5 sm:py-3 px-1 sm:px-2 text-center font-bold text-gray-400 text-xs">
                     {{ (missingPartiesPage - 1) * missingPartiesPageSize + idx + 1 }}
                   </td>
-                  <td class="py-3.5 px-4 font-bold text-gray-900">
-                    {{ party.customerName || party.supplierName }}
+                  <td class="py-2.5 sm:py-3 px-2 sm:px-3 font-bold text-gray-900">
+                    <div class="truncate max-w-[200px] lg:max-w-xs" :title="party.customerName || party.supplierName">{{ party.customerName || party.supplierName }}</div>
                   </td>
-                  <td class="py-3.5 px-4 text-right font-extrabold text-rose-700 whitespace-nowrap">
+                  <td class="py-2.5 sm:py-3 px-2 sm:px-3 text-right font-extrabold text-rose-700 whitespace-nowrap">
                     {{ formatCurrency(party.totalSales || party.totalPurchases) }}
                   </td>
-                  <td class="py-3.5 px-4 text-center font-semibold text-gray-700">
+                  <td class="py-2.5 sm:py-3 px-2 sm:px-3 text-center font-semibold text-gray-700 whitespace-nowrap">
                     {{ party.voucherCount }} bills
                   </td>
-                  <td class="py-3.5 px-4 text-center text-gray-600">
+                  <td class="py-2.5 sm:py-3 px-2 sm:px-3 text-center text-gray-600 whitespace-nowrap">
                     {{ formatDate(party.latestDate) }}
                   </td>
-                  <td class="py-3.5 px-4 text-center">
+                  <td class="py-2.5 sm:py-3 px-2 sm:px-3 text-center whitespace-nowrap">
                     <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-50 text-rose-800 border border-rose-200">
                       Create {{ activeEntityMode === 'debtors' ? 'Debtor' : 'Creditor' }} Ledger in Tally
                     </span>
@@ -987,37 +988,37 @@
                 </div>
               </div>
 
-              <div class="overflow-x-auto border border-gray-200 rounded-xl shadow-xs">
-                <table class="w-full text-left text-xs sm:text-sm">
+              <div class="overflow-x-auto lg:overflow-x-visible border border-gray-200 rounded-xl shadow-xs">
+                <table class="w-full text-left text-xs sm:text-sm table-auto xl:table-fixed">
                   <thead class="bg-gray-50 text-gray-600 text-[11px] font-bold uppercase tracking-wider border-b border-gray-200">
                     <tr>
-                      <th class="py-3 px-3.5">Tally Ref</th>
-                      <th class="py-3 px-3.5">BUSY Bill</th>
-                      <th class="py-3 px-3.5">{{ activeEntityMode === 'debtors' ? 'Party / Customer' : 'Party / Supplier' }}</th>
-                      <th class="py-3 px-3.5 text-right whitespace-nowrap">BUSY Amt</th>
-                      <th class="py-3 px-3.5 text-right whitespace-nowrap">Tally Amt</th>
-                      <th class="py-3 px-3.5 text-center">Status</th>
-                      <th class="py-3 px-4 min-w-[280px]">Issue / Error Detected</th>
-                      <th class="py-3 px-4 min-w-[320px]">How to Correct</th>
+                      <th class="py-2.5 sm:py-3 px-2 sm:px-3 w-20 lg:w-24 whitespace-nowrap">Tally Ref</th>
+                      <th class="py-2.5 sm:py-3 px-2 sm:px-3 w-20 lg:w-24 whitespace-nowrap">BUSY Bill</th>
+                      <th class="py-2.5 sm:py-3 px-2 sm:px-3 w-32 lg:w-44">{{ activeEntityMode === 'debtors' ? 'Party / Customer' : 'Party / Supplier' }}</th>
+                      <th class="py-2.5 sm:py-3 px-2 sm:px-3 text-right whitespace-nowrap w-20 lg:w-24">BUSY Amt</th>
+                      <th class="py-2.5 sm:py-3 px-2 sm:px-3 text-right whitespace-nowrap w-20 lg:w-24">Tally Amt</th>
+                      <th class="py-2.5 sm:py-3 px-2 sm:px-3 text-center whitespace-nowrap w-24 lg:w-28">Status</th>
+                      <th class="py-2.5 sm:py-3 px-2.5 sm:px-3">Issue / Error Detected</th>
+                      <th class="py-2.5 sm:py-3 px-2.5 sm:px-3">How to Correct</th>
                     </tr>
                   </thead>
                   <tbody class="divide-y divide-gray-100">
                     <tr v-for="bill in filteredBillDiscrepancies" :key="bill.ref + bill.party" class="hover:bg-amber-50/20 transition-colors">
-                      <td class="py-3.5 px-3.5 font-mono font-bold text-gray-900">{{ bill.ref }}</td>
-                      <td class="py-3.5 px-3.5 font-mono font-semibold text-blue-700">{{ bill.actualBusyRef || bill.ref }}</td>
-                      <td class="py-3.5 px-3.5 font-bold text-gray-900">
-                        <div>{{ bill.party }}</div>
-                        <div v-if="(bill.customerName || bill.supplierName) && (bill.customerName || bill.supplierName) !== bill.party" class="text-[11px] text-gray-400 font-normal">
+                      <td class="py-2.5 sm:py-3 px-2 sm:px-3 font-mono font-bold text-gray-900 whitespace-nowrap">{{ bill.ref }}</td>
+                      <td class="py-2.5 sm:py-3 px-2 sm:px-3 font-mono font-semibold text-blue-700 whitespace-nowrap">{{ bill.actualBusyRef || bill.ref }}</td>
+                      <td class="py-2.5 sm:py-3 px-2 sm:px-3 font-bold text-gray-900">
+                        <div class="truncate max-w-[130px] lg:max-w-[170px]" :title="bill.party">{{ bill.party }}</div>
+                        <div v-if="(bill.customerName || bill.supplierName) && (bill.customerName || bill.supplierName) !== bill.party" class="text-[11px] text-gray-400 font-normal truncate max-w-[130px] lg:max-w-[170px]" :title="bill.customerName || bill.supplierName">
                           BUSY: {{ bill.customerName || bill.supplierName }}
                         </div>
                       </td>
-                      <td class="py-3.5 px-3.5 text-right font-medium text-gray-700 whitespace-nowrap">
+                      <td class="py-2.5 sm:py-3 px-2 sm:px-3 text-right font-medium text-gray-700 whitespace-nowrap">
                         {{ formatCurrency(bill.busyAmount) }}
                       </td>
-                      <td class="py-3.5 px-3.5 text-right font-bold text-gray-900 whitespace-nowrap">
+                      <td class="py-2.5 sm:py-3 px-2 sm:px-3 text-right font-bold text-gray-900 whitespace-nowrap">
                         {{ formatCurrency(bill.tallyAmount) }}
                       </td>
-                      <td class="py-3.5 px-3.5 text-center">
+                      <td class="py-2.5 sm:py-3 px-2 sm:px-3 text-center whitespace-nowrap">
                         <span
                           class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap"
                           :class="{
@@ -1029,12 +1030,12 @@
                           {{ bill.status === 'AMEND_REFERENCE' ? 'Reference Typo' : bill.status === 'COMBINED_ENTRY' ? 'Combined Entry' : 'Amount Mismatch' }}
                         </span>
                       </td>
-                      <td class="py-3.5 px-4 text-xs text-gray-700 leading-relaxed font-normal">
+                      <td class="py-2.5 sm:py-3 px-2.5 sm:px-3 text-xs text-gray-700 leading-relaxed font-normal break-words">
                         {{ bill.issueDetected }}
                       </td>
-                      <td class="py-3.5 px-4 text-xs leading-relaxed">
+                      <td class="py-2.5 sm:py-3 px-2.5 sm:px-3 text-xs leading-relaxed break-words">
                         <div
-                          class="p-2 rounded-lg border text-xs"
+                          class="p-2 rounded-lg border text-xs break-words"
                           :class="{
                             'bg-amber-50/90 border-amber-200 text-amber-950 font-medium': bill.status === 'AMEND_REFERENCE',
                             'bg-sky-50/90 border-sky-200 text-sky-950': bill.status === 'COMBINED_ENTRY',
