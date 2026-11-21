@@ -861,10 +861,10 @@ const confirmAndPlaceOrder = async () => {
     <Teleport to="body">
       <div 
         v-if="isCartDrawerOpen" 
-        class="fixed inset-0 bg-slate-900/60 z-[850] backdrop-blur-xs flex flex-col justify-end"
+        class="fixed inset-0 bg-slate-900/60 z-[850] backdrop-blur-xs flex flex-col justify-end sm:justify-center sm:items-center p-0 sm:p-4"
         @click.self="isCartDrawerOpen = false"
       >
-        <div class="bg-white rounded-t-3xl max-w-xl w-full mx-auto max-h-[85vh] flex flex-col shadow-2xl animate-in slide-in-from-bottom duration-200">
+        <div class="bg-white rounded-t-3xl sm:rounded-3xl max-w-xl w-full mx-auto max-h-[85vh] sm:max-h-[88vh] flex flex-col shadow-2xl border border-slate-200 animate-in slide-in-from-bottom sm:zoom-in-95 duration-200 overflow-hidden">
           
           <!-- Header -->
           <div class="p-3.5 border-b border-slate-100 flex items-center justify-between shrink-0">
@@ -1464,29 +1464,42 @@ const confirmAndPlaceOrder = async () => {
     <Teleport to="body">
       <div 
         v-if="isCheckoutModalOpen" 
-        class="fixed inset-0 bg-white z-[900] flex flex-col"
+        class="fixed inset-0 bg-slate-900/60 z-[900] backdrop-blur-xs flex flex-col justify-end sm:justify-center sm:items-center p-0 sm:p-4 md:p-6"
+        @click.self="isCheckoutModalOpen = false; isCartDrawerOpen = true"
       >
-        <!-- Header -->
-        <div class="p-3.5 border-b border-slate-200 flex items-center justify-between shrink-0 bg-slate-50/70">
-          <div class="flex items-center gap-2">
-            <button 
-              @click="isCheckoutModalOpen = false; isCartDrawerOpen = true" 
-              class="w-8 h-8 rounded-lg bg-white border border-slate-200 text-slate-600 flex items-center justify-center text-xs cursor-pointer shadow-2xs"
-            >
-              <ArrowLeft class="w-4 h-4" />
-            </button>
-            <div>
-              <h3 class="font-bold text-slate-900 text-sm">Step 2: Dispatch & Review</h3>
-              <p class="text-[10px] text-slate-500">Customer terms, logistics, and itemized confirmation</p>
+        <div class="bg-white rounded-t-3xl sm:rounded-3xl max-w-2xl w-full mx-auto max-h-[92vh] sm:max-h-[90vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-150">
+          
+          <!-- Header -->
+          <div class="p-3.5 sm:p-4 border-b border-slate-200 flex items-center justify-between shrink-0 bg-slate-50/80">
+            <div class="flex items-center gap-2.5">
+              <button 
+                @click="isCheckoutModalOpen = false; isCartDrawerOpen = true" 
+                class="w-8 h-8 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 flex items-center justify-center text-xs cursor-pointer shadow-2xs transition-colors"
+                title="Back to items"
+              >
+                <ArrowLeft class="w-4 h-4" />
+              </button>
+              <div>
+                <h3 class="font-bold text-slate-900 text-sm">Step 2: Dispatch & Review</h3>
+                <p class="text-[10px] text-slate-500">Customer terms, logistics, and itemized confirmation</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                Ready to Book
+              </span>
+              <button 
+                @click="isCheckoutModalOpen = false; isCartDrawerOpen = true" 
+                class="w-8 h-8 rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center text-xs cursor-pointer transition-colors sm:flex hidden"
+                title="Close"
+              >
+                <X class="w-4 h-4" />
+              </button>
             </div>
           </div>
-          <span class="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-            Ready to Book
-          </span>
-        </div>
 
-        <!-- Scrollable Body -->
-        <div class="flex-1 overflow-y-auto p-4 space-y-4 max-w-2xl mx-auto w-full">
+          <!-- Scrollable Body -->
+          <div class="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
           
           <!-- SECTION 1: Customer Card with Live Credit Balance -->
           <div class="p-3 bg-blue-50/70 border border-blue-200 rounded-2xl text-xs space-y-1">
@@ -1651,9 +1664,8 @@ const confirmAndPlaceOrder = async () => {
 
         </div>
 
-        <!-- Sticky Confirmation Footer -->
-        <div class="p-3.5 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] border-t border-slate-200 bg-white shrink-0">
-          <div class="max-w-2xl mx-auto w-full">
+          <!-- Sticky Confirmation Footer -->
+          <div class="p-3.5 sm:p-4 pb-[calc(1.25rem+env(safe-area-inset-bottom,0px))] border-t border-slate-200 bg-slate-50/80 shrink-0">
             <button 
               @click="confirmAndPlaceOrder" 
               :disabled="isSubmitting"
@@ -1664,8 +1676,8 @@ const confirmAndPlaceOrder = async () => {
               <span>{{ isSubmitting ? 'Booking Order...' : 'Confirm & Book Order' }}</span>
             </button>
           </div>
-        </div>
 
+        </div>
       </div>
     </Teleport>
 
