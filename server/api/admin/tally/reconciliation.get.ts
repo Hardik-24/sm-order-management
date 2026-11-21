@@ -326,12 +326,34 @@ export default defineEventHandler(async (event) => {
 
     const usedBusyVouchers = new Set<string>()
 
+    // PASS 0: Direct match against Tally Register Vouchers (Sales / Purchase Register) if available
+    const tallyVchList: any[] = tally.vouchers || []
+    const tallyVchMap = new Map<string, any>()
+    for (const tv of tallyVchList) {
+      const normVch = (tv.voucherNo || tv.ref || '').toLowerCase().replace(/[^a-z0-9]/g, '')
+      if (normVch) tallyVchMap.set(normVch, tv)
+    }
+
+    if (tallyVchMap.size > 0) {
+      for (const [normNo, vDirect] of vchMap.entries()) {
+        const tv = tallyVchMap.get(normNo)
+        if (tv) {
+          const bAmt = Math.round(Number(vDirect.totalAmount))
+          const tAmt = Math.round(Number(tv.amount))
+          if (bAmt === tAmt) {
+            usedBusyVouchers.add(vDirect.voucherNo)
+            exactBillsMatchedCount++
+          }
+        }
+      }
+    }
+
     // PASS 1 (Direct match on voucher number and amount)
     for (const tp of tallyParties) {
       for (const b of (tp.bills || [])) {
         const normRef = (b.ref || '').toLowerCase().replace(/[^a-z0-9]/g, '')
         const vDirect = vchMap.get(normRef)
-        if (vDirect) {
+        if (vDirect && !usedBusyVouchers.has(vDirect.voucherNo)) {
           const bAmt = Math.round(Number(vDirect.totalAmount))
           const tAmt = Math.round(Number(b.amount))
           if (bAmt === tAmt) {
@@ -342,33 +364,34 @@ export default defineEventHandler(async (event) => {
       }
     }
 
-    // PASS 1b (For purchases: match by party + exact amount within ±3 days of date)
-    if (isPurchases) {
-      for (const tp of tallyParties) {
-        const cleanTpName = cleanPartyName(tp.party)
-        const partyVouchers = busyByParty.get(cleanTpName) || []
+    // PASS 1b (For BOTH sales and purchases: match by party + exact amount within ±3 days of date)
+    // In Running Accounts ("On Account"), bill allocation tags in Tally can default or repeat
+    // (e.g. SMG23 across multiple accounts), while the actual voucher in the Sales Register is typed correctly.
+    // When Party, Rupee Amount, and Date (±3 days) match, it represents a verified transaction match.
+    for (const tp of tallyParties) {
+      const cleanTpName = cleanPartyName(tp.party)
+      const partyVouchers = busyByParty.get(cleanTpName) || []
 
-        for (const b of (tp.bills || [])) {
-          const tDate = parseTallyDate(b.date)
-          if (!tDate || tDate.getUTCFullYear() !== 2026 || tDate.getUTCMonth() < 3) continue
+      for (const b of (tp.bills || [])) {
+        const tDate = parseTallyDate(b.date)
+        if (!tDate || tDate.getUTCFullYear() !== 2026 || tDate.getUTCMonth() < 3) continue
 
-          const tAmt = Math.round(Number(b.amount))
-          const normRef = (b.ref || '').toLowerCase().replace(/[^a-z0-9]/g, '')
-          if (vchMap.has(normRef) && Math.round(Number(vchMap.get(normRef).totalAmount)) === tAmt) {
-            continue
-          }
+        const tAmt = Math.round(Number(b.amount))
+        const normRef = (b.ref || '').toLowerCase().replace(/[^a-z0-9]/g, '')
+        if (vchMap.has(normRef) && Math.round(Number(vchMap.get(normRef).totalAmount)) === tAmt) {
+          continue
+        }
 
-          for (const cand of partyVouchers) {
-            if (usedBusyVouchers.has(cand.voucherNo)) continue
-            const candAmt = Math.round(Number(cand.totalAmount))
-            const candDate = new Date(cand.voucherDate)
-            const days = Math.abs((candDate.getTime() - tDate.getTime()) / (1000 * 3600 * 24))
+        for (const cand of partyVouchers) {
+          if (usedBusyVouchers.has(cand.voucherNo)) continue
+          const candAmt = Math.round(Number(cand.totalAmount))
+          const candDate = new Date(cand.voucherDate)
+          const days = Math.abs((candDate.getTime() - tDate.getTime()) / (1000 * 3600 * 24))
 
-            if (candAmt === tAmt && days <= 3) {
-              usedBusyVouchers.add(cand.voucherNo)
-              exactBillsMatchedCount++
-              break
-            }
+          if (candAmt === tAmt && days <= 3) {
+            usedBusyVouchers.add(cand.voucherNo)
+            exactBillsMatchedCount++
+            break
           }
         }
       }
@@ -387,6 +410,9 @@ export default defineEventHandler(async (event) => {
 
         // PASS 1: If already matched exactly, skip
         const vDirect = vchMap.get(normRef)
+        if (vDirect && usedBusyVouchers.has(vDirect.voucherNo)) {
+          continue
+        }
         if (vDirect && Math.round(Number(vDirect.totalAmount)) === tAmt) {
           continue
         }
@@ -414,68 +440,44 @@ export default defineEventHandler(async (event) => {
           continue
         }
 
-        // PASS 3: Bill Reference Typo Detection (Same Party + Same Amount + Date within ±3 days)
-        let foundTypo = false
-        for (const cand of partyVouchers) {
-          if (usedBusyVouchers.has(cand.voucherNo)) continue
-
+        // Check if this bill was already verified with a party voucher
+        const wasMatched = partyVouchers.some(cand => {
+          if (!usedBusyVouchers.has(cand.voucherNo)) return false
           const candAmt = Math.round(Number(cand.totalAmount))
           const candDate = new Date(cand.voucherDate)
           const days = Math.abs((candDate.getTime() - tDate.getTime()) / (1000 * 3600 * 24))
-
-          if (candAmt === tAmt && days <= 3) {
-            billValueDiscrepancies.push({
-              ref: b.ref,
-              actualBusyRef: cand.voucherNo,
-              party: tp.party,
-              customerName: cand.customerName,
-              supplierName: cand.supplierName,
-              busyAmount: candAmt,
-              tallyAmount: tAmt,
-              difference: 0,
-              busyDate: cand.voucherDate instanceof Date ? cand.voucherDate.toISOString() : String(cand.voucherDate),
-              tallyDate: b.date,
-              isClubbed: false,
-              status: 'AMEND_REFERENCE',
-              issueDetected: isPurchases
-                ? `Bill Reference Typo: BUSY purchase invoice ${cand.voucherNo} (₹${candAmt.toLocaleString('en-IN')} on ${b.date}) was entered in Tally under reference '${b.ref}'.`
-                : `Bill Reference Typo: BUSY invoice ${cand.voucherNo} (₹${candAmt.toLocaleString('en-IN')} on ${b.date}) was typed into Tally under reference '${b.ref}'.`,
-              howToCorrect: isPurchases
-                ? `DO NOT CREATE A NEW VOUCHER! In Tally, open ${tp.party} purchase voucher on ${b.date} and adjust reference '${b.ref}' if needed.`
-                : `DO NOT CREATE A NEW VOUCHER! In Tally, open ${tp.party} voucher on ${b.date} and change bill reference from ${b.ref} to ${cand.voucherNo}.`
-            })
-            usedBusyVouchers.add(cand.voucherNo)
-            foundTypo = true
-            break
-          }
+          return candAmt === tAmt && days <= 3
+        })
+        if (wasMatched) {
+          continue
         }
 
-        if (foundTypo) continue
-
-        // PASS 4: Legitimate Amount Mismatch for same party and reference
+        // PASS 3: Legitimate Amount Mismatch for same party and reference
         let directPartyScore = 0
         if (vDirect) {
           directPartyScore = computeMatchScore(tp.party, vDirect.customerName || vDirect.supplierName)
         }
-        if (vDirect && directPartyScore >= 70) {
+        if (vDirect && directPartyScore >= 70 && !usedBusyVouchers.has(vDirect.voucherNo)) {
           const bAmt = Math.round(Number(vDirect.totalAmount))
-          billValueDiscrepancies.push({
-            ref: b.ref,
-            actualBusyRef: vDirect.voucherNo,
-            party: tp.party,
-            customerName: vDirect.customerName,
-            supplierName: vDirect.supplierName,
-            busyAmount: bAmt,
-            tallyAmount: tAmt,
-            difference: bAmt - tAmt,
-            busyDate: vDirect.voucherDate instanceof Date ? vDirect.voucherDate.toISOString() : String(vDirect.voucherDate),
-            tallyDate: b.date,
-            isClubbed: false,
-            status: 'VALUE_MISMATCH',
-            issueDetected: `Amount Mismatch: BUSY ${isPurchases ? 'purchase voucher' : 'invoice'} ${vDirect.voucherNo} is ₹${bAmt.toLocaleString('en-IN')}, but Tally shows ₹${tAmt.toLocaleString('en-IN')}.`,
-            howToCorrect: `In Tally, verify voucher and update the invoice amount to match BUSY (₹${bAmt.toLocaleString('en-IN')}).`
-          })
-          usedBusyVouchers.add(vDirect.voucherNo)
+          if (bAmt !== tAmt) {
+            billValueDiscrepancies.push({
+              ref: b.ref,
+              actualBusyRef: vDirect.voucherNo,
+              party: tp.party,
+              customerName: vDirect.customerName,
+              supplierName: vDirect.supplierName,
+              busyAmount: bAmt,
+              tallyAmount: tAmt,
+              difference: bAmt - tAmt,
+              busyDate: vDirect.voucherDate instanceof Date ? vDirect.voucherDate.toISOString() : String(vDirect.voucherDate),
+              tallyDate: b.date,
+              isClubbed: false,
+              status: 'VALUE_MISMATCH',
+              issueDetected: `Amount Mismatch: BUSY ${isPurchases ? 'purchase voucher' : 'invoice'} ${vDirect.voucherNo} is ₹${bAmt.toLocaleString('en-IN')}, but Tally shows ₹${tAmt.toLocaleString('en-IN')}.`,
+              howToCorrect: `In Tally, verify voucher and update the invoice amount to match BUSY (₹${bAmt.toLocaleString('en-IN')}).`
+            })
+            usedBusyVouchers.add(vDirect.voucherNo)
+          }
         }
       }
     }

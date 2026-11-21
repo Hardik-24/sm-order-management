@@ -589,7 +589,7 @@ const confirmAndPlaceOrder = async () => {
     <AccessDenied pageName="Quick Stock Order (Admin Only Beta)" />
   </div>
 
-  <div v-else class="max-w-4xl mx-auto space-y-4 pb-28">
+  <div v-else class="max-w-4xl mx-auto space-y-4 pb-36 sm:pb-32">
     
     <!-- Top Header Bar (Admin Beta) -->
     <div class="bg-[#1b3b5f] text-white rounded-2xl p-4 shadow-lg space-y-3">
@@ -608,36 +608,29 @@ const confirmAndPlaceOrder = async () => {
             </p>
           </div>
         </div>
-
-        <button 
-          @click="openRateCalc(null, 'General Sq.ft Calculator')"
-          class="h-8 px-3 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 flex items-center gap-1.5 text-xs text-blue-100 font-bold transition-all shadow-xs cursor-pointer"
-        >
-          <Calculator class="w-3.5 h-3.5 text-emerald-400" />
-          <span class="hidden sm:inline">Sq.ft Calculator</span>
-          <span class="sm:hidden">Calc</span>
-        </button>
       </div>
 
       <!-- Customer / Party Context Bar -->
       <div class="bg-blue-950/70 border border-blue-400/30 rounded-xl p-2.5 flex items-center justify-between gap-3 text-xs">
         <div class="flex items-center gap-2.5 min-w-0 flex-1 cursor-pointer" @click="isCustomerModalOpen = true">
-          <div class="w-7 h-7 rounded-lg bg-blue-500/20 text-amber-400 flex items-center justify-center shrink-0">
+          <div class="w-8 h-8 rounded-lg bg-blue-500/20 text-amber-400 flex items-center justify-center shrink-0">
             <User class="w-4 h-4" />
           </div>
           <div class="min-w-0 flex-1">
-            <div class="flex items-center gap-1.5">
-              <span class="text-[10px] text-blue-300 block">Party (Customer):</span>
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="font-bold text-white text-xs sm:text-sm break-words leading-snug">
+                {{ isCustomCustomer ? customCustomer.name : (selectedCustomer?.company || selectedCustomer?.name || 'Select Customer') }}
+              </span>
               <span 
-                class="text-[9px] font-bold px-1.5 py-0.2 rounded"
+                class="text-[9px] font-bold px-1.5 py-0.5 rounded shrink-0 whitespace-nowrap"
                 :class="isCustomCustomer ? 'bg-amber-400 text-amber-950' : 'bg-blue-400/20 text-blue-200 border border-blue-400/30'"
               >
                 {{ isCustomCustomer ? 'Custom Walk-In' : 'BUSY Customer' }}
               </span>
             </div>
-            <div class="font-bold text-white text-xs sm:text-sm truncate">
-              {{ isCustomCustomer ? customCustomer.name : (selectedCustomer?.company || selectedCustomer?.name || 'Select Customer') }}
-            </div>
+            <p v-if="selectedCustomer?.city || customCustomer.city" class="text-[10px] text-blue-300 mt-0.5">
+              {{ isCustomCustomer ? customCustomer.city : selectedCustomer?.city }}
+            </p>
           </div>
         </div>
 
@@ -821,7 +814,7 @@ const confirmAndPlaceOrder = async () => {
     <!-- ========================================================================= -->
     <div 
       v-if="totalItemsCount > 0"
-      class="fixed bottom-4 inset-x-4 max-w-lg mx-auto z-40"
+      class="fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] md:bottom-6 inset-x-4 max-w-lg mx-auto z-[450]"
     >
       <div class="bg-slate-900 text-white rounded-2xl p-3 shadow-2xl border border-slate-700/80 flex items-center justify-between gap-3 backdrop-blur-md animate-in slide-in-from-bottom-3 duration-200">
         
@@ -868,7 +861,7 @@ const confirmAndPlaceOrder = async () => {
     <Teleport to="body">
       <div 
         v-if="isCartDrawerOpen" 
-        class="fixed inset-0 bg-slate-900/60 z-50 backdrop-blur-xs flex flex-col justify-end"
+        class="fixed inset-0 bg-slate-900/60 z-[850] backdrop-blur-xs flex flex-col justify-end"
         @click.self="isCartDrawerOpen = false"
       >
         <div class="bg-white rounded-t-3xl max-w-xl w-full mx-auto max-h-[85vh] flex flex-col shadow-2xl animate-in slide-in-from-bottom duration-200">
@@ -1059,7 +1052,7 @@ const confirmAndPlaceOrder = async () => {
           </div>
 
           <!-- Drawer Footer -->
-          <div class="p-4 bg-slate-50 border-t border-slate-200 shrink-0 space-y-3">
+          <div class="p-4 pb-[calc(1.25rem+env(safe-area-inset-bottom,0px))] bg-slate-50 border-t border-slate-200 shrink-0 space-y-3">
             <div class="space-y-1 text-xs">
               <div class="flex justify-between text-slate-500">
                 <span>Taxable Subtotal</span>
@@ -1094,7 +1087,7 @@ const confirmAndPlaceOrder = async () => {
     <Teleport to="body">
       <div 
         v-if="isCustomerModalOpen"
-        class="fixed inset-0 bg-slate-900/60 z-50 backdrop-blur-xs flex items-center justify-center p-4"
+        class="fixed inset-0 bg-slate-900/60 z-[900] backdrop-blur-xs flex items-center justify-center p-4 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))]"
         @click.self="isCustomerModalOpen = false"
       >
         <div class="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl border border-slate-200 flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-150">
@@ -1224,7 +1217,7 @@ const confirmAndPlaceOrder = async () => {
     <Teleport to="body">
       <div 
         v-if="isCustomItemModalOpen"
-        class="fixed inset-0 bg-slate-900/60 z-50 backdrop-blur-xs flex items-center justify-center p-4"
+        class="fixed inset-0 bg-slate-900/60 z-[900] backdrop-blur-xs flex items-center justify-center p-4 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))]"
         @click.self="isCustomItemModalOpen = false"
       >
         <div class="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl border border-slate-200 flex flex-col animate-in zoom-in-95 duration-150">
@@ -1363,7 +1356,7 @@ const confirmAndPlaceOrder = async () => {
     <Teleport to="body">
       <div 
         v-if="isRateCalcModalOpen"
-        class="fixed inset-0 bg-slate-900/60 z-50 backdrop-blur-xs flex items-center justify-center p-4"
+        class="fixed inset-0 bg-slate-900/60 z-[920] backdrop-blur-xs flex items-center justify-center p-4 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))]"
         @click.self="isRateCalcModalOpen = false"
       >
         <div class="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl border border-slate-200 flex flex-col animate-in zoom-in-95 duration-150">
@@ -1471,7 +1464,7 @@ const confirmAndPlaceOrder = async () => {
     <Teleport to="body">
       <div 
         v-if="isCheckoutModalOpen" 
-        class="fixed inset-0 bg-white z-50 flex flex-col"
+        class="fixed inset-0 bg-white z-[900] flex flex-col"
       >
         <!-- Header -->
         <div class="p-3.5 border-b border-slate-200 flex items-center justify-between shrink-0 bg-slate-50/70">
@@ -1659,7 +1652,7 @@ const confirmAndPlaceOrder = async () => {
         </div>
 
         <!-- Sticky Confirmation Footer -->
-        <div class="p-3.5 border-t border-slate-200 bg-white shrink-0">
+        <div class="p-3.5 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] border-t border-slate-200 bg-white shrink-0">
           <div class="max-w-2xl mx-auto w-full">
             <button 
               @click="confirmAndPlaceOrder" 

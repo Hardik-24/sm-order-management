@@ -45,6 +45,39 @@ export interface TallyReceivablesPayload {
     }
   }
   parties: TallyDebtorParty[]
+  vouchers?: any[]
+}
+
+export function parseSalesVouchers(xml: string): any[] {
+  if (!xml) return []
+  const vouchers: any[] = []
+  const vchPattern = /<VOUCHER[^>]*>([\s\S]*?)<\/VOUCHER>/gi
+  let match: RegExpExecArray | null
+  while ((match = vchPattern.exec(xml)) !== null) {
+    const block = match[1]
+    const dateMatch = block.match(/<DATE[^>]*>([^<]+)<\/DATE>/i)
+    const numMatch = block.match(/<VOUCHERNUMBER[^>]*>([^<]+)<\/VOUCHERNUMBER>/i)
+    const refMatch = block.match(/<REFERENCE[^>]*>([^<]+)<\/REFERENCE>/i)
+    const partyMatch = block.match(/<PARTYLEDGERNAME[^>]*>([^<]+)<\/PARTYLEDGERNAME>/i) || block.match(/<PARTYNAME[^>]*>([^<]+)<\/PARTYNAME>/i)
+    const amtMatch = block.match(/<AMOUNT[^>]*>([^<]+)<\/AMOUNT>/i)
+
+    if (numMatch || refMatch) {
+      const vDate = dateMatch ? dateMatch[1].trim() : ''
+      const vNum = numMatch ? numMatch[1].trim() : ''
+      const vRef = refMatch ? refMatch[1].trim() : vNum
+      const vParty = partyMatch ? partyMatch[1].replace(/&amp;/g, '&').trim() : ''
+      const rawAmt = amtMatch ? Math.abs(parseFloat(amtMatch[1])) : 0
+
+      vouchers.push({
+        date: vDate,
+        voucherNo: vNum,
+        ref: vRef,
+        party: vParty,
+        amount: Math.round(rawAmt * 100) / 100
+      })
+    }
+  }
+  return vouchers
 }
 
 export function queryTallyXml(xml: string, host = '127.0.0.1', port = 9000): Promise<string> {
@@ -98,13 +131,19 @@ export async function fetchFullTallyData(host = '127.0.0.1', port = 9000): Promi
   </ENVELOPE>`
 
   const billsXml = `<ENVELOPE><HEADER><VERSION>1</VERSION><TALLYREQUEST>Export</TALLYREQUEST><TYPE>Data</TYPE><ID>Bills Receivable</ID></HEADER><BODY><DESC><STATICVARIABLES><SVEXPORTFORMAT>$$SysName:XML</SVEXPORTFORMAT></STATICVARIABLES></DESC></BODY></ENVELOPE>`
+  const salesVchXml = `<ENVELOPE><HEADER><VERSION>1</VERSION><TALLYREQUEST>Export</TALLYREQUEST><TYPE>Collection</TYPE><ID>SalesVchCol</ID></HEADER><BODY><DESC><STATICVARIABLES><SVEXPORTFORMAT>$$SysName:XML</SVEXPORTFORMAT></STATICVARIABLES><TDL><TDLMESSAGE><COLLECTION NAME="SalesVchCol"><TYPE>Voucher</TYPE><FILTER>IsSalesFilter</FILTER><FETCH>Date,VoucherNumber,Reference,PartyLedgerName,Amount</FETCH></COLLECTION><SYSTEM TYPE="Formulae" NAME="IsSalesFilter">$$IsSales:$VoucherTypeName</SYSTEM></TDLMESSAGE></TDL></DESC></BODY></ENVELOPE>`
 
-  const [ledgersRaw, billsRaw] = await Promise.all([
+  const [ledgersRaw, billsRaw, salesRaw] = await Promise.all([
     queryTallyXml(ledgerXml, host, port),
-    queryTallyXml(billsXml, host, port)
+    queryTallyXml(billsXml, host, port),
+    queryTallyXml(salesVchXml, host, port).catch(() => '')
   ])
 
-  return parseMergedTallyData(ledgersRaw, billsRaw)
+  const payload = parseMergedTallyData(ledgersRaw, billsRaw)
+  if (salesRaw) {
+    payload.vouchers = parseSalesVouchers(salesRaw)
+  }
+  return payload
 }
 
 export function parseMergedTallyData(ledgersXml: string, billsXml: string): TallyReceivablesPayload {

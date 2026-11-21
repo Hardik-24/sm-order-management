@@ -505,6 +505,16 @@ async function syncTally() {
     console.log(`- Received ${Buffer.byteLength(billsRecRaw, 'utf8')} bytes of bills receivable`);
 
     const debtorPayload = parseMergedDebtorData(debtorsRaw, billsRecRaw, company.name);
+
+    console.log('- Fetching sales register vouchers (for direct voucher matching)...');
+    try {
+      const salesVchXml = `<ENVELOPE><HEADER><VERSION>1</VERSION><TALLYREQUEST>Export</TALLYREQUEST><TYPE>Collection</TYPE><ID>SalesVchCol</ID></HEADER><BODY><DESC><STATICVARIABLES><SVEXPORTFORMAT>$$SysName:XML</SVEXPORTFORMAT></STATICVARIABLES><TDL><TDLMESSAGE><COLLECTION NAME="SalesVchCol"><TYPE>Voucher</TYPE><FILTER>IsSalesFilter</FILTER><FETCH>Date,VoucherNumber,Reference,PartyLedgerName,Amount</FETCH></COLLECTION><SYSTEM TYPE="Formulae" NAME="IsSalesFilter">$$IsSales:$VoucherTypeName</SYSTEM></TDLMESSAGE></TDL></DESC></BODY></ENVELOPE>`;
+      const salesRaw = await queryTallyXml(salesVchXml);
+      debtorPayload.vouchers = parseSalesVouchers(salesRaw);
+      console.log(`- Extracted ${debtorPayload.vouchers.length} sales register vouchers from Tally`);
+    } catch (e) {
+      console.log(`- Sales register vouchers query note: ${e.message}`);
+    }
     console.log('  --- DEBTORS FINANCIAL SUMMARY ---');
     console.log(`  - Total Billed:        Rs. ${debtorPayload.summary.totalBilled.toLocaleString('en-IN')}`);
     console.log(`  - Total Collected:     Rs. ${debtorPayload.summary.totalPaid.toLocaleString('en-IN')}`);
@@ -555,6 +565,16 @@ async function syncTally() {
     console.log(`- Received ${Buffer.byteLength(billsPayRaw, 'utf8')} bytes of bills payable`);
 
     const creditorPayload = parseMergedCreditorData(creditorsRaw, billsPayRaw, company.name);
+
+    console.log('- Fetching purchase register vouchers (for direct voucher matching)...');
+    try {
+      const purVchXml = `<ENVELOPE><HEADER><VERSION>1</VERSION><TALLYREQUEST>Export</TALLYREQUEST><TYPE>Collection</TYPE><ID>PurVchCol</ID></HEADER><BODY><DESC><STATICVARIABLES><SVEXPORTFORMAT>$$SysName:XML</SVEXPORTFORMAT></STATICVARIABLES><TDL><TDLMESSAGE><COLLECTION NAME="PurVchCol"><TYPE>Voucher</TYPE><FILTER>IsPurFilter</FILTER><FETCH>Date,VoucherNumber,Reference,PartyLedgerName,Amount</FETCH></COLLECTION><SYSTEM TYPE="Formulae" NAME="IsPurFilter">$$IsPurchase:$VoucherTypeName</SYSTEM></TDLMESSAGE></TDL></DESC></BODY></ENVELOPE>`;
+      const purRaw = await queryTallyXml(purVchXml);
+      creditorPayload.vouchers = parseSalesVouchers(purRaw);
+      console.log(`- Extracted ${creditorPayload.vouchers.length} purchase register vouchers from Tally`);
+    } catch (e) {
+      console.log(`- Purchase register vouchers query note: ${e.message}`);
+    }
     console.log('  --- CREDITORS FINANCIAL SUMMARY ---');
     console.log(`  - Total Purchased:     Rs. ${creditorPayload.summary.totalPurchased.toLocaleString('en-IN')}`);
     console.log(`  - Total Paid:          Rs. ${creditorPayload.summary.totalPaid.toLocaleString('en-IN')}`);
