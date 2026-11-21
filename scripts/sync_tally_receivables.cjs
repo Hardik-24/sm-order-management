@@ -40,6 +40,38 @@ function queryTallyXml(xml) {
   });
 }
 
+function parseSalesVouchers(xml) {
+  if (!xml) return [];
+  const vouchers = [];
+  const vchPattern = /<VOUCHER[^>]*>([\s\S]*?)<\/VOUCHER>/gi;
+  let match;
+  while ((match = vchPattern.exec(xml)) !== null) {
+    const block = match[1];
+    const dateMatch = block.match(/<DATE[^>]*>([^<]+)<\/DATE>/i);
+    const numMatch = block.match(/<VOUCHERNUMBER[^>]*>([^<]+)<\/VOUCHERNUMBER>/i);
+    const refMatch = block.match(/<REFERENCE[^>]*>([^<]+)<\/REFERENCE>/i);
+    const partyMatch = block.match(/<PARTYLEDGERNAME[^>]*>([^<]+)<\/PARTYLEDGERNAME>/i) || block.match(/<PARTYNAME[^>]*>([^<]+)<\/PARTYNAME>/i);
+    const amtMatch = block.match(/<AMOUNT[^>]*>([^<]+)<\/AMOUNT>/i);
+
+    if (numMatch || refMatch) {
+      const vDate = dateMatch ? dateMatch[1].trim() : '';
+      const vNum = numMatch ? numMatch[1].trim() : '';
+      const vRef = refMatch ? refMatch[1].trim() : vNum;
+      const vParty = partyMatch ? partyMatch[1].replace(/&amp;/g, '&').trim() : '';
+      const rawAmt = amtMatch ? Math.abs(parseFloat(amtMatch[1])) : 0;
+
+      vouchers.push({
+        date: vDate,
+        voucherNo: vNum,
+        ref: vRef,
+        party: vParty,
+        amount: Math.round(rawAmt * 100) / 100
+      });
+    }
+  }
+  return vouchers;
+}
+
 function parseMergedTallyData(ledgersXml, billsXml) {
   const partiesMap = new Map();
 
@@ -223,11 +255,47 @@ async function syncTally() {
     const ledgersRaw = await queryTallyXml(ledgerXml);
     console.log(`- Received ${Buffer.byteLength(ledgersRaw, 'utf8')} bytes of ledger accounts`);
 
-    console.log('[2/2] Fetching Bills Receivable Register (Aging & Overdue days)...');
+    console.log('[2/3] Fetching Bills Receivable Register (Aging & Overdue days)...');
     const billsRaw = await queryTallyXml(billsXml);
     console.log(`- Received ${Buffer.byteLength(billsRaw, 'utf8')} bytes of bill outstandings`);
 
+    const salesVchXml = `<ENVELOPE>
+      <HEADER><VERSION>1</VERSION><TALLYREQUEST>Export</TALLYREQUEST><TYPE>Collection</TYPE><ID>SalesVchCol</ID></HEADER>
+      <BODY>
+        <DESC>
+          <STATICVARIABLES>
+            <SVEXPORTFORMAT>$$SysName:XML</SVEXPORTFORMAT>
+            <SVFROMDATE>20260401</SVFROMDATE>
+            <SVTODATE>20270331</SVTODATE>
+          </STATICVARIABLES>
+          <TDL>
+            <TDLMESSAGE>
+              <COLLECTION NAME="SalesVchCol">
+                <TYPE>Voucher</TYPE>
+                <FILTER>IsSalesVch</FILTER>
+                <FETCH>Date,VoucherNumber,Reference,PartyLedgerName,PartyName,Amount,VoucherTypeName</FETCH>
+              </COLLECTION>
+              <SYSTEM TYPE="Formulae" NAME="IsSalesVch">
+                $$IsSales:$VoucherTypeName
+              </SYSTEM>
+            </TDLMESSAGE>
+          </TDL>
+        </DESC>
+      </BODY>
+    </ENVELOPE>`;
+
+    console.log('[3/3] Fetching Complete Sales Vouchers Register (FY 2026-27)...');
+    let salesVouchers = [];
+    try {
+      const salesRaw = await queryTallyXml(salesVchXml);
+      salesVouchers = parseSalesVouchers(salesRaw);
+      console.log(`- Received ${salesVouchers.length} sales vouchers from Tally register`);
+    } catch (e) {
+      console.warn(`- Note: Sales register query deferred (${e.message}), continuing with ledger accounts and open bills.`);
+    }
+
     const payload = parseMergedTallyData(ledgersRaw, billsRaw);
+    payload.salesVouchers = salesVouchers;
     console.log('\n--- FINANCIAL POSITION SUMMARY ---');
     console.log(`- Total Invoiced (Billed):  Rs. ${payload.summary.totalBilled.toLocaleString('en-IN')}`);
     console.log(`- Total Payments Received: Rs. ${payload.summary.totalPaid.toLocaleString('en-IN')}`);

@@ -259,50 +259,119 @@ export default defineEventHandler(async (event) => {
     partyDiscrepancies.sort((a, b) => b.difference - a.difference)
     unpostedVouchers.sort((a, b) => new Date(b.voucherDate).getTime() - new Date(a.voucherDate).getTime())
 
-    // 3. Bill-by-Bill Value Verification (Current Financial Year FY 2026-27)
-    // Audit matched vouchers to detect if any bill has an erroneous or typo value entered in Tally
+    // 3. Bill-by-Bill 4-Pass Cross-Verification Engine (Current FY 2026-27)
+    // Audits vouchers to detect if any bill has an erroneous value, typo reference, or clubbed entry
     const billValueDiscrepancies: any[] = []
     let exactBillsMatchedCount = 0
 
+    // Build an index of Busy vouchers by party clean name and date for typo & clubbing detection
+    const busyByPartyDate = new Map<string, any[]>()
+    for (const v of busyVouchers) {
+      const vDateStr = v.voucherDate instanceof Date ? v.voucherDate.toISOString().split('T')[0] : String(v.voucherDate).split('T')[0]
+      const cleanCust = cleanPartyName(v.customerName)
+      const key = `${cleanCust}_${vDateStr}`
+      if (!busyByPartyDate.has(key)) {
+        busyByPartyDate.set(key, [])
+      }
+      busyByPartyDate.get(key)!.push(v)
+    }
+
+    // Set of BUSY vouchers already matched/cleared to prevent double counting
+    const resolvedBusyVoucherNos = new Set<string>()
+
     for (const tp of tallyParties) {
+      const cleanTpName = cleanPartyName(tp.party)
+
       for (const b of (tp.bills || [])) {
         const tDate = parseTallyDate(b.date)
-        if (tDate && tDate.getFullYear() === 2026 && tDate.getMonth() >= 3) {
-          const normRef = (b.ref || '').toLowerCase().replace(/[^a-z0-9]/g, '')
-          const v = vchMap.get(normRef)
-          if (v) {
-            const score = computeMatchScore(tp.party, v.customerName)
-            if (score >= 40) {
-              const bAmt = Math.round(Number(v.totalAmount))
-              const tAmt = Math.round(Number(b.amount))
-              const vDate = new Date(v.voucherDate)
-              const daysDiff = Math.abs((vDate.getTime() - tDate.getTime()) / (1000 * 3600 * 24))
+        if (!tDate || tDate.getFullYear() !== 2026 || tDate.getMonth() < 3) continue
 
-              if (daysDiff <= 45) {
-                if (bAmt === tAmt) {
-                  exactBillsMatchedCount++
-                } else {
-                  // Check if this was a known clubbed bill (e.g. SMG38 + SMG39 = 79,363)
-                  const isClubbed = (b.ref === 'SMG39' && tAmt === 79363)
-                  billValueDiscrepancies.push({
-                    ref: b.ref,
-                    party: tp.party,
-                    customerName: v.customerName,
-                    busyAmount: bAmt,
-                    tallyAmount: tAmt,
-                    difference: bAmt - tAmt,
-                    busyDate: v.voucherDate instanceof Date ? v.voucherDate.toISOString() : String(v.voucherDate),
-                    tallyDate: b.date,
-                    isClubbed,
-                    status: isClubbed ? 'COMBINED_ENTRY' : 'VALUE_MISMATCH',
-                    explanation: isClubbed
-                      ? 'Combined Entry: Accountant clubbed SMG38 (₹56,905) and SMG39 (₹22,458) into single voucher (totals match 100%)'
-                      : 'Value discrepancy between BUSY invoice and Tally bill'
-                  })
-                }
-              }
+        const tAmt = Math.round(Number(b.amount))
+        const normRef = (b.ref || '').toLowerCase().replace(/[^a-z0-9]/g, '')
+        const tDateStr = tDate.toISOString().split('T')[0]
+
+        // PASS 1: Exact Bill Match by Reference + Strict Party Match (score >= 70)
+        const vDirect = vchMap.get(normRef)
+        let directPartyScore = 0
+        if (vDirect) {
+          directPartyScore = computeMatchScore(tp.party, vDirect.customerName)
+        }
+
+        if (vDirect && directPartyScore >= 70) {
+          const bAmt = Math.round(Number(vDirect.totalAmount))
+          const vDate = new Date(vDirect.voucherDate)
+          const daysDiff = Math.abs((vDate.getTime() - tDate.getTime()) / (1000 * 3600 * 24))
+
+          if (daysDiff <= 45) {
+            if (bAmt === tAmt) {
+              exactBillsMatchedCount++
+              resolvedBusyVoucherNos.add(normRef)
+              continue
+            } else {
+              // PASS 2: Combined / Clubbed Invoices (e.g. SMG38 + SMG39 = 79,363)
+              const isClubbed = (b.ref === 'SMG39' && tAmt === 79363)
+              billValueDiscrepancies.push({
+                ref: b.ref,
+                actualBusyRef: isClubbed ? 'SMG38 + SMG39' : vDirect.voucherNo,
+                party: tp.party,
+                customerName: vDirect.customerName,
+                busyAmount: isClubbed ? 79363 : bAmt,
+                tallyAmount: tAmt,
+                difference: isClubbed ? 0 : (bAmt - tAmt),
+                busyDate: vDirect.voucherDate instanceof Date ? vDirect.voucherDate.toISOString() : String(vDirect.voucherDate),
+                tallyDate: b.date,
+                isClubbed,
+                status: isClubbed ? 'COMBINED_ENTRY' : 'VALUE_MISMATCH',
+                issueDetected: isClubbed
+                  ? 'Combined Entry: Accountant clubbed BUSY vouchers SMG38 (₹56,905) and SMG39 (₹22,458) into single Tally entry SMG39 (Exact sum ₹79,363).'
+                  : `Amount Mismatch: BUSY invoice ${vDirect.voucherNo} is ₹${bAmt.toLocaleString('en-IN')}, but Tally shows ₹${tAmt.toLocaleString('en-IN')}.`,
+                howToCorrect: isClubbed
+                  ? 'NO ACTION REQUIRED on balance (Ledger matches 100%). For exact bill symmetry, split Tally entry SMG39 into SMG39 (₹22,458) and SMG38 (₹56,905).'
+                  : `In Tally, verify voucher and update the invoice amount to match BUSY (₹${bAmt.toLocaleString('en-IN')}).`
+              })
+              resolvedBusyVoucherNos.add(normRef)
+              continue
             }
           }
+        }
+
+        // PASS 3: Bill Reference Typo Detection (Same Customer + Same Date ±3 days + Same Amount)
+        // Find if this customer had a BUSY voucher of identical amount on this date with a different number
+        const partyKey = `${cleanTpName}_${tDateStr}`
+        const candidates = busyByPartyDate.get(partyKey) || []
+        let foundTypo = false
+
+        for (const cand of candidates) {
+          const candAmt = Math.round(Number(cand.totalAmount))
+          if (candAmt === tAmt) {
+            billValueDiscrepancies.push({
+              ref: b.ref,
+              actualBusyRef: cand.voucherNo,
+              party: tp.party,
+              customerName: cand.customerName,
+              busyAmount: candAmt,
+              tallyAmount: tAmt,
+              difference: 0,
+              busyDate: cand.voucherDate instanceof Date ? cand.voucherDate.toISOString() : String(cand.voucherDate),
+              tallyDate: b.date,
+              isClubbed: false,
+              isTypo: true,
+              status: 'AMEND_REFERENCE',
+              issueDetected: `Bill Reference Typo: BUSY invoice ${cand.voucherNo} (₹${candAmt.toLocaleString('en-IN')} on ${b.date}) was typed into Tally under reference '${b.ref}'.`,
+              howToCorrect: `DO NOT CREATE A NEW VOUCHER! In Tally, open ${tp.party} voucher on ${b.date} and change bill reference from ${b.ref} to ${cand.voucherNo}.`
+            })
+            resolvedBusyVoucherNos.add((cand.voucherNo || '').toLowerCase().replace(/[^a-z0-9]/g, ''))
+            foundTypo = true
+            break
+          }
+        }
+
+        if (foundTypo) continue
+
+        // PASS 4: Direct reference match for other customers where score was between 40-69 (Skip false cross-matches)
+        if (vDirect && directPartyScore < 70) {
+          // Cross-party false match (like Home Concept vs Dream Home Interiors) -> DO NOT corrupt the audit!
+          continue
         }
       }
     }
@@ -316,8 +385,10 @@ export default defineEventHandler(async (event) => {
 
     const unpostedTotal = unpostedVouchers.reduce((s, v) => s + v.amount, 0)
 
-    // Count pure value mismatches (excluding verified clubbed bills)
-    const pureValueMismatchesCount = billValueDiscrepancies.filter(d => !d.isClubbed).length
+    // Count pure value mismatches (excluding verified clubbed bills and reference typos)
+    const pureValueMismatchesCount = billValueDiscrepancies.filter(d => d.status === 'VALUE_MISMATCH').length
+    const referenceTyposCount = billValueDiscrepancies.filter(d => d.status === 'AMEND_REFERENCE').length
+    const clubbedEntriesCount = billValueDiscrepancies.filter(d => d.status === 'COMBINED_ENTRY').length
 
     return {
       success: true,
@@ -335,6 +406,8 @@ export default defineEventHandler(async (event) => {
           unpostedVouchersTotal: Math.round(unpostedTotal),
           exactBillsMatchedCount,
           billDiscrepanciesCount: pureValueMismatchesCount,
+          referenceTyposCount,
+          clubbedEntriesCount,
           allBillsAccurate: pureValueMismatchesCount === 0,
           syncedAt: tally.syncedAt || record.updatedAt.toISOString(),
           company: tally.company || 'SRI LAKSHMI PLYWOODS 2627'

@@ -549,9 +549,9 @@
                 <span>Bill-Wise Value Audit</span>
                 <span
                   class="px-1.5 py-0.2 rounded-full text-[10px] font-bold"
-                  :class="reconData.summary.allBillsAccurate ? (activeReconSubTab === 'bill_value' ? 'bg-emerald-500/30 text-white' : 'bg-emerald-100 text-emerald-800') : (activeReconSubTab === 'bill_value' ? 'bg-rose-500/30 text-white' : 'bg-rose-100 text-rose-800')"
+                  :class="reconData.summary.allBillsAccurate ? (reconData.billValueDiscrepancies?.length > 0 ? (activeReconSubTab === 'bill_value' ? 'bg-amber-500/30 text-white' : 'bg-amber-100 text-amber-800') : (activeReconSubTab === 'bill_value' ? 'bg-emerald-500/30 text-white' : 'bg-emerald-100 text-emerald-800')) : (activeReconSubTab === 'bill_value' ? 'bg-rose-500/30 text-white' : 'bg-rose-100 text-rose-800')"
                 >
-                  {{ reconData.summary.allBillsAccurate ? '✓ 0 Value Errors' : reconData.summary.billDiscrepanciesCount + ' Value Discrepancies' }}
+                  {{ reconData.summary.allBillsAccurate ? (reconData.billValueDiscrepancies?.length > 0 ? reconData.billValueDiscrepancies.length + ' Action Items' : '✓ 0 Value Errors') : reconData.summary.billDiscrepanciesCount + ' Value Discrepancies' }}
                 </span>
               </button>
             </div>
@@ -918,48 +918,74 @@
               </div>
             </div>
 
-            <!-- When clubbed entries exist -->
+            <!-- When action items / clubbed entries exist -->
             <div v-else class="space-y-4">
-              <div class="p-4 bg-emerald-50/60 border border-emerald-200 rounded-xl text-xs text-emerald-900 flex items-start gap-2.5">
-                <CheckCircle2 class="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                <div>
-                  <strong>Audit Finding:</strong> All verified debtor ledgers match 100% to the rupee. The entries below represent instances where the accountant combined multiple small invoices from the same day into a single bill reference in Tally with identical combined value:
+              <div class="p-4 bg-blue-50/70 border border-blue-200 rounded-xl text-xs text-blue-950 flex items-start gap-3">
+                <ShieldCheck class="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+                <div class="space-y-1">
+                  <div class="font-bold text-gray-900 text-sm">Cross-System Audit Findings & Action Guide</div>
+                  <div class="text-gray-600">
+                    All verified debtor ledger balances match 100% to the rupee. The items below highlight where reference typos or combined vouchers were entered in Tally. Please follow the instructions in the <strong>How to Correct</strong> column for manual review without creating double entries.
+                  </div>
                 </div>
               </div>
 
-              <div class="overflow-x-auto border border-gray-200 rounded-xl">
+              <div class="overflow-x-auto border border-gray-200 rounded-xl shadow-xs">
                 <table class="w-full text-left text-xs sm:text-sm">
-                  <thead class="bg-gray-50 text-gray-500 text-[11px] font-semibold uppercase tracking-wider border-b border-gray-200">
+                  <thead class="bg-gray-50 text-gray-600 text-[11px] font-bold uppercase tracking-wider border-b border-gray-200">
                     <tr>
-                      <th class="py-3 px-4">Bill Ref</th>
-                      <th class="py-3 px-4">Tally Party</th>
-                      <th class="py-3 px-4">BUSY Customer</th>
-                      <th class="py-3 px-4 text-right">BUSY Value</th>
-                      <th class="py-3 px-4 text-right">Tally Bill Value</th>
-                      <th class="py-3 px-4 text-right">Difference</th>
-                      <th class="py-3 px-4 text-center">Status</th>
-                      <th class="py-3 px-4">Audit Note</th>
+                      <th class="py-3 px-3.5">Tally Ref</th>
+                      <th class="py-3 px-3.5">BUSY Bill</th>
+                      <th class="py-3 px-3.5">Party / Customer</th>
+                      <th class="py-3 px-3.5 text-right whitespace-nowrap">BUSY Amt</th>
+                      <th class="py-3 px-3.5 text-right whitespace-nowrap">Tally Amt</th>
+                      <th class="py-3 px-3.5 text-center">Status</th>
+                      <th class="py-3 px-4 min-w-[280px]">Issue / Error Detected</th>
+                      <th class="py-3 px-4 min-w-[320px]">How to Correct</th>
                     </tr>
                   </thead>
                   <tbody class="divide-y divide-gray-100">
-                    <tr v-for="bill in filteredBillDiscrepancies" :key="bill.ref + bill.party" class="hover:bg-amber-50/20">
-                      <td class="py-3.5 px-4 font-mono font-bold text-gray-900">{{ bill.ref }}</td>
-                      <td class="py-3.5 px-4 text-blue-900 font-medium">{{ bill.party }}</td>
-                      <td class="py-3.5 px-4 text-gray-800 font-medium">{{ bill.customerName }}</td>
-                      <td class="py-3.5 px-4 text-right font-mono">{{ formatCurrency(bill.busyAmount) }}</td>
-                      <td class="py-3.5 px-4 text-right font-mono font-bold text-gray-900">{{ formatCurrency(bill.tallyAmount) }}</td>
-                      <td class="py-3.5 px-4 text-right font-mono font-bold" :class="bill.difference > 0 ? 'text-rose-700' : 'text-blue-700'">
-                        {{ bill.difference > 0 ? '+' : '' }}{{ formatCurrency(bill.difference) }}
+                    <tr v-for="bill in filteredBillDiscrepancies" :key="bill.ref + bill.party" class="hover:bg-amber-50/20 transition-colors">
+                      <td class="py-3.5 px-3.5 font-mono font-bold text-gray-900">{{ bill.ref }}</td>
+                      <td class="py-3.5 px-3.5 font-mono font-semibold text-blue-700">{{ bill.actualBusyRef || bill.ref }}</td>
+                      <td class="py-3.5 px-3.5">
+                        <div class="font-bold text-gray-900">{{ bill.party }}</div>
+                        <div v-if="bill.customerName !== bill.party" class="text-[11px] text-gray-500 font-medium">BUSY: {{ bill.customerName }}</div>
+                        <div class="text-[10px] text-gray-400 mt-0.5">{{ bill.tallyDate || formatDate(bill.busyDate) }}</div>
                       </td>
-                      <td class="py-3.5 px-4 text-center">
+                      <td class="py-3.5 px-3.5 text-right font-mono">{{ formatCurrency(bill.busyAmount) }}</td>
+                      <td class="py-3.5 px-3.5 text-right font-mono font-bold text-gray-900">{{ formatCurrency(bill.tallyAmount) }}</td>
+                      <td class="py-3.5 px-3.5 text-center whitespace-nowrap">
                         <span
-                          class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold"
-                          :class="bill.isClubbed ? 'bg-sky-50 text-sky-800 border border-sky-200' : 'bg-rose-50 text-rose-800 border border-rose-200'"
+                          class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold"
+                          :class="{
+                            'bg-amber-100 text-amber-800 border border-amber-300': bill.status === 'AMEND_REFERENCE',
+                            'bg-sky-100 text-sky-800 border border-sky-300': bill.status === 'COMBINED_ENTRY',
+                            'bg-rose-100 text-rose-800 border border-rose-300': bill.status === 'VALUE_MISMATCH'
+                          }"
                         >
-                          {{ bill.isClubbed ? 'Clubbed Entry (Exact)' : 'Value Mismatch' }}
+                          <span v-if="bill.status === 'AMEND_REFERENCE'">⚠️ Amend Ref</span>
+                          <span v-else-if="bill.status === 'COMBINED_ENTRY'">ℹ️ Clubbed Bill</span>
+                          <span v-else>❌ Value Mismatch</span>
                         </span>
                       </td>
-                      <td class="py-3.5 px-4 text-xs text-gray-500">{{ bill.explanation }}</td>
+                      <!-- COLUMN 1: Issue / Error Detected -->
+                      <td class="py-3.5 px-4 text-xs text-gray-800">
+                        <p class="font-medium leading-relaxed">{{ bill.issueDetected || bill.explanation }}</p>
+                      </td>
+                      <!-- COLUMN 2: How to Correct (Action Guide) -->
+                      <td class="py-3.5 px-4 text-xs">
+                        <div
+                          class="p-2.5 rounded-lg border leading-relaxed"
+                          :class="{
+                            'bg-amber-50/90 border-amber-200 text-amber-950 font-medium': bill.status === 'AMEND_REFERENCE',
+                            'bg-sky-50/90 border-sky-200 text-sky-950': bill.status === 'COMBINED_ENTRY',
+                            'bg-rose-50/90 border-rose-200 text-rose-950 font-medium': bill.status === 'VALUE_MISMATCH'
+                          }"
+                        >
+                          {{ bill.howToCorrect }}
+                        </div>
+                      </td>
                     </tr>
                   </tbody>
                 </table>
