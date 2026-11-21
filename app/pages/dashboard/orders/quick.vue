@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
+import { useRouter, onBeforeRouteLeave } from 'vue-router'
+import gsap from 'gsap'
 import { 
   ArrowLeft, X, Plus, Minus, Trash2, Zap, Calculator, Clock, Check, 
   Truck, Car, AlertCircle, Package, Loader2, Tag, ChevronDown, ChevronUp, 
@@ -20,10 +21,26 @@ const { user } = useAuth()
 const { showSaving, showSaved, hide } = useSnackbar()
 const { paymentTermsOptions } = useMasters()
 
+const isOrderCompleted = ref(false)
+
 // Guard against non-admin direct access
 onMounted(() => {
   if (user.value && user.value.role !== 'ADMIN') {
     router.replace('/dashboard/orders')
+  }
+})
+
+// Prevent accidental exit when cart has active items
+onBeforeRouteLeave((to, from, next) => {
+  if (totalItemsCount.value > 0 && !isOrderCompleted.value) {
+    const confirmLeave = window.confirm(`You have ${totalItemsCount.value} item(s) in your quick cart. Leave quick order?`)
+    if (confirmLeave) {
+      next()
+    } else {
+      next(false)
+    }
+  } else {
+    next()
   }
 })
 
@@ -330,6 +347,182 @@ const applyLastPriceToItem = (id: string) => {
   }
 }
 
+// ── GSAP ANIMATIONS ────────────────────────────────────────────
+const animateProductCards = () => {
+  nextTick(() => {
+    const cards = document.querySelectorAll('.quick-product-card')
+    if (cards.length > 0) {
+      gsap.fromTo(cards, 
+        { opacity: 0, y: 12 },
+        { opacity: 1, y: 0, duration: 0.28, stagger: 0.02, ease: 'power2.out', clearProps: 'transform,opacity' }
+      )
+    }
+  })
+}
+
+const animateCartPill = () => {
+  nextTick(() => {
+    const pill = document.querySelector('.floating-cart-pill')
+    if (pill) {
+      gsap.fromTo(pill,
+        { y: 35, opacity: 0, scale: 0.94 },
+        { y: 0, opacity: 1, scale: 1, duration: 0.35, ease: 'back.out(1.4)' }
+      )
+    }
+  })
+}
+
+const animateModalEntry = (cardSelector: string, isDrawer = false) => {
+  nextTick(() => {
+    const card = document.querySelector(cardSelector)
+    if (!card) return
+    if (isDrawer && typeof window !== 'undefined' && window.innerWidth < 640) {
+      gsap.fromTo(card,
+        { y: '100%', opacity: 0 },
+        { y: '0%', opacity: 1, duration: 0.32, ease: 'power3.out' }
+      )
+    } else {
+      gsap.fromTo(card,
+        { scale: 0.92, opacity: 0, y: 14 },
+        { scale: 1, opacity: 1, y: 0, duration: 0.26, ease: 'back.out(1.2)' }
+      )
+    }
+  })
+}
+
+const animateButtonTap = (el?: HTMLElement | EventTarget | null) => {
+  if (!el || !(el instanceof HTMLElement)) return
+  gsap.fromTo(el,
+    { scale: 0.85 },
+    { scale: 1, duration: 0.18, ease: 'back.out(2.5)' }
+  )
+}
+
+// ── MODAL NAVIGATION & BROWSER/MOBILE BACK BUTTON STACK ────────
+let internalPopCounter = 0
+
+const pushModalHistory = (name: string) => {
+  if (typeof window !== 'undefined') {
+    window.history.pushState({ quickOrderModal: name }, '')
+  }
+}
+
+const popModalHistory = () => {
+  if (typeof window !== 'undefined' && window.history.state?.quickOrderModal) {
+    internalPopCounter++
+    window.history.back()
+  }
+}
+
+const onPopState = (e: PopStateEvent) => {
+  if (internalPopCounter > 0) {
+    internalPopCounter--
+    return
+  }
+
+  // Handle hardware / browser back button in priority order of modal hierarchy:
+  if (isPriceHistoryOpen.value) {
+    isPriceHistoryOpen.value = false
+    return
+  }
+  if (isRateCalcModalOpen.value) {
+    isRateCalcModalOpen.value = false
+    return
+  }
+  if (isCustomItemModalOpen.value) {
+    isCustomItemModalOpen.value = false
+    return
+  }
+  if (isCheckoutModalOpen.value) {
+    // Stepping back from Step 2: return to Cart Drawer
+    isCheckoutModalOpen.value = false
+    isCartDrawerOpen.value = true
+    animateModalEntry('.cart-drawer-card', true)
+    return
+  }
+  if (isCustomerModalOpen.value) {
+    isCustomerModalOpen.value = false
+    return
+  }
+  if (isCartDrawerOpen.value) {
+    isCartDrawerOpen.value = false
+    return
+  }
+}
+
+onMounted(() => {
+  if (typeof window !== 'undefined') {
+    window.addEventListener('popstate', onPopState)
+  }
+  nextTick(() => {
+    gsap.from('.quick-top-nav', {
+      y: -10,
+      opacity: 0,
+      duration: 0.3,
+      ease: 'power2.out'
+    })
+    gsap.from('.quick-order-header', {
+      y: -14,
+      opacity: 0,
+      duration: 0.35,
+      ease: 'power2.out'
+    })
+    animateProductCards()
+  })
+})
+
+onUnmounted(() => {
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('popstate', onPopState)
+  }
+})
+
+// Header / Page Back Button handler
+const handlePageBack = () => {
+  if (isPriceHistoryOpen.value) {
+    closePriceHistory()
+    return
+  }
+  if (isRateCalcModalOpen.value) {
+    closeRateCalcModal()
+    return
+  }
+  if (isCustomItemModalOpen.value) {
+    closeCustomItemModal()
+    return
+  }
+  if (isCheckoutModalOpen.value) {
+    backToCartFromCheckout()
+    return
+  }
+  if (isCustomerModalOpen.value) {
+    closeCustomerModal()
+    return
+  }
+  if (isCartDrawerOpen.value) {
+    closeCartDrawer()
+    return
+  }
+
+  if (totalItemsCount.value > 0) {
+    const confirmLeave = window.confirm(`You have ${totalItemsCount.value} item(s) in your quick cart. Exit without placing order?`)
+    if (!confirmLeave) return
+  }
+  router.push('/dashboard/orders')
+}
+
+// Modal Open / Close wrappers
+const openCartDrawer = () => {
+  isCartDrawerOpen.value = true
+  pushModalHistory('cart')
+  animateModalEntry('.cart-drawer-card', true)
+}
+
+const closeCartDrawer = () => {
+  isCartDrawerOpen.value = false
+  popModalHistory()
+}
+
 // ── CUSTOM NON-CATALOG ITEM MODAL ──────────────────────────────
 const isCustomItemModalOpen = ref(false)
 const customItemForm = ref({
@@ -351,6 +544,13 @@ const openCustomItemModal = (prefillTitle: string = '') => {
     isTaxInclusive: false
   }
   isCustomItemModalOpen.value = true
+  pushModalHistory('custom-item')
+  animateModalEntry('.custom-item-card', false)
+}
+
+const closeCustomItemModal = () => {
+  isCustomItemModalOpen.value = false
+  popModalHistory()
 }
 
 const addCustomItemToCart = () => {
@@ -374,7 +574,8 @@ const addCustomItemToCart = () => {
   }
 
   isCustomItemModalOpen.value = false
-  isCartDrawerOpen.value = true
+  popModalHistory()
+  openCartDrawer()
 }
 
 // ── SQ.FT RATE CALCULATOR MODAL ────────────────────────────────
@@ -402,6 +603,14 @@ const openRateCalc = (targetId: string | null = null, defaultTitle: string = 'Sh
   rateCalcState.value.width = 4
   rateCalcState.value.sqftRate = 65
   isRateCalcModalOpen.value = true
+  pushModalHistory('rate-calc')
+  animateModalEntry('.rate-calc-card', false)
+}
+
+const closeRateCalcModal = () => {
+  isRateCalcModalOpen.value = false
+  rateCalcTargetId.value = null
+  popModalHistory()
 }
 
 const applyCalculatedRate = () => {
@@ -412,8 +621,7 @@ const applyCalculatedRate = () => {
     cart.value[rateCalcTargetId.value].customPrice = rate
     cart.value[rateCalcTargetId.value].applyLastPrice = false
   }
-  isRateCalcModalOpen.value = false
-  rateCalcTargetId.value = null
+  closeRateCalcModal()
 }
 
 // ── PRICE HISTORY MODAL ────────────────────────────────────────
@@ -427,6 +635,12 @@ const openPriceHistory = (product: any) => {
   phProductName.value = product.name
   phProductSku.value = product.sku || ''
   isPriceHistoryOpen.value = true
+  pushModalHistory('price-history')
+}
+
+const closePriceHistory = () => {
+  isPriceHistoryOpen.value = false
+  popModalHistory()
 }
 
 const onApplyPriceHistory = (rate: number) => {
@@ -440,13 +654,24 @@ const onApplyPriceHistory = (rate: number) => {
       cart.value[phProductId.value].applyLastPrice = true
     }
   }
-  isPriceHistoryOpen.value = false
+  closePriceHistory()
 }
 
 // ── CUSTOMER SELECTOR MODAL ────────────────────────────────────
 const isCustomerModalOpen = ref(false)
 const customerModalTab = ref<'db' | 'custom'>('db')
 const customerSearchQuery = ref('')
+
+const openCustomerModal = () => {
+  isCustomerModalOpen.value = true
+  pushModalHistory('customer')
+  animateModalEntry('.customer-modal-card', false)
+}
+
+const closeCustomerModal = () => {
+  isCustomerModalOpen.value = false
+  popModalHistory()
+}
 
 const filteredDbCustomers = computed(() => {
   const q = customerSearchQuery.value.trim().toLowerCase()
@@ -468,7 +693,7 @@ const selectDbCustomer = (cust: any) => {
   if (cust.paymentTerms) {
     paymentTerms.value = cust.paymentTerms
   }
-  isCustomerModalOpen.value = false
+  closeCustomerModal()
 }
 
 const saveCustomCustomer = () => {
@@ -480,7 +705,7 @@ const saveCustomCustomer = () => {
   selectedCustomerId.value = ''
   deliveryAddress.value = customCustomer.value.city ? `${customCustomer.value.city} (Site Delivery)` : 'Counter Pickup'
   paymentTerms.value = 'Immediate / Cheque'
-  isCustomerModalOpen.value = false
+  closeCustomerModal()
 }
 
 // ── STEP 2: DELIVERY & CHECKOUT ────────────────────────────────
@@ -499,7 +724,45 @@ const proceedToCheckout = () => {
   }
   isCartDrawerOpen.value = false
   isCheckoutModalOpen.value = true
+  pushModalHistory('checkout')
+  animateModalEntry('.checkout-modal-card', false)
 }
+
+const backToCartFromCheckout = () => {
+  isCheckoutModalOpen.value = false
+  isCartDrawerOpen.value = true
+  animateModalEntry('.cart-drawer-card', true)
+}
+
+const handleAddToCart = (product: any, change: number = 1, event?: MouseEvent) => {
+  if (event?.currentTarget) animateButtonTap(event.currentTarget)
+  addToCart(product, change)
+}
+
+// Watchers for GSAP reactive animations
+watch(selectedCategory, () => {
+  animateProductCards()
+})
+
+watch(() => totalItemsCount.value > 0, (hasItems, wasHaving) => {
+  if (hasItems && !wasHaving) {
+    animateCartPill()
+  }
+})
+
+watch(() => cartTotals.value.grandTotal, (newVal, oldVal) => {
+  if (newVal !== oldVal) {
+    nextTick(() => {
+      const totalEl = document.querySelector('.cart-pill-total')
+      if (totalEl) {
+        gsap.fromTo(totalEl,
+          { scale: 1.15 },
+          { scale: 1, duration: 0.25, ease: 'power2.out' }
+        )
+      }
+    })
+  }
+})
 
 const confirmAndPlaceOrder = async () => {
   if (isSubmitting.value) return
@@ -566,8 +829,10 @@ const confirmAndPlaceOrder = async () => {
       body: payload
     })
 
+    isOrderCompleted.value = true
     showSaved('Order booked successfully!')
     isCheckoutModalOpen.value = false
+    popModalHistory()
     cart.value = {}
 
     // Redirect to orders list
@@ -592,12 +857,33 @@ const confirmAndPlaceOrder = async () => {
 
   <div v-else class="max-w-4xl mx-auto space-y-4 pb-36 sm:pb-32">
     
+    <!-- Top Action / Back Navigation Bar -->
+    <div class="quick-top-nav flex items-center justify-between gap-3 pt-1">
+      <button 
+        @click="handlePageBack" 
+        class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold transition-all shadow-2xs cursor-pointer active:scale-95"
+        title="Back to Orders List"
+      >
+        <ArrowLeft class="w-4 h-4 text-slate-500" />
+        <span>Back to Orders</span>
+      </button>
+
+      <div class="flex items-center gap-2">
+        <span class="text-[11px] font-mono font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full border border-slate-200">
+          {{ filteredProducts.length }} Products
+        </span>
+        <span class="text-[11px] font-bold bg-blue-50 text-blue-800 border border-blue-200 px-2 py-0.5 rounded-full">
+          Admin Beta
+        </span>
+      </div>
+    </div>
+
     <!-- Customer & Catalog Search Bar -->
-    <div class="bg-[#1b3b5f] text-white rounded-2xl p-3 sm:p-4 shadow-lg space-y-3">
+    <div class="quick-order-header bg-[#1b3b5f] text-white rounded-2xl p-3 sm:p-4 shadow-lg space-y-3">
       
       <!-- Customer / Party Context Banner -->
-      <div class="bg-blue-950/70 border border-blue-400/30 rounded-xl p-2.5 sm:p-3 flex items-center justify-between gap-3 text-xs">
-        <div class="flex items-center gap-3 min-w-0 flex-1 cursor-pointer" @click="isCustomerModalOpen = true">
+      <div class="customer-context-banner bg-blue-950/70 border border-blue-400/30 rounded-xl p-2.5 sm:p-3 flex items-center justify-between gap-3 text-xs">
+        <div class="flex items-center gap-3 min-w-0 flex-1 cursor-pointer" @click="openCustomerModal">
           <div class="w-10 h-10 rounded-xl bg-blue-500/20 text-amber-400 border border-blue-400/30 flex items-center justify-center shrink-0 shadow-inner">
             <User class="w-5 h-5" />
           </div>
@@ -627,7 +913,7 @@ const confirmAndPlaceOrder = async () => {
           </span>
 
           <button 
-            @click="isCustomerModalOpen = true"
+            @click="openCustomerModal"
             class="h-7 px-2.5 rounded-lg bg-white/10 hover:bg-white/20 active:bg-white/30 text-blue-100 border border-white/20 text-[11px] font-bold flex items-center gap-1 transition-colors cursor-pointer"
           >
             <span>Change</span>
@@ -695,7 +981,7 @@ const confirmAndPlaceOrder = async () => {
         <div 
           v-for="item in filteredProducts" 
           :key="item.id"
-          class="bg-white rounded-2xl p-3 sm:p-4 border border-slate-200/90 shadow-2xs hover:border-slate-300 transition-all flex items-center justify-between gap-3"
+          class="quick-product-card bg-white rounded-2xl p-3 sm:p-4 border border-slate-200/90 shadow-2xs hover:border-slate-300 transition-all flex items-center justify-between gap-3"
         >
           <div class="flex-1 min-w-0">
             <!-- Brand & Badges -->
@@ -767,7 +1053,7 @@ const confirmAndPlaceOrder = async () => {
               class="flex items-center bg-emerald-50 border border-emerald-300 rounded-xl p-1 gap-1 shadow-2xs"
             >
               <button 
-                @click="addToCart(item, -1)" 
+                @click="handleAddToCart(item, -1, $event)" 
                 class="w-8 h-8 rounded-lg bg-white text-emerald-800 hover:bg-emerald-100 flex items-center justify-center text-sm font-bold transition-colors cursor-pointer"
               >
                 <Minus class="w-4 h-4" />
@@ -783,7 +1069,7 @@ const confirmAndPlaceOrder = async () => {
               />
 
               <button 
-                @click="addToCart(item, 1)" 
+                @click="handleAddToCart(item, 1, $event)" 
                 class="w-8 h-8 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 flex items-center justify-center text-sm font-bold transition-colors cursor-pointer"
               >
                 <Plus class="w-4 h-4" />
@@ -792,7 +1078,7 @@ const confirmAndPlaceOrder = async () => {
 
             <button 
               v-else
-              @click="addToCart(item, 1)"
+              @click="handleAddToCart(item, 1, $event)"
               class="h-9 px-4 rounded-xl bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white border border-blue-200 hover:border-blue-600 text-xs sm:text-sm font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs active:scale-95"
             >
               <Plus class="w-4 h-4" />
@@ -819,11 +1105,11 @@ const confirmAndPlaceOrder = async () => {
     <!-- ========================================================================= -->
     <div 
       v-if="totalItemsCount > 0"
-      class="fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] md:bottom-6 inset-x-4 max-w-lg mx-auto z-[450]"
+      class="floating-cart-pill fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] md:bottom-6 inset-x-4 max-w-lg mx-auto z-[450]"
     >
       <div class="bg-slate-900 text-white rounded-2xl p-3 shadow-2xl border border-slate-700/80 flex items-center justify-between gap-3 backdrop-blur-md animate-in slide-in-from-bottom-3 duration-200">
         
-        <div class="flex items-center gap-2.5 flex-1 min-w-0 cursor-pointer" @click="isCartDrawerOpen = true">
+        <div class="flex items-center gap-2.5 flex-1 min-w-0 cursor-pointer" @click="openCartDrawer">
           <div class="relative">
             <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-md">
               <ShoppingBag class="w-5 h-5" />
@@ -835,7 +1121,7 @@ const confirmAndPlaceOrder = async () => {
 
           <div class="min-w-0">
             <div class="text-[10px] text-slate-400 font-medium leading-none">ORDER TOTAL</div>
-            <div class="text-base sm:text-lg font-black font-mono text-emerald-400 tracking-tight">
+            <div class="cart-pill-total text-base sm:text-lg font-black font-mono text-emerald-400 tracking-tight">
               ₹{{ cartTotals.grandTotal.toLocaleString('en-IN') }}
             </div>
           </div>
@@ -843,7 +1129,7 @@ const confirmAndPlaceOrder = async () => {
 
         <div class="flex items-center gap-2 shrink-0">
           <button 
-            @click="isCartDrawerOpen = true"
+            @click="openCartDrawer"
             class="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs sm:text-sm font-semibold text-white transition-colors cursor-pointer"
           >
             Review Cart
@@ -867,14 +1153,21 @@ const confirmAndPlaceOrder = async () => {
       <div 
         v-if="isCartDrawerOpen" 
         class="fixed inset-0 bg-slate-900/60 z-[850] backdrop-blur-xs flex flex-col justify-end sm:justify-center sm:items-center p-0 sm:p-4"
-        @click.self="isCartDrawerOpen = false"
+        @click.self="closeCartDrawer"
       >
-        <div class="bg-white rounded-t-3xl sm:rounded-3xl max-w-xl w-full mx-auto max-h-[85vh] sm:max-h-[88vh] flex flex-col shadow-2xl border border-slate-200 animate-in slide-in-from-bottom sm:zoom-in-95 duration-200 overflow-hidden">
+        <div class="cart-drawer-card bg-white rounded-t-3xl sm:rounded-3xl max-w-xl w-full mx-auto max-h-[85vh] sm:max-h-[88vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
           
           <!-- Header -->
           <div class="p-3.5 border-b border-slate-100 flex items-center justify-between shrink-0">
             <div class="flex items-center gap-2">
-              <div class="w-8 h-8 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center font-bold text-xs">
+              <button 
+                @click="closeCartDrawer" 
+                class="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 flex items-center justify-center text-xs cursor-pointer transition-colors sm:hidden"
+                title="Back to Catalog"
+              >
+                <ArrowLeft class="w-4 h-4" />
+              </button>
+              <div class="w-8 h-8 rounded-xl bg-blue-50 text-blue-700 sm:flex hidden items-center justify-center font-bold text-xs">
                 <ShoppingBag class="w-4 h-4" />
               </div>
               <div>
@@ -885,8 +1178,9 @@ const confirmAndPlaceOrder = async () => {
               </div>
             </div>
             <button 
-              @click="isCartDrawerOpen = false" 
+              @click="closeCartDrawer" 
               class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:text-slate-800 flex items-center justify-center text-xs cursor-pointer"
+              title="Close drawer"
             >
               <X class="w-4 h-4" />
             </button>
@@ -1073,13 +1367,24 @@ const confirmAndPlaceOrder = async () => {
               </div>
             </div>
 
-            <button 
-              @click="proceedToCheckout"
-              class="w-full py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 cursor-pointer"
-            >
-              <span>Proceed to Delivery & Logistics</span>
-              <ChevronDown class="w-4 h-4 rotate-270" />
-            </button>
+            <div class="flex items-center gap-2 pt-1">
+              <button 
+                type="button"
+                @click="closeCartDrawer" 
+                class="py-3.5 px-4 rounded-xl border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-all shadow-2xs active:scale-95 cursor-pointer shrink-0"
+                title="Back to Catalog"
+              >
+                <ArrowLeft class="w-4 h-4 text-slate-500" />
+                <span class="hidden sm:inline">Back to</span> <span>Catalog</span>
+              </button>
+              <button 
+                @click="proceedToCheckout"
+                class="flex-1 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 cursor-pointer"
+              >
+                <span>Proceed to Delivery & Logistics</span>
+                <ChevronDown class="w-4 h-4 rotate-270" />
+              </button>
+            </div>
           </div>
 
         </div>
@@ -1093,20 +1398,28 @@ const confirmAndPlaceOrder = async () => {
       <div 
         v-if="isCustomerModalOpen"
         class="fixed inset-0 bg-slate-900/60 z-[900] backdrop-blur-xs flex items-center justify-center p-4 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))]"
-        @click.self="isCustomerModalOpen = false"
+        @click.self="closeCustomerModal"
       >
-        <div class="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl border border-slate-200 flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-150">
+        <div class="customer-modal-card bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl border border-slate-200 flex flex-col max-h-[85vh]">
           
           <!-- Header -->
           <div class="p-3.5 bg-[#1b3b5f] text-white flex items-center justify-between shrink-0">
             <div class="flex items-center gap-2">
+              <button 
+                v-if="customerModalTab === 'custom'" 
+                @click="customerModalTab = 'db'" 
+                class="w-7 h-7 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-xs cursor-pointer transition-colors mr-0.5"
+                title="Back to Database list"
+              >
+                <ArrowLeft class="w-3.5 h-3.5" />
+              </button>
               <Building2 class="w-4 h-4 text-amber-400" />
               <div>
                 <h4 class="font-bold text-xs text-white">Select Customer / Party</h4>
                 <p class="text-[10px] text-blue-200">Choose from BUSY or add custom walk-in</p>
               </div>
             </div>
-            <button @click="isCustomerModalOpen = false" class="w-7 h-7 rounded-full bg-white/10 text-white hover:bg-white/20 flex items-center justify-center text-xs cursor-pointer">
+            <button @click="closeCustomerModal" class="w-7 h-7 rounded-full bg-white/10 text-white hover:bg-white/20 flex items-center justify-center text-xs cursor-pointer">
               <X class="w-4 h-4" />
             </button>
           </div>
@@ -1202,12 +1515,21 @@ const confirmAndPlaceOrder = async () => {
                 </div>
               </div>
 
-              <button 
-                @click="saveCustomCustomer"
-                class="w-full py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-md transition-all cursor-pointer mt-2"
-              >
-                Confirm & Select Custom Customer
-              </button>
+              <div class="flex items-center gap-2 mt-2">
+                <button 
+                  type="button"
+                  @click="customerModalTab = 'db'"
+                  class="py-2.5 px-3.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 font-bold text-xs transition-all cursor-pointer shrink-0"
+                >
+                  Back
+                </button>
+                <button 
+                  @click="saveCustomCustomer"
+                  class="flex-1 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-md transition-all cursor-pointer"
+                >
+                  Confirm & Select Custom Customer
+                </button>
+              </div>
             </div>
 
           </div>
@@ -1223,9 +1545,9 @@ const confirmAndPlaceOrder = async () => {
       <div 
         v-if="isCustomItemModalOpen"
         class="fixed inset-0 bg-slate-900/60 z-[900] backdrop-blur-xs flex items-center justify-center p-4 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))]"
-        @click.self="isCustomItemModalOpen = false"
+        @click.self="closeCustomItemModal"
       >
-        <div class="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl border border-slate-200 flex flex-col animate-in zoom-in-95 duration-150">
+        <div class="custom-item-card bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl border border-slate-200 flex flex-col">
           
           <div class="p-3.5 bg-amber-600 text-white flex items-center justify-between shrink-0">
             <div class="flex items-center gap-2">
@@ -1235,7 +1557,7 @@ const confirmAndPlaceOrder = async () => {
                 <p class="text-[10px] text-amber-100">Special sizes, cut pieces, or manual billing</p>
               </div>
             </div>
-            <button @click="isCustomItemModalOpen = false" class="w-7 h-7 rounded-full bg-white/10 text-white hover:bg-white/20 flex items-center justify-center text-xs cursor-pointer">
+            <button @click="closeCustomItemModal" class="w-7 h-7 rounded-full bg-white/10 text-white hover:bg-white/20 flex items-center justify-center text-xs cursor-pointer">
               <X class="w-4 h-4" />
             </button>
           </div>
@@ -1343,12 +1665,22 @@ const confirmAndPlaceOrder = async () => {
               </div>
             </div>
 
-            <button 
-              @click="addCustomItemToCart"
-              class="w-full py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-md transition-all cursor-pointer mt-2"
-            >
-              Add Custom Item to Cart
-            </button>
+            <div class="flex items-center gap-2 mt-2">
+              <button 
+                type="button"
+                @click="closeCustomItemModal"
+                class="py-2.5 px-4 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 font-bold text-xs sm:text-sm transition-all cursor-pointer shrink-0"
+              >
+                Back
+              </button>
+              <button 
+                @click="addCustomItemToCart"
+                class="flex-1 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs sm:text-sm shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <Plus class="w-4 h-4" />
+                <span>Add Custom Item</span>
+              </button>
+            </div>
           </div>
 
         </div>
@@ -1362,9 +1694,9 @@ const confirmAndPlaceOrder = async () => {
       <div 
         v-if="isRateCalcModalOpen"
         class="fixed inset-0 bg-slate-900/60 z-[920] backdrop-blur-xs flex items-center justify-center p-4 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))]"
-        @click.self="isRateCalcModalOpen = false"
+        @click.self="closeRateCalcModal"
       >
-        <div class="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl border border-slate-200 flex flex-col animate-in zoom-in-95 duration-150">
+        <div class="rate-calc-card bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl border border-slate-200 flex flex-col">
           
           <div class="p-3.5 bg-[#1b3b5f] text-white flex items-center justify-between shrink-0">
             <div class="flex items-center gap-2">
@@ -1374,7 +1706,7 @@ const confirmAndPlaceOrder = async () => {
                 <p class="text-[10px] text-blue-200 truncate max-w-[200px]">{{ rateCalcState.title }}</p>
               </div>
             </div>
-            <button @click="isRateCalcModalOpen = false" class="w-7 h-7 rounded-full bg-white/10 text-white hover:bg-white/20 flex items-center justify-center text-xs cursor-pointer">
+            <button @click="closeRateCalcModal" class="w-7 h-7 rounded-full bg-white/10 text-white hover:bg-white/20 flex items-center justify-center text-xs cursor-pointer">
               <X class="w-4 h-4" />
             </button>
           </div>
@@ -1438,12 +1770,22 @@ const confirmAndPlaceOrder = async () => {
               <div class="text-xs text-emerald-600/80 font-mono">{{ calculatedSheetArea }} sq.ft × ₹{{ rateCalcState.sqftRate }} / sq.ft</div>
             </div>
 
-            <button 
-              @click="applyCalculatedRate"
-              class="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm transition-all shadow-md cursor-pointer active:scale-95"
-            >
-              Apply Rate to Item
-            </button>
+            <div class="flex items-center gap-2">
+              <button 
+                type="button"
+                @click="closeRateCalcModal"
+                class="py-3 px-4 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 font-bold text-xs sm:text-sm transition-all cursor-pointer shrink-0"
+              >
+                Back
+              </button>
+              <button 
+                @click="applyCalculatedRate"
+                class="flex-1 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm transition-all shadow-md cursor-pointer active:scale-95 flex items-center justify-center gap-1.5"
+              >
+                <Check class="w-4 h-4" />
+                <span>Apply Rate to Item</span>
+              </button>
+            </div>
           </div>
 
         </div>
@@ -1470,15 +1812,15 @@ const confirmAndPlaceOrder = async () => {
       <div 
         v-if="isCheckoutModalOpen" 
         class="fixed inset-0 bg-slate-900/60 z-[900] backdrop-blur-xs flex flex-col justify-end sm:justify-center sm:items-center p-0 sm:p-4 md:p-6"
-        @click.self="isCheckoutModalOpen = false; isCartDrawerOpen = true"
+        @click.self="backToCartFromCheckout"
       >
-        <div class="bg-white rounded-t-3xl sm:rounded-3xl max-w-2xl w-full mx-auto max-h-[92vh] sm:max-h-[90vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-150">
+        <div class="checkout-modal-card bg-white rounded-t-3xl sm:rounded-3xl max-w-2xl w-full mx-auto max-h-[92vh] sm:max-h-[90vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
           
           <!-- Header -->
           <div class="p-3.5 sm:p-4 border-b border-slate-200 flex items-center justify-between shrink-0 bg-slate-50/80">
             <div class="flex items-center gap-2.5">
               <button 
-                @click="isCheckoutModalOpen = false; isCartDrawerOpen = true" 
+                @click="backToCartFromCheckout" 
                 class="w-8 h-8 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 flex items-center justify-center text-xs cursor-pointer shadow-2xs transition-colors"
                 title="Back to items"
               >
@@ -1494,7 +1836,7 @@ const confirmAndPlaceOrder = async () => {
                 Ready to Book
               </span>
               <button 
-                @click="isCheckoutModalOpen = false; isCartDrawerOpen = true" 
+                @click="backToCartFromCheckout" 
                 class="w-8 h-8 rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center text-xs cursor-pointer transition-colors sm:flex hidden"
                 title="Close"
               >
@@ -1670,11 +2012,20 @@ const confirmAndPlaceOrder = async () => {
           </div>
 
           <!-- Sticky Confirmation Footer -->
-          <div class="p-3.5 sm:p-4 pb-[calc(1.25rem+env(safe-area-inset-bottom,0px))] border-t border-slate-200 bg-slate-50/80 shrink-0">
+          <div class="p-3.5 sm:p-4 pb-[calc(1.25rem+env(safe-area-inset-bottom,0px))] border-t border-slate-200 bg-slate-50/80 shrink-0 flex items-center gap-2.5">
+            <button 
+              type="button"
+              @click="backToCartFromCheckout"
+              class="py-3.5 px-4 rounded-2xl bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-all shadow-2xs active:scale-95 cursor-pointer shrink-0"
+              title="Return to Cart Review"
+            >
+              <ArrowLeft class="w-4 h-4 text-slate-500" />
+              <span>Back to Cart</span>
+            </button>
             <button 
               @click="confirmAndPlaceOrder" 
               :disabled="isSubmitting"
-              class="w-full py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-400 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all cursor-pointer"
+              class="flex-1 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-400 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all cursor-pointer"
             >
               <Loader2 v-if="isSubmitting" class="w-4 h-4 animate-spin" />
               <CheckCircle2 v-else class="w-4 h-4" />
