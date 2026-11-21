@@ -591,56 +591,48 @@ const confirmAndPlaceOrder = async () => {
 
   <div v-else class="max-w-4xl mx-auto space-y-4 pb-36 sm:pb-32">
     
-    <!-- Top Header Bar (Admin Beta) -->
-    <div class="bg-[#1b3b5f] text-white rounded-2xl p-4 shadow-lg space-y-3">
-      <div class="flex items-center justify-between gap-3">
-        <div class="flex items-center gap-2.5">
-          <div class="w-9 h-9 rounded-xl bg-blue-500/20 text-blue-200 border border-blue-400/30 flex items-center justify-center shrink-0">
-            <Zap class="w-5 h-5 text-amber-400" />
-          </div>
-          <div>
-            <div class="flex items-center gap-2">
-              <h2 class="text-base sm:text-lg font-black tracking-tight">Stock-to-Cart Quick Order</h2>
-              <span class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-amber-400 text-amber-950">ADMIN BETA</span>
-            </div>
-            <p class="text-xs text-blue-200 mt-0.5">
-              Live Warehouse Stock • {{ rawProducts?.length || 0 }} SKUs Active
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Customer / Party Context Bar -->
-      <div class="bg-blue-950/70 border border-blue-400/30 rounded-xl p-2.5 flex items-center justify-between gap-3 text-xs">
-        <div class="flex items-center gap-2.5 min-w-0 flex-1 cursor-pointer" @click="isCustomerModalOpen = true">
-          <div class="w-8 h-8 rounded-lg bg-blue-500/20 text-amber-400 flex items-center justify-center shrink-0">
-            <User class="w-4 h-4" />
+    <!-- Customer & Catalog Search Bar -->
+    <div class="bg-[#1b3b5f] text-white rounded-2xl p-3 sm:p-4 shadow-lg space-y-3">
+      
+      <!-- Customer / Party Context Banner -->
+      <div class="bg-blue-950/70 border border-blue-400/30 rounded-xl p-2.5 sm:p-3 flex items-center justify-between gap-3 text-xs">
+        <div class="flex items-center gap-3 min-w-0 flex-1 cursor-pointer" @click="isCustomerModalOpen = true">
+          <div class="w-10 h-10 rounded-xl bg-blue-500/20 text-amber-400 border border-blue-400/30 flex items-center justify-center shrink-0 shadow-inner">
+            <User class="w-5 h-5" />
           </div>
           <div class="min-w-0 flex-1">
-            <div class="flex items-center gap-2 flex-wrap">
-              <span class="font-bold text-white text-xs sm:text-sm break-words leading-snug">
-                {{ isCustomCustomer ? customCustomer.name : (selectedCustomer?.company || selectedCustomer?.name || 'Select Customer') }}
+            <h2 class="font-bold text-white text-xs sm:text-sm md:text-base break-words leading-snug">
+              {{ isCustomCustomer ? customCustomer.name : (selectedCustomer?.company || selectedCustomer?.name || 'Select Customer') }}
+            </h2>
+            <div class="flex items-center gap-2 text-[10px] text-blue-200 mt-0.5 flex-wrap">
+              <span v-if="selectedCustomer?.city || customCustomer.city" class="flex items-center gap-1">
+                <MapPin class="w-3 h-3 text-blue-300 shrink-0" />
+                <span>{{ isCustomCustomer ? customCustomer.city : selectedCustomer?.city }}</span>
               </span>
-              <span 
-                class="text-[9px] font-bold px-1.5 py-0.5 rounded shrink-0 whitespace-nowrap"
-                :class="isCustomCustomer ? 'bg-amber-400 text-amber-950' : 'bg-blue-400/20 text-blue-200 border border-blue-400/30'"
-              >
-                {{ isCustomCustomer ? 'Custom Walk-In' : 'BUSY Customer' }}
+              <span v-if="!isCustomCustomer && customerCreditInfo.status === 'OVERDUE'" class="text-amber-300 font-bold">
+                • Overdue
               </span>
             </div>
-            <p v-if="selectedCustomer?.city || customCustomer.city" class="text-[10px] text-blue-300 mt-0.5">
-              {{ isCustomCustomer ? customCustomer.city : selectedCustomer?.city }}
-            </p>
           </div>
         </div>
 
-        <button 
-          @click="isCustomerModalOpen = true"
-          class="bg-white/10 hover:bg-white/20 text-blue-100 rounded-lg py-1.5 px-3 text-xs border border-white/20 font-bold flex items-center gap-1.5 shrink-0 transition-colors cursor-pointer"
-        >
-          <span>Change</span>
-          <ChevronDown class="w-3.5 h-3.5 text-blue-300" />
-        </button>
+        <!-- Right Side: Badge ABOVE Change Button -->
+        <div class="flex flex-col items-end gap-1.5 shrink-0">
+          <span 
+            class="text-[9px] font-bold px-2 py-0.5 rounded-full shrink-0 whitespace-nowrap"
+            :class="isCustomCustomer ? 'bg-amber-400 text-amber-950' : 'bg-blue-400/20 text-blue-200 border border-blue-400/30'"
+          >
+            {{ isCustomCustomer ? 'Custom Walk-In' : 'BUSY Customer' }}
+          </span>
+
+          <button 
+            @click="isCustomerModalOpen = true"
+            class="h-7 px-2.5 rounded-lg bg-white/10 hover:bg-white/20 active:bg-white/30 text-blue-100 border border-white/20 text-[11px] font-bold flex items-center gap-1 transition-colors cursor-pointer"
+          >
+            <span>Change</span>
+            <ChevronDown class="w-3.5 h-3.5 text-blue-300" />
+          </button>
+        </div>
       </div>
 
       <!-- Search & Custom Item Quick Bar -->
