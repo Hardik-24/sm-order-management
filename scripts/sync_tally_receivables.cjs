@@ -416,12 +416,38 @@ async function getActiveCompany() {
   const toDate = endMatch ? formatTallyDate(endMatch[1].trim()) : '';
 
   // Safety Guard: Ensure nobody accidentally syncs the wrong company into OMS
-  const expectedKeyword = process.env.TALLY_EXPECTED_COMPANY || 'SRI LAKSHMI PLYWOODS';
-  if (!name.toUpperCase().includes(expectedKeyword.toUpperCase())) {
-    throw new Error(`SAFETY BLOCK: Currently open company in Tally is "${name}", which does NOT match "${expectedKeyword}"! Sync aborted to prevent overwriting OMS with wrong company data.`);
+  let expectedCompany = process.env.TALLY_EXPECTED_COMPANY;
+  if (!expectedCompany) {
+    try {
+      const fs = require('fs');
+      const path = require('path');
+      const candidates = [
+        path.join(__dirname, '..', 'config.json'),
+        path.join(process.cwd(), 'config.json'),
+        path.join(process.cwd(), 'sync_agent', 'config.json')
+      ];
+      for (const c of candidates) {
+        if (fs.existsSync(c)) {
+          const cfg = JSON.parse(fs.readFileSync(c, 'utf8'));
+          if (cfg && cfg.TallyCompanyName) {
+            expectedCompany = cfg.TallyCompanyName;
+            break;
+          }
+        }
+      }
+    } catch (_) {}
+  }
+  if (!expectedCompany) {
+    expectedCompany = 'SRI LAKSHMI PLYWOODS 2627';
   }
 
-  return { name, fromDate, toDate };
+  const cleanExpected = expectedCompany.trim().toUpperCase();
+  const cleanActive = name.trim().toUpperCase();
+  if (cleanActive !== cleanExpected && !cleanActive.includes(cleanExpected) && !cleanExpected.includes(cleanActive)) {
+    throw new Error(`SAFETY BLOCK: Currently open company in Tally is "${name}", but Sync Agent expects "${expectedCompany}"! Sync aborted to protect OMS data.`);
+  }
+
+  return { name, fromDate, toDate, expectedCompany };
 }
 
 async function syncTally() {
@@ -439,6 +465,7 @@ async function syncTally() {
     const company = await getActiveCompany();
     console.log(`\n====================================================`);
     console.log(`[✓] Active Tally Company : ${company.name}`);
+    console.log(`[✓] Security Match Check : PASSED (Matches "${company.expectedCompany}")`);
     if (company.fromDate && company.toDate) {
       console.log(`    Financial Period     : ${company.fromDate} to ${company.toDate}`);
     }

@@ -32,6 +32,7 @@ namespace SMFlowSyncAgent
         public bool IsStandby { get; set; }
         public string TallyHost { get; set; }
         public int TallyPort { get; set; }
+        public string TallyCompanyName { get; set; }
 
         public AgentConfig()
         {
@@ -47,6 +48,7 @@ namespace SMFlowSyncAgent
             IsStandby = false;
             TallyHost = "127.0.0.1";
             TallyPort = 9000;
+            TallyCompanyName = "SRI LAKSHMI PLYWOODS 2627";
         }
 
         public static string GetConfigPath()
@@ -312,6 +314,7 @@ namespace SMFlowSyncAgent
         private Button btnClaimPrimary;
         private CheckBox chkStandbyMode;
         private CheckBox chkStartWithWindows;
+        private TextBox txtTallyCompanyName;
         private TextBox txtTallyHost;
         private TextBox txtTallyPort;
         private Button btnSaveSettings;
@@ -802,6 +805,7 @@ namespace SMFlowSyncAgent
             tabSettings.Controls.Add(lblTallyInfo);
             y += 24;
 
+            AddFolderSetting("Expected Tally Company Name (Security Safety Lock):", ref txtTallyCompanyName, config.TallyCompanyName ?? "SRI LAKSHMI PLYWOODS 2627", false, ref y);
             AddFolderSetting("Tally Prime Host (Default: 127.0.0.1):", ref txtTallyHost, config.TallyHost ?? "127.0.0.1", false, ref y);
             AddFolderSetting("Tally Prime Port (Default: 9000):", ref txtTallyPort, (config.TallyPort > 0 ? config.TallyPort : 9000).ToString(), false, ref y);
 
@@ -897,6 +901,7 @@ namespace SMFlowSyncAgent
                 config.StartWithWindows = chkStartWithWindows.Checked;
                 config.IsStandby = chkStandbyMode != null && chkStandbyMode.Checked;
 
+                if (txtTallyCompanyName != null) config.TallyCompanyName = string.IsNullOrEmpty(txtTallyCompanyName.Text.Trim()) ? "SRI LAKSHMI PLYWOODS 2627" : txtTallyCompanyName.Text.Trim();
                 if (txtTallyHost != null) config.TallyHost = string.IsNullOrEmpty(txtTallyHost.Text.Trim()) ? "127.0.0.1" : txtTallyHost.Text.Trim();
                 if (txtTallyPort != null)
                 {
@@ -1819,9 +1824,10 @@ namespace SMFlowSyncAgent
                     psi.RedirectStandardOutput = true;
                     psi.RedirectStandardError = true;
 
-                    // Pass host and port as environment variables
+                    // Pass host, port, and expected company as environment variables
                     psi.EnvironmentVariables["TALLY_HOST"] = host;
                     psi.EnvironmentVariables["TALLY_PORT"] = port.ToString();
+                    psi.EnvironmentVariables["TALLY_EXPECTED_COMPANY"] = string.IsNullOrEmpty(config.TallyCompanyName) ? "SRI LAKSHMI PLYWOODS 2627" : config.TallyCompanyName;
 
                     int exitCode = 0;
                     bool hasScriptError = false;
