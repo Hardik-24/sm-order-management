@@ -443,8 +443,8 @@ async function getActiveCompany() {
 
   const cleanExpected = expectedCompany.trim().toUpperCase();
   const cleanActive = name.trim().toUpperCase();
-  if (cleanActive !== cleanExpected && !cleanActive.includes(cleanExpected) && !cleanExpected.includes(cleanActive)) {
-    throw new Error(`SAFETY BLOCK: Currently open company in Tally is "${name}", but Sync Agent expects "${expectedCompany}"! Sync aborted to protect OMS data.`);
+  if (cleanActive !== cleanExpected) {
+    throw new Error(`SAFETY BLOCK: Company mismatch! Currently open company in Tally is "${name}", but Sync Agent is strictly configured for "${expectedCompany}"! Sync aborted to protect OMS data.`);
   }
 
   return { name, fromDate, toDate, expectedCompany };
