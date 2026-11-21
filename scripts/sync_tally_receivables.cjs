@@ -74,7 +74,7 @@ function parseSalesVouchers(xml) {
   return vouchers;
 }
 
-function parseMergedDebtorData(ledgersXml, billsXml) {
+function parseMergedDebtorData(ledgersXml, billsXml, companyName) {
   const partiesMap = new Map();
 
   // 1. Parse Ledgers (Billed, Paid, Net Pending)
@@ -203,7 +203,7 @@ function parseMergedDebtorData(ledgersXml, billsXml) {
 
   return {
     source: 'Tally Prime Dual Interface (Debtor Financials + Bills Receivable)',
-    company: 'SRI LAKSHMI PLYWOODS 2627',
+    company: companyName || 'SRI LAKSHMI PLYWOODS 2627',
     syncedAt: new Date().toISOString(),
     summary: {
       totalBilled: Math.round(sumBilled * 100) / 100,
@@ -225,7 +225,7 @@ function parseMergedDebtorData(ledgersXml, billsXml) {
   };
 }
 
-function parseMergedCreditorData(ledgersXml, billsXml) {
+function parseMergedCreditorData(ledgersXml, billsXml, companyName) {
   const partiesMap = new Map();
 
   // 1. Parse Creditor Ledgers (Purchases, Payments, Net Pending Payable)
@@ -353,7 +353,7 @@ function parseMergedCreditorData(ledgersXml, billsXml) {
 
   return {
     source: 'Tally Prime Dual Interface (Creditor Financials + Bills Payable)',
-    company: 'SRI LAKSHMI PLYWOODS 2627',
+    company: companyName || 'SRI LAKSHMI PLYWOODS 2627',
     syncedAt: new Date().toISOString(),
     summary: {
       totalPurchased: Math.round(sumPurchases * 100) / 100,
@@ -376,6 +376,48 @@ function parseMergedCreditorData(ledgersXml, billsXml) {
   };
 }
 
+function formatTallyDate(yyyymmdd) {
+  if (!yyyymmdd || yyyymmdd.length !== 8) return yyyymmdd;
+  const y = yyyymmdd.substring(0, 4);
+  const m = yyyymmdd.substring(4, 6);
+  const d = yyyymmdd.substring(6, 8);
+  return `${d}-${m}-${y}`;
+}
+
+async function getActiveCompany() {
+  const xml = `<ENVELOPE>
+    <HEADER><VERSION>1</VERSION><TALLYREQUEST>Export</TALLYREQUEST><TYPE>Collection</TYPE><ID>CurCmpCol</ID></HEADER>
+    <BODY>
+      <DESC>
+        <STATICVARIABLES><SVEXPORTFORMAT>$$SysName:XML</SVEXPORTFORMAT></STATICVARIABLES>
+        <TDL>
+          <TDLMESSAGE>
+            <COLLECTION NAME="CurCmpCol">
+              <TYPE>Company</TYPE>
+              <FETCH>Name,StartingFrom,EndingAt</FETCH>
+            </COLLECTION>
+          </TDLMESSAGE>
+        </TDL>
+      </DESC>
+    </BODY>
+  </ENVELOPE>`;
+
+  const res = await queryTallyXml(xml);
+  const cmpMatch = res.match(/<COMPANY[^>]*NAME="([^"]+)"/i);
+  if (!cmpMatch) {
+    throw new Error('Tally Prime is connected, but NO Company is opened! Please open your company in Tally Prime.');
+  }
+
+  const name = cmpMatch[1].replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').trim();
+  const startMatch = res.match(/<STARTINGFROM[^>]*>([^<]+)<\/STARTINGFROM>/i);
+  const endMatch = res.match(/<ENDINGAT[^>]*>([^<]+)<\/ENDINGAT>/i);
+
+  const fromDate = startMatch ? formatTallyDate(startMatch[1].trim()) : '';
+  const toDate = endMatch ? formatTallyDate(endMatch[1].trim()) : '';
+
+  return { name, fromDate, toDate };
+}
+
 async function syncTally() {
   console.log('====================================================');
   console.log('  TALLY PRIME 360° FINANCIAL SYNC (DEBTORS + CREDITORS)');
@@ -384,6 +426,18 @@ async function syncTally() {
   const t0 = Date.now();
 
   try {
+    // ----------------------------------------------------
+    // 0. DETECT ACTIVE COMPANY & FINANCIAL PERIOD
+    // ----------------------------------------------------
+    console.log('- Identifying active Tally company...');
+    const company = await getActiveCompany();
+    console.log(`\n====================================================`);
+    console.log(`[✓] Active Tally Company : ${company.name}`);
+    if (company.fromDate && company.toDate) {
+      console.log(`    Financial Period     : ${company.fromDate} to ${company.toDate}`);
+    }
+    console.log(`====================================================`);
+
     // ----------------------------------------------------
     // 1. DEBTORS & RECEIVABLES SYNC
     // ----------------------------------------------------
@@ -417,7 +471,7 @@ async function syncTally() {
     const billsRecRaw = await queryTallyXml(billsRecXml);
     console.log(`- Received ${Buffer.byteLength(billsRecRaw, 'utf8')} bytes of bills receivable`);
 
-    const debtorPayload = parseMergedDebtorData(debtorsRaw, billsRecRaw);
+    const debtorPayload = parseMergedDebtorData(debtorsRaw, billsRecRaw, company.name);
     console.log('  --- DEBTORS FINANCIAL SUMMARY ---');
     console.log(`  - Total Billed:        Rs. ${debtorPayload.summary.totalBilled.toLocaleString('en-IN')}`);
     console.log(`  - Total Collected:     Rs. ${debtorPayload.summary.totalPaid.toLocaleString('en-IN')}`);
@@ -467,7 +521,7 @@ async function syncTally() {
     const billsPayRaw = await queryTallyXml(billsPayXml);
     console.log(`- Received ${Buffer.byteLength(billsPayRaw, 'utf8')} bytes of bills payable`);
 
-    const creditorPayload = parseMergedCreditorData(creditorsRaw, billsPayRaw);
+    const creditorPayload = parseMergedCreditorData(creditorsRaw, billsPayRaw, company.name);
     console.log('  --- CREDITORS FINANCIAL SUMMARY ---');
     console.log(`  - Total Purchased:     Rs. ${creditorPayload.summary.totalPurchased.toLocaleString('en-IN')}`);
     console.log(`  - Total Paid:          Rs. ${creditorPayload.summary.totalPaid.toLocaleString('en-IN')}`);
