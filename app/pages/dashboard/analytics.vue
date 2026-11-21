@@ -1006,7 +1006,7 @@ definePageMeta({
   layout: 'dashboard'
 })
 
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { 
   IndianRupee, Boxes, Users, AlertTriangle, Tag, Clock, 
   RefreshCw, AlertCircle, Crown, Search, Building2, Truck, 
@@ -1103,9 +1103,61 @@ const fetchAnalytics = async (forceRefresh = false) => {
   }
 }
 
+// Mouse wheel to horizontal scroll translation on horizontal tab bars & button strips
+const handleWheelOnScrollableTabs = (e: WheelEvent) => {
+  if (e.defaultPrevented) return
+  // If the user's gesture is already primarily horizontal (touchpad swipe), let native handle it
+  if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return
+
+  let current = e.target as HTMLElement | null
+  while (current && current !== document.body && current !== document.documentElement) {
+    // Avoid table rows or tables where vertical scroll is intended
+    if (
+      current.tagName === 'TABLE' ||
+      current.tagName === 'TBODY' ||
+      current.tagName === 'TR' ||
+      current.tagName === 'TEXTAREA' ||
+      current.tagName === 'INPUT'
+    ) {
+      return
+    }
+
+    const style = window.getComputedStyle(current)
+    const isHorizOverflow = (style.overflowX === 'auto' || style.overflowX === 'scroll') && current.scrollWidth > current.clientWidth
+    const isVertOverflow = (style.overflowY === 'auto' || style.overflowY === 'scroll') && current.scrollHeight > current.clientHeight
+
+    // Match horizontally scrollable containers that do NOT have vertical overflow (e.g. navs, tab bars, filter pill lists)
+    if (isHorizOverflow && !isVertOverflow) {
+      if (e.deltaY !== 0) {
+        const delta = e.deltaMode === 1 ? e.deltaY * 36 : e.deltaY
+        const maxScroll = current.scrollWidth - current.clientWidth
+        const atStart = current.scrollLeft <= 0 && delta < 0
+        const atEnd = current.scrollLeft >= maxScroll - 1 && delta > 0
+
+        // If not at the boundary, scroll horizontally and cancel page vertical scroll
+        if (!atStart && !atEnd) {
+          e.preventDefault()
+          current.scrollLeft += delta
+          return
+        }
+      }
+    }
+    current = current.parentElement
+  }
+}
+
 onMounted(() => {
   initContext(tabContentRef.value || undefined)
   fetchAnalytics()
+  if (typeof window !== 'undefined') {
+    window.addEventListener('wheel', handleWheelOnScrollableTabs, { passive: false })
+  }
+})
+
+onBeforeUnmount(() => {
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('wheel', handleWheelOnScrollableTabs)
+  }
 })
 
 const averageInvoiceValue = computed(() => {
