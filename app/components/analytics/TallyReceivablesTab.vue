@@ -45,7 +45,42 @@
       </div>
     </div>
 
-    <!-- MAIN SEGMENT SWITCHER: Debtors vs Busy-Tally Reconciliation -->
+    <!-- TOP ENTITY TOGGLE: Sales & Debtors vs Purchases & Creditors -->
+    <div class="bg-gray-100/90 p-1.5 rounded-2xl flex items-center gap-1.5 border border-gray-200/90 shadow-2xs">
+      <button
+        type="button"
+        @click="switchEntityMode('debtors')"
+        class="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 sm:px-4 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer"
+        :class="activeEntityMode === 'debtors' ? 'bg-white text-gray-900 shadow-sm border border-gray-200/80' : 'text-gray-500 hover:text-gray-900 hover:bg-white/40'"
+      >
+        <Users class="w-4 h-4 text-blue-600 shrink-0" />
+        <span class="truncate">Sales & Debtors (Customers / Receivables)</span>
+        <span
+          class="px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 hidden sm:inline-flex"
+          :class="activeEntityMode === 'debtors' ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-gray-200 text-gray-600'"
+        >
+          {{ debtorsData?.summary?.totalParties || 354 }} Parties
+        </span>
+      </button>
+
+      <button
+        type="button"
+        @click="switchEntityMode('creditors')"
+        class="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 sm:px-4 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer"
+        :class="activeEntityMode === 'creditors' ? 'bg-white text-gray-900 shadow-sm border border-gray-200/80' : 'text-gray-500 hover:text-gray-900 hover:bg-white/40'"
+      >
+        <Building2 class="w-4 h-4 text-purple-600 shrink-0" />
+        <span class="truncate">Purchases & Creditors (Suppliers / Payables)</span>
+        <span
+          class="px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 hidden sm:inline-flex"
+          :class="activeEntityMode === 'creditors' ? 'bg-purple-50 text-purple-700 border border-purple-200' : 'bg-gray-200 text-gray-600'"
+        >
+          {{ creditorsData?.summary?.totalParties || 202 }} Suppliers
+        </span>
+      </button>
+    </div>
+
+    <!-- MAIN SEGMENT SWITCHER: Accounts vs Busy-Tally Reconciliation -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-200 pb-2">
       <div class="flex items-center gap-2 overflow-x-auto no-scrollbar">
         <button
@@ -54,10 +89,10 @@
           class="flex items-center gap-2 px-4 py-2 text-xs sm:text-sm font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap"
           :class="activeMainView === 'debtors' ? 'bg-[#1b3b5f] text-white shadow-sm' : 'bg-white text-gray-600 hover:text-gray-900 hover:bg-gray-50 border border-gray-200'"
         >
-          <Users class="w-4 h-4" />
-          <span>Sundry Debtors Accounts</span>
+          <component :is="activeEntityMode === 'debtors' ? Users : Building2" class="w-4 h-4" />
+          <span>{{ activeEntityMode === 'debtors' ? 'Sundry Debtors Accounts' : 'Sundry Creditors Accounts' }}</span>
           <span class="px-2 py-0.5 rounded-full text-[10px] font-bold" :class="activeMainView === 'debtors' ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'">
-            {{ tallyData?.summary?.totalParties || 354 }}
+            {{ tallyData?.summary?.totalParties || (activeEntityMode === 'debtors' ? 354 : 202) }}
           </span>
         </button>
 
@@ -68,13 +103,13 @@
           :class="activeMainView === 'reconciliation' ? 'bg-amber-600 text-white shadow-sm' : 'bg-white text-amber-900 hover:bg-amber-50/60 border border-amber-300'"
         >
           <Scale class="w-4 h-4" />
-          <span>BUSY ↔ Tally Reconciliation</span>
+          <span>{{ activeEntityMode === 'debtors' ? 'BUSY ↔ Tally Sales Reconciliation' : 'BUSY ↔ Tally Purchases Reconciliation' }}</span>
           <span
             v-if="reconData?.summary?.netDiscrepancy"
             class="px-2 py-0.5 rounded-full text-[10px] font-bold"
             :class="activeMainView === 'reconciliation' ? 'bg-white/25 text-white' : 'bg-rose-100 text-rose-800 border border-rose-200'"
           >
-            {{ formatCrores(reconData.summary.netDiscrepancy) }} Gap
+            {{ formatCrores(Math.abs(reconData.summary.netDiscrepancy)) }} Gap
           </span>
         </button>
       </div>
@@ -82,13 +117,13 @@
       <div v-if="activeMainView === 'reconciliation' && reconData" class="flex items-center gap-2 text-xs text-gray-500 self-end sm:self-center">
         <span class="inline-flex items-center gap-1 font-semibold text-rose-700 bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200">
           <AlertCircle class="w-3.5 h-3.5" />
-          {{ reconData.summary.unpostedVouchersCount }} Unposted Invoices
+          {{ reconData.summary.unpostedVouchersCount }} Unposted {{ activeEntityMode === 'debtors' ? 'Invoices' : 'Purchases' }}
         </span>
       </div>
     </div>
 
     <!-- ========================================================================================= -->
-    <!-- VIEW 1: SUNDRY DEBTORS LEDGER ACCOUNTS (EXISTING VIEW) -->
+    <!-- VIEW 1: SUNDRY LEDGER ACCOUNTS (DEBTORS OR CREDITORS) -->
     <!-- ========================================================================================= -->
     <div v-if="activeMainView === 'debtors'" class="space-y-6">
       <!-- Loading State -->
@@ -98,34 +133,38 @@
 
       <!-- Content when loaded -->
       <div v-else-if="tallyData" class="space-y-6">
-        <!-- 4 Executive KPI Cards (Billed vs Paid vs Pending) -->
+        <!-- 4 Executive KPI Cards (Billed/Purchased vs Paid vs Pending) -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <!-- 1. Total Invoiced (Billed) -->
+          <!-- 1. Total Invoiced (Billed / Purchased) -->
           <div class="bg-white rounded-2xl p-5 border border-gray-200/80 shadow-xs relative overflow-hidden group hover:border-gray-300 transition-all">
             <div class="flex items-center justify-between">
-              <span class="text-xs font-semibold uppercase tracking-wider text-gray-500">Total Billed (Debits)</span>
+              <span class="text-xs font-semibold uppercase tracking-wider text-gray-500">
+                {{ activeEntityMode === 'debtors' ? 'Total Billed (Debits)' : 'Total Purchased (Credits)' }}
+              </span>
               <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center border border-blue-200/80">
                 <IndianRupee class="w-5 h-5" />
               </div>
             </div>
             <div class="mt-3">
               <div class="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
-                {{ formatCrores(tallyData.summary.totalBilled || tallyData.summary.totalOutstanding) }}
+                {{ formatCrores(activeEntityMode === 'debtors' ? (tallyData.summary.totalBilled || tallyData.summary.totalOutstanding) : (tallyData.summary.totalPurchased || tallyData.summary.totalBilled)) }}
               </div>
               <div class="flex items-center justify-between text-xs text-gray-500 mt-2">
-                <span>{{ formatCurrency(tallyData.summary.totalBilled || tallyData.summary.totalOutstanding) }}</span>
+                <span>{{ formatCurrency(activeEntityMode === 'debtors' ? (tallyData.summary.totalBilled || tallyData.summary.totalOutstanding) : (tallyData.summary.totalPurchased || tallyData.summary.totalBilled)) }}</span>
                 <span class="text-blue-700 font-semibold bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200 text-[11px]">
-                  Invoiced Sales
+                  {{ activeEntityMode === 'debtors' ? 'Invoiced Sales' : 'Invoiced Purchases' }}
                 </span>
               </div>
             </div>
             <div class="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-indigo-500"></div>
           </div>
 
-          <!-- 2. Total Paid (Receipts) -->
+          <!-- 2. Total Paid (Receipts / Disbursements) -->
           <div class="bg-white rounded-2xl p-5 border border-gray-200/80 shadow-xs relative overflow-hidden group hover:border-gray-300 transition-all">
             <div class="flex items-center justify-between">
-              <span class="text-xs font-semibold uppercase tracking-wider text-gray-500">Total Collected (Paid)</span>
+              <span class="text-xs font-semibold uppercase tracking-wider text-gray-500">
+                {{ activeEntityMode === 'debtors' ? 'Total Collected (Paid)' : 'Total Paid (Disbursed)' }}
+              </span>
               <div class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center border border-emerald-200/80">
                 <CheckCircle2 class="w-5 h-5" />
               </div>
@@ -137,17 +176,19 @@
               <div class="flex items-center justify-between text-xs text-gray-500 mt-2">
                 <span>{{ formatCurrency(tallyData.summary.totalPaid) }}</span>
                 <span class="text-emerald-800 font-bold bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-200 text-[11px]">
-                  {{ tallyData.summary.overallCollectionRate }}% Collected
+                  {{ activeEntityMode === 'debtors' ? (tallyData.summary.overallCollectionRate + '% Collected') : (tallyData.summary.overallPaymentRate + '% Paid') }}
                 </span>
               </div>
             </div>
             <div class="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 to-teal-500"></div>
           </div>
 
-          <!-- 3. Net Receivables Pending -->
+          <!-- 3. Net Pending Balance -->
           <div class="bg-white rounded-2xl p-5 border border-gray-200/80 shadow-xs relative overflow-hidden group hover:border-gray-300 transition-all">
             <div class="flex items-center justify-between">
-              <span class="text-xs font-semibold uppercase tracking-wider text-gray-500">Net Pending Balance</span>
+              <span class="text-xs font-semibold uppercase tracking-wider text-gray-500">
+                {{ activeEntityMode === 'debtors' ? 'Net Receivables Pending' : 'Net Payables Pending' }}
+              </span>
               <div class="w-9 h-9 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center border border-amber-200/80">
                 <AlertTriangle class="w-5 h-5" />
               </div>
@@ -169,9 +210,11 @@
           <!-- 4. Active Accounts -->
           <div class="bg-white rounded-2xl p-5 border border-gray-200/80 shadow-xs relative overflow-hidden group hover:border-gray-300 transition-all">
             <div class="flex items-center justify-between">
-              <span class="text-xs font-semibold uppercase tracking-wider text-gray-500">Active Debtors</span>
+              <span class="text-xs font-semibold uppercase tracking-wider text-gray-500">
+                {{ activeEntityMode === 'debtors' ? 'Active Debtors' : 'Active Creditors' }}
+              </span>
               <div class="w-9 h-9 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center border border-purple-200/80">
-                <Users class="w-5 h-5" />
+                <component :is="activeEntityMode === 'debtors' ? Users : Building2" class="w-5 h-5" />
               </div>
             </div>
             <div class="mt-3">
@@ -179,7 +222,7 @@
                 {{ formatNumber(tallyData.summary.totalParties) }}
               </div>
               <div class="flex items-center justify-between text-xs text-gray-500 mt-2">
-                <span>Avg Pending / Debtor</span>
+                <span>{{ activeEntityMode === 'debtors' ? 'Avg Pending / Debtor' : 'Avg Pending / Creditor' }}</span>
                 <span class="font-semibold text-gray-700">
                   {{ formatCurrency(tallyData.summary.totalParties > 0 ? Math.round((tallyData.summary.totalNetPending || tallyData.summary.totalOutstanding) / tallyData.summary.totalParties) : 0) }}
                 </span>
@@ -189,12 +232,14 @@
           </div>
         </div>
 
-        <!-- Overall Collection Progress Bar -->
+        <!-- Progress Bar (Collection Health vs Payment Health) -->
         <div class="bg-white rounded-2xl p-4 sm:p-5 border border-gray-200/80 shadow-xs space-y-2.5">
           <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div class="flex items-center gap-2 font-bold text-gray-900 text-xs sm:text-sm">
-              <span>Overall Collection Health</span>
-              <span class="text-xs font-normal text-gray-500 hidden md:inline">(Total Payments vs Total Billing Demand)</span>
+              <span>{{ activeEntityMode === 'debtors' ? 'Overall Collection Health' : 'Overall Supplier Payment Health' }}</span>
+              <span class="text-xs font-normal text-gray-500 hidden md:inline">
+                ({{ activeEntityMode === 'debtors' ? 'Total Payments vs Total Billing Demand' : 'Total Payments vs Total Purchase Demand' }})
+              </span>
             </div>
             <div class="flex items-center justify-between sm:justify-end gap-2 text-xs">
               <span class="text-emerald-700 font-bold bg-emerald-50 sm:bg-transparent px-2 sm:px-0 py-0.5 sm:py-0 rounded-md">Paid: {{ formatCrores(tallyData.summary.totalPaid) }}</span>
@@ -206,28 +251,32 @@
           <div class="w-full bg-gray-100 rounded-full h-3 overflow-hidden flex">
             <div
               class="bg-emerald-500 h-full rounded-l-full transition-all duration-500"
-              :style="{ width: `${Math.min(100, tallyData.summary.overallCollectionRate)}%` }"
-              :title="`Paid: ${tallyData.summary.overallCollectionRate}%`"
+              :style="{ width: `${Math.min(100, activeEntityMode === 'debtors' ? tallyData.summary.overallCollectionRate : tallyData.summary.overallPaymentRate)}%` }"
+              :title="`Paid: ${activeEntityMode === 'debtors' ? tallyData.summary.overallCollectionRate : tallyData.summary.overallPaymentRate}%`"
             ></div>
             <div
               class="bg-amber-400 h-full rounded-r-full transition-all duration-500"
-              :style="{ width: `${Math.max(0, 100 - tallyData.summary.overallCollectionRate)}%` }"
-              :title="`Pending: ${(100 - tallyData.summary.overallCollectionRate).toFixed(1)}%`"
+              :style="{ width: `${Math.max(0, 100 - (activeEntityMode === 'debtors' ? tallyData.summary.overallCollectionRate : tallyData.summary.overallPaymentRate))}%` }"
+              :title="`Pending: ${(100 - (activeEntityMode === 'debtors' ? tallyData.summary.overallCollectionRate : tallyData.summary.overallPaymentRate)).toFixed(1)}%`"
             ></div>
           </div>
 
           <div class="flex items-center justify-between text-[11px] text-gray-500 pt-0.5">
             <span>0%</span>
-            <span class="font-bold text-emerald-700">{{ tallyData.summary.overallCollectionRate }}% Collected</span>
+            <span class="font-bold text-emerald-700">
+              {{ activeEntityMode === 'debtors' ? (tallyData.summary.overallCollectionRate + '% Collected') : (tallyData.summary.overallPaymentRate + '% Paid') }}
+            </span>
             <span>100% Demand</span>
           </div>
         </div>
 
-        <!-- Debtors Search, Filter and Table Card -->
+        <!-- Ledger Accounts Search, Filter and Table Card -->
         <div class="bg-white rounded-2xl border border-gray-200/80 shadow-xs overflow-hidden">
           <div class="p-4 sm:p-5 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div class="flex items-center gap-2">
-              <h3 class="font-bold text-gray-900 text-base">Sundry Debtors Ledger Accounts</h3>
+              <h3 class="font-bold text-gray-900 text-base">
+                {{ activeEntityMode === 'debtors' ? 'Sundry Debtors Ledger Accounts' : 'Sundry Creditors Ledger Accounts' }}
+              </h3>
               <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-gray-100 text-gray-700">
                 {{ filteredParties.length }} Accounts
               </span>
@@ -240,7 +289,7 @@
                 <input
                   v-model="searchQuery"
                   type="text"
-                  placeholder="Search debtor name or group..."
+                  :placeholder="activeEntityMode === 'debtors' ? 'Search debtor name or group...' : 'Search supplier name or group...'"
                   class="w-full pl-9 pr-3.5 py-1.5 text-xs sm:text-sm rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
                 />
                 <button
@@ -256,14 +305,14 @@
                 v-model="sortBy"
                 class="w-full sm:w-auto px-2.5 py-1.5 text-xs sm:text-sm rounded-xl border border-gray-200 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 cursor-pointer"
               >
-                <option value="pending_desc">Highest Net Pending</option>
-                <option value="billed_desc">Highest Total Billed</option>
+                <option value="pending_desc">{{ activeEntityMode === 'debtors' ? 'Highest Net Pending' : 'Highest Net Payable' }}</option>
+                <option value="billed_desc">{{ activeEntityMode === 'debtors' ? 'Highest Total Billed' : 'Highest Total Purchased' }}</option>
                 <option value="paid_desc">Highest Total Paid</option>
-                <option value="rate_asc">Lowest Collection Rate (Risk)</option>
-                <option value="rate_desc">Highest Collection Rate</option>
+                <option value="rate_asc">{{ activeEntityMode === 'debtors' ? 'Lowest Collection Rate (Risk)' : 'Lowest Payment Rate' }}</option>
+                <option value="rate_desc">{{ activeEntityMode === 'debtors' ? 'Highest Collection Rate' : 'Highest Payment Rate' }}</option>
                 <option value="bills_desc">Most Unadjusted Bills</option>
-                <option value="speed_asc">Fastest Payers (Lowest Days)</option>
-                <option value="speed_desc">Slowest Payers (Highest Days)</option>
+                <option value="speed_asc">Fastest Turnaround</option>
+                <option value="speed_desc">Slowest Turnaround</option>
               </select>
             </div>
           </div>
@@ -274,11 +323,11 @@
               <thead class="bg-gray-50/80 text-gray-500 text-[11px] font-semibold uppercase tracking-wider border-b border-gray-200">
                 <tr>
                   <th class="py-3 px-4 w-12 text-center">#</th>
-                  <th class="py-3 px-4">Debtor Party / Ledger</th>
-                  <th class="py-3 px-4 text-right">Total Billed</th>
+                  <th class="py-3 px-4">{{ activeEntityMode === 'debtors' ? 'Debtor Party / Ledger' : 'Supplier Creditor / Ledger' }}</th>
+                  <th class="py-3 px-4 text-right">{{ activeEntityMode === 'debtors' ? 'Total Billed' : 'Total Purchased' }}</th>
                   <th class="py-3 px-4 text-right">Total Paid</th>
-                  <th class="py-3 px-4 text-right">Net Pending</th>
-                  <th class="py-3 px-4 text-center">Collection %</th>
+                  <th class="py-3 px-4 text-right">{{ activeEntityMode === 'debtors' ? 'Net Pending' : 'Net Payable' }}</th>
+                  <th class="py-3 px-4 text-center">{{ activeEntityMode === 'debtors' ? 'Collection %' : 'Payment %' }}</th>
                   <th class="py-3 px-4 text-center">Avg Pay Time</th>
                   <th class="py-3 px-4 text-center">Open Bills</th>
                   <th class="py-3 px-4 text-center">Action</th>
@@ -299,7 +348,7 @@
                     <div v-if="party.parent" class="text-[11px] text-gray-400 font-normal">{{ party.parent }}</div>
                   </td>
                   <td class="py-3.5 px-4 text-right font-medium text-gray-700">
-                    {{ formatCurrency(party.totalBilled) }}
+                    {{ formatCurrency(activeEntityMode === 'debtors' ? party.totalBilled : (party.totalPurchased || party.totalBilled)) }}
                   </td>
                   <td class="py-3.5 px-4 text-right font-bold text-emerald-700">
                     {{ formatCurrency(party.totalPaid) }}
@@ -310,10 +359,10 @@
                   <td class="py-3.5 px-4 text-center">
                     <div class="flex items-center justify-center gap-1.5">
                       <div class="w-12 bg-gray-200 rounded-full h-1.5 overflow-hidden">
-                        <div class="bg-emerald-500 h-full rounded-full" :style="{ width: `${Math.min(100, party.collectionRate)}%` }"></div>
+                        <div class="bg-emerald-500 h-full rounded-full" :style="{ width: `${Math.min(100, activeEntityMode === 'debtors' ? party.collectionRate : party.paymentRate)}%` }"></div>
                       </div>
-                      <span class="text-xs font-bold" :class="party.collectionRate >= 80 ? 'text-emerald-700' : party.collectionRate >= 50 ? 'text-amber-700' : 'text-rose-700'">
-                        {{ party.collectionRate }}%
+                      <span class="text-xs font-bold" :class="(activeEntityMode === 'debtors' ? party.collectionRate : party.paymentRate) >= 80 ? 'text-emerald-700' : (activeEntityMode === 'debtors' ? party.collectionRate : party.paymentRate) >= 50 ? 'text-amber-700' : 'text-rose-700'">
+                        {{ activeEntityMode === 'debtors' ? party.collectionRate : party.paymentRate }}%
                       </span>
                     </div>
                   </td>
@@ -348,20 +397,22 @@
 
                 <tr v-if="filteredParties.length === 0">
                   <td colspan="9" class="py-12 text-center text-gray-500">
-                    <Search class="w-8 h-8 mx-auto text-gray-300 mb-2" />
-                    <p class="font-medium">No debtor accounts match your search.</p>
-                    <button @click="searchQuery = ''" class="text-xs text-amber-700 underline mt-1">Clear search</button>
+                    <div class="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mx-auto text-gray-400 mb-3">
+                      <Search class="w-6 h-6" />
+                    </div>
+                    <p class="font-medium">No accounts found matching your search</p>
+                    <p class="text-xs text-gray-400 mt-1">Try searching for a different party or ledger name</p>
                   </td>
                 </tr>
               </tbody>
             </table>
           </div>
 
-          <!-- Pagination Controls -->
-          <div v-if="filteredParties.length > pageSize" class="p-4 border-t border-gray-200 flex items-center justify-between">
-            <span class="text-xs text-gray-500">
-              Showing {{ (currentPage - 1) * pageSize + 1 }} to {{ Math.min(currentPage * pageSize, filteredParties.length) }} of {{ filteredParties.length }}
-            </span>
+          <!-- Pagination -->
+          <div class="p-4 border-t border-gray-200 flex items-center justify-between text-xs text-gray-500">
+            <div>
+              Showing {{ (currentPage - 1) * pageSize + 1 }} to {{ Math.min(currentPage * pageSize, filteredParties.length) }} of {{ filteredParties.length }} accounts
+            </div>
             <div class="flex items-center gap-1.5">
               <button
                 @click="currentPage--"
@@ -397,76 +448,82 @@
       <div v-else-if="reconData" class="space-y-6">
         <!-- 4 Reconciliation KPI Cards -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <!-- 1. Total Busy Sales -->
+          <!-- 1. Total Busy Sales / Purchases -->
           <div class="bg-white rounded-2xl p-5 border border-gray-200/80 shadow-xs relative overflow-hidden group hover:border-gray-300 transition-all">
             <div class="flex items-center justify-between">
-              <span class="text-xs font-semibold uppercase tracking-wider text-gray-500">Live BUSY Sales</span>
+              <span class="text-xs font-semibold uppercase tracking-wider text-gray-500">
+                {{ activeEntityMode === 'debtors' ? 'Live BUSY Sales' : 'Live BUSY Purchases' }}
+              </span>
               <div class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center border border-emerald-200/80">
                 <Receipt class="w-5 h-5" />
               </div>
             </div>
             <div class="mt-3">
               <div class="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
-                {{ formatCrores(reconData.summary.totalBusySales) }}
+                {{ formatCrores(reconData.summary.totalBusySales || reconData.summary.totalBusyPurchases) }}
               </div>
               <div class="flex items-center justify-between text-xs text-gray-500 mt-2">
-                <span>{{ formatCurrency(reconData.summary.totalBusySales) }}</span>
+                <span>{{ formatCurrency(reconData.summary.totalBusySales || reconData.summary.totalBusyPurchases) }}</span>
                 <span class="text-emerald-800 font-bold bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-200 text-[11px]">
-                  {{ formatNumber(reconData.summary.busyVoucherCount) }} Invoices
+                  {{ formatNumber(reconData.summary.busyVoucherCount) }} {{ activeEntityMode === 'debtors' ? 'Invoices' : 'Purchases' }}
                 </span>
               </div>
             </div>
             <div class="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 to-teal-500"></div>
           </div>
 
-          <!-- 2. Total Tally Billed -->
+          <!-- 2. Total Tally Billed / Purchased -->
           <div class="bg-white rounded-2xl p-5 border border-gray-200/80 shadow-xs relative overflow-hidden group hover:border-gray-300 transition-all">
             <div class="flex items-center justify-between">
-              <span class="text-xs font-semibold uppercase tracking-wider text-gray-500">Tally Debtors Billed</span>
+              <span class="text-xs font-semibold uppercase tracking-wider text-gray-500">
+                {{ activeEntityMode === 'debtors' ? 'Tally Prime Billed' : 'Tally Prime Purchased' }}
+              </span>
               <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center border border-blue-200/80">
                 <Building2 class="w-5 h-5" />
               </div>
             </div>
             <div class="mt-3">
               <div class="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
-                {{ formatCrores(reconData.summary.totalTallyBilled) }}
+                {{ formatCrores(reconData.summary.totalTallyBilled || reconData.summary.totalTallyPurchased) }}
               </div>
               <div class="flex items-center justify-between text-xs text-gray-500 mt-2">
-                <span>{{ formatCurrency(reconData.summary.totalTallyBilled) }}</span>
-                <span class="text-blue-800 font-bold bg-blue-100 px-2 py-0.5 rounded-full border border-blue-200 text-[11px]">
-                  {{ formatNumber(reconData.summary.tallyDebtorCount) }} Debtors
+                <span>{{ formatCurrency(reconData.summary.totalTallyBilled || reconData.summary.totalTallyPurchased) }}</span>
+                <span class="text-blue-700 font-semibold bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200 text-[11px]">
+                  {{ formatNumber(activeEntityMode === 'debtors' ? reconData.summary.tallyDebtorCount : reconData.summary.tallyCreditorCount) }} {{ activeEntityMode === 'debtors' ? 'Debtors' : 'Creditors' }}
                 </span>
               </div>
             </div>
             <div class="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-indigo-500"></div>
           </div>
 
-          <!-- 3. Overall Net Discrepancy Gap -->
-          <div class="bg-white rounded-2xl p-5 border border-rose-200 shadow-xs relative overflow-hidden group hover:border-rose-300 transition-all bg-rose-50/20">
+          <!-- 3. Net Ledger Discrepancy -->
+          <div class="bg-white rounded-2xl p-5 border border-gray-200/80 shadow-xs relative overflow-hidden group hover:border-gray-300 transition-all">
             <div class="flex items-center justify-between">
-              <span class="text-xs font-semibold uppercase tracking-wider text-rose-800">Unposted Sales Gap</span>
-              <div class="w-9 h-9 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center border border-rose-200">
+              <span class="text-xs font-semibold uppercase tracking-wider text-rose-700">Net Ledger Discrepancy</span>
+              <div class="w-9 h-9 rounded-xl bg-rose-50 text-rose-700 flex items-center justify-center border border-rose-200/80">
                 <AlertTriangle class="w-5 h-5" />
               </div>
             </div>
             <div class="mt-3">
               <div class="text-2xl sm:text-3xl font-extrabold text-rose-700 tracking-tight">
-                {{ formatCrores(reconData.summary.netDiscrepancy) }}
+                {{ formatCrores(Math.abs(reconData.summary.netDiscrepancy)) }}
               </div>
               <div class="flex items-center justify-between text-xs text-rose-600 mt-2">
-                <span>{{ formatCurrency(reconData.summary.netDiscrepancy) }}</span>
+                <span>{{ formatCurrency(Math.abs(reconData.summary.netDiscrepancy)) }}</span>
                 <span class="text-rose-800 font-bold bg-rose-100 px-2 py-0.5 rounded-full border border-rose-200 text-[11px]">
-                  Busy &gt; Tally
+                  {{ reconData.summary.netDiscrepancy >= 0 ? 'Busy > Tally' : 'Tally > Busy' }}
                 </span>
               </div>
             </div>
             <div class="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-rose-500 to-red-600"></div>
           </div>
 
-          <!-- 4. Unposted Invoices Count & Amount -->
+          <!-- 4. Unposted Invoices / Purchases -->
           <div class="bg-white rounded-2xl p-5 border border-amber-200 shadow-xs relative overflow-hidden group hover:border-amber-300 transition-all bg-amber-50/20">
             <div class="flex items-center justify-between">
-              <span class="text-xs font-semibold uppercase tracking-wider text-amber-800">Unposted Invoices</span>
+              <span class="text-xs font-semibold uppercase tracking-wider text-amber-800">
+                {{ activeEntityMode === 'debtors' ? 'Unposted Invoices' : 'Unposted Purchases' }}
+              </span>
               <div class="w-9 h-9 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center border border-amber-200">
                 <FileSpreadsheet class="w-5 h-5" />
               </div>
@@ -486,15 +543,17 @@
           </div>
         </div>
 
-        <!-- Discrepancy Breakdown Insight Box (Clean & informative) -->
+        <!-- Discrepancy Breakdown Insight Box -->
         <div class="bg-amber-50/50 border border-amber-200 rounded-2xl p-4 sm:p-5 flex items-start gap-3.5">
           <div class="w-8 h-8 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center shrink-0 mt-0.5">
             <Scale class="w-4 h-4" />
           </div>
           <div class="text-xs sm:text-sm text-gray-700">
-            <p class="font-bold text-gray-900">Why does BUSY have ₹66.03 Lakhs more sales than Tally?</p>
+            <p class="font-bold text-gray-900">
+              Why does BUSY have {{ formatCrores(Math.abs(reconData.summary.netDiscrepancy)) }} {{ reconData.summary.netDiscrepancy >= 0 ? 'more' : 'less' }} {{ activeEntityMode === 'debtors' ? 'sales' : 'purchases' }} than Tally?
+            </p>
             <p class="mt-0.5 text-gray-600">
-              <strong>{{ formatCrores(reconData.summary.missingPartiesSales) }}</strong> ({{ reconData.summary.missingPartiesCount }} customers) is from accounts missing in Tally's Debtors list, and the remaining <strong>{{ formatCrores(reconData.summary.netDiscrepancy - reconData.summary.missingPartiesSales) }}</strong> is from recent/unposted invoices in active customer accounts.
+              <strong>{{ formatCrores(reconData.summary.missingPartiesSales || reconData.summary.missingPartiesPurchases) }}</strong> ({{ reconData.summary.missingPartiesCount }} {{ activeEntityMode === 'debtors' ? 'customers' : 'suppliers' }}) is from accounts missing in Tally's {{ activeEntityMode === 'debtors' ? 'Debtors' : 'Creditors' }} list, and the remaining <strong>{{ formatCrores(Math.abs(reconData.summary.netDiscrepancy - (reconData.summary.missingPartiesSales || reconData.summary.missingPartiesPurchases))) }}</strong> is from recent/unposted vouchers in active accounts.
             </p>
           </div>
         </div>
@@ -510,7 +569,7 @@
                 :class="activeReconSubTab === 'unposted' ? 'bg-[#1b3b5f] text-white shadow-xs' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
               >
                 <FileText class="w-3.5 h-3.5" />
-                <span>Unposted BUSY Invoices</span>
+                <span>{{ activeEntityMode === 'debtors' ? 'Unposted BUSY Invoices' : 'Unposted BUSY Purchases' }}</span>
                 <span class="px-1.5 py-0.2 rounded-full text-[10px] font-bold" :class="activeReconSubTab === 'unposted' ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-800'">
                   {{ reconData.unpostedVouchers.length }}
                 </span>
@@ -522,7 +581,7 @@
                 :class="activeReconSubTab === 'discrepancies' ? 'bg-[#1b3b5f] text-white shadow-xs' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
               >
                 <Users class="w-3.5 h-3.5" />
-                <span>Party Balance Discrepancies</span>
+                <span>{{ activeEntityMode === 'debtors' ? 'Party Balance Discrepancies' : 'Supplier Balance Discrepancies' }}</span>
                 <span class="px-1.5 py-0.2 rounded-full text-[10px] font-bold" :class="activeReconSubTab === 'discrepancies' ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-800'">
                   {{ reconData.partyDiscrepancies.length }}
                 </span>
@@ -534,7 +593,7 @@
                 :class="activeReconSubTab === 'missing_parties' ? 'bg-[#1b3b5f] text-white shadow-xs' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
               >
                 <UserX class="w-3.5 h-3.5 text-rose-600" />
-                <span>Missing Debtors in Tally</span>
+                <span>{{ activeEntityMode === 'debtors' ? 'Missing Debtors in Tally' : 'Missing Creditors in Tally' }}</span>
                 <span class="px-1.5 py-0.2 rounded-full text-[10px] font-bold" :class="activeReconSubTab === 'missing_parties' ? 'bg-white/20 text-white' : 'bg-rose-100 text-rose-800'">
                   {{ reconData.unmatchedParties.length }}
                 </span>
@@ -556,14 +615,14 @@
               </button>
             </div>
 
-            <!-- ROW 2: Search Bar & Filters (Clean full-width layout) -->
+            <!-- ROW 2: Search Bar & Filters -->
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-gray-100">
               <div class="relative w-full sm:w-80">
                 <Search class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   v-model="reconSearchQuery"
                   type="text"
-                  :placeholder="activeReconSubTab === 'unposted' ? 'Search voucher # or customer...' : activeReconSubTab === 'discrepancies' ? 'Search customer or tally party...' : activeReconSubTab === 'missing_parties' ? 'Search missing customer...' : 'Filter bill # or party name...'"
+                  :placeholder="activeReconSubTab === 'unposted' ? 'Search voucher # or party...' : activeReconSubTab === 'discrepancies' ? 'Search party or tally ledger...' : activeReconSubTab === 'missing_parties' ? 'Search missing party...' : 'Filter bill # or party name...'"
                   class="w-full pl-9 pr-3.5 py-1.5 text-xs sm:text-sm rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
                 />
                 <button
@@ -581,9 +640,9 @@
                 v-model="unpostedCategoryFilter"
                 class="w-full sm:w-auto px-3 py-1.5 text-xs sm:text-sm rounded-xl border border-gray-200 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 cursor-pointer"
               >
-                <option value="all">All Unposted Invoices</option>
-                <option value="UNPOSTED_INVOICE">In Active Accounts</option>
-                <option value="MISSING_CUSTOMER">From Missing Customers</option>
+                <option value="all">All Unposted {{ activeEntityMode === 'debtors' ? 'Invoices' : 'Purchases' }}</option>
+                <option :value="activeEntityMode === 'debtors' ? 'UNPOSTED_INVOICE' : 'UNPOSTED_PURCHASE'">In Active Accounts</option>
+                <option :value="activeEntityMode === 'debtors' ? 'MISSING_CUSTOMER' : 'MISSING_SUPPLIER'">From Missing {{ activeEntityMode === 'debtors' ? 'Customers' : 'Suppliers' }}</option>
               </select>
 
               <!-- Filter select for Discrepancies -->
@@ -600,94 +659,98 @@
           </div>
 
           <!-- ========================================== -->
-          <!-- SUB-TAB 1: UNPOSTED BUSY INVOICES TABLE -->
+          <!-- SUB-TAB 1: UNPOSTED VOUCHERS TABLE -->
           <!-- ========================================== -->
           <div v-if="activeReconSubTab === 'unposted'" class="overflow-x-auto">
             <table class="w-full text-left text-xs sm:text-sm">
-              <thead class="bg-gray-50/80 text-gray-500 text-[11px] font-semibold uppercase tracking-wider border-b border-gray-200">
+              <thead class="bg-gray-50 text-gray-600 text-[11px] font-bold uppercase tracking-wider border-b border-gray-200">
                 <tr>
                   <th class="py-3 px-4 w-12 text-center">#</th>
-                  <th class="py-3 px-4">Voucher No</th>
+                  <th class="py-3 px-4">Voucher #</th>
                   <th class="py-3 px-4">Date</th>
-                  <th class="py-3 px-4">Customer Name (BUSY)</th>
-                  <th class="py-3 px-4">Tally Debtor Ledger</th>
-                  <th class="py-3 px-4 text-right">Taxable</th>
-                  <th class="py-3 px-4 text-right">GST</th>
-                  <th class="py-3 px-4 text-right">Gross Amount</th>
-                  <th class="py-3 px-4 text-center">Status / Reason</th>
+                  <th class="py-3 px-4">{{ activeEntityMode === 'debtors' ? 'Customer Name' : 'Supplier Name' }}</th>
+                  <th class="py-3 px-4 text-right">Taxable Base</th>
+                  <th class="py-3 px-4 text-right">GST Tax</th>
+                  <th class="py-3 px-4 text-right">Total Value</th>
+                  <th class="py-3 px-4">Status / Reason</th>
+                  <th class="py-3 px-4 text-center">Action</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-100">
                 <tr
-                  v-for="(voucher, idx) in paginatedUnpostedVouchers"
-                  :key="voucher.voucherNo"
+                  v-for="(vch, idx) in paginatedUnpostedVouchers"
+                  :key="vch.voucherNo"
                   class="hover:bg-amber-50/20 transition-colors"
                 >
                   <td class="py-3.5 px-4 text-center font-bold text-gray-400 text-xs">
                     {{ (unpostedPage - 1) * unpostedPageSize + idx + 1 }}
                   </td>
-                  <td class="py-3.5 px-4 font-mono font-bold text-gray-900">
-                    <div class="flex items-center gap-1.5">
-                      <span>{{ voucher.voucherNo }}</span>
-                      <button
-                        @click="copyVoucherNo(voucher.voucherNo)"
-                        class="text-gray-400 hover:text-amber-700 p-0.5 rounded cursor-pointer"
-                        :title="'Copy voucher ' + voucher.voucherNo"
-                      >
-                        <Check v-if="copiedVoucher === voucher.voucherNo" class="w-3 h-3 text-emerald-600" />
-                        <Copy v-else class="w-3 h-3" />
-                      </button>
-                    </div>
+                  <td class="py-3.5 px-4 font-mono font-bold text-gray-900 flex items-center gap-1.5">
+                    <span>{{ vch.voucherNo }}</span>
+                    <button
+                      @click="copyVoucherNo(vch.voucherNo)"
+                      class="text-gray-400 hover:text-gray-700 p-0.5 rounded cursor-pointer"
+                      title="Copy Voucher #"
+                    >
+                      <Check v-if="copiedVoucher === vch.voucherNo" class="w-3.5 h-3.5 text-emerald-600" />
+                      <Copy v-else class="w-3.5 h-3.5" />
+                    </button>
                   </td>
                   <td class="py-3.5 px-4 text-gray-600 whitespace-nowrap">
-                    {{ formatDate(voucher.voucherDate) }}
+                    {{ formatDate(vch.voucherDate) }}
                   </td>
-                  <td class="py-3.5 px-4 font-semibold text-gray-900">
-                    {{ voucher.customerName }}
+                  <td class="py-3.5 px-4 font-bold text-gray-900">
+                    <div>{{ vch.customerName || vch.supplierName }}</div>
+                    <div v-if="vch.tallyParty" class="text-[11px] text-gray-400 font-normal">
+                      Tally: {{ vch.tallyParty }}
+                    </div>
                   </td>
-                  <td class="py-3.5 px-4 text-gray-700">
-                    <span v-if="voucher.tallyParty" class="font-medium text-blue-900">
-                      {{ voucher.tallyParty }}
-                    </span>
-                    <span v-else class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
-                      <UserX class="w-2.5 h-2.5" />
-                      Not in Tally
-                    </span>
+                  <td class="py-3.5 px-4 text-right text-gray-600">
+                    {{ formatCurrency(vch.taxableAmount) }}
                   </td>
-                  <td class="py-3.5 px-4 text-right text-gray-500 font-mono">
-                    {{ formatCurrency(voucher.taxableAmount) }}
+                  <td class="py-3.5 px-4 text-right text-gray-600">
+                    {{ formatCurrency(vch.taxAmount) }}
                   </td>
-                  <td class="py-3.5 px-4 text-right text-gray-500 font-mono">
-                    {{ formatCurrency(voucher.taxAmount) }}
+                  <td class="py-3.5 px-4 text-right font-extrabold text-amber-900 whitespace-nowrap">
+                    {{ formatCurrency(vch.amount) }}
                   </td>
-                  <td class="py-3.5 px-4 text-right font-bold text-rose-700 font-mono">
-                    {{ formatCurrency(voucher.amount) }}
-                  </td>
-                  <td class="py-3.5 px-4 text-center">
+                  <td class="py-3.5 px-4">
                     <span
                       class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold"
-                      :class="voucher.category === 'MISSING_CUSTOMER' ? 'bg-rose-50 text-rose-800 border border-rose-200' : 'bg-amber-50 text-amber-800 border border-amber-200'"
-                      :title="voucher.reason"
+                      :class="vch.category === 'MISSING_CUSTOMER' || vch.category === 'MISSING_SUPPLIER' ? 'bg-rose-50 text-rose-800 border border-rose-200' : 'bg-amber-50 text-amber-800 border border-amber-200'"
                     >
-                      <Clock3 class="w-3 h-3 shrink-0" />
-                      <span>{{ voucher.category === 'MISSING_CUSTOMER' ? 'Missing Customer' : 'Unposted Bill' }}</span>
+                      <AlertCircle class="w-3 h-3 shrink-0" />
+                      <span>{{ vch.reason }}</span>
                     </span>
+                  </td>
+                  <td class="py-3.5 px-4 text-center">
+                    <button
+                      v-if="vch.tallyParty"
+                      @click="viewPartyDebtorDetails(vch.tallyParty)"
+                      class="px-2.5 py-1 rounded-lg text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors cursor-pointer"
+                    >
+                      Inspect Ledger
+                    </button>
+                    <span v-else class="text-xs text-rose-600 font-semibold">Create Ledger</span>
                   </td>
                 </tr>
 
                 <tr v-if="filteredUnpostedVouchers.length === 0">
                   <td colspan="9" class="py-12 text-center text-gray-500">
-                    <CheckCircle2 class="w-8 h-8 mx-auto text-emerald-500 mb-2" />
-                    <p class="font-medium">No unposted vouchers match your criteria.</p>
+                    <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center mx-auto mb-3">
+                      <CheckCircle2 class="w-6 h-6" />
+                    </div>
+                    <p class="font-bold text-gray-900">Zero Unposted Vouchers</p>
+                    <p class="text-xs text-gray-400 mt-1">All vouchers in this category have been posted to Tally.</p>
                   </td>
                 </tr>
               </tbody>
             </table>
 
-            <!-- Pagination for Unposted Vouchers -->
+            <!-- Pagination for Unposted -->
             <div v-if="filteredUnpostedVouchers.length > unpostedPageSize" class="p-4 border-t border-gray-200 flex items-center justify-between">
               <span class="text-xs text-gray-500">
-                Showing {{ (unpostedPage - 1) * unpostedPageSize + 1 }} to {{ Math.min(unpostedPage * unpostedPageSize, filteredUnpostedVouchers.length) }} of {{ filteredUnpostedVouchers.length }}
+                Showing {{ (unpostedPage - 1) * unpostedPageSize + 1 }} to {{ Math.min(unpostedPage * unpostedPageSize, filteredUnpostedVouchers.length) }} of {{ filteredUnpostedVouchers.length }} vouchers
               </span>
               <div class="flex items-center gap-1.5">
                 <button
@@ -710,19 +773,18 @@
           </div>
 
           <!-- ========================================== -->
-          <!-- SUB-TAB 2: PARTY BALANCE DISCREPANCIES TABLE -->
+          <!-- SUB-TAB 2: PARTY DISCREPANCIES TABLE -->
           <!-- ========================================== -->
           <div v-else-if="activeReconSubTab === 'discrepancies'" class="overflow-x-auto">
             <table class="w-full text-left text-xs sm:text-sm">
-              <thead class="bg-gray-50/80 text-gray-500 text-[11px] font-semibold uppercase tracking-wider border-b border-gray-200">
+              <thead class="bg-gray-50 text-gray-600 text-[11px] font-bold uppercase tracking-wider border-b border-gray-200">
                 <tr>
                   <th class="py-3 px-4 w-12 text-center">#</th>
-                  <th class="py-3 px-4">BUSY Customer</th>
-                  <th class="py-3 px-4">Tally Ledger Account</th>
-                  <th class="py-3 px-4 text-right">BUSY Sales</th>
-                  <th class="py-3 px-4 text-right">Tally Billed</th>
+                  <th class="py-3 px-4">{{ activeEntityMode === 'debtors' ? 'Customer Account (BUSY)' : 'Supplier Account (BUSY)' }}</th>
+                  <th class="py-3 px-4">{{ activeEntityMode === 'debtors' ? 'Matched Tally Debtor' : 'Matched Tally Creditor' }}</th>
+                  <th class="py-3 px-4 text-right">{{ activeEntityMode === 'debtors' ? 'BUSY Sales' : 'BUSY Purchases' }}</th>
+                  <th class="py-3 px-4 text-right">{{ activeEntityMode === 'debtors' ? 'Tally Billed' : 'Tally Purchased' }}</th>
                   <th class="py-3 px-4 text-right">Difference (Gap)</th>
-                  <th class="py-3 px-4 text-center">Busy Invoices</th>
                   <th class="py-3 px-4 text-center">Status</th>
                   <th class="py-3 px-4 text-center">Action</th>
                 </tr>
@@ -730,55 +792,52 @@
               <tbody class="divide-y divide-gray-100">
                 <tr
                   v-for="(party, idx) in paginatedPartyDiscrepancies"
-                  :key="party.customerName"
+                  :key="party.customerName || party.supplierName"
                   class="hover:bg-amber-50/20 transition-colors"
                 >
                   <td class="py-3.5 px-4 text-center font-bold text-gray-400 text-xs">
                     {{ (discrepancyPage - 1) * discrepancyPageSize + idx + 1 }}
                   </td>
                   <td class="py-3.5 px-4 font-bold text-gray-900">
-                    {{ party.customerName }}
+                    {{ party.customerName || party.supplierName }}
+                    <div class="text-[11px] text-gray-400 font-normal">{{ party.busyVoucherCount }} BUSY vouchers</div>
                   </td>
-                  <td class="py-3.5 px-4 text-blue-900 font-medium">
+                  <td class="py-3.5 px-4 font-bold text-gray-700">
                     {{ party.tallyParty }}
                   </td>
                   <td class="py-3.5 px-4 text-right font-medium text-gray-800">
-                    {{ formatCurrency(party.busySales) }}
+                    {{ formatCurrency(party.busySales || party.busyPurchases) }}
                   </td>
-                  <td class="py-3.5 px-4 text-right font-medium text-gray-600">
-                    {{ formatCurrency(party.tallyBilled) }}
+                  <td class="py-3.5 px-4 text-right font-medium text-gray-800">
+                    {{ formatCurrency(party.tallyBilled || party.tallyPurchased) }}
                   </td>
                   <td
-                    class="py-3.5 px-4 text-right font-bold"
-                    :class="party.difference > 0 ? 'text-rose-700' : 'text-emerald-700'"
+                    class="py-3.5 px-4 text-right font-extrabold whitespace-nowrap"
+                    :class="party.difference > 0 ? 'text-rose-700' : 'text-blue-700'"
                   >
                     {{ party.difference > 0 ? '+' : '' }}{{ formatCurrency(party.difference) }}
-                  </td>
-                  <td class="py-3.5 px-4 text-center font-medium text-gray-600">
-                    {{ party.busyVoucherCount }} bills
                   </td>
                   <td class="py-3.5 px-4 text-center">
                     <span
                       class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold"
-                      :class="party.difference > 0 ? 'bg-rose-50 text-rose-800 border border-rose-200' : 'bg-emerald-50 text-emerald-800 border border-emerald-200'"
+                      :class="party.status === 'BUSY_HIGHER' ? 'bg-rose-50 text-rose-800 border border-rose-200' : 'bg-blue-50 text-blue-800 border border-blue-200'"
                     >
-                      <span>{{ party.difference > 0 ? 'Busy Higher' : 'Tally Higher' }}</span>
+                      {{ party.status === 'BUSY_HIGHER' ? 'Busy Higher' : 'Tally Higher' }}
                     </span>
                   </td>
                   <td class="py-3.5 px-4 text-center">
                     <button
                       @click="viewPartyDebtorDetails(party.tallyParty)"
-                      class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors cursor-pointer"
+                      class="px-2.5 py-1 rounded-lg text-xs font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 transition-colors cursor-pointer"
                     >
-                      <span>View Bills</span>
-                      <ChevronRight class="w-3 h-3" />
+                      View Ledger
                     </button>
                   </td>
                 </tr>
 
                 <tr v-if="filteredPartyDiscrepancies.length === 0">
-                  <td colspan="9" class="py-12 text-center text-gray-500">
-                    <p class="font-medium">No party discrepancies match your search.</p>
+                  <td colspan="8" class="py-12 text-center text-gray-500">
+                    <p class="font-medium">No account discrepancies match your filter.</p>
                   </td>
                 </tr>
               </tbody>
@@ -787,7 +846,7 @@
             <!-- Pagination for Discrepancies -->
             <div v-if="filteredPartyDiscrepancies.length > discrepancyPageSize" class="p-4 border-t border-gray-200 flex items-center justify-between">
               <span class="text-xs text-gray-500">
-                Showing {{ (discrepancyPage - 1) * discrepancyPageSize + 1 }} to {{ Math.min(discrepancyPage * discrepancyPageSize, filteredPartyDiscrepancies.length) }} of {{ filteredPartyDiscrepancies.length }}
+                Showing {{ (discrepancyPage - 1) * discrepancyPageSize + 1 }} to {{ Math.min(discrepancyPage * discrepancyPageSize, filteredPartyDiscrepancies.length) }} of {{ filteredPartyDiscrepancies.length }} accounts
               </span>
               <div class="flex items-center gap-1.5">
                 <button
@@ -810,43 +869,41 @@
           </div>
 
           <!-- ========================================== -->
-          <!-- SUB-TAB 3: MISSING CUSTOMERS IN TALLY TABLE -->
+          <!-- SUB-TAB 3: MISSING PARTIES IN TALLY -->
           <!-- ========================================== -->
           <div v-else-if="activeReconSubTab === 'missing_parties'" class="overflow-x-auto">
-            <div class="p-4 bg-rose-50/40 border-b border-rose-100 text-xs text-rose-900 flex items-start gap-2.5">
-              <AlertCircle class="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
-              <div>
-                <strong>Accounting Action Required:</strong> These {{ reconData.unmatchedParties.length }} customer accounts exist in BUSY with valid invoiced sales totaling <strong>{{ formatCrores(reconData.summary.missingPartiesSales) }}</strong>, but have not been created as Sundry Debtors in Tally Prime. Creating these debtor accounts and entering the vouchers will reconcile <strong>58% of the entire discrepancy</strong>.
-              </div>
+            <div class="p-4 bg-rose-50/70 border-b border-rose-100 text-xs text-rose-900 flex items-center gap-2">
+              <UserX class="w-4 h-4 text-rose-600 shrink-0" />
+              <span>These accounts have transactions recorded in BUSY, but no corresponding ledger exists in Tally's {{ activeEntityMode === 'debtors' ? 'Sundry Debtors' : 'Sundry Creditors' }} group.</span>
             </div>
 
             <table class="w-full text-left text-xs sm:text-sm">
-              <thead class="bg-gray-50/80 text-gray-500 text-[11px] font-semibold uppercase tracking-wider border-b border-gray-200">
+              <thead class="bg-gray-50 text-gray-600 text-[11px] font-bold uppercase tracking-wider border-b border-gray-200">
                 <tr>
                   <th class="py-3 px-4 w-12 text-center">#</th>
-                  <th class="py-3 px-4">Customer Name in BUSY</th>
-                  <th class="py-3 px-4 text-right">Total Invoiced Sales</th>
-                  <th class="py-3 px-4 text-center">Invoices Count</th>
-                  <th class="py-3 px-4 text-center">Latest Invoice Date</th>
-                  <th class="py-3 px-4 text-center">Recommended Action</th>
+                  <th class="py-3 px-4">{{ activeEntityMode === 'debtors' ? 'Customer Name (BUSY)' : 'Supplier Name (BUSY)' }}</th>
+                  <th class="py-3 px-4 text-right">{{ activeEntityMode === 'debtors' ? 'Total Sales' : 'Total Purchases' }}</th>
+                  <th class="py-3 px-4 text-center">Vouchers</th>
+                  <th class="py-3 px-4 text-center">Latest Transaction</th>
+                  <th class="py-3 px-4 text-center">Suggested Action</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-100">
                 <tr
                   v-for="(party, idx) in paginatedMissingParties"
-                  :key="party.customerName"
-                  class="hover:bg-rose-50/20 transition-colors"
+                  :key="party.customerName || party.supplierName"
+                  class="hover:bg-amber-50/20 transition-colors"
                 >
                   <td class="py-3.5 px-4 text-center font-bold text-gray-400 text-xs">
                     {{ (missingPartiesPage - 1) * missingPartiesPageSize + idx + 1 }}
                   </td>
                   <td class="py-3.5 px-4 font-bold text-gray-900">
-                    {{ party.customerName }}
+                    {{ party.customerName || party.supplierName }}
                   </td>
-                  <td class="py-3.5 px-4 text-right font-bold text-rose-700">
-                    {{ formatCurrency(party.totalSales) }}
+                  <td class="py-3.5 px-4 text-right font-extrabold text-rose-700 whitespace-nowrap">
+                    {{ formatCurrency(party.totalSales || party.totalPurchases) }}
                   </td>
-                  <td class="py-3.5 px-4 text-center font-medium text-gray-700">
+                  <td class="py-3.5 px-4 text-center font-semibold text-gray-700">
                     {{ party.voucherCount }} bills
                   </td>
                   <td class="py-3.5 px-4 text-center text-gray-600">
@@ -854,14 +911,14 @@
                   </td>
                   <td class="py-3.5 px-4 text-center">
                     <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-50 text-rose-800 border border-rose-200">
-                      Create Debtor Ledger in Tally
+                      Create {{ activeEntityMode === 'debtors' ? 'Debtor' : 'Creditor' }} Ledger in Tally
                     </span>
                   </td>
                 </tr>
 
                 <tr v-if="filteredMissingParties.length === 0">
                   <td colspan="6" class="py-12 text-center text-gray-500">
-                    <p class="font-medium">No missing customer accounts match your search.</p>
+                    <p class="font-medium">No missing accounts match your search.</p>
                   </td>
                 </tr>
               </tbody>
@@ -906,7 +963,7 @@
               </div>
               <h4 class="text-base sm:text-lg font-bold text-gray-900">All Vouchers Accurately Mapped in Tally</h4>
               <p class="text-xs sm:text-sm text-gray-600">
-                Zero bill-by-bill value corruptions or typo discrepancies detected. All 222 active debtor accounts in Tally match their BUSY counterpart exactly to the single rupee.
+                Zero bill-by-bill value corruptions or typo discrepancies detected. All active accounts in Tally match their BUSY counterpart exactly to the single rupee.
               </p>
               <div class="bg-gray-50 border border-gray-200 rounded-xl p-3.5 text-xs text-gray-600 text-left space-y-1.5 mt-4">
                 <div class="flex items-center gap-1.5 font-bold text-gray-800">
@@ -914,7 +971,7 @@
                   Verification Audit Summary:
                 </div>
                 <div>• Every bill entered into Tally carries the exact correct taxable base, GST tax, and total value as recorded in BUSY.</div>
-                <div>• The overall ₹66.03L difference consists exclusively of <strong>unposted invoices</strong> and <strong>missing customer ledgers</strong>, not incorrect bill amounts.</div>
+                <div>• The overall difference consists exclusively of <strong>unposted vouchers</strong> and <strong>missing party ledgers</strong>, not incorrect bill amounts.</div>
               </div>
             </div>
 
@@ -925,7 +982,7 @@
                 <div class="space-y-1">
                   <div class="font-bold text-gray-900 text-sm">Cross-System Audit Findings & Action Guide</div>
                   <div class="text-gray-600">
-                    All verified debtor ledger balances match 100% to the rupee. The items below highlight where reference typos or combined vouchers were entered in Tally. Please follow the instructions in the <strong>How to Correct</strong> column for manual review without creating double entries.
+                    All verified ledger balances match 100% to the rupee. The items below highlight where reference typos or combined vouchers were entered in Tally. Please follow the instructions in the <strong>How to Correct</strong> column for manual review without creating double entries.
                   </div>
                 </div>
               </div>
@@ -936,7 +993,7 @@
                     <tr>
                       <th class="py-3 px-3.5">Tally Ref</th>
                       <th class="py-3 px-3.5">BUSY Bill</th>
-                      <th class="py-3 px-3.5">Party / Customer</th>
+                      <th class="py-3 px-3.5">{{ activeEntityMode === 'debtors' ? 'Party / Customer' : 'Party / Supplier' }}</th>
                       <th class="py-3 px-3.5 text-right whitespace-nowrap">BUSY Amt</th>
                       <th class="py-3 px-3.5 text-right whitespace-nowrap">Tally Amt</th>
                       <th class="py-3 px-3.5 text-center">Status</th>
@@ -948,35 +1005,36 @@
                     <tr v-for="bill in filteredBillDiscrepancies" :key="bill.ref + bill.party" class="hover:bg-amber-50/20 transition-colors">
                       <td class="py-3.5 px-3.5 font-mono font-bold text-gray-900">{{ bill.ref }}</td>
                       <td class="py-3.5 px-3.5 font-mono font-semibold text-blue-700">{{ bill.actualBusyRef || bill.ref }}</td>
-                      <td class="py-3.5 px-3.5">
-                        <div class="font-bold text-gray-900">{{ bill.party }}</div>
-                        <div v-if="bill.customerName !== bill.party" class="text-[11px] text-gray-500 font-medium">BUSY: {{ bill.customerName }}</div>
-                        <div class="text-[10px] text-gray-400 mt-0.5">{{ bill.tallyDate || formatDate(bill.busyDate) }}</div>
+                      <td class="py-3.5 px-3.5 font-bold text-gray-900">
+                        <div>{{ bill.party }}</div>
+                        <div v-if="(bill.customerName || bill.supplierName) && (bill.customerName || bill.supplierName) !== bill.party" class="text-[11px] text-gray-400 font-normal">
+                          BUSY: {{ bill.customerName || bill.supplierName }}
+                        </div>
                       </td>
-                      <td class="py-3.5 px-3.5 text-right font-mono">{{ formatCurrency(bill.busyAmount) }}</td>
-                      <td class="py-3.5 px-3.5 text-right font-mono font-bold text-gray-900">{{ formatCurrency(bill.tallyAmount) }}</td>
-                      <td class="py-3.5 px-3.5 text-center whitespace-nowrap">
+                      <td class="py-3.5 px-3.5 text-right font-medium text-gray-700 whitespace-nowrap">
+                        {{ formatCurrency(bill.busyAmount) }}
+                      </td>
+                      <td class="py-3.5 px-3.5 text-right font-bold text-gray-900 whitespace-nowrap">
+                        {{ formatCurrency(bill.tallyAmount) }}
+                      </td>
+                      <td class="py-3.5 px-3.5 text-center">
                         <span
-                          class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold"
+                          class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap"
                           :class="{
-                            'bg-amber-100 text-amber-800 border border-amber-300': bill.status === 'AMEND_REFERENCE',
-                            'bg-sky-100 text-sky-800 border border-sky-300': bill.status === 'COMBINED_ENTRY',
-                            'bg-rose-100 text-rose-800 border border-rose-300': bill.status === 'VALUE_MISMATCH'
+                            'bg-amber-100 text-amber-800 border border-amber-200': bill.status === 'AMEND_REFERENCE',
+                            'bg-sky-100 text-sky-800 border border-sky-200': bill.status === 'COMBINED_ENTRY',
+                            'bg-rose-100 text-rose-800 border border-rose-200': bill.status === 'VALUE_MISMATCH'
                           }"
                         >
-                          <span v-if="bill.status === 'AMEND_REFERENCE'">⚠️ Amend Ref</span>
-                          <span v-else-if="bill.status === 'COMBINED_ENTRY'">ℹ️ Clubbed Bill</span>
-                          <span v-else>❌ Value Mismatch</span>
+                          {{ bill.status === 'AMEND_REFERENCE' ? 'Reference Typo' : bill.status === 'COMBINED_ENTRY' ? 'Combined Entry' : 'Amount Mismatch' }}
                         </span>
                       </td>
-                      <!-- COLUMN 1: Issue / Error Detected -->
-                      <td class="py-3.5 px-4 text-xs text-gray-800">
-                        <p class="font-medium leading-relaxed">{{ bill.issueDetected || bill.explanation }}</p>
+                      <td class="py-3.5 px-4 text-xs text-gray-700 leading-relaxed font-normal">
+                        {{ bill.issueDetected }}
                       </td>
-                      <!-- COLUMN 2: How to Correct (Action Guide) -->
-                      <td class="py-3.5 px-4 text-xs">
+                      <td class="py-3.5 px-4 text-xs leading-relaxed">
                         <div
-                          class="p-2.5 rounded-lg border leading-relaxed"
+                          class="p-2 rounded-lg border text-xs"
                           :class="{
                             'bg-amber-50/90 border-amber-200 text-amber-950 font-medium': bill.status === 'AMEND_REFERENCE',
                             'bg-sky-50/90 border-sky-200 text-sky-950': bill.status === 'COMBINED_ENTRY',
@@ -996,7 +1054,7 @@
       </div>
     </div>
 
-    <!-- Debtor Financials & Bills Slide-over Modal / Drawer -->
+    <!-- Financials & Bills Slide-over Modal / Drawer -->
     <Teleport to="body">
       <div
         v-if="selectedParty"
@@ -1008,7 +1066,9 @@
           <div class="p-4 sm:p-5 border-b border-gray-200 bg-gray-50/70 flex items-start justify-between gap-3">
             <div class="min-w-0 flex-1">
               <div class="flex items-center gap-2 flex-wrap">
-                <span class="px-2 py-0.5 rounded text-[10px] sm:text-[11px] font-bold bg-amber-100 text-amber-800 uppercase tracking-wide shrink-0">Customer Financial Overview</span>
+                <span class="px-2 py-0.5 rounded text-[10px] sm:text-[11px] font-bold bg-amber-100 text-amber-800 uppercase tracking-wide shrink-0">
+                  {{ activeEntityMode === 'debtors' ? 'Customer Financial Overview' : 'Supplier Financial Overview' }}
+                </span>
                 <span v-if="selectedParty.parent" class="text-xs text-gray-500 truncate max-w-[200px]">{{ selectedParty.parent }}</span>
               </div>
               <h3 class="text-base sm:text-lg font-bold text-gray-900 mt-1 break-words leading-snug">{{ selectedParty.party }}</h3>
@@ -1029,15 +1089,15 @@
             <!-- 3 Stat Cards in Drawer -->
             <div class="grid grid-cols-3 gap-3">
               <div class="bg-gray-50 rounded-xl p-3 border border-gray-200/80">
-                <span class="text-[11px] font-semibold text-gray-500 uppercase">Total Billed</span>
-                <p class="text-sm sm:text-base font-extrabold text-gray-900 mt-0.5">{{ formatCurrency(selectedParty.totalBilled) }}</p>
+                <span class="text-[11px] font-semibold text-gray-500 uppercase">{{ activeEntityMode === 'debtors' ? 'Total Billed' : 'Total Purchased' }}</span>
+                <p class="text-sm sm:text-base font-extrabold text-gray-900 mt-0.5">{{ formatCurrency(activeEntityMode === 'debtors' ? selectedParty.totalBilled : (selectedParty.totalPurchased || selectedParty.totalBilled)) }}</p>
               </div>
               <div class="bg-emerald-50/70 rounded-xl p-3 border border-emerald-200/80">
                 <span class="text-[11px] font-semibold text-emerald-800 uppercase">Total Paid</span>
                 <p class="text-sm sm:text-base font-extrabold text-emerald-700 mt-0.5">{{ formatCurrency(selectedParty.totalPaid) }}</p>
               </div>
               <div class="bg-amber-50/70 rounded-xl p-3 border border-amber-200/80">
-                <span class="text-[11px] font-semibold text-amber-800 uppercase">Net Pending</span>
+                <span class="text-[11px] font-semibold text-amber-800 uppercase">{{ activeEntityMode === 'debtors' ? 'Net Pending' : 'Net Payable' }}</span>
                 <p class="text-sm sm:text-base font-extrabold text-amber-700 mt-0.5">
                   {{ selectedParty.netPending > 0 ? formatCurrency(selectedParty.netPending) : '₹0' }}
                 </p>
@@ -1053,7 +1113,7 @@
                   </div>
                   <div>
                     <h4 class="text-xs font-bold text-gray-900">Average Payment Completion Time</h4>
-                    <p class="text-[11px] text-gray-500">Days Sales Outstanding (DSO) & Turnover Cycle</p>
+                    <p class="text-[11px] text-gray-500">Days Turnover & Settlement Cycle</p>
                   </div>
                 </div>
                 <span
@@ -1078,19 +1138,19 @@
               </div>
             </div>
 
-            <!-- Collection Progress in Drawer -->
+            <!-- Progress in Drawer -->
             <div class="space-y-1.5">
               <div class="flex items-center justify-between text-xs font-semibold">
-                <span class="text-gray-700">Account Collection Rate</span>
-                <span :class="selectedParty.collectionRate >= 80 ? 'text-emerald-700 font-bold' : selectedParty.collectionRate >= 50 ? 'text-amber-700 font-bold' : 'text-rose-700 font-bold'">
-                  {{ selectedParty.collectionRate }}% Settled
+                <span class="text-gray-700">{{ activeEntityMode === 'debtors' ? 'Account Collection Rate' : 'Account Payment Rate' }}</span>
+                <span :class="(activeEntityMode === 'debtors' ? selectedParty.collectionRate : selectedParty.paymentRate) >= 80 ? 'text-emerald-700 font-bold' : (activeEntityMode === 'debtors' ? selectedParty.collectionRate : selectedParty.paymentRate) >= 50 ? 'text-amber-700 font-bold' : 'text-rose-700 font-bold'">
+                  {{ activeEntityMode === 'debtors' ? selectedParty.collectionRate : selectedParty.paymentRate }}% Settled
                 </span>
               </div>
               <div class="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
                 <div
                   class="h-full rounded-full transition-all duration-300"
-                  :class="selectedParty.collectionRate >= 80 ? 'bg-emerald-500' : selectedParty.collectionRate >= 50 ? 'bg-amber-500' : 'bg-rose-500'"
-                  :style="{ width: `${Math.min(100, selectedParty.collectionRate)}%` }"
+                  :class="(activeEntityMode === 'debtors' ? selectedParty.collectionRate : selectedParty.paymentRate) >= 80 ? 'bg-emerald-500' : (activeEntityMode === 'debtors' ? selectedParty.collectionRate : selectedParty.paymentRate) >= 50 ? 'bg-amber-500' : 'bg-rose-500'"
+                  :style="{ width: `${Math.min(100, activeEntityMode === 'debtors' ? selectedParty.collectionRate : selectedParty.paymentRate)}%` }"
                 ></div>
               </div>
             </div>
@@ -1101,120 +1161,123 @@
                 <button
                   @click="selectedBillTab = 'pending'"
                   class="px-3 py-1.5 text-xs font-bold rounded-lg transition-colors cursor-pointer"
-                  :class="selectedBillTab === 'pending' ? 'bg-amber-100 text-amber-900 font-extrabold' : 'text-gray-500 hover:text-gray-700'"
+                  :class="selectedBillTab === 'pending' ? 'bg-amber-100 text-amber-900 font-extrabold' : 'text-gray-600 hover:bg-gray-100'"
                 >
-                  Open Pending ({{ partyBillsData?.pendingBills?.length ?? selectedParty.bills?.length ?? 0 }})
+                  Pending Bills
+                  <span v-if="partyBillsData?.pendingBills" class="ml-1 px-1.5 py-0.2 rounded-full bg-amber-200 text-amber-900 text-[10px]">
+                    {{ partyBillsData.pendingBills.length }}
+                  </span>
                 </button>
+
                 <button
                   @click="selectedBillTab = 'partial'"
                   class="px-3 py-1.5 text-xs font-bold rounded-lg transition-colors cursor-pointer"
-                  :class="selectedBillTab === 'partial' ? 'bg-amber-100 text-amber-900 font-extrabold' : 'text-gray-500 hover:text-gray-700'"
+                  :class="selectedBillTab === 'partial' ? 'bg-amber-100 text-amber-900 font-extrabold' : 'text-gray-600 hover:bg-gray-100'"
                 >
-                  Partial ({{ partyBillsData?.partialBills?.length ?? 0 }})
+                  Partially Paid
+                  <span v-if="partyBillsData?.partialBills" class="ml-1 px-1.5 py-0.2 rounded-full bg-amber-200 text-amber-900 text-[10px]">
+                    {{ partyBillsData.partialBills.length }}
+                  </span>
                 </button>
+
                 <button
                   @click="selectedBillTab = 'cleared'"
                   class="px-3 py-1.5 text-xs font-bold rounded-lg transition-colors cursor-pointer"
-                  :class="selectedBillTab === 'cleared' ? 'bg-emerald-100 text-emerald-900 font-extrabold' : 'text-gray-500 hover:text-gray-700'"
+                  :class="selectedBillTab === 'cleared' ? 'bg-emerald-100 text-emerald-900 font-extrabold' : 'text-gray-600 hover:bg-gray-100'"
                 >
-                  Cleared ({{ partyBillsData?.clearedBills?.length ?? 0 }})
+                  Cleared Bills
+                  <span v-if="partyBillsData?.clearedBills" class="ml-1 px-1.5 py-0.2 rounded-full bg-emerald-200 text-emerald-900 text-[10px]">
+                    {{ partyBillsData.clearedBills.length }}
+                  </span>
                 </button>
+
                 <button
                   @click="selectedBillTab = 'all'"
                   class="px-3 py-1.5 text-xs font-bold rounded-lg transition-colors cursor-pointer"
-                  :class="selectedBillTab === 'all' ? 'bg-gray-200 text-gray-900 font-extrabold' : 'text-gray-500 hover:text-gray-700'"
+                  :class="selectedBillTab === 'all' ? 'bg-gray-200 text-gray-900 font-extrabold' : 'text-gray-600 hover:bg-gray-100'"
                 >
-                  All Invoices ({{ partyBillsData?.allBills?.length ?? 0 }})
+                  All ({{ partyBillsData?.allBills ? partyBillsData.allBills.length : selectedParty.bills?.length || 0 }})
                 </button>
               </div>
 
-              <!-- Bill Search -->
-              <div class="relative w-36 sm:w-44">
+              <!-- Search Bills inside drawer -->
+              <div class="relative w-40 sm:w-48">
                 <Search class="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
                 <input
                   v-model="billSearchQuery"
                   type="text"
-                  placeholder="Filter ref/date..."
-                  class="w-full pl-7 pr-2.5 py-1 text-xs rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                  placeholder="Filter bills..."
+                  class="w-full pl-8 pr-2.5 py-1 text-xs rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-amber-500"
                 />
               </div>
             </div>
 
-            <!-- Loading Bills Spinner -->
-            <div v-if="partyBillsLoading" class="py-12 text-center text-gray-400 text-xs">
-              <RefreshCw class="w-5 h-5 mx-auto animate-spin text-amber-600 mb-2" />
-              Loading complete ledger and cleared bills...
+            <!-- Loading State for detailed bills -->
+            <div v-if="partyBillsLoading" class="py-8 text-center text-gray-500 space-y-2">
+              <RefreshCw class="w-5 h-5 mx-auto animate-spin text-amber-600" />
+              <p class="text-xs">Fetching live voucher audit...</p>
             </div>
 
-            <!-- Invoices List -->
-            <div v-else-if="filteredPartyBills.length > 0" class="space-y-2">
+            <!-- Bills List in Drawer -->
+            <div v-else-if="filteredPartyBills.length > 0" class="space-y-2.5">
               <div
-                v-for="b in filteredPartyBills"
-                :key="b.ref + b.date"
-                class="p-3 rounded-xl border border-gray-200/80 hover:border-gray-300 transition-colors flex items-center justify-between gap-3 text-xs bg-white shadow-2xs"
+                v-for="bill in filteredPartyBills"
+                :key="bill.ref"
+                class="p-3.5 rounded-xl border transition-all"
+                :class="bill.status === 'CLEARED' ? 'bg-emerald-50/30 border-emerald-200/60' : bill.status === 'PARTIAL' ? 'bg-amber-50/50 border-amber-300' : 'bg-white border-gray-200 shadow-2xs'"
               >
-                <div class="min-w-0">
+                <div class="flex items-center justify-between">
                   <div class="flex items-center gap-2">
-                    <span class="font-mono font-bold text-gray-900 text-sm">{{ b.ref }}</span>
+                    <span class="font-mono font-bold text-xs sm:text-sm text-gray-900">{{ bill.ref }}</span>
                     <span
-                      class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider"
-                      :class="b.status === 'CLEARED' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : b.status === 'PARTIAL' ? 'bg-sky-50 text-sky-700 border border-sky-200' : 'bg-amber-50 text-amber-700 border border-amber-200'"
+                      class="px-2 py-0.5 rounded text-[10px] font-bold uppercase"
+                      :class="bill.status === 'CLEARED' ? 'bg-emerald-100 text-emerald-800' : bill.status === 'PARTIAL' ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-700'"
                     >
-                      {{ b.status }}
+                      {{ bill.status === 'CLEARED' ? 'Fully Cleared' : bill.status === 'PARTIAL' ? 'Partially Paid' : 'Open / Due' }}
                     </span>
                   </div>
-                  <div class="flex items-center gap-3 text-gray-500 text-[11px] mt-1">
-                    <span class="flex items-center gap-1">
-                      <Calendar class="w-3 h-3 text-gray-400" />
-                      {{ b.date }}
+                  <div class="text-right">
+                    <span class="text-sm sm:text-base font-extrabold" :class="bill.status === 'CLEARED' ? 'text-emerald-700' : 'text-amber-800'">
+                      {{ formatCurrency(bill.amount) }}
                     </span>
-                    <span v-if="b.overdueDays > 0" class="text-amber-700 font-semibold">
-                      {{ b.overdueDays }} days overdue
-                    </span>
-                    <span v-if="b.itemCount > 0" class="text-gray-400">
-                      {{ b.itemCount }} items
-                    </span>
+                    <div v-if="bill.originalAmount && bill.originalAmount !== bill.amount" class="text-[10px] text-gray-400">
+                      Total: {{ formatCurrency(bill.originalAmount) }}
+                    </div>
                   </div>
                 </div>
 
-                <div class="text-right shrink-0">
-                  <div class="font-bold text-sm text-gray-900">
-                    {{ formatCurrency(b.amount) }}
+                <div class="flex items-center justify-between text-[11px] text-gray-500 mt-2 pt-2 border-t border-gray-100">
+                  <div class="flex items-center gap-3">
+                    <span class="flex items-center gap-1">
+                      <Calendar class="w-3 h-3 text-gray-400" />
+                      {{ formatDate(bill.date) }}
+                    </span>
+                    <span v-if="bill.dueDate" class="text-gray-400">Due: {{ formatDate(bill.dueDate) }}</span>
                   </div>
-                  <div v-if="b.paidAmount && b.status === 'PARTIAL'" class="text-[11px] text-emerald-600 font-medium">
-                    Paid: {{ formatCurrency(b.paidAmount) }}
-                  </div>
-                  <div v-else-if="b.status === 'CLEARED'" class="text-[11px] text-emerald-600 font-semibold flex items-center gap-0.5 justify-end">
-                    <CheckCircle2 class="w-3 h-3" />
-                    Cleared
-                  </div>
-                  <div v-else class="text-[11px] text-amber-600 font-medium flex items-center gap-0.5 justify-end">
-                    <Clock3 class="w-3 h-3" />
-                    Pending
+
+                  <div class="flex items-center gap-2">
+                    <span
+                      v-if="bill.overdueDays > 0"
+                      class="font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200"
+                    >
+                      {{ bill.overdueDays }} days overdue
+                    </span>
+                    <span v-else-if="bill.status === 'CLEARED'" class="text-emerald-700 font-semibold flex items-center gap-0.5">
+                      <CheckCircle2 class="w-3 h-3" />
+                      Settled
+                    </span>
+                    <span v-else class="text-emerald-700 font-semibold">Current (Within Term)</span>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div v-if="!partyBillsLoading && filteredPartyBills.length === 0" class="py-12 text-center text-gray-400 text-xs">
-              <span v-if="selectedBillTab === 'pending'">No open bills pending clearance. Account is settled!</span>
-              <span v-else-if="selectedBillTab === 'partial'">No partially paid bills found for this customer.</span>
-              <span v-else-if="selectedBillTab === 'cleared'">No cleared bills recorded yet for this customer.</span>
-              <span v-else>No invoices match your search.</span>
+            <!-- Empty Bills State -->
+            <div v-else class="py-12 text-center text-gray-500">
+              <Clock3 class="w-8 h-8 mx-auto text-gray-400 mb-2" />
+              <p class="font-medium">No bills found in this view</p>
+              <p class="text-xs text-gray-400 mt-0.5">This party may not have any unadjusted or pending bills.</p>
             </div>
-          </div>
-
-          <!-- Drawer Footer -->
-          <div class="p-3 sm:p-4 border-t border-gray-200 bg-gray-50 flex items-center justify-between text-xs">
-            <span class="text-gray-500">
-              Showing {{ filteredPartyBills.length }} {{ selectedBillTab === 'pending' ? 'pending' : selectedBillTab === 'partial' ? 'partially paid' : selectedBillTab === 'cleared' ? 'cleared' : 'total' }} invoice{{ filteredPartyBills.length === 1 ? '' : 's' }}
-            </span>
-            <button
-              @click="selectedParty = null"
-              class="px-4 py-2 rounded-xl bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300 cursor-pointer"
-            >
-              Close
-            </button>
           </div>
         </div>
       </div>
@@ -1234,23 +1297,35 @@ import {
 
 const route = useRoute()
 
-// Primary Navigation state
+// Entity Mode Toggle: 'debtors' (Sales) vs 'creditors' (Purchases)
+const activeEntityMode = ref<'debtors' | 'creditors'>('debtors')
+
+// Primary View Navigation: 'debtors' (Accounts Table) vs 'reconciliation'
 const activeMainView = ref<'debtors' | 'reconciliation'>('debtors')
 const activeReconSubTab = ref<'unposted' | 'discrepancies' | 'missing_parties' | 'bill_value'>('unposted')
 
-// Debtors view state
+// Loading & Data States
 const loading = ref(true)
-const tallyData = ref<any | null>(null)
+const reconLoading = ref(false)
+
+const debtorsData = ref<any | null>(null)
+const creditorsData = ref<any | null>(null)
+const salesReconData = ref<any | null>(null)
+const purchasesReconData = ref<any | null>(null)
+
+// Unified active data bindings
+const tallyData = computed(() => activeEntityMode.value === 'debtors' ? debtorsData.value : creditorsData.value)
+const reconData = computed(() => activeEntityMode.value === 'debtors' ? salesReconData.value : purchasesReconData.value)
+
+// Filter & Sort State for Accounts
 const searchQuery = ref('')
 const sortBy = ref<'pending_desc' | 'billed_desc' | 'paid_desc' | 'rate_asc' | 'rate_desc' | 'bills_desc' | 'speed_asc' | 'speed_desc'>('pending_desc')
 const currentPage = ref(1)
 const pageSize = 25
 
 // Reconciliation view state
-const reconLoading = ref(false)
-const reconData = ref<any | null>(null)
 const reconSearchQuery = ref('')
-const unpostedCategoryFilter = ref<'all' | 'UNPOSTED_INVOICE' | 'MISSING_CUSTOMER'>('all')
+const unpostedCategoryFilter = ref<string>('all')
 const partyDiscrepancyFilter = ref<'all' | 'BUSY_HIGHER' | 'TALLY_HIGHER'>('all')
 
 const unpostedPage = ref(1)
@@ -1271,39 +1346,86 @@ const selectedBillTab = ref<'pending' | 'partial' | 'cleared' | 'all'>('pending'
 const partyBillsLoading = ref(false)
 const partyBillsData = ref<any | null>(null)
 
-const fetchTallyReceivables = async () => {
-  loading.value = true
+// ==========================================
+// DATA FETCHING METHODS
+// ==========================================
+const fetchDebtors = async () => {
   try {
     const res = await $fetch<any>('/api/admin/tally/receivables')
     if (res && res.success && res.data) {
-      tallyData.value = res.data
+      debtorsData.value = res.data
     }
   } catch (err: any) {
-    console.error('Failed to load Tally receivables:', err)
-  } finally {
-    loading.value = false
+    console.error('Failed to load Tally debtors:', err)
   }
 }
 
-const fetchReconciliation = async () => {
-  reconLoading.value = true
+const fetchCreditors = async () => {
   try {
-    const res = await $fetch<any>('/api/admin/tally/reconciliation')
+    const res = await $fetch<any>('/api/admin/tally/payables')
     if (res && res.success && res.data) {
-      reconData.value = res.data
+      creditorsData.value = res.data
     }
   } catch (err: any) {
-    console.error('Failed to load reconciliation audit:', err)
-  } finally {
+    console.error('Failed to load Tally creditors:', err)
+  }
+}
+
+const fetchSalesReconciliation = async () => {
+  try {
+    const res = await $fetch<any>('/api/admin/tally/reconciliation?type=sales')
+    if (res && res.success && res.data) {
+      salesReconData.value = res.data
+    }
+  } catch (err: any) {
+    console.error('Failed to load sales reconciliation audit:', err)
+  }
+}
+
+const fetchPurchasesReconciliation = async () => {
+  try {
+    const res = await $fetch<any>('/api/admin/tally/reconciliation?type=purchases')
+    if (res && res.success && res.data) {
+      purchasesReconData.value = res.data
+    }
+  } catch (err: any) {
+    console.error('Failed to load purchases reconciliation audit:', err)
+  }
+}
+
+const switchEntityMode = async (mode: 'debtors' | 'creditors') => {
+  activeEntityMode.value = mode
+  currentPage.value = 1
+  unpostedPage.value = 1
+  discrepancyPage.value = 1
+  missingPartiesPage.value = 1
+  searchQuery.value = ''
+  reconSearchQuery.value = ''
+  unpostedCategoryFilter.value = 'all'
+
+  if (mode === 'creditors' && (!creditorsData.value || !purchasesReconData.value)) {
+    loading.value = !creditorsData.value
+    reconLoading.value = !purchasesReconData.value
+    await Promise.all([
+      fetchCreditors(),
+      fetchPurchasesReconciliation()
+    ])
+    loading.value = false
     reconLoading.value = false
   }
 }
 
 const refreshAllData = async () => {
+  loading.value = true
+  reconLoading.value = true
   await Promise.all([
-    fetchTallyReceivables(),
-    fetchReconciliation()
+    fetchDebtors(),
+    fetchCreditors(),
+    fetchSalesReconciliation(),
+    fetchPurchasesReconciliation()
   ])
+  loading.value = false
+  reconLoading.value = false
 }
 
 const formattedSyncTime = computed(() => {
@@ -1314,7 +1436,7 @@ const formattedSyncTime = computed(() => {
 })
 
 // ==========================================
-// DEBTORS FILTERING & SORTING
+// ACCOUNTS FILTERING & SORTING
 // ==========================================
 const filteredParties = computed(() => {
   if (!tallyData.value?.parties) return []
@@ -1332,13 +1454,13 @@ const filteredParties = computed(() => {
   if (sortBy.value === 'pending_desc') {
     list.sort((a, b) => (b.netPending || 0) - (a.netPending || 0))
   } else if (sortBy.value === 'billed_desc') {
-    list.sort((a, b) => (b.totalBilled || 0) - (a.totalBilled || 0))
+    list.sort((a, b) => (b.totalBilled || b.totalPurchased || 0) - (a.totalBilled || a.totalPurchased || 0))
   } else if (sortBy.value === 'paid_desc') {
     list.sort((a, b) => (b.totalPaid || 0) - (a.totalPaid || 0))
   } else if (sortBy.value === 'rate_asc') {
-    list.sort((a, b) => (a.collectionRate || 0) - (b.collectionRate || 0))
+    list.sort((a, b) => (a.collectionRate || a.paymentRate || 0) - (b.collectionRate || b.paymentRate || 0))
   } else if (sortBy.value === 'rate_desc') {
-    list.sort((a, b) => (b.collectionRate || 0) - (a.collectionRate || 0))
+    list.sort((a, b) => (b.collectionRate || b.paymentRate || 0) - (a.collectionRate || a.paymentRate || 0))
   } else if (sortBy.value === 'bills_desc') {
     list.sort((a, b) => (b.billsCount || 0) - (a.billsCount || 0))
   } else if (sortBy.value === 'speed_asc') {
@@ -1372,7 +1494,8 @@ const filteredUnpostedVouchers = computed(() => {
     const q = reconSearchQuery.value.toLowerCase().trim()
     list = list.filter((v: any) =>
       v.voucherNo.toLowerCase().includes(q) ||
-      v.customerName.toLowerCase().includes(q) ||
+      (v.customerName && v.customerName.toLowerCase().includes(q)) ||
+      (v.supplierName && v.supplierName.toLowerCase().includes(q)) ||
       (v.tallyParty && v.tallyParty.toLowerCase().includes(q))
     )
   }
@@ -1397,7 +1520,7 @@ const filteredPartyDiscrepancies = computed(() => {
   if (reconSearchQuery.value.trim()) {
     const q = reconSearchQuery.value.toLowerCase().trim()
     list = list.filter((p: any) =>
-      p.customerName.toLowerCase().includes(q) ||
+      ((p.customerName || p.supplierName) && (p.customerName || p.supplierName).toLowerCase().includes(q)) ||
       (p.tallyParty && p.tallyParty.toLowerCase().includes(q))
     )
   }
@@ -1417,7 +1540,9 @@ const filteredMissingParties = computed(() => {
 
   if (reconSearchQuery.value.trim()) {
     const q = reconSearchQuery.value.toLowerCase().trim()
-    list = list.filter((p: any) => p.customerName.toLowerCase().includes(q))
+    list = list.filter((p: any) =>
+      (p.customerName || p.supplierName) && (p.customerName || p.supplierName).toLowerCase().includes(q)
+    )
   }
 
   return list
@@ -1438,7 +1563,7 @@ const filteredBillDiscrepancies = computed(() => {
     list = list.filter((b: any) =>
       b.ref.toLowerCase().includes(q) ||
       b.party.toLowerCase().includes(q) ||
-      b.customerName.toLowerCase().includes(q)
+      ((b.customerName || b.supplierName) && (b.customerName || b.supplierName).toLowerCase().includes(q))
     )
   }
 
@@ -1466,7 +1591,7 @@ const openDebtorDetails = async (party: any) => {
   partyBillsData.value = null
 
   try {
-    const res = await $fetch<any>(`/api/admin/tally/party-bills?party=${encodeURIComponent(party.party)}`)
+    const res = await $fetch<any>(`/api/admin/tally/party-bills?party=${encodeURIComponent(party.party)}&type=${activeEntityMode.value}`)
     if (res && res.success && res.data) {
       partyBillsData.value = res.data
     }
@@ -1539,7 +1664,8 @@ function formatCrores(val: number | string | undefined): string {
 }
 
 function getAvgPaymentDays(party: any): number {
-  if (!party || !party.totalBilled || Number(party.totalBilled) <= 0) return 0
+  const base = Number(party?.totalBilled || party?.totalPurchased || 0)
+  if (!party || base <= 0) return 0
   const pending = Number(party.netPending || 0)
   if (pending <= 0) return 0
 
@@ -1549,7 +1675,7 @@ function getAvgPaymentDays(party: any): number {
   const fyStart = new Date(fyStartYear, 3, 1)
   const daysElapsed = Math.max(1, Math.round((now.getTime() - fyStart.getTime()) / (1000 * 60 * 60 * 24)))
 
-  return Math.round((pending / Number(party.totalBilled)) * daysElapsed)
+  return Math.round((pending / base) * daysElapsed)
 }
 
 function getAvgPaymentDaysText(party: any): string {
@@ -1585,7 +1711,7 @@ function getPaymentSpeedLabel(party: any): string {
   const days = getAvgPaymentDays(party)
   if (days <= 30) return 'Prompt'
   if (days <= 60) return 'Moderate'
-  return 'Slow Payer'
+  return 'Slow Turnaround'
 }
 
 function getPartyAvgOverdue(party: any): number {
@@ -1594,13 +1720,26 @@ function getPartyAvgOverdue(party: any): number {
   return Math.round(total / party.bills.length)
 }
 
-onMounted(() => {
-  fetchTallyReceivables()
-  fetchReconciliation()
+onMounted(async () => {
+  loading.value = true
+  reconLoading.value = true
+
+  await Promise.all([
+    fetchDebtors(),
+    fetchSalesReconciliation(),
+    fetchCreditors(),
+    fetchPurchasesReconciliation()
+  ])
+
+  loading.value = false
+  reconLoading.value = false
 
   // Deep linking: if ?sub=recon in url
   if (route.query.sub === 'recon') {
     activeMainView.value = 'reconciliation'
+  }
+  if (route.query.mode === 'creditors' || route.query.mode === 'payables') {
+    activeEntityMode.value = 'creditors'
   }
 })
 </script>

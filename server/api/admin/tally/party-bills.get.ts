@@ -85,6 +85,7 @@ export default defineEventHandler(async (event) => {
 
   const query = getQuery(event)
   const partyName = query.party as string
+  const requestedType = (query.type as string)?.toLowerCase()
 
   if (!partyName) {
     throw createError({
@@ -94,46 +95,76 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    const record = await prisma.systemSetting.findUnique({
-      where: { key: 'tally_receivables_data' }
+    const isCreditorQuery = requestedType === 'creditors' || requestedType === 'payables' || requestedType === 'purchases'
+    const settingKey = isCreditorQuery ? 'tally_payables_data' : 'tally_receivables_data'
+
+    let record = await prisma.systemSetting.findUnique({
+      where: { key: settingKey }
     })
 
-    if (!record || !record.value) {
-      throw createError({
-        statusCode: 404,
-        statusMessage: 'No Tally receivables snapshot found.'
-      })
-    }
-
-    const tallyData = typeof record.value === 'string' ? JSON.parse(record.value) : record.value
-    const party = (tallyData.parties || []).find(
+    let isCreditor = isCreditorQuery
+    let tallyData = record?.value ? (typeof record.value === 'string' ? JSON.parse(record.value) : record.value) : null
+    let party = (tallyData?.parties || []).find(
       (p: any) => p.party.toLowerCase() === partyName.toLowerCase()
     )
+
+    // Fallback: If not found in primary setting, check the other setting
+    if (!party) {
+      const fallbackKey = isCreditorQuery ? 'tally_receivables_data' : 'tally_payables_data'
+      const fallbackRecord = await prisma.systemSetting.findUnique({
+        where: { key: fallbackKey }
+      })
+      if (fallbackRecord?.value) {
+        const fallbackData = typeof fallbackRecord.value === 'string' ? JSON.parse(fallbackRecord.value) : fallbackRecord.value
+        const found = (fallbackData?.parties || []).find(
+          (p: any) => p.party.toLowerCase() === partyName.toLowerCase()
+        )
+        if (found) {
+          party = found
+          tallyData = fallbackData
+          isCreditor = !isCreditorQuery
+        }
+      }
+    }
 
     if (!party) {
       throw createError({
         statusCode: 404,
-        statusMessage: `Party "${partyName}" not found in Tally debtors.`
+        statusMessage: `Party "${partyName}" not found in Tally records.`
       })
     }
 
     const pClean = cleanPartyName(party.party)
-    const pWords = pClean.split(' ').filter(w => w.length > 2)
 
-    // Fetch all sales vouchers from busy_vouchers
-    const allVouchers = await prisma.busyVoucher.findMany({
-      select: {
-        voucherNo: true,
-        voucherDate: true,
-        customerName: true,
-        totalAmount: true,
-        itemCount: true
-      },
-      orderBy: { voucherDate: 'desc' }
-    })
-
-    // Filter vouchers belonging strictly to this party
-    const partyVouchers = allVouchers.filter(v => isCustomerMatch(party.party, v.customerName))
+    // Fetch vouchers based on entity type (BusyPurchase for creditors, BusyVoucher for debtors)
+    let partyVouchers: any[] = []
+    if (isCreditor) {
+      const allPurchases = await prisma.busyPurchase.findMany({
+        select: {
+          voucherNo: true,
+          voucherDate: true,
+          supplierName: true,
+          totalAmount: true,
+          itemCount: true
+        },
+        orderBy: { voucherDate: 'desc' }
+      })
+      partyVouchers = allPurchases
+        .filter(v => isCustomerMatch(party.party, v.supplierName))
+        .map(v => ({ ...v, customerName: v.supplierName }))
+    } else {
+      const allSales = await prisma.busyVoucher.findMany({
+        select: {
+          voucherNo: true,
+          voucherDate: true,
+          customerName: true,
+          totalAmount: true,
+          itemCount: true
+        },
+        orderBy: { voucherDate: 'desc' }
+      })
+      partyVouchers = allSales.filter(v => isCustomerMatch(party.party, v.customerName))
+    }
 
     // Index pending bills by normalized reference number
     const pendingMap = new Map<string, any>()
