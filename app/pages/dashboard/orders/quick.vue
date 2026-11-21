@@ -217,6 +217,103 @@ const filteredProducts = computed(() => {
   })
 })
 
+// ── CATALOG PAGINATION & PROGRESSIVE SCROLL ───────────────────
+const PAGE_BATCH_SIZE = 30
+const visibleProductCount = ref(PAGE_BATCH_SIZE)
+
+const displayedProducts = computed(() => {
+  return filteredProducts.value.slice(0, visibleProductCount.value)
+})
+
+const hasMoreProducts = computed(() => {
+  return visibleProductCount.value < filteredProducts.value.length
+})
+
+const loadMoreProducts = () => {
+  if (hasMoreProducts.value) {
+    visibleProductCount.value += PAGE_BATCH_SIZE
+  }
+}
+
+// Reset visible count when search or category filter changes
+watch([searchQuery, selectedCategory], () => {
+  visibleProductCount.value = PAGE_BATCH_SIZE
+  nextTick(() => {
+    animateProductCards()
+  })
+})
+
+const infiniteScrollSentinel = ref<HTMLElement | null>(null)
+let scrollObserver: IntersectionObserver | null = null
+
+const handleWindowScroll = () => {
+  if (!hasMoreProducts.value) return
+  const scrollHeight = document.documentElement.scrollHeight
+  const scrollTop = window.scrollY || document.documentElement.scrollTop
+  const clientHeight = window.innerHeight || document.documentElement.clientHeight
+  if (scrollHeight - (scrollTop + clientHeight) < 400) {
+    loadMoreProducts()
+  }
+}
+
+const setupScrollObserver = () => {
+  if (typeof window === 'undefined') return
+  if (scrollObserver) {
+    scrollObserver.disconnect()
+    scrollObserver = null
+  }
+
+  if ('IntersectionObserver' in window) {
+    scrollObserver = new IntersectionObserver(
+      (entries) => {
+        const target = entries[0]
+        if (target && target.isIntersecting) {
+          loadMoreProducts()
+        }
+      },
+      {
+        root: null,
+        rootMargin: '400px',
+        threshold: 0.05
+      }
+    )
+
+    if (infiniteScrollSentinel.value) {
+      scrollObserver.observe(infiniteScrollSentinel.value)
+    }
+  }
+}
+
+watch(infiniteScrollSentinel, (el) => {
+  if (el && scrollObserver) {
+    scrollObserver.disconnect()
+    scrollObserver.observe(el)
+  }
+})
+
+// ── UNIQUE ALIAS & TAX HELPERS ─────────────────────────────────
+const getProductAlias = (item: any): string | null => {
+  if (!item) return null
+  const name = (item.name || item.customName || '').trim().toLowerCase()
+  if (item.alias && item.alias.trim().toLowerCase() !== name) {
+    return item.alias.trim()
+  }
+  if (item.sku && item.sku.trim().toLowerCase() !== name) {
+    return item.sku.trim()
+  }
+  return null
+}
+
+const getItemTaxRate = (c: CartItem | any): number => {
+  if (!c) return 18
+  if (c.isCustom) return 18
+  const p = (rawProducts.value || []).find(x => x.id === c.id)
+  if (p && p.taxRate != null && !isNaN(Number(p.taxRate))) {
+    return Number(p.taxRate)
+  }
+  return 18
+}
+
 // ── CART STATE ─────────────────────────────────────────────────
 interface CartItem {
   id: string
@@ -257,8 +354,7 @@ const cartTotals = computed(() => {
     const c = cart.value[id]
     if (!c || c.qty <= 0) continue
 
-    const p = (rawProducts.value || []).find(x => x.id === id)
-    const taxRate = c.isCustom ? 18 : (p?.taxRate ?? 18)
+    const taxRate = getItemTaxRate(c)
     const qty = Number(c.qty) || 1
     const rate = Number(c.customPrice) || 0
 
@@ -453,6 +549,8 @@ const onPopState = (e: PopStateEvent) => {
 onMounted(() => {
   if (typeof window !== 'undefined') {
     window.addEventListener('popstate', onPopState)
+    window.addEventListener('scroll', handleWindowScroll, { passive: true })
+    setupScrollObserver()
   }
   nextTick(() => {
     gsap.from('.quick-top-nav', {
@@ -474,6 +572,11 @@ onMounted(() => {
 onUnmounted(() => {
   if (typeof window !== 'undefined') {
     window.removeEventListener('popstate', onPopState)
+    window.removeEventListener('scroll', handleWindowScroll)
+  }
+  if (scrollObserver) {
+    scrollObserver.disconnect()
+    scrollObserver = null
   }
 })
 
@@ -979,28 +1082,34 @@ const confirmAndPlaceOrder = async () => {
 
       <div v-else class="space-y-2">
         <div 
-          v-for="item in filteredProducts" 
+          v-for="item in displayedProducts" 
           :key="item.id"
           class="quick-product-card bg-white rounded-2xl p-3 sm:p-4 border border-slate-200/90 shadow-2xs hover:border-slate-300 transition-all flex items-center justify-between gap-3"
         >
           <div class="flex-1 min-w-0">
-            <!-- Brand & Badges -->
+            <!-- Line 1: Group Name Badge next to Stock Badge -->
             <div class="flex items-center gap-1.5 flex-wrap">
-              <span v-if="item.brand" class="text-[10px] font-bold px-1.5 py-0.2 rounded bg-slate-100 text-slate-600">
-                {{ item.brand }}
-              </span>
+              <!-- Group Name Badge -->
               <span 
-                class="text-[10px] font-semibold px-1.5 py-0.2 rounded border"
-                :class="item.stock > 30 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'"
+                v-if="item.category?.name || item.categoryName || item.brand" 
+                class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200 uppercase tracking-wide"
               >
-                {{ item.stock }} in stock
+                {{ item.category?.name || item.categoryName || item.brand }}
+              </span>
+
+              <!-- Stock Badge -->
+              <span 
+                class="text-[10px] font-semibold px-2 py-0.5 rounded-md border"
+                :class="item.stock > 30 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : (item.stock > 0 ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-rose-50 text-rose-700 border-rose-200')"
+              >
+                {{ item.stock > 0 ? `${item.stock} in stock` : 'Out of stock' }}
               </span>
 
               <!-- Customer Last Price pill -->
               <button 
                 v-if="customerLastPrices[item.id]?.lastPrice"
                 @click="openPriceHistory(item)"
-                class="text-[10px] font-medium px-1.5 py-0.2 rounded bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200/80 inline-flex items-center gap-1 cursor-pointer transition-colors"
+                class="text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200/80 inline-flex items-center gap-1 cursor-pointer transition-colors"
                 title="View full customer price history"
               >
                 <Clock class="w-3 h-3 text-purple-600" />
@@ -1008,25 +1117,18 @@ const confirmAndPlaceOrder = async () => {
               </button>
             </div>
 
-            <!-- Product Title & Details -->
-            <h4 class="font-bold text-slate-900 text-xs sm:text-sm mt-1 break-words leading-snug">
+            <!-- Line 2: Product Name Full -->
+            <h4 class="font-bold text-slate-900 text-xs sm:text-sm mt-1.5 break-words leading-snug">
               {{ item.name }}
             </h4>
 
-            <!-- Unique Alias (Show only if unique and distinct from name) -->
-            <div 
-              v-if="item.alias && item.alias.trim().toLowerCase() !== item.name.trim().toLowerCase()" 
-              class="mt-0.5"
-            >
+            <!-- Line 3: Unique Alias (show only if distinct from product name) -->
+            <div v-if="getProductAlias(item)" class="mt-1">
               <span class="inline-flex items-center gap-1 text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
                 <span class="text-slate-400 font-sans">Alias:</span>
-                <span>{{ item.alias }}</span>
+                <span>{{ getProductAlias(item) }}</span>
               </span>
             </div>
-
-            <p v-if="item.sku || item.category?.name" class="text-[11px] text-slate-500 mt-0.5">
-              {{ [item.sku, item.category?.name].filter(Boolean).join(' • ') }}
-            </p>
 
             <!-- Price & Tax -->
             <div class="flex items-center gap-2 mt-1.5">
@@ -1041,7 +1143,7 @@ const confirmAndPlaceOrder = async () => {
                 Incl. Tax
               </span>
               <span v-else class="text-[10px] font-medium text-slate-400">
-                + {{ item.taxRate ?? 18 }}% GST
+                + {{ item.taxRate != null ? Number(item.taxRate) : 18 }}% GST
               </span>
             </div>
           </div>
@@ -1085,6 +1187,22 @@ const confirmAndPlaceOrder = async () => {
               <span>Add</span>
             </button>
           </div>
+        </div>
+
+        <!-- Progressive Infinite Scroll Sentinel -->
+        <div v-if="hasMoreProducts" ref="infiniteScrollSentinel" class="py-4 text-center">
+          <button 
+            type="button" 
+            @click="loadMoreProducts"
+            class="px-4 py-2 text-xs font-semibold text-slate-600 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl shadow-2xs cursor-pointer inline-flex items-center gap-2 active:scale-95 transition-all"
+          >
+            <span class="w-2 h-2 rounded-full bg-blue-600 animate-ping"></span>
+            <span>Loading more products ({{ displayedProducts.length }} of {{ filteredProducts.length }})...</span>
+          </button>
+        </div>
+
+        <div v-else-if="filteredProducts.length > 30" class="py-3 text-center text-xs text-slate-400 font-medium">
+          ✓ Showing all {{ filteredProducts.length }} products
         </div>
 
         <!-- Custom Item Card at bottom of catalog -->
@@ -1209,6 +1327,14 @@ const confirmAndPlaceOrder = async () => {
                       Incl. Tax
                     </span>
                   </div>
+
+                  <!-- Unique Alias in Cart Review (only if unique and distinct from name) -->
+                  <div v-if="getProductAlias(c.isCustom ? c : (rawProducts || []).find(x => x.id === c.id))" class="mt-0.5">
+                    <span class="inline-flex items-center gap-1 text-[10px] font-mono font-semibold px-1.5 py-0.2 rounded bg-slate-100 text-slate-700 border border-slate-200">
+                      <span class="text-slate-400 font-sans">Alias:</span>
+                      <span>{{ getProductAlias(c.isCustom ? c : (rawProducts || []).find(x => x.id === c.id)) }}</span>
+                    </span>
+                  </div>
                   <div class="text-xs sm:text-sm text-slate-600 font-mono mt-1">
                     ₹{{ c.customPrice.toLocaleString('en-IN') }} × {{ c.qty }} = 
                     <span class="font-bold text-blue-950 font-mono text-sm sm:text-base">₹{{ (c.customPrice * c.qty).toLocaleString('en-IN') }}</span>
@@ -1296,7 +1422,7 @@ const confirmAndPlaceOrder = async () => {
                         class="py-1 rounded-lg transition-all cursor-pointer"
                         :class="!c.isTaxInclusive ? 'bg-white text-blue-900 shadow-2xs' : 'text-slate-600 hover:text-slate-900'"
                       >
-                        + 18% GST
+                        + {{ getItemTaxRate(c) }}% GST
                       </button>
                       <button 
                         type="button"
@@ -1358,7 +1484,7 @@ const confirmAndPlaceOrder = async () => {
                 <span class="font-mono font-medium text-slate-800">₹{{ cartTotals.taxableTotal.toLocaleString('en-IN') }}</span>
               </div>
               <div class="flex justify-between text-slate-500">
-                <span>GST (18% Estimated)</span>
+                <span>GST</span>
                 <span class="font-mono font-medium text-slate-800">₹{{ cartTotals.gstTotal.toLocaleString('en-IN') }}</span>
               </div>
               <div class="flex justify-between text-sm sm:text-base font-bold text-slate-900 pt-1.5 border-t border-slate-200">
@@ -1979,10 +2105,19 @@ const confirmAndPlaceOrder = async () => {
                         Custom
                       </span>
                     </div>
+
+                    <!-- Unique Alias in Step 2 Review -->
+                    <div v-if="getProductAlias(c.isCustom ? c : (rawProducts || []).find(x => x.id === c.id))" class="mt-0.5">
+                      <span class="inline-flex items-center gap-1 text-[10px] font-mono font-semibold px-1.5 py-0.2 rounded bg-slate-100 text-slate-700 border border-slate-200">
+                        <span class="text-slate-400 font-sans">Alias:</span>
+                        <span>{{ getProductAlias(c.isCustom ? c : (rawProducts || []).find(x => x.id === c.id)) }}</span>
+                      </span>
+                    </div>
+
                     <div class="text-xs text-slate-600 font-mono mt-0.5">
                       {{ c.qty }} {{ c.isCustom ? c.customUnit : ((rawProducts || []).find(x => x.id === c.id)?.unit || 'Sheet') }} × ₹{{ c.customPrice.toLocaleString('en-IN') }} 
                       <span v-if="c.isTaxInclusive" class="text-blue-700 font-bold">(Tax Incl)</span>
-                      <span v-else class="text-slate-400">+ 18% GST</span>
+                      <span v-else class="text-slate-400">+ {{ getItemTaxRate(c) }}% GST</span>
                     </div>
                   </div>
                   <div class="font-mono font-bold text-sm sm:text-base text-blue-950 text-right shrink-0">
@@ -1998,7 +2133,7 @@ const confirmAndPlaceOrder = async () => {
                   <span class="font-mono font-medium text-slate-800">₹{{ cartTotals.taxableTotal.toLocaleString('en-IN') }}</span>
                 </div>
                 <div class="flex justify-between text-slate-600">
-                  <span>Estimated GST (18%)</span>
+                  <span>GST</span>
                   <span class="font-mono font-medium text-slate-800">₹{{ cartTotals.gstTotal.toLocaleString('en-IN') }}</span>
                 </div>
                 <div class="flex justify-between text-sm sm:text-base font-bold text-slate-900 pt-1.5 border-t border-slate-200">
