@@ -30,6 +30,8 @@ namespace SMFlowSyncAgent
         public string PrimaryPcName { get; set; }
         public bool StartWithWindows { get; set; }
         public bool IsStandby { get; set; }
+        public string TallyHost { get; set; }
+        public int TallyPort { get; set; }
 
         public AgentConfig()
         {
@@ -43,6 +45,8 @@ namespace SMFlowSyncAgent
             PrimaryPcName = "PRISM";
             StartWithWindows = true;
             IsStandby = false;
+            TallyHost = "127.0.0.1";
+            TallyPort = 9000;
         }
 
         public static string GetConfigPath()
@@ -262,6 +266,7 @@ namespace SMFlowSyncAgent
         private DateTime lastSyncTime = DateTime.MinValue;
         private DateTime nextSyncTime = DateTime.MinValue;
         private bool isSyncing = false;
+        private bool isTallySyncing = false;
         private bool hasShownTrayBalloon = false;
 
         // UI Controls
@@ -270,6 +275,7 @@ namespace SMFlowSyncAgent
         private Label lblAppSubtitle;
         private Label lblStatusPill;
         private Button btnSyncNow;
+        private Button btnSyncTally;
         private Label lblCountdown;
 
         private Panel statsPanel;
@@ -306,6 +312,8 @@ namespace SMFlowSyncAgent
         private Button btnClaimPrimary;
         private CheckBox chkStandbyMode;
         private CheckBox chkStartWithWindows;
+        private TextBox txtTallyHost;
+        private TextBox txtTallyPort;
         private Button btnSaveSettings;
 
         private bool startInTray = false;
@@ -384,8 +392,8 @@ namespace SMFlowSyncAgent
         private void InitializeComponent()
         {
             this.Text = "SM Flow Sync Agent";
-            this.Size = new Size(820, 620);
-            this.MinimumSize = new Size(720, 500);
+            this.Size = new Size(890, 620);
+            this.MinimumSize = new Size(820, 500);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = ColorBgLight;
             this.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
@@ -406,7 +414,7 @@ namespace SMFlowSyncAgent
             lblAppTitle.Location = new Point(16, 12);
 
             lblAppSubtitle = new Label();
-            lblAppSubtitle.Text = "BusyWin 1-Way Clone to OMS Cloud Bridge • High-Speed Sync";
+            lblAppSubtitle.Text = "BusyWin & Tally Prime Cloud Bridge • High-Speed Sync";
             lblAppSubtitle.ForeColor = Color.FromArgb(147, 197, 253);
             lblAppSubtitle.Font = new Font("Segoe UI", 8F);
             lblAppSubtitle.AutoSize = true;
@@ -416,34 +424,47 @@ namespace SMFlowSyncAgent
             lblStatusPill.Text = "● PRIMARY (ACTIVE)";
             lblStatusPill.Font = new Font("Segoe UI", 8.5F, FontStyle.Bold);
             lblStatusPill.TextAlign = ContentAlignment.MiddleCenter;
-            lblStatusPill.Size = new Size(160, 28);
-            lblStatusPill.Location = new Point(360, 20);
+            lblStatusPill.Size = new Size(150, 28);
+            lblStatusPill.Location = new Point(315, 20);
             lblStatusPill.BackColor = Color.FromArgb(236, 253, 245);
             lblStatusPill.ForeColor = Color.FromArgb(4, 120, 87);
 
             btnSyncNow = new Button();
-            btnSyncNow.Text = "⚡ Sync Now";
+            btnSyncNow.Text = "⚡ Sync Busy";
             btnSyncNow.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
             btnSyncNow.ForeColor = Color.White;
             btnSyncNow.BackColor = Color.FromArgb(37, 99, 235);
             btnSyncNow.FlatStyle = FlatStyle.Flat;
             btnSyncNow.FlatAppearance.BorderSize = 0;
-            btnSyncNow.Size = new Size(110, 32);
-            btnSyncNow.Location = new Point(540, 18);
+            btnSyncNow.Size = new Size(105, 32);
+            btnSyncNow.Location = new Point(475, 18);
             btnSyncNow.Cursor = Cursors.Hand;
             btnSyncNow.Click += (s, e) => TriggerManualSync();
 
+            btnSyncTally = new Button();
+            btnSyncTally.Text = "📊 Sync Tally";
+            btnSyncTally.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            btnSyncTally.ForeColor = Color.White;
+            btnSyncTally.BackColor = Color.FromArgb(13, 148, 136); // Teal / Emerald
+            btnSyncTally.FlatStyle = FlatStyle.Flat;
+            btnSyncTally.FlatAppearance.BorderSize = 0;
+            btnSyncTally.Size = new Size(105, 32);
+            btnSyncTally.Location = new Point(588, 18);
+            btnSyncTally.Cursor = Cursors.Hand;
+            btnSyncTally.Click += (s, e) => TriggerTallySync();
+
             lblCountdown = new Label();
-            lblCountdown.Text = "Next: 30m 00s";
+            lblCountdown.Text = "Busy: 30m 00s";
             lblCountdown.ForeColor = Color.FromArgb(226, 232, 240);
             lblCountdown.Font = new Font("Segoe UI", 8F, FontStyle.Bold);
             lblCountdown.AutoSize = true;
-            lblCountdown.Location = new Point(665, 26);
+            lblCountdown.Location = new Point(704, 26);
 
             headerPanel.Controls.Add(lblAppTitle);
             headerPanel.Controls.Add(lblAppSubtitle);
             headerPanel.Controls.Add(lblStatusPill);
             headerPanel.Controls.Add(btnSyncNow);
+            headerPanel.Controls.Add(btnSyncTally);
             headerPanel.Controls.Add(lblCountdown);
             this.Controls.Add(headerPanel);
 
@@ -768,6 +789,22 @@ namespace SMFlowSyncAgent
             tabSettings.Controls.Add(chkStartWithWindows);
             y += 44;
 
+            // Section 4: Tally Prime Integration
+            Label lblSecTally = CreateSectionHeader("4. Tally Prime Integration (Manual Sync Only)", ref y);
+            tabSettings.Controls.Add(lblSecTally);
+
+            Label lblTallyInfo = new Label();
+            lblTallyInfo.Text = "Tally Prime XML Server configuration. Tally sync is strictly manual on demand (never run on a schedule).";
+            lblTallyInfo.ForeColor = ColorTextMuted;
+            lblTallyInfo.Font = new Font("Segoe UI", 8.5F);
+            lblTallyInfo.AutoSize = true;
+            lblTallyInfo.Location = new Point(24, y);
+            tabSettings.Controls.Add(lblTallyInfo);
+            y += 24;
+
+            AddFolderSetting("Tally Prime Host (Default: 127.0.0.1):", ref txtTallyHost, config.TallyHost ?? "127.0.0.1", false, ref y);
+            AddFolderSetting("Tally Prime Port (Default: 9000):", ref txtTallyPort, (config.TallyPort > 0 ? config.TallyPort : 9000).ToString(), false, ref y);
+
             btnSaveSettings = new Button();
             btnSaveSettings.Text = "💾 Save Settings";
             btnSaveSettings.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
@@ -859,6 +896,15 @@ namespace SMFlowSyncAgent
 
                 config.StartWithWindows = chkStartWithWindows.Checked;
                 config.IsStandby = chkStandbyMode != null && chkStandbyMode.Checked;
+
+                if (txtTallyHost != null) config.TallyHost = string.IsNullOrEmpty(txtTallyHost.Text.Trim()) ? "127.0.0.1" : txtTallyHost.Text.Trim();
+                if (txtTallyPort != null)
+                {
+                    int tp;
+                    if (int.TryParse(txtTallyPort.Text.Trim(), out tp) && tp > 0) config.TallyPort = tp;
+                    else config.TallyPort = 9000;
+                }
+
                 config.Save();
 
                 UpdateStartupShortcut(config.StartWithWindows);
@@ -918,8 +964,11 @@ namespace SMFlowSyncAgent
             trayMenu = new ContextMenuStrip();
             trayMenu.Font = new Font("Segoe UI", 9F);
 
-            ToolStripMenuItem miSyncNow = new ToolStripMenuItem("⚡ Sync Now", null, (s, e) => TriggerManualSync());
+            ToolStripMenuItem miSyncNow = new ToolStripMenuItem("⚡ Sync Busy Now", null, (s, e) => TriggerManualSync());
             miSyncNow.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+
+            ToolStripMenuItem miSyncTally = new ToolStripMenuItem("📊 Sync Tally Now (Manual)", null, (s, e) => TriggerTallySync());
+            miSyncTally.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
 
             ToolStripMenuItem miOpenTerminal = new ToolStripMenuItem("📟 Open Live Terminal", null, (s, e) => ShowAndRestore());
             ToolStripMenuItem miHistory = new ToolStripMenuItem("📜 View Sync History", null, (s, e) => { ShowAndRestore(); mainTabs.SelectedTab = tabHistory; });
@@ -927,6 +976,7 @@ namespace SMFlowSyncAgent
             ToolStripMenuItem miExit = new ToolStripMenuItem("❌ Exit Agent", null, (s, e) => ForceExit());
 
             trayMenu.Items.Add(miSyncNow);
+            trayMenu.Items.Add(miSyncTally);
             trayMenu.Items.Add(new ToolStripSeparator());
             trayMenu.Items.Add(miOpenTerminal);
             trayMenu.Items.Add(miHistory);
@@ -1047,7 +1097,13 @@ namespace SMFlowSyncAgent
         {
             if (isSyncing)
             {
-                lblCountdown.Text = "Syncing in progress...";
+                lblCountdown.Text = "Syncing Busy...";
+                return;
+            }
+
+            if (isTallySyncing)
+            {
+                lblCountdown.Text = "Syncing Tally...";
                 return;
             }
 
@@ -1074,11 +1130,11 @@ namespace SMFlowSyncAgent
             TimeSpan diff = nextSyncTime - DateTime.Now;
             if (diff.TotalSeconds > 0)
             {
-                lblCountdown.Text = string.Format("Next: {0:D2}m {1:D2}s ({2:hh:mm tt})", (int)diff.TotalMinutes, diff.Seconds, nextSyncTime);
+                lblCountdown.Text = string.Format("Busy: {0:D2}m {1:D2}s ({2:hh:mm tt})", (int)diff.TotalMinutes, diff.Seconds, nextSyncTime);
             }
             else
             {
-                lblCountdown.Text = "Next: Syncing now...";
+                lblCountdown.Text = "Busy: Syncing now...";
             }
         }
 
@@ -1087,8 +1143,8 @@ namespace SMFlowSyncAgent
             bool prim = IsPrimary();
             if (prim)
             {
-                btnSyncNow.Enabled = !isSyncing;
-                btnSyncNow.Text = "⚡ Sync Now";
+                btnSyncNow.Enabled = !isSyncing && !isTallySyncing;
+                btnSyncNow.Text = "⚡ Sync Busy";
                 btnSyncNow.BackColor = Color.FromArgb(37, 99, 235);
                 lblStatusPill.Text = "● PRIMARY (ACTIVE)";
                 lblStatusPill.BackColor = Color.FromArgb(236, 253, 245);
@@ -1098,13 +1154,15 @@ namespace SMFlowSyncAgent
             else
             {
                 btnSyncNow.Enabled = false;
-                btnSyncNow.Text = "Standby (Locked)";
+                btnSyncNow.Text = "Busy (Locked)";
                 btnSyncNow.BackColor = Color.FromArgb(148, 163, 184);
                 lblStatusPill.Text = config.IsStandby ? "○ STANDBY (FORCED)" : string.Format("○ STANDBY ({0})", config.PrimaryPcName);
                 lblStatusPill.BackColor = Color.FromArgb(241, 245, 249);
                 lblStatusPill.ForeColor = Color.FromArgb(71, 85, 105);
                 trayIcon.Text = config.IsStandby ? "SM Flow Sync Agent: Standby (Forced on this PC)" : string.Format("SM Flow Sync Agent: Standby (Primary is {0})", config.PrimaryPcName);
             }
+
+            btnSyncTally.Enabled = !isSyncing && !isTallySyncing;
 
             lblStatPrimary.Text = string.Format("Host: {0} ({1})", Environment.MachineName, prim ? "Primary" : (config.IsStandby ? "Standby - Forced" : "Standby"));
             lblStatInterval.Text = config.IntervalMinutes > 0 ? string.Format("Interval: {0} Mins", config.IntervalMinutes) : "Interval: Manual";
@@ -1120,9 +1178,9 @@ namespace SMFlowSyncAgent
         // =========================================================================
         private void TriggerManualSync()
         {
-            if (isSyncing)
+            if (isSyncing || isTallySyncing)
             {
-                MessageBox.Show("A sync is already in progress. Please wait for it to complete.", "Sync Busy", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("A sync operation is already in progress. Please wait for it to complete.", "Sync Busy", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
 
@@ -1146,10 +1204,11 @@ namespace SMFlowSyncAgent
 
         private void RunSyncPipeline(bool manual)
         {
-            if (isSyncing) return;
+            if (isSyncing || isTallySyncing) return;
             if (!IsPrimary()) return;
             isSyncing = true;
             btnSyncNow.Enabled = false;
+            btnSyncTally.Enabled = false;
 
             lblStatusPill.Text = "⚡ SYNCING...";
             lblStatusPill.BackColor = Color.FromArgb(254, 243, 199);
@@ -1610,7 +1669,8 @@ namespace SMFlowSyncAgent
                     InvokeAction(() =>
                     {
                         isSyncing = false;
-                        btnSyncNow.Enabled = true;
+                        btnSyncNow.Enabled = IsPrimary();
+                        btnSyncTally.Enabled = true;
 
                         if (isSuccess)
                         {
@@ -1635,7 +1695,244 @@ namespace SMFlowSyncAgent
                         {
                             nextSyncTime = CalculateNextAlignedTime(config.IntervalMinutes);
                         }
-                        lblStatDuration.Text = "Duration: " + durationStr;
+                        lblStatDuration.Text = "Busy: " + durationStr;
+                        LoadHistory();
+                    });
+                }
+            });
+        }
+
+        // =====================================================================
+        // TALLY PRIME SYNC PIPELINE (ON-DEMAND MANUAL TRIGGER ONLY)
+        // =========================================================================
+        private void TriggerTallySync()
+        {
+            if (isSyncing || isTallySyncing)
+            {
+                MessageBox.Show("A sync operation is already in progress. Please wait for it to complete.", "Sync Busy", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            RunTallySyncPipeline();
+        }
+
+        private void RunTallySyncPipeline()
+        {
+            if (isSyncing || isTallySyncing) return;
+            isTallySyncing = true;
+            btnSyncNow.Enabled = false;
+            btnSyncTally.Enabled = false;
+
+            string host = string.IsNullOrEmpty(config.TallyHost) ? "127.0.0.1" : config.TallyHost;
+            int port = config.TallyPort > 0 ? config.TallyPort : 9000;
+
+            lblStatusPill.Text = "📊 SYNCING TALLY...";
+            lblStatusPill.BackColor = Color.FromArgb(204, 251, 241);
+            lblStatusPill.ForeColor = Color.FromArgb(15, 118, 110);
+            lblTerminalStatus.Text = "Connecting to Tally Prime...";
+            trayIcon.Text = "SM Flow Sync Agent: Syncing Tally...";
+
+            Task.Factory.StartNew(() =>
+            {
+                Stopwatch swTotal = Stopwatch.StartNew();
+                string durationStr = "0.0s";
+                bool isSuccess = false;
+                string failedReason = null;
+
+                try
+                {
+                    InvokeAction(() =>
+                    {
+                        AppendLog("\n=======================================================", ColorBrandNavy);
+                        AppendLog(string.Format("   TALLY PRIME FINANCIAL SYNC (ON-DEMAND) [{0}]", DateTime.Now.ToString("dd-MM-yyyy HH:mm:ss")), ColorCyan);
+                        AppendLog("=======================================================", ColorBrandNavy);
+                    });
+
+                    // -------------------------------------------------------------
+                    // STEP 1/2: Check Tally Prime Port Connectivity
+                    // -------------------------------------------------------------
+                    InvokeAction(() =>
+                    {
+                        lblTerminalStatus.Text = string.Format("Step 1/2: Checking Tally ({0}:{1})...", host, port);
+                        AppendLog(string.Format("\n[1/2] Connecting to Tally Prime at http://{0}:{1} ...", host, port), ColorCyan);
+                    });
+
+                    bool isTallyOnline = false;
+                    try
+                    {
+                        using (System.Net.Sockets.TcpClient tcp = new System.Net.Sockets.TcpClient())
+                        {
+                            IAsyncResult ar = tcp.BeginConnect(host, port, null, null);
+                            isTallyOnline = ar.AsyncWaitHandle.WaitOne(3000, false);
+                            if (isTallyOnline) tcp.EndConnect(ar);
+                        }
+                    }
+                    catch { }
+
+                    if (!isTallyOnline)
+                    {
+                        failedReason = string.Format("Tally Prime on {0}:{1} is unreachable", host, port);
+                        InvokeAction(() =>
+                        {
+                            AppendLog(string.Format("      [x] Cannot connect to Tally Prime on {0}:{1} (Port closed).", host, port), ColorRose);
+                            AppendLog("      [!] Please ensure Tally Prime is open and your company is loaded.", ColorAmber);
+                        });
+                        LogHistoryEntry(string.Format("ERROR: [Tally Failed] Cannot connect to Tally Prime on {0}:{1} (port closed).", host, port), swTotal.Elapsed);
+                        return;
+                    }
+
+                    InvokeAction(() => AppendLog(string.Format("      [v] Tally Prime is ONLINE on port {0}.", port), ColorGreen));
+
+                    // -------------------------------------------------------------
+                    // STEP 2/2: Extract Debtors, Creditors & Upload to OMS Cloud
+                    // -------------------------------------------------------------
+                    InvokeAction(() =>
+                    {
+                        lblTerminalStatus.Text = "Step 2/2: Syncing Tally Financials...";
+                        AppendLog("\n[2/2] Extracting Tally Financials & Uploading to OMS Cloud...", ColorCyan);
+                    });
+
+                    string tallyScript = GetScriptPath("sync_tally_receivables.cjs");
+                    if (!File.Exists(tallyScript))
+                    {
+                        failedReason = "sync_tally_receivables.cjs missing";
+                        InvokeAction(() => AppendLog("      [x] Script not found: " + tallyScript, ColorRose));
+                        LogHistoryEntry("ERROR: [Tally Failed] sync_tally_receivables.cjs missing.", swTotal.Elapsed);
+                        return;
+                    }
+
+                    string workDir = GetScriptsWorkingDir();
+                    string appDir = AppDomain.CurrentDomain.BaseDirectory;
+                    string nodeExe = "node.exe";
+                    string localNode = Path.Combine(appDir, "node.exe");
+                    if (File.Exists(localNode))
+                    {
+                        nodeExe = localNode;
+                    }
+
+                    ProcessStartInfo psi = new ProcessStartInfo();
+                    psi.FileName = nodeExe;
+                    psi.Arguments = string.Format("\"{0}\"", tallyScript);
+                    psi.WorkingDirectory = workDir;
+                    psi.UseShellExecute = false;
+                    psi.CreateNoWindow = true;
+                    psi.RedirectStandardOutput = true;
+                    psi.RedirectStandardError = true;
+
+                    // Pass host and port as environment variables
+                    psi.EnvironmentVariables["TALLY_HOST"] = host;
+                    psi.EnvironmentVariables["TALLY_PORT"] = port.ToString();
+
+                    int exitCode = 0;
+                    bool hasScriptError = false;
+                    string firstError = null;
+
+                    using (Process proc = Process.Start(psi))
+                    {
+                        string line;
+                        while ((line = proc.StandardOutput.ReadLine()) != null)
+                        {
+                            string l = line;
+                            InvokeAction(() =>
+                            {
+                                if (l.Contains("SUCCESS") || l.Contains("Saved tally_"))
+                                {
+                                    AppendLog("      " + l, ColorGreen);
+                                }
+                                else if (l.Contains("ERROR") || l.Contains("Exception") || l.Contains("FAILED"))
+                                {
+                                    hasScriptError = true;
+                                    if (string.IsNullOrEmpty(firstError)) firstError = l.Trim();
+                                    AppendLog("      " + l, ColorRose);
+                                }
+                                else if (l.StartsWith(">>>") || l.StartsWith("Connecting") || l.StartsWith("- Fetching"))
+                                {
+                                    AppendLog("      " + l, ColorCyan);
+                                }
+                                else
+                                {
+                                    AppendLog("      " + l, ColorTerminalText);
+                                }
+                            });
+                        }
+
+                        string errLine;
+                        while ((errLine = proc.StandardError.ReadLine()) != null)
+                        {
+                            string el = errLine;
+                            hasScriptError = true;
+                            if (string.IsNullOrEmpty(firstError) && !string.IsNullOrWhiteSpace(el))
+                            {
+                                firstError = el.Trim();
+                            }
+                            InvokeAction(() => AppendLog("      [!] " + el, ColorRose));
+                        }
+
+                        proc.WaitForExit();
+                        exitCode = proc.ExitCode;
+                    }
+
+                    if (exitCode != 0 || hasScriptError)
+                    {
+                        failedReason = firstError ?? string.Format("Exit code {0}", exitCode);
+                        InvokeAction(() => AppendLog("      [x] Tally sync failed: " + failedReason, ColorRose));
+                        LogHistoryEntry(string.Format("ERROR: [Tally Failed] Sync failed: {0}", failedReason), swTotal.Elapsed);
+                        return;
+                    }
+
+                    isSuccess = true;
+                    durationStr = string.Format("{0:F2}s", swTotal.Elapsed.TotalSeconds);
+                    string successSummary = string.Format("SUCCESS [TALLY]: Debtors, Creditors, Receivables & Payables 100% synchronized with OMS Cloud ({0})", durationStr);
+                    LogHistoryEntry(successSummary, swTotal.Elapsed);
+
+                    InvokeAction(() =>
+                    {
+                        AppendLog("\n=======================================================", ColorBrandNavy);
+                        AppendLog("  [v] All Tally Financials synced successfully to OMS Cloud!", ColorGreen);
+                        AppendLog(string.Format("  Total Tally Sync Execution Time: {0}", durationStr), ColorGreen);
+                        AppendLog("=======================================================\n", ColorBrandNavy);
+                    });
+                }
+                catch (System.ComponentModel.Win32Exception)
+                {
+                    failedReason = "Node.js runtime not found";
+                    InvokeAction(() => AppendLog("      [x] Node.js runtime not found on this computer. Please install Node.js (https://nodejs.org) or place node.exe in this agent folder.", ColorRose));
+                    LogHistoryEntry("ERROR: [Tally Failed] Node.js runtime not found.", swTotal.Elapsed);
+                }
+                catch (Exception ex)
+                {
+                    failedReason = ex.Message;
+                    InvokeAction(() => AppendLog("\n[x] Tally Sync Exception: " + ex.Message, ColorRose));
+                    LogHistoryEntry("ERROR: [Tally Failed] Exception: " + ex.Message, swTotal.Elapsed);
+                }
+                finally
+                {
+                    swTotal.Stop();
+                    durationStr = string.Format("{0:F2}s", swTotal.Elapsed.TotalSeconds);
+                    InvokeAction(() =>
+                    {
+                        isTallySyncing = false;
+                        btnSyncTally.Enabled = true;
+                        btnSyncNow.Enabled = IsPrimary();
+
+                        if (isSuccess)
+                        {
+                            lblStatusPill.Text = "● TALLY SYNCED";
+                            lblStatusPill.BackColor = Color.FromArgb(236, 253, 245);
+                            lblStatusPill.ForeColor = Color.FromArgb(4, 120, 87);
+                            lblTerminalStatus.Text = "Tally Financials Synced";
+                            trayIcon.Text = "SM Flow Sync Agent: Tally Synced";
+                        }
+                        else
+                        {
+                            lblStatusPill.Text = "● TALLY ERROR";
+                            lblStatusPill.BackColor = Color.FromArgb(254, 226, 226);
+                            lblStatusPill.ForeColor = Color.FromArgb(185, 28, 28);
+                            lblTerminalStatus.Text = "Tally Error: " + (failedReason ?? "Failed");
+                            trayIcon.Text = "SM Flow Sync Agent: Tally Sync Error";
+                        }
+
+                        lblStatDuration.Text = "Tally: " + durationStr;
                         LoadHistory();
                     });
                 }
@@ -1719,10 +2016,20 @@ namespace SMFlowSyncAgent
                     string status = "INFO";
                     Color rowColor = ColorTextPrimary;
 
-                    if (rest.StartsWith("SUCCESS", StringComparison.OrdinalIgnoreCase))
+                    if (rest.StartsWith("SUCCESS [TALLY]", StringComparison.OrdinalIgnoreCase))
+                    {
+                        status = "TALLY OK";
+                        rowColor = Color.FromArgb(13, 148, 136);
+                    }
+                    else if (rest.StartsWith("SUCCESS", StringComparison.OrdinalIgnoreCase))
                     {
                         status = "5/5 OK";
                         rowColor = Color.FromArgb(4, 120, 87);
+                    }
+                    else if (rest.IndexOf("[Tally Failed]", StringComparison.OrdinalIgnoreCase) >= 0 || rest.StartsWith("ERROR [TALLY]", StringComparison.OrdinalIgnoreCase))
+                    {
+                        status = "TALLY ERR";
+                        rowColor = Color.FromArgb(190, 18, 60);
                     }
                     else if (rest.StartsWith("SKIP", StringComparison.OrdinalIgnoreCase))
                     {
