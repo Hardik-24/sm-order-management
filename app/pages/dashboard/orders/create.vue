@@ -783,6 +783,17 @@ const getCustomerInitials = (name: string) => {
       </div>
 
       <div class="flex items-center gap-1.5 shrink-0">
+        <!-- Admin Beta Quick Order Shortcut (Mobile) -->
+        <NuxtLink
+          v-if="user?.role === 'ADMIN'"
+          to="/dashboard/orders/quick"
+          class="p-1 px-2 rounded-lg bg-amber-500/10 text-amber-900 border border-amber-300 font-bold text-[10px] flex items-center gap-1 shadow-2xs"
+          title="Quick Order (Admin Beta)"
+        >
+          <Zap class="w-3 h-3 text-amber-600" />
+          <span>Quick</span>
+        </NuxtLink>
+
         <!-- UI Mode Toggle: Modern vs Classic -->
         <div class="inline-flex items-center p-0.5 bg-slate-100 rounded-xl border border-slate-200/90 text-[10px] font-bold select-none">
           <button
@@ -828,6 +839,17 @@ const getCustomerInitials = (name: string) => {
       </div>
       
       <div class="flex items-center gap-3">
+        <!-- Admin Beta Quick Order Shortcut -->
+        <NuxtLink
+          v-if="user?.role === 'ADMIN'"
+          to="/dashboard/orders/quick"
+          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-900 border border-amber-300 text-xs font-bold transition-all shadow-2xs"
+          title="Stock-to-Cart workflow (Admin Beta)"
+        >
+          <Zap class="w-3.5 h-3.5 text-amber-600" />
+          <span>Quick Stock Order (Admin Beta) ➔</span>
+        </NuxtLink>
+
         <!-- UI Mode Toggle: Modern vs Classic -->
         <div class="inline-flex items-center p-1 bg-slate-100 rounded-xl border border-slate-200 text-xs font-bold shadow-2xs select-none">
           <button

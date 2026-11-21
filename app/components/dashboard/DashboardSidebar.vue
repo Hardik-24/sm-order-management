@@ -53,6 +53,13 @@
             <PenTool class="shrink-0 w-4 h-4 transition-colors" :class="isLinkActive('/dashboard/orders/create') ? 'text-sky-400' : 'text-gray-400'" />
             <span v-if="!isSidebarCollapsed" class="font-medium whitespace-nowrap">Create Order</span>
           </NuxtLink>
+          <NuxtLink v-if="user?.role === 'ADMIN' && canAccessRoute('/dashboard/orders/quick')" to="/dashboard/orders/quick" title="Quick Order (Admin Beta)" class="flex items-center gap-3 rounded-md py-2 text-sm transition-colors" :class="[isLinkActive('/dashboard/orders/quick') ? 'bg-[#182d47] text-amber-300 font-semibold' : 'text-amber-400/90 hover:bg-gray-800/50 hover:text-amber-300', isSidebarCollapsed ? 'justify-center px-0' : 'px-3']">
+            <Zap class="shrink-0 w-4 h-4 text-amber-400" />
+            <span v-if="!isSidebarCollapsed" class="font-medium whitespace-nowrap flex items-center gap-1.5 text-xs">
+              <span>Quick Order</span>
+              <span class="text-[8px] font-bold px-1.5 py-0.2 rounded bg-amber-400/20 text-amber-300 border border-amber-400/30">BETA</span>
+            </span>
+          </NuxtLink>
           <NuxtLink v-if="['ADMIN', 'SUPERVISOR', 'SALES'].includes(user?.role || '') && canAccessRoute('/dashboard/approve-orders')" to="/dashboard/approve-orders" title="Approve Orders" class="flex items-center gap-3 rounded-md py-2.5 text-sm transition-colors" :class="[isLinkActive('/dashboard/approve-orders') ? 'bg-[#182d47] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50 hover:text-gray-200', isSidebarCollapsed ? 'justify-center px-0' : 'px-3']">
             <CheckCheck class="shrink-0 w-4 h-4 transition-colors" :class="isLinkActive('/dashboard/approve-orders') ? 'text-sky-400' : 'text-gray-400'" />
             <span v-if="!isSidebarCollapsed" class="font-medium whitespace-nowrap">Approve Orders</span>
@@ -378,6 +385,28 @@
                 <div class="flex flex-col">
                   <span class="text-sm font-semibold text-gray-100">Create Order</span>
                   <span class="text-[11px] text-gray-400">Full sales order entry form</span>
+                </div>
+              </div>
+              <ChevronRight class="w-4 h-4 text-gray-500" />
+            </NuxtLink>
+
+            <NuxtLink
+              v-if="user?.role === 'ADMIN' && canAccessRoute('/dashboard/orders/quick')"
+              to="/dashboard/orders/quick"
+              @click="onSheetItemClick"
+              class="flex items-center justify-between p-3.5 rounded-xl bg-[#242424] hover:bg-[#2a2a2a] border border-amber-500/30 transition-all active:scale-[0.98]"
+              :class="{ 'ring-1 ring-amber-500/60 bg-amber-950/30 border-amber-500/40 text-amber-300': route.path === '/dashboard/orders/quick' }"
+            >
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center shrink-0">
+                  <Zap class="w-5 h-5" />
+                </div>
+                <div class="flex flex-col">
+                  <span class="text-sm font-semibold text-gray-100 flex items-center gap-1.5">
+                    <span>Quick Stock Order</span>
+                    <span class="text-[8px] font-bold px-1.5 py-0.2 rounded bg-amber-400 text-slate-950">ADMIN BETA</span>
+                  </span>
+                  <span class="text-[11px] text-gray-400">Stock-to-Cart modern ordering workflow</span>
                 </div>
               </div>
               <ChevronRight class="w-4 h-4 text-gray-500" />
@@ -833,7 +862,8 @@ import {
   Layers,
   ChevronRight,
   ExternalLink,
-  PlusCircle
+  PlusCircle,
+  Zap
 } from 'lucide-vue-next'
 import { useRoute } from 'vue-router'
 import { watch, ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
@@ -983,7 +1013,7 @@ const isOperationsActive = computed(() => {
 })
 
 const isCreateActive = computed(() => {
-  if (route.path === '/dashboard/orders/create') return true
+  if (route.path === '/dashboard/orders/create' || route.path === '/dashboard/orders/quick') return true
   if (route.path.startsWith('/dashboard/quotations') && (route.query.create === '1' || route.query.create === 'true')) return true
   return false
 })
@@ -1012,8 +1042,9 @@ const canAccessDriverApp = computed(() => {
 
 const isLinkActive = (path: string) => {
   if (path === '/dashboard') return route.path === '/dashboard'
-  if (path === '/dashboard/orders') return route.path.startsWith('/dashboard/orders') && route.path !== '/dashboard/orders/create'
+  if (path === '/dashboard/orders') return route.path.startsWith('/dashboard/orders') && route.path !== '/dashboard/orders/create' && route.path !== '/dashboard/orders/quick'
   if (path === '/dashboard/orders/create') return route.path === '/dashboard/orders/create'
+  if (path === '/dashboard/orders/quick') return route.path === '/dashboard/orders/quick'
   return route.path.startsWith(path)
 }
 

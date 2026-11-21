@@ -14,6 +14,7 @@ export const APP_PAGES: AppPageDef[] = [
   { key: 'ANALYTICS', path: '/dashboard/analytics', label: 'Analytics', category: 'Dashboard', description: 'Business intelligence, stock valuation, and operational statistics' },
   { key: 'ORDERS', path: '/dashboard/orders', label: 'Orders List', category: 'Dashboard', description: 'View, filter, and track all sales orders' },
   { key: 'CREATE_ORDER', path: '/dashboard/orders/create', label: 'Create Order', category: 'Dashboard', description: 'Create and submit new orders' },
+  { key: 'QUICK_ORDER', path: '/dashboard/orders/quick', label: 'Quick Order (Beta)', category: 'Operations', description: 'Stock-to-Cart modern ordering workflow (Admin Beta)' },
   { key: 'ORDER_REQUESTS', path: '/dashboard/order-requests', label: 'Order Requests', category: 'Dashboard', description: 'Incoming customer orders and inquiries' },
   { key: 'CHAT', path: '/dashboard/chat', label: 'Team Chat', category: 'Dashboard', description: 'Internal team communication' },
 
@@ -38,7 +39,7 @@ export const APP_PAGES: AppPageDef[] = [
 
 export const DEFAULT_ROLE_PAGES: Record<UserRole, string[]> = {
   ADMIN: [
-    'OVERVIEW', 'ANALYTICS', 'ORDERS', 'CREATE_ORDER', 'ORDER_REQUESTS', 'CHAT',
+    'OVERVIEW', 'ANALYTICS', 'ORDERS', 'CREATE_ORDER', 'QUICK_ORDER', 'ORDER_REQUESTS', 'CHAT',
     'QUOTATIONS', 'APPROVE_ORDERS', 'PACKING', 'BILLING', 'DELIVERY', 'INVENTORY', 'DRIVER_PORTAL',
     'CUSTOMERS', 'PRODUCTS', 'VOUCHERS', 'PURCHASES', 'ADMIN'
   ],
@@ -71,6 +72,7 @@ export function getPageKeyFromPath(path: string): string | null {
   if (cleanPath === '/driver' || cleanPath.startsWith('/driver/')) return 'DRIVER_PORTAL'
   if (cleanPath === '/dashboard') return 'OVERVIEW'
   if (cleanPath.startsWith('/dashboard/analytics')) return 'ANALYTICS'
+  if (cleanPath === '/dashboard/orders/quick') return 'QUICK_ORDER'
   if (cleanPath === '/dashboard/orders/create') return 'CREATE_ORDER'
   if (cleanPath.startsWith('/dashboard/orders')) return 'ORDERS'
   if (cleanPath.startsWith('/dashboard/order-requests')) return 'ORDER_REQUESTS'
