@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { ref, computed, watch, nextTick, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
+import { useRouter, onBeforeRouteLeave } from 'vue-router'
 import { ArrowLeft, X, Plus, Trash2, Zap, MapPin, UserCheck, ShieldAlert, Award, FileText, IndianRupee, Truck, Car, AlertCircle, Package, PackageSearch, Loader2, Clock, Crown, Check, Tag, Calculator, ChevronRight, Database, Pencil, ChevronDown, ChevronUp, LayoutList, UserPlus } from 'lucide-vue-next'
 import { formatCurrency, formatDate } from '~/lib/utils'
 import CustomSelect from '~/components/ui/CustomSelect.vue'
 import SearchCombobox from '~/components/ui/SearchCombobox.vue'
+import ConfirmDiscardModal from '~/components/ui/ConfirmDiscardModal.vue'
 import { useSnackbar } from '~/composables/useSnackbar'
 import { useRealtimeSync } from '~/composables/useRealtimeSync'
 import { useGsapAnimation } from '~/composables/useGsapAnimation'
@@ -730,6 +731,7 @@ const submitOrder = async () => {
     })
     const { notifyChange } = useRealtimeSync()
     notifyChange({ orderId: res?.id, action: 'ORDER_CREATED' })
+    isOrderSubmitted.value = true
     showSaved('Order created successfully')
     router.push('/dashboard/orders')
   } catch (err: any) {
@@ -763,6 +765,71 @@ const getCustomerInitials = (name: string) => {
   if (words.length === 1) return words[0].slice(0, 2).toUpperCase()
   return (words[0][0] + words[words.length - 1][0]).toUpperCase()
 }
+
+// ── UNSAVED CHANGES GUARD ──────────────────────────────────────────────
+const isOrderSubmitted = ref(false)
+const showDiscardModal = ref(false)
+const isDiscardConfirmed = ref(false)
+let pendingNavigationTarget: any = null
+
+const hasUnsavedChanges = computed(() => {
+  if (isOrderSubmitted.value) return false
+  const hasItems = form.value.items && form.value.items.length > 0
+  const hasCustomer = !!form.value.customerId || !!customCustomer.value.name.trim()
+  const hasNotes = !!form.value.notes?.trim()
+  return hasItems || hasCustomer || hasNotes
+})
+
+onBeforeRouteLeave((to, from, next) => {
+  if (isDiscardConfirmed.value || !hasUnsavedChanges.value) {
+    next()
+    return
+  }
+  pendingNavigationTarget = to
+  showDiscardModal.value = true
+  next(false)
+})
+
+const handleManualBack = (target = '/dashboard/orders') => {
+  if (hasUnsavedChanges.value) {
+    pendingNavigationTarget = target
+    showDiscardModal.value = true
+  } else {
+    router.push(target)
+  }
+}
+
+const handleConfirmDiscard = () => {
+  showDiscardModal.value = false
+  isDiscardConfirmed.value = true
+  nextTick(() => {
+    if (pendingNavigationTarget) {
+      router.push(pendingNavigationTarget)
+    } else {
+      router.push('/dashboard/orders')
+    }
+  })
+}
+
+const handleCancelDiscard = () => {
+  showDiscardModal.value = false
+  pendingNavigationTarget = null
+}
+
+const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+  if (hasUnsavedChanges.value && !isDiscardConfirmed.value) {
+    e.preventDefault()
+    e.returnValue = ''
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('beforeunload', handleBeforeUnload)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('beforeunload', handleBeforeUnload)
+})
 </script>
 
 <template>
@@ -770,9 +837,14 @@ const getCustomerInitials = (name: string) => {
     <!-- Mobile Top Header (100% Mockup Screen 1 Match) -->
     <div class="sm:hidden flex items-center justify-between bg-white p-3 rounded-2xl border border-slate-200/90 shadow-2xs gap-2">
       <div class="flex items-center gap-2 min-w-0">
-        <NuxtLink to="/dashboard/orders" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition-colors shrink-0">
+        <button
+          type="button"
+          @click="handleManualBack('/dashboard/orders')"
+          class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition-colors shrink-0 cursor-pointer"
+          title="Back to Orders"
+        >
           <ArrowLeft class="w-4 h-4" />
-        </NuxtLink>
+        </button>
         <div class="min-w-0">
           <div class="flex items-center gap-1.5">
             <h1 class="text-sm font-black text-slate-900 leading-tight">Create Order</h1>
@@ -1953,9 +2025,13 @@ const getCustomerInitials = (name: string) => {
         class="justify-end gap-3 pt-4"
         :class="uiMode === 'classic' ? 'flex flex-col sm:flex-row' : 'hidden sm:flex'"
       >
-        <NuxtLink to="/dashboard/orders" class="px-6 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors text-center">
+        <button
+          type="button"
+          @click="handleManualBack('/dashboard/orders')"
+          class="px-6 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors text-center cursor-pointer"
+        >
           Cancel
-        </NuxtLink>
+        </button>
         <button type="submit" :disabled="!form.items.length" class="px-6 py-2.5 bg-[#1b3b5f] text-white text-sm font-bold rounded-lg hover:bg-[#1b3b5f]/90 disabled:opacity-50 transition-colors shadow-sm cursor-pointer text-center">
           Submit Order
         </button>
@@ -2491,6 +2567,19 @@ const getCustomerInitials = (name: string) => {
       :customer-id="form.customerId"
       :customer-name="selectedCustomer?.name"
       @apply-price="onApplyPriceHistory"
+    />
+
+    <!-- ── Confirm Discard Unsaved Changes Modal ───────────────────────── -->
+    <ConfirmDiscardModal
+      :is-open="showDiscardModal"
+      title="Discard unsaved order?"
+      message="You have unsaved items or customer details in this order form. Leaving now will discard your progress."
+      badge-text="Order Draft"
+      :item-count="form.items.length"
+      confirm-text="Discard & Leave"
+      cancel-text="Keep Editing"
+      @confirm="handleConfirmDiscard"
+      @cancel="handleCancelDiscard"
     />
   </div>
 </template>

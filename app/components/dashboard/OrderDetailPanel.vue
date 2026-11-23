@@ -12,6 +12,7 @@ import CreateBatchModal from '~/components/dashboard/CreateBatchModal.vue'
 import LoadingTopBar from '~/components/ui/LoadingTopBar.vue'
 import CustomSelect from '~/components/ui/CustomSelect.vue'
 import SearchCombobox from '~/components/ui/SearchCombobox.vue'
+import ConfirmDiscardModal from '~/components/ui/ConfirmDiscardModal.vue'
 import { formatCurrency, formatDateTime, formatDate, formatTime, getDisplayStatus, getOverallColor, getStatusColor } from '~~/app/lib/utils'
 import type { Order } from '~/types'
 import { useSnackbar } from '~/composables/useSnackbar'
@@ -1403,6 +1404,24 @@ const customersList = ref<any[]>([])
 const productsList = ref<any[]>([])
 
 const initialFormState = ref('')
+const isDiscardEditModalOpen = ref(false)
+
+const handleAttemptCancelEdit = () => {
+  if (isEditModalOpen.value && JSON.stringify(editForm.value) !== initialFormState.value) {
+    isDiscardEditModalOpen.value = true
+    return
+  }
+  cancelEdit()
+}
+
+const confirmDiscardEdit = () => {
+  isDiscardEditModalOpen.value = false
+  cancelEdit()
+}
+
+const cancelDiscardEdit = () => {
+  isDiscardEditModalOpen.value = false
+}
 
 const cancelEdit = async () => {
   isEditModalOpen.value = false
@@ -4170,7 +4189,7 @@ onUnmounted(() => {
   <!-- Edit Order Modal -->
   <Teleport to="body">
     <div v-if="isEditModalOpen" data-modal-container class="fixed inset-0 z-[600] flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
-      <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" @click="cancelEdit"></div>
+      <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" @click="handleAttemptCancelEdit"></div>
       
       <div ref="editModalCardRef" class="relative bg-[#faf8f5] w-full max-w-4xl rounded-2xl shadow-2xl flex flex-col max-h-[94dvh] md:max-h-[92vh] overflow-hidden transform transition-all border border-gray-200">
         <div class="px-3.5 py-3 sm:px-6 sm:py-4 border-b border-gray-200 bg-white flex items-center justify-between shrink-0 gap-2">
@@ -4211,7 +4230,7 @@ onUnmounted(() => {
               </div>
             </label>
 
-            <button @click="cancelEdit" data-modal-close="true" class="p-1.5 sm:p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors">
+            <button @click="handleAttemptCancelEdit" data-modal-close="true" class="p-1.5 sm:p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors">
               <X class="w-5 h-5" />
             </button>
           </div>
@@ -4936,7 +4955,7 @@ onUnmounted(() => {
         <div class="px-4 py-3 sm:px-6 sm:py-4 bg-white border-t border-gray-200 flex items-center justify-between shrink-0">
           <button 
             type="button" 
-            @click="cancelEdit" 
+            @click="handleAttemptCancelEdit" 
             class="px-4 py-2 text-xs sm:text-sm font-semibold text-gray-700 hover:bg-gray-100 rounded-lg border border-gray-300 transition-colors"
           >
             Cancel
@@ -5475,5 +5494,18 @@ onUnmounted(() => {
       @close="isBatchModalOpen = false"
       @batch-created="onBatchSuccess"
       @batch-updated="onBatchSuccess"
+    />
+
+    <!-- Confirm Discard Edit Order Modal -->
+    <ConfirmDiscardModal
+      :is-open="isDiscardEditModalOpen"
+      title="Discard order modifications?"
+      message="You have unsaved changes in this order. If you leave now, all your edits will be discarded."
+      badge-text="Edit Order"
+      :item-count="editForm.items.length"
+      confirm-text="Discard & Exit"
+      cancel-text="Keep Editing"
+      @confirm="confirmDiscardEdit"
+      @cancel="cancelDiscardEdit"
     />
 </template>

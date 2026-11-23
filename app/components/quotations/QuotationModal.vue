@@ -2,7 +2,7 @@
   <Teleport to="body">
     <div
       v-if="modelValue"
-      @click.self="closeModal"
+      @click.self="handleAttemptClose"
       class="fixed inset-x-0 top-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] md:bottom-0 md:inset-0 z-[500] overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-0 sm:p-4 lg:p-6 animate-in fade-in duration-200"
     >
       <!-- Modal Box: Responsive Full-screen on mobile, rounded card on sm+ (Matching GenerateBillModal.vue:6) -->
@@ -16,7 +16,7 @@
             <button
               v-if="!isSuccessView && (props.initialQuote || activeQuoteData)"
               type="button"
-              @click="closeModal"
+              @click="handleAttemptClose"
               class="px-2.5 py-1 -ml-1 text-gray-700 hover:text-gray-900 rounded-lg hover:bg-gray-200 transition cursor-pointer flex items-center gap-1 text-xs font-bold border border-gray-200 bg-white shadow-2xs"
               title="Return to Review Slip"
             >
@@ -76,7 +76,7 @@
             <button
               v-if="!isSuccessView && (isEditingExisting || props.initialQuote)"
               type="button"
-              @click="isSuccessView = true"
+              @click="handleAttemptClose"
               class="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 active:scale-98 text-gray-700 rounded-lg text-xs font-bold transition shadow-xs cursor-pointer"
               title="Return to Quotation Preview"
             >
@@ -116,7 +116,7 @@
             <!-- Close button matching GenerateBillModal.vue:17 -->
             <button
               type="button"
-              @click="closeModal"
+              @click="handleAttemptClose"
               class="p-1.5 text-gray-400 hover:text-gray-700 rounded-lg hover:bg-gray-200 transition cursor-pointer"
               :title="!isSuccessView && (props.initialQuote || activeQuoteData) ? 'Back to Review Slip' : 'Close Modal'"
               data-modal-close="true"
@@ -1407,7 +1407,7 @@
         <div class="px-4 sm:px-6 py-3.5 bg-white border-t border-gray-200 flex flex-wrap items-center justify-between gap-3 shrink-0">
           <button
             type="button"
-            @click="closeModal"
+            @click="handleAttemptClose"
             class="px-4 py-2 border border-gray-300 hover:bg-gray-50 rounded-xl text-xs font-bold text-gray-700 transition cursor-pointer flex items-center gap-1.5"
           >
             <ChevronLeft v-if="!isSuccessView && (props.initialQuote || activeQuoteData)" class="w-3.5 h-3.5 text-gray-500" />
@@ -2191,6 +2191,19 @@
         </div>
       </div>
     </div>
+
+    <!-- ── Confirm Discard Quotation Modal ─────────────────────────────── -->
+    <ConfirmDiscardModal
+      :is-open="isDiscardModalOpen"
+      title="Discard unsaved quotation?"
+      message="You have unsaved changes in this quotation. If you leave now, all entered items and details will be lost."
+      badge-text="Quotation Draft"
+      :item-count="quoteItems.length"
+      confirm-text="Discard & Leave"
+      cancel-text="Keep Editing"
+      @confirm="confirmDiscard"
+      @cancel="cancelDiscard"
+    />
   </Teleport>
 </template>
 
@@ -2232,6 +2245,7 @@ import {
   Percent
 } from 'lucide-vue-next'
 import CustomSelect from '~/components/ui/CustomSelect.vue'
+import ConfirmDiscardModal from '~/components/ui/ConfirmDiscardModal.vue'
 import { toBlob, toPng, toJpeg } from 'html-to-image'
 import { jsPDF } from 'jspdf'
 import { useSnackbar } from '~/composables/useSnackbar'
@@ -2357,10 +2371,22 @@ const triggerConversion = () => {
   emit('update:modelValue', false)
 }
 
+const editInitialSnapshot = ref('')
+
 const enterEditMode = () => {
   if (props.initialQuote?.status === 'CONVERTED') return
   isSuccessView.value = false
   isEditingExisting.value = true
+  editInitialSnapshot.value = JSON.stringify({
+    customerName: customerName.value,
+    customerPlace: customerPlace.value,
+    customerPhone: customerPhone.value,
+    validityDays: validityDays.value,
+    taxMode: taxMode.value,
+    quoteNotes: quoteNotes.value,
+    showDiscountColumn: showDiscountColumn.value,
+    items: quoteItems.value
+  })
 }
 
 // Multi-Page PDF Pagination State & Types
@@ -3471,6 +3497,49 @@ watch(
   }
 )
 
+const isDiscardModalOpen = ref(false)
+
+const hasUnsavedChanges = computed(() => {
+  if (isSuccessView.value) return false
+
+  const targetQuote = props.initialQuote || activeQuoteData.value
+  if (targetQuote) {
+    if (!editInitialSnapshot.value) return false
+    const current = JSON.stringify({
+      customerName: customerName.value,
+      customerPlace: customerPlace.value,
+      customerPhone: customerPhone.value,
+      validityDays: validityDays.value,
+      taxMode: taxMode.value,
+      quoteNotes: quoteNotes.value,
+      showDiscountColumn: showDiscountColumn.value,
+      items: quoteItems.value
+    })
+    return current !== editInitialSnapshot.value
+  }
+
+  const hasItems = quoteItems.value && quoteItems.value.length > 0
+  const hasCustomer = !!customerName.value.trim() || !!customerPhone.value.trim() || !!selectedCustomerId.value
+  return hasItems || hasCustomer
+})
+
+const handleAttemptClose = () => {
+  if (hasUnsavedChanges.value) {
+    isDiscardModalOpen.value = true
+    return
+  }
+  closeModal()
+}
+
+const confirmDiscard = () => {
+  isDiscardModalOpen.value = false
+  closeModal()
+}
+
+const cancelDiscard = () => {
+  isDiscardModalOpen.value = false
+}
+
 const closeModal = () => {
   // If we are currently editing an existing quote over the review slip,
   // closing edit mode returns cleanly to the review slip without closing the modal
@@ -3936,6 +4005,13 @@ watch(
   }
 )
 
+const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+  if (props.modelValue && hasUnsavedChanges.value) {
+    e.preventDefault()
+    e.returnValue = ''
+  }
+}
+
 onMounted(() => {
   loadGlobalSettings()
   loadDbUsers()
@@ -3943,9 +4019,15 @@ onMounted(() => {
   loadSheetCatalog()
   loadDbCustomers()
   setupViewportObserver()
+  if (typeof window !== 'undefined') {
+    window.addEventListener('beforeunload', handleBeforeUnload)
+  }
 })
 
 onUnmounted(() => {
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('beforeunload', handleBeforeUnload)
+  }
   if (resizeObserver) {
     resizeObserver.disconnect()
     resizeObserver = null

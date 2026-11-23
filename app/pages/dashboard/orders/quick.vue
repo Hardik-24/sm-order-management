@@ -11,6 +11,7 @@ import {
 import { formatCurrency } from '~/lib/utils'
 import AccessDenied from '~/components/ui/AccessDenied.vue'
 import PriceHistoryModal from '~/components/orders/PriceHistoryModal.vue'
+import ConfirmDiscardModal from '~/components/ui/ConfirmDiscardModal.vue'
 import { useSnackbar } from '~/composables/useSnackbar'
 import { useMasters } from '~/composables/useMasters'
 
@@ -31,18 +32,36 @@ onMounted(() => {
 })
 
 // Prevent accidental exit when cart has active items
+const showDiscardModal = ref(false)
+const isDiscardConfirmed = ref(false)
+let pendingNavigationTarget: any = null
+
 onBeforeRouteLeave((to, from, next) => {
-  if (totalItemsCount.value > 0 && !isOrderCompleted.value) {
-    const confirmLeave = window.confirm(`You have ${totalItemsCount.value} item(s) in your quick cart. Leave quick order?`)
-    if (confirmLeave) {
-      next()
-    } else {
-      next(false)
-    }
-  } else {
+  if (isDiscardConfirmed.value || totalItemsCount.value === 0 || isOrderCompleted.value) {
     next()
+    return
   }
+  pendingNavigationTarget = to
+  showDiscardModal.value = true
+  next(false)
 })
+
+const handleConfirmDiscard = () => {
+  showDiscardModal.value = false
+  isDiscardConfirmed.value = true
+  nextTick(() => {
+    if (pendingNavigationTarget) {
+      router.push(pendingNavigationTarget)
+    } else {
+      router.push('/dashboard/orders')
+    }
+  })
+}
+
+const handleCancelDiscard = () => {
+  showDiscardModal.value = false
+  pendingNavigationTarget = null
+}
 
 // ── DATA FETCHING ──────────────────────────────────────────────
 const { data: rawCustomers, pending: loadingCustomers } = await useFetch<any[]>('/api/customers')
@@ -698,6 +717,7 @@ onMounted(() => {
   if (typeof window !== 'undefined') {
     window.addEventListener('popstate', onPopState)
     window.addEventListener('scroll', handleWindowScroll, { passive: true })
+    window.addEventListener('beforeunload', handleBeforeUnload)
     setupScrollObserver()
   }
   nextTick(() => {
@@ -721,12 +741,20 @@ onUnmounted(() => {
   if (typeof window !== 'undefined') {
     window.removeEventListener('popstate', onPopState)
     window.removeEventListener('scroll', handleWindowScroll)
+    window.removeEventListener('beforeunload', handleBeforeUnload)
   }
   if (scrollObserver) {
     scrollObserver.disconnect()
     scrollObserver = null
   }
 })
+
+const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+  if (totalItemsCount.value > 0 && !isOrderCompleted.value && !isDiscardConfirmed.value) {
+    e.preventDefault()
+    e.returnValue = ''
+  }
+}
 
 // Header / Page Back Button handler
 const handlePageBack = () => {
@@ -759,9 +787,10 @@ const handlePageBack = () => {
     return
   }
 
-  if (totalItemsCount.value > 0) {
-    const confirmLeave = window.confirm(`You have ${totalItemsCount.value} item(s) in your quick cart. Exit without placing order?`)
-    if (!confirmLeave) return
+  if (totalItemsCount.value > 0 && !isOrderCompleted.value) {
+    pendingNavigationTarget = '/dashboard/orders'
+    showDiscardModal.value = true
+    return
   }
   router.push('/dashboard/orders')
 }
@@ -2571,6 +2600,19 @@ const confirmAndPlaceOrder = async () => {
         </div>
       </div>
     </Teleport>
+
+    <!-- ── Confirm Discard Quick Order Modal ───────────────────────────── -->
+    <ConfirmDiscardModal
+      :is-open="showDiscardModal"
+      title="Leave quick order?"
+      message="You have items in your quick order cart. Leaving now will discard your quick order selections."
+      badge-text="Quick Cart"
+      :item-count="totalItemsCount"
+      confirm-text="Discard & Leave"
+      cancel-text="Keep Editing"
+      @confirm="handleConfirmDiscard"
+      @cancel="handleCancelDiscard"
+    />
 
   </div>
 </template>
