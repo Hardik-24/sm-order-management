@@ -427,7 +427,12 @@
                     <!-- ================= STYLE 1: CLASSIC TALLY PRIME (Exact Match to User Image) ================= -->
                     <div v-if="designStyle === 'classic'" class="space-y-4">
                       <!-- Page 1 Full Header -->
-                      <div v-if="page.isFirstPage" class="space-y-3">
+                      <div v-if="page.isFirstPage" class="space-y-2">
+                        <!-- Top Page Number (Classic Tally Prime layout) -->
+                        <div class="text-right text-[11px] font-sans font-semibold text-black leading-none">
+                          Page {{ page.pageNumber }}
+                        </div>
+
                         <div class="text-center space-y-0.5">
                           <h1 class="text-lg font-black tracking-wider uppercase text-black font-sans">
                             {{ ledgerData.company.name }}
@@ -453,13 +458,9 @@
                             {{ ledgerData.party.phone }}
                           </p>
 
-                          <div class="pt-1 flex items-center justify-between text-xs text-black">
-                            <div class="flex-1 text-center font-bold">
-                              {{ ledgerData.period.display }}
-                            </div>
-                            <div class="text-right text-[11px] font-sans font-semibold shrink-0">
-                              Page {{ page.pageNumber }}
-                            </div>
+                          <!-- Date Above Table: Perfectly Center Aligned -->
+                          <div class="pt-1.5 text-center text-xs font-bold text-black font-sans">
+                            {{ ledgerData.period.display }}
                           </div>
                         </div>
                       </div>
@@ -600,18 +601,10 @@
                         <div class="bg-slate-50 border border-slate-200/90 rounded-lg p-2.5 flex items-start justify-between gap-4">
                           <!-- Left: Customer Name & Contact -->
                           <div class="min-w-0 flex-1">
-                            <div class="flex items-center gap-1.5 mb-0.5">
-                              <span class="text-[9px] font-bold uppercase tracking-wider text-gray-400">
-                                Account Of
-                              </span>
-                              <span
-                                v-if="selectedPartyObj?.parent"
-                                class="text-[8.5px] font-bold px-1.5 py-0.2 rounded bg-amber-50 text-amber-800 border border-amber-200 uppercase"
-                              >
-                                {{ selectedPartyObj.parent }}
-                              </span>
-                            </div>
-                            <h2 class="text-sm font-semibold text-gray-900 uppercase tracking-normal truncate">
+                            <span class="text-[9px] font-bold uppercase tracking-wider text-gray-400 block mb-0.5">
+                              Account Of
+                            </span>
+                            <h2 class="text-base font-bold text-[#1b3b5f] tracking-wide uppercase leading-tight truncate">
                               {{ ledgerData?.party?.name }}
                             </h2>
                             <div v-if="ledgerData?.party?.phone" class="text-[10px] text-gray-600 mt-0.5 flex items-center gap-1 font-mono">
