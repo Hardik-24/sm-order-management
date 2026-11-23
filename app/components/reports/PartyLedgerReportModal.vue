@@ -572,10 +572,10 @@
                         <!-- Row 1: Company Header (Left) & Document Meta (Right) -->
                         <div class="flex items-start justify-between border-b border-gray-200 pb-2.5 gap-4">
                           <div class="min-w-0">
-                            <h1 class="text-base font-black text-[#1b3b5f] tracking-wide uppercase leading-tight">
+                            <h1 class="text-base font-bold text-[#1b3b5f] tracking-wide uppercase leading-tight">
                               {{ ledgerData?.company?.name || 'SRI LAKSHMI PLYWOODS' }}
                             </h1>
-                            <p class="text-[11px] font-bold text-gray-600 mt-0.5">
+                            <p class="text-[11px] font-medium text-gray-500 mt-0.5">
                               {{ ledgerData?.company?.tradeName || 'Trade Name : Silicon Marketing' }}
                             </p>
                             <p class="text-[10px] text-gray-500 whitespace-pre-line leading-tight mt-0.5 max-w-md">
@@ -611,7 +611,7 @@
                                 {{ selectedPartyObj.parent }}
                               </span>
                             </div>
-                            <h2 class="text-sm font-black text-gray-950 uppercase tracking-tight truncate">
+                            <h2 class="text-sm font-semibold text-gray-900 uppercase tracking-normal truncate">
                               {{ ledgerData?.party?.name }}
                             </h2>
                             <div v-if="ledgerData?.party?.phone" class="text-[10px] text-gray-600 mt-0.5 flex items-center gap-1 font-mono">
@@ -647,11 +647,11 @@
                         <div class="h-1 w-full bg-gradient-to-r from-[#1b3b5f] to-[#d92546] rounded-full"></div>
                         <div class="flex items-center justify-between text-xs pb-1 border-b border-gray-200">
                           <div>
-                            <span class="font-black text-[#1b3b5f] uppercase tracking-wide">{{ ledgerData.company.name }}</span>
+                            <span class="font-bold text-[#1b3b5f] uppercase tracking-wide">{{ ledgerData.company.name }}</span>
                             <span class="text-gray-400 mx-2">&bull;</span>
-                            <span class="font-bold text-gray-800">{{ ledgerData.party.name }}</span>
+                            <span class="font-semibold text-gray-800">{{ ledgerData.party.name }}</span>
                             <span class="text-gray-400 mx-2">&bull;</span>
-                            <span class="text-[11px] text-gray-500">Ledger Account</span>
+                            <span class="text-[11px] text-gray-500">Statement of Account</span>
                           </div>
                           <span class="text-[11px] font-mono text-gray-500">Page {{ page.pageNumber }} of {{ page.totalPages }}</span>
                         </div>
