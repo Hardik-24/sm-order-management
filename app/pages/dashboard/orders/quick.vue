@@ -238,25 +238,107 @@ watch(selectedCustomerId, (newId) => {
 // ── CATALOG & SEARCH ───────────────────────────────────────────
 const searchQuery = ref('')
 const selectedCategory = ref('All')
+const stockFilter = ref<'all' | 'in_stock' | 'out_of_stock'>('all')
 
-const categories = computed(() => {
+// Category Counts & Sorted List
+const categoryCounts = computed(() => {
+  const counts: Record<string, number> = { All: (rawProducts.value || []).length }
+  for (const p of rawProducts.value || []) {
+    const name = p.category?.name || p.categoryName || 'Other'
+    counts[name] = (counts[name] || 0) + 1
+  }
+  return counts
+})
+
+const allCategories = computed(() => {
   const set = new Set<string>()
   for (const p of rawProducts.value || []) {
-    if (p.category?.name) set.add(p.category.name)
-    else if (p.categoryName) set.add(p.categoryName)
+    const name = p.category?.name || p.categoryName
+    if (name) set.add(name)
   }
-  return ['All', ...Array.from(set)]
+  const sorted = Array.from(set).sort((a, b) => {
+    const countA = categoryCounts.value[a] || 0
+    const countB = categoryCounts.value[b] || 0
+    return countB - countA // Highest count first
+  })
+  return ['All', ...sorted]
+})
+
+// Top 4 Quick Chips + Active category if not in top 4
+const TOP_CHIPS_COUNT = 4
+const topCategories = computed(() => {
+  const nonAll = allCategories.value.filter(c => c !== 'All')
+  const top = nonAll.slice(0, TOP_CHIPS_COUNT)
+  if (selectedCategory.value !== 'All' && !top.includes(selectedCategory.value)) {
+    return ['All', selectedCategory.value, ...top.slice(0, TOP_CHIPS_COUNT - 1)]
+  }
+  return ['All', ...top]
+})
+
+// Category Selector Modal / Sheet
+const isCategoryModalOpen = ref(false)
+const categorySearchQuery = ref('')
+
+const openCategoryModal = () => {
+  categorySearchQuery.value = ''
+  isCategoryModalOpen.value = true
+  pushModalHistory('category')
+  animateModalEntry('.category-modal-card', false)
+}
+
+const closeCategoryModal = () => {
+  isCategoryModalOpen.value = false
+  popModalHistory()
+}
+
+const selectCategoryFromModal = (cat: string) => {
+  selectedCategory.value = cat
+  closeCategoryModal()
+}
+
+const filteredModalCategories = computed(() => {
+  const q = categorySearchQuery.value.trim().toLowerCase()
+  const cats = allCategories.value
+  if (!q) return cats
+  return cats.filter(c => c.toLowerCase().includes(q))
+})
+
+// Stock counts for filter pills
+const stockCounts = computed(() => {
+  let inStock = 0
+  let outOfStock = 0
+  const list = rawProducts.value || []
+  for (const p of list) {
+    if (Number(p.stock) > 0) inStock++
+    else outOfStock++
+  }
+  return {
+    all: list.length,
+    inStock,
+    outOfStock
+  }
 })
 
 const filteredProducts = computed(() => {
   const q = searchQuery.value.trim().toLowerCase()
   const cat = selectedCategory.value
+  const stockMode = stockFilter.value
 
   return (rawProducts.value || []).filter(p => {
+    // 1. Stock availability filter
+    if (stockMode === 'in_stock' && !(Number(p.stock) > 0)) {
+      return false
+    }
+    if (stockMode === 'out_of_stock' && Number(p.stock) > 0) {
+      return false
+    }
+
+    // 2. Category / Group filter
     const pCat = p.category?.name || p.categoryName || ''
     const matchCat = cat === 'All' || pCat === cat
     if (!matchCat) return false
 
+    // 3. Search query
     if (!q) return true
     const nameMatch = (p.name || '').toLowerCase().includes(q)
     const skuMatch = (p.sku || '').toLowerCase().includes(q)
@@ -285,8 +367,8 @@ const loadMoreProducts = () => {
   }
 }
 
-// Reset visible count when search or category filter changes
-watch([searchQuery, selectedCategory], () => {
+// Reset visible count when search, category or stock filter changes
+watch([searchQuery, selectedCategory, stockFilter], () => {
   visibleProductCount.value = PAGE_BATCH_SIZE
   nextTick(() => {
     animateProductCards()
@@ -295,14 +377,26 @@ watch([searchQuery, selectedCategory], () => {
 
 const infiniteScrollSentinel = ref<HTMLElement | null>(null)
 let scrollObserver: IntersectionObserver | null = null
+const isSearchPinned = ref(false)
 
 const handleWindowScroll = () => {
+  if (typeof window !== 'undefined') {
+    const scrollTop = window.scrollY || document.documentElement.scrollTop
+    isSearchPinned.value = scrollTop > 220
+  }
+
   if (!hasMoreProducts.value) return
   const scrollHeight = document.documentElement.scrollHeight
   const scrollTop = window.scrollY || document.documentElement.scrollTop
   const clientHeight = window.innerHeight || document.documentElement.clientHeight
   if (scrollHeight - (scrollTop + clientHeight) < 400) {
     loadMoreProducts()
+  }
+}
+
+const scrollToTop = () => {
+  if (typeof window !== 'undefined') {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 }
 
@@ -586,6 +680,10 @@ const onPopState = (e: PopStateEvent) => {
     animateModalEntry('.cart-drawer-card', true)
     return
   }
+  if (isCategoryModalOpen.value) {
+    isCategoryModalOpen.value = false
+    return
+  }
   if (isCustomerModalOpen.value) {
     isCustomerModalOpen.value = false
     return
@@ -646,6 +744,10 @@ const handlePageBack = () => {
   }
   if (isCheckoutModalOpen.value) {
     backToCartFromCheckout()
+    return
+  }
+  if (isCategoryModalOpen.value) {
+    closeCategoryModal()
     return
   }
   if (isCustomerModalOpen.value) {
@@ -1011,6 +1113,72 @@ const confirmAndPlaceOrder = async () => {
 
   <div v-else class="max-w-4xl mx-auto space-y-4 pb-36 sm:pb-32">
     
+    <!-- Pinned Sticky Top Search Bar on Scroll -->
+    <Transition
+      enter-active-class="transition duration-200 ease-out"
+      enter-from-class="-translate-y-full opacity-0"
+      enter-to-class="translate-y-0 opacity-100"
+      leave-active-class="transition duration-150 ease-in"
+      leave-from-class="translate-y-0 opacity-100"
+      leave-to-class="-translate-y-full opacity-0"
+    >
+      <div 
+        v-if="isSearchPinned" 
+        class="fixed top-0 left-0 right-0 z-40 bg-[#1b3b5f]/95 backdrop-blur-md shadow-md border-b border-blue-400/30 px-3 sm:px-6 py-2 pt-[max(0.5rem,env(safe-area-inset-top,0px))] transition-all"
+      >
+        <div class="max-w-4xl mx-auto flex items-center gap-2">
+          <!-- Compact Search Input -->
+          <div class="relative flex-1">
+            <Search class="w-4 h-4 text-blue-300 absolute left-3 top-2.5" />
+            <input 
+              v-model="searchQuery"
+              type="text" 
+              placeholder="Search catalog products..." 
+              class="w-full bg-blue-950/70 border border-blue-400/40 rounded-xl py-1.5 pl-9 pr-8 text-xs text-white placeholder-blue-300/60 focus:outline-hidden focus:border-blue-300 font-medium"
+            />
+            <button 
+              v-if="searchQuery" 
+              @click="searchQuery = ''"
+              class="absolute right-2.5 top-2.5 text-blue-300 hover:text-white cursor-pointer"
+              title="Clear search"
+            >
+              <X class="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          <!-- Quick Stock Filter Pill in Pinned Bar -->
+          <button 
+            type="button"
+            @click="openCategoryModal"
+            class="h-8 px-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-blue-100 border border-white/20 text-[11px] font-bold flex items-center gap-1 transition-colors cursor-pointer shrink-0"
+          >
+            <span class="max-w-[80px] sm:max-w-none truncate">{{ selectedCategory === 'All' ? 'All Groups' : selectedCategory }}</span>
+            <ChevronDown class="w-3 h-3 text-blue-300" />
+          </button>
+
+          <!-- Quick Custom Item -->
+          <button 
+            @click="openCustomItemModal(searchQuery)"
+            class="h-8 px-2.5 sm:px-3 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/40 text-amber-200 text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 cursor-pointer shadow-2xs"
+            title="Add Non-Catalog / Custom Item"
+          >
+            <Plus class="w-3.5 h-3.5 text-amber-300" />
+            <span class="hidden sm:inline">Custom Item</span>
+            <span class="sm:hidden">Custom</span>
+          </button>
+
+          <!-- Quick Back to Top -->
+          <button 
+            @click="scrollToTop"
+            class="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center shrink-0 cursor-pointer transition-colors"
+            title="Scroll to Top"
+          >
+            <ChevronUp class="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    </Transition>
+
     <!-- Top Action / Back Navigation Bar -->
     <div class="quick-top-nav flex items-center justify-between gap-3 pt-1">
       <button 
@@ -1023,10 +1191,7 @@ const confirmAndPlaceOrder = async () => {
       </button>
 
       <div class="flex items-center gap-2">
-        <span class="text-[11px] font-mono font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full border border-slate-200">
-          {{ filteredProducts.length }} Products
-        </span>
-        <span class="text-[11px] font-bold bg-blue-50 text-blue-800 border border-blue-200 px-2 py-0.5 rounded-full">
+        <span class="text-[11px] font-bold bg-blue-50 text-blue-800 border border-blue-200 px-2.5 py-0.5 rounded-full">
           Admin Beta
         </span>
       </div>
@@ -1063,7 +1228,7 @@ const confirmAndPlaceOrder = async () => {
             class="text-[9px] font-bold px-2 py-0.5 rounded-full shrink-0 whitespace-nowrap"
             :class="isCustomCustomer ? 'bg-amber-400 text-amber-950' : 'bg-blue-400/20 text-blue-200 border border-blue-400/30'"
           >
-            {{ isCustomCustomer ? 'Custom Walk-In' : 'BUSY Customer' }}
+            {{ isCustomCustomer ? 'Custom / New' : 'BUSY Customer' }}
           </span>
 
           <button 
@@ -1098,18 +1263,76 @@ const confirmAndPlaceOrder = async () => {
         </button>
       </div>
 
-      <!-- Category Filter Chips -->
+      <!-- Category Filter Chips (Option A: Top Quick Chips + More Groups) -->
       <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5 text-xs">
         <button 
-          v-for="cat in categories" 
+          v-for="cat in topCategories" 
           :key="cat"
           @click="selectedCategory = cat"
-          class="px-3 py-1.5 rounded-lg font-bold whitespace-nowrap transition-all cursor-pointer"
+          class="px-3 py-1.5 rounded-lg font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1"
           :class="selectedCategory === cat ? 'bg-white text-slate-900 shadow-xs' : 'bg-blue-900/50 text-blue-200 hover:bg-blue-900'"
         >
-          {{ cat }}
+          <span>{{ cat }}</span>
+          <span 
+            v-if="cat !== 'All' && categoryCounts[cat]" 
+            class="text-[9px] font-mono opacity-70"
+          >
+            ({{ categoryCounts[cat] }})
+          </span>
+        </button>
+
+        <!-- All Groups Modal Button -->
+        <button 
+          type="button"
+          @click="openCategoryModal"
+          class="px-3 py-1.5 rounded-lg font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 border border-white/20"
+          :class="!topCategories.includes(selectedCategory) && selectedCategory !== 'All' ? 'bg-amber-400 text-amber-950 shadow-xs' : 'bg-white/10 text-white hover:bg-white/20'"
+        >
+          <span>All Groups ({{ allCategories.length - 1 }})</span>
+          <ChevronDown class="w-3.5 h-3.5" />
         </button>
       </div>
+    </div>
+
+    <!-- Stock Availability Filter Pills (All / In Stock / Out of Stock) -->
+    <div class="flex items-center gap-1.5 p-1 bg-slate-200/70 rounded-2xl border border-slate-300/80 text-xs select-none">
+      <button 
+        type="button"
+        @click="stockFilter = 'all'"
+        class="flex-1 py-1.5 px-3 rounded-xl font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+        :class="stockFilter === 'all' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'"
+      >
+        <span>All</span>
+        <span class="text-[10px] font-mono px-1.5 py-0.2 rounded-full font-semibold" :class="stockFilter === 'all' ? 'bg-slate-100 text-slate-700' : 'bg-slate-300/60 text-slate-600'">
+          {{ stockCounts.all }}
+        </span>
+      </button>
+
+      <button 
+        type="button"
+        @click="stockFilter = 'in_stock'"
+        class="flex-1 py-1.5 px-3 rounded-xl font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+        :class="stockFilter === 'in_stock' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 hover:text-emerald-800'"
+      >
+        <span class="w-1.5 h-1.5 rounded-full" :class="stockFilter === 'in_stock' ? 'bg-white' : 'bg-emerald-500'"></span>
+        <span>In Stock</span>
+        <span class="text-[10px] font-mono px-1.5 py-0.2 rounded-full font-semibold" :class="stockFilter === 'in_stock' ? 'bg-emerald-700 text-emerald-100' : 'bg-emerald-100 text-emerald-800'">
+          {{ stockCounts.inStock }}
+        </span>
+      </button>
+
+      <button 
+        type="button"
+        @click="stockFilter = 'out_of_stock'"
+        class="flex-1 py-1.5 px-3 rounded-xl font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+        :class="stockFilter === 'out_of_stock' ? 'bg-rose-600 text-white shadow-xs' : 'text-slate-600 hover:text-rose-800'"
+      >
+        <span class="w-1.5 h-1.5 rounded-full" :class="stockFilter === 'out_of_stock' ? 'bg-white' : 'bg-rose-500'"></span>
+        <span>Out of Stock</span>
+        <span class="text-[10px] font-mono px-1.5 py-0.2 rounded-full font-semibold" :class="stockFilter === 'out_of_stock' ? 'bg-rose-700 text-rose-100' : 'bg-rose-100 text-rose-800'">
+          {{ stockCounts.outOfStock }}
+        </span>
+      </button>
     </div>
 
     <!-- Product List View (Stock Catalog) -->
@@ -1593,7 +1816,7 @@ const confirmAndPlaceOrder = async () => {
               <Building2 class="w-4 h-4 text-amber-400" />
               <div>
                 <h4 class="font-bold text-xs text-white">Select Customer / Party</h4>
-                <p class="text-[10px] text-blue-200">Choose from BUSY or add custom walk-in</p>
+                <p class="text-[10px] text-blue-200">Choose from BUSY or enter custom / new party</p>
               </div>
             </div>
             <button @click="closeCustomerModal" class="w-7 h-7 rounded-full bg-white/10 text-white hover:bg-white/20 flex items-center justify-center text-xs cursor-pointer">
@@ -1605,17 +1828,17 @@ const confirmAndPlaceOrder = async () => {
           <div class="grid grid-cols-2 p-1.5 bg-slate-100 border-b border-slate-200 text-xs font-bold text-center">
             <button 
               @click="customerModalTab = 'db'"
-              class="py-1.5 rounded-xl transition-all"
+              class="py-1.5 rounded-xl transition-all cursor-pointer"
               :class="customerModalTab === 'db' ? 'bg-white text-blue-900 shadow-2xs' : 'text-slate-600 hover:text-slate-900'"
             >
               Database (BUSY)
             </button>
             <button 
               @click="customerModalTab = 'custom'"
-              class="py-1.5 rounded-xl transition-all"
+              class="py-1.5 rounded-xl transition-all cursor-pointer"
               :class="customerModalTab === 'custom' ? 'bg-white text-amber-900 shadow-2xs' : 'text-slate-600 hover:text-slate-900'"
             >
-              + Custom / Walk-In
+              + Custom / New
             </button>
           </div>
 
@@ -1657,8 +1880,8 @@ const confirmAndPlaceOrder = async () => {
 
             <!-- View 2: Custom Customer Form -->
             <div v-else class="space-y-3 text-xs">
-              <div class="p-2.5 bg-amber-50 border border-amber-200 rounded-xl text-[11px] text-amber-900 leading-snug">
-                <strong>Walk-in / Cash Party:</strong> Use for counter clients not in BUSY. Order booking is processed on an immediate cash/cheque settlement basis.
+              <div class="text-xs font-semibold text-slate-600 pb-0.5">
+                Enter new customer details
               </div>
 
               <div>
@@ -1667,7 +1890,7 @@ const confirmAndPlaceOrder = async () => {
                   v-model="customCustomer.name"
                   type="text" 
                   placeholder="e.g. Royal Interiors / Rajesh Patel" 
-                  class="w-full bg-white border border-slate-300 rounded-xl p-2 text-xs text-slate-900 font-bold focus:outline-hidden focus:border-amber-500" 
+                  class="w-full bg-white border border-slate-300 rounded-xl p-2.5 text-xs text-slate-900 font-bold focus:outline-hidden focus:border-amber-500 shadow-2xs" 
                 />
               </div>
 
@@ -1678,7 +1901,7 @@ const confirmAndPlaceOrder = async () => {
                     v-model="customCustomer.phone"
                     type="tel" 
                     placeholder="e.g. 9845012345" 
-                    class="w-full bg-white border border-slate-300 rounded-xl p-2 text-xs text-slate-900 font-medium focus:outline-hidden focus:border-amber-500" 
+                    class="w-full bg-white border border-slate-300 rounded-xl p-2 text-xs text-slate-900 font-medium focus:outline-hidden focus:border-amber-500 shadow-2xs" 
                   />
                 </div>
                 <div>
@@ -1687,7 +1910,7 @@ const confirmAndPlaceOrder = async () => {
                     v-model="customCustomer.city"
                     type="text" 
                     placeholder="e.g. Hubli / Dharwad" 
-                    class="w-full bg-white border border-slate-300 rounded-xl p-2 text-xs text-slate-900 font-medium focus:outline-hidden focus:border-amber-500" 
+                    class="w-full bg-white border border-slate-300 rounded-xl p-2 text-xs text-slate-900 font-medium focus:outline-hidden focus:border-amber-500 shadow-2xs" 
                   />
                 </div>
               </div>
@@ -1702,13 +1925,111 @@ const confirmAndPlaceOrder = async () => {
                 </button>
                 <button 
                   @click="saveCustomCustomer"
-                  class="flex-1 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-md transition-all cursor-pointer"
+                  class="flex-1 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 active:scale-98 text-white font-bold text-xs shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5"
                 >
-                  Confirm & Select Custom Customer
+                  <span>Custom</span>
                 </button>
               </div>
             </div>
 
+          </div>
+
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- ========================================================================= -->
+    <!-- CATEGORY / GROUP SELECTOR MODAL (Option A)                                -->
+    <!-- ========================================================================= -->
+    <Teleport to="body">
+      <div 
+        v-if="isCategoryModalOpen"
+        class="fixed inset-0 bg-slate-900/60 z-[900] backdrop-blur-xs flex items-center justify-center p-4 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))]"
+        @click.self="closeCategoryModal"
+      >
+        <div class="category-modal-card bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl border border-slate-200 flex flex-col max-h-[85vh]">
+          
+          <!-- Header -->
+          <div class="p-3.5 bg-[#1b3b5f] text-white flex items-center justify-between shrink-0">
+            <div class="flex items-center gap-2">
+              <Package class="w-4 h-4 text-amber-400" />
+              <div>
+                <h4 class="font-bold text-xs text-white">Select Product Group</h4>
+                <p class="text-[10px] text-blue-200">Filter catalog by category ({{ allCategories.length - 1 }} groups)</p>
+              </div>
+            </div>
+            <button @click="closeCategoryModal" class="w-7 h-7 rounded-full bg-white/10 text-white hover:bg-white/20 flex items-center justify-center text-xs cursor-pointer">
+              <X class="w-4 h-4" />
+            </button>
+          </div>
+
+          <!-- Search Input -->
+          <div class="p-3 bg-slate-50 border-b border-slate-200">
+            <div class="relative">
+              <Search class="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+              <input 
+                v-model="categorySearchQuery"
+                type="text" 
+                placeholder="Search product groups..." 
+                class="w-full bg-white border border-slate-200 rounded-xl py-1.5 pl-8 pr-8 text-xs text-slate-800 focus:outline-hidden focus:border-blue-500 shadow-2xs font-medium" 
+              />
+              <button 
+                v-if="categorySearchQuery"
+                @click="categorySearchQuery = ''"
+                class="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600 cursor-pointer"
+              >
+                <X class="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+
+          <!-- Category List -->
+          <div class="p-3 overflow-y-auto flex-1 space-y-1.5 max-h-[60vh]">
+            <div 
+              v-for="cat in filteredModalCategories" 
+              :key="cat"
+              @click="selectCategoryFromModal(cat)"
+              class="p-2.5 rounded-xl border transition-all flex items-center justify-between cursor-pointer"
+              :class="selectedCategory === cat ? 'bg-blue-50 border-blue-500 text-blue-950 font-bold shadow-2xs' : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-800 font-medium'"
+            >
+              <div class="flex items-center gap-2">
+                <span class="text-xs sm:text-sm">{{ cat }}</span>
+                <span 
+                  v-if="cat === 'All'" 
+                  class="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-slate-200 text-slate-700 uppercase"
+                >
+                  All Items
+                </span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="text-[11px] font-mono text-slate-500">
+                  {{ categoryCounts[cat] || 0 }} {{ (categoryCounts[cat] || 0) === 1 ? 'item' : 'items' }}
+                </span>
+                <span v-if="selectedCategory === cat" class="text-blue-600 text-sm font-bold">✓</span>
+              </div>
+            </div>
+
+            <div v-if="filteredModalCategories.length === 0" class="py-8 text-center text-slate-400 text-xs">
+              No product groups match "{{ categorySearchQuery }}"
+            </div>
+          </div>
+
+          <!-- Footer -->
+          <div class="p-3 bg-slate-100 border-t border-slate-200 flex justify-end">
+            <button 
+              type="button"
+              @click="selectCategoryFromModal('All')"
+              class="px-3.5 py-1.5 rounded-xl bg-white border border-slate-300 text-xs font-bold text-slate-700 hover:bg-slate-50 cursor-pointer mr-auto shadow-2xs"
+            >
+              Show All Groups
+            </button>
+            <button 
+              type="button"
+              @click="closeCategoryModal"
+              class="px-4 py-1.5 rounded-xl bg-[#1b3b5f] text-white text-xs font-bold hover:bg-[#152e4a] cursor-pointer shadow-xs"
+            >
+              Done
+            </button>
           </div>
 
         </div>
@@ -1787,13 +2108,21 @@ const confirmAndPlaceOrder = async () => {
 
               <div>
                 <label class="text-[11px] font-bold text-slate-700 block mb-1">Unit</label>
-                <select v-model="customItemForm.unit" class="w-full bg-white border border-slate-300 rounded-xl p-2.5 text-xs sm:text-sm font-bold text-slate-800 cursor-pointer">
-                  <option>Sheets</option>
-                  <option>Sq.ft</option>
-                  <option>Pcs</option>
-                  <option>Boxes</option>
-                  <option>Rolls</option>
-                </select>
+                <div class="relative">
+                  <select 
+                    v-model="customItemForm.unit" 
+                    class="w-full bg-white border border-slate-300 rounded-xl p-2.5 text-xs sm:text-sm font-bold text-slate-800 cursor-pointer focus:outline-hidden focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 appearance-none pr-8 shadow-2xs transition-all hover:border-slate-400"
+                  >
+                    <option>Sheets</option>
+                    <option>Sq.ft</option>
+                    <option>Pcs</option>
+                    <option>Boxes</option>
+                    <option>Rolls</option>
+                  </select>
+                  <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-slate-500">
+                    <ChevronDown class="w-3.5 h-3.5" />
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -2103,7 +2432,7 @@ const confirmAndPlaceOrder = async () => {
             <div class="relative">
               <select 
                 v-model="paymentTerms"
-                class="w-full bg-white border border-slate-300 rounded-xl p-3 text-xs sm:text-sm text-slate-800 font-bold cursor-pointer focus:outline-hidden focus:border-blue-500 appearance-none pr-10"
+                class="w-full bg-white border border-slate-300 rounded-xl p-3 text-xs sm:text-sm text-slate-800 font-bold cursor-pointer focus:outline-hidden focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 appearance-none pr-10 shadow-2xs transition-all hover:border-slate-400"
               >
                 <option v-for="opt in availablePaymentTerms" :key="opt.value" :value="opt.value">
                   {{ opt.label }}{{ opt.subtitle ? ` (${opt.subtitle})` : '' }}
