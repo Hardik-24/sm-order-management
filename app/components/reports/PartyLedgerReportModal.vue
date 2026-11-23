@@ -1006,7 +1006,10 @@ const paginatedPages = computed(() => {
 
   const txs = ledgerData.value.transactions as any[]
   const totalTxs = txs.length
-  const firstPageLimit = designStyle.value === 'sm' ? 22 : 18
+  // Dynamic page capacities: Classic look has compact py-1 rows (~23px) fitting 28 on p1 & 34 on p2+
+  // SM look has py-2 rows (~31px) fitting 24 on p1 & 28 on p2+
+  const firstPageLimit = designStyle.value === 'sm' ? 24 : 28
+  const subsequentPageLimit = designStyle.value === 'sm' ? 28 : 34
 
   if (totalTxs <= firstPageLimit) {
     return [{
@@ -1030,7 +1033,7 @@ const paginatedPages = computed(() => {
 
   while (currentIndex < totalTxs) {
     const isFirst = pageNumber === 1
-    const pageSize = isFirst ? firstPageLimit : 26
+    const pageSize = isFirst ? firstPageLimit : subsequentPageLimit
     const chunk = txs.slice(currentIndex, currentIndex + pageSize)
     const isLast = (currentIndex + pageSize) >= totalTxs
 
