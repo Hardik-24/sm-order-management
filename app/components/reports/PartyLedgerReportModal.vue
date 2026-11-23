@@ -1001,8 +1001,8 @@ const paginatedPages = computed(() => {
   const totalTxs = txs.length
   // Dynamic page capacities:
   // Classic look rows are py-1 (~23px) -> Page 1 fits 28 rows, Page 2+ fits 34 rows (leaving ~155px bottom margin)
-  // SM look rows are py-2 (~31px) -> Page 1 fits 20 rows, Page 2+ fits 24 rows (leaving ~145px generous bottom margin)
-  const firstPageLimit = designStyle.value === 'sm' ? 20 : 28
+  // SM look rows are py-2 (~31px) -> Page 1 fits 21 rows, Page 2+ fits 24 rows (leaving ~110px balanced bottom margin)
+  const firstPageLimit = designStyle.value === 'sm' ? 21 : 28
   const subsequentPageLimit = designStyle.value === 'sm' ? 24 : 34
 
   if (totalTxs <= firstPageLimit) {
