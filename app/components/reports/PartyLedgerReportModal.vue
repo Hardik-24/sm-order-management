@@ -423,7 +423,7 @@
                 }"
               >
                 <div
-                  class="a4-ledger-sheet bg-white border border-gray-300 px-8 pt-8 pb-10 flex flex-col justify-between text-left antialiased select-text"
+                  class="a4-ledger-sheet bg-white border border-gray-300 px-8 pt-8 pb-12 flex flex-col justify-between text-left antialiased select-text"
                   :class="designStyle === 'classic' ? 'text-gray-950 font-serif' : 'text-gray-900 font-sans'"
                   :style="{
                     width: '794px',
@@ -572,6 +572,11 @@
                             </template>
                           </tbody>
                         </table>
+                      </div>
+
+                      <!-- Bottom Continuation Note (for intermediate pages) -->
+                      <div v-if="!page.isLastPage" class="pt-3 text-right italic text-[11px] text-gray-700 font-serif">
+                        continued ...
                       </div>
                     </div>
 
@@ -756,11 +761,11 @@
                           </tbody>
                         </table>
                       </div>
-                    </div>
 
-                    <!-- Bottom Continuation Note (for intermediate pages) -->
-                    <div v-if="!page.isLastPage" class="pt-4 text-right italic text-[11px] text-gray-600">
-                      continued ...
+                      <!-- Bottom Continuation Note (for intermediate pages) -->
+                      <div v-if="!page.isLastPage" class="pt-4 text-right italic text-[11px] text-gray-600">
+                        continued ...
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1013,10 +1018,10 @@ const paginatedPages = computed(() => {
   const txs = ledgerData.value.transactions as any[]
   const totalTxs = txs.length
   // Dynamic page capacities:
-  // Classic look rows are py-1 (~23px) -> Page 1 fits 28 rows, Page 2+ fits 34 rows (leaving ~155px bottom margin)
-  // SM look rows are py-2 (~31px) -> Page 1 fits 21 rows, Page 2+ fits 24 rows (leaving ~110px balanced bottom margin)
-  const firstPageLimit = designStyle.value === 'sm' ? 21 : 28
-  const subsequentPageLimit = designStyle.value === 'sm' ? 24 : 34
+  // Classic look rows are py-1 (~24px) -> Page 1 fits 22 rows, Page 2+ fits 26 rows (leaving ~140-160px bottom margin)
+  // SM look rows are py-2 (~32px) -> Page 1 fits 16 rows, Page 2+ fits 19 rows (leaving ~130-150px bottom margin)
+  const firstPageLimit = designStyle.value === 'sm' ? 16 : 22
+  const subsequentPageLimit = designStyle.value === 'sm' ? 19 : 26
 
   if (totalTxs <= firstPageLimit) {
     return [{

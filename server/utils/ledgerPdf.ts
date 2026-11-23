@@ -135,7 +135,7 @@ export function generateLedgerVectorPdf(
       head: [['Date', 'Particulars', 'Vch Type', 'Vch No.', 'Debit', 'Credit']],
       body: rows,
       foot: footRows,
-      margin: { left: margin, right: margin, top: 40, bottom: 40 },
+      margin: { left: margin, right: margin, top: 40, bottom: 60 },
       theme: 'plain',
       styles: {
         font: 'times',
@@ -317,7 +317,7 @@ export function generateLedgerVectorPdf(
       head: [['Date', 'Particulars', 'Vch Type', 'Vch No.', 'Debit (Rs.)', 'Credit (Rs.)']],
       body: rows,
       foot: footRows,
-      margin: { left: margin, right: margin, top: 40, bottom: 45 },
+      margin: { left: margin, right: margin, top: 40, bottom: 68 },
       theme: 'grid',
       styles: {
         font: 'helvetica',
@@ -392,14 +392,14 @@ export function generateLedgerVectorPdf(
 
     // Balance Confirmation Note on Last Page
     const finalY = (doc as any).lastAutoTable?.finalY || startY
-    if (finalY < pageHeight - 65) {
+    if (finalY <= pageHeight - 55) {
       doc.setFont('helvetica', 'italic')
       doc.setFontSize(7.5)
       doc.setTextColor(120, 120, 120)
       doc.text(
         'Note: Please verify this statement. If no discrepancy is reported within 7 days, this balance will be deemed confirmed.',
         margin,
-        finalY + 16
+        finalY + 14
       )
     }
   }
