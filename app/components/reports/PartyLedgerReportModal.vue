@@ -564,47 +564,79 @@
 
                     <!-- ================= STYLE 2: SM LOOK (Faithful First Custom Design) ================= -->
                     <div v-else class="space-y-4">
-                      <!-- Page 1 Header -->
-                      <div v-if="page.isFirstPage" class="space-y-4">
+                      <!-- Page 1 Header (Compact, Left-Aligned with Name at Left & Address at Right) -->
+                      <div v-if="page.isFirstPage" class="space-y-2.5">
                         <!-- Top Brand Color Gradient Line -->
                         <div class="h-1.5 w-full bg-gradient-to-r from-[#1b3b5f] via-[#d92546] to-[#1b3b5f] rounded-full"></div>
 
-                        <!-- Company Header (Centered) -->
-                        <div class="text-center space-y-1 pb-3 border-b border-gray-200">
-                          <h1 class="text-xl font-black text-[#1b3b5f] tracking-wide uppercase">
-                            {{ ledgerData?.company?.name || 'SRI LAKSHMI PLYWOODS' }}
-                          </h1>
-                          <p class="text-xs font-semibold text-gray-600">
-                            {{ ledgerData?.company?.tradeName || 'Trade Name : Silicon Marketing' }}
-                          </p>
-                          <p class="text-[11px] text-gray-500 whitespace-pre-line leading-relaxed max-w-lg mx-auto">
-                            {{ ledgerData?.company?.address }}
-                          </p>
+                        <!-- Row 1: Company Header (Left) & Document Meta (Right) -->
+                        <div class="flex items-start justify-between border-b border-gray-200 pb-2.5 gap-4">
+                          <div class="min-w-0">
+                            <h1 class="text-base font-black text-[#1b3b5f] tracking-wide uppercase leading-tight">
+                              {{ ledgerData?.company?.name || 'SRI LAKSHMI PLYWOODS' }}
+                            </h1>
+                            <p class="text-[11px] font-bold text-gray-600 mt-0.5">
+                              {{ ledgerData?.company?.tradeName || 'Trade Name : Silicon Marketing' }}
+                            </p>
+                            <p class="text-[10px] text-gray-500 whitespace-pre-line leading-tight mt-0.5 max-w-md">
+                              {{ ledgerData?.company?.address }}
+                            </p>
+                          </div>
+
+                          <div class="text-right shrink-0 flex flex-col items-end">
+                            <span class="inline-block px-2.5 py-0.5 rounded-md bg-[#1b3b5f] text-white text-[10px] font-black uppercase tracking-wider shadow-2xs">
+                              Statement of Account
+                            </span>
+                            <div class="text-[10px] font-mono font-bold text-gray-700 mt-1">
+                              Period: <span class="text-[#1b3b5f]">{{ ledgerData?.period?.display }}</span>
+                            </div>
+                            <div class="text-[9px] font-mono text-gray-400 mt-0.5">
+                              Page {{ page.pageNumber }} of {{ page.totalPages }}
+                            </div>
+                          </div>
                         </div>
 
-                        <!-- Party Title & Details (Centered) -->
-                        <div class="text-center space-y-1 pb-2">
-                          <h2 class="text-base font-bold text-gray-950 uppercase tracking-tight pt-1">
-                            {{ ledgerData?.party?.name }}
-                          </h2>
-                          <div>
-                            <span class="inline-block px-3 py-0.5 rounded-full bg-slate-100 text-[#1b3b5f] font-bold text-xs uppercase tracking-wider">
-                              Ledger Account
+                        <!-- Row 2: Customer Box (Name at Left, Address at Right) -->
+                        <div class="bg-slate-50 border border-slate-200/90 rounded-lg p-2.5 flex items-start justify-between gap-4">
+                          <!-- Left: Customer Name & Contact -->
+                          <div class="min-w-0 flex-1">
+                            <div class="flex items-center gap-1.5 mb-0.5">
+                              <span class="text-[9px] font-bold uppercase tracking-wider text-gray-400">
+                                Account Of
+                              </span>
+                              <span
+                                v-if="selectedPartyObj?.parent"
+                                class="text-[8.5px] font-bold px-1.5 py-0.2 rounded bg-amber-50 text-amber-800 border border-amber-200 uppercase"
+                              >
+                                {{ selectedPartyObj.parent }}
+                              </span>
+                            </div>
+                            <h2 class="text-sm font-black text-gray-950 uppercase tracking-tight truncate">
+                              {{ ledgerData?.party?.name }}
+                            </h2>
+                            <div v-if="ledgerData?.party?.phone" class="text-[10px] text-gray-600 mt-0.5 flex items-center gap-1 font-mono">
+                              <span class="text-gray-400 font-sans">Contact:</span>
+                              <span class="font-bold text-gray-800">{{ ledgerData.party.phone }}</span>
+                            </div>
+                          </div>
+
+                          <!-- Right: Party Address (Neatly right aligned) -->
+                          <div
+                            v-if="ledgerData?.party?.addressLines?.length || ledgerData?.party?.address"
+                            class="text-right max-w-xs shrink-0"
+                          >
+                            <span class="text-[9px] font-bold uppercase tracking-wider text-gray-400 block mb-0.5">
+                              Address
                             </span>
-                          </div>
-                          <div v-if="ledgerData?.party?.addressLines?.length" class="text-xs text-gray-600 pt-0.5 leading-snug max-w-md mx-auto">
-                            <p v-for="(line, idx) in ledgerData.party.addressLines" :key="idx">{{ line }}</p>
-                          </div>
-                          <div v-if="ledgerData?.party?.phone" class="text-xs font-medium text-gray-600">
-                            <span>Contact: {{ ledgerData.party.phone }}</span>
-                          </div>
-                          <div class="pt-2 flex items-center justify-between text-xs">
-                            <div class="w-20"></div>
-                            <span class="inline-block px-3 py-1 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 font-mono text-xs font-bold">
-                              Period: {{ ledgerData?.period?.display }}
-                            </span>
-                            <div class="w-20 text-right text-[11px] font-mono text-gray-400 shrink-0">
-                              Page {{ page.pageNumber }} of {{ page.totalPages }}
+                            <div class="text-[10.5px] text-gray-700 uppercase leading-snug">
+                              <template v-if="ledgerData.party.addressLines?.length">
+                                <p v-for="(line, idx) in ledgerData.party.addressLines" :key="idx" class="truncate">
+                                  {{ line }}
+                                </p>
+                              </template>
+                              <p v-else class="whitespace-pre-line line-clamp-2">
+                                {{ ledgerData.party.address }}
+                              </p>
                             </div>
                           </div>
                         </div>
@@ -974,8 +1006,9 @@ const paginatedPages = computed(() => {
 
   const txs = ledgerData.value.transactions as any[]
   const totalTxs = txs.length
+  const firstPageLimit = designStyle.value === 'sm' ? 22 : 18
 
-  if (totalTxs <= 18) {
+  if (totalTxs <= firstPageLimit) {
     return [{
       pageNumber: 1,
       totalPages: 1,
@@ -997,7 +1030,7 @@ const paginatedPages = computed(() => {
 
   while (currentIndex < totalTxs) {
     const isFirst = pageNumber === 1
-    const pageSize = isFirst ? 18 : 26
+    const pageSize = isFirst ? firstPageLimit : 26
     const chunk = txs.slice(currentIndex, currentIndex + pageSize)
     const isLast = (currentIndex + pageSize) >= totalTxs
 
