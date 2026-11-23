@@ -411,7 +411,7 @@
                 }"
               >
                 <div
-                  class="a4-ledger-sheet bg-white border border-gray-300 p-8 flex flex-col justify-between text-left antialiased select-text"
+                  class="a4-ledger-sheet bg-white border border-gray-300 px-8 pt-8 pb-10 flex flex-col justify-between text-left antialiased select-text"
                   :class="designStyle === 'classic' ? 'text-gray-950 font-serif' : 'text-gray-900 font-sans'"
                   :style="{
                     width: '794px',
@@ -999,10 +999,11 @@ const paginatedPages = computed(() => {
 
   const txs = ledgerData.value.transactions as any[]
   const totalTxs = txs.length
-  // Dynamic page capacities: Classic look has compact py-1 rows (~23px) fitting 28 on p1 & 34 on p2+
-  // SM look has py-2 rows (~31px) fitting 24 on p1 & 28 on p2+
-  const firstPageLimit = designStyle.value === 'sm' ? 24 : 28
-  const subsequentPageLimit = designStyle.value === 'sm' ? 28 : 34
+  // Dynamic page capacities:
+  // Classic look rows are py-1 (~23px) -> Page 1 fits 28 rows, Page 2+ fits 34 rows (leaving ~155px bottom margin)
+  // SM look rows are py-2 (~31px) -> Page 1 fits 20 rows, Page 2+ fits 24 rows (leaving ~145px generous bottom margin)
+  const firstPageLimit = designStyle.value === 'sm' ? 20 : 28
+  const subsequentPageLimit = designStyle.value === 'sm' ? 24 : 34
 
   if (totalTxs <= firstPageLimit) {
     return [{
