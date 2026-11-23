@@ -97,6 +97,7 @@ export const useAuth = () => {
   const canLinkBusyData = computed(() => user.value?.role === 'ADMIN' || actionPermissions.value.canLinkBusyData)
   const canEditConvertedQuotationOrders = computed(() => user.value?.role === 'ADMIN' || Boolean(actionPermissions.value.canEditConvertedQuotationOrders))
   const canManageBatches = computed(() => user.value?.role === 'ADMIN' || Boolean(actionPermissions.value.canManageBatches))
+  const canDownloadPartyLedger = computed(() => user.value?.role === 'ADMIN' || Boolean(actionPermissions.value.canDownloadPartyLedger))
 
   return {
     user,
@@ -116,6 +117,7 @@ export const useAuth = () => {
     canLinkBusyData,
     canEditConvertedQuotationOrders,
     canManageBatches,
+    canDownloadPartyLedger,
   }
 }
 

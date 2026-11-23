@@ -42,6 +42,70 @@ function queryTallyXml(xml) {
   });
 }
 
+const MONTH_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+function formatTallyDisplayDate(yyyymmdd) {
+  if (!yyyymmdd || yyyymmdd.length !== 8) return yyyymmdd || '';
+  const y = yyyymmdd.substring(2, 4);
+  const mIdx = parseInt(yyyymmdd.substring(4, 6), 10) - 1;
+  const d = parseInt(yyyymmdd.substring(6, 8), 10);
+  const mStr = MONTH_ABBR[mIdx] || 'Jan';
+  return `${d}-${mStr}-${y}`;
+}
+
+function parseDetailedVouchers(xml) {
+  if (!xml) return [];
+  const vouchers = [];
+  const vchPattern = /<VOUCHER[^>]*>([\s\S]*?)<\/VOUCHER>/gi;
+  let match;
+  while ((match = vchPattern.exec(xml)) !== null) {
+    const block = match[1];
+    const dateMatch = block.match(/<DATE[^>]*>([^<]+)<\/DATE>/i);
+    const typeMatch = block.match(/<VOUCHERTYPENAME[^>]*>([^<]+)<\/VOUCHERTYPENAME>/i);
+    const numMatch = block.match(/<VOUCHERNUMBER[^>]*>([^<]+)<\/VOUCHERNUMBER>/i);
+    const refMatch = block.match(/<REFERENCE[^>]*>([^<]+)<\/REFERENCE>/i);
+    const partyMatch = block.match(/<PARTYLEDGERNAME[^>]*>([^<]+)<\/PARTYLEDGERNAME>/i) || block.match(/<PARTYNAME[^>]*>([^<]+)<\/PARTYNAME>/i);
+    const amtMatch = block.match(/<AMOUNT[^>]*>([^<]+)<\/AMOUNT>/i);
+
+    const vDate = dateMatch ? formatTallyDisplayDate(dateMatch[1].trim()) : '';
+    const vType = typeMatch ? typeMatch[1].trim() : '';
+    const vNum = numMatch ? numMatch[1].trim() : '';
+    const vRef = refMatch ? refMatch[1].trim() : vNum;
+    const vParty = partyMatch ? partyMatch[1].replace(/&amp;/g, '&').trim() : '';
+    const rawAmt = amtMatch ? Math.abs(parseFloat(amtMatch[1])) : 0;
+
+    // Extract other ledger entries to identify opposing accounts (e.g. Bank HDFC, Sales GST@18%)
+    const entries = [];
+    const entryPattern = /<ALLLEDGERENTRIES\.LIST[^>]*>([\s\S]*?)<\/ALLLEDGERENTRIES\.LIST>/gi;
+    let eMatch;
+    while ((eMatch = entryPattern.exec(block)) !== null) {
+      const eBlock = eMatch[1];
+      const lNameMatch = eBlock.match(/<LEDGERNAME[^>]*>([^<]+)<\/LEDGERNAME>/i);
+      const lAmtMatch = eBlock.match(/<AMOUNT[^>]*>([^<]+)<\/AMOUNT>/i);
+      const lPosMatch = eBlock.match(/<ISDEEMEDPOSITIVE[^>]*>([^<]+)<\/ISDEEMEDPOSITIVE>/i);
+      if (lNameMatch) {
+        entries.push({
+          name: lNameMatch[1].replace(/&amp;/g, '&').trim(),
+          amount: parseFloat(lAmtMatch ? lAmtMatch[1] : 0) || 0,
+          isDeemedPositive: lPosMatch ? lPosMatch[1].trim().toLowerCase() === 'yes' : false
+        });
+      }
+    }
+
+    if (vNum || vRef || vParty) {
+      vouchers.push({
+        date: vDate,
+        vchType: vType,
+        vchNo: vNum || vRef,
+        ref: vRef,
+        party: vParty,
+        amount: Math.round(rawAmt * 100) / 100,
+        entries
+      });
+    }
+  }
+  return vouchers;
+}
+
 function parseSalesVouchers(xml) {
   if (!xml) return [];
   const vouchers = [];
@@ -515,6 +579,70 @@ async function syncTally() {
     } catch (e) {
       console.log(`- Sales register vouchers query note: ${e.message}`);
     }
+
+    console.log('- Fetching detailed debtor transactions (Sales, Receipts, Journals)...');
+    try {
+      const detailedVchXml = `<ENVELOPE><HEADER><VERSION>1</VERSION><TALLYREQUEST>Export</TALLYREQUEST><TYPE>Collection</TYPE><ID>DetailedVchCol</ID></HEADER><BODY><DESC><STATICVARIABLES><SVEXPORTFORMAT>$$SysName:XML</SVEXPORTFORMAT></STATICVARIABLES><TDL><TDLMESSAGE><COLLECTION NAME="DetailedVchCol"><TYPE>Voucher</TYPE><FILTER>IsFinancialVoucher</FILTER><FETCH>Date,VoucherTypeName,VoucherNumber,Reference,PartyLedgerName,Amount,AllLedgerEntries.List</FETCH></COLLECTION><SYSTEM TYPE="Formulae" NAME="IsFinancialVoucher">$$IsSales:$VoucherTypeName OR $$IsReceipt:$VoucherTypeName OR $$IsJournal:$VoucherTypeName OR $$IsCreditNote:$VoucherTypeName OR $$IsDebitNote:$VoucherTypeName</SYSTEM></TDLMESSAGE></TDL></DESC></BODY></ENVELOPE>`;
+      const detailedRaw = await queryTallyXml(detailedVchXml);
+      const allVouchers = parseDetailedVouchers(detailedRaw);
+      console.log(`- Extracted ${allVouchers.length} total debtor financial vouchers from Tally`);
+
+      const partyMap = new Map();
+      debtorPayload.parties.forEach(p => {
+        p.transactions = [];
+        partyMap.set(p.party.toLowerCase(), p);
+      });
+
+      for (const v of allVouchers) {
+        const pKey = (v.party || '').toLowerCase();
+        const p = partyMap.get(pKey);
+        if (!p) continue;
+
+        let opposing = '';
+        if (v.entries && v.entries.length > 0) {
+          const other = v.entries.find(e => e.name.toLowerCase() !== pKey);
+          if (other) opposing = other.name;
+        }
+
+        let particulars = opposing || v.vchType;
+        let debit = null;
+        let credit = null;
+
+        if (v.vchType === 'Sales') {
+          particulars = `To ${opposing || 'Sales GST@18%'}`;
+          debit = v.amount;
+        } else if (v.vchType === 'Receipt') {
+          particulars = `By ${opposing || 'Bank / Cash'}`;
+          credit = v.amount;
+        } else if (v.vchType === 'Credit Note') {
+          particulars = `By ${opposing || 'Sales Return'}`;
+          credit = v.amount;
+        } else if (v.vchType === 'Debit Note') {
+          particulars = `To ${opposing || 'Debit Note'}`;
+          debit = v.amount;
+        } else if (v.vchType === 'Journal') {
+          const pEntry = v.entries.find(e => e.name.toLowerCase() === pKey);
+          if (pEntry && pEntry.amount < 0) {
+            particulars = `To ${opposing || 'Journal'}`;
+            debit = Math.abs(pEntry.amount);
+          } else {
+            particulars = `By ${opposing || 'Journal'}`;
+            credit = pEntry ? Math.abs(pEntry.amount) : v.amount;
+          }
+        }
+
+        p.transactions.push({
+          date: v.date,
+          particulars,
+          vchType: v.vchType,
+          vchNo: v.vchNo,
+          debit,
+          credit
+        });
+      }
+    } catch (e) {
+      console.log(`- Detailed debtor vouchers note: ${e.message}`);
+    }
     console.log('  --- DEBTORS FINANCIAL SUMMARY ---');
     console.log(`  - Total Billed:        Rs. ${debtorPayload.summary.totalBilled.toLocaleString('en-IN')}`);
     console.log(`  - Total Collected:     Rs. ${debtorPayload.summary.totalPaid.toLocaleString('en-IN')}`);
@@ -574,6 +702,70 @@ async function syncTally() {
       console.log(`- Extracted ${creditorPayload.vouchers.length} purchase register vouchers from Tally`);
     } catch (e) {
       console.log(`- Purchase register vouchers query note: ${e.message}`);
+    }
+
+    console.log('- Fetching detailed creditor transactions (Purchases, Payments, Journals)...');
+    try {
+      const detailedCredVchXml = `<ENVELOPE><HEADER><VERSION>1</VERSION><TALLYREQUEST>Export</TALLYREQUEST><TYPE>Collection</TYPE><ID>DetailedCredVchCol</ID></HEADER><BODY><DESC><STATICVARIABLES><SVEXPORTFORMAT>$$SysName:XML</SVEXPORTFORMAT></STATICVARIABLES><TDL><TDLMESSAGE><COLLECTION NAME="DetailedCredVchCol"><TYPE>Voucher</TYPE><FILTER>IsFinancialCredVoucher</FILTER><FETCH>Date,VoucherTypeName,VoucherNumber,Reference,PartyLedgerName,Amount,AllLedgerEntries.List</FETCH></COLLECTION><SYSTEM TYPE="Formulae" NAME="IsFinancialCredVoucher">$$IsPurchase:$VoucherTypeName OR $$IsPayment:$VoucherTypeName OR $$IsJournal:$VoucherTypeName OR $$IsCreditNote:$VoucherTypeName OR $$IsDebitNote:$VoucherTypeName</SYSTEM></TDLMESSAGE></TDL></DESC></BODY></ENVELOPE>`;
+      const detailedCredRaw = await queryTallyXml(detailedCredVchXml);
+      const allCredVouchers = parseDetailedVouchers(detailedCredRaw);
+      console.log(`- Extracted ${allCredVouchers.length} total creditor financial vouchers from Tally`);
+
+      const credPartyMap = new Map();
+      creditorPayload.parties.forEach(p => {
+        p.transactions = [];
+        credPartyMap.set(p.party.toLowerCase(), p);
+      });
+
+      for (const v of allCredVouchers) {
+        const pKey = (v.party || '').toLowerCase();
+        const p = credPartyMap.get(pKey);
+        if (!p) continue;
+
+        let opposing = '';
+        if (v.entries && v.entries.length > 0) {
+          const other = v.entries.find(e => e.name.toLowerCase() !== pKey);
+          if (other) opposing = other.name;
+        }
+
+        let particulars = opposing || v.vchType;
+        let debit = null;
+        let credit = null;
+
+        if (v.vchType === 'Purchase') {
+          particulars = `By ${opposing || 'Purchase GST@18%'}`;
+          credit = v.amount;
+        } else if (v.vchType === 'Payment') {
+          particulars = `To ${opposing || 'Bank / Cash'}`;
+          debit = v.amount;
+        } else if (v.vchType === 'Debit Note') {
+          particulars = `To ${opposing || 'Purchase Return'}`;
+          debit = v.amount;
+        } else if (v.vchType === 'Credit Note') {
+          particulars = `By ${opposing || 'Credit Note'}`;
+          credit = v.amount;
+        } else if (v.vchType === 'Journal') {
+          const pEntry = v.entries.find(e => e.name.toLowerCase() === pKey);
+          if (pEntry && pEntry.amount < 0) {
+            particulars = `To ${opposing || 'Journal'}`;
+            debit = Math.abs(pEntry.amount);
+          } else {
+            particulars = `By ${opposing || 'Journal'}`;
+            credit = pEntry ? Math.abs(pEntry.amount) : v.amount;
+          }
+        }
+
+        p.transactions.push({
+          date: v.date,
+          particulars,
+          vchType: v.vchType,
+          vchNo: v.vchNo,
+          debit,
+          credit
+        });
+      }
+    } catch (e) {
+      console.log(`- Detailed creditor vouchers note: ${e.message}`);
     }
     console.log('  --- CREDITORS FINANCIAL SUMMARY ---');
     console.log(`  - Total Purchased:     Rs. ${creditorPayload.summary.totalPurchased.toLocaleString('en-IN')}`);

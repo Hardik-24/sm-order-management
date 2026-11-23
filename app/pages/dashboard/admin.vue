@@ -459,6 +459,20 @@
                       Edit Converted Quotes
                     </span>
                     <span 
+                      v-if="getEffectiveActionPermissions(u).canManageBatches"
+                      class="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200"
+                      title="Can Manage Batches"
+                    >
+                      Batches
+                    </span>
+                    <span 
+                      v-if="getEffectiveActionPermissions(u).canDownloadPartyLedger"
+                      class="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200"
+                      title="Can Download Party Ledger (PDF)"
+                    >
+                      Ledger PDF
+                    </span>
+                    <span 
                       v-if="u.role === 'SALES'"
                       class="text-[9px] font-semibold px-1.5 py-0.5 rounded border"
                       :class="getEffectiveActionPermissions(u).canViewAllCompanyOrders 
@@ -469,7 +483,7 @@
                       {{ getEffectiveActionPermissions(u).canViewAllCompanyOrders ? 'All Company Scope' : 'My Scope Only' }}
                     </span>
                     <span 
-                      v-if="!getEffectiveActionPermissions(u).canEditOrders && !getEffectiveActionPermissions(u).canEditOrderStatus && !getEffectiveActionPermissions(u).canCancelOrders && !getEffectiveActionPermissions(u).canEditCustomers && !getEffectiveActionPermissions(u).canEditProducts && !getEffectiveActionPermissions(u).canDeleteQuotations && !getEffectiveActionPermissions(u).canLinkBusyData && !getEffectiveActionPermissions(u).canEditConvertedQuotationOrders"
+                      v-if="!getEffectiveActionPermissions(u).canEditOrders && !getEffectiveActionPermissions(u).canEditOrderStatus && !getEffectiveActionPermissions(u).canCancelOrders && !getEffectiveActionPermissions(u).canEditCustomers && !getEffectiveActionPermissions(u).canEditProducts && !getEffectiveActionPermissions(u).canDeleteQuotations && !getEffectiveActionPermissions(u).canLinkBusyData && !getEffectiveActionPermissions(u).canEditConvertedQuotationOrders && !getEffectiveActionPermissions(u).canManageBatches && !getEffectiveActionPermissions(u).canDownloadPartyLedger"
                       class="text-[9px] text-gray-400 italic"
                     >
                       No action permissions
@@ -684,6 +698,18 @@
                     Link Busy Data
                   </span>
                   <span 
+                    v-if="getEffectiveActionPermissions(u).canManageBatches"
+                    class="text-[9px] font-semibold px-1.5 py-0.2 rounded bg-indigo-50 text-indigo-700 border border-indigo-200"
+                  >
+                    Batches
+                  </span>
+                  <span 
+                    v-if="getEffectiveActionPermissions(u).canDownloadPartyLedger"
+                    class="text-[9px] font-semibold px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-800 border border-emerald-200"
+                  >
+                    Ledger PDF
+                  </span>
+                  <span 
                     v-if="u.role === 'SALES'"
                     class="text-[9px] font-semibold px-1.5 py-0.2 rounded border"
                     :class="getEffectiveActionPermissions(u).canViewAllCompanyOrders 
@@ -893,7 +919,7 @@
                       class="text-xs font-semibold px-2.5 py-0.5 rounded-full"
                       :class="form.role === 'ADMIN' ? 'bg-purple-100 text-purple-800 border border-purple-200' : 'bg-emerald-50 text-[#1b3b5f] border border-emerald-200'"
                     >
-                      {{ form.role === 'ADMIN' ? 'All 10 Operations Granted' : `${activeActionCount} of 10 Actions Permitted` }}
+                      {{ form.role === 'ADMIN' ? 'All 11 Operations Granted' : `${activeActionCount} of 11 Actions Permitted` }}
                     </span>
                   </div>
                   <p class="text-xs text-gray-500 mt-1">
@@ -1253,6 +1279,41 @@
                     </p>
                   </div>
                 </div>
+
+                <!-- 11. Download Party Ledger (PDF) -->
+                <div
+                  @click="toggleActionPermission('canDownloadPartyLedger')"
+                  class="p-3 rounded-lg border text-left transition-all flex items-start gap-2.5 select-none"
+                  :class="[
+                    form.role === 'ADMIN' ? 'cursor-not-allowed bg-purple-50/30 border-purple-200' : 'cursor-pointer',
+                    form.actionPermissions.canDownloadPartyLedger 
+                      ? 'border-emerald-600 bg-emerald-50/20 text-[#1a1a1a] shadow-2xs' 
+                      : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50/60'
+                  ]"
+                >
+                  <div class="mt-0.5 shrink-0">
+                    <div 
+                      class="w-4 h-4 rounded border flex items-center justify-center transition-colors"
+                      :class="form.actionPermissions.canDownloadPartyLedger ? 'bg-emerald-600 border-emerald-600 text-white' : 'border-gray-300 bg-white'"
+                    >
+                      <Check v-if="form.actionPermissions.canDownloadPartyLedger" class="w-3 h-3 stroke-[3]" />
+                    </div>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center justify-between gap-1">
+                      <span class="text-xs font-semibold text-gray-900">Download Party Ledger (PDF)</span>
+                      <span 
+                        class="text-[10px] font-semibold px-1.5 py-0.2 rounded"
+                        :class="form.actionPermissions.canDownloadPartyLedger ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-500'"
+                      >
+                        {{ form.actionPermissions.canDownloadPartyLedger ? 'Granted' : 'Blocked' }}
+                      </span>
+                    </div>
+                    <p class="text-[11px] text-gray-500 mt-0.5 leading-snug">
+                      Allow generating and downloading official party financial ledger statements (statements of accounts) as PDF. By default, disabled for all non-admins.
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -1561,6 +1622,7 @@ const form = ref<{
     canLinkBusyData: false,
     canEditConvertedQuotationOrders: false,
     canManageBatches: false,
+    canDownloadPartyLedger: false,
   }
 })
 
@@ -1670,7 +1732,7 @@ onMounted(() => {
 
 // Action Permissions helpers
 const activeActionCount = computed(() => {
-  if (form.value.role === 'ADMIN') return 10
+  if (form.value.role === 'ADMIN') return 11
   const a = form.value.actionPermissions
   return (a.canEditOrders ? 1 : 0) + 
          (a.canEditOrderStatus ? 1 : 0) + 
@@ -1681,7 +1743,8 @@ const activeActionCount = computed(() => {
          (a.canViewAllCompanyOrders ? 1 : 0) +
          (a.canLinkBusyData ? 1 : 0) +
          (a.canEditConvertedQuotationOrders ? 1 : 0) +
-         (a.canManageBatches ? 1 : 0)
+         (a.canManageBatches ? 1 : 0) +
+         (a.canDownloadPartyLedger ? 1 : 0)
 })
 
 const toggleActionPermission = (key: keyof UserActionPermissions) => {
@@ -1758,6 +1821,7 @@ const onRoleChanged = (newRole: any) => {
       canLinkBusyData: true,
       canEditConvertedQuotationOrders: true,
       canManageBatches: true,
+      canDownloadPartyLedger: true,
     }
   } else {
     form.value.allowedPages = form.value.allowedPages.filter(k => k !== 'ADMIN')
@@ -1775,6 +1839,7 @@ const onRoleChanged = (newRole: any) => {
       canLinkBusyData: false,
       canEditConvertedQuotationOrders: false,
       canManageBatches: false,
+      canDownloadPartyLedger: false,
     }
     form.value.actionPermissions = { ...defaultActions }
   }
@@ -1915,7 +1980,7 @@ const openModal = (u: any = null) => {
       isActive: u.isActive !== false,
       allowedPages: u.role === 'ADMIN' ? APP_PAGES.map(p => p.key) : [...effective],
       actionPermissions: u.role === 'ADMIN' 
-        ? { canEditOrders: true, canEditOrderStatus: true, canCancelOrders: true, canEditCustomers: true, canEditProducts: true, canDeleteQuotations: true, canViewAllCompanyOrders: true, canLinkBusyData: true, canEditConvertedQuotationOrders: true, canManageBatches: true }
+        ? { canEditOrders: true, canEditOrderStatus: true, canCancelOrders: true, canEditCustomers: true, canEditProducts: true, canDeleteQuotations: true, canViewAllCompanyOrders: true, canLinkBusyData: true, canEditConvertedQuotationOrders: true, canManageBatches: true, canDownloadPartyLedger: true }
         : { ...effectiveActions }
     }
   } else {
@@ -1932,6 +1997,7 @@ const openModal = (u: any = null) => {
       canLinkBusyData: false,
       canEditConvertedQuotationOrders: false,
       canManageBatches: false,
+      canDownloadPartyLedger: false,
     }
     form.value = {
       name: '',
@@ -1981,6 +2047,8 @@ const saveUser = async () => {
         canViewAllCompanyOrders: true,
         canLinkBusyData: true,
         canEditConvertedQuotationOrders: true,
+        canManageBatches: true,
+        canDownloadPartyLedger: true,
       }
     : { ...form.value.actionPermissions }
 

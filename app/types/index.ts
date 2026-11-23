@@ -19,6 +19,7 @@ export interface UserActionPermissions {
   canLinkBusyData: boolean
   canEditConvertedQuotationOrders: boolean
   canManageBatches?: boolean
+  canDownloadPartyLedger?: boolean
 }
 
 export interface SessionUser {

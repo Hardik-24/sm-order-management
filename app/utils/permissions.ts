@@ -159,6 +159,7 @@ export const DEFAULT_ROLE_ACTION_PERMISSIONS: Record<UserRole, UserActionPermiss
     canLinkBusyData: true,
     canEditConvertedQuotationOrders: true,
     canManageBatches: true,
+    canDownloadPartyLedger: true,
   },
   SUPERVISOR: {
     canEditOrders: true,
@@ -171,6 +172,7 @@ export const DEFAULT_ROLE_ACTION_PERMISSIONS: Record<UserRole, UserActionPermiss
     canLinkBusyData: true,
     canEditConvertedQuotationOrders: false,
     canManageBatches: true,
+    canDownloadPartyLedger: false,
   },
   SALES: {
     canEditOrders: true,
@@ -183,6 +185,7 @@ export const DEFAULT_ROLE_ACTION_PERMISSIONS: Record<UserRole, UserActionPermiss
     canLinkBusyData: false,
     canEditConvertedQuotationOrders: false,
     canManageBatches: false,
+    canDownloadPartyLedger: false,
   },
   BILLING: {
     canEditOrders: false,
@@ -195,6 +198,7 @@ export const DEFAULT_ROLE_ACTION_PERMISSIONS: Record<UserRole, UserActionPermiss
     canLinkBusyData: true,
     canEditConvertedQuotationOrders: false,
     canManageBatches: false,
+    canDownloadPartyLedger: false,
   },
   PACKING: {
     canEditOrders: false,
@@ -207,6 +211,7 @@ export const DEFAULT_ROLE_ACTION_PERMISSIONS: Record<UserRole, UserActionPermiss
     canLinkBusyData: false,
     canEditConvertedQuotationOrders: false,
     canManageBatches: false,
+    canDownloadPartyLedger: false,
   },
   DELIVERY: {
     canEditOrders: false,
@@ -219,6 +224,7 @@ export const DEFAULT_ROLE_ACTION_PERMISSIONS: Record<UserRole, UserActionPermiss
     canLinkBusyData: false,
     canEditConvertedQuotationOrders: false,
     canManageBatches: false,
+    canDownloadPartyLedger: false,
   },
 }
 
@@ -240,6 +246,7 @@ export function getEffectiveActionPermissions(
       canLinkBusyData: false,
       canEditConvertedQuotationOrders: false,
       canManageBatches: false,
+      canDownloadPartyLedger: false,
     }
   }
 
@@ -256,6 +263,7 @@ export function getEffectiveActionPermissions(
       canLinkBusyData: true,
       canEditConvertedQuotationOrders: true,
       canManageBatches: true,
+      canDownloadPartyLedger: true,
     }
   }
 
@@ -271,6 +279,7 @@ export function getEffectiveActionPermissions(
     canLinkBusyData: false,
     canEditConvertedQuotationOrders: false,
     canManageBatches: false,
+    canDownloadPartyLedger: false,
   }
 
   const userPerms = (user.actionPermissions && typeof user.actionPermissions === 'object')
@@ -288,6 +297,7 @@ export function getEffectiveActionPermissions(
     canLinkBusyData: userPerms.canLinkBusyData !== undefined ? Boolean(userPerms.canLinkBusyData) : defaults.canLinkBusyData,
     canEditConvertedQuotationOrders: userPerms.canEditConvertedQuotationOrders !== undefined ? Boolean(userPerms.canEditConvertedQuotationOrders) : defaults.canEditConvertedQuotationOrders,
     canManageBatches: userPerms.canManageBatches !== undefined ? Boolean(userPerms.canManageBatches) : Boolean(defaults.canManageBatches),
+    canDownloadPartyLedger: userPerms.canDownloadPartyLedger !== undefined ? Boolean(userPerms.canDownloadPartyLedger) : Boolean(defaults.canDownloadPartyLedger),
   }
 }
 
