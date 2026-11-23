@@ -1018,10 +1018,10 @@ const paginatedPages = computed(() => {
   const txs = ledgerData.value.transactions as any[]
   const totalTxs = txs.length
   // Dynamic page capacities:
-  // Classic look rows are py-1 (~24px) -> Page 1 fits 22 rows, Page 2+ fits 26 rows (leaving ~140-160px bottom margin)
-  // SM look rows are py-2 (~32px) -> Page 1 fits 16 rows, Page 2+ fits 19 rows (leaving ~130-150px bottom margin)
-  const firstPageLimit = designStyle.value === 'sm' ? 16 : 22
-  const subsequentPageLimit = designStyle.value === 'sm' ? 19 : 26
+  // Classic look rows are py-1 (~24px) -> Page 1 fits 26 rows, Page 2+ fits 30 rows (comfortable balanced bottom margin)
+  // SM look rows are py-2 (~32px) -> Page 1 fits 20 rows, Page 2+ fits 24 rows (comfortable balanced bottom margin)
+  const firstPageLimit = designStyle.value === 'sm' ? 20 : 26
+  const subsequentPageLimit = designStyle.value === 'sm' ? 24 : 30
 
   if (totalTxs <= firstPageLimit) {
     return [{

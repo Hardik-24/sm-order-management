@@ -23,15 +23,57 @@ interface LedgerPdfPage {
 }
 
 function paginateLedger(
+  doc: jsPDF,
   transactions: LedgerTransaction[],
   style: 'classic' | 'sm'
 ): LedgerPdfPage[] {
   const txs = transactions || []
-  // Synchronized with PartyLedgerReportModal.vue
-  const firstPageLimit = style === 'sm' ? 16 : 22
-  const subsequentPageLimit = style === 'sm' ? 19 : 26
+  if (txs.length === 0) {
+    return [{
+      pageNumber: 1,
+      totalPages: 1,
+      isFirstPage: true,
+      isLastPage: true,
+      rows: [],
+      broughtForwardDebit: 0,
+      broughtForwardCredit: 0,
+      carriedOverDebit: 0,
+      carriedOverCredit: 0
+    }]
+  }
 
-  if (txs.length <= firstPageLimit) {
+  const isSm = style === 'sm'
+  const particularsWidth = isSm ? 210 : 220
+  const baseRowH = isSm ? 16 : 13.5
+  const paddingH = isSm ? 7 : 5
+  const fontName = isSm ? 'helvetica' : 'times'
+
+  doc.setFont(fontName, 'normal')
+  doc.setFontSize(8)
+
+  const txHeights = txs.map(tx => {
+    const lines = doc.splitTextToSize(tx.particulars || '', particularsWidth).length
+    return Math.max(baseRowH, lines * 9.5 + paddingH)
+  })
+
+  // Foot heights & reserves
+  const headH = isSm ? 22 : 18
+  const broughtForwardH = isSm ? 17 : 14
+  const intermediateBottomReserve = isSm ? 34 : 28 // Carried Over row + continued note
+  const lastPageBottomReserve = isSm ? 74 : 46 // Totals + Closing + Balanced Total + note
+
+  // Available vertical heights for the table on A4 (841.89 pt)
+  // Page 1: SM startY ~145 pt, stops at ~760 pt => 615 pt available
+  // Page 1: Classic startY ~135 pt, stops at ~780 pt => 645 pt available
+  const page1MaxAvailable = isSm ? 615 : 645
+
+  // Page 2+: SM startY 40 pt, stops at ~760 pt => 720 pt available
+  // Page 2+: Classic startY 44 pt, stops at ~780 pt => 736 pt available
+  const subPageMaxAvailable = isSm ? 720 : 736
+
+  // Check if ALL transactions fit on Page 1 as a single page
+  const totalTxHeight = txHeights.reduce((sum, h) => sum + h, 0)
+  if (headH + totalTxHeight + lastPageBottomReserve <= page1MaxAvailable) {
     return [{
       pageNumber: 1,
       totalPages: 1,
@@ -53,17 +95,34 @@ function paginateLedger(
 
   while (currentIndex < txs.length) {
     const isFirst = pageNum === 1
-    const pageSize = isFirst ? firstPageLimit : subsequentPageLimit
-    const chunk = txs.slice(currentIndex, currentIndex + pageSize)
-    const isLast = (currentIndex + pageSize) >= txs.length
+    const maxAvailable = isFirst ? page1MaxAvailable : subPageMaxAvailable
 
+    // Reserve for header & top Brought Forward row (on page > 1)
+    let currentHeight = headH + (!isFirst ? broughtForwardH : 0)
+
+    const chunk: LedgerTransaction[] = []
     const bfDebit = runningDebit
     const bfCredit = runningCredit
 
-    for (const row of chunk) {
+    while (currentIndex < txs.length) {
+      const nextRowH = txHeights[currentIndex]
+      const isCandidateLast = (currentIndex === txs.length - 1)
+      const reserveAtBottom = isCandidateLast ? lastPageBottomReserve : intermediateBottomReserve
+
+      // Check if adding this row would exceed available height
+      if (chunk.length > 0 && (currentHeight + nextRowH + reserveAtBottom > maxAvailable)) {
+        break
+      }
+
+      const row = txs[currentIndex]
+      chunk.push(row)
+      currentHeight += nextRowH
       if (row.debit) runningDebit += row.debit
       if (row.credit) runningCredit += row.credit
+      currentIndex++
     }
+
+    const isLast = currentIndex >= txs.length
 
     pages.push({
       pageNumber: pageNum,
@@ -77,7 +136,6 @@ function paginateLedger(
       carriedOverCredit: runningCredit
     })
 
-    currentIndex += pageSize
     pageNum++
   }
 
@@ -101,7 +159,7 @@ export function generateLedgerVectorPdf(
   const margin = 32 // 32 pt (~11.3 mm) margins for clean A4 fit
   const contentWidth = pageWidth - (margin * 2) // 531.28 pt
 
-  const pages = paginateLedger(ledgerData.transactions, style)
+  const pages = paginateLedger(doc, ledgerData.transactions, style)
 
   if (style === 'classic') {
     // ═══════════════════════════════════════════════════════════════
