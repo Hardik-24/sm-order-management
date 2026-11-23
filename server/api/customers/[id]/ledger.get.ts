@@ -1,4 +1,4 @@
-import { defineEventHandler, createError, getQuery } from 'h3'
+import { defineEventHandler, createError, getQuery, getRouterParam } from 'h3'
 import { requireActionPermission } from '~~/server/utils/auth'
 import { prisma } from '~~/server/utils/prisma'
 
@@ -24,32 +24,17 @@ export default defineEventHandler(async (event) => {
   // 1. RBAC Check: Ensure user has canDownloadPartyLedger or is ADMIN
   await requireActionPermission(event, 'canDownloadPartyLedger')
 
-  const customerId = event.context.params?.id
+  const customerId = getRouterParam(event, 'id') || event.context.params?.id
   if (!customerId) {
     throw createError({ statusCode: 400, message: 'Missing customer ID' })
   }
 
-  // 2. Fetch Customer from DB
+  // 2. Fetch Customer from DB (Only query valid schema fields)
   const customer = await prisma.customer.findUnique({
     where: { id: customerId },
     include: {
       addresses: {
         orderBy: [{ isDefault: 'desc' }, { createdAt: 'asc' }]
-      },
-      orders: {
-        where: { status: { notIn: ['CANCELLED', 'REJECTED'] } },
-        select: {
-          id: true,
-          orderNumber: true,
-          finalAmount: true,
-          paidAmount: true,
-          paymentStatus: true,
-          createdAt: true,
-          invoiceNumber: true,
-          invoiceDate: true,
-          invoiceStatus: true
-        },
-        orderBy: { createdAt: 'asc' }
       }
     }
   })
@@ -59,21 +44,21 @@ export default defineEventHandler(async (event) => {
   }
 
   // 3. Retrieve Tally Receivables and Payables Snapshots
-  const [recSetting, paySetting] = await Promise.all([
-    prisma.systemSetting.findUnique({ where: { key: 'tally_receivables_data' } }),
-    prisma.systemSetting.findUnique({ where: { key: 'tally_payables_data' } })
-  ])
-
   let debtorData: any = null
   let creditorData: any = null
-  try {
-    if (recSetting?.value) debtorData = JSON.parse(recSetting.value)
-  } catch (_) {}
-  try {
-    if (paySetting?.value) creditorData = JSON.parse(paySetting.value)
-  } catch (_) {}
 
-  const custName = customer.company || customer.name
+  try {
+    const [recSetting, paySetting] = await Promise.all([
+      prisma.systemSetting.findUnique({ where: { key: 'tally_receivables_data' } }),
+      prisma.systemSetting.findUnique({ where: { key: 'tally_payables_data' } })
+    ])
+    if (recSetting?.value) debtorData = JSON.parse(recSetting.value)
+    if (paySetting?.value) creditorData = JSON.parse(paySetting.value)
+  } catch (err: any) {
+    console.error('Error reading tally settings:', err)
+  }
+
+  const custName = customer.company || customer.name || ''
   const custAlias = customer.alias || ''
   const normCustName = normalizeName(custName)
   const normAlias = normalizeName(custAlias)
@@ -87,7 +72,6 @@ export default defineEventHandler(async (event) => {
       const normPName = normalizeName(pName)
       if (normPName === normCustName) return true
       if (normAlias && normPName === normAlias) return true
-      if (customer.tallyLedgerName && pName.toLowerCase() === customer.tallyLedgerName.toLowerCase()) return true
       return false
     })
 
@@ -95,7 +79,7 @@ export default defineEventHandler(async (event) => {
     if (!match) {
       match = parties.find(p => {
         const normPName = normalizeName(p.party || '')
-        return normPName.includes(normCustName) || normCustName.includes(normPName)
+        return (normPName && normCustName && (normPName.includes(normCustName) || normCustName.includes(normPName)))
       })
     }
     return match
@@ -123,18 +107,17 @@ export default defineEventHandler(async (event) => {
   // 6. Party Header Info
   const defaultAddress = customer.addresses?.[0]
   const fullAddressLines = [
-    defaultAddress?.addressLine,
-    defaultAddress?.area,
-    [defaultAddress?.city, defaultAddress?.state ? `${defaultAddress.state} - ${defaultAddress.pincode || ''}` : defaultAddress?.pincode].filter(Boolean).join(', ')
+    defaultAddress?.addressLine || customer.address,
+    [defaultAddress?.city || customer.city, (defaultAddress?.state || customer.state) ? `${defaultAddress?.state || customer.state} - ${defaultAddress?.pincode || customer.pincode || ''}` : (defaultAddress?.pincode || customer.pincode)].filter(Boolean).join(', ')
   ].filter(Boolean)
 
   const partyInfo = {
     name: tallyParty?.party || customer.company || customer.name,
-    customerCode: customer.customerCode,
+    customerCode: customer.customerCode || 'CUST',
     alias: customer.alias || '',
     addressLines: fullAddressLines.length > 0 ? fullAddressLines : ['Mysuru, Karnataka'],
     phone: customer.phone ? `+91 ${customer.phone}` : (tallyParty?.phone || ''),
-    gstin: customer.gstin || '',
+    gstin: customer.gstNumber || '',
     isDualRole: isCreditorLedger
   }
 
@@ -233,11 +216,9 @@ export default defineEventHandler(async (event) => {
   let closingBalanceType: 'Dr' | 'Cr' = 'Dr'
 
   if (diff > 0) {
-    // Debit side is heavier; closing balance placed on Credit side
     closingBalance = diff
     closingBalanceType = 'Dr'
   } else if (diff < 0) {
-    // Credit side is heavier; closing balance placed on Debit side
     closingBalance = Math.abs(diff)
     closingBalanceType = 'Cr'
   }
