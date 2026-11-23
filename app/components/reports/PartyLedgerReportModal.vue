@@ -459,7 +459,7 @@
 
                         <!-- Party Details -->
                         <div class="text-center space-y-0.5 pt-1">
-                          <h2 class="text-base font-bold text-black tracking-tight font-sans">
+                          <h2 class="text-base font-bold text-black tracking-tight font-sans uppercase">
                             {{ ledgerData.party.name }}
                           </h2>
                           <p class="text-xs text-gray-800">Ledger Account</p>
@@ -488,7 +488,7 @@
                           </span>
                         </div>
                         <div class="flex items-center justify-between text-xs pt-0.5">
-                          <span class="font-bold text-black">{{ ledgerData.party.name }}</span>
+                          <span class="font-bold text-black font-sans uppercase">{{ ledgerData.party.name }}</span>
                           <span class="text-[11px] text-gray-700">Ledger Account : {{ ledgerData.period.display }}</span>
                         </div>
                       </div>
@@ -659,7 +659,7 @@
                           <div>
                             <span class="font-bold text-[#1b3b5f] uppercase tracking-wide">{{ ledgerData.company.name }}</span>
                             <span class="text-gray-400 mx-2">&bull;</span>
-                            <span class="font-semibold text-gray-800">{{ ledgerData.party.name }}</span>
+                            <span class="font-bold text-gray-800 uppercase tracking-wide">{{ ledgerData.party.name }}</span>
                             <span class="text-gray-400 mx-2">&bull;</span>
                             <span class="text-[11px] text-gray-500">Statement of Account</span>
                           </div>

@@ -174,40 +174,41 @@ export function generateLedgerVectorPdf(
 
       if (page.isFirstPage) {
         // Top Right: Page indicator
-        doc.setFont('times', 'normal')
+        doc.setFont('helvetica', 'normal')
         doc.setFontSize(8.5)
-        doc.setTextColor(30, 30, 30)
+        doc.setTextColor(40, 40, 40)
         doc.text(`Page 1 of ${page.totalPages}`, pageWidth - margin, startY, { align: 'right' })
         startY += 12
 
         // Centered Company Header
-        doc.setFont('times', 'bold')
-        doc.setFontSize(12.5)
+        doc.setFont('helvetica', 'bold')
+        doc.setFontSize(13)
         doc.setTextColor(0, 0, 0)
-        doc.text(ledgerData.company.name, pageWidth / 2, startY, { align: 'center' })
+        doc.text(ledgerData.company.name.toUpperCase(), pageWidth / 2, startY, { align: 'center' })
         startY += 12
 
         doc.setFont('times', 'italic')
-        doc.setFontSize(8)
-        doc.setTextColor(70, 70, 70)
+        doc.setFontSize(8.5)
+        doc.setTextColor(60, 60, 60)
         doc.text(ledgerData.company.tradeName, pageWidth / 2, startY, { align: 'center' })
         startY += 10
 
         doc.setFont('times', 'normal')
         doc.setFontSize(7.5)
+        doc.setTextColor(70, 70, 70)
         const compAddressLines = ledgerData.company.address.split('\n')
         compAddressLines.forEach(line => {
-          doc.text(line.trim(), pageWidth / 2, startY, { align: 'center' })
+          doc.text(line.trim().toUpperCase(), pageWidth / 2, startY, { align: 'center' })
           startY += 9
         })
         startY += 4
 
         // Centered Party Details
-        doc.setFont('times', 'bold')
-        doc.setFontSize(11)
+        doc.setFont('helvetica', 'bold')
+        doc.setFontSize(11.5)
         doc.setTextColor(0, 0, 0)
-        doc.text(ledgerData.party.name, pageWidth / 2, startY, { align: 'center' })
-        startY += 11
+        doc.text(ledgerData.party.name.toUpperCase(), pageWidth / 2, startY, { align: 'center' })
+        startY += 12
 
         doc.setFont('times', 'normal')
         doc.setFontSize(8)
@@ -217,34 +218,46 @@ export function generateLedgerVectorPdf(
 
         if (ledgerData.party.addressLines && ledgerData.party.addressLines.length > 0) {
           doc.setFontSize(7.5)
+          doc.setTextColor(70, 70, 70)
           ledgerData.party.addressLines.forEach(line => {
-            doc.text(line.trim(), pageWidth / 2, startY, { align: 'center' })
+            doc.text(line.trim().toUpperCase(), pageWidth / 2, startY, { align: 'center' })
             startY += 9
           })
         }
         if (ledgerData.party.phone) {
           doc.setFontSize(7.5)
+          doc.setTextColor(70, 70, 70)
           doc.text(ledgerData.party.phone, pageWidth / 2, startY, { align: 'center' })
           startY += 9
         }
         startY += 4
 
         // Period Centered Directly Above Table
-        doc.setFont('times', 'bold')
+        doc.setFont('helvetica', 'bold')
         doc.setFontSize(8.5)
         doc.setTextColor(0, 0, 0)
         doc.text(ledgerData.period.display, pageWidth / 2, startY, { align: 'center' })
         startY += 12
       } else {
         // Subsequent Pages (Page 2+) Short Header
-        doc.setFont('times', 'bold')
+        doc.setFont('helvetica', 'bold')
         doc.setFontSize(8.5)
         doc.setTextColor(0, 0, 0)
-        doc.text(ledgerData.company.name, margin, 24)
-        doc.setFont('times', 'normal')
+        doc.text(ledgerData.company.name.toUpperCase(), margin, 24)
+
+        doc.setFont('helvetica', 'normal')
+        doc.setFontSize(8)
         doc.text(`Page ${page.pageNumber} of ${page.totalPages}`, pageWidth - margin, 24, { align: 'right' })
 
-        doc.text(`${ledgerData.party.name}  •  Ledger Account : ${ledgerData.period.display}`, margin, 34)
+        doc.setFont('helvetica', 'bold')
+        doc.setFontSize(8.5)
+        doc.text(ledgerData.party.name.toUpperCase(), margin, 34)
+
+        doc.setFont('times', 'normal')
+        doc.setFontSize(8)
+        doc.setTextColor(70, 70, 70)
+        doc.text(`Ledger Account : ${ledgerData.period.display}`, pageWidth - margin, 34, { align: 'right' })
+
         doc.setDrawColor(0, 0, 0)
         doc.setLineWidth(0.5)
         doc.line(margin, 38, pageWidth - margin, 38)
@@ -401,15 +414,16 @@ export function generateLedgerVectorPdf(
         doc.setFont('helvetica', 'bold')
         doc.setFontSize(13)
         doc.setTextColor(27, 59, 95)
-        doc.text(ledgerData.company.name, margin, startY)
+        doc.text(ledgerData.company.name.toUpperCase(), margin, startY)
 
         // Document Meta (Right)
+        const metaBoxW = 135
         doc.setFillColor(27, 59, 95)
-        doc.roundedRect(pageWidth - margin - 130, startY - 10, 130, 16, 2, 2, 'F')
+        doc.roundedRect(pageWidth - margin - metaBoxW, startY - 10, metaBoxW, 16, 2, 2, 'F')
         doc.setFont('helvetica', 'bold')
         doc.setFontSize(7.5)
         doc.setTextColor(255, 255, 255)
-        doc.text('STATEMENT OF ACCOUNT', pageWidth - margin - 65, startY + 1, { align: 'center' })
+        doc.text('STATEMENT OF ACCOUNT', pageWidth - margin - (metaBoxW / 2), startY + 1.5, { align: 'center' })
 
         startY += 13
         doc.setFont('helvetica', 'normal')
@@ -417,15 +431,31 @@ export function generateLedgerVectorPdf(
         doc.setTextColor(100, 100, 100)
         doc.text(ledgerData.company.tradeName, margin, startY)
 
+        // Period (Right aligned)
+        doc.setFont('helvetica', 'normal')
         doc.setFontSize(8)
         doc.setTextColor(80, 80, 80)
-        doc.text(`Period: ${ledgerData.period.display}`, pageWidth - margin, startY, { align: 'right' })
+        const periodPrefix = 'Period: '
+        const periodVal = ledgerData.period.display
+        const pValW = doc.getTextWidth(periodVal)
+        const pPrefW = doc.getTextWidth(periodPrefix)
+        doc.text(periodPrefix, pageWidth - margin - pValW - pPrefW, startY)
+        doc.setFont('helvetica', 'bold')
+        doc.setTextColor(27, 59, 95)
+        doc.text(periodVal, pageWidth - margin, startY, { align: 'right' })
 
         startY += 11
+        doc.setFont('helvetica', 'normal')
         doc.setFontSize(7.5)
         doc.setTextColor(110, 110, 110)
         const singleLineAddr = ledgerData.company.address.replace(/\n/g, ', ')
         doc.text(singleLineAddr.length > 70 ? singleLineAddr.slice(0, 70) + '...' : singleLineAddr, margin, startY)
+
+        // Page X of Y (Right aligned)
+        doc.setFont('helvetica', 'normal')
+        doc.setFontSize(7.5)
+        doc.setTextColor(140, 140, 140)
+        doc.text(`Page ${page.pageNumber} of ${page.totalPages}`, pageWidth - margin, startY, { align: 'right' })
 
         startY += 10
         doc.setDrawColor(226, 232, 240)
@@ -435,7 +465,14 @@ export function generateLedgerVectorPdf(
 
         // Row 2: Customer Box (Left: Name & Phone, Right: Address)
         const custBoxY = startY
-        const custBoxH = 42
+        const partyNameUpper = ledgerData.party.name.toUpperCase()
+        const partyLines = doc.splitTextToSize(partyNameUpper, 290)
+        const hasPhone = !!ledgerData.party.phone
+        const addrLines = (ledgerData.party.addressLines && ledgerData.party.addressLines.length > 0)
+          ? ledgerData.party.addressLines.slice(0, 2)
+          : []
+
+        const custBoxH = partyLines.length > 1 ? 52 : (hasPhone ? 46 : 40)
         doc.setFillColor(248, 250, 252) // slate-50
         doc.setDrawColor(226, 232, 240) // slate-200
         doc.roundedRect(margin, custBoxY, contentWidth, custBoxH, 4, 4, 'FD')
@@ -444,53 +481,92 @@ export function generateLedgerVectorPdf(
         doc.setFont('helvetica', 'bold')
         doc.setFontSize(7.5)
         doc.setTextColor(140, 140, 140)
-        doc.text('ACCOUNT OF', margin + 10, custBoxY + 13)
+        doc.text('ACCOUNT OF', margin + 10, custBoxY + 12)
 
         doc.setFont('helvetica', 'bold')
-        doc.setFontSize(10.5)
+        doc.setFontSize(11)
         doc.setTextColor(27, 59, 95)
-        const partyNameShort = ledgerData.party.name.length > 38 ? ledgerData.party.name.slice(0, 38) + '...' : ledgerData.party.name
-        doc.text(partyNameShort, margin + 10, custBoxY + 26)
+        let pY = custBoxY + 24
+        partyLines.forEach(line => {
+          doc.text(line, margin + 10, pY)
+          pY += 12
+        })
 
-        if (ledgerData.party.phone) {
+        if (hasPhone) {
           doc.setFont('helvetica', 'normal')
           doc.setFontSize(7.5)
           doc.setTextColor(100, 100, 100)
-          doc.text(`Contact: ${ledgerData.party.phone}`, margin + 10, custBoxY + 36)
+          const contactLabel = 'Contact: '
+          const cY = custBoxY + custBoxH - 7
+          doc.text(contactLabel, margin + 10, cY)
+          doc.setFont('helvetica', 'bold')
+          doc.setTextColor(40, 40, 40)
+          doc.text(ledgerData.party.phone, margin + 10 + doc.getTextWidth(contactLabel), cY)
         }
 
         // Right: Address
         doc.setFont('helvetica', 'bold')
         doc.setFontSize(7.5)
         doc.setTextColor(140, 140, 140)
-        doc.text('ADDRESS', pageWidth - margin - 10, custBoxY + 13, { align: 'right' })
+        doc.text('ADDRESS', pageWidth - margin - 10, custBoxY + 12, { align: 'right' })
 
         doc.setFont('helvetica', 'normal')
         doc.setFontSize(8)
         doc.setTextColor(60, 60, 60)
-        if (ledgerData.party.addressLines && ledgerData.party.addressLines.length > 0) {
-          const line1 = ledgerData.party.addressLines[0] || ''
-          const line2 = ledgerData.party.addressLines[1] || ''
-          doc.text(line1.slice(0, 45), pageWidth - margin - 10, custBoxY + 25, { align: 'right' })
-          if (line2) doc.text(line2.slice(0, 45), pageWidth - margin - 10, custBoxY + 35, { align: 'right' })
+        if (addrLines.length > 0) {
+          let aY = custBoxY + 23
+          addrLines.forEach(line => {
+            const trimmed = line.trim().toUpperCase()
+            doc.text(trimmed.length > 42 ? trimmed.slice(0, 42) + '...' : trimmed, pageWidth - margin - 10, aY, { align: 'right' })
+            aY += 10
+          })
         } else {
-          doc.text('—', pageWidth - margin - 10, custBoxY + 25, { align: 'right' })
+          doc.text('—', pageWidth - margin - 10, custBoxY + 23, { align: 'right' })
         }
 
         startY = custBoxY + custBoxH + 10
       } else {
         // Subsequent Pages (Page 2+) Short Header
         doc.setFillColor(27, 59, 95)
-        doc.rect(margin, 20, contentWidth, 2, 'F')
+        doc.rect(margin, 20, contentWidth * 0.7, 2, 'F')
+        doc.setFillColor(217, 37, 70)
+        doc.rect(margin + contentWidth * 0.7, 20, contentWidth * 0.3, 2, 'F')
+
         doc.setFont('helvetica', 'bold')
-        doc.setFontSize(8.5)
+        doc.setFontSize(8)
         doc.setTextColor(27, 59, 95)
-        doc.text(ledgerData.company.name, margin, 32)
+        const compUpper = ledgerData.company.name.toUpperCase()
+        doc.text(compUpper, margin, 32)
+        let currX = margin + doc.getTextWidth(compUpper)
+
         doc.setFont('helvetica', 'normal')
-        doc.setTextColor(90, 90, 90)
-        doc.text(`• ${ledgerData.party.name} • Statement of Account`, margin + 130, 32)
+        doc.setTextColor(150, 150, 150)
+        doc.text(' • ', currX, 32)
+        currX += doc.getTextWidth(' • ')
+
+        doc.setFont('helvetica', 'bold')
+        doc.setTextColor(50, 50, 50)
+        const partyUpper = ledgerData.party.name.toUpperCase()
+        const maxPartyWidth = (pageWidth - margin - 150) - currX
+        const partyDisplay = doc.getTextWidth(partyUpper) > maxPartyWidth
+          ? partyUpper.slice(0, 32) + '...'
+          : partyUpper
+        doc.text(partyDisplay, currX, 32)
+        currX += doc.getTextWidth(partyDisplay)
+
+        doc.setFont('helvetica', 'normal')
+        doc.setTextColor(120, 120, 120)
+        doc.text(' • Statement of Account', currX, 32)
+
+        doc.setFont('helvetica', 'normal')
+        doc.setFontSize(7.5)
+        doc.setTextColor(140, 140, 140)
         doc.text(`Page ${page.pageNumber} of ${page.totalPages}`, pageWidth - margin, 32, { align: 'right' })
-        startY = 40
+
+        doc.setDrawColor(226, 232, 240)
+        doc.setLineWidth(0.5)
+        doc.line(margin, 36, pageWidth - margin, 36)
+        startY = 42
       }
 
       // Build Table Body Rows for this page
