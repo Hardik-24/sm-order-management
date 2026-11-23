@@ -16,17 +16,12 @@
       >
         <!-- Modal Top Bar -->
         <div class="px-3 sm:px-6 py-2.5 sm:py-3 bg-[#171717] text-white flex items-center justify-between shrink-0 border-b border-gray-800">
-          <div class="flex items-center gap-2 sm:gap-3 min-w-0">
+          <div class="flex items-center gap-2.5 sm:gap-3 min-w-0">
             <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-emerald-400 shrink-0">
               <FileSpreadsheet class="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div class="min-w-0">
-              <div class="flex items-center gap-2">
-                <h3 class="text-xs sm:text-base font-bold text-white truncate">Party Ledger</h3>
-              </div>
-              <p class="text-[10px] sm:text-[11px] text-gray-400 truncate max-w-[130px] sm:max-w-none">
-                {{ selectedParty ? selectedParty : 'Search & select party' }}
-              </p>
+              <h3 class="text-xs sm:text-base font-bold text-white truncate">Party Ledger Statement</h3>
             </div>
           </div>
 
@@ -91,41 +86,43 @@
         </div>
 
         <!-- Filter Bar: Customer Search & Date Range -->
-        <div class="px-3 sm:px-6 py-3 bg-slate-50 border-b border-gray-200 flex flex-col gap-2.5 shrink-0">
+        <div class="px-3 sm:px-6 py-2.5 sm:py-3 bg-slate-50 border-b border-gray-200 flex flex-col gap-2.5 shrink-0">
           <!-- Row 1: Searchable Tally Party Combobox -->
           <div class="relative" ref="comboboxRef">
             <div
               @click="toggleDropdown"
-              class="w-full px-3 py-2 bg-white hover:bg-slate-50/80 border border-gray-300 rounded-xl flex items-center justify-between cursor-pointer transition-all shadow-2xs"
+              class="w-full px-3 py-2 bg-white hover:bg-slate-50/80 border border-gray-300 rounded-xl flex items-center justify-between cursor-pointer transition-all shadow-2xs gap-2"
               :class="{ 'ring-2 ring-[#1b3b5f] border-transparent': isDropdownOpen }"
             >
-              <div class="flex items-center gap-2.5 min-w-0">
+              <div class="flex items-center gap-2.5 min-w-0 flex-1">
                 <Search class="w-4 h-4 text-gray-400 shrink-0" />
                 <div class="min-w-0 flex-1">
-                  <span v-if="!selectedParty" class="text-xs text-gray-400 font-medium">
-                    Search and select a Tally party (starts blank)...
+                  <span v-if="!selectedParty" class="text-xs text-gray-400 font-medium truncate block">
+                    Search customer or vendor account...
                   </span>
-                  <div v-else class="flex items-center gap-2 truncate">
-                    <span class="text-xs font-bold text-gray-900 truncate">{{ selectedParty }}</span>
+                  <div v-else class="min-w-0 flex items-center gap-1.5 flex-wrap sm:flex-nowrap">
+                    <span class="text-xs font-bold text-gray-950 truncate max-w-[180px] sm:max-w-md block">
+                      {{ selectedParty }}
+                    </span>
                     <span
                       v-if="selectedPartyObj"
-                      class="text-[9px] font-bold px-1.5 py-0.2 rounded"
+                      class="text-[9px] font-bold px-1.5 py-0.2 rounded shrink-0"
                       :class="selectedPartyObj.role === 'creditor' ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-amber-50 text-amber-800 border border-amber-200'"
                     >
                       {{ selectedPartyObj.parent }}
                     </span>
-                    <span v-if="selectedPartyObj" class="text-[11px] font-mono text-gray-500">
+                    <span v-if="selectedPartyObj && selectedPartyObj.netPending > 0" class="text-[10px] font-mono font-semibold text-gray-500 shrink-0 hidden sm:inline">
                       &bull; ₹{{ formatIndianNumber(selectedPartyObj.netPending) }} pending
                     </span>
                   </div>
                 </div>
               </div>
 
-              <div class="flex items-center gap-1.5 shrink-0 text-gray-400">
+              <div class="flex items-center gap-1 shrink-0 text-gray-400">
                 <button
                   v-if="selectedParty"
                   @click.stop="clearSelection"
-                  class="p-0.5 hover:text-gray-600 rounded text-gray-400 cursor-pointer mr-1"
+                  class="p-1 hover:text-gray-600 rounded-full hover:bg-gray-100 text-gray-400 cursor-pointer mr-0.5"
                   title="Clear party"
                 >
                   <X class="w-3.5 h-3.5" />
@@ -174,13 +171,13 @@
                   class="w-full px-3.5 py-2.5 text-left hover:bg-slate-50 transition-colors flex items-center justify-between gap-3 cursor-pointer group"
                   :class="selectedParty === p.party ? 'bg-slate-100 font-semibold' : ''"
                 >
-                  <div class="min-w-0">
-                    <div class="flex items-center gap-2">
-                      <span class="text-xs font-bold text-gray-900 group-hover:text-[#1b3b5f] truncate">
+                  <div class="min-w-0 flex-1">
+                    <div class="flex items-center gap-1.5 flex-wrap sm:flex-nowrap">
+                      <span class="text-xs font-bold text-gray-900 group-hover:text-[#1b3b5f] truncate max-w-[190px] sm:max-w-md block">
                         {{ p.party }}
                       </span>
                       <span
-                        class="text-[9px] font-bold px-1.5 py-0.2 rounded"
+                        class="text-[9px] font-bold px-1.5 py-0.2 rounded shrink-0"
                         :class="p.role === 'creditor' ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-amber-50 text-amber-800 border border-amber-200'"
                       >
                         {{ p.parent }}
@@ -207,9 +204,10 @@
           </div>
 
           <!-- Row 2: Date Picker Controls & Quick Presets -->
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs">
-            <div class="flex items-center gap-1.5 flex-wrap">
-              <span class="font-bold text-gray-700 flex items-center gap-1 text-[11px] sm:text-xs">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-2.5 text-xs">
+            <!-- Desktop / Tablet inline date picker -->
+            <div class="hidden sm:flex items-center gap-1.5 flex-wrap">
+              <span class="font-bold text-gray-700 flex items-center gap-1 text-xs">
                 <Calendar class="w-3.5 h-3.5 text-gray-500" />
                 <span>Period:</span>
               </span>
@@ -245,8 +243,40 @@
               </div>
             </div>
 
+            <!-- Mobile-only 2-column Date Pickers Row (Guaranteed No Overflow!) -->
+            <div class="sm:hidden flex items-center gap-1.5 w-full">
+              <div class="grid grid-cols-2 gap-1.5 flex-1 min-w-0">
+                <div class="flex items-center bg-white border border-gray-300 rounded-lg px-2 py-1 shadow-2xs min-w-0">
+                  <span class="text-[9px] uppercase font-bold text-gray-400 mr-1 shrink-0">From</span>
+                  <input
+                    v-model="fromDate"
+                    type="date"
+                    class="bg-transparent text-[11px] font-mono font-bold text-gray-800 outline-none w-full min-w-0 p-0 cursor-pointer"
+                  />
+                </div>
+                <div class="flex items-center bg-white border border-gray-300 rounded-lg px-2 py-1 shadow-2xs min-w-0">
+                  <span class="text-[9px] uppercase font-bold text-gray-400 mr-1 shrink-0">To</span>
+                  <input
+                    v-model="toDate"
+                    type="date"
+                    class="bg-transparent text-[11px] font-mono font-bold text-gray-800 outline-none w-full min-w-0 p-0 cursor-pointer"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="button"
+                @click="fetchLedger"
+                :disabled="!selectedParty || isLoadingLedger"
+                class="px-3 py-1.5 bg-[#1b3b5f] hover:bg-[#132c49] text-white font-bold rounded-lg text-xs transition-colors shadow-2xs cursor-pointer disabled:opacity-50 flex items-center justify-center shrink-0"
+                title="Apply Date Filter"
+              >
+                <RefreshCw class="w-3.5 h-3.5" :class="{ 'animate-spin': isLoadingLedger }" />
+              </button>
+            </div>
+
             <!-- Quick Presets -->
-            <div class="flex items-center gap-1 overflow-x-auto scrollbar-none text-[11px] font-semibold">
+            <div class="flex items-center gap-1 overflow-x-auto scrollbar-none text-[10px] sm:text-[11px] font-semibold py-0.5">
               <button
                 type="button"
                 @click="applyPreset('currentFY')"
@@ -554,11 +584,7 @@
 
                         <!-- Party Title & Details (Centered) -->
                         <div class="text-center space-y-1 pb-2">
-                          <div class="flex items-center justify-between text-[11px] text-gray-400 font-mono mb-1">
-                            <span></span>
-                            <span>Page {{ page.pageNumber }} of {{ page.totalPages }}</span>
-                          </div>
-                          <h2 class="text-base font-bold text-gray-950 uppercase tracking-tight">
+                          <h2 class="text-base font-bold text-gray-950 uppercase tracking-tight pt-1">
                             {{ ledgerData?.party?.name }}
                           </h2>
                           <div>
@@ -566,16 +592,20 @@
                               Ledger Account
                             </span>
                           </div>
-                          <div v-if="ledgerData?.party?.addressLines?.length" class="text-xs text-gray-600 pt-1 leading-snug">
+                          <div v-if="ledgerData?.party?.addressLines?.length" class="text-xs text-gray-600 pt-0.5 leading-snug max-w-md mx-auto">
                             <p v-for="(line, idx) in ledgerData.party.addressLines" :key="idx">{{ line }}</p>
                           </div>
                           <div v-if="ledgerData?.party?.phone" class="text-xs font-medium text-gray-600">
                             <span>Contact: {{ ledgerData.party.phone }}</span>
                           </div>
-                          <div class="pt-2">
+                          <div class="pt-2 flex items-center justify-between text-xs">
+                            <div class="w-20"></div>
                             <span class="inline-block px-3 py-1 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 font-mono text-xs font-bold">
                               Period: {{ ledgerData?.period?.display }}
                             </span>
+                            <div class="w-20 text-right text-[11px] font-mono text-gray-400 shrink-0">
+                              Page {{ page.pageNumber }} of {{ page.totalPages }}
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -911,7 +941,7 @@ function updateResponsiveScales() {
   isDesktop.value = w >= 640
 
   if (w < 640) {
-    const targetW = Math.max(300, w - 16)
+    const targetW = Math.max(280, w - 24)
     const calculatedFit = Math.round((targetW / 794) * 1000) / 1000
     fitScale.value = calculatedFit
     zoomScale.value = calculatedFit

@@ -166,15 +166,14 @@ export default defineEventHandler(async (event) => {
       if (dbCustomer) {
         if (addressLines.length === 0) {
           const defaultAddress = dbCustomer.addresses?.[0]
-          const fullLines = [
-            defaultAddress?.addressLine || dbCustomer.address,
-            [
-              defaultAddress?.city || dbCustomer.city,
-              (defaultAddress?.state || dbCustomer.state)
-                ? `${defaultAddress?.state || dbCustomer.state} - ${defaultAddress?.pincode || dbCustomer.pincode || ''}`
-                : (defaultAddress?.pincode || dbCustomer.pincode)
-            ].filter(Boolean).join(', ')
-          ].filter(Boolean)
+          const addrLine1 = defaultAddress?.addressLine || dbCustomer.address
+          const city = defaultAddress?.city || dbCustomer.city
+          const state = defaultAddress?.state || dbCustomer.state
+          const pincode = defaultAddress?.pincode || dbCustomer.pincode
+          const statePin = [state, pincode].filter(Boolean).join(' - ')
+          const addrLine2 = [city, statePin].filter(Boolean).join(', ')
+
+          const fullLines = [addrLine1, addrLine2].filter((l): l is string => Boolean(l && String(l).trim()))
           if (fullLines.length > 0) addressLines = fullLines
         }
         if (!phone && dbCustomer.phone) {
