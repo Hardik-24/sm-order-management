@@ -21,22 +21,6 @@
               </p>
             </div>
           </div>
-
-          <!-- Quick Summary Stats -->
-          <div v-if="summary" class="flex items-center gap-2.5 text-xs flex-wrap">
-            <div class="px-3 py-1.5 rounded-xl bg-slate-100 border border-slate-200 flex items-center gap-2 shadow-2xs">
-              <span class="text-gray-500 font-medium">Tally Parties:</span>
-              <strong class="font-mono text-gray-900 font-bold">{{ summary.totalParties }}</strong>
-            </div>
-            <div class="px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200 flex items-center gap-2 shadow-2xs">
-              <span class="text-amber-800 font-medium">Debtors:</span>
-              <strong class="font-mono text-amber-900 font-bold">{{ summary.debtorsCount }}</strong>
-            </div>
-            <div class="px-3 py-1.5 rounded-xl bg-blue-50 border border-blue-200 flex items-center gap-2 shadow-2xs">
-              <span class="text-blue-800 font-medium">Creditors:</span>
-              <strong class="font-mono text-blue-900 font-bold">{{ summary.creditorsCount }}</strong>
-            </div>
-          </div>
         </div>
       </div>
     </header>
@@ -222,7 +206,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
 import {
   FileSpreadsheet,
   Receipt,
@@ -238,21 +222,8 @@ definePageMeta({ layout: 'dashboard' })
 const { user, canDownloadPartyLedger } = useAuth()
 
 const isPartyLedgerModalOpen = ref(false)
-const summary = ref<any>(null)
 
 const openPartyLedgerModal = () => {
   isPartyLedgerModalOpen.value = true
 }
-
-// Fetch aggregate summary numbers
-const fetchSummary = async () => {
-  try {
-    const res = await $fetch<any>('/api/reports/tally-parties')
-    summary.value = res.summary || null
-  } catch (_) {}
-}
-
-onMounted(() => {
-  fetchSummary()
-})
 </script>

@@ -2,7 +2,7 @@
   <Teleport to="body">
     <div
       v-if="isOpen"
-      class="fixed inset-0 z-[650] flex flex-col justify-end sm:justify-center p-0 sm:p-4 overflow-hidden antialiased"
+      class="fixed inset-0 z-[650] flex flex-col justify-end sm:justify-center items-center p-0 sm:p-4 lg:p-6 overflow-hidden antialiased"
     >
       <!-- Backdrop -->
       <div
@@ -12,7 +12,7 @@
 
       <!-- Modal Container -->
       <div
-        class="relative bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-6xl h-[100dvh] sm:h-auto sm:max-h-[94vh] overflow-hidden flex flex-col border border-gray-200 z-10"
+        class="relative bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-6xl mx-auto h-[100dvh] sm:h-auto sm:max-h-[94vh] overflow-hidden flex flex-col border border-gray-200 z-10"
       >
         <!-- Modal Top Bar -->
         <div class="px-4 sm:px-6 py-3 bg-[#171717] text-white flex items-center justify-between shrink-0 border-b border-gray-800">
@@ -461,7 +461,7 @@
                   width: `${Math.round(794 * zoomScale)}px`,
                   minHeight: `${Math.round(1123 * zoomScale * paginatedPages.length)}px`
                 }"
-                class="relative transition-all duration-150 space-y-6"
+                class="relative transition-all duration-150 space-y-6 mx-auto"
               >
                 <!-- Container for all pages -->
                 <div
