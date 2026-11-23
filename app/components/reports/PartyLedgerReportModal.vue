@@ -15,40 +15,40 @@
         class="relative bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-6xl mx-auto h-[100dvh] sm:h-auto sm:max-h-[94vh] overflow-hidden flex flex-col border border-gray-200 z-10"
       >
         <!-- Modal Top Bar -->
-        <div class="px-4 sm:px-6 py-3 bg-[#171717] text-white flex items-center justify-between shrink-0 border-b border-gray-800">
-          <div class="flex items-center gap-2.5 sm:gap-3 min-w-0">
-            <div class="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-emerald-400 shrink-0">
+        <div class="px-3 sm:px-6 py-2.5 sm:py-3 bg-[#171717] text-white flex items-center justify-between shrink-0 border-b border-gray-800">
+          <div class="flex items-center gap-2 sm:gap-3 min-w-0">
+            <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-emerald-400 shrink-0">
               <FileSpreadsheet class="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div class="min-w-0">
               <div class="flex items-center gap-2">
-                <h3 class="text-sm sm:text-base font-bold text-white truncate">Party Ledger Statement</h3>
+                <h3 class="text-xs sm:text-base font-bold text-white truncate">Party Ledger</h3>
               </div>
-              <p class="text-[11px] text-gray-400 truncate">
-                {{ selectedParty ? selectedParty : 'Search & select a customer or vendor account' }}
+              <p class="text-[10px] sm:text-[11px] text-gray-400 truncate max-w-[130px] sm:max-w-none">
+                {{ selectedParty ? selectedParty : 'Search & select party' }}
               </p>
             </div>
           </div>
 
           <!-- Top Action Controls -->
-          <div class="flex items-center gap-2 shrink-0">
+          <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <!-- Design Style Toggle (Classic Look vs SM Look) -->
-            <div class="flex items-center p-0.5 bg-gray-800/90 rounded-lg border border-gray-700 text-[11px] font-bold">
+            <div class="flex items-center p-0.5 bg-gray-800/90 rounded-lg border border-gray-700 text-[10px] sm:text-[11px] font-bold">
               <button
                 type="button"
                 @click="designStyle = 'classic'"
-                class="px-2.5 py-1 rounded-md transition-all flex items-center gap-1 cursor-pointer"
+                class="px-2 sm:px-2.5 py-1 rounded-md transition-all flex items-center gap-1 cursor-pointer"
                 :class="designStyle === 'classic' ? 'bg-white text-gray-950 shadow-xs' : 'text-gray-400 hover:text-white'"
                 title="Traditional monochrome ledger layout"
               >
-                <span>Classic Look</span>
+                <span>Classic</span>
               </button>
               <button
                 type="button"
                 @click="designStyle = 'sm'"
-                class="px-2.5 py-1 rounded-md transition-all flex items-center gap-1 cursor-pointer"
+                class="px-2 sm:px-2.5 py-1 rounded-md transition-all flex items-center gap-1 cursor-pointer"
                 :class="designStyle === 'sm' ? 'bg-[#1b3b5f] text-white shadow-xs' : 'text-gray-400 hover:text-white'"
-                title="Silicon Marketing branded layout inspired by quotation slip"
+                title="Silicon Marketing branded layout"
               >
                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
                 <span>SM Look</span>
@@ -83,7 +83,7 @@
             <!-- Close Modal -->
             <button
               @click="closeModal"
-              class="p-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-white/10 transition-colors cursor-pointer ml-1"
+              class="p-1 sm:p-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-white/10 transition-colors cursor-pointer ml-0.5 sm:ml-1"
             >
               <X class="w-5 h-5" />
             </button>
@@ -284,20 +284,20 @@
         </div>
 
         <!-- Preview Body Area -->
-        <div class="overflow-y-auto overflow-x-hidden flex-1 bg-slate-100 p-2 sm:p-6 pb-20 sm:pb-6 text-center -webkit-overflow-scrolling-touch">
+        <div class="overflow-y-auto overflow-x-auto flex-1 bg-slate-200/80 p-2 sm:p-6 pb-24 sm:pb-8 text-center -webkit-overflow-scrolling-touch">
           <!-- State 1: Start Blank (No Party Selected) -->
-          <div v-if="!selectedParty && !isLoadingLedger" class="py-24 text-center max-w-sm mx-auto space-y-3">
+          <div v-if="!selectedParty && !isLoadingLedger" class="py-20 sm:py-24 text-center max-w-sm mx-auto space-y-3 px-4">
             <div class="w-12 h-12 rounded-2xl bg-white border border-gray-200 text-[#1b3b5f] flex items-center justify-center mx-auto shadow-2xs">
               <Search class="w-6 h-6 text-gray-400" />
             </div>
             <h4 class="text-sm font-bold text-gray-900">Select a Tally Customer to Generate Statement</h4>
             <p class="text-xs text-gray-500 leading-relaxed">
-              Use the search bar above to look up any customer or vendor. The ledger will immediately generate with your chosen style.
+              Use the search bar above to look up any customer or vendor. The statement will immediately generate below.
             </p>
           </div>
 
           <!-- State 2: Loading State -->
-          <div v-else-if="isLoadingLedger" class="py-24 flex flex-col items-center justify-center gap-3 text-gray-500">
+          <div v-else-if="isLoadingLedger" class="py-20 sm:py-24 flex flex-col items-center justify-center gap-3 text-gray-500">
             <Loader2 class="w-8 h-8 animate-spin text-[#1b3b5f]" />
             <p class="text-xs font-semibold text-gray-700">Generating statement for {{ selectedParty }}...</p>
           </div>
@@ -315,37 +315,24 @@
           </div>
 
           <!-- State 4: Ledger Preview (Rendered) -->
-          <div v-else-if="ledgerData" class="w-full">
-            <!-- Mobile View Switcher & Zoom Controls Bar -->
-            <div class="flex items-center justify-between max-w-5xl mx-auto mb-3">
-              <div class="flex sm:hidden p-0.5 bg-gray-200/80 rounded-lg text-[10px] font-bold">
-                <button
-                  type="button"
-                  @click="mobileViewMode = 'list'"
-                  class="px-2.5 py-1 rounded-md transition-all"
-                  :class="mobileViewMode === 'list' ? 'bg-white text-gray-900 shadow-2xs' : 'text-gray-600'"
-                >
-                  Cards
-                </button>
-                <button
-                  type="button"
-                  @click="mobileViewMode = 'slip'"
-                  class="px-2.5 py-1 rounded-md transition-all"
-                  :class="mobileViewMode === 'slip' ? 'bg-[#1b3b5f] text-white shadow-2xs' : 'text-gray-600'"
-                >
-                  A4 Slip
-                </button>
+          <div v-else-if="ledgerData" class="w-full flex flex-col items-center">
+            <!-- Zoom & Page Indicator Controls Bar -->
+            <div class="flex items-center justify-between w-full max-w-4xl mx-auto mb-3 px-1">
+              <div class="flex items-center gap-2 text-xs text-gray-700 font-semibold">
+                <span class="inline-flex items-center gap-1 font-mono text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-white border border-gray-300 shadow-2xs">
+                  {{ paginatedPages.length }} {{ paginatedPages.length === 1 ? 'Page' : 'Pages' }}
+                </span>
               </div>
 
-              <div v-show="mobileViewMode === 'slip' || isDesktop" class="flex items-center gap-1 text-xs ml-auto">
+              <div class="flex items-center gap-1 text-xs">
                 <span class="text-[10px] font-mono font-bold text-[#1b3b5f] bg-[#1b3b5f]/10 px-2 py-0.5 rounded border border-[#1b3b5f]/20">
                   {{ Math.round(zoomScale * 100) }}%
                 </span>
                 <button
                   type="button"
                   @click="zoomOut"
-                  :disabled="zoomScale <= 0.35"
-                  class="p-1 rounded bg-gray-200 hover:bg-gray-300 text-gray-700 disabled:opacity-40 cursor-pointer"
+                  :disabled="zoomScale <= 0.25"
+                  class="p-1 rounded bg-white hover:bg-gray-100 border border-gray-300 text-gray-700 disabled:opacity-40 cursor-pointer shadow-2xs"
                   title="Zoom Out"
                 >
                   <ZoomOut class="w-3.5 h-3.5" />
@@ -353,16 +340,16 @@
                 <button
                   type="button"
                   @click="setZoom('fit')"
-                  class="px-2 py-0.5 rounded text-[11px] font-bold transition cursor-pointer"
-                  :class="zoomScale === fitScale ? 'bg-[#1b3b5f] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'"
+                  class="px-2 py-0.5 rounded text-[11px] font-bold transition cursor-pointer shadow-2xs"
+                  :class="zoomScale === fitScale ? 'bg-[#1b3b5f] text-white border border-[#1b3b5f]' : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-100'"
                 >
                   Fit
                 </button>
                 <button
                   type="button"
                   @click="setZoom(1.0)"
-                  class="px-2 py-0.5 rounded text-[11px] font-bold transition cursor-pointer"
-                  :class="zoomScale === 1.0 ? 'bg-[#1b3b5f] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'"
+                  class="px-2 py-0.5 rounded text-[11px] font-bold transition cursor-pointer shadow-2xs"
+                  :class="zoomScale === 1.0 ? 'bg-[#1b3b5f] text-white border border-[#1b3b5f]' : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-100'"
                 >
                   100%
                 </button>
@@ -370,7 +357,7 @@
                   type="button"
                   @click="zoomIn"
                   :disabled="zoomScale >= 1.6"
-                  class="p-1 rounded bg-gray-200 hover:bg-gray-300 text-gray-700 disabled:opacity-40 cursor-pointer"
+                  class="p-1 rounded bg-white hover:bg-gray-100 border border-gray-300 text-gray-700 disabled:opacity-40 cursor-pointer shadow-2xs"
                   title="Zoom In"
                 >
                   <ZoomIn class="w-3.5 h-3.5" />
@@ -378,110 +365,35 @@
               </div>
             </div>
 
-            <!-- Mobile Cards Mode -->
+            <!-- Faithful Multi-Page A4 Canvas Preview (Works natively on Desktop & Mobile!) -->
             <div
-              v-if="mobileViewMode === 'list' && !isDesktop"
-              class="space-y-3 max-w-md mx-auto text-left"
+              ref="printableContainerRef"
+              class="flex flex-col items-center gap-6 mx-auto w-fit py-1 select-text"
             >
-              <div class="p-4 rounded-xl bg-white border border-gray-200 shadow-2xs space-y-3">
-                <div class="flex items-center justify-between">
-                  <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Net Ledger Balance</span>
-                  <span
-                    class="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                    :class="ledgerData.totals.closingBalanceType === 'Dr' ? 'bg-amber-100 text-amber-900 border border-amber-200' : 'bg-emerald-100 text-emerald-900 border border-emerald-200'"
-                  >
-                    {{ ledgerData.totals.closingBalanceType === 'Dr' ? 'RECEIVABLE (Dr)' : 'ADVANCE / PAYABLE (Cr)' }}
-                  </span>
-                </div>
-                <div class="flex items-baseline justify-between">
-                  <div class="text-2xl font-black text-gray-950 font-mono">
-                    ₹{{ formatIndianNumber(ledgerData.totals.closingBalance) }}
-                  </div>
-                  <div class="text-right text-[11px] text-gray-500 font-mono">
-                    {{ ledgerData.period.display }}
-                  </div>
-                </div>
-                <div class="grid grid-cols-2 gap-2 pt-2 border-t border-gray-100 text-xs">
-                  <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
-                    <span class="text-[10px] text-gray-500 block">Total Debits</span>
-                    <span class="font-bold font-mono text-[#1b3b5f]">₹{{ formatIndianNumber(ledgerData.totals.totalDebit) }}</span>
-                  </div>
-                  <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
-                    <span class="text-[10px] text-gray-500 block">Total Credits</span>
-                    <span class="font-bold font-mono text-emerald-700">₹{{ formatIndianNumber(ledgerData.totals.totalCredit) }}</span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Transaction Feed -->
-              <div class="space-y-2">
-                <div
-                  v-for="(row, idx) in ledgerData.transactions"
-                  :key="idx"
-                  class="p-3 bg-white rounded-xl border border-gray-200 shadow-2xs space-y-1.5"
-                  :class="row.particulars.includes('Opening Balance') ? 'bg-amber-50/30 border-amber-200' : ''"
-                >
-                  <div class="flex items-center justify-between text-xs">
-                    <span class="font-mono text-gray-500 text-[11px]">{{ row.date }}</span>
-                    <span
-                      v-if="row.vchType"
-                      class="font-mono text-[10px] font-bold px-1.5 py-0.2 rounded"
-                      :class="row.vchType === 'Sales' ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'"
-                    >
-                      {{ row.vchType }} {{ row.vchNo ? `#${row.vchNo}` : '' }}
-                    </span>
-                  </div>
-                  <div class="flex items-center justify-between gap-2">
-                    <span class="text-xs font-semibold text-gray-900 leading-snug truncate max-w-[220px]">
-                      {{ row.particulars }}
-                    </span>
-                    <div class="text-right shrink-0">
-                      <span v-if="row.debit !== null" class="font-mono font-bold text-xs text-[#1b3b5f]">
-                        ₹{{ formatIndianNumber(row.debit) }} <span class="text-[9px] font-normal text-gray-400">Dr</span>
-                      </span>
-                      <span v-else-if="row.credit !== null" class="font-mono font-bold text-xs text-emerald-700">
-                        ₹{{ formatIndianNumber(row.credit) }} <span class="text-[9px] font-normal text-gray-400">Cr</span>
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Faithful Multi-Page A4 Canvas Preview -->
-            <div
-              v-else
-              class="w-full overflow-x-auto flex flex-col items-center py-2"
-            >
+              <!-- Multi-Page Paginated Sheets -->
               <div
+                v-for="page in paginatedPages"
+                :key="page.pageNumber"
+                class="page-sheet-wrapper relative shadow-2xl rounded-xs overflow-hidden mx-auto transition-all duration-150"
                 :style="{
                   width: `${Math.round(794 * zoomScale)}px`,
-                  minHeight: `${Math.round(1123 * zoomScale * paginatedPages.length)}px`
+                  height: `${Math.round(1123 * zoomScale)}px`
                 }"
-                class="relative transition-all duration-150 space-y-6 mx-auto"
               >
-                <!-- Container for all pages -->
                 <div
-                  ref="printableContainerRef"
-                  class="flex flex-col gap-8"
+                  class="a4-ledger-sheet bg-white border border-gray-300 p-8 flex flex-col justify-between text-left antialiased select-text"
+                  :class="designStyle === 'classic' ? 'text-gray-950 font-serif' : 'text-gray-900 font-sans'"
                   :style="{
+                    width: '794px',
+                    height: '1123px',
                     transform: `scale(${zoomScale})`,
-                    transformOrigin: 'top center',
-                    width: '794px'
+                    transformOrigin: 'top left',
+                    position: 'absolute',
+                    left: '0px',
+                    top: '0px',
+                    fontFamily: designStyle === 'classic' ? `'Times New Roman', Times, serif` : `ui-sans-serif, system-ui, sans-serif`
                   }"
                 >
-                  <!-- Multi-Page Paginated Sheets -->
-                  <div
-                    v-for="page in paginatedPages"
-                    :key="page.pageNumber"
-                    class="a4-ledger-sheet bg-white shadow-xl rounded-none border border-gray-300 p-8 flex flex-col justify-between"
-                    :class="designStyle === 'classic' ? 'text-gray-950 font-serif' : 'text-gray-900 font-sans'"
-                    :style="{
-                      width: '794px',
-                      minHeight: '1123px',
-                      fontFamily: designStyle === 'classic' ? `'Times New Roman', Times, serif` : `ui-sans-serif, system-ui, sans-serif`
-                    }"
-                  >
                     <!-- ================= STYLE 1: CLASSIC TALLY PRIME (Exact Match to User Image) ================= -->
                     <div v-if="designStyle === 'classic'" class="space-y-4">
                       <!-- Page 1 Full Header -->
@@ -769,43 +681,13 @@
                                 </td>
                               </tr>
                               <tr class="bg-[#1b3b5f]/5 border-t-2 border-b-4 border-double border-gray-400 font-black text-xs">
-                                <td colspan="4" class="py-2.5 px-3 text-right uppercase tracking-widest text-[#1b3b5f]">Grand Total</td>
+                                <td colspan="4" class="py-2.5 px-3 text-right"></td>
                                 <td class="py-2.5 px-3 text-right font-mono text-[#1b3b5f] tabular-nums">₹{{ formatIndianNumber(ledgerData.totals.balancedTotal) }}</td>
                                 <td class="py-2.5 px-3 text-right font-mono text-[#1b3b5f] tabular-nums">₹{{ formatIndianNumber(ledgerData.totals.balancedTotal) }}</td>
                               </tr>
                             </template>
                           </tbody>
                         </table>
-                      </div>
-
-                      <!-- Outstanding Summary Box (Last Page Only) -->
-                      <div v-if="page.isLastPage" class="mt-4 p-4 rounded-xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs">
-                        <div class="space-y-1">
-                          <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Net Ledger Status:</span>
-                          <div class="flex items-center gap-2">
-                            <span
-                              class="text-sm font-black px-2.5 py-0.5 rounded-lg border"
-                              :class="ledgerData?.totals?.closingBalanceType === 'Dr' 
-                                ? 'bg-amber-100 text-amber-900 border-amber-300' 
-                                : 'bg-emerald-100 text-emerald-900 border-emerald-300'"
-                            >
-                              {{ ledgerData?.totals?.closingBalanceType === 'Dr' ? 'RECEIVABLE FROM PARTY' : 'ADVANCE / PAYABLE TO PARTY' }}
-                            </span>
-                            <strong class="text-sm font-mono font-bold text-gray-900">
-                              ₹{{ formatIndianNumber(ledgerData?.totals?.closingBalance || 0) }}
-                            </strong>
-                          </div>
-                        </div>
-
-                        <div class="text-right text-[11px] text-gray-500 space-y-0.5">
-                          <p>Computer-generated statement of accounts.</p>
-                          <p class="font-mono text-[10px] text-gray-400">Generated: {{ currentFormattedTimestamp }}</p>
-                        </div>
-                      </div>
-
-                      <!-- Page Footer Branding (Last Page Only) -->
-                      <div v-if="page.isLastPage" class="pt-3 border-t border-gray-200 text-center text-[10px] text-gray-400">
-                        <span>Silicon Marketing Order Management System &bull; Official Tally Statement of Account</span>
                       </div>
                     </div>
 
@@ -818,15 +700,16 @@
               </div>
             </div>
           </div>
-        </div>
 
         <!-- Sticky Mobile Bottom Bar -->
         <div v-if="ledgerData" class="sm:hidden p-3 bg-white border-t border-gray-200 shadow-lg flex items-center gap-2.5 shrink-0 z-20">
           <div class="flex-1 min-w-0">
-            <span class="text-[9px] uppercase tracking-wider text-gray-400 block font-bold">Net Balance</span>
+            <span class="text-[9px] uppercase tracking-wider text-gray-400 block font-bold">Closing Balance</span>
             <div class="text-xs font-mono font-black text-gray-900 truncate">
               ₹{{ formatIndianNumber(ledgerData?.totals?.closingBalance || 0) }}
-              <span class="text-[10px] text-amber-700">({{ ledgerData?.totals?.closingBalanceType || 'Dr' }})</span>
+              <span class="text-[10px]" :class="ledgerData?.totals?.closingBalanceType === 'Dr' ? 'text-amber-800' : 'text-emerald-700'">
+                ({{ ledgerData?.totals?.closingBalanceType || 'Dr' }})
+              </span>
             </div>
           </div>
 
@@ -895,10 +778,9 @@ const fromDate = ref('2026-04-01')
 const toDate = ref('2026-11-30')
 const activePreset = ref<'currentFY' | 'thisMonth' | 'lastMonth' | 'allTime'>('currentFY')
 
-// Zoom & View Mode State
+// Zoom & Scale State
 const zoomScale = ref(0.95)
 const fitScale = ref(0.95)
-const mobileViewMode = ref<'list' | 'slip'>('list')
 const isDesktop = ref(false)
 const printableContainerRef = ref<HTMLElement | null>(null)
 
@@ -1029,13 +911,13 @@ function updateResponsiveScales() {
   isDesktop.value = w >= 640
 
   if (w < 640) {
-    const targetW = w - 32
-    fitScale.value = Math.max(0.35, Math.min(1.0, Math.round((targetW / 794) * 100) / 100))
-    if (zoomScale.value === 0.95 || zoomScale.value > fitScale.value * 1.5) {
-      zoomScale.value = fitScale.value
-    }
+    const targetW = Math.max(300, w - 16)
+    const calculatedFit = Math.round((targetW / 794) * 1000) / 1000
+    fitScale.value = calculatedFit
+    zoomScale.value = calculatedFit
   } else {
-    fitScale.value = Math.max(0.7, Math.min(1.15, Math.round(((w - 180) / 794) * 100) / 100))
+    const targetW = Math.min(1050, w - 80)
+    fitScale.value = Math.max(0.6, Math.min(1.15, Math.round((targetW / 794) * 100) / 100))
     zoomScale.value = Math.min(0.95, fitScale.value)
   }
 }
@@ -1045,7 +927,7 @@ function zoomIn() {
 }
 
 function zoomOut() {
-  if (zoomScale.value > 0.35) zoomScale.value = Math.max(0.35, Math.round((zoomScale.value - 0.1) * 10) / 10)
+  if (zoomScale.value > 0.25) zoomScale.value = Math.max(0.25, Math.round((zoomScale.value - 0.1) * 10) / 10)
 }
 
 function setZoom(val: number | 'fit') {
@@ -1123,12 +1005,6 @@ const downloadPdf = async () => {
   exportAction.value = 'pdf'
 
   try {
-    const prevMode = mobileViewMode.value
-    if (!isDesktop.value && mobileViewMode.value === 'list') {
-      mobileViewMode.value = 'slip'
-      await new Promise(r => setTimeout(r, 120))
-    }
-
     const container = printableContainerRef.value
     if (!container) throw new Error('Preview container not found')
 
@@ -1154,7 +1030,16 @@ const downloadPdf = async () => {
       const dataUrl = await toPng(pageEl, {
         pixelRatio: 2,
         quality: 0.95,
-        backgroundColor: '#ffffff'
+        backgroundColor: '#ffffff',
+        width: 794,
+        height: 1123,
+        style: {
+          transform: 'none',
+          transformOrigin: 'top left',
+          left: '0px',
+          top: '0px',
+          margin: '0px'
+        }
       })
 
       if (i > 0) pdf.addPage('a4', 'portrait')
@@ -1180,10 +1065,6 @@ const downloadPdf = async () => {
     }
 
     pdf.save(fileName)
-
-    if (!isDesktop.value && prevMode === 'list') {
-      mobileViewMode.value = 'list'
-    }
   } catch (err: any) {
     console.error('PDF generation error:', err)
   } finally {
@@ -1211,7 +1092,16 @@ const printLedger = async () => {
       const dataUrl = await toPng(pageEl, {
         pixelRatio: 2,
         quality: 0.95,
-        backgroundColor: '#ffffff'
+        backgroundColor: '#ffffff',
+        width: 794,
+        height: 1123,
+        style: {
+          transform: 'none',
+          transformOrigin: 'top left',
+          left: '0px',
+          top: '0px',
+          margin: '0px'
+        }
       })
       images.push(dataUrl)
     }
