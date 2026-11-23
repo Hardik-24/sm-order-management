@@ -182,6 +182,28 @@ function parseMergedDebtorData(ledgersXml, billsXml, companyName) {
       const demand = opening + billed;
       const rate = demand > 0 ? Math.min(100, (paid / demand) * 100) : (paid > 0 ? 100 : 0);
 
+      // Extract address & contact info directly from Tally Ledger Master
+      const addressLines = [];
+      const addrListMatch = block.match(/<ADDRESS\.LIST[^>]*>([\s\S]*?)<\/ADDRESS\.LIST>/i);
+      const addrSource = addrListMatch ? addrListMatch[1] : block;
+      const addrRegex = /<ADDRESS[^>]*>([^<]+)<\/ADDRESS>/gi;
+      let aMatch;
+      while ((aMatch = addrRegex.exec(addrSource)) !== null) {
+        const line = aMatch[1].replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').trim();
+        if (line) addressLines.push(line);
+      }
+
+      const phoneMatch = block.match(/<LEDGERPHONE[^>]*>([^<]+)<\/LEDGERPHONE>/i);
+      const mobileMatch = block.match(/<LEDGERMOBILE[^>]*>([^<]+)<\/LEDGERMOBILE>/i);
+      const pinMatch = block.match(/<PINCODE[^>]*>([^<]+)<\/PINCODE>/i);
+      const stateMatch = block.match(/<STATENAME[^>]*>([^<]+)<\/STATENAME>/i);
+      const gstinMatch = block.match(/<PARTYGSTIN[^>]*>([^<]+)<\/PARTYGSTIN>/i) || block.match(/<GSTIN[^>]*>([^<]+)<\/GSTIN>/i);
+
+      const phone = phoneMatch ? phoneMatch[1].trim() : (mobileMatch ? mobileMatch[1].trim() : '');
+      const pincode = pinMatch ? pinMatch[1].trim() : '';
+      const state = stateMatch ? stateMatch[1].trim() : '';
+      const gstin = gstinMatch ? gstinMatch[1].trim() : '';
+
       partiesMap.set(cleanName, {
         party: cleanName,
         parent,
@@ -195,7 +217,13 @@ function parseMergedDebtorData(ledgersXml, billsXml, companyName) {
         billsCount: 0,
         maxOverdueDays: 0,
         minOverdueDays: 0,
-        bills: []
+        bills: [],
+        addressLines,
+        address: addressLines.join(', '),
+        phone,
+        pincode,
+        state,
+        gstin
       });
     }
   }
@@ -332,6 +360,28 @@ function parseMergedCreditorData(ledgersXml, billsXml, companyName) {
       const demand = opening + purchases;
       const rate = demand > 0 ? Math.min(100, (paid / demand) * 100) : (paid > 0 ? 100 : 0);
 
+      // Extract address & contact info directly from Tally Ledger Master
+      const addressLines = [];
+      const addrListMatch = block.match(/<ADDRESS\.LIST[^>]*>([\s\S]*?)<\/ADDRESS\.LIST>/i);
+      const addrSource = addrListMatch ? addrListMatch[1] : block;
+      const addrRegex = /<ADDRESS[^>]*>([^<]+)<\/ADDRESS>/gi;
+      let aMatch;
+      while ((aMatch = addrRegex.exec(addrSource)) !== null) {
+        const line = aMatch[1].replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').trim();
+        if (line) addressLines.push(line);
+      }
+
+      const phoneMatch = block.match(/<LEDGERPHONE[^>]*>([^<]+)<\/LEDGERPHONE>/i);
+      const mobileMatch = block.match(/<LEDGERMOBILE[^>]*>([^<]+)<\/LEDGERMOBILE>/i);
+      const pinMatch = block.match(/<PINCODE[^>]*>([^<]+)<\/PINCODE>/i);
+      const stateMatch = block.match(/<STATENAME[^>]*>([^<]+)<\/STATENAME>/i);
+      const gstinMatch = block.match(/<PARTYGSTIN[^>]*>([^<]+)<\/PARTYGSTIN>/i) || block.match(/<GSTIN[^>]*>([^<]+)<\/GSTIN>/i);
+
+      const phone = phoneMatch ? phoneMatch[1].trim() : (mobileMatch ? mobileMatch[1].trim() : '');
+      const pincode = pinMatch ? pinMatch[1].trim() : '';
+      const state = stateMatch ? stateMatch[1].trim() : '';
+      const gstin = gstinMatch ? gstinMatch[1].trim() : '';
+
       partiesMap.set(cleanName, {
         party: cleanName,
         parent,
@@ -345,7 +395,13 @@ function parseMergedCreditorData(ledgersXml, billsXml, companyName) {
         billsCount: 0,
         maxOverdueDays: 0,
         minOverdueDays: 0,
-        bills: []
+        bills: [],
+        addressLines,
+        address: addressLines.join(', '),
+        phone,
+        pincode,
+        state,
+        gstin
       });
     }
   }
@@ -550,7 +606,7 @@ async function syncTally() {
                 <TYPE>Ledger</TYPE>
                 <CHILDOF>$$GroupSundryDebtors</CHILDOF>
                 <BELONGSTO>Yes</BELONGSTO>
-                <FETCH>Name,Parent,ClosingBalance,OpeningBalance,DebitTotals,CreditTotals</FETCH>
+                <FETCH>Name,Parent,ClosingBalance,OpeningBalance,DebitTotals,CreditTotals,Address,LedgerPhone,LedgerMobile,Pincode,CountryName,StateName,PartyGSTIN</FETCH>
               </COLLECTION>
             </TDLMESSAGE>
           </TDL>
@@ -674,7 +730,7 @@ async function syncTally() {
                 <TYPE>Ledger</TYPE>
                 <CHILDOF>$$GroupSundryCreditors</CHILDOF>
                 <BELONGSTO>Yes</BELONGSTO>
-                <FETCH>Name,Parent,ClosingBalance,OpeningBalance,DebitTotals,CreditTotals</FETCH>
+                <FETCH>Name,Parent,ClosingBalance,OpeningBalance,DebitTotals,CreditTotals,Address,LedgerPhone,LedgerMobile,Pincode,CountryName,StateName,PartyGSTIN</FETCH>
               </COLLECTION>
             </TDLMESSAGE>
           </TDL>

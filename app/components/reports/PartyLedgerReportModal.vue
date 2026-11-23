@@ -620,58 +620,50 @@
                       </div>
                     </div>
 
-                    <!-- ================= STYLE 2: SM LOOK (Modern Quotation Slip Inspired) ================= -->
+                    <!-- ================= STYLE 2: SM LOOK (Faithful First Custom Design) ================= -->
                     <div v-else class="space-y-4">
                       <!-- Page 1 Header -->
                       <div v-if="page.isFirstPage" class="space-y-4">
                         <!-- Top Brand Color Gradient Line -->
                         <div class="h-1.5 w-full bg-gradient-to-r from-[#1b3b5f] via-[#d92546] to-[#1b3b5f] rounded-full"></div>
 
-                        <!-- Header Flex -->
-                        <div class="flex items-center justify-between border-b border-gray-200 pb-4">
-                          <div>
-                            <h1 class="text-xl font-black text-[#1b3b5f] uppercase tracking-wide">
-                              {{ ledgerData.company.name }}
-                            </h1>
-                            <p class="text-xs font-semibold text-gray-600 mt-0.5">
-                              {{ ledgerData.company.tradeName }}
-                            </p>
-                            <p class="text-[10px] text-gray-500 whitespace-pre-line leading-tight mt-1 max-w-md">
-                              {{ ledgerData.company.address }}
-                            </p>
-                          </div>
-
-                          <div class="text-right shrink-0">
-                            <span class="inline-block px-3 py-1 rounded-lg bg-[#1b3b5f] text-white text-[11px] font-black uppercase tracking-wider shadow-2xs">
-                              STATEMENT OF ACCOUNT
-                            </span>
-                            <div class="text-xs font-mono font-bold text-gray-700 mt-1">
-                              Period: {{ ledgerData.period.display }}
-                            </div>
-                            <div class="text-[10px] text-gray-400 mt-0.5">
-                              Page {{ page.pageNumber }} of {{ page.totalPages }}
-                            </div>
-                          </div>
+                        <!-- Company Header (Centered) -->
+                        <div class="text-center space-y-1 pb-3 border-b border-gray-200">
+                          <h1 class="text-xl font-black text-[#1b3b5f] tracking-wide uppercase">
+                            {{ ledgerData?.company?.name || 'SRI LAKSHMI PLYWOODS' }}
+                          </h1>
+                          <p class="text-xs font-semibold text-gray-600">
+                            {{ ledgerData?.company?.tradeName || 'Trade Name : Silicon Marketing' }}
+                          </p>
+                          <p class="text-[11px] text-gray-500 whitespace-pre-line leading-relaxed max-w-lg mx-auto">
+                            {{ ledgerData?.company?.address }}
+                          </p>
                         </div>
 
-                        <!-- Customer Details Card -->
-                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 flex items-center justify-between gap-4 text-xs">
-                          <div class="min-w-0">
-                            <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400 block mb-0.5">Party Details</span>
-                            <div class="text-sm font-black text-[#1b3b5f] truncate">
-                              {{ ledgerData.party.name }}
-                            </div>
-                            <div class="text-[11px] text-gray-600 mt-0.5">
-                              <span class="font-semibold">{{ ledgerData.party.parentGroup }}</span>
-                              <span v-if="ledgerData.party.phone">&bull; {{ ledgerData.party.phone }}</span>
-                            </div>
+                        <!-- Party Title & Details (Centered) -->
+                        <div class="text-center space-y-1 pb-2">
+                          <div class="flex items-center justify-between text-[11px] text-gray-400 font-mono mb-1">
+                            <span></span>
+                            <span>Page {{ page.pageNumber }} of {{ page.totalPages }}</span>
                           </div>
-
-                          <div class="text-right shrink-0">
-                            <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400 block mb-0.5">Net Status</span>
-                            <div class="text-sm font-black font-mono" :class="ledgerData.totals.closingBalanceType === 'Dr' ? 'text-amber-800' : 'text-emerald-700'">
-                              ₹{{ formatIndianNumber(ledgerData.totals.closingBalance) }} ({{ ledgerData.totals.closingBalanceType }})
-                            </div>
+                          <h2 class="text-base font-bold text-gray-950 uppercase tracking-tight">
+                            {{ ledgerData?.party?.name }}
+                          </h2>
+                          <div>
+                            <span class="inline-block px-3 py-0.5 rounded-full bg-slate-100 text-[#1b3b5f] font-bold text-xs uppercase tracking-wider">
+                              Ledger Account
+                            </span>
+                          </div>
+                          <div v-if="ledgerData?.party?.addressLines?.length" class="text-xs text-gray-600 pt-1 leading-snug">
+                            <p v-for="(line, idx) in ledgerData.party.addressLines" :key="idx">{{ line }}</p>
+                          </div>
+                          <div v-if="ledgerData?.party?.phone" class="text-xs font-medium text-gray-600">
+                            <span>Contact: {{ ledgerData.party.phone }}</span>
+                          </div>
+                          <div class="pt-2">
+                            <span class="inline-block px-3 py-1 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 font-mono text-xs font-bold">
+                              Period: {{ ledgerData?.period?.display }}
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -684,31 +676,33 @@
                             <span class="font-black text-[#1b3b5f] uppercase tracking-wide">{{ ledgerData.company.name }}</span>
                             <span class="text-gray-400 mx-2">&bull;</span>
                             <span class="font-bold text-gray-800">{{ ledgerData.party.name }}</span>
+                            <span class="text-gray-400 mx-2">&bull;</span>
+                            <span class="text-[11px] text-gray-500">Ledger Account</span>
                           </div>
                           <span class="text-[11px] font-mono text-gray-500">Page {{ page.pageNumber }} of {{ page.totalPages }}</span>
                         </div>
                       </div>
 
                       <!-- Modern SM Table -->
-                      <div class="border border-gray-200 rounded-lg overflow-hidden shadow-2xs">
+                      <div class="border border-gray-300 rounded-lg overflow-hidden shadow-2xs">
                         <table class="w-full text-left border-collapse text-xs">
                           <thead>
                             <tr class="bg-[#1b3b5f] text-white font-extrabold text-[11px] uppercase tracking-wider">
                               <th class="py-2.5 px-3 w-24">Date</th>
                               <th class="py-2.5 px-3">Particulars</th>
-                              <th class="py-2.5 px-2 text-center w-20">Vch Type</th>
-                              <th class="py-2.5 px-2 text-center w-24">Vch No.</th>
+                              <th class="py-2.5 px-2.5 text-center w-20">Vch Type</th>
+                              <th class="py-2.5 px-2.5 text-center w-24">Vch No.</th>
                               <th class="py-2.5 px-3 text-right w-28">Debit (₹)</th>
                               <th class="py-2.5 px-3 text-right w-28">Credit (₹)</th>
                             </tr>
                           </thead>
                           <tbody class="divide-y divide-gray-200 text-[11px]">
-                            <!-- Brought Forward -->
+                            <!-- Brought Forward (Page 2+) -->
                             <tr v-if="!page.isFirstPage" class="bg-slate-50 font-bold">
                               <td class="py-2 px-3"></td>
                               <td class="py-2 px-3 text-gray-700 italic">Brought Forward</td>
-                              <td class="py-2 px-2 text-center">-</td>
-                              <td class="py-2 px-2 text-center">-</td>
+                              <td class="py-2 px-2.5 text-center">-</td>
+                              <td class="py-2 px-2.5 text-center">-</td>
                               <td class="py-2 px-3 text-right font-mono tabular-nums text-[#1b3b5f]">
                                 {{ page.broughtForwardDebit > 0 ? formatIndianNumber(page.broughtForwardDebit) : '' }}
                               </td>
@@ -724,24 +718,28 @@
                               class="hover:bg-slate-50/80 transition-colors"
                               :class="row.particulars.includes('Opening Balance') ? 'bg-amber-50/40 font-bold' : ''"
                             >
-                              <td class="py-2 px-3 font-mono text-gray-600 whitespace-nowrap">{{ row.date }}</td>
-                              <td class="py-2 px-3 text-gray-900 font-medium">{{ row.particulars }}</td>
-                              <td class="py-2 px-2 text-center font-semibold text-gray-600">{{ row.vchType || '-' }}</td>
-                              <td class="py-2 px-2 text-center font-mono font-bold text-[#1b3b5f]">{{ row.vchNo || '-' }}</td>
-                              <td class="py-2 px-3 text-right font-mono font-bold text-[#1b3b5f] tabular-nums">
+                              <td class="py-2 px-3 font-mono text-gray-700 whitespace-nowrap">{{ row.date }}</td>
+                              <td class="py-2 px-3 text-gray-900 font-medium">
+                                <span :class="row.particulars.startsWith('To') ? 'text-[#1b3b5f] font-semibold' : 'text-slate-800 font-semibold'">
+                                  {{ row.particulars }}
+                                </span>
+                              </td>
+                              <td class="py-2 px-2.5 text-center font-semibold text-gray-600">{{ row.vchType || '-' }}</td>
+                              <td class="py-2 px-2.5 text-center font-mono font-bold text-[#1b3b5f]">{{ row.vchNo || '-' }}</td>
+                              <td class="py-2 px-3 text-right font-mono font-semibold text-gray-900 tabular-nums">
                                 {{ row.debit !== null ? formatIndianNumber(row.debit) : '' }}
                               </td>
-                              <td class="py-2 px-3 text-right font-mono font-bold text-emerald-700 tabular-nums">
+                              <td class="py-2 px-3 text-right font-mono font-semibold text-gray-900 tabular-nums">
                                 {{ row.credit !== null ? formatIndianNumber(row.credit) : '' }}
                               </td>
                             </tr>
 
-                            <!-- Carried Over -->
+                            <!-- Carried Over (Intermediate pages) -->
                             <tr v-if="!page.isLastPage" class="bg-slate-50 font-bold border-t border-gray-300">
                               <td class="py-2 px-3"></td>
                               <td class="py-2 px-3 text-gray-700 italic">Carried Over</td>
-                              <td class="py-2 px-2 text-center">-</td>
-                              <td class="py-2 px-2 text-center">-</td>
+                              <td class="py-2 px-2.5 text-center">-</td>
+                              <td class="py-2 px-2.5 text-center">-</td>
                               <td class="py-2 px-3 text-right font-mono tabular-nums text-[#1b3b5f]">{{ formatIndianNumber(page.carriedOverDebit) }}</td>
                               <td class="py-2 px-3 text-right font-mono tabular-nums text-emerald-700">{{ formatIndianNumber(page.carriedOverCredit) }}</td>
                             </tr>
@@ -750,20 +748,23 @@
                             <template v-if="page.isLastPage">
                               <tr class="bg-gray-50 border-t-2 border-gray-300 font-bold text-[11px]">
                                 <td colspan="4" class="py-2 px-3 text-right uppercase tracking-wider text-gray-700">Totals</td>
-                                <td class="py-2 px-3 text-right font-mono tabular-nums text-gray-900">{{ formatIndianNumber(ledgerData.totals.totalDebit) }}</td>
-                                <td class="py-2 px-3 text-right font-mono tabular-nums text-gray-900">{{ formatIndianNumber(ledgerData.totals.totalCredit) }}</td>
+                                <td class="py-2 px-3 text-right font-mono text-gray-900 tabular-nums">{{ formatIndianNumber(ledgerData.totals.totalDebit) }}</td>
+                                <td class="py-2 px-3 text-right font-mono text-gray-900 tabular-nums">{{ formatIndianNumber(ledgerData.totals.totalCredit) }}</td>
                               </tr>
                               <tr v-if="ledgerData.totals.closingBalance > 0" class="bg-amber-50/50 font-bold text-[11px]">
                                 <td class="py-2 px-3 font-mono text-gray-600">{{ toDate }}</td>
                                 <td colspan="3" class="py-2 px-3 text-gray-900">
-                                  <span :class="ledgerData.totals.closingBalanceType === 'Dr' ? 'text-[#1b3b5f]' : 'text-emerald-700'">
-                                    {{ ledgerData.totals.closingBalanceType === 'Dr' ? 'By Closing Balance (Dr)' : 'To Closing Balance (Cr)' }}
+                                  <span v-if="ledgerData.totals.closingBalanceType === 'Dr'" class="text-[#1b3b5f]">
+                                    By Closing Balance (Dr)
+                                  </span>
+                                  <span v-else class="text-emerald-700">
+                                    To Closing Balance (Cr)
                                   </span>
                                 </td>
-                                <td class="py-2 px-3 text-right font-mono tabular-nums text-gray-900">
+                                <td class="py-2 px-3 text-right font-mono text-gray-900 tabular-nums">
                                   <span v-if="ledgerData.totals.closingBalanceType === 'Cr'">{{ formatIndianNumber(ledgerData.totals.closingBalance) }}</span>
                                 </td>
-                                <td class="py-2 px-3 text-right font-mono tabular-nums text-gray-900">
+                                <td class="py-2 px-3 text-right font-mono text-gray-900 tabular-nums">
                                   <span v-if="ledgerData.totals.closingBalanceType === 'Dr'">{{ formatIndianNumber(ledgerData.totals.closingBalance) }}</span>
                                 </td>
                               </tr>
@@ -775,6 +776,36 @@
                             </template>
                           </tbody>
                         </table>
+                      </div>
+
+                      <!-- Outstanding Summary Box (Last Page Only) -->
+                      <div v-if="page.isLastPage" class="mt-4 p-4 rounded-xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs">
+                        <div class="space-y-1">
+                          <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Net Ledger Status:</span>
+                          <div class="flex items-center gap-2">
+                            <span
+                              class="text-sm font-black px-2.5 py-0.5 rounded-lg border"
+                              :class="ledgerData?.totals?.closingBalanceType === 'Dr' 
+                                ? 'bg-amber-100 text-amber-900 border-amber-300' 
+                                : 'bg-emerald-100 text-emerald-900 border-emerald-300'"
+                            >
+                              {{ ledgerData?.totals?.closingBalanceType === 'Dr' ? 'RECEIVABLE FROM PARTY' : 'ADVANCE / PAYABLE TO PARTY' }}
+                            </span>
+                            <strong class="text-sm font-mono font-bold text-gray-900">
+                              ₹{{ formatIndianNumber(ledgerData?.totals?.closingBalance || 0) }}
+                            </strong>
+                          </div>
+                        </div>
+
+                        <div class="text-right text-[11px] text-gray-500 space-y-0.5">
+                          <p>Computer-generated statement of accounts.</p>
+                          <p class="font-mono text-[10px] text-gray-400">Generated: {{ currentFormattedTimestamp }}</p>
+                        </div>
+                      </div>
+
+                      <!-- Page Footer Branding (Last Page Only) -->
+                      <div v-if="page.isLastPage" class="pt-3 border-t border-gray-200 text-center text-[10px] text-gray-400">
+                        <span>Silicon Marketing Order Management System &bull; Official Tally Statement of Account</span>
                       </div>
                     </div>
 
@@ -893,6 +924,17 @@ const filteredParties = computed(() => {
   if (!query) return parties.value
   return parties.value.filter(p => {
     return p.party.toLowerCase().includes(query) || (p.parent && p.parent.toLowerCase().includes(query))
+  })
+})
+
+const currentFormattedTimestamp = computed(() => {
+  const d = new Date()
+  return d.toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
   })
 })
 

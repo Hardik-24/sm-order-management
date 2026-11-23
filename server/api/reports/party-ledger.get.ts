@@ -113,25 +113,79 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  // 4. Enrich address / contact info from Customer DB if matched
-  let dbCustomer: any = null
-  try {
-    // Try matching customer by company name or alias
-    dbCustomer = await prisma.customer.findFirst({
-      where: {
-        OR: [
-          { company: { contains: partyParam.split(',')[0].trim() } },
-          { name: { contains: partyParam.split(',')[0].trim() } },
-          { alias: { contains: partyParam.split(',')[0].trim() } }
-        ]
-      },
-      include: {
-        addresses: {
-          orderBy: [{ isDefault: 'desc' }, { createdAt: 'asc' }]
+  // 4. Enrich address / contact info from Tally Master & Customer DB
+  let addressLines: string[] = []
+  if (Array.isArray(tallyParty.addressLines) && tallyParty.addressLines.length > 0) {
+    addressLines = tallyParty.addressLines.filter(Boolean)
+  }
+
+  let phone = tallyParty.phone || ''
+  let gstin = tallyParty.gstin || ''
+
+  // If not present in Tally snapshot, fallback to intelligent match with Customer DB
+  if (addressLines.length === 0 || !phone) {
+    let dbCustomer: any = null
+    try {
+      const partyBase = partyParam.split(',')[0].trim()
+      dbCustomer = await prisma.customer.findFirst({
+        where: {
+          OR: [
+            { company: { contains: partyBase } },
+            { name: { contains: partyBase } },
+            { alias: { contains: partyBase } }
+          ]
+        },
+        include: {
+          addresses: {
+            orderBy: [{ isDefault: 'desc' }, { createdAt: 'asc' }]
+          }
+        }
+      })
+
+      // Secondary token search (e.g. matching "Knob" for "Mr Knob The Hardware Shopee")
+      if (!dbCustomer) {
+        const tokens = partyBase.split(/\s+/).filter(w => w.length > 3)
+        for (const token of tokens) {
+          dbCustomer = await prisma.customer.findFirst({
+            where: {
+              OR: [
+                { company: { contains: token } },
+                { name: { contains: token } }
+              ]
+            },
+            include: {
+              addresses: {
+                orderBy: [{ isDefault: 'desc' }, { createdAt: 'asc' }]
+              }
+            }
+          })
+          if (dbCustomer) break
         }
       }
-    })
-  } catch (_) {}
+
+      if (dbCustomer) {
+        if (addressLines.length === 0) {
+          const defaultAddress = dbCustomer.addresses?.[0]
+          const fullLines = [
+            defaultAddress?.addressLine || dbCustomer.address,
+            [
+              defaultAddress?.city || dbCustomer.city,
+              (defaultAddress?.state || dbCustomer.state)
+                ? `${defaultAddress?.state || dbCustomer.state} - ${defaultAddress?.pincode || dbCustomer.pincode || ''}`
+                : (defaultAddress?.pincode || dbCustomer.pincode)
+            ].filter(Boolean).join(', ')
+          ].filter(Boolean)
+          if (fullLines.length > 0) addressLines = fullLines
+        }
+        if (!phone && dbCustomer.phone) {
+          phone = `+91 ${dbCustomer.phone}`
+        }
+        if (!gstin && dbCustomer.gstNumber) {
+          gstin = dbCustomer.gstNumber
+        }
+      }
+    } catch (_) {}
+  }
 
   // 5. Official Company Header (Sri Lakshmi Plywoods / Silicon Marketing)
   const companyInfo = {
@@ -144,24 +198,13 @@ export default defineEventHandler(async (event) => {
   }
 
   // 6. Party Header Info
-  const defaultAddress = dbCustomer?.addresses?.[0]
-  const fullAddressLines = [
-    defaultAddress?.addressLine || dbCustomer?.address,
-    [
-      defaultAddress?.city || dbCustomer?.city,
-      (defaultAddress?.state || dbCustomer?.state)
-        ? `${defaultAddress?.state || dbCustomer?.state} - ${defaultAddress?.pincode || dbCustomer?.pincode || ''}`
-        : (defaultAddress?.pincode || dbCustomer?.pincode)
-    ].filter(Boolean).join(', ')
-  ].filter(Boolean)
-
   const partyInfo = {
     name: tallyParty.party,
     parentGroup: tallyParty.parent || (role === 'debtor' ? 'Sundry Debtors' : 'Sundry Creditors'),
     role,
-    addressLines: fullAddressLines.length > 0 ? fullAddressLines : ['Mysuru, Karnataka'],
-    phone: dbCustomer?.phone ? `+91 ${dbCustomer.phone}` : (tallyParty.phone || ''),
-    gstin: dbCustomer?.gstNumber || ''
+    addressLines: addressLines.length > 0 ? addressLines : [],
+    phone: phone || '',
+    gstin: gstin || ''
   }
 
   // 7. Date Period Filtering & Range Computation
