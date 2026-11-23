@@ -63,6 +63,18 @@
               <span>Print</span>
             </button>
 
+            <!-- Vector PDF View Tab -->
+            <a
+              v-if="selectedParty && ledgerData"
+              :href="'/api/reports/party-ledger-pdf?party=' + encodeURIComponent(selectedParty) + '&from=' + fromDate + '&to=' + toDate + '&style=' + designStyle"
+              target="_blank"
+              class="hidden sm:flex px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-bold transition-all items-center gap-1.5 cursor-pointer"
+              title="Open pure-vector PDF in new tab"
+            >
+              <ExternalLink class="w-3.5 h-3.5 text-emerald-400" />
+              <span>Vector PDF</span>
+            </a>
+
             <!-- Download PDF Button (Desktop) -->
             <button
               type="button"
@@ -798,6 +810,7 @@ import {
   Loader2,
   ZoomIn,
   ZoomOut,
+  ExternalLink,
   X
 } from 'lucide-vue-next'
 import { jsPDF } from 'jspdf'
@@ -1058,75 +1071,55 @@ const paginatedPages = computed(() => {
   return pages
 })
 
-// PDF Generation
+// PDF Generation via Fast Pure-Vector Server Endpoint
 const downloadPdf = async () => {
-  if (isExporting.value || !ledgerData.value) return
+  if (isExporting.value || !ledgerData.value || !selectedParty.value) return
   isExporting.value = true
   exportAction.value = 'pdf'
 
   try {
-    const container = printableContainerRef.value
-    if (!container) throw new Error('Preview container not found')
-
-    const pageElements = container.querySelectorAll('.a4-ledger-sheet')
-    if (!pageElements.length) throw new Error('No printable sheets found')
-
-    if (typeof document !== 'undefined' && document.fonts) {
-      await document.fonts.ready
-    }
-
-    const pdf = new jsPDF({
-      orientation: 'portrait',
-      unit: 'pt',
-      format: 'a4',
-      compress: true
-    })
-
-    const pdfW = pdf.internal.pageSize.getWidth()
-    const pdfH = pdf.internal.pageSize.getHeight()
-
-    for (let i = 0; i < pageElements.length; i++) {
-      const pageEl = pageElements[i] as HTMLElement
-      const dataUrl = await toPng(pageEl, {
-        pixelRatio: 2,
-        quality: 0.95,
-        backgroundColor: '#ffffff',
-        width: 794,
-        height: 1123,
-        style: {
-          transform: 'none',
-          transformOrigin: 'top left',
-          left: '0px',
-          top: '0px',
-          margin: '0px'
-        }
-      })
-
-      if (i > 0) pdf.addPage('a4', 'portrait')
-      pdf.addImage(dataUrl, 'JPEG', 0, 0, pdfW, pdfH, undefined, 'FAST')
-    }
-
     const safeParty = (ledgerData.value?.party?.name || 'Party').replace(/[^a-zA-Z0-9_-]/g, '_')
     const fileName = `Ledger-${safeParty}-${designStyle.value}-${toDate.value}.pdf`
+    const pdfUrl = `/api/reports/party-ledger-pdf?party=${encodeURIComponent(selectedParty.value)}&from=${fromDate.value}&to=${toDate.value}&style=${designStyle.value}&download=1`
 
+    const response = await fetch(pdfUrl)
+    if (!response.ok) {
+      throw new Error(`Failed to generate PDF: ${response.statusText}`)
+    }
+    const blob = await response.blob()
+
+    // Mobile App (Capacitor / AndroidBridge)
     if (typeof window !== 'undefined' && ((window as any).Capacitor?.Plugins?.OMSBridge?.saveFile || (window as any).AndroidBridge?.saveFile)) {
-      const pdfDataUri = pdf.output('datauristring')
-      if ((window as any).Capacitor?.Plugins?.OMSBridge?.saveFile) {
-        await (window as any).Capacitor.Plugins.OMSBridge.saveFile({
-          base64Data: pdfDataUri,
-          fileName,
-          mimeType: 'application/pdf',
-          openAfterSave: true
-        })
-      } else {
-        ;(window as any).AndroidBridge.saveFile(pdfDataUri, fileName, 'application/pdf', true)
+      const reader = new FileReader()
+      reader.onloadend = async () => {
+        const base64Data = reader.result as string
+        if ((window as any).Capacitor?.Plugins?.OMSBridge?.saveFile) {
+          await (window as any).Capacitor.Plugins.OMSBridge.saveFile({
+            base64Data,
+            fileName,
+            mimeType: 'application/pdf',
+            openAfterSave: true
+          })
+        } else {
+          ;(window as any).AndroidBridge.saveFile(base64Data, fileName, 'application/pdf', true)
+        }
       }
+      reader.readAsDataURL(blob)
       return
     }
 
-    pdf.save(fileName)
+    // Standard Browser Download
+    const blobUrl = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = blobUrl
+    link.download = fileName
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(blobUrl)
   } catch (err: any) {
     console.error('PDF generation error:', err)
+    alert('Failed to generate PDF statement: ' + (err.message || 'Unknown error'))
   } finally {
     isExporting.value = false
     exportAction.value = null
