@@ -51,8 +51,8 @@ const limit = ref(10)
 const approveTableRef = ref<HTMLElement | null>(null)
 const search = ref('')
 const debouncedSearch = refDebounced(search, 300)
-const startDate = ref('')
-const endDate = ref('')
+const startDate = ref(getTodayYMD())
+const endDate = ref(getTodayYMD())
 const salesPersonId = ref('')
 const status = ref('')
 const billingStatus = ref('')
@@ -122,7 +122,17 @@ const { data, pending: isLoading, refresh } = useFetch('/api/orders', {
 })
 
 // Universal approval statistics
-const { data: statsData, refresh: refreshStats } = useFetch('/api/orders/approval-stats')
+const statsQuery = computed(() => {
+  const q: any = {}
+  if (startDate.value) q.startDate = startDate.value
+  if (endDate.value) q.endDate = endDate.value
+  return q
+})
+
+const { data: statsData, refresh: refreshStats } = useFetch('/api/orders/approval-stats', {
+  query: statsQuery,
+  watch: [statsQuery]
+})
 
 const handleRefresh = async () => {
   await Promise.all([refresh(), refreshStats()])

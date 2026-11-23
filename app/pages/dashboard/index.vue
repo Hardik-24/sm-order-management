@@ -97,8 +97,8 @@ const { data: dashboardData, pending: dashboardPending, refresh: refreshDashboar
 const page = ref(1)
 const limit = ref(5)
 const search = ref('')
-const startDate = ref('')
-const endDate = ref('')
+const startDate = ref(getTodayYMD())
+const endDate = ref(getTodayYMD())
 const status = ref('')
 const billingStatus = ref('')
 const packingStatus = ref('')
@@ -109,10 +109,10 @@ const activeStatCard = ref<string | null>(null)
 
 const handleStatCardClick = (cardKey: string) => {
   if (activeStatCard.value === cardKey) {
-    // Toggle OFF: reset all filters
+    // Toggle OFF: reset all filters back to default (Today)
     activeStatCard.value = null
-    startDate.value = ''
-    endDate.value = ''
+    startDate.value = getTodayYMD()
+    endDate.value = getTodayYMD()
     isApproved.value = ''
     packingStatus.value = ''
     billingStatus.value = ''
@@ -127,8 +127,7 @@ const handleStatCardClick = (cardKey: string) => {
   page.value = 1
 
   // Format today's YYYY-MM-DD
-  const now = new Date()
-  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+  const todayStr = getTodayYMD()
 
   // Clear existing filters first
   startDate.value = ''
