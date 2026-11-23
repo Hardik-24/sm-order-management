@@ -581,15 +581,6 @@
               <Edit2 class="w-3.5 h-3.5" />
               <span>Edit Customer</span>
             </button>
-            <button 
-              v-if="canDownloadPartyLedger"
-              @click="openPartyLedgerModal(selectedCustomer)"
-              class="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition-colors shadow-2xs cursor-pointer"
-              title="Download official Statement of Accounts (Tally Ledger PDF)"
-            >
-              <FileSpreadsheet class="w-3.5 h-3.5 text-emerald-700" />
-              <span>Download Party Ledger (PDF)</span>
-            </button>
           </div>
           <button 
             @click="closeCustomerDetail" 
@@ -1040,13 +1031,6 @@
       @close="isCustomerPinModalOpen = false"
       @saved="onCustomerPinSaved"
     />
-
-    <!-- Party Ledger Statement Modal -->
-    <PartyLedgerModal
-      :is-open="isPartyLedgerModalOpen"
-      :customer="partyLedgerCustomer"
-      @close="closePartyLedgerModal"
-    />
   </div>
 </template>
 
@@ -1055,14 +1039,13 @@ import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { 
   Plus, Search, Edit2, X, Loader2, Building2, User, Phone, Mail, 
   MapPin, CreditCard, ShieldCheck, CheckCircle2, XCircle, ChevronLeft, ChevronRight,
-  UserCheck, Award, Zap, FileSpreadsheet
+  UserCheck, Award, Zap
 } from 'lucide-vue-next'
 import { formatCurrency, formatDate } from '~/lib/utils'
 import { useSnackbar } from '~/composables/useSnackbar'
 import { useGsapAnimation } from '~/composables/useGsapAnimation'
 import { useRealtimeSync } from '~/composables/useRealtimeSync'
 import SetDeliveryPinModal from '~/components/dashboard/SetDeliveryPinModal.vue'
-import PartyLedgerModal from '~/components/customers/PartyLedgerModal.vue'
 import CustomSelect from '~/components/ui/CustomSelect.vue'
 import RowsPerPageSelect from '~/components/ui/RowsPerPageSelect.vue'
 import FloatingHorizontalScrollbar from '~/components/ui/FloatingHorizontalScrollbar.vue'
@@ -1071,7 +1054,7 @@ import { rankAndFilter } from '~/utils/search'
 
 definePageMeta({ layout: 'dashboard' })
 
-const { user, canEditCustomers, canDownloadPartyLedger } = useAuth()
+const { user, canEditCustomers } = useAuth()
 const { showEditing, showSaving, showSaved, hide, snackbarState } = useSnackbar()
 const { animateModalOpen, animateStagger, initContext } = useGsapAnimation()
 const { notifyChange, onOrderSync } = useRealtimeSync()
@@ -1193,18 +1176,6 @@ const detailModalRef = ref<HTMLElement | null>(null)
 const detailBackdropRef = ref<HTMLElement | null>(null)
 const customerPriceHistory = ref<any[]>([])
 const isLoadingPriceHistory = ref(false)
-
-// Party Ledger modal state
-const isPartyLedgerModalOpen = ref(false)
-const partyLedgerCustomer = ref<any | null>(null)
-const openPartyLedgerModal = (customer: any) => {
-  partyLedgerCustomer.value = customer
-  isPartyLedgerModalOpen.value = true
-}
-const closePartyLedgerModal = () => {
-  isPartyLedgerModalOpen.value = false
-  partyLedgerCustomer.value = null
-}
 
 // Form modal state
 const formModalRef = ref<HTMLElement | null>(null)

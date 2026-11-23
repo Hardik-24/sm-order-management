@@ -32,6 +32,7 @@ export const APP_PAGES: AppPageDef[] = [
   { key: 'PRODUCTS', path: '/dashboard/products', label: 'Products', category: 'Data', description: 'Product catalog, pricing, and SKUs' },
   { key: 'VOUCHERS', path: '/dashboard/vouchers', label: 'BUSY Vouchers', category: 'Data', description: 'Search and inspect all historical and live BUSY sales invoices' },
   { key: 'PURCHASES', path: '/dashboard/purchases', label: 'Purchase Invoices', category: 'Data', description: 'Search and inspect all BUSY purchase invoices and supplier spend' },
+  { key: 'REPORTS', path: '/dashboard/reports', label: 'Reports', category: 'Data', description: 'Financial statements, party ledgers, and accounting reports' },
 
   // Administration
   { key: 'ADMIN', path: '/dashboard/admin', label: 'Administration', category: 'Administration', description: 'Manage users, roles, and permissions' },
@@ -41,19 +42,19 @@ export const DEFAULT_ROLE_PAGES: Record<UserRole, string[]> = {
   ADMIN: [
     'OVERVIEW', 'ANALYTICS', 'ORDERS', 'CREATE_ORDER', 'QUICK_ORDER', 'ORDER_REQUESTS', 'CHAT',
     'QUOTATIONS', 'APPROVE_ORDERS', 'PACKING', 'BILLING', 'DELIVERY', 'INVENTORY', 'DRIVER_PORTAL',
-    'CUSTOMERS', 'PRODUCTS', 'VOUCHERS', 'PURCHASES', 'ADMIN'
+    'CUSTOMERS', 'PRODUCTS', 'VOUCHERS', 'PURCHASES', 'REPORTS', 'ADMIN'
   ],
   SUPERVISOR: [
     'OVERVIEW', 'ANALYTICS', 'ORDERS', 'CREATE_ORDER', 'ORDER_REQUESTS', 'CHAT',
     'QUOTATIONS', 'APPROVE_ORDERS', 'PACKING', 'BILLING', 'DELIVERY', 'INVENTORY',
-    'CUSTOMERS', 'PRODUCTS', 'VOUCHERS', 'PURCHASES'
+    'CUSTOMERS', 'PRODUCTS', 'VOUCHERS', 'PURCHASES', 'REPORTS'
   ],
   SALES: [
     'OVERVIEW', 'ANALYTICS', 'ORDERS', 'CREATE_ORDER', 'ORDER_REQUESTS', 'CHAT',
-    'QUOTATIONS', 'APPROVE_ORDERS', 'CUSTOMERS', 'PRODUCTS', 'VOUCHERS', 'INVENTORY'
+    'QUOTATIONS', 'APPROVE_ORDERS', 'CUSTOMERS', 'PRODUCTS', 'VOUCHERS', 'INVENTORY', 'REPORTS'
   ],
   BILLING: [
-    'OVERVIEW', 'ORDERS', 'QUOTATIONS', 'BILLING', 'CUSTOMERS', 'PRODUCTS', 'VOUCHERS', 'CHAT'
+    'OVERVIEW', 'ORDERS', 'QUOTATIONS', 'BILLING', 'CUSTOMERS', 'PRODUCTS', 'VOUCHERS', 'REPORTS', 'CHAT'
   ],
   PACKING: [
     'OVERVIEW', 'ORDERS', 'PACKING', 'INVENTORY', 'CHAT'
@@ -86,6 +87,7 @@ export function getPageKeyFromPath(path: string): string | null {
   if (cleanPath.startsWith('/dashboard/products')) return 'PRODUCTS'
   if (cleanPath.startsWith('/dashboard/vouchers')) return 'VOUCHERS'
   if (cleanPath.startsWith('/dashboard/purchases')) return 'PURCHASES'
+  if (cleanPath.startsWith('/dashboard/reports')) return 'REPORTS'
   if (cleanPath.startsWith('/dashboard/chat')) return 'CHAT'
   if (cleanPath.startsWith('/dashboard/admin')) return 'ADMIN'
 
