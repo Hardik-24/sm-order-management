@@ -82,6 +82,58 @@ const selectedCustomer = computed(() => {
   return (rawCustomers.value || []).find(c => c.id === selectedCustomerId.value) || null
 })
 
+const deliveryAddress = ref('')
+const paymentTerms = ref('30 Days')
+
+const isFirstOrderForCustomer = computed(() => {
+  if (isCustomCustomer.value) return true
+  if (!selectedCustomer.value) return false
+  const count = (selectedCustomer.value as any).orderCount ?? (selectedCustomer.value as any)._count?.orders ?? 0
+  return count === 0
+})
+
+const availablePaymentTerms = computed(() => {
+  const options: Array<{ label: string; value: string; subtitle?: string }> = []
+  
+  if (paymentTermsOptions.value && paymentTermsOptions.value.length > 0) {
+    options.push(...paymentTermsOptions.value)
+  } else {
+    options.push(
+      { label: '30 Days', value: '30 Days', subtitle: 'Default Term' },
+      { label: '15 Days', value: '15 Days' },
+      { label: '45 Days', value: '45 Days' },
+      { label: '60 Days', value: '60 Days' },
+      { label: 'Cash on Delivery (COD)', value: 'COD' },
+      { label: 'Due on Receipt', value: 'Due on Receipt' },
+      { label: 'Advance Payment', value: 'Advance Payment' }
+    )
+  }
+
+  // Ensure current paymentTerms value is present in dropdown
+  const currentVal = paymentTerms.value
+  if (currentVal && !options.some(o => o.value === currentVal || o.label === currentVal)) {
+    options.unshift({ label: currentVal, value: currentVal })
+  }
+
+  // Ensure customer's profile default term is present
+  const custVal = selectedCustomer.value?.paymentTerms
+  if (custVal && !options.some(o => o.value === custVal || o.label === custVal)) {
+    options.unshift({ label: custVal, value: custVal })
+  }
+
+  return options
+})
+
+const syncCustomerPaymentTerms = (cust: any) => {
+  if (!cust) return
+  const isFirst = (cust.orderCount ?? cust._count?.orders ?? 0) === 0
+  if (isFirst) {
+    paymentTerms.value = cust.paymentTerms && cust.paymentTerms !== '30 Days' ? cust.paymentTerms : (cust.paymentTerms || '30 Days')
+  } else {
+    paymentTerms.value = cust.paymentTerms || '30 Days'
+  }
+}
+
 // Credit information for selected customer
 const customerCreditInfo = computed(() => {
   if (isCustomCustomer.value) {
@@ -178,9 +230,7 @@ watch(selectedCustomerId, (newId) => {
     const cust = (rawCustomers.value || []).find(c => c.id === newId)
     if (cust) {
       deliveryAddress.value = cust.address || cust.city || ''
-      if (cust.paymentTerms) {
-        paymentTerms.value = cust.paymentTerms
-      }
+      syncCustomerPaymentTerms(cust)
     }
   }
 }, { immediate: true })
@@ -793,9 +843,7 @@ const selectDbCustomer = (cust: any) => {
   isCustomCustomer.value = false
   selectedCustomerId.value = cust.id
   deliveryAddress.value = cust.address || cust.city || ''
-  if (cust.paymentTerms) {
-    paymentTerms.value = cust.paymentTerms
-  }
+  syncCustomerPaymentTerms(cust)
   closeCustomerModal()
 }
 
@@ -807,15 +855,13 @@ const saveCustomCustomer = () => {
   isCustomCustomer.value = true
   selectedCustomerId.value = ''
   deliveryAddress.value = customCustomer.value.city ? `${customCustomer.value.city} (Site Delivery)` : 'Counter Pickup'
-  paymentTerms.value = 'Immediate / Cheque'
+  paymentTerms.value = 'Due on Receipt'
   closeCustomerModal()
 }
 
 // ── STEP 2: DELIVERY & CHECKOUT ────────────────────────────────
 const isCheckoutModalOpen = ref(false)
 const transportMode = ref<'OUR_FLEET' | 'PARTY_VEHICLE' | 'THIRD_PARTY'>('OUR_FLEET')
-const deliveryAddress = ref('')
-const paymentTerms = ref('30 Days Credit')
 const isUrgent = ref(false)
 const orderNotes = ref('')
 const isSubmitting = ref(false)
@@ -877,6 +923,11 @@ const confirmAndPlaceOrder = async () => {
 
   if (!isCustomCustomer.value && !selectedCustomerId.value) {
     alert('Please select a customer for this order')
+    return
+  }
+
+  if (!paymentTerms.value || !paymentTerms.value.trim()) {
+    alert('Please select payment terms for this order')
     return
   }
 
@@ -2037,18 +2088,38 @@ const confirmAndPlaceOrder = async () => {
             ></textarea>
           </div>
 
-          <!-- SECTION 3: Payment Terms (Clean, Dispatch Date Removed!) -->
-          <div class="space-y-1 text-xs">
-            <label class="text-[10px] font-bold text-slate-600 block">Payment Terms</label>
-            <select 
-              v-model="paymentTerms"
-              class="w-full bg-white border border-slate-300 rounded-xl p-3 text-xs sm:text-sm text-slate-800 font-bold cursor-pointer"
-            >
-              <option>30 Days Credit</option>
-              <option>15 Days Credit</option>
-              <option>Immediate / Cheque</option>
-              <option>Advance RTGS / UPI</option>
-            </select>
+          <!-- SECTION 3: Payment Terms (Aligned with Create Order form & System Masters) -->
+          <div class="space-y-1.5 text-xs">
+            <div class="flex items-center justify-between">
+              <label class="text-[10px] font-bold text-slate-600 uppercase tracking-wider block">Payment Terms *</label>
+              <span v-if="isFirstOrderForCustomer" class="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                ★ 1st Order (Saves as Customer Default)
+              </span>
+              <span v-else-if="selectedCustomer && selectedCustomer.paymentTerms" class="text-[10px] text-slate-500">
+                Profile Default: <strong class="text-slate-800">{{ selectedCustomer.paymentTerms }}</strong>
+              </span>
+            </div>
+            
+            <div class="relative">
+              <select 
+                v-model="paymentTerms"
+                class="w-full bg-white border border-slate-300 rounded-xl p-3 text-xs sm:text-sm text-slate-800 font-bold cursor-pointer focus:outline-hidden focus:border-blue-500 appearance-none pr-10"
+              >
+                <option v-for="opt in availablePaymentTerms" :key="opt.value" :value="opt.value">
+                  {{ opt.label }}{{ opt.subtitle ? ` (${opt.subtitle})` : '' }}
+                </option>
+              </select>
+              <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
+                <ChevronDown class="w-4 h-4" />
+              </div>
+            </div>
+
+            <p v-if="isFirstOrderForCustomer" class="text-[11px] text-amber-700 mt-1 flex items-center gap-1 font-medium">
+              💡 First order for this customer: the chosen terms will be saved to their master profile.
+            </p>
+            <p v-else-if="selectedCustomer && paymentTerms && paymentTerms !== selectedCustomer.paymentTerms" class="text-[11px] text-sky-700 mt-1 flex items-center gap-1 font-medium">
+              ℹ Tweak for this order only — customer profile default remains "{{ selectedCustomer.paymentTerms }}".
+            </p>
           </div>
 
           <!-- Urgent Priority Flag -->
