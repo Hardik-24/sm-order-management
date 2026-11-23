@@ -21,11 +21,8 @@
               <FileSpreadsheet class="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div class="min-w-0">
-              <div class="flex items-center gap-2 flex-wrap">
+              <div class="flex items-center gap-2">
                 <h3 class="text-sm sm:text-base font-bold text-white truncate">Party Ledger Statement</h3>
-                <span class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 uppercase">
-                  Tally Prime
-                </span>
               </div>
               <p class="text-[11px] text-gray-400 truncate">
                 {{ selectedParty ? selectedParty : 'Search & select a customer or vendor account' }}
@@ -35,16 +32,16 @@
 
           <!-- Top Action Controls -->
           <div class="flex items-center gap-2 shrink-0">
-            <!-- Design Style Toggle (Classic Tally vs SM Look) -->
+            <!-- Design Style Toggle (Classic Look vs SM Look) -->
             <div class="flex items-center p-0.5 bg-gray-800/90 rounded-lg border border-gray-700 text-[11px] font-bold">
               <button
                 type="button"
                 @click="designStyle = 'classic'"
                 class="px-2.5 py-1 rounded-md transition-all flex items-center gap-1 cursor-pointer"
                 :class="designStyle === 'classic' ? 'bg-white text-gray-950 shadow-xs' : 'text-gray-400 hover:text-white'"
-                title="Traditional Tally Prime monochrome layout"
+                title="Traditional monochrome ledger layout"
               >
-                <span>Classic (Tally)</span>
+                <span>Classic Look</span>
               </button>
               <button
                 type="button"
