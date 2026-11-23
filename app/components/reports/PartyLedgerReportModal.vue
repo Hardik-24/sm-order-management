@@ -2,20 +2,20 @@
   <Teleport to="body">
     <div
       v-if="isOpen"
-      class="fixed inset-0 z-[650] flex flex-col justify-end sm:justify-center items-center p-0 sm:p-4 lg:p-6 overflow-hidden antialiased"
+      class="fixed inset-x-0 top-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] md:bottom-0 md:inset-0 z-[350] md:z-[500] flex flex-col justify-end sm:justify-center items-center p-0 sm:p-4 lg:p-6 overflow-hidden antialiased animate-in fade-in duration-200"
     >
       <!-- Backdrop -->
       <div
-        class="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
+        class="absolute inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
         @click="closeModal"
       ></div>
 
       <!-- Modal Container -->
       <div
-        class="relative bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-6xl mx-auto h-[100dvh] sm:h-auto sm:max-h-[94vh] overflow-hidden flex flex-col border border-gray-200 z-10"
+        class="relative bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-6xl mx-auto h-full sm:h-auto sm:max-h-[94vh] overflow-hidden flex flex-col border border-gray-200 z-10"
       >
         <!-- Modal Top Bar -->
-        <div class="px-3 sm:px-6 py-2.5 sm:py-3 bg-[#171717] text-white flex items-center justify-between shrink-0 border-b border-gray-800">
+        <div class="px-3 sm:px-6 pt-[calc(0.625rem+env(safe-area-inset-top,0px))] pb-2.5 sm:py-3 bg-[#171717] text-white flex items-center justify-between shrink-0 border-b border-gray-800">
           <div class="flex items-center gap-2.5 sm:gap-3 min-w-0">
             <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-emerald-400 shrink-0">
               <FileSpreadsheet class="w-4 h-4 sm:w-5 sm:h-5" />
