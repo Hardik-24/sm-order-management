@@ -651,8 +651,33 @@ async function syncTally() {
 
       for (const v of allVouchers) {
         const pKey = (v.party || '').toLowerCase();
-        const p = partyMap.get(pKey);
-        if (!p) continue;
+        let p = partyMap.get(pKey);
+        if (!p) {
+          p = {
+            party: v.party,
+            parent: 'Other Ledger (From Voucher Register)',
+            openingBalance: 0,
+            totalBilled: 0,
+            totalPaid: 0,
+            netPending: 0,
+            advance: 0,
+            collectionRate: 100,
+            totalReceivable: 0,
+            billsCount: 0,
+            maxOverdueDays: 0,
+            minOverdueDays: 0,
+            bills: [],
+            addressLines: [],
+            address: '',
+            phone: '',
+            pincode: '',
+            state: '',
+            gstin: '',
+            transactions: []
+          };
+          debtorPayload.parties.push(p);
+          partyMap.set(pKey, p);
+        }
 
         let opposing = '';
         if (v.entries && v.entries.length > 0) {
@@ -775,8 +800,31 @@ async function syncTally() {
 
       for (const v of allCredVouchers) {
         const pKey = (v.party || '').toLowerCase();
-        const p = credPartyMap.get(pKey);
-        if (!p) continue;
+        let p = credPartyMap.get(pKey);
+        if (!p) {
+          p = {
+            party: v.party,
+            parent: 'Other Ledger (From Voucher Register)',
+            openingBalance: 0,
+            totalPurchases: 0,
+            totalPaid: 0,
+            netPending: 0,
+            advance: 0,
+            billsCount: 0,
+            maxOverdueDays: 0,
+            minOverdueDays: 0,
+            bills: [],
+            addressLines: [],
+            address: '',
+            phone: '',
+            pincode: '',
+            state: '',
+            gstin: '',
+            transactions: []
+          };
+          creditorPayload.parties.push(p);
+          credPartyMap.set(pKey, p);
+        }
 
         let opposing = '';
         if (v.entries && v.entries.length > 0) {

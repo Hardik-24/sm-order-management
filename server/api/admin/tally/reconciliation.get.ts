@@ -195,8 +195,74 @@ export default defineEventHandler(async (event) => {
       ? (typeof secondaryRecord.value === 'string' ? JSON.parse(secondaryRecord.value) : secondaryRecord.value)
       : null
 
-    const primaryParties: any[] = tally.parties || []
-    const secondaryParties: any[] = secondaryTally?.parties || []
+    // Pre-index Tally Register Vouchers (Sales and Purchase registers)
+    const tallyVchList: any[] = [
+      ...(tally.vouchers || []),
+      ...(secondaryTally?.vouchers || [])
+    ]
+    const tallyVchMap = new Map<string, any[]>()
+    for (const tv of tallyVchList) {
+      const refs = [tv.voucherNo, tv.ref].filter(Boolean)
+      for (const r of refs) {
+        const norm = String(r).toLowerCase().replace(/[^a-z0-9]/g, '')
+        if (!norm) continue
+        if (!tallyVchMap.has(norm)) tallyVchMap.set(norm, [])
+        tallyVchMap.get(norm)!.push(tv)
+      }
+    }
+
+    // Helper to find Tally voucher match
+    function findTallyVoucherMatch(normNo: string, busyPartyName: string) {
+      const candidates = tallyVchMap.get(normNo)
+      if (!candidates || candidates.length === 0) return null
+      if (!isPurchases) {
+        const partyMatch = candidates.find(tv => computeMatchScore(tv.party, busyPartyName) >= 40)
+        return partyMatch || candidates[0]
+      } else {
+        return candidates.find(tv => computeMatchScore(tv.party, busyPartyName) >= 40) || null
+      }
+    }
+
+    // Augment parties with any ledgers present in voucher transactions (e.g., Cash, non-debtor groups)
+    function augmentPartiesWithVouchers(parties: any[], vouchers: any[]) {
+      const pMap = new Map<string, any>()
+      parties.forEach(p => pMap.set((p.party || '').toLowerCase().trim(), p))
+
+      ;(vouchers || []).forEach(v => {
+        const pName = (v.party || '').trim()
+        if (!pName) return
+        const key = pName.toLowerCase()
+        if (!pMap.has(key)) {
+          const synthParty = {
+            party: pName,
+            parent: 'Other Ledger (From Voucher Register)',
+            openingBalance: 0,
+            totalBilled: 0,
+            totalPurchased: 0,
+            totalPaid: 0,
+            netPending: 0,
+            advance: 0,
+            collectionRate: 100,
+            totalReceivable: 0,
+            billsCount: 0,
+            maxOverdueDays: 0,
+            minOverdueDays: 0,
+            bills: []
+          }
+          pMap.set(key, synthParty)
+        }
+        const entry = pMap.get(key)
+        if (entry.billsCount === 0 && (entry.totalBilled === 0 || entry.totalPurchased === 0)) {
+          entry.totalBilled = (entry.totalBilled || 0) + Number(v.amount || 0)
+          entry.totalPurchased = (entry.totalPurchased || 0) + Number(v.amount || 0)
+        }
+      })
+
+      return Array.from(pMap.values())
+    }
+
+    const primaryParties: any[] = augmentPartiesWithVouchers(tally.parties || [], tally.vouchers || [])
+    const secondaryParties: any[] = augmentPartiesWithVouchers(secondaryTally?.parties || [], secondaryTally?.vouchers || [])
     const allTallyParties: any[] = [...primaryParties, ...secondaryParties]
     const tallyParties: any[] = primaryParties
 
@@ -302,9 +368,17 @@ export default defineEventHandler(async (event) => {
     // Identify Unposted Vouchers
     const unpostedVouchers: any[] = []
 
-    // 1. All vouchers for parties that do not exist anywhere in Tally (neither Debtors nor Creditors)
+    // 1. All vouchers for parties that do not exist anywhere in Tally:
+    // Only flag vouchers that truly DO NOT exist in Tally's register
     for (const u of unmatchedParties) {
       for (const v of u.vouchers) {
+        const normRef = (v.voucherNo || '').toLowerCase().replace(/[^a-z0-9]/g, '')
+        const vchMatch = findTallyVoucherMatch(normRef, v.customerName || v.supplierName)
+        if (vchMatch) {
+          // Voucher is already posted in Tally!
+          continue
+        }
+
         unpostedVouchers.push({
           voucherNo: v.voucherNo,
           voucherDate: v.voucherDate instanceof Date ? v.voucherDate.toISOString() : String(v.voucherDate),
@@ -318,11 +392,11 @@ export default defineEventHandler(async (event) => {
           isDualRole: false,
           dualRoleGroup: null,
           dualRoleTag: null,
-          reason: isPurchases ? 'Supplier Account Not in Tally (Debtors or Creditors)' : 'Customer Account Not in Tally (Debtors or Creditors)',
+          reason: isPurchases ? 'Supplier Account Not in Tally' : 'Customer Account Not in Tally',
           category: isPurchases ? 'MISSING_SUPPLIER' : 'MISSING_CUSTOMER',
           issueDetected: isPurchases
-            ? `Missing Supplier in Tally: Supplier '${v.supplierName}' does not exist under Sundry Creditors or Debtors in Tally.`
-            : `Missing Customer in Tally: Customer '${v.customerName}' does not exist under Sundry Debtors or Creditors in Tally.`,
+            ? `Missing Supplier in Tally: Supplier '${v.supplierName}' does not exist under Tally ledgers, and invoice ${v.voucherNo} is not posted.`
+            : `Missing Customer in Tally: Customer '${v.customerName}' does not exist under Tally ledgers, and invoice ${v.voucherNo} is not posted.`,
           howToCorrect: isPurchases
             ? `In Tally, create Sundry Creditor ledger for '${v.supplierName}', then enter purchase invoice ${v.voucherNo}.`
             : `In Tally, create Sundry Debtor ledger for '${v.customerName}', then post sales invoice ${v.voucherNo}.`
@@ -330,7 +404,8 @@ export default defineEventHandler(async (event) => {
       }
     }
 
-    // 2. Identify unposted vouchers for matched parties where Busy > Tally
+    // 2. Identify unposted vouchers for matched parties:
+    // A voucher is unposted ONLY if it is absent from Tally's register
     const partyDiscrepancies: any[] = []
 
     for (const [busyName, tp] of partyMatches.entries()) {
@@ -339,50 +414,40 @@ export default defineEventHandler(async (event) => {
       const tallyBilled = Number(isPurchases ? (tp.totalPurchased || tp.totalBilled || 0) : (tp.totalBilled || tp.totalPurchased || 0))
       const diff = Math.round(busyTotal - tallyBilled)
 
-      if (Math.abs(diff) > 100) {
-        const openRefs = new Set((tp.bills || []).map((b: any) => (b.ref || '').toLowerCase().replace(/[^a-z0-9]/g, '')))
-        const unpostedForParty: any[] = []
+      const unpostedForParty: any[] = vouchers.filter(v => {
+        const normRef = (v.voucherNo || '').toLowerCase().replace(/[^a-z0-9]/g, '')
+        return !findTallyVoucherMatch(normRef, busyName)
+      })
 
-        if (diff > 100) {
-          const sortedDesc = [...vouchers].sort((a, b) => new Date(b.voucherDate).getTime() - new Date(a.voucherDate).getTime())
-          let remainingDiff = diff
+      for (const v of unpostedForParty) {
+        const amt = Math.round(Number(v.totalAmount))
+        unpostedVouchers.push({
+          voucherNo: v.voucherNo,
+          voucherDate: v.voucherDate instanceof Date ? v.voucherDate.toISOString() : String(v.voucherDate),
+          customerName: v.customerName,
+          supplierName: v.supplierName,
+          amount: amt,
+          taxableAmount: Math.round(Number(v.taxableAmount)),
+          taxAmount: Math.round(Number(v.taxAmount)),
+          itemCount: v.itemCount || 0,
+          tallyParty: tp.party,
+          isDualRole: !!tp.isDualRole,
+          dualRoleGroup: tp.dualRoleGroup || null,
+          dualRoleTag: tp.dualRoleTag || null,
+          reason: isPurchases
+            ? `Unposted Purchase (${tp.isDualRole ? `${tp.dualRoleTag}: ` : ''}Invoice not found in Tally Purchase Register)`
+            : `Unposted Invoice (${tp.isDualRole ? `${tp.dualRoleTag}: ` : ''}Invoice not found in Tally Sales Register)`,
+          category: isPurchases ? 'UNPOSTED_PURCHASE' : 'UNPOSTED_INVOICE',
+          issueDetected: isPurchases
+            ? `Unposted Purchase Voucher: BUSY shows invoice ${v.voucherNo} (₹${amt.toLocaleString('en-IN')}), not found in Tally Purchase Register${tp.isDualRole ? ` (Ledger: '${tp.party}')` : ''}.`
+            : `Unposted Sales Invoice: BUSY shows invoice ${v.voucherNo} (₹${amt.toLocaleString('en-IN')}), not found in Tally Sales Register${tp.isDualRole ? ` (Ledger: '${tp.party}')` : ''}.`,
+          howToCorrect: isPurchases
+            ? `In Tally, post purchase voucher ${v.voucherNo} for supplier '${tp.party}' (${tp.isDualRole ? 'under Sundry Debtors ledger' : 'Sundry Creditor'}) for ₹${amt.toLocaleString('en-IN')}.`
+            : `In Tally, post sales invoice ${v.voucherNo} for customer '${tp.party}' (${tp.isDualRole ? 'under Sundry Creditors ledger' : 'Sundry Debtor'}) for ₹${amt.toLocaleString('en-IN')}.`
+        })
+      }
 
-          for (const v of sortedDesc) {
-            const normRef = (v.voucherNo || '').toLowerCase().replace(/[^a-z0-9]/g, '')
-            if (openRefs.has(normRef)) continue
-
-            const amt = Math.round(Number(v.totalAmount))
-            if (remainingDiff > 0) {
-              unpostedForParty.push(v)
-              unpostedVouchers.push({
-                voucherNo: v.voucherNo,
-                voucherDate: v.voucherDate instanceof Date ? v.voucherDate.toISOString() : String(v.voucherDate),
-                customerName: v.customerName,
-                supplierName: v.supplierName,
-                amount: amt,
-                taxableAmount: Math.round(Number(v.taxableAmount)),
-                taxAmount: Math.round(Number(v.taxAmount)),
-                itemCount: v.itemCount || 0,
-                tallyParty: tp.party,
-                isDualRole: !!tp.isDualRole,
-                dualRoleGroup: tp.dualRoleGroup || null,
-                dualRoleTag: tp.dualRoleTag || null,
-                reason: isPurchases
-                  ? `Unposted Purchase (${tp.isDualRole ? `${tp.dualRoleTag}: ` : ''}Busy purchases exceed Tally ledger by ₹${diff.toLocaleString('en-IN')})`
-                  : `Unposted Invoice (${tp.isDualRole ? `${tp.dualRoleTag}: ` : ''}Busy sales exceed Tally ledger by ₹${diff.toLocaleString('en-IN')})`,
-                category: isPurchases ? 'UNPOSTED_PURCHASE' : 'UNPOSTED_INVOICE',
-                issueDetected: isPurchases
-                  ? `Unposted Purchase Voucher: BUSY shows invoice ${v.voucherNo} (₹${amt.toLocaleString('en-IN')}), not reflected in Tally${tp.isDualRole ? ` (Ledger maintained under Sundry Debtors as '${tp.party}')` : ''}.`
-                  : `Unposted Sales Invoice: BUSY shows invoice ${v.voucherNo} (₹${amt.toLocaleString('en-IN')}), not reflected in Tally${tp.isDualRole ? ` (Ledger maintained under Sundry Creditors as '${tp.party}')` : ''}.`,
-                howToCorrect: isPurchases
-                  ? `In Tally, post purchase voucher ${v.voucherNo} for supplier '${tp.party}' (${tp.isDualRole ? 'under Sundry Debtors ledger' : 'Sundry Creditor'}) for ₹${amt.toLocaleString('en-IN')}.`
-                  : `In Tally, post sales invoice ${v.voucherNo} for customer '${tp.party}' (${tp.isDualRole ? 'under Sundry Creditors ledger' : 'Sundry Debtor'}) for ₹${amt.toLocaleString('en-IN')}.`
-              })
-              remainingDiff -= amt
-            }
-          }
-        }
-
+      if (Math.abs(diff) > 100 || unpostedForParty.length > 0) {
         partyDiscrepancies.push({
           customerName: busyName,
           supplierName: busyName,
@@ -405,7 +470,7 @@ export default defineEventHandler(async (event) => {
     partyDiscrepancies.sort((a, b) => b.difference - a.difference)
     unpostedVouchers.sort((a, b) => new Date(b.voucherDate).getTime() - new Date(a.voucherDate).getTime())
 
-    // 3. Bill-by-Bill 4-Pass Cross-Verification Engine (Current FY 2026-27)
+    // 3. Bill-by-Bill Cross-Verification Engine (Current FY 2026-27)
     const billValueDiscrepancies: any[] = []
     let exactBillsMatchedCount = 0
 
@@ -420,58 +485,77 @@ export default defineEventHandler(async (event) => {
 
     const usedBusyVouchers = new Set<string>()
 
-    // PASS 0: Direct match against Tally Register Vouchers (Sales / Purchase Register) if available
-    const tallyVchList: any[] = [
-      ...(tally.vouchers || []),
-      ...(secondaryTally?.vouchers || [])
-    ]
-    const tallyVchMap = new Map<string, any>()
-    for (const tv of tallyVchList) {
-      const normVch = (tv.voucherNo || tv.ref || '').toLowerCase().replace(/[^a-z0-9]/g, '')
-      if (normVch) tallyVchMap.set(normVch, tv)
-    }
-
+    // PASS 0: Direct match against Tally Register Vouchers (Sales / Purchase Register)
     if (tallyVchMap.size > 0) {
       for (const [normNo, vDirect] of vchMap.entries()) {
-        const tv = tallyVchMap.get(normNo)
+        const tv = findTallyVoucherMatch(normNo, vDirect.customerName || vDirect.supplierName)
         if (tv) {
           const bAmt = Math.round(Number(vDirect.totalAmount))
           const tAmt = Math.round(Number(tv.amount))
           if (bAmt === tAmt) {
             usedBusyVouchers.add(vDirect.voucherNo)
             exactBillsMatchedCount++
+          } else {
+            billValueDiscrepancies.push({
+              ref: tv.voucherNo || vDirect.voucherNo,
+              actualBusyRef: vDirect.voucherNo,
+              party: tv.party || vDirect.customerName,
+              customerName: vDirect.customerName,
+              supplierName: vDirect.supplierName,
+              busyAmount: bAmt,
+              tallyAmount: tAmt,
+              difference: bAmt - tAmt,
+              busyDate: vDirect.voucherDate instanceof Date ? vDirect.voucherDate.toISOString() : String(vDirect.voucherDate),
+              tallyDate: tv.date,
+              isClubbed: false,
+              status: 'VALUE_MISMATCH',
+              issueDetected: `Amount Mismatch: BUSY ${isPurchases ? 'purchase voucher' : 'invoice'} ${vDirect.voucherNo} is ₹${bAmt.toLocaleString('en-IN')}, but Tally ${isPurchases ? 'Purchase' : 'Sales'} Register shows ₹${tAmt.toLocaleString('en-IN')}.`,
+              howToCorrect: `In Tally, verify voucher and update the invoice amount to match BUSY (₹${bAmt.toLocaleString('en-IN')}).`
+            })
+            usedBusyVouchers.add(vDirect.voucherNo)
           }
         }
       }
     }
 
-    // PASS 1 (Direct match on voucher number and amount across all parties in both groups)
+    // PASS 1 (Direct match on voucher number and amount from open bills in Current FY)
     for (const tp of allTallyParties) {
       for (const b of (tp.bills || [])) {
+        const tDate = parseTallyDate(b.date)
+        if (!tDate) continue
+        const yr = tDate.getUTCFullYear()
+        const mo = tDate.getUTCMonth()
+        const isCurrentFY = (yr === 2026 && mo >= 3) || (yr === 2027 && mo <= 2)
+        if (!isCurrentFY) continue
+
         const normRef = (b.ref || '').toLowerCase().replace(/[^a-z0-9]/g, '')
         const vDirect = vchMap.get(normRef)
         if (vDirect && !usedBusyVouchers.has(vDirect.voucherNo)) {
-          const bAmt = Math.round(Number(vDirect.totalAmount))
-          const tAmt = Math.round(Number(b.amount))
-          if (bAmt === tAmt) {
-            usedBusyVouchers.add(vDirect.voucherNo)
-            exactBillsMatchedCount++
+          const directScore = computeMatchScore(tp.party, vDirect.customerName || vDirect.supplierName)
+          if (directScore >= 50) {
+            const bAmt = Math.round(Number(vDirect.totalAmount))
+            const tAmt = Math.round(Number(b.amount))
+            if (bAmt === tAmt) {
+              usedBusyVouchers.add(vDirect.voucherNo)
+              exactBillsMatchedCount++
+            }
           }
         }
       }
     }
 
     // PASS 1b (For BOTH sales and purchases: match by party + exact amount within ±3 days of date)
-    // In Running Accounts ("On Account"), bill allocation tags in Tally can default or repeat
-    // (e.g. SMG23 across multiple accounts), while the actual voucher in the Sales Register is typed correctly.
-    // When Party, Rupee Amount, and Date (±3 days) match, it represents a verified transaction match.
     for (const tp of allTallyParties) {
       const cleanTpName = cleanPartyName(tp.party)
       const partyVouchers = busyByParty.get(cleanTpName) || []
 
       for (const b of (tp.bills || [])) {
         const tDate = parseTallyDate(b.date)
-        if (!tDate || tDate.getUTCFullYear() !== 2026 || tDate.getUTCMonth() < 3) continue
+        if (!tDate) continue
+        const yr = tDate.getUTCFullYear()
+        const mo = tDate.getUTCMonth()
+        const isCurrentFY = (yr === 2026 && mo >= 3) || (yr === 2027 && mo <= 2)
+        if (!isCurrentFY) continue
 
         const tAmt = Math.round(Number(b.amount))
         const normRef = (b.ref || '').toLowerCase().replace(/[^a-z0-9]/g, '')
@@ -500,7 +584,11 @@ export default defineEventHandler(async (event) => {
 
       for (const b of (tp.bills || [])) {
         const tDate = parseTallyDate(b.date)
-        if (!tDate || tDate.getUTCFullYear() !== 2026 || tDate.getUTCMonth() < 3) continue
+        if (!tDate) continue
+        const yr = tDate.getUTCFullYear()
+        const mo = tDate.getUTCMonth()
+        const isCurrentFY = (yr === 2026 && mo >= 3) || (yr === 2027 && mo <= 2)
+        if (!isCurrentFY) continue
 
         const tAmt = Math.round(Number(b.amount))
         const normRef = (b.ref || '').toLowerCase().replace(/[^a-z0-9]/g, '')
