@@ -453,16 +453,21 @@ export function generateLedgerVectorPdf(
         doc.text(pVal, pageWidth - margin, periodY, { align: 'right' })
 
         startY += 10
-        // Clean Company Address (single commas, no trailing comma)
+        // Left: Only Address (wrapped to 2 lines within left 65% ~350pt)
         doc.setFont('Inter', 'normal')
         doc.setFontSize(7.2)
         doc.setTextColor(71, 85, 105)
+        const leftMaxW = contentWidth * 0.65
         const rawCompAddr = (ledgerData.company.address || '')
           .split('\n')
           .map((s: string) => s.trim().replace(/,+$/, ''))
           .filter(Boolean)
           .join(', ')
-        doc.text(rawCompAddr, margin, startY)
+        const compAddrLines = doc.splitTextToSize(rawCompAddr, leftMaxW)
+        compAddrLines.forEach((line: string) => {
+          doc.text(line, margin, startY)
+          startY += 9
+        })
 
         // Right: Page Indicator
         const pageMetaY = periodY + 9.5
@@ -471,15 +476,7 @@ export function generateLedgerVectorPdf(
         doc.setTextColor(148, 163, 184)
         doc.text(`Page 1 of ${page.totalPages}`, pageWidth - margin, pageMetaY, { align: 'right' })
 
-        startY += 9.5
-        // Left: Phone, Email, Company GSTIN
-        const compMetaParts: string[] = []
-        if (ledgerData.company.phone) compMetaParts.push(`Phone: ${ledgerData.company.phone}`)
-        if (ledgerData.company.email) compMetaParts.push(`Email: ${ledgerData.company.email}`)
-        if (ledgerData.company.gstin) compMetaParts.push(`GSTIN: ${ledgerData.company.gstin}`)
-        doc.text(compMetaParts.join('  •  '), margin, startY)
-
-        startY += 8
+        startY += 2
         doc.setDrawColor(226, 232, 240)
         doc.setLineWidth(0.5)
         doc.line(margin, startY, pageWidth - margin, startY)
@@ -495,15 +492,17 @@ export function generateLedgerVectorPdf(
         const hasPhone = !!ledgerData.party.phone
         const partyGstin = ledgerData.party.gstin
 
-        // Prepare Address Info
+        // Prepare Party Address Info (filter out phone numbers so only pure address lines appear)
         const cleanAddrLines = (ledgerData.party.addressLines && ledgerData.party.addressLines.length > 0)
-          ? ledgerData.party.addressLines.map((s: string) => s.trim().replace(/,+$/, '')).filter(Boolean)
+          ? ledgerData.party.addressLines
+              .map((s: string) => s.trim().replace(/,+$/, ''))
+              .filter((s: string) => s && !/^[\d\s+-]{6,}$/.test(s))
           : []
 
         // Calculate height dynamically
         const leftContentH = 14 + (partyLines.length * 12) + (hasPhone ? 11 : 0) + (partyGstin ? 10 : 0) + 8
         const rightContentH = 14 + (cleanAddrLines.length * 9.5) + 8
-        const custBoxH = Math.max(54, Math.max(leftContentH, rightContentH))
+        const custBoxH = Math.max(50, Math.max(leftContentH, rightContentH))
 
         // Card Background
         doc.setFillColor(248, 250, 252) // slate-50
@@ -537,10 +536,10 @@ export function generateLedgerVectorPdf(
           doc.setFont('Inter', 'normal')
           doc.setFontSize(7.5)
           doc.setTextColor(100, 116, 139)
-          doc.text('Contact: ', leftX, cY)
+          doc.text('Contact No: ', leftX, cY)
           doc.setFont('Inter', 'bold')
           doc.setTextColor(30, 41, 59)
-          doc.text(ledgerData.party.phone, leftX + doc.getTextWidth('Contact: '), cY)
+          doc.text(ledgerData.party.phone, leftX + doc.getTextWidth('Contact No: '), cY)
           cY += 10
         }
 
@@ -560,13 +559,13 @@ export function generateLedgerVectorPdf(
           doc.text(ledgerData.party.parentGroup || 'Sundry Debtors', leftX, cY)
         }
 
-        // --- RIGHT COLUMN: Billing Address ---
+        // --- RIGHT COLUMN: Party Address ---
         const rightX = dividerX + 12
         let rY = custBoxY + 12
         doc.setFont('Inter', 'bold')
         doc.setFontSize(6.8)
         doc.setTextColor(148, 163, 184)
-        doc.text('BILLING ADDRESS', rightX, rY)
+        doc.text('PARTY ADDRESS', rightX, rY)
 
         rY += 12
         doc.setFont('Inter', 'normal')
@@ -574,18 +573,7 @@ export function generateLedgerVectorPdf(
         doc.setTextColor(51, 65, 85)
         if (cleanAddrLines.length > 0) {
           cleanAddrLines.forEach((line: string) => {
-            const isPhoneLine = /^[\d\s+-]{6,}$/.test(line.trim())
-            if (isPhoneLine) {
-              doc.setTextColor(100, 116, 139)
-              doc.text('Landline: ', rightX, rY)
-              doc.setFont('Inter', 'bold')
-              doc.setTextColor(30, 41, 59)
-              doc.text(line.trim(), rightX + doc.getTextWidth('Landline: '), rY)
-              doc.setFont('Inter', 'normal')
-              doc.setTextColor(51, 65, 85)
-            } else {
-              doc.text(line, rightX, rY)
-            }
+            doc.text(line, rightX, rY)
             rY += 9.5
           })
         } else {
