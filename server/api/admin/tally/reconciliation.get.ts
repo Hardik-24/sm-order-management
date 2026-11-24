@@ -39,6 +39,13 @@ function computeMatchScore(tallyParty: string, busyParty: string): number {
   if (tClean === bClean) return 100
   if (tClean.replace(/\s+/g, '') === bClean.replace(/\s+/g, '')) return 95
 
+  const tRaw = tClean.split(' ').filter(Boolean)
+  const bRaw = bClean.split(' ').filter(Boolean)
+  // If leading tokens differ and either is a short initial (<= 2 chars), they are different parties (e.g. I Build vs V Build)
+  if (tRaw.length > 0 && bRaw.length > 0 && tRaw[0] !== bRaw[0] && (tRaw[0].length <= 2 || bRaw[0].length <= 2)) {
+    return 0
+  }
+
   const tWords = getDistinctiveWords(tClean)
   const bWords = getDistinctiveWords(bClean)
 
@@ -67,7 +74,7 @@ function computeMatchScore(tallyParty: string, busyParty: string): number {
 
   const maxLen = Math.max(tWords.length, bWords.length)
   const score = (common / maxLen) * 80
-  return score >= 40 ? score : 0
+  return score >= 60 ? score : 0
 }
 
 function findBestPartyMatchWithScore(busyParty: string, tallyParties: any[]): { match: any | null, score: number } {
@@ -326,31 +333,82 @@ export default defineEventHandler(async (event) => {
       busyByCustomer.get(name)!.push(v)
     }
 
-    // Match Busy parties to Tally parties using 360° Cross-Group Matching
+    // 1. Empirical Party Mapping derived from Tally's Sales/Purchase Register vouchers
     const partyMatches = new Map<string, any>()
-    const unmatchedParties: any[] = []
+    const matchedTallyLedgers = new Set<string>()
+
+    for (const [busyName, vouchers] of busyByCustomer.entries()) {
+      const tallyPartiesFrequency = new Map<string, number>()
+      for (const v of vouchers) {
+        const norm = (v.voucherNo || '').toLowerCase().replace(/[^a-z0-9]/g, '')
+        const tv = findTallyVoucherMatch(norm, busyName)
+        if (tv?.party && !tv.party.toLowerCase().startsWith('cash')) {
+          tallyPartiesFrequency.set(tv.party, (tallyPartiesFrequency.get(tv.party) || 0) + 1)
+        }
+      }
+
+      if (tallyPartiesFrequency.size > 0) {
+        let bestParty = ''
+        let maxCount = 0
+        for (const [tpName, count] of tallyPartiesFrequency.entries()) {
+          if (count > maxCount) {
+            maxCount = count
+            bestParty = tpName
+          }
+        }
+        const matchedPartyObj = allTallyParties.find(p => p.party.toLowerCase() === bestParty.toLowerCase())
+        if (matchedPartyObj) {
+          partyMatches.set(busyName, {
+            ...matchedPartyObj,
+            isEmpiricalVoucherMatch: true,
+            matchScore: 100
+          })
+          matchedTallyLedgers.add(bestParty.toLowerCase())
+        }
+      }
+    }
+
+    // 2. Strict Name Matching (>= 75) for unmapped parties, preventing many-to-one collisions
+    const missingLedgers: any[] = []
     let dualRolePartiesCount = 0
     let dualRolePartiesTotal = 0
 
     for (const [busyName, vouchers] of busyByCustomer.entries()) {
-      const resolved = resolveParty360(busyName, primaryParties, secondaryParties, isPurchases)
-      const total = vouchers.reduce((acc, v) => acc + Number(v.totalAmount), 0)
-      const latestDate = vouchers[vouchers.length - 1].voucherDate
+      if (partyMatches.has(busyName)) continue
 
-      if (resolved.match) {
-        if (resolved.isDualRole) {
-          dualRolePartiesCount++
-          dualRolePartiesTotal += total
+      // If all vouchers of this party are already posted in Tally (e.g. Cash counter sales), it is not a missing ledger!
+      const hasAnyPosted = vouchers.some(v => {
+        const norm = (v.voucherNo || '').toLowerCase().replace(/[^a-z0-9]/g, '')
+        return tallyVchMap.has(norm)
+      })
+
+      if (hasAnyPosted) {
+        continue
+      }
+
+      // Try strict fuzzy match against unused Tally ledgers
+      let bestMatch: any = null
+      let highestScore = 0
+      for (const tp of allTallyParties) {
+        if (matchedTallyLedgers.has(tp.party.toLowerCase())) continue
+        const score = computeMatchScore(tp.party, busyName)
+        if (score > highestScore) {
+          highestScore = score
+          bestMatch = tp
         }
+      }
+
+      if (bestMatch && highestScore >= 75) {
         partyMatches.set(busyName, {
-          ...resolved.match,
-          isDualRole: resolved.isDualRole,
-          dualRoleGroup: resolved.dualRoleGroup,
-          dualRoleTag: resolved.dualRoleTag,
-          matchScore: resolved.score
+          ...bestMatch,
+          isEmpiricalVoucherMatch: false,
+          matchScore: highestScore
         })
+        matchedTallyLedgers.add(bestMatch.party.toLowerCase())
       } else {
-        unmatchedParties.push({
+        const total = vouchers.reduce((acc, v) => acc + Number(v.totalAmount), 0)
+        const latestDate = vouchers[vouchers.length - 1].voucherDate
+        missingLedgers.push({
           customerName: busyName,
           supplierName: busyName,
           totalSales: Math.round(total),
@@ -362,15 +420,15 @@ export default defineEventHandler(async (event) => {
       }
     }
 
-    unmatchedParties.sort((a, b) => b.totalSales - a.totalSales)
-    const missingPartiesSales = unmatchedParties.reduce((acc, p) => acc + p.totalSales, 0)
+    missingLedgers.sort((a, b) => b.totalSales - a.totalSales)
+    const missingPartiesSales = missingLedgers.reduce((acc, p) => acc + p.totalSales, 0)
 
     // Identify Unposted Vouchers
     const unpostedVouchers: any[] = []
 
     // 1. All vouchers for parties that do not exist anywhere in Tally:
     // Only flag vouchers that truly DO NOT exist in Tally's register
-    for (const u of unmatchedParties) {
+    for (const u of missingLedgers) {
       for (const v of u.vouchers) {
         const normRef = (v.voucherNo || '').toLowerCase().replace(/[^a-z0-9]/g, '')
         const vchMatch = findTallyVoucherMatch(normRef, v.customerName || v.supplierName)
@@ -392,7 +450,7 @@ export default defineEventHandler(async (event) => {
           isDualRole: false,
           dualRoleGroup: null,
           dualRoleTag: null,
-          reason: isPurchases ? 'Supplier Account Not in Tally' : 'Customer Account Not in Tally',
+          reason: isPurchases ? 'Supplier Ledger Not in Tally' : 'Customer Ledger Not in Tally',
           category: isPurchases ? 'MISSING_SUPPLIER' : 'MISSING_CUSTOMER',
           issueDetected: isPurchases
             ? `Missing Supplier in Tally: Supplier '${v.supplierName}' does not exist under Tally ledgers, and invoice ${v.voucherNo} is not posted.`
@@ -496,23 +554,59 @@ export default defineEventHandler(async (event) => {
             usedBusyVouchers.add(vDirect.voucherNo)
             exactBillsMatchedCount++
           } else {
-            billValueDiscrepancies.push({
-              ref: tv.voucherNo || vDirect.voucherNo,
-              actualBusyRef: vDirect.voucherNo,
-              party: tv.party || vDirect.customerName,
-              customerName: vDirect.customerName,
-              supplierName: vDirect.supplierName,
-              busyAmount: bAmt,
-              tallyAmount: tAmt,
-              difference: bAmt - tAmt,
-              busyDate: vDirect.voucherDate instanceof Date ? vDirect.voucherDate.toISOString() : String(vDirect.voucherDate),
-              tallyDate: tv.date,
-              isClubbed: false,
-              status: 'VALUE_MISMATCH',
-              issueDetected: `Amount Mismatch: BUSY ${isPurchases ? 'purchase voucher' : 'invoice'} ${vDirect.voucherNo} is ₹${bAmt.toLocaleString('en-IN')}, but Tally ${isPurchases ? 'Purchase' : 'Sales'} Register shows ₹${tAmt.toLocaleString('en-IN')}.`,
-              howToCorrect: `In Tally, verify voucher and update the invoice amount to match BUSY (₹${bAmt.toLocaleString('en-IN')}).`
-            })
-            usedBusyVouchers.add(vDirect.voucherNo)
+            // Check if this voucher is part of a swapped voucher pair in Tally
+            let swappedWith: any = null
+            for (const [candNorm, candVDirect] of vchMap.entries()) {
+              if (candNorm === normNo) continue
+              const candTv = findTallyVoucherMatch(candNorm, candVDirect.customerName || candVDirect.supplierName)
+              if (candTv) {
+                const candBAmt = Math.round(Number(candVDirect.totalAmount))
+                const candTAmt = Math.round(Number(candTv.amount))
+                if (candBAmt === tAmt && candTAmt === bAmt) {
+                  swappedWith = { candVDirect, candTv, candBAmt, candTAmt }
+                  break
+                }
+              }
+            }
+
+            if (swappedWith) {
+              billValueDiscrepancies.push({
+                ref: tv.voucherNo || vDirect.voucherNo,
+                actualBusyRef: vDirect.voucherNo,
+                swappedWithRef: swappedWith.candVDirect.voucherNo,
+                party: tv.party || vDirect.customerName,
+                customerName: vDirect.customerName,
+                supplierName: vDirect.supplierName,
+                busyAmount: bAmt,
+                tallyAmount: tAmt,
+                difference: bAmt - tAmt,
+                busyDate: vDirect.voucherDate instanceof Date ? vDirect.voucherDate.toISOString() : String(vDirect.voucherDate),
+                tallyDate: tv.date,
+                isClubbed: false,
+                status: 'SWAPPED_VOUCHERS',
+                issueDetected: `Swapped Voucher Numbers: In BUSY (tax invoice of record), ${vDirect.voucherNo} was issued to '${vDirect.customerName || vDirect.supplierName}' (₹${bAmt.toLocaleString('en-IN')}) and ${swappedWith.candVDirect.voucherNo} was issued to '${swappedWith.candVDirect.customerName || swappedWith.candVDirect.supplierName}' (₹${swappedWith.candBAmt.toLocaleString('en-IN')}). In Tally, these voucher numbers were entered in reverse.`,
+                howToCorrect: `In Tally, SWAP the voucher numbers: renumber '${vDirect.customerName || vDirect.supplierName}' to ${vDirect.voucherNo} and renumber '${swappedWith.candVDirect.customerName || swappedWith.candVDirect.supplierName}' to ${swappedWith.candVDirect.voucherNo}. Do NOT alter invoice amounts—both bill totals and ledger balances are already 100% accurate.`
+              })
+              usedBusyVouchers.add(vDirect.voucherNo)
+            } else {
+              billValueDiscrepancies.push({
+                ref: tv.voucherNo || vDirect.voucherNo,
+                actualBusyRef: vDirect.voucherNo,
+                party: tv.party || vDirect.customerName,
+                customerName: vDirect.customerName,
+                supplierName: vDirect.supplierName,
+                busyAmount: bAmt,
+                tallyAmount: tAmt,
+                difference: bAmt - tAmt,
+                busyDate: vDirect.voucherDate instanceof Date ? vDirect.voucherDate.toISOString() : String(vDirect.voucherDate),
+                tallyDate: tv.date,
+                isClubbed: false,
+                status: 'VALUE_MISMATCH',
+                issueDetected: `Amount Mismatch: BUSY ${isPurchases ? 'purchase voucher' : 'invoice'} ${vDirect.voucherNo} is ₹${bAmt.toLocaleString('en-IN')}, but Tally ${isPurchases ? 'Purchase' : 'Sales'} Register shows ₹${tAmt.toLocaleString('en-IN')}.`,
+                howToCorrect: `In Tally, verify voucher and update the invoice amount to match BUSY (₹${bAmt.toLocaleString('en-IN')}).`
+              })
+              usedBusyVouchers.add(vDirect.voucherNo)
+            }
           }
         }
       }
@@ -667,7 +761,7 @@ export default defineEventHandler(async (event) => {
       }
     }
 
-    const cleanUnmatchedParties = unmatchedParties.map(p => ({
+    const cleanMissingLedgers = missingLedgers.map(p => ({
       customerName: p.customerName,
       supplierName: p.supplierName,
       totalSales: p.totalSales,
@@ -678,6 +772,7 @@ export default defineEventHandler(async (event) => {
 
     const unpostedTotal = unpostedVouchers.reduce((s, v) => s + v.amount, 0)
     const pureValueMismatchesCount = billValueDiscrepancies.filter(d => d.status === 'VALUE_MISMATCH').length
+    const swappedVouchersCount = billValueDiscrepancies.filter(d => d.status === 'SWAPPED_VOUCHERS').length
     const referenceTyposCount = billValueDiscrepancies.filter(d => d.status === 'AMEND_REFERENCE').length
     const clubbedEntriesCount = billValueDiscrepancies.filter(d => d.status === 'COMBINED_ENTRY').length
 
@@ -696,7 +791,8 @@ export default defineEventHandler(async (event) => {
           tallyCreditorCount: isPurchases ? primaryParties.length : secondaryParties.length,
           dualRolePartiesCount,
           dualRolePartiesTotal: Math.round(dualRolePartiesTotal),
-          missingPartiesCount: cleanUnmatchedParties.length,
+          missingLedgersCount: cleanMissingLedgers.length,
+          missingPartiesCount: cleanMissingLedgers.length,
           missingPartiesSales: Math.round(missingPartiesSales),
           missingPartiesPurchases: Math.round(missingPartiesSales),
           partyDiscrepanciesCount: partyDiscrepancies.length,
@@ -704,6 +800,7 @@ export default defineEventHandler(async (event) => {
           unpostedVouchersTotal: Math.round(unpostedTotal),
           exactBillsMatchedCount,
           billDiscrepanciesCount: pureValueMismatchesCount,
+          swappedVouchersCount,
           referenceTyposCount,
           clubbedEntriesCount,
           allBillsAccurate: pureValueMismatchesCount === 0,
@@ -712,7 +809,8 @@ export default defineEventHandler(async (event) => {
         },
         unpostedVouchers,
         partyDiscrepancies,
-        unmatchedParties: cleanUnmatchedParties,
+        missingLedgers: cleanMissingLedgers,
+        unmatchedParties: cleanMissingLedgers,
         billValueDiscrepancies
       }
     }

@@ -634,7 +634,7 @@
                 :class="activeReconSubTab === 'missing_parties' ? 'bg-[#1b3b5f] text-white shadow-xs' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
               >
                 <UserX class="w-3.5 h-3.5 text-rose-600" />
-                <span>{{ activeEntityMode === 'debtors' ? 'Missing Debtors in Tally' : 'Missing Creditors in Tally' }}</span>
+                <span>{{ activeEntityMode === 'debtors' ? 'Missing Customer Ledgers' : 'Missing Supplier Ledgers' }}</span>
                 <span class="px-1.5 py-0.2 rounded-full text-[10px] font-bold" :class="activeReconSubTab === 'missing_parties' ? 'bg-white/20 text-white' : 'bg-rose-100 text-rose-800'">
                   {{ reconData.unmatchedParties.length }}
                 </span>
@@ -663,7 +663,7 @@
                 <input
                   v-model="reconSearchQuery"
                   type="text"
-                  :placeholder="activeReconSubTab === 'unposted' ? 'Search voucher # or party...' : activeReconSubTab === 'discrepancies' ? 'Search party or tally ledger...' : activeReconSubTab === 'missing_parties' ? 'Search missing party...' : 'Filter bill # or party name...'"
+                  :placeholder="activeReconSubTab === 'unposted' ? 'Search voucher # or party...' : activeReconSubTab === 'discrepancies' ? 'Search party or tally ledger...' : activeReconSubTab === 'missing_parties' ? 'Search missing ledger...' : 'Filter bill # or party name...'"
                   class="w-full pl-9 pr-3.5 py-1.5 text-xs sm:text-sm rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
                 />
                 <button
@@ -923,10 +923,10 @@
             <div class="p-4 bg-rose-50/70 border-b border-rose-100 text-xs text-rose-900 flex items-center justify-between flex-wrap gap-2">
               <div class="flex items-center gap-2">
                 <UserX class="w-4 h-4 text-rose-600 shrink-0" />
-                <span>These accounts have transactions recorded in BUSY, but no corresponding ledger exists in Tally under either Sundry Debtors or Sundry Creditors.</span>
+                <span>These accounts have transactions recorded in BUSY, but no corresponding ledger exists anywhere in Tally Prime.</span>
               </div>
               <span class="text-[11px] font-bold text-purple-700 bg-purple-50 border border-purple-200 px-2 py-0.5 rounded-full inline-flex items-center gap-1">
-                ✓ 360° Cross-Group Verified
+                ✓ Whole Tally Ledger Master Verified
               </span>
             </div>
 
@@ -964,7 +964,7 @@
                   </td>
                   <td class="py-2.5 sm:py-3 px-2 sm:px-3 text-center whitespace-nowrap">
                     <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-50 text-rose-800 border border-rose-200">
-                      Create {{ activeEntityMode === 'debtors' ? 'Debtor' : 'Creditor' }} Ledger in Tally
+                      Create {{ activeEntityMode === 'debtors' ? 'Customer' : 'Supplier' }} Ledger in Tally
                     </span>
                   </td>
                 </tr>
@@ -1090,12 +1090,13 @@
                         <span
                           class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap"
                           :class="{
+                            'bg-indigo-100 text-indigo-800 border border-indigo-200': bill.status === 'SWAPPED_VOUCHERS',
                             'bg-amber-100 text-amber-800 border border-amber-200': bill.status === 'AMEND_REFERENCE',
                             'bg-sky-100 text-sky-800 border border-sky-200': bill.status === 'COMBINED_ENTRY',
                             'bg-rose-100 text-rose-800 border border-rose-200': bill.status === 'VALUE_MISMATCH'
                           }"
                         >
-                          {{ bill.status === 'AMEND_REFERENCE' ? 'Reference Typo' : bill.status === 'COMBINED_ENTRY' ? 'Combined Entry' : 'Amount Mismatch' }}
+                          {{ bill.status === 'SWAPPED_VOUCHERS' ? 'Swapped Numbers' : bill.status === 'AMEND_REFERENCE' ? 'Reference Typo' : bill.status === 'COMBINED_ENTRY' ? 'Combined Entry' : 'Amount Mismatch' }}
                         </span>
                       </td>
 
@@ -1109,6 +1110,7 @@
                         <div
                           class="p-2 rounded-lg border text-xs break-words"
                           :class="{
+                            'bg-indigo-50/90 border-indigo-200 text-indigo-950 font-medium': bill.status === 'SWAPPED_VOUCHERS',
                             'bg-amber-50/90 border-amber-200 text-amber-950 font-medium': bill.status === 'AMEND_REFERENCE',
                             'bg-sky-50/90 border-sky-200 text-sky-950': bill.status === 'COMBINED_ENTRY',
                             'bg-rose-50/90 border-rose-200 text-rose-950 font-medium': bill.status === 'VALUE_MISMATCH'
