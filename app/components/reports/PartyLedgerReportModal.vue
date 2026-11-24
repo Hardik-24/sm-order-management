@@ -339,7 +339,7 @@
           </div>
 
           <!-- State 2: Loading State -->
-          <div v-else-if="isLoadingLedger" class="py-20 sm:py-24 flex flex-col items-center justify-center gap-3 text-gray-500">
+          <div v-else-if="isLoadingLedger && !ledgerData" class="py-20 sm:py-24 flex flex-col items-center justify-center gap-3 text-gray-500">
             <Loader2 class="w-8 h-8 animate-spin text-[#1b3b5f]" />
             <p class="text-xs font-semibold text-gray-700">Generating statement for {{ selectedParty }}...</p>
           </div>
@@ -690,6 +690,7 @@ const fetchLedger = async () => {
       }
     })
     ledgerData.value = res
+    isLoadingLedger.value = false
 
     await renderPdfPreview()
   } catch (err: any) {
