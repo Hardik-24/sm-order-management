@@ -407,133 +407,189 @@ export function generateLedgerVectorPdf(
         doc.addPage('a4', 'portrait')
       }
 
-      let startY = 22
+      let startY = 20
 
       if (page.isFirstPage) {
         // Top Brand Gradient Bar
         doc.setFillColor(27, 59, 95) // #1b3b5f
-        doc.rect(margin, startY, contentWidth * 0.7, 3, 'F')
+        doc.rect(margin, startY, contentWidth * 0.72, 3.5, 'F')
         doc.setFillColor(217, 37, 70) // #d92546 accent
-        doc.rect(margin + contentWidth * 0.7, startY, contentWidth * 0.3, 3, 'F')
-        startY += 13
+        doc.rect(margin + contentWidth * 0.72, startY, contentWidth * 0.28, 3.5, 'F')
+        startY += 15
 
         // Row 1: Company Header (Left) & Document Meta Badge (Right)
         doc.setFont('Inter', 'bold')
-        doc.setFontSize(12.5)
+        doc.setFontSize(13)
         doc.setTextColor(27, 59, 95)
         doc.text(ledgerData.company.name.toUpperCase(), margin, startY)
 
         // Document Meta Badge (Right)
-        const metaBoxW = 140
+        const metaBoxW = 142
+        const metaBoxH = 17
+        const metaBoxY = startY - 9
         doc.setFillColor(27, 59, 95)
-        doc.roundedRect(pageWidth - margin - metaBoxW, startY - 9, metaBoxW, 16, 2, 2, 'F')
+        doc.roundedRect(pageWidth - margin - metaBoxW, metaBoxY, metaBoxW, metaBoxH, 2.5, 2.5, 'F')
         doc.setFont('Inter', 'bold')
         doc.setFontSize(7.5)
         doc.setTextColor(255, 255, 255)
-        doc.text('STATEMENT OF ACCOUNT', pageWidth - margin - (metaBoxW / 2), startY + 2.5, { align: 'center' })
+        doc.text('STATEMENT OF ACCOUNT', pageWidth - margin - (metaBoxW / 2), metaBoxY + 11.5, { align: 'center' })
 
         startY += 13
-        doc.setFont('Inter', 'normal')
+        doc.setFont('Inter', 'bold')
         doc.setFontSize(8)
-        doc.setTextColor(100, 116, 139) // slate-500
-        doc.text(ledgerData.company.tradeName, margin, startY)
+        doc.setTextColor(217, 37, 70) // Crimson accent
+        doc.text(ledgerData.company.tradeName || 'Trade Name : Silicon Marketing', margin, startY)
 
-        // Period (Right aligned)
+        // Right: Period Row with proper vertical clearance
+        const periodY = metaBoxY + metaBoxH + 11
         doc.setFont('Inter', 'normal')
-        doc.setFontSize(8)
-        doc.setTextColor(71, 85, 105)
-        const periodPrefix = 'Period: '
-        const periodVal = ledgerData.period.display
-        const pValW = doc.getTextWidth(periodVal)
-        const pPrefW = doc.getTextWidth(periodPrefix)
-        doc.text(periodPrefix, pageWidth - margin - pValW - pPrefW, startY)
+        doc.setFontSize(7.5)
+        doc.setTextColor(100, 116, 139) // slate-500
+        const pVal = ledgerData.period.display
+        const pValW = doc.getTextWidth(pVal)
+        doc.text('Period: ', pageWidth - margin - pValW - 4, periodY, { align: 'right' })
         doc.setFont('Inter', 'bold')
         doc.setTextColor(27, 59, 95)
-        doc.text(periodVal, pageWidth - margin, startY, { align: 'right' })
+        doc.text(pVal, pageWidth - margin, periodY, { align: 'right' })
 
         startY += 10
-        // Company Address (2 lines wrapped, no cut off)
+        // Clean Company Address (single commas, no trailing comma)
         doc.setFont('Inter', 'normal')
-        doc.setFontSize(7.5)
-        doc.setTextColor(100, 116, 139)
-        const compCleanAddr = ledgerData.company.address.replace(/\n/g, ', ')
-        const compAddrLines = doc.splitTextToSize(compCleanAddr, 340)
-        compAddrLines.slice(0, 2).forEach((line: string) => {
-          doc.text(line, margin, startY)
-          startY += 9
-        })
+        doc.setFontSize(7.2)
+        doc.setTextColor(71, 85, 105)
+        const rawCompAddr = (ledgerData.company.address || '')
+          .split('\n')
+          .map((s: string) => s.trim().replace(/,+$/, ''))
+          .filter(Boolean)
+          .join(', ')
+        doc.text(rawCompAddr, margin, startY)
 
-        // Page indicator (Right aligned)
+        // Right: Page Indicator
+        const pageMetaY = periodY + 9.5
         doc.setFont('Inter', 'normal')
-        doc.setFontSize(7.5)
+        doc.setFontSize(7.2)
         doc.setTextColor(148, 163, 184)
-        doc.text(`Page 1 of ${page.totalPages}`, pageWidth - margin, startY - 9, { align: 'right' })
+        doc.text(`Page 1 of ${page.totalPages}`, pageWidth - margin, pageMetaY, { align: 'right' })
 
-        startY += 3
+        startY += 9.5
+        // Left: Phone, Email, Company GSTIN
+        const compMetaParts: string[] = []
+        if (ledgerData.company.phone) compMetaParts.push(`Phone: ${ledgerData.company.phone}`)
+        if (ledgerData.company.email) compMetaParts.push(`Email: ${ledgerData.company.email}`)
+        if (ledgerData.company.gstin) compMetaParts.push(`GSTIN: ${ledgerData.company.gstin}`)
+        doc.text(compMetaParts.join('  •  '), margin, startY)
+
+        startY += 8
         doc.setDrawColor(226, 232, 240)
         doc.setLineWidth(0.5)
         doc.line(margin, startY, pageWidth - margin, startY)
-        startY += 8
+        startY += 9
 
-        // Row 2: Customer Box (Left: Name & Phone, Right: Address)
+        // 3. Customer Box: Two-Column Split Card
         const custBoxY = startY
+        const halfW = (contentWidth - 14) / 2
+
+        // Prepare Customer Info
         const partyNameUpper = ledgerData.party.name.toUpperCase()
-        const partyLines = doc.splitTextToSize(partyNameUpper, 280)
+        const partyLines = doc.splitTextToSize(partyNameUpper, halfW - 20)
         const hasPhone = !!ledgerData.party.phone
-        const addrLines = (ledgerData.party.addressLines && ledgerData.party.addressLines.length > 0)
-          ? ledgerData.party.addressLines
+        const partyGstin = ledgerData.party.gstin
+
+        // Prepare Address Info
+        const cleanAddrLines = (ledgerData.party.addressLines && ledgerData.party.addressLines.length > 0)
+          ? ledgerData.party.addressLines.map((s: string) => s.trim().replace(/,+$/, '')).filter(Boolean)
           : []
 
-        const custBoxH = Math.max(48, Math.max(partyLines.length * 12 + 28, addrLines.length * 9.5 + 24))
+        // Calculate height dynamically
+        const leftContentH = 14 + (partyLines.length * 12) + (hasPhone ? 11 : 0) + (partyGstin ? 10 : 0) + 8
+        const rightContentH = 14 + (cleanAddrLines.length * 9.5) + 8
+        const custBoxH = Math.max(54, Math.max(leftContentH, rightContentH))
+
+        // Card Background
         doc.setFillColor(248, 250, 252) // slate-50
         doc.setDrawColor(226, 232, 240) // slate-200
         doc.roundedRect(margin, custBoxY, contentWidth, custBoxH, 4, 4, 'FD')
 
-        // Left: Account of
-        doc.setFont('Inter', 'bold')
-        doc.setFontSize(7)
-        doc.setTextColor(148, 163, 184)
-        doc.text('ACCOUNT OF', margin + 10, custBoxY + 11)
+        // Vertical Divider in Middle
+        const dividerX = margin + halfW + 7
+        doc.setDrawColor(226, 232, 240)
+        doc.setLineWidth(0.5)
+        doc.line(dividerX, custBoxY + 7, dividerX, custBoxY + custBoxH - 7)
 
+        // --- LEFT COLUMN: Customer Info ---
+        const leftX = margin + 12
+        let cY = custBoxY + 12
         doc.setFont('Inter', 'bold')
-        doc.setFontSize(10)
-        doc.setTextColor(27, 59, 95)
-        let pY = custBoxY + 23
+        doc.setFontSize(6.8)
+        doc.setTextColor(148, 163, 184) // slate-400
+        doc.text('CUSTOMER DETAILS', leftX, cY)
+
+        cY += 12
+        doc.setFont('Inter', 'bold')
+        doc.setFontSize(10.5)
+        doc.setTextColor(27, 59, 95) // Deep Navy
         partyLines.forEach((line: string) => {
-          doc.text(line, margin + 10, pY)
-          pY += 12
+          doc.text(line, leftX, cY)
+          cY += 12
         })
 
         if (hasPhone) {
           doc.setFont('Inter', 'normal')
           doc.setFontSize(7.5)
           doc.setTextColor(100, 116, 139)
-          const contactLabel = 'Contact: '
-          const cY = pY + 2
-          doc.text(contactLabel, margin + 10, cY)
+          doc.text('Contact: ', leftX, cY)
           doc.setFont('Inter', 'bold')
           doc.setTextColor(30, 41, 59)
-          doc.text(ledgerData.party.phone, margin + 10 + doc.getTextWidth(contactLabel), cY)
+          doc.text(ledgerData.party.phone, leftX + doc.getTextWidth('Contact: '), cY)
+          cY += 10
         }
 
-        // Right: Address
-        doc.setFont('Inter', 'bold')
-        doc.setFontSize(7)
-        doc.setTextColor(148, 163, 184)
-        doc.text('ADDRESS', pageWidth - margin - 10, custBoxY + 11, { align: 'right' })
+        doc.setFont('Inter', 'normal')
+        doc.setFontSize(7.2)
+        doc.setTextColor(100, 116, 139)
+        if (partyGstin) {
+          doc.text('GSTIN: ', leftX, cY)
+          doc.setFont('Inter', 'bold')
+          doc.setTextColor(27, 59, 95)
+          doc.text(partyGstin, leftX + doc.getTextWidth('GSTIN: '), cY)
+          doc.setFont('Inter', 'normal')
+          doc.setTextColor(148, 163, 184)
+          doc.text(`  •  ${ledgerData.party.parentGroup || 'Sundry Debtors'}`, leftX + doc.getTextWidth(`GSTIN: ${partyGstin}`), cY)
+        } else {
+          doc.setTextColor(148, 163, 184)
+          doc.text(ledgerData.party.parentGroup || 'Sundry Debtors', leftX, cY)
+        }
 
+        // --- RIGHT COLUMN: Billing Address ---
+        const rightX = dividerX + 12
+        let rY = custBoxY + 12
+        doc.setFont('Inter', 'bold')
+        doc.setFontSize(6.8)
+        doc.setTextColor(148, 163, 184)
+        doc.text('BILLING ADDRESS', rightX, rY)
+
+        rY += 12
         doc.setFont('Inter', 'normal')
         doc.setFontSize(7.5)
-        doc.setTextColor(71, 85, 105)
-        if (addrLines.length > 0) {
-          let aY = custBoxY + 22
-          addrLines.forEach((line: string) => {
-            const trimmed = line.trim().toUpperCase()
-            doc.text(trimmed, pageWidth - margin - 10, aY, { align: 'right' })
-            aY += 9.5
+        doc.setTextColor(51, 65, 85)
+        if (cleanAddrLines.length > 0) {
+          cleanAddrLines.forEach((line: string) => {
+            const isPhoneLine = /^[\d\s+-]{6,}$/.test(line.trim())
+            if (isPhoneLine) {
+              doc.setTextColor(100, 116, 139)
+              doc.text('Landline: ', rightX, rY)
+              doc.setFont('Inter', 'bold')
+              doc.setTextColor(30, 41, 59)
+              doc.text(line.trim(), rightX + doc.getTextWidth('Landline: '), rY)
+              doc.setFont('Inter', 'normal')
+              doc.setTextColor(51, 65, 85)
+            } else {
+              doc.text(line, rightX, rY)
+            }
+            rY += 9.5
           })
         } else {
-          doc.text('—', pageWidth - margin - 10, custBoxY + 22, { align: 'right' })
+          doc.text('—', rightX, rY)
         }
 
         startY = custBoxY + custBoxH + 8
