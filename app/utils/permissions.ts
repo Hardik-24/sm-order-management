@@ -32,7 +32,7 @@ export const APP_PAGES: AppPageDef[] = [
   { key: 'PRODUCTS', path: '/dashboard/products', label: 'Products', category: 'Data', description: 'Product catalog, pricing, and SKUs' },
   { key: 'VOUCHERS', path: '/dashboard/vouchers', label: 'BUSY Vouchers', category: 'Data', description: 'Search and inspect all historical and live BUSY sales invoices' },
   { key: 'PURCHASES', path: '/dashboard/purchases', label: 'Purchase Invoices', category: 'Data', description: 'Search and inspect all BUSY purchase invoices and supplier spend' },
-  { key: 'REPORTS', path: '/dashboard/reports', label: 'Reports', category: 'Data', description: 'Financial statements, party ledgers, and accounting reports' },
+  { key: 'REPORTS', path: '/dashboard/reports', label: 'Reports & Syncing', category: 'Data', description: 'Financial statements, party ledgers, and BUSY-to-Tally syncing' },
 
   // Administration
   { key: 'ADMIN', path: '/dashboard/admin', label: 'Administration', category: 'Administration', description: 'Manage users, roles, and permissions' },
@@ -162,6 +162,7 @@ export const DEFAULT_ROLE_ACTION_PERMISSIONS: Record<UserRole, UserActionPermiss
     canEditConvertedQuotationOrders: true,
     canManageBatches: true,
     canDownloadPartyLedger: true,
+    canPostBusyToTally: true,
   },
   SUPERVISOR: {
     canEditOrders: true,
@@ -175,6 +176,7 @@ export const DEFAULT_ROLE_ACTION_PERMISSIONS: Record<UserRole, UserActionPermiss
     canEditConvertedQuotationOrders: false,
     canManageBatches: true,
     canDownloadPartyLedger: false,
+    canPostBusyToTally: false,
   },
   SALES: {
     canEditOrders: true,
@@ -188,6 +190,7 @@ export const DEFAULT_ROLE_ACTION_PERMISSIONS: Record<UserRole, UserActionPermiss
     canEditConvertedQuotationOrders: false,
     canManageBatches: false,
     canDownloadPartyLedger: false,
+    canPostBusyToTally: false,
   },
   BILLING: {
     canEditOrders: false,
@@ -201,6 +204,7 @@ export const DEFAULT_ROLE_ACTION_PERMISSIONS: Record<UserRole, UserActionPermiss
     canEditConvertedQuotationOrders: false,
     canManageBatches: false,
     canDownloadPartyLedger: false,
+    canPostBusyToTally: false,
   },
   PACKING: {
     canEditOrders: false,
@@ -214,6 +218,7 @@ export const DEFAULT_ROLE_ACTION_PERMISSIONS: Record<UserRole, UserActionPermiss
     canEditConvertedQuotationOrders: false,
     canManageBatches: false,
     canDownloadPartyLedger: false,
+    canPostBusyToTally: false,
   },
   DELIVERY: {
     canEditOrders: false,
@@ -227,6 +232,7 @@ export const DEFAULT_ROLE_ACTION_PERMISSIONS: Record<UserRole, UserActionPermiss
     canEditConvertedQuotationOrders: false,
     canManageBatches: false,
     canDownloadPartyLedger: false,
+    canPostBusyToTally: false,
   },
 }
 
@@ -249,6 +255,7 @@ export function getEffectiveActionPermissions(
       canEditConvertedQuotationOrders: false,
       canManageBatches: false,
       canDownloadPartyLedger: false,
+      canPostBusyToTally: false,
     }
   }
 
@@ -266,6 +273,7 @@ export function getEffectiveActionPermissions(
       canEditConvertedQuotationOrders: true,
       canManageBatches: true,
       canDownloadPartyLedger: true,
+      canPostBusyToTally: true,
     }
   }
 
@@ -282,6 +290,7 @@ export function getEffectiveActionPermissions(
     canEditConvertedQuotationOrders: false,
     canManageBatches: false,
     canDownloadPartyLedger: false,
+    canPostBusyToTally: false,
   }
 
   const userPerms = (user.actionPermissions && typeof user.actionPermissions === 'object')
@@ -300,6 +309,7 @@ export function getEffectiveActionPermissions(
     canEditConvertedQuotationOrders: userPerms.canEditConvertedQuotationOrders !== undefined ? Boolean(userPerms.canEditConvertedQuotationOrders) : defaults.canEditConvertedQuotationOrders,
     canManageBatches: userPerms.canManageBatches !== undefined ? Boolean(userPerms.canManageBatches) : Boolean(defaults.canManageBatches),
     canDownloadPartyLedger: userPerms.canDownloadPartyLedger !== undefined ? Boolean(userPerms.canDownloadPartyLedger) : Boolean(defaults.canDownloadPartyLedger),
+    canPostBusyToTally: userPerms.canPostBusyToTally !== undefined ? Boolean(userPerms.canPostBusyToTally) : Boolean(defaults.canPostBusyToTally),
   }
 }
 

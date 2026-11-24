@@ -1,0 +1,610 @@
+<template>
+  <div v-if="isOpen && voucher" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
+    <!-- Backdrop -->
+    <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity" @click="close"></div>
+
+    <!-- Modal Dialog -->
+    <div class="relative bg-white rounded-2xl shadow-2xl border border-gray-200 w-full max-w-6xl max-h-[92vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+      
+      <!-- Top Header Bar -->
+      <div class="px-6 py-4 border-b border-gray-200 bg-slate-50/80 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-xs">
+            <ArrowLeftRight class="w-5 h-5" />
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h2 class="text-base sm:text-lg font-black text-gray-900 tracking-tight">
+                Voucher Posting Review: {{ voucher.voucherNo }}
+              </h2>
+              <span 
+                class="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                :class="voucher.isPosted ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'"
+              >
+                {{ voucher.isPosted ? 'Already Posted' : 'Ready to Review & Post' }}
+              </span>
+            </div>
+            <p class="text-xs text-gray-500">
+              Side-by-side comparison: verify the BUSY source on the left and edit or override Tally fields on the right.
+            </p>
+          </div>
+        </div>
+
+        <button 
+          @click="close" 
+          class="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
+        >
+          <X class="w-5 h-5" />
+        </button>
+      </div>
+
+      <!-- Main Body: Two Columns Side-by-Side -->
+      <div class="flex-1 overflow-y-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- ========================================== -->
+        <!-- LEFT COLUMN: BUSY SOURCE (READ-ONLY)       -->
+        <!-- ========================================== -->
+        <div class="lg:col-span-5 flex flex-col gap-4 border-b lg:border-b-0 lg:border-r border-gray-200 pb-6 lg:pb-0 lg:pr-6">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-black uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-slate-400"></span>
+              BUSY Source of Truth (Uneditable)
+            </span>
+            <span class="text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
+              Series: {{ voucher.series }}
+            </span>
+          </div>
+
+          <!-- Basic Voucher Info Card -->
+          <div class="bg-slate-50 rounded-xl p-4 border border-slate-200/80 space-y-2.5 text-xs">
+            <div class="flex justify-between items-center py-1 border-b border-slate-200/60">
+              <span class="text-gray-500 font-medium">Invoice Number</span>
+              <span class="font-bold text-gray-900 font-mono">{{ voucher.voucherNo }}</span>
+            </div>
+            <div class="flex justify-between items-center py-1 border-b border-slate-200/60">
+              <span class="text-gray-500 font-medium">Invoice Date</span>
+              <span class="font-semibold text-gray-800">{{ voucher.displayDate }}</span>
+            </div>
+            <div class="flex justify-between items-start py-1">
+              <span class="text-gray-500 font-medium shrink-0">Party (Customer)</span>
+              <span class="font-bold text-gray-900 text-right break-words max-w-[200px]">{{ voucher.customerName }}</span>
+            </div>
+          </div>
+
+          <!-- Financial Totals Breakdown -->
+          <div class="bg-white rounded-xl p-4 border border-gray-200 shadow-2xs space-y-2 text-xs">
+            <h4 class="text-[11px] font-bold text-gray-700 uppercase tracking-wide mb-1">Financial Breakdown</h4>
+            
+            <div class="flex justify-between text-gray-600">
+              <span>Taxable Value:</span>
+              <span class="font-semibold text-gray-900">₹{{ voucher.taxableAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}</span>
+            </div>
+
+            <div v-if="voucher.cgstAmount > 0" class="flex justify-between text-gray-600">
+              <span>CGST:</span>
+              <span class="font-semibold text-gray-900">₹{{ voucher.cgstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}</span>
+            </div>
+
+            <div v-if="voucher.sgstAmount > 0" class="flex justify-between text-gray-600">
+              <span>SGST:</span>
+              <span class="font-semibold text-gray-900">₹{{ voucher.sgstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}</span>
+            </div>
+
+            <div v-if="voucher.igstAmount > 0" class="flex justify-between text-purple-700 font-medium">
+              <span>IGST (Inter-State):</span>
+              <span class="font-bold text-purple-900">₹{{ voucher.igstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}</span>
+            </div>
+
+            <div v-if="Math.abs(voucher.roundOffAmount) > 0.001" class="flex justify-between text-gray-500 text-[11px]">
+              <span>Round Off:</span>
+              <span class="font-mono">₹{{ voucher.roundOffAmount.toFixed(2) }}</span>
+            </div>
+
+            <div class="pt-2 border-t border-gray-200 flex justify-between items-center text-sm">
+              <span class="font-bold text-gray-900">Grand Total:</span>
+              <span class="font-black text-indigo-700 text-base">₹{{ voucher.totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}</span>
+            </div>
+          </div>
+
+          <!-- Items Preview Table -->
+          <div class="flex-1 flex flex-col min-h-0 bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div class="px-3 py-2 bg-slate-50 border-b border-gray-200 flex items-center justify-between">
+              <span class="text-[11px] font-bold text-gray-700 uppercase tracking-wide">
+                Invoice Items ({{ (voucher.items && voucher.items.length) || voucher.itemCount || 1 }})
+              </span>
+              <span class="text-[10px] text-gray-500">Read-Only</span>
+            </div>
+            
+            <div class="overflow-y-auto max-h-48 p-2 divide-y divide-gray-100 text-[11px]">
+              <div v-for="(it, idx) in (voucher.items || [])" :key="idx" class="py-1.5 flex flex-col gap-0.5">
+                <div class="flex justify-between font-semibold text-gray-900">
+                  <span class="truncate pr-2">{{ it.name || it.description || 'Item' }}</span>
+                  <span class="shrink-0 font-mono">₹{{ (Number(it.amount) || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}</span>
+                </div>
+                <div class="flex items-center gap-2 text-[10px] text-gray-500">
+                  <span v-if="it.sku" class="font-mono bg-slate-100 px-1 rounded">SKU: {{ it.sku }}</span>
+                  <span>Qty: {{ it.qty }}</span>
+                  <span>Rate: ₹{{ it.rate }}</span>
+                  <span v-if="it.taxRate" class="text-indigo-600 font-bold">GST: {{ it.taxRate }}%</span>
+                </div>
+              </div>
+              <div v-if="!voucher.items || voucher.items.length === 0" class="py-4 text-center text-gray-400 italic">
+                Summary invoice (item-level lines aggregated in BUSY)
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- RIGHT COLUMN: TALLY PRIME (FULLY EDITABLE) -->
+        <!-- ========================================== -->
+        <div class="lg:col-span-7 flex flex-col gap-4">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-black uppercase tracking-wider text-indigo-700 flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-indigo-600 animate-pulse"></span>
+              Tally Prime Mapping (Fully Editable)
+            </span>
+            <span class="text-xs font-semibold px-2 py-0.5 rounded bg-indigo-50 text-indigo-800 border border-indigo-200">
+              Target: Accounting Invoice View
+            </span>
+          </div>
+
+          <!-- Top Config Controls -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <!-- Voucher Type -->
+            <div>
+              <label class="block text-[11px] font-bold text-gray-700 mb-1">Voucher Type</label>
+              <select 
+                v-model="form.voucherType"
+                class="w-full text-xs font-semibold px-3 py-2 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+              >
+                <option v-for="vt in availableVoucherTypes" :key="vt" :value="vt">{{ vt }}</option>
+              </select>
+            </div>
+
+            <!-- Voucher Date -->
+            <div>
+              <label class="block text-[11px] font-bold text-gray-700 mb-1">Tally Voucher Date</label>
+              <input 
+                type="date"
+                v-model="formDisplayDate"
+                class="w-full text-xs font-semibold px-3 py-2 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+              />
+            </div>
+
+            <!-- Voucher No -->
+            <div>
+              <label class="block text-[11px] font-bold text-gray-700 mb-1">Voucher Number</label>
+              <input 
+                type="text"
+                v-model="form.voucherNo"
+                class="w-full text-xs font-bold px-3 py-2 rounded-lg border border-gray-300 bg-white font-mono focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+              />
+            </div>
+          </div>
+
+          <!-- Party Ledger in Tally (Searchable dropdown) -->
+          <div class="bg-indigo-50/40 p-3.5 rounded-xl border border-indigo-100 space-y-2">
+            <div class="flex items-center justify-between">
+              <label class="block text-[11px] font-black uppercase tracking-wider text-indigo-950">
+                Party Ledger Name in Tally
+              </label>
+              <span 
+                v-if="voucher.isMapped"
+                class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 flex items-center gap-1"
+              >
+                <Check class="w-3 h-3" /> Linked to BUSY
+              </span>
+              <span 
+                v-else
+                class="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-900"
+              >
+                ⚠️ Auto-Matched
+              </span>
+            </div>
+
+            <div class="relative">
+              <input 
+                type="text"
+                v-model="partySearchQuery"
+                @focus="showPartyDropdown = true"
+                class="w-full text-xs font-bold px-3 py-2 rounded-lg border border-indigo-200 bg-white text-gray-900 shadow-2xs focus:ring-2 focus:ring-indigo-500 outline-none"
+                placeholder="Type or select Tally ledger name..."
+              />
+
+              <!-- Suggestions Dropdown -->
+              <div 
+                v-if="showPartyDropdown && filteredTallyDebtors.length > 0"
+                class="absolute left-0 right-0 top-full mt-1 z-30 max-h-48 overflow-y-auto bg-white rounded-lg shadow-xl border border-gray-200 divide-y divide-gray-100"
+              >
+                <button
+                  type="button"
+                  v-for="d in filteredTallyDebtors"
+                  :key="d"
+                  @click="selectPartyLedger(d)"
+                  class="w-full text-left px-3 py-2 text-xs hover:bg-indigo-50 transition-colors flex items-center justify-between"
+                  :class="form.partyLedgerName === d ? 'bg-indigo-50/80 font-bold text-indigo-900' : 'text-gray-800'"
+                >
+                  <span>{{ d }}</span>
+                  <Check v-if="form.partyLedgerName === d" class="w-3.5 h-3.5 text-indigo-600" />
+                </button>
+              </div>
+            </div>
+
+            <!-- Remember Mapping Option -->
+            <label class="flex items-center gap-2 cursor-pointer pt-1">
+              <input 
+                type="checkbox" 
+                v-model="form.saveMapping"
+                class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-gray-300"
+              />
+              <span class="text-[11px] text-gray-700 font-medium select-none">
+                Remember this mapping for all future vouchers for <strong>{{ voucher.customerName }}</strong>
+              </span>
+            </label>
+          </div>
+
+          <!-- Narration -->
+          <div>
+            <label class="block text-[11px] font-bold text-gray-700 mb-1">Narration</label>
+            <input 
+              type="text" 
+              v-model="form.narration"
+              class="w-full text-xs px-3 py-1.5 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-indigo-500 outline-none"
+              placeholder="e.g. Sales of Goods - SMG2390"
+            />
+          </div>
+
+          <!-- Accounting Ledger Rows Breakdown (Editable Table) -->
+          <div class="space-y-2">
+            <div class="flex items-center justify-between">
+              <h4 class="text-[11px] font-bold text-gray-700 uppercase tracking-wide">
+                Tally Ledger Entries (Dr / Cr Breakdown)
+              </h4>
+              <button 
+                type="button"
+                @click="addLedgerRow"
+                class="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 cursor-pointer"
+              >
+                <Plus class="w-3.5 h-3.5" /> Add Ledger Row
+              </button>
+            </div>
+
+            <div class="border border-gray-200 rounded-xl overflow-hidden bg-white shadow-2xs">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-slate-50 border-b border-gray-200 text-[10px] font-black uppercase text-gray-500 tracking-wider">
+                  <tr>
+                    <th class="px-3 py-2">Ledger Name</th>
+                    <th class="px-3 py-2 w-20">Type</th>
+                    <th class="px-3 py-2 w-28 text-right">Amount (₹)</th>
+                    <th class="px-2 py-2 w-10 text-center">Action</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                  <tr v-for="(entry, idx) in form.ledgerEntries" :key="idx" class="hover:bg-slate-50/60">
+                    <!-- Ledger Name (Dropdown or Text) -->
+                    <td class="px-3 py-2">
+                      <input 
+                        type="text"
+                        v-model="entry.ledgerName"
+                        class="w-full text-xs font-semibold px-2 py-1 rounded border border-gray-300 focus:border-indigo-500 outline-none bg-white"
+                        :disabled="idx === 0"
+                        :placeholder="idx === 0 ? 'Party Ledger' : 'Select or type ledger name...'"
+                      />
+                    </td>
+
+                    <!-- Dr / Cr Selector -->
+                    <td class="px-3 py-2">
+                      <select 
+                        v-model="entry.isDeemedPositive"
+                        class="text-xs font-bold px-2 py-1 rounded border border-gray-300 bg-white outline-none"
+                        :disabled="idx === 0"
+                      >
+                        <option :value="true">Dr</option>
+                        <option :value="false">Cr</option>
+                      </select>
+                    </td>
+
+                    <!-- Amount Input -->
+                    <td class="px-3 py-2 text-right">
+                      <input 
+                        type="number"
+                        step="0.01"
+                        v-model.number="entry.amount"
+                        @input="onAmountChanged"
+                        class="w-full text-right text-xs font-bold font-mono px-2 py-1 rounded border border-gray-300 focus:border-indigo-500 outline-none bg-white"
+                      />
+                    </td>
+
+                    <!-- Delete button -->
+                    <td class="px-2 py-2 text-center">
+                      <button 
+                        v-if="idx !== 0"
+                        type="button"
+                        @click="removeLedgerRow(idx)"
+                        class="text-gray-400 hover:text-red-600 transition-colors cursor-pointer p-1"
+                        title="Remove entry"
+                      >
+                        <Trash2 class="w-3.5 h-3.5" />
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Live Balance Status Indicator -->
+          <div 
+            class="p-3 rounded-xl border flex items-center justify-between text-xs"
+            :class="isBalanced ? 'bg-emerald-50 border-emerald-200 text-emerald-900' : 'bg-rose-50 border-rose-200 text-rose-900'"
+          >
+            <div class="flex items-center gap-2">
+              <CheckCircle2 v-if="isBalanced" class="w-4 h-4 text-emerald-600 shrink-0" />
+              <AlertTriangle v-else class="w-4 h-4 text-rose-600 shrink-0" />
+              <span class="font-bold">
+                {{ isBalanced ? 'Balanced: Debits = Credits' : `Imbalanced by ₹${imbalanceDiff.toFixed(2)}` }}
+              </span>
+            </div>
+            <div class="text-[11px] font-mono">
+              <span>Dr: ₹{{ totalDr.toFixed(2) }}</span>
+              <span class="mx-1.5">|</span>
+              <span>Cr: ₹{{ totalCr.toFixed(2) }}</span>
+            </div>
+          </div>
+
+          <!-- Feedback Alert Message -->
+          <div v-if="postFeedback" class="p-3 rounded-xl text-xs font-medium" :class="postFeedback.success ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : 'bg-red-50 border border-red-200 text-red-800'">
+            <div class="flex items-center gap-2 font-bold">
+              <CheckCircle2 v-if="postFeedback.success" class="w-4 h-4 text-emerald-600" />
+              <AlertCircle v-else class="w-4 h-4 text-red-600" />
+              <span>{{ postFeedback.success ? 'Successfully Posted to Tally Prime!' : 'Posting Error from Tally Prime:' }}</span>
+            </div>
+            <p class="mt-1 text-[11px] leading-relaxed break-words">{{ postFeedback.message }}</p>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- Bottom Action Bar -->
+      <div class="px-6 py-4 border-t border-gray-200 bg-slate-50/80 flex items-center justify-between shrink-0">
+        <button 
+          type="button" 
+          @click="close"
+          class="px-4 py-2 text-xs font-bold text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-xl transition-colors cursor-pointer"
+        >
+          Cancel
+        </button>
+
+        <div class="flex items-center gap-3">
+          <button 
+            type="button"
+            :disabled="!isBalanced || isPosting"
+            @click="postToTally"
+            class="px-5 py-2.5 text-xs font-black text-white rounded-xl shadow-sm transition-all flex items-center gap-2 cursor-pointer active:scale-95"
+            :class="[
+              isBalanced && !isPosting 
+                ? 'bg-indigo-600 hover:bg-indigo-700 hover:shadow-md' 
+                : 'bg-gray-400 cursor-not-allowed opacity-60'
+            ]"
+          >
+            <Loader2 v-if="isPosting" class="w-4 h-4 animate-spin" />
+            <Send v-else class="w-4 h-4" />
+            <span>{{ isPosting ? 'Posting to Port 9000...' : 'Post to Tally Prime (Port 9000)' }}</span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, computed, watch } from 'vue'
+import {
+  ArrowLeftRight,
+  X,
+  Plus,
+  Trash2,
+  Check,
+  CheckCircle2,
+  AlertTriangle,
+  AlertCircle,
+  Send,
+  Loader2
+} from 'lucide-vue-next'
+import type { PreparedVoucherItem, FormattedTallyEntry } from '~~/server/api/tally/vouchers.get'
+
+const props = defineProps<{
+  isOpen: boolean
+  voucher: PreparedVoucherItem | null
+  availableTallyDebtors: string[]
+  availableVoucherTypes: string[]
+}>()
+
+const emit = defineEmits<{
+  (e: 'close'): void
+  (e: 'posted', voucherNo: string): void
+}>()
+
+// State
+const form = ref<{
+  voucherType: string
+  voucherNo: string
+  date: string // YYYYMMDD
+  partyLedgerName: string
+  narration: string
+  saveMapping: boolean
+  ledgerEntries: FormattedTallyEntry[]
+}>({
+  voucherType: 'Sales',
+  voucherNo: '',
+  date: '',
+  partyLedgerName: '',
+  narration: '',
+  saveMapping: true,
+  ledgerEntries: []
+})
+
+const formDisplayDate = ref<string>('')
+const partySearchQuery = ref<string>('')
+const showPartyDropdown = ref(false)
+const isPosting = ref(false)
+const postFeedback = ref<{ success: boolean; message: string } | null>(null)
+
+// Initialize form when voucher changes
+watch(() => props.voucher, (v) => {
+  if (!v) return
+  postFeedback.value = null
+
+  // Date formatted for date input: YYYY-MM-DD
+  const rawDate = v.voucherDate || ''
+  if (rawDate.length === 8) {
+    const y = rawDate.slice(0, 4)
+    const m = rawDate.slice(4, 6)
+    const d = rawDate.slice(6, 8)
+    formDisplayDate.value = `${y}-${m}-${d}`
+  } else {
+    formDisplayDate.value = new Date().toISOString().slice(0, 10)
+  }
+
+  const party = v.mappedTallyParty || v.suggestedTallyParty || v.customerName
+  partySearchQuery.value = party
+
+  form.value = {
+    voucherType: 'Sales',
+    voucherNo: v.voucherNo,
+    date: v.voucherDate,
+    partyLedgerName: party,
+    narration: `Sales of Goods - ${v.voucherNo}`,
+    saveMapping: !v.isMapped,
+    ledgerEntries: JSON.parse(JSON.stringify(v.defaultTallyEntries || []))
+  }
+
+  // Ensure first entry is party debit
+  if (form.value.ledgerEntries.length > 0) {
+    form.value.ledgerEntries[0].ledgerName = party
+    form.value.ledgerEntries[0].isDeemedPositive = true
+    form.value.ledgerEntries[0].amount = Math.abs(v.totalAmount)
+  }
+}, { immediate: true })
+
+// Sync date input to YYYYMMDD
+watch(formDisplayDate, (val) => {
+  if (!val) return
+  form.value.date = val.replace(/-/g, '')
+})
+
+// Filter debtors for autocomplete
+const filteredTallyDebtors = computed(() => {
+  const q = partySearchQuery.value.toLowerCase().trim()
+  if (!q) return props.availableTallyDebtors.slice(0, 30)
+  return props.availableTallyDebtors.filter(d => d.toLowerCase().includes(q)).slice(0, 30)
+})
+
+const selectPartyLedger = (ledger: string) => {
+  form.value.partyLedgerName = ledger
+  partySearchQuery.value = ledger
+  showPartyDropdown.value = false
+  if (form.value.ledgerEntries.length > 0) {
+    form.value.ledgerEntries[0].ledgerName = ledger
+  }
+}
+
+// Ledger Rows management
+const addLedgerRow = () => {
+  form.value.ledgerEntries.push({
+    ledgerName: 'Sales GST@18%',
+    amount: 0,
+    isDeemedPositive: false,
+    type: 'SALES'
+  })
+}
+
+const removeLedgerRow = (idx: number) => {
+  if (idx === 0) return // Cannot remove party row
+  form.value.ledgerEntries.splice(idx, 1)
+}
+
+const onAmountChanged = () => {
+  // Triggers reactivity
+}
+
+// Live Balance Calculation
+const totalDr = computed(() => {
+  return form.value.ledgerEntries
+    .filter(e => e.isDeemedPositive)
+    .reduce((sum, e) => sum + Math.abs(Number(e.amount) || 0), 0)
+})
+
+const totalCr = computed(() => {
+  return form.value.ledgerEntries
+    .filter(e => !e.isDeemedPositive)
+    .reduce((sum, e) => sum + Math.abs(Number(e.amount) || 0), 0)
+})
+
+const imbalanceDiff = computed(() => {
+  return Math.abs(totalDr.value - totalCr.value)
+})
+
+const isBalanced = computed(() => {
+  return imbalanceDiff.value <= 0.05
+})
+
+// Close Modal
+const close = () => {
+  showPartyDropdown.value = false
+  emit('close')
+}
+
+// Post to Tally Prime
+const postToTally = async () => {
+  if (!isBalanced.value || !props.voucher) return
+
+  isPosting.value = true
+  postFeedback.value = null
+
+  try {
+    const payload = {
+      voucherId: props.voucher.id,
+      voucherNo: form.value.voucherNo,
+      voucherType: form.value.voucherType,
+      date: form.value.date,
+      partyLedgerName: form.value.partyLedgerName,
+      narration: form.value.narration,
+      ledgerEntries: form.value.ledgerEntries,
+      busyPartyName: props.voucher.customerName,
+      saveMapping: form.value.saveMapping
+    }
+
+    const res = await $fetch<any>('/api/tally/post-voucher', {
+      method: 'POST',
+      body: payload
+    })
+
+    if (res.success) {
+      postFeedback.value = {
+        success: true,
+        message: `Voucher ${res.voucherNo} successfully created in company "${res.company}" on Tally Prime!`
+      }
+      emit('posted', res.voucherNo)
+      setTimeout(() => {
+        close()
+      }, 1400)
+    } else {
+      postFeedback.value = {
+        success: false,
+        message: res.error || 'Tally Prime rejected the voucher.'
+      }
+    }
+  } catch (err: any) {
+    postFeedback.value = {
+      success: false,
+      message: err.data?.statusMessage || err.message || 'Failed connecting to Tally Prime'
+    }
+  } finally {
+    isPosting.value = false
+  }
+}
+</script>

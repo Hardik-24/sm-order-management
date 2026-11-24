@@ -473,6 +473,13 @@
                       Ledger PDF
                     </span>
                     <span 
+                      v-if="getEffectiveActionPermissions(u).canPostBusyToTally"
+                      class="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-800 border border-indigo-200"
+                      title="Can Post BUSY to Tally"
+                    >
+                      Tally Sync
+                    </span>
+                    <span 
                       v-if="u.role === 'SALES'"
                       class="text-[9px] font-semibold px-1.5 py-0.5 rounded border"
                       :class="getEffectiveActionPermissions(u).canViewAllCompanyOrders 
@@ -483,7 +490,7 @@
                       {{ getEffectiveActionPermissions(u).canViewAllCompanyOrders ? 'All Company Scope' : 'My Scope Only' }}
                     </span>
                     <span 
-                      v-if="!getEffectiveActionPermissions(u).canEditOrders && !getEffectiveActionPermissions(u).canEditOrderStatus && !getEffectiveActionPermissions(u).canCancelOrders && !getEffectiveActionPermissions(u).canEditCustomers && !getEffectiveActionPermissions(u).canEditProducts && !getEffectiveActionPermissions(u).canDeleteQuotations && !getEffectiveActionPermissions(u).canLinkBusyData && !getEffectiveActionPermissions(u).canEditConvertedQuotationOrders && !getEffectiveActionPermissions(u).canManageBatches && !getEffectiveActionPermissions(u).canDownloadPartyLedger"
+                      v-if="!getEffectiveActionPermissions(u).canEditOrders && !getEffectiveActionPermissions(u).canEditOrderStatus && !getEffectiveActionPermissions(u).canCancelOrders && !getEffectiveActionPermissions(u).canEditCustomers && !getEffectiveActionPermissions(u).canEditProducts && !getEffectiveActionPermissions(u).canDeleteQuotations && !getEffectiveActionPermissions(u).canLinkBusyData && !getEffectiveActionPermissions(u).canEditConvertedQuotationOrders && !getEffectiveActionPermissions(u).canManageBatches && !getEffectiveActionPermissions(u).canDownloadPartyLedger && !getEffectiveActionPermissions(u).canPostBusyToTally"
                       class="text-[9px] text-gray-400 italic"
                     >
                       No action permissions
@@ -708,6 +715,12 @@
                     class="text-[9px] font-semibold px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-800 border border-emerald-200"
                   >
                     Ledger PDF
+                  </span>
+                  <span 
+                    v-if="getEffectiveActionPermissions(u).canPostBusyToTally"
+                    class="text-[9px] font-semibold px-1.5 py-0.2 rounded bg-indigo-50 text-indigo-800 border border-indigo-200"
+                  >
+                    Tally Sync
                   </span>
                   <span 
                     v-if="u.role === 'SALES'"
@@ -1314,6 +1327,41 @@
                     </p>
                   </div>
                 </div>
+
+                <!-- 12. Post BUSY to Tally -->
+                <div
+                  @click="toggleActionPermission('canPostBusyToTally')"
+                  class="p-3 rounded-lg border text-left transition-all flex items-start gap-2.5 select-none"
+                  :class="[
+                    form.role === 'ADMIN' ? 'cursor-not-allowed bg-purple-50/30 border-purple-200' : 'cursor-pointer',
+                    form.actionPermissions.canPostBusyToTally 
+                      ? 'border-indigo-600 bg-indigo-50/20 text-[#1a1a1a] shadow-2xs' 
+                      : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50/60'
+                  ]"
+                >
+                  <div class="mt-0.5 shrink-0">
+                    <div 
+                      class="w-4 h-4 rounded border flex items-center justify-center transition-colors"
+                      :class="form.actionPermissions.canPostBusyToTally ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-gray-300 bg-white'"
+                    >
+                      <Check v-if="form.actionPermissions.canPostBusyToTally" class="w-3 h-3 stroke-[3]" />
+                    </div>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center justify-between gap-1">
+                      <span class="text-xs font-semibold text-gray-900">Post BUSY Vouchers to Tally</span>
+                      <span 
+                        class="text-[10px] font-semibold px-1.5 py-0.2 rounded"
+                        :class="form.actionPermissions.canPostBusyToTally ? 'bg-indigo-100 text-indigo-800' : 'bg-gray-100 text-gray-500'"
+                      >
+                        {{ form.actionPermissions.canPostBusyToTally ? 'Granted' : 'Blocked' }}
+                      </span>
+                    </div>
+                    <p class="text-[11px] text-gray-500 mt-0.5 leading-snug">
+                      Allow reviewing, previewing, and posting BUSY sales vouchers into Tally Prime via XML and managing party mappings. Disabled by default for all non-admins.
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -1822,6 +1870,7 @@ const onRoleChanged = (newRole: any) => {
       canEditConvertedQuotationOrders: true,
       canManageBatches: true,
       canDownloadPartyLedger: true,
+      canPostBusyToTally: true,
     }
   } else {
     form.value.allowedPages = form.value.allowedPages.filter(k => k !== 'ADMIN')
@@ -1840,6 +1889,7 @@ const onRoleChanged = (newRole: any) => {
       canEditConvertedQuotationOrders: false,
       canManageBatches: false,
       canDownloadPartyLedger: false,
+      canPostBusyToTally: false,
     }
     form.value.actionPermissions = { ...defaultActions }
   }
@@ -1980,7 +2030,7 @@ const openModal = (u: any = null) => {
       isActive: u.isActive !== false,
       allowedPages: u.role === 'ADMIN' ? APP_PAGES.map(p => p.key) : [...effective],
       actionPermissions: u.role === 'ADMIN' 
-        ? { canEditOrders: true, canEditOrderStatus: true, canCancelOrders: true, canEditCustomers: true, canEditProducts: true, canDeleteQuotations: true, canViewAllCompanyOrders: true, canLinkBusyData: true, canEditConvertedQuotationOrders: true, canManageBatches: true, canDownloadPartyLedger: true }
+        ? { canEditOrders: true, canEditOrderStatus: true, canCancelOrders: true, canEditCustomers: true, canEditProducts: true, canDeleteQuotations: true, canViewAllCompanyOrders: true, canLinkBusyData: true, canEditConvertedQuotationOrders: true, canManageBatches: true, canDownloadPartyLedger: true, canPostBusyToTally: true }
         : { ...effectiveActions }
     }
   } else {
@@ -1998,6 +2048,7 @@ const openModal = (u: any = null) => {
       canEditConvertedQuotationOrders: false,
       canManageBatches: false,
       canDownloadPartyLedger: false,
+      canPostBusyToTally: false,
     }
     form.value = {
       name: '',
@@ -2049,6 +2100,7 @@ const saveUser = async () => {
         canEditConvertedQuotationOrders: true,
         canManageBatches: true,
         canDownloadPartyLedger: true,
+        canPostBusyToTally: true,
       }
     : { ...form.value.actionPermissions }
 

@@ -20,6 +20,7 @@ export interface UserActionPermissions {
   canEditConvertedQuotationOrders: boolean
   canManageBatches?: boolean
   canDownloadPartyLedger?: boolean
+  canPostBusyToTally?: boolean
 }
 
 export interface SessionUser {

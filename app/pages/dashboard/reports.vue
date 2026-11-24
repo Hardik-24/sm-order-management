@@ -12,8 +12,9 @@
         </p>
       </div>
 
-      <!-- Single Tile: Party Ledger Statement -->
+      <!-- Tiles Grid -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <!-- Tile 1: Party Ledger Statement -->
         <div
           @click="openPartyLedgerModal"
           class="group relative bg-white rounded-2xl border-2 border-emerald-500/30 hover:border-emerald-500 p-6 shadow-sm hover:shadow-xl transition-all duration-200 flex flex-col justify-between cursor-pointer active:scale-[0.99] bg-gradient-to-br from-white via-white to-emerald-50/20"
@@ -56,6 +57,57 @@
             </span>
           </div>
         </div>
+
+        <!-- Tile 2: BUSY to Tally Voucher Posting -->
+        <div
+          @click="openBusyToTallyModal"
+          class="group relative bg-white rounded-2xl border-2 border-indigo-500/30 hover:border-indigo-500 p-6 shadow-sm hover:shadow-xl transition-all duration-200 flex flex-col justify-between cursor-pointer active:scale-[0.99] bg-gradient-to-br from-white via-white to-indigo-50/25"
+          :class="{ 'opacity-70 cursor-not-allowed': !canPostBusyToTally && user?.role !== 'ADMIN' }"
+        >
+          <!-- Icon & Info -->
+          <div class="space-y-3 mb-6">
+            <div class="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-200 text-indigo-700 flex items-center justify-center shadow-2xs group-hover:bg-indigo-600 group-hover:text-white transition-colors duration-200">
+              <Layers class="w-6 h-6" />
+            </div>
+
+            <div>
+              <h3 class="text-base sm:text-lg font-black text-gray-950 group-hover:text-indigo-700 transition-colors flex items-center gap-2">
+                <span>BUSY to Tally Voucher Posting</span>
+                <ArrowUpRight class="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </h3>
+              <p class="text-xs text-gray-600 leading-relaxed mt-1.5">
+                Inspect, review side-by-side, edit fields, and post unposted BUSY sales vouchers into Tally Prime with auto party and GST mapping.
+              </p>
+            </div>
+
+            <!-- Features Tags -->
+            <div class="flex items-center gap-1.5 flex-wrap pt-1 text-[10px] font-bold text-gray-500">
+              <span class="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200">Side-by-Side Review</span>
+              <span class="px-2 py-0.5 rounded-md bg-slate-100 border border-slate-200">Editable Override</span>
+              <span class="px-2 py-0.5 rounded-md bg-slate-100 border border-slate-200">Port 9000 Direct</span>
+            </div>
+          </div>
+
+          <!-- Bottom Action Button -->
+          <div class="pt-4 border-t border-gray-100 flex items-center justify-between">
+            <span class="text-xs font-bold text-indigo-700 flex items-center gap-1.5 group-hover:translate-x-0.5 transition-transform">
+              <span>Open Voucher Posting Manager</span>
+              <ChevronRight class="w-4 h-4" />
+            </span>
+            <span
+              v-if="!canPostBusyToTally && user?.role !== 'ADMIN'"
+              class="text-[9px] font-bold px-2 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-200"
+            >
+              Permission Locked
+            </span>
+            <span
+              v-else
+              class="text-[9px] font-bold px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200"
+            >
+              Active
+            </span>
+          </div>
+        </div>
       </div>
     </main>
 
@@ -63,6 +115,12 @@
     <PartyLedgerReportModal
       :is-open="isPartyLedgerModalOpen"
       @close="isPartyLedgerModalOpen = false"
+    />
+
+    <!-- Modal Mount: BUSY to Tally Voucher Posting Manager -->
+    <BusyToTallyPostingManager
+      :is-open="isBusyToTallyModalOpen"
+      @close="isBusyToTallyModalOpen = false"
     />
   </div>
 </template>
@@ -72,17 +130,25 @@ import { ref } from 'vue'
 import {
   FileSpreadsheet,
   ChevronRight,
-  ArrowUpRight
+  ArrowUpRight,
+  Layers
 } from 'lucide-vue-next'
 import PartyLedgerReportModal from '~/components/reports/PartyLedgerReportModal.vue'
+import BusyToTallyPostingManager from '~/components/tally/BusyToTallyPostingManager.vue'
 
 definePageMeta({ layout: 'dashboard' })
 
-const { user, canDownloadPartyLedger } = useAuth()
+const { user, canDownloadPartyLedger, canPostBusyToTally } = useAuth()
 
 const isPartyLedgerModalOpen = ref(false)
+const isBusyToTallyModalOpen = ref(false)
 
 const openPartyLedgerModal = () => {
   isPartyLedgerModalOpen.value = true
+}
+
+const openBusyToTallyModal = () => {
+  if (!canPostBusyToTally.value && user.value?.role !== 'ADMIN') return
+  isBusyToTallyModalOpen.value = true
 }
 </script>

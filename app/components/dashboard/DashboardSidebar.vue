@@ -136,9 +136,9 @@
             <Receipt class="shrink-0 w-4 h-4 transition-colors" :class="isLinkActive('/dashboard/vouchers') ? 'text-sky-400' : 'text-gray-400'" />
             <span v-if="!isSidebarCollapsed" class="font-medium whitespace-nowrap">BUSY Vouchers</span>
           </NuxtLink>
-          <NuxtLink v-if="canAccessRoute('/dashboard/reports')" to="/dashboard/reports" title="Reports" class="flex items-center gap-3 rounded-md py-2.5 text-sm transition-colors" :class="[isLinkActive('/dashboard/reports') ? 'bg-[#182d47] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50 hover:text-gray-200', isSidebarCollapsed ? 'justify-center px-0' : 'px-3']">
+          <NuxtLink v-if="canAccessRoute('/dashboard/reports')" to="/dashboard/reports" title="Reports & Syncing" class="flex items-center gap-3 rounded-md py-2.5 text-sm transition-colors" :class="[isLinkActive('/dashboard/reports') ? 'bg-[#182d47] text-[#e8e0d4]' : 'text-gray-400 hover:bg-gray-800/50 hover:text-gray-200', isSidebarCollapsed ? 'justify-center px-0' : 'px-3']">
             <FileSpreadsheet class="shrink-0 w-4 h-4 transition-colors" :class="isLinkActive('/dashboard/reports') ? 'text-sky-400' : 'text-gray-400'" />
-            <span v-if="!isSidebarCollapsed" class="font-medium whitespace-nowrap">Reports</span>
+            <span v-if="!isSidebarCollapsed" class="font-medium whitespace-nowrap">Reports & Syncing</span>
           </NuxtLink>
         </nav>
       </div>
@@ -589,8 +589,8 @@
                   <FileSpreadsheet class="w-4 h-4" />
                 </div>
                 <div class="flex flex-col min-w-0">
-                  <span class="text-xs font-semibold text-gray-100">Reports</span>
-                  <span class="text-[10px] text-gray-400">Party ledgers & statements</span>
+                  <span class="text-xs font-semibold text-gray-100">Reports & Syncing</span>
+                  <span class="text-[10px] text-gray-400">Party ledgers, statements & Tally sync</span>
                 </div>
               </div>
               <ChevronRight class="w-4 h-4 text-gray-500" />
