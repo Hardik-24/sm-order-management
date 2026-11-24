@@ -309,11 +309,14 @@ export default defineEventHandler(async (event) => {
     }
 
     const totalBusySales = busyVouchers.reduce((acc, v) => acc + Number(v.totalAmount), 0)
-    const totalTallyBilled = Number(
-      isPurchases
-        ? (tally.summary?.totalPurchased || tally.summary?.totalBilled || 0)
-        : (tally.summary?.totalBilled || tally.summary?.totalOutstanding || 0)
-    )
+    const tallyVoucherTotal = (tally.vouchers || []).reduce((acc: number, v: any) => acc + Number(v.amount || 0), 0)
+    const totalTallyBilled = tallyVoucherTotal > 0
+      ? tallyVoucherTotal
+      : Number(
+          isPurchases
+            ? (tally.summary?.totalPurchased || tally.summary?.totalBilled || 0)
+            : (tally.summary?.totalBilled || tally.summary?.totalOutstanding || 0)
+        )
     const netDiscrepancy = totalBusySales - totalTallyBilled
 
     // Pre-index Busy vouchers by normalized voucher number
@@ -785,6 +788,8 @@ export default defineEventHandler(async (event) => {
           totalBusyPurchases: Math.round(totalBusySales),
           totalTallyBilled: Math.round(totalTallyBilled),
           totalTallyPurchased: Math.round(totalTallyBilled),
+          tallyVoucherCount: (tally.vouchers || []).length,
+          tallyLedgerBilled: Math.round(Number(isPurchases ? (tally.summary?.totalPurchased || 0) : (tally.summary?.totalBilled || 0))),
           netDiscrepancy: Math.round(netDiscrepancy),
           busyVoucherCount: busyVouchers.length,
           tallyDebtorCount: isPurchases ? secondaryParties.length : primaryParties.length,

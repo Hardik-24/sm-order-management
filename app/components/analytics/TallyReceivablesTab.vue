@@ -476,7 +476,7 @@
           <div class="bg-white rounded-2xl p-5 border border-gray-200/80 shadow-xs relative overflow-hidden group hover:border-gray-300 transition-all">
             <div class="flex items-center justify-between">
               <span class="text-xs font-semibold uppercase tracking-wider text-gray-500">
-                {{ activeEntityMode === 'debtors' ? 'Tally Prime Billed' : 'Tally Prime Purchased' }}
+                {{ activeEntityMode === 'debtors' ? 'Tally Sales Register' : 'Tally Purchase Register' }}
               </span>
               <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center border border-blue-200/80">
                 <Building2 class="w-5 h-5" />
@@ -489,17 +489,17 @@
               <div class="flex items-center justify-between text-xs text-gray-500 mt-2">
                 <span>{{ formatCurrency(reconData.summary.totalTallyBilled || reconData.summary.totalTallyPurchased) }}</span>
                 <span class="text-blue-700 font-semibold bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200 text-[11px]">
-                  {{ formatNumber(activeEntityMode === 'debtors' ? reconData.summary.tallyDebtorCount : reconData.summary.tallyCreditorCount) }} {{ activeEntityMode === 'debtors' ? 'Debtors' : 'Creditors' }}
+                  {{ formatNumber(reconData.summary.tallyVoucherCount || (activeEntityMode === 'debtors' ? reconData.summary.tallyDebtorCount : reconData.summary.tallyCreditorCount)) }} {{ reconData.summary.tallyVoucherCount ? (activeEntityMode === 'debtors' ? 'Invoices' : 'Purchases') : (activeEntityMode === 'debtors' ? 'Debtors' : 'Creditors') }}
                 </span>
               </div>
             </div>
             <div class="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-indigo-500"></div>
           </div>
 
-          <!-- 3. Net Ledger Discrepancy -->
+          <!-- 3. Net Register Discrepancy -->
           <div class="bg-white rounded-2xl p-5 border border-gray-200/80 shadow-xs relative overflow-hidden group hover:border-gray-300 transition-all">
             <div class="flex items-center justify-between">
-              <span class="text-xs font-semibold uppercase tracking-wider text-rose-700">Net Ledger Discrepancy</span>
+              <span class="text-xs font-semibold uppercase tracking-wider text-rose-700">Net Discrepancy</span>
               <div class="w-9 h-9 rounded-xl bg-rose-50 text-rose-700 flex items-center justify-center border border-rose-200/80">
                 <AlertTriangle class="w-5 h-5" />
               </div>
