@@ -5,7 +5,9 @@ import { prisma } from '~~/server/utils/prisma'
 
 export interface TallyLedgersResponse {
   debtors: string[]
+  creditors: string[]
   salesAccounts: string[]
+  purchaseAccounts: string[]
   taxAccounts: string[]
   roundOffAccounts: string[]
   voucherTypes: string[]
@@ -16,10 +18,12 @@ export default defineEventHandler(async (event): Promise<TallyLedgersResponse> =
   await requireActionPermission(event, 'canPostBusyToTally')
 
   const debtors = new Set<string>()
+  const creditors = new Set<string>()
   const salesAccounts = new Set<string>()
+  const purchaseAccounts = new Set<string>()
   const taxAccounts = new Set<string>()
   const roundOffAccounts = new Set<string>()
-  const voucherTypes = new Set<string>(['Sales', 'Sales - Manual Series'])
+  const voucherTypes = new Set<string>(['Sales', 'Purchase'])
   const allLedgers: Array<{ name: string; parent: string }> = []
 
   // 1. Try Live Tally Query on port 9000
@@ -56,8 +60,12 @@ export default defineEventHandler(async (event): Promise<TallyLedgersResponse> =
 
       if (parentUpper.includes('SUNDRY DEBTOR')) {
         debtors.add(name)
+      } else if (parentUpper.includes('SUNDRY CREDITOR')) {
+        creditors.add(name)
       } else if (parentUpper.includes('SALES')) {
         salesAccounts.add(name)
+      } else if (parentUpper.includes('PURCHASE')) {
+        purchaseAccounts.add(name)
       } else if (parentUpper.includes('DUTIES') || parentUpper.includes('TAX') || parentUpper === 'GST' || nameUpper.includes('CGST') || nameUpper.includes('SGST') || nameUpper.includes('IGST')) {
         taxAccounts.add(name)
       } else if (nameUpper.includes('ROUND')) {
@@ -73,45 +81,71 @@ export default defineEventHandler(async (event): Promise<TallyLedgersResponse> =
       for (const m of vtMatches) {
         const vtName = m[1].trim()
         const vtParent = m[2].trim()
-        if (vtParent.toLowerCase() === 'sales' || vtName.toLowerCase().includes('sales')) {
+        if (vtParent.toLowerCase() === 'sales' || vtName.toLowerCase().includes('sales') || vtParent.toLowerCase() === 'purchase' || vtName.toLowerCase().includes('purchase')) {
           voucherTypes.add(vtName)
         }
       }
     } catch (_) {}
 
   } catch (err) {
-    // 2. Fallback to cached receivables data if Tally is temporarily closed
-    try {
-      const rec = await prisma.systemSetting.findUnique({ where: { key: 'tally_receivables_data' } })
-      if (rec?.value) {
-        const parsed = JSON.parse(rec.value)
-        if (Array.isArray(parsed.parties)) {
-          for (const p of parsed.parties) {
-            if (p.party) debtors.add(p.party.trim())
-          }
+    // 2. Fallback to cached receivables & payables data if Tally is temporarily closed
+  }
+
+  // Load from cached receivables & payables data in systemSetting
+  try {
+    const [rec, pay] = await Promise.all([
+      prisma.systemSetting.findUnique({ where: { key: 'tally_receivables_data' } }),
+      prisma.systemSetting.findUnique({ where: { key: 'tally_payables_data' } }),
+    ])
+
+    if (rec?.value) {
+      const parsed = JSON.parse(rec.value)
+      if (Array.isArray(parsed.parties)) {
+        for (const p of parsed.parties) {
+          if (p.party) debtors.add(p.party.trim())
         }
       }
-    } catch (_) {}
-  }
+    }
+
+    if (pay?.value) {
+      const parsedPay = JSON.parse(pay.value)
+      if (Array.isArray(parsedPay.parties)) {
+        for (const p of parsedPay.parties) {
+          if (p.party) creditors.add(p.party.trim())
+        }
+      }
+    }
+  } catch (_) {}
 
   // Ensure standard fallbacks exist
   const defaultSales = ['Sales GST@18%', 'Sales GST@28%', 'Sales GST@12%', 'Sales GST@5%', 'Sales IGST@18%']
   for (const s of defaultSales) salesAccounts.add(s)
+
+  const defaultPurchases = ['Purchase GST@18%', 'Purchase GST@28%', 'Purchase GST@12%', 'Purchase GST@5%', 'Purchase IGST@18%']
+  for (const p of defaultPurchases) purchaseAccounts.add(p)
 
   const defaultTaxes = [
     'Output CGST@9%', 'Output SGST@9%',
     'Output CGST@14%', 'Output SGST@14%',
     'Output CGST@6%', 'Output SGST@6%',
     'Output CGST@2.5%', 'Output SGST@2.5%',
-    'Output IGST@18%', 'Output IGST@28%', 'Output IGST@12%', 'Output IGST@5%'
+    'Output IGST@18%', 'Output IGST@28%', 'Output IGST@12%', 'Output IGST@5%',
+    'Input CGST@9%', 'Input SGST@9%',
+    'Input CGST@14%', 'Input SGST@14%',
+    'Input CGST@6%', 'Input SGST@6%',
+    'Input CGST@2.5%', 'Input SGST@2.5%',
+    'Input IGST@18%', 'Input IGST@28%', 'Input IGST@12%', 'Input IGST@5%'
   ]
   for (const t of defaultTaxes) taxAccounts.add(t)
 
   roundOffAccounts.add('Sales Rounding Off')
+  roundOffAccounts.add('Rounding Off')
 
   return {
     debtors: Array.from(debtors).sort(),
+    creditors: Array.from(creditors).sort(),
     salesAccounts: Array.from(salesAccounts).sort(),
+    purchaseAccounts: Array.from(purchaseAccounts).sort(),
     taxAccounts: Array.from(taxAccounts).sort(),
     roundOffAccounts: Array.from(roundOffAccounts).sort(),
     voucherTypes: Array.from(voucherTypes).sort(),

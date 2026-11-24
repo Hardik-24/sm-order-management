@@ -23,6 +23,9 @@
               >
                 {{ voucher.isPosted ? 'Already Posted' : 'Ready to Review & Post' }}
               </span>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800">
+                {{ voucher.voucherType || 'Sales' }}
+              </span>
             </div>
             <p class="text-xs text-gray-500">
               Side-by-side comparison: verify the BUSY source on the left and edit or override Tally fields on the right.
@@ -51,7 +54,7 @@
               BUSY Source of Truth (Uneditable)
             </span>
             <span class="text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
-              Series: {{ voucher.series }}
+              {{ voucher.voucherType === 'Purchase' ? 'Purchase Invoice' : `Series: ${voucher.series}` }}
             </span>
           </div>
 
@@ -65,9 +68,17 @@
               <span class="text-gray-500 font-medium">Invoice Date</span>
               <span class="font-semibold text-gray-800">{{ voucher.displayDate }}</span>
             </div>
-            <div class="flex justify-between items-start py-1">
-              <span class="text-gray-500 font-medium shrink-0">Party (Customer)</span>
+            <div class="flex justify-between items-start py-1 border-b border-slate-200/60">
+              <span class="text-gray-500 font-medium shrink-0">
+                {{ voucher.voucherType === 'Purchase' ? 'Supplier (Creditor)' : 'Customer (Debtor)' }}
+              </span>
               <span class="font-bold text-gray-900 text-right break-words max-w-[200px]">{{ voucher.customerName }}</span>
+            </div>
+            <div class="flex justify-between items-start py-1">
+              <span class="text-gray-500 font-medium shrink-0">BUSY Remarks</span>
+              <span class="text-gray-600 text-right italic break-words max-w-[200px]">
+                {{ voucher.narration || 'No remarks recorded in BUSY' }}
+              </span>
             </div>
           </div>
 
@@ -187,7 +198,7 @@
           <div class="bg-indigo-50/40 p-3.5 rounded-xl border border-indigo-100 space-y-2">
             <div class="flex items-center justify-between">
               <label class="block text-[11px] font-black uppercase tracking-wider text-indigo-950">
-                Party Ledger Name in Tally
+                Party Ledger Name in Tally ({{ voucher.voucherType === 'Purchase' ? 'Sundry Creditor' : 'Sundry Debtor' }})
               </label>
               <span 
                 v-if="voucher.isMapped"
@@ -209,17 +220,17 @@
                 v-model="partySearchQuery"
                 @focus="showPartyDropdown = true"
                 class="w-full text-xs font-bold px-3 py-2 rounded-lg border border-indigo-200 bg-white text-gray-900 shadow-2xs focus:ring-2 focus:ring-indigo-500 outline-none"
-                placeholder="Type or select Tally ledger name..."
+                :placeholder="voucher.voucherType === 'Purchase' ? 'Type or select Supplier ledger...' : 'Type or select Customer ledger...'"
               />
 
               <!-- Suggestions Dropdown -->
               <div 
-                v-if="showPartyDropdown && filteredTallyDebtors.length > 0"
+                v-if="showPartyDropdown && filteredTallyParties.length > 0"
                 class="absolute left-0 right-0 top-full mt-1 z-30 max-h-48 overflow-y-auto bg-white rounded-lg shadow-xl border border-gray-200 divide-y divide-gray-100"
               >
                 <button
                   type="button"
-                  v-for="d in filteredTallyDebtors"
+                  v-for="d in filteredTallyParties"
                   :key="d"
                   @click="selectPartyLedger(d)"
                   class="w-full text-left px-3 py-2 text-xs hover:bg-indigo-50 transition-colors flex items-center justify-between"
@@ -244,15 +255,63 @@
             </label>
           </div>
 
-          <!-- Narration -->
-          <div>
-            <label class="block text-[11px] font-bold text-gray-700 mb-1">Narration</label>
-            <input 
-              type="text" 
+          <!-- Tally Narration (Prominent, Multi-line & Tag Supported) -->
+          <div class="bg-slate-50/80 p-3.5 rounded-xl border border-gray-200 space-y-2">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-1.5">
+                <FileText class="w-3.5 h-3.5 text-indigo-600" />
+                <label class="block text-[11px] font-black uppercase tracking-wider text-gray-800">
+                  Tally Narration (Editable Preview)
+                </label>
+              </div>
+              <button 
+                type="button" 
+                @click="resetNarration" 
+                class="text-[10px] font-semibold text-gray-500 hover:text-indigo-600 underline cursor-pointer"
+              >
+                Reset Default
+              </button>
+            </div>
+
+            <textarea 
               v-model="form.narration"
-              class="w-full text-xs px-3 py-1.5 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-indigo-500 outline-none"
-              placeholder="e.g. Sales of Goods - SMG2390"
-            />
+              rows="2"
+              class="w-full text-xs px-3 py-2 rounded-lg border border-gray-300 bg-white font-medium text-gray-800 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none resize-none leading-relaxed"
+              placeholder="Enter voucher narration to post to Tally Prime..."
+            ></textarea>
+
+            <!-- Quick Append Tags -->
+            <div class="flex items-center gap-1.5 flex-wrap pt-0.5">
+              <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mr-1">Quick Add:</span>
+              <button
+                type="button"
+                @click="appendNarrationTag(voucher.customerName)"
+                class="px-2 py-0.5 text-[10px] font-medium bg-white hover:bg-indigo-50 hover:text-indigo-700 text-gray-600 border border-gray-200 rounded-md transition-colors cursor-pointer"
+              >
+                + Party Name
+              </button>
+              <button
+                type="button"
+                @click="appendNarrationTag(`Inv #${voucher.voucherNo}`)"
+                class="px-2 py-0.5 text-[10px] font-medium bg-white hover:bg-indigo-50 hover:text-indigo-700 text-gray-600 border border-gray-200 rounded-md transition-colors cursor-pointer"
+              >
+                + Voucher No
+              </button>
+              <button
+                type="button"
+                @click="appendNarrationTag(`Dt ${voucher.displayDate}`)"
+                class="px-2 py-0.5 text-[10px] font-medium bg-white hover:bg-indigo-50 hover:text-indigo-700 text-gray-600 border border-gray-200 rounded-md transition-colors cursor-pointer"
+              >
+                + Date
+              </button>
+              <button
+                type="button"
+                @click="appendNarrationTag(`Tot ₹${voucher.totalAmount}`)"
+                class="px-2 py-0.5 text-[10px] font-medium bg-white hover:bg-indigo-50 hover:text-indigo-700 text-gray-600 border border-gray-200 rounded-md transition-colors cursor-pointer"
+              >
+                + Grand Total
+              </button>
+            </div>
           </div>
 
           <!-- Accounting Ledger Rows Breakdown (Editable Table) -->
@@ -282,7 +341,7 @@
                 </thead>
                 <tbody class="divide-y divide-gray-100">
                   <tr v-for="(entry, idx) in form.ledgerEntries" :key="idx" class="hover:bg-slate-50/60">
-                    <!-- Ledger Name (Dropdown or Text) -->
+                    <!-- Ledger Name -->
                     <td class="px-3 py-2">
                       <input 
                         type="text"
@@ -298,32 +357,32 @@
                       <select 
                         v-model="entry.isDeemedPositive"
                         class="text-xs font-bold px-2 py-1 rounded border border-gray-300 bg-white outline-none"
-                        :disabled="idx === 0"
+                        :class="entry.isDeemedPositive ? 'text-blue-700 bg-blue-50/50' : 'text-emerald-700 bg-emerald-50/50'"
                       >
                         <option :value="true">Dr</option>
                         <option :value="false">Cr</option>
                       </select>
                     </td>
 
-                    <!-- Amount Input -->
+                    <!-- Amount -->
                     <td class="px-3 py-2 text-right">
                       <input 
                         type="number"
                         step="0.01"
-                        v-model.number="entry.amount"
-                        @input="onAmountChanged"
-                        class="w-full text-right text-xs font-bold font-mono px-2 py-1 rounded border border-gray-300 focus:border-indigo-500 outline-none bg-white"
+                        :value="Math.abs(entry.amount)"
+                        @input="entry.amount = parseFloat(($event.target as HTMLInputElement).value) || 0"
+                        class="w-24 text-right text-xs font-mono font-bold px-2 py-1 rounded border border-gray-300 focus:border-indigo-500 outline-none bg-white"
                       />
                     </td>
 
-                    <!-- Delete button -->
+                    <!-- Delete Row -->
                     <td class="px-2 py-2 text-center">
                       <button 
-                        v-if="idx !== 0"
                         type="button"
+                        v-if="idx > 0"
                         @click="removeLedgerRow(idx)"
-                        class="text-gray-400 hover:text-red-600 transition-colors cursor-pointer p-1"
-                        title="Remove entry"
+                        class="p-1 text-gray-400 hover:text-red-600 rounded transition-colors cursor-pointer"
+                        title="Remove row"
                       >
                         <Trash2 class="w-3.5 h-3.5" />
                       </button>
@@ -334,19 +393,20 @@
             </div>
           </div>
 
-          <!-- Live Balance Status Indicator -->
+          <!-- Balance Validation Banner -->
           <div 
-            class="p-3 rounded-xl border flex items-center justify-between text-xs"
-            :class="isBalanced ? 'bg-emerald-50 border-emerald-200 text-emerald-900' : 'bg-rose-50 border-rose-200 text-rose-900'"
+            class="px-4 py-2.5 rounded-xl border flex items-center justify-between text-xs font-bold"
+            :class="isBalanced ? 'bg-emerald-50 border-emerald-200 text-emerald-900' : 'bg-red-50 border-red-200 text-red-900'"
           >
             <div class="flex items-center gap-2">
-              <CheckCircle2 v-if="isBalanced" class="w-4 h-4 text-emerald-600 shrink-0" />
-              <AlertTriangle v-else class="w-4 h-4 text-rose-600 shrink-0" />
-              <span class="font-bold">
-                {{ isBalanced ? 'Balanced: Debits = Credits' : `Imbalanced by ₹${imbalanceDiff.toFixed(2)}` }}
+              <CheckCircle2 v-if="isBalanced" class="w-4 h-4 text-emerald-600" />
+              <AlertTriangle v-else class="w-4 h-4 text-red-600" />
+              <span>
+                {{ isBalanced ? 'Debit & Credit Balanced' : `Imbalance Detected! Difference: ₹${imbalanceDiff.toFixed(2)}` }}
               </span>
             </div>
-            <div class="text-[11px] font-mono">
+
+            <div class="flex items-center gap-3 font-mono text-[11px]">
               <span>Dr: ₹{{ totalDr.toFixed(2) }}</span>
               <span class="mx-1.5">|</span>
               <span>Cr: ₹{{ totalCr.toFixed(2) }}</span>
@@ -412,7 +472,8 @@ import {
   AlertTriangle,
   AlertCircle,
   Send,
-  Loader2
+  Loader2,
+  FileText
 } from 'lucide-vue-next'
 import type { PreparedVoucherItem, FormattedTallyEntry } from '~~/server/api/tally/vouchers.get'
 
@@ -420,6 +481,7 @@ const props = defineProps<{
   isOpen: boolean
   voucher: PreparedVoucherItem | null
   availableTallyDebtors: string[]
+  availableTallyCreditors?: string[]
   availableVoucherTypes: string[]
 }>()
 
@@ -473,20 +535,25 @@ watch(() => props.voucher, (v) => {
   partySearchQuery.value = party
 
   form.value = {
-    voucherType: 'Sales',
+    voucherType: v.voucherType || 'Sales',
     voucherNo: v.voucherNo,
     date: v.voucherDate,
     partyLedgerName: party,
-    narration: `Sales of Goods - ${v.voucherNo}`,
+    narration: v.narration || `${v.voucherType || 'Sales'} Invoice - ${v.voucherNo}`,
     saveMapping: !v.isMapped,
     ledgerEntries: JSON.parse(JSON.stringify(v.defaultTallyEntries || []))
   }
 
-  // Ensure first entry is party debit
+  // Ensure first entry is party
   if (form.value.ledgerEntries.length > 0) {
     form.value.ledgerEntries[0].ledgerName = party
-    form.value.ledgerEntries[0].isDeemedPositive = true
-    form.value.ledgerEntries[0].amount = Math.abs(v.totalAmount)
+    if (v.voucherType === 'Purchase') {
+      form.value.ledgerEntries[0].isDeemedPositive = false
+      form.value.ledgerEntries[0].amount = Math.abs(v.totalAmount)
+    } else {
+      form.value.ledgerEntries[0].isDeemedPositive = true
+      form.value.ledgerEntries[0].amount = Math.abs(v.totalAmount)
+    }
   }
 }, { immediate: true })
 
@@ -496,11 +563,16 @@ watch(formDisplayDate, (val) => {
   form.value.date = val.replace(/-/g, '')
 })
 
-// Filter debtors for autocomplete
-const filteredTallyDebtors = computed(() => {
+// Filter parties for autocomplete based on Sales (Debtors) vs Purchase (Creditors)
+const filteredTallyParties = computed(() => {
+  const isPurchase = props.voucher?.voucherType === 'Purchase'
+  const list = isPurchase
+    ? (props.availableTallyCreditors && props.availableTallyCreditors.length > 0 ? props.availableTallyCreditors : props.availableTallyDebtors)
+    : props.availableTallyDebtors
+
   const q = partySearchQuery.value.toLowerCase().trim()
-  if (!q) return props.availableTallyDebtors.slice(0, 30)
-  return props.availableTallyDebtors.filter(d => d.toLowerCase().includes(q)).slice(0, 30)
+  if (!q) return list.slice(0, 30)
+  return list.filter(d => d.toLowerCase().includes(q)).slice(0, 30)
 })
 
 const selectPartyLedger = (ledger: string) => {
@@ -512,13 +584,29 @@ const selectPartyLedger = (ledger: string) => {
   }
 }
 
+// Narration Helpers
+const appendNarrationTag = (tag: string) => {
+  if (!tag) return
+  if (!form.value.narration) {
+    form.value.narration = tag
+  } else {
+    form.value.narration = `${form.value.narration.trim()} - ${tag}`
+  }
+}
+
+const resetNarration = () => {
+  if (!props.voucher) return
+  form.value.narration = props.voucher.narration || `${props.voucher.voucherType || 'Sales'} Invoice - ${props.voucher.voucherNo}`
+}
+
 // Ledger Rows management
 const addLedgerRow = () => {
+  const isPurchase = form.value.voucherType === 'Purchase'
   form.value.ledgerEntries.push({
-    ledgerName: 'Sales GST@18%',
+    ledgerName: isPurchase ? 'Purchase GST@18%' : 'Sales GST@18%',
     amount: 0,
-    isDeemedPositive: false,
-    type: 'SALES'
+    isDeemedPositive: isPurchase ? true : false,
+    type: isPurchase ? 'PURCHASE' : 'SALES'
   })
 }
 
@@ -527,21 +615,17 @@ const removeLedgerRow = (idx: number) => {
   form.value.ledgerEntries.splice(idx, 1)
 }
 
-const onAmountChanged = () => {
-  // Triggers reactivity
-}
-
-// Live Balance Calculation
+// Balance Calculation
 const totalDr = computed(() => {
-  return form.value.ledgerEntries
-    .filter(e => e.isDeemedPositive)
-    .reduce((sum, e) => sum + Math.abs(Number(e.amount) || 0), 0)
+  return form.value.ledgerEntries.reduce((sum, e) => {
+    return e.isDeemedPositive ? sum + Math.abs(Number(e.amount) || 0) : sum
+  }, 0)
 })
 
 const totalCr = computed(() => {
-  return form.value.ledgerEntries
-    .filter(e => !e.isDeemedPositive)
-    .reduce((sum, e) => sum + Math.abs(Number(e.amount) || 0), 0)
+  return form.value.ledgerEntries.reduce((sum, e) => {
+    return !e.isDeemedPositive ? sum + Math.abs(Number(e.amount) || 0) : sum
+  }, 0)
 })
 
 const imbalanceDiff = computed(() => {

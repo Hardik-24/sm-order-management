@@ -61,17 +61,17 @@ export default defineEventHandler(async (event) => {
   const vchDate = (body.date || '').replace(/[^0-9]/g, '') || new Date().toISOString().slice(0, 10).replace(/-/g, '')
   const vchNo = body.voucherNo.trim()
   const partyLedger = body.partyLedgerName.trim()
-  const narration = body.narration || `Sales Invoice ${vchNo}`
+  const narration = body.narration || `${vchType} Invoice ${vchNo}`
 
   const ledgerXmlParts = body.ledgerEntries.map((e, idx) => {
     const isPositive = Boolean(e.isDeemedPositive)
     const rawAmt = Math.abs(Number(e.amount) || 0)
-    // In Tally Accounting Invoice:
+    // In Tally:
     // Debit amount is represented as negative (e.g. -1180.00) with ISDEEMEDPOSITIVE=Yes
     // Credit amount is represented as positive (e.g. 1000.00) with ISDEEMEDPOSITIVE=No
     const formattedAmount = isPositive ? `-${rawAmt.toFixed(2)}` : rawAmt.toFixed(2)
     const escapedLedger = e.ledgerName.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    const isParty = idx === 0 || isPositive
+    const isParty = idx === 0 || e.ledgerName.trim().toLowerCase() === partyLedger.toLowerCase()
 
     return `
       <LEDGERENTRIES.LIST>
