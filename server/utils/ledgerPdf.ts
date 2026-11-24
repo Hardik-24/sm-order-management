@@ -543,20 +543,14 @@ export function generateLedgerVectorPdf(
           cY += 10
         }
 
-        doc.setFont('Inter', 'normal')
-        doc.setFontSize(7.2)
-        doc.setTextColor(100, 116, 139)
         if (partyGstin) {
+          doc.setFont('Inter', 'normal')
+          doc.setFontSize(7.2)
+          doc.setTextColor(100, 116, 139)
           doc.text('GSTIN: ', leftX, cY)
           doc.setFont('Inter', 'bold')
           doc.setTextColor(27, 59, 95)
           doc.text(partyGstin, leftX + doc.getTextWidth('GSTIN: '), cY)
-          doc.setFont('Inter', 'normal')
-          doc.setTextColor(148, 163, 184)
-          doc.text(`  •  ${ledgerData.party.parentGroup || 'Sundry Debtors'}`, leftX + doc.getTextWidth(`GSTIN: ${partyGstin}`), cY)
-        } else {
-          doc.setTextColor(148, 163, 184)
-          doc.text(ledgerData.party.parentGroup || 'Sundry Debtors', leftX, cY)
         }
 
         // --- RIGHT COLUMN: Party Address ---

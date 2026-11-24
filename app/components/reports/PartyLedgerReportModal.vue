@@ -544,6 +544,11 @@ const isRenderingPdf = ref(false)
 const renderError = ref<string | null>(null)
 const canvasRefs = new Map<number, HTMLCanvasElement>()
 const activeRenderTasks = new Map<number, any>()
+const pdfStyleCache = new Map<string, { blob: Blob, doc: any, pagesCount: number }>()
+
+function clearPdfCache() {
+  pdfStyleCache.clear()
+}
 
 function setCanvasRef(pageNum: number, el: any) {
   if (el) {
@@ -628,6 +633,7 @@ const clearSelection = () => {
   pdfDoc.value = null
   pdfPagesCount.value = 0
   canvasRefs.clear()
+  clearPdfCache()
 }
 
 const selectedPartyObj = computed(() => {
@@ -680,6 +686,7 @@ const fetchLedger = async () => {
   if (!selectedParty.value) return
   isLoadingLedger.value = true
   ledgerError.value = null
+  clearPdfCache()
 
   try {
     const res = await $fetch<any>('/api/reports/party-ledger', {
@@ -706,7 +713,20 @@ async function renderPdfPreview() {
   isRenderingPdf.value = true
   renderError.value = null
 
+  const cacheKey = `${selectedParty.value}_${fromDate.value}_${toDate.value}_${designStyle.value}`
+
   try {
+    if (pdfStyleCache.has(cacheKey)) {
+      const cached = pdfStyleCache.get(cacheKey)!
+      pdfBlob.value = cached.blob
+      pdfDoc.value = cached.doc
+      pdfPagesCount.value = cached.pagesCount
+      isRenderingPdf.value = false
+      await nextTick()
+      await drawPages()
+      return
+    }
+
     const pdfUrl = `/api/reports/party-ledger-pdf?party=${encodeURIComponent(selectedParty.value)}&from=${fromDate.value}&to=${toDate.value}&style=${designStyle.value}`
     const response = await fetch(pdfUrl)
     if (!response.ok) {
@@ -726,13 +746,50 @@ async function renderPdfPreview() {
     pdfDoc.value = doc
     pdfPagesCount.value = doc.numPages
 
+    pdfStyleCache.set(cacheKey, {
+      blob,
+      doc,
+      pagesCount: doc.numPages
+    })
+
     isRenderingPdf.value = false
     await nextTick()
     await drawPages()
+
+    // Non-blocking prefetch of alternative style for instant subsequent switches
+    prefetchAlternativeStyle()
   } catch (err: any) {
     console.error('Error rendering PDF preview:', err)
     renderError.value = err.message || 'Failed to render PDF preview.'
     isRenderingPdf.value = false
+  }
+}
+
+async function prefetchAlternativeStyle() {
+  if (!selectedParty.value || !ledgerData.value) return
+  const otherStyle = designStyle.value === 'classic' ? 'sm' : 'classic'
+  const otherKey = `${selectedParty.value}_${fromDate.value}_${toDate.value}_${otherStyle}`
+  if (pdfStyleCache.has(otherKey)) return
+
+  try {
+    const pdfUrl = `/api/reports/party-ledger-pdf?party=${encodeURIComponent(selectedParty.value)}&from=${fromDate.value}&to=${toDate.value}&style=${otherStyle}`
+    const response = await fetch(pdfUrl)
+    if (!response.ok) return
+    const blob = await response.blob()
+    const arrayBuffer = await blob.arrayBuffer()
+    const pdfjsLib = await loadPdfjs()
+    if (!pdfjsLib) return
+    const loadingTask = pdfjsLib.getDocument({
+      data: new Uint8Array(arrayBuffer)
+    })
+    const doc = await loadingTask.promise
+    pdfStyleCache.set(otherKey, {
+      blob,
+      doc,
+      pagesCount: doc.numPages
+    })
+  } catch (_) {
+    // Non-blocking prefetch failure
   }
 }
 
