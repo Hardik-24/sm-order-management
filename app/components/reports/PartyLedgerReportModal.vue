@@ -413,44 +413,43 @@
             <!-- True Vector PDF Multi-Page Canvas Preview (Identical to Downloaded PDF!) -->
             <div
               ref="printableContainerRef"
-              class="flex flex-col items-center gap-6 mx-auto w-fit py-1 select-text"
+              class="flex flex-col items-center gap-6 mx-auto w-fit py-1 select-text relative min-h-[400px]"
             >
-              <!-- PDF Rendering Indicator -->
-              <div v-if="isRenderingPdf" class="py-16 flex flex-col items-center justify-center gap-2 text-gray-500">
-                <Loader2 class="w-6 h-6 animate-spin text-[#1b3b5f]" />
-                <p class="text-xs font-semibold text-gray-700">Rendering vector statement preview...</p>
-              </div>
-
               <!-- PDF Render Error Notice -->
-              <div v-else-if="renderError" class="py-12 px-4 max-w-md mx-auto text-center space-y-2 text-red-600">
-                <AlertCircle class="w-6 h-6 mx-auto text-red-500" />
+              <div v-if="renderError" class="py-12 px-6 max-w-md mx-auto text-center space-y-3 text-red-600 bg-white rounded-xl shadow-lg border border-red-200">
+                <AlertCircle class="w-8 h-8 mx-auto text-red-500" />
                 <p class="text-xs font-bold">{{ renderError }}</p>
                 <button
                   type="button"
                   @click="renderPdfPreview"
-                  class="px-3 py-1 bg-red-100 hover:bg-red-200 text-red-800 rounded-lg text-xs font-bold transition cursor-pointer"
+                  class="px-4 py-1.5 bg-red-100 hover:bg-red-200 text-red-800 rounded-lg text-xs font-bold transition cursor-pointer shadow-xs"
                 >
                   Retry Preview
                 </button>
               </div>
 
+              <!-- Initial Loading State -->
+              <div v-else-if="isRenderingPdf && pdfPagesCount === 0" class="py-24 flex flex-col items-center justify-center gap-3 text-gray-500">
+                <Loader2 class="w-8 h-8 animate-spin text-[#1b3b5f]" />
+                <p class="text-xs font-semibold text-gray-700">Rendering vector statement preview...</p>
+              </div>
+
               <!-- Multi-Page Real Vector Sheets -->
-              <template v-else>
-                <div
-                  v-for="pageNum in pdfPagesCount"
-                  :key="pageNum"
-                  class="page-sheet-wrapper relative shadow-2xl rounded-xs overflow-hidden mx-auto transition-all duration-150 bg-white"
-                  :style="{
-                    width: `${Math.round(794 * zoomScale)}px`,
-                    height: `${Math.round(1123 * zoomScale)}px`
-                  }"
-                >
-                  <canvas
-                    :ref="el => setCanvasRef(pageNum, el)"
-                    class="w-full h-full block"
-                  ></canvas>
-                </div>
-              </template>
+              <div
+                v-for="pageNum in pdfPagesCount"
+                v-show="!renderError"
+                :key="pageNum"
+                class="page-sheet-wrapper relative shadow-2xl rounded-xs overflow-hidden mx-auto transition-all duration-150 bg-white border border-gray-300"
+                :style="{
+                  width: `${Math.round(794 * zoomScale)}px`,
+                  height: `${Math.round(1123 * zoomScale)}px`
+                }"
+              >
+                <canvas
+                  :ref="el => setCanvasRef(pageNum, el)"
+                  class="w-full h-full block"
+                ></canvas>
+              </div>
             </div>
           </div>
         </div>
@@ -544,12 +543,60 @@ const pdfPagesCount = ref(0)
 const isRenderingPdf = ref(false)
 const renderError = ref<string | null>(null)
 const canvasRefs = new Map<number, HTMLCanvasElement>()
+const activeRenderTasks = new Map<number, any>()
 
 function setCanvasRef(pageNum: number, el: any) {
   if (el) {
     canvasRefs.set(pageNum, el as HTMLCanvasElement)
   } else {
     canvasRefs.delete(pageNum)
+  }
+}
+
+async function drawSinglePage(pageNum: number, canvas: HTMLCanvasElement) {
+  if (!pdfDoc.value || !canvas) return
+
+  // Cancel any previous render on this page to avoid PDF.js concurrent canvas errors
+  const existingTask = activeRenderTasks.get(pageNum)
+  if (existingTask) {
+    try {
+      existingTask.cancel()
+    } catch (_) {}
+    activeRenderTasks.delete(pageNum)
+  }
+
+  try {
+    const page = await pdfDoc.value.getPage(pageNum)
+    const baseViewport = page.getViewport({ scale: 1 })
+    const fitScaleFactor = 794 / baseViewport.width
+    const viewport = page.getViewport({ scale: fitScaleFactor })
+
+    const dpr = Math.max(2, (typeof window !== 'undefined' ? window.devicePixelRatio : 1) || 1)
+    canvas.width = Math.floor(viewport.width * dpr)
+    canvas.height = Math.floor(viewport.height * dpr)
+    canvas.style.width = '100%'
+    canvas.style.height = '100%'
+
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+    ctx.save()
+    ctx.scale(dpr, dpr)
+
+    const renderTask = page.render({
+      canvasContext: ctx,
+      viewport: viewport
+    })
+    activeRenderTasks.set(pageNum, renderTask)
+
+    await renderTask.promise
+    ctx.restore()
+  } catch (err: any) {
+    if (err?.name === 'RenderingCancelledException') {
+      return
+    }
+    console.error(`[drawSinglePage] Error rendering page ${pageNum}:`, err)
+  } finally {
+    activeRenderTasks.delete(pageNum)
   }
 }
 
@@ -678,46 +725,28 @@ async function renderPdfPreview() {
     pdfDoc.value = doc
     pdfPagesCount.value = doc.numPages
 
+    isRenderingPdf.value = false
     await nextTick()
     await drawPages()
   } catch (err: any) {
     console.error('Error rendering PDF preview:', err)
     renderError.value = err.message || 'Failed to render PDF preview.'
-  } finally {
     isRenderingPdf.value = false
   }
 }
 
 async function drawPages() {
   if (!pdfDoc.value) return
-  const doc = pdfDoc.value
-
-  for (let pageNum = 1; pageNum <= doc.numPages; pageNum++) {
-    const canvas = canvasRefs.get(pageNum)
-    if (!canvas) continue
-
-    const page = await doc.getPage(pageNum)
-    const baseViewport = page.getViewport({ scale: 1 })
-    const fitScaleFactor = 794 / baseViewport.width
-    const viewport = page.getViewport({ scale: fitScaleFactor })
-
-    const dpr = Math.max(2, (typeof window !== 'undefined' ? window.devicePixelRatio : 1) || 1)
-    canvas.width = Math.floor(viewport.width * dpr)
-    canvas.height = Math.floor(viewport.height * dpr)
-    canvas.style.width = '100%'
-    canvas.style.height = '100%'
-
-    const ctx = canvas.getContext('2d')
-    if (!ctx) continue
-    ctx.save()
-    ctx.scale(dpr, dpr)
-
-    await page.render({
-      canvasContext: ctx,
-      viewport: viewport
-    }).promise
-
-    ctx.restore()
+  const totalPages = pdfDoc.value.numPages
+  for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
+    let canvas = canvasRefs.get(pageNum)
+    if (!canvas) {
+      await nextTick()
+      canvas = canvasRefs.get(pageNum)
+    }
+    if (canvas) {
+      await drawSinglePage(pageNum, canvas)
+    }
   }
 }
 
