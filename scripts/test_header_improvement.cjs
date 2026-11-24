@@ -27,14 +27,14 @@ async function testHeader() {
   const contentWidth = pageWidth - (margin * 2); // 539.28 pt
   const leftMaxW = contentWidth * 0.65; // ~350 pt max width for company side
 
-  let startY = 20;
+  let startY = 18;
 
   // 1. Top Brand Gradient Bar
   doc.setFillColor(27, 59, 95); // #1b3b5f
   doc.rect(margin, startY, contentWidth * 0.72, 3.5, 'F');
   doc.setFillColor(217, 37, 70); // #d92546 accent
   doc.rect(margin + contentWidth * 0.72, startY, contentWidth * 0.28, 3.5, 'F');
-  startY += 15;
+  startY += 21; // Generous 8.5 pt clearance below the 3.5 pt bar (21.5 pt to 30 pt)
 
   // 2. Company Info (Left 65%) & Document Meta Block (Right 35%)
   // Left: Company Name
@@ -46,7 +46,7 @@ async function testHeader() {
   // Right: Document Badge
   const metaBoxW = 140;
   const metaBoxH = 17;
-  const metaBoxY = startY - 9;
+  const metaBoxY = startY - 9; // Top of badge at y = 30 pt (8.5 pt below top bar)
   doc.setFillColor(27, 59, 95);
   doc.roundedRect(pageWidth - margin - metaBoxW, metaBoxY, metaBoxW, metaBoxH, 2.5, 2.5, 'F');
   doc.setFont('Inter', 'bold');
@@ -137,7 +137,7 @@ async function testHeader() {
   doc.setFont('Inter', 'bold');
   doc.setFontSize(6.8);
   doc.setTextColor(148, 163, 184); // slate-400
-  doc.text('CUSTOMER DETAILS', leftX, cY);
+  doc.text('PARTY DETAILS', leftX, cY);
 
   cY += 12;
   doc.setFont('Inter', 'bold');

@@ -65,9 +65,9 @@ function paginateLedger(
 
   // Available vertical heights on A4 (841.89 pt)
   // AutoTable bottom margin is 35 pt (cutoff at 806.89 pt)
-  // Page 1: SM startY ~140 pt => 800 - 140 = 660 pt. We set 650 pt limit.
+  // Page 1: SM startY ~146 pt => 800 - 146 = 654 pt. We set 645 pt limit.
   // Page 1: Classic startY ~145 pt => 800 - 145 = 655 pt. We set 645 pt limit.
-  const page1MaxAvailable = isSm ? 650 : 645
+  const page1MaxAvailable = isSm ? 645 : 645
 
   // Subpages: startY ~44 pt => 800 - 44 = 756 pt. We set 745 pt limit.
   const subPageMaxAvailable = isSm ? 748 : 740
@@ -407,7 +407,7 @@ export function generateLedgerVectorPdf(
         doc.addPage('a4', 'portrait')
       }
 
-      let startY = 20
+      let startY = 18
 
       if (page.isFirstPage) {
         // Top Brand Gradient Bar
@@ -415,7 +415,7 @@ export function generateLedgerVectorPdf(
         doc.rect(margin, startY, contentWidth * 0.72, 3.5, 'F')
         doc.setFillColor(217, 37, 70) // #d92546 accent
         doc.rect(margin + contentWidth * 0.72, startY, contentWidth * 0.28, 3.5, 'F')
-        startY += 15
+        startY += 21 // 8.5 pt clearance below the 3.5 pt bar (21.5 pt to 30 pt)
 
         // Row 1: Company Header (Left) & Document Meta Badge (Right)
         doc.setFont('Inter', 'bold')
@@ -515,13 +515,13 @@ export function generateLedgerVectorPdf(
         doc.setLineWidth(0.5)
         doc.line(dividerX, custBoxY + 7, dividerX, custBoxY + custBoxH - 7)
 
-        // --- LEFT COLUMN: Customer Info ---
+        // --- LEFT COLUMN: Party Info ---
         const leftX = margin + 12
         let cY = custBoxY + 12
         doc.setFont('Inter', 'bold')
         doc.setFontSize(6.8)
         doc.setTextColor(148, 163, 184) // slate-400
-        doc.text('CUSTOMER DETAILS', leftX, cY)
+        doc.text('PARTY DETAILS', leftX, cY)
 
         cY += 12
         doc.setFont('Inter', 'bold')
