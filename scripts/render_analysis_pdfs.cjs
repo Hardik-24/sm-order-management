@@ -19,6 +19,7 @@ async function main() {
 
   const partiesToTest = [
     { name: 'MAS Furniture,Mys', label: 'mas' },
+    { name: 'Moddy/s Confectionery Private Limited, Ooty TN', label: 'moddys' },
     { name: 'Krishna Plywood & Hardware, Mys', label: 'krishna_multipage' }
   ];
 

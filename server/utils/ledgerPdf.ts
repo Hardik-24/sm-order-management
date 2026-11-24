@@ -65,9 +65,9 @@ function paginateLedger(
 
   // Available vertical heights on A4 (841.89 pt)
   // AutoTable bottom margin is 35 pt (cutoff at 806.89 pt)
-  // Page 1: SM startY ~146 pt => 800 - 146 = 654 pt. We set 645 pt limit.
+  // Page 1: SM startY ~146-150 pt => 800 - 150 = 650 pt. We set 648 pt limit.
   // Page 1: Classic startY ~145 pt => 800 - 145 = 655 pt. We set 645 pt limit.
-  const page1MaxAvailable = isSm ? 645 : 645
+  const page1MaxAvailable = isSm ? 648 : 645
 
   // Subpages: startY ~44 pt => 800 - 44 = 756 pt. We set 745 pt limit.
   const subPageMaxAvailable = isSm ? 748 : 740
@@ -486,22 +486,32 @@ export function generateLedgerVectorPdf(
         const custBoxY = startY
         const halfW = (contentWidth - 14) / 2
 
-        // Prepare Customer Info
+        // Set font & size to Inter bold 10.5 BEFORE measuring party name so wrapping is 100% accurate!
+        doc.setFont('Inter', 'bold')
+        doc.setFontSize(10.5)
         const partyNameUpper = ledgerData.party.name.toUpperCase()
-        const partyLines = doc.splitTextToSize(partyNameUpper, halfW - 20)
+        const partyLines = doc.splitTextToSize(partyNameUpper, halfW - 24)
         const hasPhone = !!ledgerData.party.phone
         const partyGstin = ledgerData.party.gstin
 
-        // Prepare Party Address Info (filter out phone numbers so only pure address lines appear)
+        // Prepare & wrap Party Address Info (filter out phone numbers so only pure address lines appear)
+        doc.setFont('Inter', 'normal')
+        doc.setFontSize(7.5)
         const cleanAddrLines = (ledgerData.party.addressLines && ledgerData.party.addressLines.length > 0)
           ? ledgerData.party.addressLines
               .map((s: string) => s.trim().replace(/,+$/, ''))
               .filter((s: string) => s && !/^[\d\s+-]{6,}$/.test(s))
           : []
 
+        const wrappedAddrLines: string[] = []
+        cleanAddrLines.forEach((l: string) => {
+          const split = doc.splitTextToSize(l, halfW - 24)
+          wrappedAddrLines.push(...split)
+        })
+
         // Calculate height dynamically
-        const leftContentH = 14 + (partyLines.length * 12) + (hasPhone ? 11 : 0) + (partyGstin ? 10 : 0) + 8
-        const rightContentH = 14 + (cleanAddrLines.length * 9.5) + 8
+        const leftContentH = 14 + (partyLines.length * 13) + (hasPhone ? 11 : 0) + (partyGstin ? 10 : 0) + 8
+        const rightContentH = 14 + (wrappedAddrLines.length * 9.5) + 8
         const custBoxH = Math.max(50, Math.max(leftContentH, rightContentH))
 
         // Card Background
@@ -529,7 +539,7 @@ export function generateLedgerVectorPdf(
         doc.setTextColor(27, 59, 95) // Deep Navy
         partyLines.forEach((line: string) => {
           doc.text(line, leftX, cY)
-          cY += 12
+          cY += 13
         })
 
         if (hasPhone) {
@@ -565,8 +575,8 @@ export function generateLedgerVectorPdf(
         doc.setFont('Inter', 'normal')
         doc.setFontSize(7.5)
         doc.setTextColor(51, 65, 85)
-        if (cleanAddrLines.length > 0) {
-          cleanAddrLines.forEach((line: string) => {
+        if (wrappedAddrLines.length > 0) {
+          wrappedAddrLines.forEach((line: string) => {
             doc.text(line, rightX, rY)
             rY += 9.5
           })
@@ -597,10 +607,14 @@ export function generateLedgerVectorPdf(
         doc.setFont('Inter', 'bold')
         doc.setTextColor(30, 41, 59)
         const partyUpper = ledgerData.party.name.toUpperCase()
-        const maxPartyWidth = (pageWidth - margin - 160) - currX
-        const partyDisplay = doc.getTextWidth(partyUpper) > maxPartyWidth
-          ? partyUpper.slice(0, 30) + '...'
-          : partyUpper
+        const maxPartyWidth = (pageWidth - margin - 170) - currX
+        let partyDisplay = partyUpper
+        if (doc.getTextWidth(partyDisplay) > maxPartyWidth) {
+          while (partyDisplay.length > 0 && doc.getTextWidth(partyDisplay + '...') > maxPartyWidth) {
+            partyDisplay = partyDisplay.slice(0, -1).trim()
+          }
+          partyDisplay = partyDisplay + '...'
+        }
         doc.text(partyDisplay, currX, 30)
         currX += doc.getTextWidth(partyDisplay)
 
