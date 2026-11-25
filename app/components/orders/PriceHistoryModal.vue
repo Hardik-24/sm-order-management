@@ -173,18 +173,17 @@
               </div>
             </div>
 
-            <!-- Rate Display (Reference Only, No Apply Button) -->
-            <div class="shrink-0 text-right max-w-[55%] sm:max-w-none">
-              <div class="flex items-center justify-end gap-1 flex-wrap text-xs sm:text-sm tabular-nums">
-                <span class="font-bold text-gray-800">{{ getRowBreakdown(row).withoutTaxFormatted }}</span>
-                <span class="text-gray-400 font-bold">+</span>
-                <span class="text-gray-600 font-medium text-[11px] sm:text-xs" :title="`${getRowBreakdown(row).gstRate}% GST`">GST {{ getRowBreakdown(row).gstAmountFormatted }}</span>
-                <span class="text-gray-400 font-bold">=</span>
-                <strong class="font-black text-[#1b3b5f]">{{ getRowBreakdown(row).finalRateFormatted }}</strong>
+            <!-- Rate Display (Stacked: Product rate, GST rate, Final amount) -->
+            <div class="shrink-0 text-right tabular-nums space-y-0.5 leading-tight">
+              <div class="text-xs font-semibold text-gray-700">
+                {{ getRowBreakdown(row).withoutTaxFormatted }}
               </div>
-              <span class="text-[9px] font-semibold text-gray-400 block mt-0.5">
-                {{ row.isTaxInclusive ? 'Incl. Tax' : '+Tax' }} &bull; {{ getRowBreakdown(row).gstRate }}% GST
-              </span>
+              <div class="text-[10px] text-gray-500 font-medium">
+                + GST {{ getRowBreakdown(row).gstAmountFormatted }} <span class="text-[9px] text-gray-400">({{ getRowBreakdown(row).gstRate }}%)</span>
+              </div>
+              <div class="text-xs sm:text-sm font-black text-[#1b3b5f]">
+                = {{ getRowBreakdown(row).finalRateFormatted }}
+              </div>
             </div>
           </div>
         </div>
