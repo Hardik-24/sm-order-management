@@ -29,6 +29,9 @@ export interface PreparedVoucherItem {
   itemCount: number
   items: any[]
   isPosted: boolean
+  isVerifiedInTally: boolean
+  isJustPosted: boolean
+  postStatus: 'verified' | 'just_posted' | 'unposted'
   postedAt?: string
   isMapped: boolean
   mappedTallyParty?: string
@@ -183,8 +186,13 @@ export default defineEventHandler(async (event) => {
       const tallyDate = `${yyyy}${mm}${dd}`
       const displayDate = `${dd}-${mm}-${yyyy}`
 
-      // Synchronized check: check Tally synced set OR manual OMS post
-      const isPosted = tallySalesSet.has(normNo) || Boolean(postedVouchers[vchNo])
+      // Two-Tier Synchronized Check: Live Tally Register vs Just Posted from OMS
+      const isVerifiedInTally = tallySalesSet.has(normNo)
+      const isJustPosted = Boolean(postedVouchers[vchNo])
+      const isPosted = isVerifiedInTally || isJustPosted
+      const postStatus: 'verified' | 'just_posted' | 'unposted' = isVerifiedInTally
+        ? 'verified'
+        : (isJustPosted ? 'just_posted' : 'unposted')
       const postedInfo = postedVouchers[vchNo]
 
       const vSeries = (v.series || (v.voucherType === 2 ? 'RETAIL' : 'SMG')).toUpperCase()
@@ -334,6 +342,9 @@ export default defineEventHandler(async (event) => {
         itemCount: items.length || v.itemCount || 1,
         items,
         isPosted,
+        isVerifiedInTally,
+        isJustPosted,
+        postStatus,
         postedAt: postedInfo?.postedAt,
         isMapped: Boolean(mappedTallyParty),
         mappedTallyParty,
@@ -384,8 +395,13 @@ export default defineEventHandler(async (event) => {
       const tallyDate = `${yyyy}${mm}${dd}`
       const displayDate = `${dd}-${mm}-${yyyy}`
 
-      // Synchronized check: check Tally synced set OR manual OMS post
-      const isPosted = tallyPurchSet.has(normNo) || Boolean(postedVouchers[vchNo])
+      // Two-Tier Synchronized Check: Live Tally Register vs Just Posted from OMS
+      const isVerifiedInTally = tallyPurchSet.has(normNo)
+      const isJustPosted = Boolean(postedVouchers[vchNo])
+      const isPosted = isVerifiedInTally || isJustPosted
+      const postStatus: 'verified' | 'just_posted' | 'unposted' = isVerifiedInTally
+        ? 'verified'
+        : (isJustPosted ? 'just_posted' : 'unposted')
       const postedInfo = postedVouchers[vchNo]
 
       // Search filtering
@@ -486,6 +502,9 @@ export default defineEventHandler(async (event) => {
         itemCount: items.length || p.itemCount || 1,
         items,
         isPosted,
+        isVerifiedInTally,
+        isJustPosted,
+        postStatus,
         postedAt: postedInfo?.postedAt,
         isMapped: Boolean(mappedTallyParty),
         mappedTallyParty,

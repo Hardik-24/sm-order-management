@@ -1702,13 +1702,20 @@ namespace SMFlowSyncAgent
                         }
                         lblStatDuration.Text = "Busy: " + durationStr;
                         LoadHistory();
+
+                        // Automatically trigger Tally Prime Financial Sync right after BUSY sync completes
+                        if (isSuccess)
+                        {
+                            AppendLog("\n[+] Chaining Automatic Tally Prime Financial Sync...", ColorCyan);
+                            RunTallySyncPipeline();
+                        }
                     });
                 }
             });
         }
 
-        // =====================================================================
-        // TALLY PRIME SYNC PIPELINE (ON-DEMAND MANUAL TRIGGER ONLY)
+        // =========================================================================
+        // TALLY PRIME SYNC PIPELINE (MANUAL TRIGGER OR AUTOMATIC POST-BUSY CHAIN)
         // =========================================================================
         private void TriggerTallySync()
         {

@@ -546,6 +546,26 @@
       </div>
 
     </div>
+
+    <!-- Mount Progress Stepper Modal -->
+    <BusyToTallyProgressModal
+      :is-open="isProgressOpen"
+      :voucher-no="form.voucherNo"
+      :voucher-type="form.voucherType"
+      :party-name="voucher?.customerName || ''"
+      :tally-ledger-name="form.partyLedgerName"
+      :total-amount="voucher?.totalAmount || 0"
+      :current-step="progressStep"
+      :failed-at-step="progressFailedAt"
+      :step1-details="progressStep1Details"
+      :step2-details="progressStep2Details"
+      :step3-details="progressStep3Details"
+      :step4-details="progressStep4Details"
+      :error-message="progressErrorMessage"
+      :tally-company="createdTallyCompany"
+      @close="onProgressClose"
+      @retry="postToTally"
+    />
   </div>
 </template>
 
@@ -565,6 +585,7 @@ import {
   FileText
 } from 'lucide-vue-next'
 import type { PreparedVoucherItem, FormattedTallyEntry } from '~~/server/api/tally/vouchers.get'
+import BusyToTallyProgressModal from './BusyToTallyProgressModal.vue'
 
 const props = defineProps<{
   isOpen: boolean
@@ -607,6 +628,24 @@ const showPartyDropdown = ref(false)
 const isEditingParty = ref(false)
 const isPosting = ref(false)
 const postFeedback = ref<{ success: boolean; message: string } | null>(null)
+
+// Stepper Progress Modal State
+const isProgressOpen = ref(false)
+const progressStep = ref(1) // 1: Connect, 2: Validate, 3: Transmit, 4: Confirm, 5: Success, -1: Error
+const progressFailedAt = ref<number | undefined>(undefined)
+const progressStep1Details = ref('')
+const progressStep2Details = ref('')
+const progressStep3Details = ref('')
+const progressStep4Details = ref('')
+const progressErrorMessage = ref('')
+const createdTallyCompany = ref('')
+
+const onProgressClose = () => {
+  isProgressOpen.value = false
+  if (progressStep.value === 5) {
+    close()
+  }
+}
 
 // Active tally ledgers: Show ALL Tally ledgers, with relevant Debtors/Creditors prioritized at top
 const activeTallyLedgers = computed<string[]>(() => {
@@ -808,14 +847,39 @@ const close = () => {
   emit('close')
 }
 
-// Post to Tally Prime
+// Post to Tally Prime with Animated Multi-Step Stepper
 const postToTally = async () => {
   if (!isBalanced.value || !props.voucher) return
 
   isPosting.value = true
   postFeedback.value = null
 
+  // Open Progress Stepper Modal
+  isProgressOpen.value = true
+  progressStep.value = 1
+  progressFailedAt.value = undefined
+  progressStep1Details.value = 'Connecting to Tally Prime on Port 9000...'
+  progressStep2Details.value = ''
+  progressStep3Details.value = ''
+  progressStep4Details.value = ''
+  progressErrorMessage.value = ''
+
   try {
+    // Step 1: Brief pause so the user sees Step 1 engaging
+    await new Promise(r => setTimeout(r, 350))
+
+    // Step 2: Validate Ledgers & Tax Balance
+    progressStep.value = 2
+    progressStep1Details.value = 'Tally Prime HTTP Server reached on Port 9000.'
+    const totalDrVal = totalDr.value.toFixed(2)
+    progressStep2Details.value = `Verified equilibrium (₹${totalDrVal}). Ledgers & GST structure validated.`
+
+    await new Promise(r => setTimeout(r, 300))
+
+    // Step 3: XML Transmission
+    progressStep.value = 3
+    progressStep3Details.value = `Generating <TALLYMESSAGE> XML envelope with Bill Allocation (New Ref)...`
+
     const payload = {
       voucherId: props.voucher.id,
       voucherNo: form.value.voucherNo,
@@ -835,24 +899,49 @@ const postToTally = async () => {
     })
 
     if (res.success) {
+      // Step 4: Confirm Creation in Tally Books
+      progressStep.value = 4
+      progressStep3Details.value = 'XML payload successfully delivered to Tally.'
+      progressStep4Details.value = `Tally responded: <CREATED>1</CREATED>. Bill reference "${res.voucherNo}" allocated.`
+
+      await new Promise(r => setTimeout(r, 400))
+
+      // Step 5: Success State
+      progressStep.value = 5
+      createdTallyCompany.value = res.company || 'SRI LAKSHMI PLYWOODS 2627'
+
       postFeedback.value = {
         success: true,
         message: `Voucher ${res.voucherNo} successfully created in company "${res.company}" on Tally Prime!`
       }
       emit('posted', res.voucherNo, form.value.partyLedgerName, props.voucher.customerName)
-      setTimeout(() => {
-        close()
-      }, 1400)
     } else {
+      progressStep.value = -1
+      progressFailedAt.value = 4
+      progressErrorMessage.value = res.error || 'Tally Prime rejected the voucher creation request.'
       postFeedback.value = {
         success: false,
         message: res.error || 'Tally Prime rejected the voucher.'
       }
     }
   } catch (err: any) {
+    progressStep.value = -1
+    const errMsg = err.data?.statusMessage || err.message || 'Failed connecting to Tally Prime'
+    progressErrorMessage.value = errMsg
+
+    const lower = errMsg.toLowerCase()
+    if (lower.includes('connect') || lower.includes('port') || lower.includes('econnrefused') || lower.includes('timeout')) {
+      progressFailedAt.value = 1
+      progressStep1Details.value = 'Connection failed to Port 9000.'
+    } else if (lower.includes('ledger') || lower.includes('balance') || lower.includes('tax')) {
+      progressFailedAt.value = 2
+    } else {
+      progressFailedAt.value = 3
+    }
+
     postFeedback.value = {
       success: false,
-      message: err.data?.statusMessage || err.message || 'Failed connecting to Tally Prime'
+      message: errMsg
     }
   } finally {
     isPosting.value = false

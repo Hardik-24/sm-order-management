@@ -41,6 +41,17 @@
 
         <div class="flex items-center gap-2 self-end sm:self-center">
           <button 
+            type="button"
+            @click="isResetModalOpen = true" 
+            :disabled="isResetting || isLoading"
+            class="px-3 py-1.5 text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 hover:bg-rose-100 rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
+            title="Reset OMS test postings back to Tally ground truth"
+          >
+            <RotateCcw class="w-3.5 h-3.5" :class="{ 'animate-spin': isResetting }" />
+            <span>Reset Test Data</span>
+          </button>
+
+          <button 
             @click="refreshData" 
             :disabled="isLoading"
             class="px-3 py-1.5 text-xs font-bold text-gray-700 bg-white border border-gray-300 hover:bg-gray-100 rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
@@ -69,8 +80,16 @@
           <div class="text-lg font-black text-amber-900 mt-0.5">{{ unpostedCount }}</div>
         </div>
         <div class="bg-white p-3 rounded-xl border border-emerald-200/80 shadow-2xs bg-gradient-to-br from-white to-emerald-50/30">
-          <div class="text-[10px] font-bold uppercase tracking-wider text-emerald-700">Posted in Tally</div>
-          <div class="text-lg font-black text-emerald-900 mt-0.5">{{ postedCount }}</div>
+          <div class="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-emerald-700">
+            <span>Posted in Tally</span>
+            <span v-if="justPostedCount > 0" class="text-[9px] font-bold text-blue-700 bg-blue-100 px-1 py-0.2 rounded">
+              {{ justPostedCount }} new
+            </span>
+          </div>
+          <div class="text-lg font-black text-emerald-900 mt-0.5 flex items-baseline gap-2">
+            <span>{{ postedCount }}</span>
+            <span class="text-[11px] font-semibold text-emerald-600">({{ verifiedCount }} verified)</span>
+          </div>
         </div>
         <div class="bg-white p-3 rounded-xl border border-indigo-200/80 shadow-2xs bg-gradient-to-br from-white to-indigo-50/30">
           <div class="text-[10px] font-bold uppercase tracking-wider text-indigo-700">Known Tally Ledgers</div>
@@ -250,10 +269,18 @@
               <!-- Status -->
               <td class="px-4 py-3 text-center whitespace-nowrap">
                 <span 
-                  v-if="v.isPosted"
-                  class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 inline-flex items-center gap-1"
+                  v-if="v.isVerifiedInTally"
+                  class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 inline-flex items-center gap-1 shadow-2xs"
+                  title="Ground-truth verified in live Tally Prime register"
                 >
-                  <CheckCircle2 class="w-3 h-3 text-emerald-600" /> Posted
+                  <CheckCircle2 class="w-3 h-3 text-emerald-600" /> Verified in Tally
+                </span>
+                <span 
+                  v-else-if="v.isJustPosted || v.isPosted"
+                  class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200 inline-flex items-center gap-1 shadow-2xs"
+                  title="Created via OMS; will be verified on next background sync"
+                >
+                  <Clock class="w-3 h-3 text-blue-600" /> Just Posted
                 </span>
                 <span 
                   v-else
@@ -270,17 +297,20 @@
                   @click="openReviewModal(v)"
                   class="px-3 py-1.5 text-xs font-bold rounded-lg border transition-all flex items-center gap-1.5 cursor-pointer ml-auto shadow-2xs active:scale-95"
                   :class="[
-                    v.isPosted 
-                      ? 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50' 
-                      : (!v.isMapped
-                          ? 'bg-amber-600 text-white border-amber-600 hover:bg-amber-700 hover:shadow-sm'
-                          : 'bg-indigo-600 text-white border-indigo-600 hover:bg-indigo-700 hover:shadow-sm')
+                    v.isVerifiedInTally
+                      ? 'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200' 
+                      : (v.isJustPosted
+                          ? 'bg-blue-50 text-blue-700 border-blue-300 hover:bg-blue-100'
+                          : (!v.isMapped
+                              ? 'bg-amber-600 text-white border-amber-600 hover:bg-amber-700 hover:shadow-sm'
+                              : 'bg-indigo-600 text-white border-indigo-600 hover:bg-indigo-700 hover:shadow-sm'))
                   ]"
                 >
-                  <Eye v-if="v.isPosted" class="w-3.5 h-3.5" />
+                  <CheckCircle2 v-if="v.isVerifiedInTally" class="w-3.5 h-3.5 text-emerald-600" />
+                  <Clock v-else-if="v.isJustPosted" class="w-3.5 h-3.5 text-blue-600" />
                   <Link2 v-else-if="!v.isMapped" class="w-3.5 h-3.5" />
                   <Send v-else class="w-3.5 h-3.5" />
-                  <span>{{ v.isPosted ? 'View / Repost' : (!v.isMapped ? 'Link & Post' : 'Review & Post') }}</span>
+                  <span>{{ v.isVerifiedInTally ? 'View / Repost' : (v.isJustPosted ? 'View / Repost' : (!v.isMapped ? 'Link & Post' : 'Review & Post')) }}</span>
                 </button>
               </td>
             </tr>
@@ -294,6 +324,64 @@
         <span>Click <strong>"Review & Post"</strong> on any voucher to open the side-by-side comparison & override modal.</span>
       </div>
 
+    </div>
+
+    <!-- Reset Test Data Confirmation Modal -->
+    <div v-if="isResetModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
+      <div class="fixed inset-0 bg-slate-950/75 backdrop-blur-xs" @click="isResetModalOpen = false"></div>
+      <div class="relative bg-white rounded-2xl shadow-2xl border border-gray-200 w-full max-w-md p-6 space-y-4 animate-in fade-in zoom-in-95 duration-150">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center shrink-0">
+            <RotateCcw class="w-5 h-5" />
+          </div>
+          <div>
+            <h3 class="text-sm font-black text-gray-900">Reset Test Postings</h3>
+            <p class="text-xs text-gray-500">Revert OMS posting status back to live Tally sync</p>
+          </div>
+        </div>
+
+        <div class="p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-900 space-y-1.5 leading-relaxed">
+          <div class="font-bold flex items-center gap-1.5 text-amber-950">
+            <AlertTriangle class="w-4 h-4 text-amber-600 shrink-0" />
+            <span>How This Reset Works</span>
+          </div>
+          <p>
+            This clears the local OMS tracking of tested vouchers (marked as <strong>"Just Posted"</strong>), immediately reverting them to <strong>"Unposted"</strong> unless they are genuinely present in your live Tally register.
+          </p>
+        </div>
+
+        <label class="flex items-start gap-2.5 p-3 rounded-xl bg-slate-50 border border-gray-200 cursor-pointer select-none">
+          <input 
+            type="checkbox" 
+            v-model="alsoResetMappings" 
+            class="mt-0.5 rounded text-rose-600 focus:ring-rose-500"
+          />
+          <div class="text-xs">
+            <div class="font-bold text-gray-900">Also reset party ledger mappings</div>
+            <div class="text-[11px] text-gray-500">Unlinks all tested parties so they can be re-mapped cleanly.</div>
+          </div>
+        </label>
+
+        <div class="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
+          <button 
+            type="button" 
+            @click="isResetModalOpen = false" 
+            class="px-4 py-2 text-xs font-bold text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-xl transition-colors cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button 
+            type="button" 
+            @click="executeReset" 
+            :disabled="isResetting"
+            class="px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl transition-colors cursor-pointer flex items-center gap-1.5 shadow-sm"
+          >
+            <Loader2 v-if="isResetting" class="w-3.5 h-3.5 animate-spin" />
+            <RotateCcw v-else class="w-3.5 h-3.5" />
+            <span>Confirm Reset</span>
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Mount Side-by-Side Review & Override Modal -->
@@ -325,7 +413,10 @@ import {
   ShoppingBag,
   ChevronDown,
   Link2,
-  Send
+  Send,
+  Clock,
+  RotateCcw,
+  AlertTriangle
 } from 'lucide-vue-next'
 import type { PreparedVoucherItem } from '~~/server/api/tally/vouchers.get'
 import BusyToTallyReviewModal from './BusyToTallyReviewModal.vue'
@@ -354,6 +445,27 @@ const statusFilter = ref<'all' | 'unposted' | 'posted'>('unposted')
 const isReviewModalOpen = ref(false)
 const selectedVoucher = ref<PreparedVoucherItem | null>(null)
 
+// Reset Test Data State
+const isResetModalOpen = ref(false)
+const alsoResetMappings = ref(true)
+const isResetting = ref(false)
+
+const executeReset = async () => {
+  isResetting.value = true
+  try {
+    await $fetch('/api/tally/reset-test-postings', {
+      method: 'POST',
+      body: { resetMappings: alsoResetMappings.value }
+    })
+    isResetModalOpen.value = false
+    await refreshData()
+  } catch (err) {
+    console.error('Failed to reset test postings:', err)
+  } finally {
+    isResetting.value = false
+  }
+}
+
 const setTypeFilter = (type: 'sales' | 'purchase' | 'all') => {
   selectedType.value = type
   fetchVouchers()
@@ -363,6 +475,8 @@ const setTypeFilter = (type: 'sales' | 'purchase' | 'all') => {
 const totalCount = computed(() => vouchers.value.length)
 const postedCount = computed(() => vouchers.value.filter(v => v.isPosted).length)
 const unpostedCount = computed(() => vouchers.value.filter(v => !v.isPosted).length)
+const verifiedCount = computed(() => vouchers.value.filter(v => v.isVerifiedInTally).length)
+const justPostedCount = computed(() => vouchers.value.filter(v => v.isJustPosted && !v.isVerifiedInTally).length)
 
 // Filtering
 const filteredVouchers = computed(() => {
@@ -448,6 +562,8 @@ const onVoucherPosted = (vchNo: string, partyLedgerName?: string, busyPartyName?
   const target = vouchers.value.find(v => v.voucherNo === vchNo)
   if (target) {
     target.isPosted = true
+    target.isJustPosted = true
+    target.postStatus = 'just_posted'
     target.postedAt = new Date().toISOString()
   }
   if (partyLedgerName && busyPartyName) {
