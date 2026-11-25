@@ -887,6 +887,101 @@ async function syncTally() {
     });
     console.log(`  Saved tally_payables_data (${(Buffer.byteLength(creditorPayloadStr) / 1024).toFixed(1)} KB)`);
 
+    // ----------------------------------------------------
+    // 3. COMPLETE MASTER LEDGER SYNC (ALL 1000+ ACCOUNTS)
+    // ----------------------------------------------------
+    console.log('\n>>> [3/3] SYNCING ALL TALLY MASTER LEDGERS (ALL 1000+ ACCOUNTS)...');
+    try {
+      const allDebtorNamesSet = new Set();
+      const debtorNameMatches = debtorsRaw.matchAll(/<LEDGER NAME="([^"]+)"/gi);
+      for (const m of debtorNameMatches) {
+        const clean = m[1].replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').trim();
+        if (clean) allDebtorNamesSet.add(clean);
+      }
+
+      const allCreditorNamesSet = new Set();
+      const creditorNameMatches = creditorsRaw.matchAll(/<LEDGER NAME="([^"]+)"/gi);
+      for (const m of creditorNameMatches) {
+        const clean = m[1].replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').trim();
+        if (clean) allCreditorNamesSet.add(clean);
+      }
+
+      const allLedgersXml = `<ENVELOPE>
+        <HEADER><VERSION>1</VERSION><TALLYREQUEST>Export</TALLYREQUEST><TYPE>Collection</TYPE><ID>AllLedgersMasterCol</ID></HEADER>
+        <BODY>
+          <DESC>
+            <STATICVARIABLES><SVEXPORTFORMAT>$$SysName:XML</SVEXPORTFORMAT></STATICVARIABLES>
+            <TDL>
+              <TDLMESSAGE>
+                <COLLECTION NAME="AllLedgersMasterCol">
+                  <TYPE>Ledger</TYPE>
+                  <FETCH>Name,Parent</FETCH>
+                </COLLECTION>
+              </TDLMESSAGE>
+            </TDL>
+          </DESC>
+        </BODY>
+      </ENVELOPE>`;
+
+      const allLedgersRaw = await queryTallyXml(allLedgersXml);
+      const allLedgerItems = [];
+      const salesAccounts = new Set(['Sales GST@18%', 'Sales GST@28%', 'Sales GST@12%', 'Sales GST@5%', 'Sales IGST@18%']);
+      const purchaseAccounts = new Set(['Purchase GST@18%', 'Purchase GST@28%', 'Purchase GST@12%', 'Purchase GST@5%', 'Purchase IGST@18%']);
+      const taxAccounts = new Set([
+        'Output CGST@9%', 'Output SGST@9%', 'Output IGST@18%',
+        'Input CGST@9%', 'Input SGST@9%', 'Input IGST @18%'
+      ]);
+      const roundOffAccounts = new Set(['Sales Rounding Off', 'Purchase Rounding Off', 'Rounding Off']);
+
+      const allLedgerRegex = /<LEDGER NAME="([^"]+)"[^>]*>[\s\S]*?<PARENT[^>]*>([^<]+)<\/PARENT>/gi;
+      for (const m of allLedgersRaw.matchAll(allLedgerRegex)) {
+        const name = m[1].replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').trim();
+        const parent = m[2].replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').trim();
+        if (!name) continue;
+        allLedgerItems.push({ name, parent });
+
+        const parentUpper = parent.toUpperCase();
+        const nameUpper = name.toUpperCase();
+
+        if (parentUpper.includes('SUNDRY DEBTOR')) {
+          allDebtorNamesSet.add(name);
+        } else if (parentUpper.includes('SUNDRY CREDITOR')) {
+          allCreditorNamesSet.add(name);
+        } else if (parentUpper.includes('SALES')) {
+          salesAccounts.add(name);
+        } else if (parentUpper.includes('PURCHASE')) {
+          purchaseAccounts.add(name);
+        } else if (parentUpper.includes('DUTIES') || parentUpper.includes('TAX') || parentUpper === 'GST' || nameUpper.includes('CGST') || nameUpper.includes('SGST') || nameUpper.includes('IGST')) {
+          taxAccounts.add(name);
+        } else if (nameUpper.includes('ROUND')) {
+          roundOffAccounts.add(name);
+        }
+      }
+
+      const masterPayload = {
+        syncedAt: new Date().toISOString(),
+        company: company.name || 'SRI LAKSHMI PLYWOODS 2627',
+        totalLedgers: allLedgerItems.length || (allDebtorNamesSet.size + allCreditorNamesSet.size),
+        debtors: Array.from(allDebtorNamesSet).sort(),
+        creditors: Array.from(allCreditorNamesSet).sort(),
+        salesAccounts: Array.from(salesAccounts).sort(),
+        purchaseAccounts: Array.from(purchaseAccounts).sort(),
+        taxAccounts: Array.from(taxAccounts).sort(),
+        roundOffAccounts: Array.from(roundOffAccounts).sort(),
+        allLedgers: allLedgerItems
+      };
+
+      const masterPayloadStr = JSON.stringify(masterPayload);
+      await prisma.systemSetting.upsert({
+        where: { key: 'tally_master_ledgers' },
+        update: { value: masterPayloadStr },
+        create: { key: 'tally_master_ledgers', value: masterPayloadStr }
+      });
+      console.log(`  Saved tally_master_ledgers (${(Buffer.byteLength(masterPayloadStr) / 1024).toFixed(1)} KB): ${masterPayload.debtors.length} debtors, ${masterPayload.creditors.length} creditors, ${masterPayload.totalLedgers} total ledgers across Tally.`);
+    } catch (e) {
+      console.log(`- Master ledgers sync note: ${e.message}`);
+    }
+
     console.log(`\n====================================================`);
     console.log(`  ALL TALLY FINANCIALS SYNCED SUCCESSFULLY in ${Date.now() - t0}ms`);
     console.log(`====================================================`);

@@ -46,11 +46,12 @@ export default defineEventHandler(async (event) => {
   const limit = parseInt((query.limit as string) || '200', 10)
 
   // 1. Fetch party mappings, manual posted settings, and Tally sync data
-  const [mapSetting, postedSetting, receivablesSetting, payablesSetting] = await Promise.all([
+  const [mapSetting, postedSetting, receivablesSetting, payablesSetting, masterLedgersSetting] = await Promise.all([
     prisma.systemSetting.findUnique({ where: { key: 'BUSY_TALLY_PARTY_MAPPINGS' } }),
     prisma.systemSetting.findUnique({ where: { key: 'BUSY_TALLY_POSTED_VOUCHERS' } }),
     prisma.systemSetting.findUnique({ where: { key: 'tally_receivables_data' } }),
     prisma.systemSetting.findUnique({ where: { key: 'tally_payables_data' } }),
+    prisma.systemSetting.findUnique({ where: { key: 'tally_master_ledgers' } }),
   ])
 
   const partyMappings: Record<string, string> = mapSetting?.value ? JSON.parse(mapSetting.value) : {}
@@ -91,6 +92,25 @@ export default defineEventHandler(async (event) => {
       if (Array.isArray(pay.parties)) {
         for (const p of pay.parties) {
           if (p.party) allTallyCreditors.push(p.party.trim())
+        }
+      }
+    } catch {}
+  }
+
+  // Also include all master debtors & creditors if available
+  if (masterLedgersSetting?.value) {
+    try {
+      const master = JSON.parse(masterLedgersSetting.value)
+      if (Array.isArray(master.debtors)) {
+        for (const d of master.debtors) {
+          const trimmed = d.trim()
+          if (!allTallyDebtors.includes(trimmed)) allTallyDebtors.push(trimmed)
+        }
+      }
+      if (Array.isArray(master.creditors)) {
+        for (const c of master.creditors) {
+          const trimmed = c.trim()
+          if (!allTallyCreditors.includes(trimmed)) allTallyCreditors.push(trimmed)
         }
       }
     } catch {}

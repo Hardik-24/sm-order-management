@@ -91,12 +91,40 @@ export default defineEventHandler(async (event): Promise<TallyLedgersResponse> =
     // 2. Fallback to cached receivables & payables data if Tally is temporarily closed
   }
 
-  // Load from cached receivables & payables data in systemSetting
+  // Load from cached master ledgers first, then fallback to receivables & payables
   try {
-    const [rec, pay] = await Promise.all([
+    const [master, rec, pay] = await Promise.all([
+      prisma.systemSetting.findUnique({ where: { key: 'tally_master_ledgers' } }),
       prisma.systemSetting.findUnique({ where: { key: 'tally_receivables_data' } }),
       prisma.systemSetting.findUnique({ where: { key: 'tally_payables_data' } }),
     ])
+
+    if (master?.value) {
+      try {
+        const parsedMaster = JSON.parse(master.value)
+        if (Array.isArray(parsedMaster.debtors)) {
+          for (const d of parsedMaster.debtors) debtors.add(d.trim())
+        }
+        if (Array.isArray(parsedMaster.creditors)) {
+          for (const c of parsedMaster.creditors) creditors.add(c.trim())
+        }
+        if (Array.isArray(parsedMaster.salesAccounts)) {
+          for (const s of parsedMaster.salesAccounts) salesAccounts.add(s.trim())
+        }
+        if (Array.isArray(parsedMaster.purchaseAccounts)) {
+          for (const p of parsedMaster.purchaseAccounts) purchaseAccounts.add(p.trim())
+        }
+        if (Array.isArray(parsedMaster.taxAccounts)) {
+          for (const t of parsedMaster.taxAccounts) taxAccounts.add(t.trim())
+        }
+        if (Array.isArray(parsedMaster.roundOffAccounts)) {
+          for (const r of parsedMaster.roundOffAccounts) roundOffAccounts.add(r.trim())
+        }
+        if (Array.isArray(parsedMaster.allLedgers) && allLedgers.length === 0) {
+          allLedgers.push(...parsedMaster.allLedgers)
+        }
+      } catch (_) {}
+    }
 
     if (rec?.value) {
       const parsed = JSON.parse(rec.value)
