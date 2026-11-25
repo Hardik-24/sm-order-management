@@ -19,6 +19,7 @@ export interface PreparedVoucherItem {
   displayDate: string // DD-MM-YYYY
   series: string
   customerName: string // Customer for sales, Supplier for purchase
+  reference?: string // Supplier invoice no for purchase, or reference
   totalAmount: number
   taxableAmount: number
   cgstAmount: number
@@ -303,6 +304,7 @@ export default defineEventHandler(async (event) => {
         displayDate,
         series: vSeries,
         customerName: customer,
+        reference: vchNo,
         totalAmount: totalAmt,
         taxableAmount: taxableAmt,
         cgstAmount: cgstAmt,
@@ -416,7 +418,7 @@ export default defineEventHandler(async (event) => {
       // 3. Input Taxes Debit
       if (isInterstate) {
         defaultEntries.push({
-          ledgerName: 'Input IGST@18%',
+          ledgerName: 'Input IGST @18%',
           amount: -Math.abs(igstAmt),
           isDeemedPositive: true,
           type: 'TAX'
@@ -439,7 +441,7 @@ export default defineEventHandler(async (event) => {
       // Round Off
       if (Math.abs(roundOff) > 0.001) {
         defaultEntries.push({
-          ledgerName: 'Rounding Off',
+          ledgerName: 'Purchase Rounding Off',
           amount: roundOff,
           isDeemedPositive: roundOff > 0,
           type: 'ROUNDOFF'
@@ -454,6 +456,7 @@ export default defineEventHandler(async (event) => {
         displayDate,
         series: p.series || 'Main',
         customerName: supplier,
+        reference: vchNo,
         totalAmount: totalAmt,
         taxableAmount: taxableAmt,
         cgstAmount: cgstAmt,

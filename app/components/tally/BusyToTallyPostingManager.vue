@@ -82,125 +82,71 @@
 
       <!-- Filter Bar -->
       <div class="p-4 sm:px-6 bg-white border-b border-gray-200 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 shrink-0">
-        <!-- Search Input -->
-        <div class="relative flex-1 max-w-md">
-          <Search class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-          <input 
-            type="text"
-            v-model="searchQuery"
-            placeholder="Search by invoice number or party name..."
-            class="w-full text-xs pl-9 pr-3 py-2 rounded-xl border border-gray-300 bg-white focus:ring-2 focus:ring-indigo-500 outline-none"
-          />
+        <!-- Left: Search Input + Sales / Purchases Toggle -->
+        <div class="flex items-center gap-3 flex-1 max-w-2xl">
+          <div class="relative flex-1">
+            <Search class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input 
+              type="text"
+              v-model="searchQuery"
+              :placeholder="selectedType === 'purchase' ? 'Search purchases by voucher # or supplier...' : 'Search sales by invoice # or customer...'"
+              class="w-full text-xs pl-9 pr-3 py-2 rounded-xl border border-gray-300 bg-white focus:ring-2 focus:ring-indigo-500 outline-none"
+            />
+          </div>
+
+          <!-- Sales / Purchases Toggle Pill -->
+          <div class="flex p-0.5 bg-slate-100 rounded-xl border border-gray-200 text-xs font-bold shrink-0 shadow-2xs">
+            <button
+              type="button"
+              @click="setTypeFilter('sales')"
+              class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg transition-all cursor-pointer"
+              :class="selectedType === 'sales' ? 'bg-indigo-600 text-white shadow-xs font-black' : 'text-gray-600 hover:text-gray-900 hover:bg-white/60'"
+            >
+              <ShoppingCart class="w-3.5 h-3.5" />
+              <span>Sales</span>
+            </button>
+            <button
+              type="button"
+              @click="setTypeFilter('purchase')"
+              class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg transition-all cursor-pointer"
+              :class="selectedType === 'purchase' ? 'bg-emerald-600 text-white shadow-xs font-black' : 'text-gray-600 hover:text-gray-900 hover:bg-white/60'"
+            >
+              <ShoppingBag class="w-3.5 h-3.5" />
+              <span>Purchases</span>
+            </button>
+          </div>
         </div>
 
-        <!-- Transaction Type & Status Filters -->
-        <div class="flex items-center gap-2.5 flex-wrap">
-          <!-- Status Tabs -->
-          <div class="flex p-0.5 bg-slate-100 rounded-lg text-xs font-bold text-gray-600">
-            <button 
-              type="button"
-              @click="statusFilter = 'all'"
-              class="px-2.5 py-1 rounded-md transition-colors cursor-pointer"
-              :class="statusFilter === 'all' ? 'bg-white text-gray-900 shadow-2xs font-extrabold' : 'hover:text-gray-900'"
-            >
-              All
-            </button>
+        <!-- Right: Status Tabs (Unposted / Posted / All) -->
+        <div class="flex items-center gap-2">
+          <div class="flex p-0.5 bg-slate-100 rounded-xl text-xs font-bold text-gray-600 border border-gray-200">
             <button 
               type="button"
               @click="statusFilter = 'unposted'"
-              class="px-2.5 py-1 rounded-md transition-colors cursor-pointer"
-              :class="statusFilter === 'unposted' ? 'bg-white text-amber-800 shadow-2xs font-extrabold' : 'hover:text-gray-900'"
+              class="px-3 py-1.5 rounded-lg transition-colors cursor-pointer flex items-center gap-1.5"
+              :class="statusFilter === 'unposted' ? 'bg-white text-amber-900 shadow-2xs font-extrabold' : 'hover:text-gray-900'"
             >
-              Unposted ({{ unpostedCount }})
+              <span>Unposted</span>
+              <span class="px-1.5 py-0.5 rounded-full text-[10px]" :class="statusFilter === 'unposted' ? 'bg-amber-100 text-amber-900' : 'bg-slate-200 text-gray-700'">{{ unpostedCount }}</span>
             </button>
             <button 
               type="button"
               @click="statusFilter = 'posted'"
-              class="px-2.5 py-1 rounded-md transition-colors cursor-pointer"
-              :class="statusFilter === 'posted' ? 'bg-white text-emerald-800 shadow-2xs font-extrabold' : 'hover:text-gray-900'"
+              class="px-3 py-1.5 rounded-lg transition-colors cursor-pointer flex items-center gap-1.5"
+              :class="statusFilter === 'posted' ? 'bg-white text-emerald-900 shadow-2xs font-extrabold' : 'hover:text-gray-900'"
             >
-              Posted ({{ postedCount }})
+              <span>Posted</span>
+              <span class="px-1.5 py-0.5 rounded-full text-[10px]" :class="statusFilter === 'posted' ? 'bg-emerald-100 text-emerald-900' : 'bg-slate-200 text-gray-700'">{{ postedCount }}</span>
             </button>
-          </div>
-
-          <!-- Custom Polished Voucher Type Selector (Sales vs Purchase) -->
-          <div class="relative" ref="typeDropdownRef">
-            <button
+            <button 
               type="button"
-              @click="isTypeDropdownOpen = !isTypeDropdownOpen"
-              class="px-3 py-1.5 text-xs font-bold rounded-xl border border-gray-300 bg-white text-gray-800 hover:border-indigo-400 hover:bg-slate-50 shadow-2xs transition-all flex items-center gap-2 cursor-pointer outline-none focus:ring-2 focus:ring-indigo-500"
+              @click="statusFilter = 'all'"
+              class="px-3 py-1.5 rounded-lg transition-colors cursor-pointer flex items-center gap-1.5"
+              :class="statusFilter === 'all' ? 'bg-white text-gray-900 shadow-2xs font-extrabold' : 'hover:text-gray-900'"
             >
-              <ShoppingCart v-if="selectedType === 'sales'" class="w-3.5 h-3.5 text-indigo-600" />
-              <ShoppingBag v-else-if="selectedType === 'purchase'" class="w-3.5 h-3.5 text-emerald-600" />
-              <Layers v-else class="w-3.5 h-3.5 text-slate-600" />
-              <span>{{ selectedTypeLabel }}</span>
-              <ChevronDown class="w-3.5 h-3.5 text-gray-400 transition-transform duration-200" :class="{ 'rotate-180': isTypeDropdownOpen }" />
+              <span>All</span>
+              <span class="px-1.5 py-0.5 rounded-full text-[10px]" :class="statusFilter === 'all' ? 'bg-slate-200 text-gray-900' : 'bg-slate-200 text-gray-700'">{{ totalCount }}</span>
             </button>
-
-            <!-- Dropdown Menu -->
-            <div 
-              v-if="isTypeDropdownOpen"
-              class="absolute right-0 mt-1.5 w-52 bg-white rounded-xl shadow-xl border border-gray-200 py-1.5 z-30 animate-in fade-in zoom-in-95 duration-100"
-            >
-              <div class="px-3 py-1 text-[10px] font-black uppercase tracking-wider text-gray-400">
-                Transaction Type
-              </div>
-
-              <!-- Sales Option -->
-              <button
-                type="button"
-                @click="setTypeFilter('sales')"
-                class="w-full text-left px-3 py-2 text-xs font-bold flex items-center justify-between transition-colors cursor-pointer"
-                :class="selectedType === 'sales' ? 'bg-indigo-50 text-indigo-900' : 'text-gray-700 hover:bg-slate-50'"
-              >
-                <div class="flex items-center gap-2">
-                  <div class="w-6 h-6 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center">
-                    <ShoppingCart class="w-3.5 h-3.5" />
-                  </div>
-                  <div>
-                    <span class="block">Sales Invoices</span>
-                    <span class="text-[10px] font-normal text-gray-500">Debtors & Outward GST</span>
-                  </div>
-                </div>
-                <Check v-if="selectedType === 'sales'" class="w-4 h-4 text-indigo-600" />
-              </button>
-
-              <!-- Purchase Option -->
-              <button
-                type="button"
-                @click="setTypeFilter('purchase')"
-                class="w-full text-left px-3 py-2 text-xs font-bold flex items-center justify-between transition-colors cursor-pointer"
-                :class="selectedType === 'purchase' ? 'bg-emerald-50 text-emerald-900' : 'text-gray-700 hover:bg-slate-50'"
-              >
-                <div class="flex items-center gap-2">
-                  <div class="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
-                    <ShoppingBag class="w-3.5 h-3.5" />
-                  </div>
-                  <div>
-                    <span class="block">Purchase Invoices</span>
-                    <span class="text-[10px] font-normal text-gray-500">Creditors & Inward GST</span>
-                  </div>
-                </div>
-                <Check v-if="selectedType === 'purchase'" class="w-4 h-4 text-emerald-600" />
-              </button>
-
-              <!-- All Option -->
-              <div class="border-t border-gray-100 my-1"></div>
-              <button
-                type="button"
-                @click="setTypeFilter('all')"
-                class="w-full text-left px-3 py-2 text-xs font-bold flex items-center justify-between transition-colors cursor-pointer"
-                :class="selectedType === 'all' ? 'bg-slate-100 text-gray-900' : 'text-gray-700 hover:bg-slate-50'"
-              >
-                <div class="flex items-center gap-2">
-                  <div class="w-6 h-6 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center">
-                    <Layers class="w-3.5 h-3.5" />
-                  </div>
-                  <span>All (Sales & Purchase)</span>
-                </div>
-                <Check v-if="selectedType === 'all'" class="w-4 h-4 text-gray-700" />
-              </button>
-            </div>
           </div>
         </div>
       </div>
@@ -391,22 +337,13 @@ const availableVoucherTypes = ref<string[]>(['Sales', 'Purchase'])
 
 const searchQuery = ref('')
 const selectedType = ref<'sales' | 'purchase' | 'all'>('sales')
-const isTypeDropdownOpen = ref(false)
-const statusFilter = ref<'all' | 'unposted' | 'posted'>('all')
+const statusFilter = ref<'all' | 'unposted' | 'posted'>('unposted')
 
 const isReviewModalOpen = ref(false)
 const selectedVoucher = ref<PreparedVoucherItem | null>(null)
 
-// Dropdown label
-const selectedTypeLabel = computed(() => {
-  if (selectedType.value === 'sales') return 'Sales'
-  if (selectedType.value === 'purchase') return 'Purchase'
-  return 'All Types'
-})
-
 const setTypeFilter = (type: 'sales' | 'purchase' | 'all') => {
   selectedType.value = type
-  isTypeDropdownOpen.value = false
   fetchVouchers()
 }
 

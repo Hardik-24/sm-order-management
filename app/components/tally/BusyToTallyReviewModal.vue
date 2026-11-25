@@ -161,7 +161,7 @@
           </div>
 
           <!-- Top Config Controls -->
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <!-- Voucher Type -->
             <div>
               <label class="block text-[11px] font-bold text-gray-700 mb-1">Voucher Type</label>
@@ -189,6 +189,19 @@
               <input 
                 type="text"
                 v-model="form.voucherNo"
+                class="w-full text-xs font-bold px-3 py-2 rounded-lg border border-gray-300 bg-white font-mono focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+              />
+            </div>
+
+            <!-- Supplier Invoice Ref (For Purchase) or Bill Ref (For Sales) -->
+            <div>
+              <label class="block text-[11px] font-bold text-gray-700 mb-1">
+                {{ form.voucherType === 'Purchase' ? 'Supplier Bill Ref' : 'Bill Reference' }}
+              </label>
+              <input 
+                type="text"
+                v-model="form.reference"
+                :placeholder="form.voucherType === 'Purchase' ? 'e.g. PB25024493' : 'e.g. ' + form.voucherNo"
                 class="w-full text-xs font-bold px-3 py-2 rounded-lg border border-gray-300 bg-white font-mono focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
               />
             </div>
@@ -494,6 +507,7 @@ const emit = defineEmits<{
 const form = ref<{
   voucherType: string
   voucherNo: string
+  reference: string
   date: string // YYYYMMDD
   partyLedgerName: string
   narration: string
@@ -502,6 +516,7 @@ const form = ref<{
 }>({
   voucherType: 'Sales',
   voucherNo: '',
+  reference: '',
   date: '',
   partyLedgerName: '',
   narration: '',
@@ -537,6 +552,7 @@ watch(() => props.voucher, (v) => {
   form.value = {
     voucherType: v.voucherType || 'Sales',
     voucherNo: v.voucherNo,
+    reference: v.reference || (v.voucherType === 'Purchase' ? v.voucherNo : ''),
     date: v.voucherDate,
     partyLedgerName: party,
     narration: v.narration || `${v.voucherType || 'Sales'} Invoice - ${v.voucherNo}`,
@@ -656,6 +672,7 @@ const postToTally = async () => {
       voucherType: form.value.voucherType,
       date: form.value.date,
       partyLedgerName: form.value.partyLedgerName,
+      reference: form.value.reference,
       narration: form.value.narration,
       ledgerEntries: form.value.ledgerEntries,
       busyPartyName: props.voucher.customerName,

@@ -9,6 +9,8 @@ export interface PostVoucherPayload {
   voucherType?: string
   date: string // YYYYMMDD
   partyLedgerName: string
+  reference?: string
+  referenceDate?: string
   narration?: string
   ledgerEntries: Array<{
     ledgerName: string
@@ -62,6 +64,7 @@ export default defineEventHandler(async (event) => {
   const vchNo = body.voucherNo.trim()
   const partyLedger = body.partyLedgerName.trim()
   const narration = body.narration || `${vchType} Invoice ${vchNo}`
+  const reference = (body.reference || '').trim()
 
   const ledgerXmlParts = body.ledgerEntries.map((e, idx) => {
     const isPositive = Boolean(e.isDeemedPositive)
@@ -73,12 +76,26 @@ export default defineEventHandler(async (event) => {
     const escapedLedger = e.ledgerName.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     const isParty = idx === 0 || e.ledgerName.trim().toLowerCase() === partyLedger.toLowerCase()
 
+    // Bill-by-Bill Allocation: Ensure invoice is tracked under specific Bill Ref (New Ref) in Tally
+    let billAllocationsXml = ''
+    if (isParty) {
+      const billRefName = (reference || vchNo).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      billAllocationsXml = `
+        <BILLALLOCATIONS.LIST>
+          <NAME>${billRefName}</NAME>
+          <BILLTYPE>New Ref</BILLTYPE>
+          <AMOUNT>${formattedAmount}</AMOUNT>
+        </BILLALLOCATIONS.LIST>
+      `
+    }
+
     return `
       <LEDGERENTRIES.LIST>
         <LEDGERNAME>${escapedLedger}</LEDGERNAME>
         <ISDEEMEDPOSITIVE>${isPositive ? 'Yes' : 'No'}</ISDEEMEDPOSITIVE>
         ${isParty ? '<ISPARTYLEDGER>Yes</ISPARTYLEDGER>' : ''}
         <AMOUNT>${formattedAmount}</AMOUNT>
+        ${billAllocationsXml}
       </LEDGERENTRIES.LIST>
     `
   }).join('')
@@ -86,6 +103,8 @@ export default defineEventHandler(async (event) => {
   const escapedCompany = companyName.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
   const escapedParty = partyLedger.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
   const escapedNarration = narration.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  const escapedReference = reference.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  const referenceXml = escapedReference ? `<REFERENCE>${escapedReference}</REFERENCE><REFERENCEDATE>${vchDate}</REFERENCEDATE>` : ''
 
   const tallyEnvelope = `
 <ENVELOPE>
@@ -107,6 +126,7 @@ export default defineEventHandler(async (event) => {
           <DATE>${vchDate}</DATE>
           <VOUCHERTYPENAME>${vchType}</VOUCHERTYPENAME>
           <VOUCHERNUMBER>${vchNo}</VOUCHERNUMBER>
+          ${referenceXml}
           <PARTYLEDGERNAME>${escapedParty}</PARTYLEDGERNAME>
           <PERSISTEDVIEW>Invoice Voucher View</PERSISTEDVIEW>
           <VCHENTRYMODE>Accounting Invoice</VCHENTRYMODE>
