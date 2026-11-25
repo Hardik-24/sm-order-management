@@ -41,6 +41,7 @@ export default defineEventHandler(async (event) => {
       productName: hp.product?.name,
       productSku: hp.product?.sku,
       catalogPrice: Number(hp.product?.price || 0),
+      lastPrice: Number(hp.unitPrice),
       unitPrice: Number(hp.unitPrice),
       basePrice: hp.basePrice !== null ? Number(hp.basePrice) : Number(hp.unitPrice),
       taxRate: hp.taxRate !== null ? Number(hp.taxRate) : 18,

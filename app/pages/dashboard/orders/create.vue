@@ -2,7 +2,7 @@
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useRouter, onBeforeRouteLeave } from 'vue-router'
 import { ArrowLeft, X, Plus, Trash2, Zap, MapPin, UserCheck, ShieldAlert, Award, FileText, IndianRupee, Truck, Car, AlertCircle, Package, PackageSearch, Loader2, Clock, Crown, Check, Tag, Calculator, ChevronRight, Database, Pencil, ChevronDown, ChevronUp, LayoutList, UserPlus } from 'lucide-vue-next'
-import { formatCurrency, formatDate } from '~/lib/utils'
+import { formatCurrency, formatPriceExact, formatDate } from '~/lib/utils'
 import CustomSelect from '~/components/ui/CustomSelect.vue'
 import SearchCombobox from '~/components/ui/SearchCombobox.vue'
 import ConfirmDiscardModal from '~/components/ui/ConfirmDiscardModal.vue'
@@ -416,6 +416,71 @@ const removeItem = (index: number) => {
 // Historical Prices Lookup
 const historicalPricesMap = ref<Record<string, any>>({})
 const loadingPrices = ref<Record<string, boolean>>({})
+
+interface BilledBreakdown {
+  withoutTax: number
+  withoutTaxFormatted: string
+  gstRate: number
+  gstAmount: number
+  gstAmountFormatted: string
+  finalRate: number
+  finalRateFormatted: string
+  voucherNo?: string
+  daysAgo?: number
+}
+
+const getBilledBreakdown = (hp: any): BilledBreakdown | null => {
+  if (!hp) return null
+
+  const isIncl = hp.isTaxInclusive !== false
+  const taxRate = Number(hp.taxRate ?? 18)
+
+  let withoutTax = 0
+  let finalRate = 0
+
+  if (hp.basePrice !== null && hp.basePrice !== undefined && Number(hp.basePrice) > 0) {
+    withoutTax = Number(hp.basePrice)
+    if (isIncl) {
+      finalRate = Number(hp.unitPrice ?? withoutTax)
+    } else {
+      finalRate = withoutTax * (1 + taxRate / 100)
+    }
+  } else if (hp.unitPrice !== null && hp.unitPrice !== undefined) {
+    const uPrice = Number(hp.unitPrice)
+    if (isIncl) {
+      finalRate = uPrice
+      withoutTax = taxRate > 0 ? (finalRate / (1 + taxRate / 100)) : finalRate
+    } else {
+      withoutTax = uPrice
+      finalRate = withoutTax * (1 + taxRate / 100)
+    }
+  } else if (hp.rate !== null && hp.rate !== undefined) {
+    const r = Number(hp.rate)
+    if (isIncl) {
+      finalRate = r
+      withoutTax = taxRate > 0 ? (finalRate / (1 + taxRate / 100)) : finalRate
+    } else {
+      withoutTax = r
+      finalRate = withoutTax * (1 + taxRate / 100)
+    }
+  }
+
+  withoutTax = Math.round(withoutTax * 10000) / 10000
+  finalRate = Math.round(finalRate * 10000) / 10000
+  const gstAmount = Math.round(Math.abs(finalRate - withoutTax) * 10000) / 10000
+
+  return {
+    withoutTax,
+    withoutTaxFormatted: formatPriceExact(withoutTax),
+    gstRate: taxRate,
+    gstAmount,
+    gstAmountFormatted: formatPriceExact(gstAmount),
+    finalRate,
+    finalRateFormatted: formatPriceExact(finalRate),
+    voucherNo: hp.voucherNo,
+    daysAgo: hp.daysAgo
+  }
+}
 
 const fetchHistoricalPrice = async (customerId: string, productId: string) => {
   if (!customerId || !productId) return
@@ -1910,13 +1975,15 @@ onUnmounted(() => {
                     title="Click to view complete price history for Current Party & All Parties"
                   >
                     <span class="w-1.5 h-1.5 rounded-full shrink-0" :class="item.applyLastPrice ? 'bg-emerald-600' : 'bg-amber-500'"></span>
-                    <span>
-                      Last Billed: 
-                      <strong class="font-bold text-gray-900">
-                        {{ formatCurrency(item.isTaxInclusive ? historicalPricesMap[item.productId].unitPrice : historicalPricesMap[item.productId].basePrice) }}
-                      </strong>
-                      <span class="text-[10px] text-gray-500 ml-1">
-                        ({{ item.isTaxInclusive ? 'Incl. Tax' : '+Tax' }} • {{ historicalPricesMap[item.productId].daysAgo }}d ago)
+                    <span v-if="getBilledBreakdown(historicalPricesMap[item.productId])" class="inline-flex items-center gap-1 flex-wrap">
+                      <span class="text-gray-500 font-medium">Last Billed:</span>
+                      <span class="font-bold text-gray-800 tabular-nums">{{ getBilledBreakdown(historicalPricesMap[item.productId])!.withoutTaxFormatted }}</span>
+                      <span class="text-gray-400 font-bold">+</span>
+                      <span class="text-gray-600 font-medium tabular-nums" :title="`${getBilledBreakdown(historicalPricesMap[item.productId])!.gstRate}% GST`">GST {{ getBilledBreakdown(historicalPricesMap[item.productId])!.gstAmountFormatted }}</span>
+                      <span class="text-gray-400 font-bold">=</span>
+                      <strong class="font-black text-gray-950 tabular-nums">{{ getBilledBreakdown(historicalPricesMap[item.productId])!.finalRateFormatted }}</strong>
+                      <span v-if="getBilledBreakdown(historicalPricesMap[item.productId])!.daysAgo !== undefined" class="text-[10px] text-gray-400 ml-1">
+                        ({{ getBilledBreakdown(historicalPricesMap[item.productId])!.daysAgo }}d ago)
                       </span>
                     </span>
 
@@ -2302,13 +2369,15 @@ onUnmounted(() => {
               >
                 <div class="flex items-center gap-1.5 min-w-0 truncate">
                   <span class="w-1.5 h-1.5 rounded-full shrink-0" :class="currentItem.applyLastPrice ? 'bg-emerald-600' : 'bg-amber-500'"></span>
-                  <span class="truncate">
-                    Last Billed: 
-                    <strong class="font-bold text-gray-900">
-                      {{ formatCurrency(currentItem.isTaxInclusive ? historicalPricesMap[currentItem.productId].unitPrice : historicalPricesMap[currentItem.productId].basePrice) }}
-                    </strong>
-                    <span class="text-[10px] text-gray-500 ml-1">
-                      ({{ currentItem.isTaxInclusive ? 'Incl. Tax' : '+Tax' }} • {{ historicalPricesMap[currentItem.productId].daysAgo }}d ago)
+                  <span v-if="getBilledBreakdown(historicalPricesMap[currentItem.productId])" class="truncate inline-flex items-center gap-1 flex-wrap">
+                    <span class="text-gray-500 font-medium">Last Billed:</span>
+                    <span class="font-bold text-gray-800 tabular-nums">{{ getBilledBreakdown(historicalPricesMap[currentItem.productId])!.withoutTaxFormatted }}</span>
+                    <span class="text-gray-400 font-bold">+</span>
+                    <span class="text-gray-600 font-medium tabular-nums" :title="`${getBilledBreakdown(historicalPricesMap[currentItem.productId])!.gstRate}% GST`">GST {{ getBilledBreakdown(historicalPricesMap[currentItem.productId])!.gstAmountFormatted }}</span>
+                    <span class="text-gray-400 font-bold">=</span>
+                    <strong class="font-black text-gray-950 tabular-nums">{{ getBilledBreakdown(historicalPricesMap[currentItem.productId])!.finalRateFormatted }}</strong>
+                    <span v-if="getBilledBreakdown(historicalPricesMap[currentItem.productId])!.daysAgo !== undefined" class="text-[10px] text-gray-400 ml-1">
+                      ({{ getBilledBreakdown(historicalPricesMap[currentItem.productId])!.daysAgo }}d ago)
                     </span>
                   </span>
                   <span class="text-[10px] text-sky-700 font-bold hover:underline flex items-center gap-0.5 ml-1 shrink-0">

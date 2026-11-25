@@ -74,6 +74,9 @@ export default defineEventHandler(async (event) => {
     qty: number
     rate: number
     amount: number
+    taxRate: number
+    taxableAmount: number
+    taxAmount: number
     isTaxInclusive: boolean
   }> = []
 
@@ -83,6 +86,9 @@ export default defineEventHandler(async (event) => {
              COALESCE((item->>'qty')::numeric, 0) as qty, 
              COALESCE((item->>'rate')::numeric, 0) as rate, 
              COALESCE((item->>'amount')::numeric, 0) as amount, 
+             COALESCE((item->>'taxRate')::numeric, 18) as "taxRate",
+             COALESCE((item->>'taxableAmount')::numeric, 0) as "taxableAmount",
+             COALESCE((item->>'taxAmount')::numeric, 0) as "taxAmount",
              COALESCE((item->>'isTaxInclusive')::boolean, true) as "isTaxInclusive"
       FROM busy_vouchers v,
            jsonb_array_elements(v.items) AS item
@@ -98,6 +104,9 @@ export default defineEventHandler(async (event) => {
       qty: Number(r.qty),
       rate: Number(r.rate),
       amount: Number(r.amount),
+      taxRate: Number(r.taxRate ?? 18),
+      taxableAmount: Number(r.taxableAmount ?? 0),
+      taxAmount: Number(r.taxAmount ?? 0),
       isTaxInclusive: Boolean(r.isTaxInclusive)
     }))
   } catch (err) {
@@ -122,6 +131,9 @@ export default defineEventHandler(async (event) => {
                  COALESCE((item->>'qty')::numeric, 0) as qty, 
                  COALESCE((item->>'rate')::numeric, 0) as rate, 
                  COALESCE((item->>'amount')::numeric, 0) as amount, 
+                 COALESCE((item->>'taxRate')::numeric, 18) as "taxRate",
+                 COALESCE((item->>'taxableAmount')::numeric, 0) as "taxableAmount",
+                 COALESCE((item->>'taxAmount')::numeric, 0) as "taxAmount",
                  COALESCE((item->>'isTaxInclusive')::boolean, true) as "isTaxInclusive"
           FROM busy_vouchers v,
                jsonb_array_elements(v.items) AS item
@@ -142,6 +154,9 @@ export default defineEventHandler(async (event) => {
           qty: Number(r.qty),
           rate: Number(r.rate),
           amount: Number(r.amount),
+          taxRate: Number(r.taxRate ?? 18),
+          taxableAmount: Number(r.taxableAmount ?? 0),
+          taxAmount: Number(r.taxAmount ?? 0),
           isTaxInclusive: Boolean(r.isTaxInclusive)
         }))
       } catch (err) {

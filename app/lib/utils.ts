@@ -18,6 +18,31 @@ export function formatCurrency(amount: number | string): string {
   }).format(num)
 }
 
+/**
+ * Format currency in Indian Rupees without rounding off, showing all decimal places present.
+ * Prevents rounding 4026.75 to 4027 or 2730.51 to 2731.
+ */
+export function formatPriceExact(val: number | string | undefined | null): string {
+  if (val === undefined || val === null || val === '') return '₹0'
+  const num = typeof val === 'string' ? parseFloat(val) : val
+  if (isNaN(num)) return '₹0'
+
+  // Clean floating point artifacts (e.g. 491.4899999999998 -> 491.49)
+  const cleanNum = Math.round(num * 10000) / 10000
+  const str = String(cleanNum).trim()
+  const decParts = str.split('.')
+  const decimals = decParts.length > 1 ? decParts[1].length : 0
+  const minDec = decimals > 0 ? Math.min(2, decimals) : 0
+  const maxDec = Math.max(decimals, 2)
+
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    minimumFractionDigits: minDec,
+    maximumFractionDigits: maxDec
+  }).format(cleanNum)
+}
+
 /** Format date to "24 Aug 2026, 4:32 PM" */
 export function formatDateTime(date: string | Date): string {
   const d = typeof date === 'string' ? new Date(date) : date

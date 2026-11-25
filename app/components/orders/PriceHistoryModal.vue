@@ -174,12 +174,16 @@
             </div>
 
             <!-- Rate Display (Reference Only, No Apply Button) -->
-            <div class="shrink-0 text-right">
-              <div class="text-xs sm:text-sm font-black text-[#1b3b5f] tabular-nums">
-                {{ formatCurrency(row.rate || row.unitPrice || 0) }}
+            <div class="shrink-0 text-right max-w-[55%] sm:max-w-none">
+              <div class="flex items-center justify-end gap-1 flex-wrap text-xs sm:text-sm tabular-nums">
+                <span class="font-bold text-gray-800">{{ getRowBreakdown(row).withoutTaxFormatted }}</span>
+                <span class="text-gray-400 font-bold">+</span>
+                <span class="text-gray-600 font-medium text-[11px] sm:text-xs" :title="`${getRowBreakdown(row).gstRate}% GST`">GST {{ getRowBreakdown(row).gstAmountFormatted }}</span>
+                <span class="text-gray-400 font-bold">=</span>
+                <strong class="font-black text-[#1b3b5f]">{{ getRowBreakdown(row).finalRateFormatted }}</strong>
               </div>
-              <span class="text-[9px] font-bold uppercase tracking-wider block" :class="row.isTaxInclusive ? 'text-blue-600' : 'text-gray-500'">
-                {{ row.isTaxInclusive ? 'Incl. Tax' : '+Tax' }}
+              <span class="text-[9px] font-semibold text-gray-400 block mt-0.5">
+                {{ row.isTaxInclusive ? 'Incl. Tax' : '+Tax' }} &bull; {{ getRowBreakdown(row).gstRate }}% GST
               </span>
             </div>
           </div>
@@ -207,7 +211,73 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { History, X, UserCheck, Users, Search, Loader2, FileText } from 'lucide-vue-next'
-import { formatCurrency } from '~/lib/utils'
+import { formatCurrency, formatPriceExact } from '~/lib/utils'
+
+interface RowBreakdown {
+  withoutTax: number
+  withoutTaxFormatted: string
+  gstRate: number
+  gstAmount: number
+  gstAmountFormatted: string
+  finalRate: number
+  finalRateFormatted: string
+}
+
+const getRowBreakdown = (row: any): RowBreakdown => {
+  const isIncl = row.isTaxInclusive !== false
+  const taxRate = Number(row.taxRate ?? 18)
+
+  let withoutTax = 0
+  let finalRate = 0
+
+  if (row.qty && Number(row.qty) > 0 && row.taxableAmount && Number(row.taxableAmount) > 0) {
+    withoutTax = Number(row.taxableAmount) / Number(row.qty)
+    if (isIncl) {
+      finalRate = Number(row.rate ?? (withoutTax * (1 + taxRate / 100)))
+    } else {
+      finalRate = withoutTax * (1 + taxRate / 100)
+    }
+  } else if (row.basePrice !== null && row.basePrice !== undefined && Number(row.basePrice) > 0) {
+    withoutTax = Number(row.basePrice)
+    if (isIncl) {
+      finalRate = Number(row.unitPrice ?? (withoutTax * (1 + taxRate / 100)))
+    } else {
+      finalRate = withoutTax * (1 + taxRate / 100)
+    }
+  } else if (row.unitPrice !== null && row.unitPrice !== undefined && Number(row.unitPrice) > 0) {
+    const uPrice = Number(row.unitPrice)
+    if (isIncl) {
+      finalRate = uPrice
+      withoutTax = taxRate > 0 ? (finalRate / (1 + taxRate / 100)) : finalRate
+    } else {
+      withoutTax = uPrice
+      finalRate = withoutTax * (1 + taxRate / 100)
+    }
+  } else if (row.rate !== null && row.rate !== undefined && Number(row.rate) > 0) {
+    const r = Number(row.rate)
+    if (isIncl) {
+      finalRate = r
+      withoutTax = taxRate > 0 ? (finalRate / (1 + taxRate / 100)) : finalRate
+    } else {
+      withoutTax = r
+      finalRate = withoutTax * (1 + taxRate / 100)
+    }
+  }
+
+  withoutTax = Math.round(withoutTax * 10000) / 10000
+  finalRate = Math.round(finalRate * 10000) / 10000
+  const gstAmount = Math.round(Math.abs(finalRate - withoutTax) * 10000) / 10000
+
+  return {
+    withoutTax,
+    withoutTaxFormatted: formatPriceExact(withoutTax),
+    gstRate: taxRate,
+    gstAmount,
+    gstAmountFormatted: formatPriceExact(gstAmount),
+    finalRate,
+    finalRateFormatted: formatPriceExact(finalRate)
+  }
+}
 
 const props = defineProps<{
   modelValue: boolean
@@ -320,6 +390,10 @@ const currentPartyList = computed(() => {
       customerCode: hp.customer?.customerCode,
       qty: hp.quantity,
       rate: Number(hp.unitPrice || hp.basePrice || 0),
+      basePrice: hp.basePrice,
+      unitPrice: hp.unitPrice,
+      taxRate: hp.taxRate,
+      taxAmount: hp.taxAmount,
       isTaxInclusive: Boolean(hp.isTaxInclusive),
       daysAgo,
       customer: hp.customer
@@ -353,7 +427,11 @@ const allPartiesList = computed(() => {
       customerName: hp.customer?.name || 'Customer',
       customerCode: hp.customer?.customerCode,
       qty: hp.quantity,
-      rate: Number(hp.unitPrice || 0),
+      rate: Number(hp.unitPrice || hp.basePrice || 0),
+      basePrice: hp.basePrice,
+      unitPrice: hp.unitPrice,
+      taxRate: hp.taxRate,
+      taxAmount: hp.taxAmount,
       isTaxInclusive: Boolean(hp.isTaxInclusive),
       daysAgo,
       customer: hp.customer

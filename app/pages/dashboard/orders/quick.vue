@@ -8,7 +8,7 @@ import {
   ShoppingBag, Search, Sparkles, Building2, User, Phone, MapPin, 
   ShieldCheck, ShieldAlert, CheckCircle2, History
 } from 'lucide-vue-next'
-import { formatCurrency } from '~/lib/utils'
+import { formatCurrency, formatPriceExact } from '~/lib/utils'
 import AccessDenied from '~/components/ui/AccessDenied.vue'
 import PriceHistoryModal from '~/components/orders/PriceHistoryModal.vue'
 import ConfirmDiscardModal from '~/components/ui/ConfirmDiscardModal.vue'
@@ -218,6 +218,71 @@ const customerCreditInfo = computed(() => {
 // Customer Last Prices map
 const customerLastPrices = ref<Record<string, any>>({})
 const loadingLastPrices = ref(false)
+
+interface BilledBreakdown {
+  withoutTax: number
+  withoutTaxFormatted: string
+  gstRate: number
+  gstAmount: number
+  gstAmountFormatted: string
+  finalRate: number
+  finalRateFormatted: string
+  voucherNo?: string
+  daysAgo?: number
+}
+
+const getBilledBreakdown = (hp: any): BilledBreakdown | null => {
+  if (!hp) return null
+
+  const isIncl = hp.isTaxInclusive !== false
+  const taxRate = Number(hp.taxRate ?? 18)
+
+  let withoutTax = 0
+  let finalRate = 0
+
+  if (hp.basePrice !== null && hp.basePrice !== undefined && Number(hp.basePrice) > 0) {
+    withoutTax = Number(hp.basePrice)
+    if (isIncl) {
+      finalRate = Number(hp.unitPrice ?? (withoutTax * (1 + taxRate / 100)))
+    } else {
+      finalRate = withoutTax * (1 + taxRate / 100)
+    }
+  } else if (hp.unitPrice !== null && hp.unitPrice !== undefined && Number(hp.unitPrice) > 0) {
+    const uPrice = Number(hp.unitPrice)
+    if (isIncl) {
+      finalRate = uPrice
+      withoutTax = taxRate > 0 ? (finalRate / (1 + taxRate / 100)) : finalRate
+    } else {
+      withoutTax = uPrice
+      finalRate = withoutTax * (1 + taxRate / 100)
+    }
+  } else if (hp.lastPrice !== null && hp.lastPrice !== undefined && Number(hp.lastPrice) > 0) {
+    const lp = Number(hp.lastPrice)
+    if (isIncl) {
+      finalRate = lp
+      withoutTax = taxRate > 0 ? (finalRate / (1 + taxRate / 100)) : finalRate
+    } else {
+      withoutTax = lp
+      finalRate = withoutTax * (1 + taxRate / 100)
+    }
+  }
+
+  withoutTax = Math.round(withoutTax * 10000) / 10000
+  finalRate = Math.round(finalRate * 10000) / 10000
+  const gstAmount = Math.round(Math.abs(finalRate - withoutTax) * 10000) / 10000
+
+  return {
+    withoutTax,
+    withoutTaxFormatted: formatPriceExact(withoutTax),
+    gstRate: taxRate,
+    gstAmount,
+    gstAmountFormatted: formatPriceExact(gstAmount),
+    finalRate,
+    finalRateFormatted: formatPriceExact(finalRate),
+    voucherNo: hp.voucherNo,
+    daysAgo: hp.daysAgo
+  }
+}
 
 const loadCustomerLastPrices = async (custId: string) => {
   if (!custId || isCustomCustomer.value) {
@@ -600,8 +665,9 @@ const deleteCartItem = (id: string) => {
 
 const applyLastPriceToItem = (id: string) => {
   const lp = customerLastPrices.value[id]
-  if (lp && lp.lastPrice && cart.value[id]) {
-    cart.value[id].customPrice = Number(lp.lastPrice)
+  const priceVal = lp?.unitPrice ?? lp?.lastPrice
+  if (lp && priceVal && cart.value[id]) {
+    cart.value[id].customPrice = Number(priceVal)
     cart.value[id].applyLastPrice = true
   }
 }
@@ -927,8 +993,9 @@ const closePriceHistory = () => {
   popModalHistory()
 }
 
-const onApplyPriceHistory = (rate: number) => {
-  if (phProductId.value) {
+const onApplyPriceHistory = (data: any) => {
+  const rate = typeof data === 'object' && data !== null ? Number(data.rate) : Number(data)
+  if (phProductId.value && rate > 0) {
     if (!cart.value[phProductId.value]) {
       const p = (rawProducts.value || []).find(x => x.id === phProductId.value)
       if (p) addToCart(p, 1)
@@ -1410,13 +1477,18 @@ const confirmAndPlaceOrder = async () => {
 
               <!-- Customer Last Price pill -->
               <button 
-                v-if="customerLastPrices[item.id]?.lastPrice"
+                v-if="customerLastPrices[item.id]?.unitPrice || customerLastPrices[item.id]?.lastPrice"
                 @click="openPriceHistory(item)"
-                class="text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200/80 inline-flex items-center gap-1 cursor-pointer transition-colors"
+                class="text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200/80 inline-flex items-center gap-1 cursor-pointer transition-colors max-w-full truncate"
                 title="View full customer price history"
               >
-                <Clock class="w-3 h-3 text-purple-600" />
-                <span>Last: ₹{{ Number(customerLastPrices[item.id].lastPrice).toLocaleString('en-IN') }}</span>
+                <Clock class="w-3 h-3 text-purple-600 shrink-0" />
+                <span v-if="getBilledBreakdown(customerLastPrices[item.id])" class="tabular-nums truncate">
+                  Last: {{ getBilledBreakdown(customerLastPrices[item.id])!.withoutTaxFormatted }} + GST {{ getBilledBreakdown(customerLastPrices[item.id])!.gstAmountFormatted }} = {{ getBilledBreakdown(customerLastPrices[item.id])!.finalRateFormatted }}
+                </span>
+                <span v-else>
+                  Last: ₹{{ Number(customerLastPrices[item.id].lastPrice || customerLastPrices[item.id].unitPrice).toLocaleString('en-IN') }}
+                </span>
               </button>
             </div>
 
@@ -1741,11 +1813,16 @@ const confirmAndPlaceOrder = async () => {
 
                 <!-- Price History Bar -->
                 <div 
-                  v-if="!c.isCustom && customerLastPrices[c.id]?.lastPrice"
+                  v-if="!c.isCustom && (customerLastPrices[c.id]?.unitPrice || customerLastPrices[c.id]?.lastPrice)"
                   class="flex items-center justify-between bg-white border border-slate-200 p-2 rounded-xl text-[11px]"
                 >
                   <div class="text-slate-600">
-                    <span class="font-bold text-purple-700">Last: ₹{{ Number(customerLastPrices[c.id].lastPrice).toLocaleString('en-IN') }}</span>
+                    <span v-if="getBilledBreakdown(customerLastPrices[c.id])" class="font-bold text-purple-700 tabular-nums">
+                      Last: {{ getBilledBreakdown(customerLastPrices[c.id])!.withoutTaxFormatted }} + GST {{ getBilledBreakdown(customerLastPrices[c.id])!.gstAmountFormatted }} = {{ getBilledBreakdown(customerLastPrices[c.id])!.finalRateFormatted }}
+                    </span>
+                    <span v-else class="font-bold text-purple-700">
+                      Last: ₹{{ Number(customerLastPrices[c.id].lastPrice || customerLastPrices[c.id].unitPrice).toLocaleString('en-IN') }}
+                    </span>
                   </div>
                   <div class="flex items-center gap-1.5">
                     <button 
