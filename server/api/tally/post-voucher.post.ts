@@ -1,6 +1,6 @@
 import { defineEventHandler, readBody, createError } from 'h3'
 import { requireActionPermission } from '~~/server/utils/auth'
-import { queryTally, getTallyConnectionStatus } from '~~/server/utils/tallyClient'
+import { queryTally, getTallyConnectionStatus, checkTallyVoucherExists } from '~~/server/utils/tallyClient'
 import { prisma } from '~~/server/utils/prisma'
 
 export interface PostVoucherPayload {
@@ -58,13 +58,104 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  // 3. Construct Tally XML
   const vchType = body.voucherType || 'Sales'
   const vchDate = (body.date || '').replace(/[^0-9]/g, '') || new Date().toISOString().slice(0, 10).replace(/-/g, '')
   const vchNo = body.voucherNo.trim()
   const partyLedger = body.partyLedgerName.trim()
   const narration = body.narration || `${vchType} Invoice ${vchNo}`
   const reference = (body.reference || '').trim()
+
+  // 3. DUPLICATE CHECK & DOUBLE-POSTING PREVENTION
+  // Check A: Database records (Tally synced registers + recent OMS posts)
+  const normNo = vchNo.toUpperCase()
+  const normRef = (reference || '').toUpperCase()
+
+  const [receivablesSetting, payablesSetting, postedSetting] = await Promise.all([
+    prisma.systemSetting.findUnique({ where: { key: 'tally_receivables_data' } }),
+    prisma.systemSetting.findUnique({ where: { key: 'tally_payables_data' } }),
+    prisma.systemSetting.findUnique({ where: { key: 'BUSY_TALLY_POSTED_VOUCHERS' } }),
+  ])
+
+  let isAlreadyInDbSync = false
+  let syncedType = ''
+
+  if (vchType.toLowerCase() === 'sales' && receivablesSetting?.value) {
+    try {
+      const rec = JSON.parse(receivablesSetting.value)
+      if (Array.isArray(rec.vouchers)) {
+        const found = rec.vouchers.find((v: any) => 
+          (v.voucherNo && v.voucherNo.trim().toUpperCase() === normNo) ||
+          (v.ref && v.ref.trim().toUpperCase() === normNo) ||
+          (normRef && v.voucherNo && v.voucherNo.trim().toUpperCase() === normRef) ||
+          (normRef && v.ref && v.ref.trim().toUpperCase() === normRef)
+        )
+        if (found) {
+          isAlreadyInDbSync = true
+          syncedType = 'Sales'
+        }
+      }
+    } catch {}
+  } else if (vchType.toLowerCase() === 'purchase' && payablesSetting?.value) {
+    try {
+      const pay = JSON.parse(payablesSetting.value)
+      if (Array.isArray(pay.vouchers)) {
+        const found = pay.vouchers.find((v: any) => 
+          (v.voucherNo && v.voucherNo.trim().toUpperCase() === normNo) ||
+          (v.ref && v.ref.trim().toUpperCase() === normNo) ||
+          (normRef && v.voucherNo && v.voucherNo.trim().toUpperCase() === normRef) ||
+          (normRef && v.ref && v.ref.trim().toUpperCase() === normRef)
+        )
+        if (found) {
+          isAlreadyInDbSync = true
+          syncedType = 'Purchase'
+        }
+      }
+    } catch {}
+  }
+
+  if (isAlreadyInDbSync) {
+    return {
+      success: false,
+      alreadyExists: true,
+      voucherNo: vchNo,
+      error: `Duplicate Blocked: Voucher #${vchNo} is already present in Tally Prime (${syncedType} Register). Double posting is strictly prohibited.`
+    }
+  }
+
+  // Check B: LIVE TALLY GROUND-TRUTH QUERY (Detects any voucher manually entered by accounts team!)
+  const liveCheck = await checkTallyVoucherExists(vchNo, companyName, reference)
+  if (liveCheck.exists) {
+    // Record in BUSY_TALLY_POSTED_VOUCHERS so OMS knows it's already there
+    try {
+      let postedMap: Record<string, { postedAt: string; tallyVchNo?: string }> = {}
+      if (postedSetting?.value) {
+        try { postedMap = JSON.parse(postedSetting.value) } catch {}
+      }
+      postedMap[vchNo] = {
+        postedAt: new Date().toISOString(),
+        tallyVchNo: liveCheck.voucherNo || vchNo
+      }
+      await prisma.systemSetting.upsert({
+        where: { key: 'BUSY_TALLY_POSTED_VOUCHERS' },
+        update: { value: JSON.stringify(postedMap) },
+        create: { key: 'BUSY_TALLY_POSTED_VOUCHERS', value: JSON.stringify(postedMap) }
+      })
+    } catch {}
+
+    const amtStr = liveCheck.amount ? ` (₹${liveCheck.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })})` : ''
+    const partyStr = liveCheck.partyLedgerName ? ` for "${liveCheck.partyLedgerName}"` : ''
+    const typeStr = liveCheck.voucherType ? ` (${liveCheck.voucherType})` : ''
+
+    return {
+      success: false,
+      alreadyExists: true,
+      voucherNo: vchNo,
+      existingVoucher: liveCheck,
+      error: `Duplicate Blocked: Voucher #${vchNo} already exists in Tally Prime${typeStr}${partyStr}${amtStr}. Double posting is strictly prohibited.`
+    }
+  }
+
+  // 4. Construct Tally XML
 
   const ledgerXmlParts = body.ledgerEntries.map((e, idx) => {
     const isPositive = Boolean(e.isDeemedPositive)

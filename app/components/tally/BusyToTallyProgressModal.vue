@@ -103,10 +103,10 @@
             </div>
             <div class="flex-1">
               <div class="text-xs font-bold" :class="getStepTextClass(1)">
-                Step 1: Check Tally Prime Connection
+                Step 1: Connection & Duplicate Prevention Check
               </div>
               <div class="text-[11px] text-gray-500 mt-0.5">
-                {{ step1Details || 'Connecting to Tally Prime on Port 9000...' }}
+                {{ step1Details || 'Checking Port 9000 & verifying voucher does not already exist in Tally...' }}
               </div>
             </div>
           </div>

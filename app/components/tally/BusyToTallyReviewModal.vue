@@ -521,26 +521,35 @@
         </button>
 
         <div class="flex items-center gap-3">
+          <!-- Already Posted Notice -->
+          <div v-if="voucher.isVerifiedInTally" class="flex items-center gap-1.5 text-xs font-bold text-emerald-800 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-300">
+            <CheckCircle2 class="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>Voucher is verified in Tally Prime. Double posting is prevented.</span>
+          </div>
+
           <!-- Missing Ledger Alert -->
-          <div v-if="!isValidTallyLedger" class="flex items-center gap-1.5 text-xs font-bold text-amber-800 bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-300">
+          <div v-else-if="!isValidTallyLedger" class="flex items-center gap-1.5 text-xs font-bold text-amber-800 bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-300">
             <AlertTriangle class="w-4 h-4 text-amber-600 shrink-0" />
             <span>Select an existing Tally ledger to enable posting</span>
           </div>
 
           <button 
             type="button" 
-            :disabled="!isBalanced || isPosting || !isValidTallyLedger"
+            :disabled="!isBalanced || isPosting || !isValidTallyLedger || voucher.isVerifiedInTally"
             @click="postToTally"
             class="px-5 py-2.5 text-xs font-black text-white rounded-xl shadow-sm transition-all flex items-center gap-2 cursor-pointer active:scale-95"
             :class="[
-              isBalanced && !isPosting && isValidTallyLedger
-                ? 'bg-indigo-600 hover:bg-indigo-700 hover:shadow-md' 
-                : 'bg-gray-400 cursor-not-allowed opacity-60'
+              voucher.isVerifiedInTally
+                ? 'bg-slate-400 cursor-not-allowed opacity-80'
+                : (isBalanced && !isPosting && isValidTallyLedger
+                    ? 'bg-indigo-600 hover:bg-indigo-700 hover:shadow-md' 
+                    : 'bg-gray-400 cursor-not-allowed opacity-60')
             ]"
           >
-            <Loader2 v-if="isPosting" class="w-4 h-4 animate-spin" />
+            <CheckCircle2 v-if="voucher.isVerifiedInTally" class="w-4 h-4 text-emerald-300" />
+            <Loader2 v-else-if="isPosting" class="w-4 h-4 animate-spin" />
             <Send v-else class="w-4 h-4" />
-            <span>{{ isPosting ? 'Posting to Port 9000...' : 'Post to Tally Prime (Port 9000)' }}</span>
+            <span>{{ isPosting ? 'Checking & Posting...' : (voucher.isVerifiedInTally ? 'Already Live in Tally' : 'Post to Tally Prime (Port 9000)') }}</span>
           </button>
         </div>
       </div>
@@ -858,7 +867,7 @@ const postToTally = async () => {
   isProgressOpen.value = true
   progressStep.value = 1
   progressFailedAt.value = undefined
-  progressStep1Details.value = 'Connecting to Tally Prime on Port 9000...'
+  progressStep1Details.value = 'Connecting to Tally Prime & checking for duplicate voucher in books...'
   progressStep2Details.value = ''
   progressStep3Details.value = ''
   progressStep4Details.value = ''
@@ -870,7 +879,7 @@ const postToTally = async () => {
 
     // Step 2: Validate Ledgers & Tax Balance
     progressStep.value = 2
-    progressStep1Details.value = 'Tally Prime HTTP Server reached on Port 9000.'
+    progressStep1Details.value = 'Tally Prime reached. No duplicate found in Tally register.'
     const totalDrVal = totalDr.value.toFixed(2)
     progressStep2Details.value = `Verified equilibrium (₹${totalDrVal}). Ledgers & GST structure validated.`
 
@@ -917,7 +926,13 @@ const postToTally = async () => {
       emit('posted', res.voucherNo, form.value.partyLedgerName, props.voucher.customerName)
     } else {
       progressStep.value = -1
-      progressFailedAt.value = 4
+      if (res.alreadyExists) {
+        progressFailedAt.value = 1
+        progressStep1Details.value = `Voucher #${res.voucherNo} already exists in Tally books.`
+        emit('posted', res.voucherNo, form.value.partyLedgerName, props.voucher.customerName)
+      } else {
+        progressFailedAt.value = 4
+      }
       progressErrorMessage.value = res.error || 'Tally Prime rejected the voucher creation request.'
       postFeedback.value = {
         success: false,
@@ -930,7 +945,11 @@ const postToTally = async () => {
     progressErrorMessage.value = errMsg
 
     const lower = errMsg.toLowerCase()
-    if (lower.includes('connect') || lower.includes('port') || lower.includes('econnrefused') || lower.includes('timeout')) {
+    if (lower.includes('duplicate') || lower.includes('already exists') || lower.includes('already present')) {
+      progressFailedAt.value = 1
+      progressStep1Details.value = 'Duplicate blocked: voucher already exists in Tally books.'
+      emit('posted', form.value.voucherNo, form.value.partyLedgerName, props.voucher.customerName)
+    } else if (lower.includes('connect') || lower.includes('port') || lower.includes('econnrefused') || lower.includes('timeout')) {
       progressFailedAt.value = 1
       progressStep1Details.value = 'Connection failed to Port 9000.'
     } else if (lower.includes('ledger') || lower.includes('balance') || lower.includes('tax')) {
