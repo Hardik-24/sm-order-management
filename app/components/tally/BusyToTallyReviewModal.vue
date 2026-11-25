@@ -207,49 +207,119 @@
             </div>
           </div>
 
-          <!-- Party Ledger in Tally (Searchable dropdown) -->
-          <div class="bg-indigo-50/40 p-3.5 rounded-xl border border-indigo-100 space-y-2">
+          <!-- Party Ledger in Tally (Searchable dropdown with strict selection from Tally ledgers) -->
+          <div class="bg-indigo-50/40 p-4 rounded-xl border border-indigo-100 space-y-3">
             <div class="flex items-center justify-between">
               <label class="block text-[11px] font-black uppercase tracking-wider text-indigo-950">
-                Party Ledger Name in Tally ({{ voucher.voucherType === 'Purchase' ? 'Sundry Creditor' : 'Sundry Debtor' }})
+                Party Ledger in Tally ({{ voucher.voucherType === 'Purchase' ? 'Sundry Creditor' : 'Sundry Debtor' }})
               </label>
               <span 
-                v-if="voucher.isMapped"
+                v-if="voucher.isMapped && isValidTallyLedger"
                 class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 flex items-center gap-1"
               >
                 <Check class="w-3 h-3" /> Linked to BUSY
               </span>
               <span 
-                v-else
-                class="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-900"
+                v-else-if="isValidTallyLedger"
+                class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 flex items-center gap-1"
               >
-                ⚠️ Auto-Matched
+                <Check class="w-3 h-3" /> Selected from Tally
+              </span>
+              <span 
+                v-else
+                class="text-[10px] font-black px-2 py-0.5 rounded bg-amber-100 text-amber-900 flex items-center gap-1 border border-amber-300"
+              >
+                <AlertTriangle class="w-3 h-3 text-amber-600" /> Link Required (First Time)
               </span>
             </div>
 
-            <div class="relative">
-              <input 
-                type="text"
-                v-model="partySearchQuery"
-                @focus="showPartyDropdown = true"
-                class="w-full text-xs font-bold px-3 py-2 rounded-lg border border-indigo-200 bg-white text-gray-900 shadow-2xs focus:ring-2 focus:ring-indigo-500 outline-none"
-                :placeholder="voucher.voucherType === 'Purchase' ? 'Type or select Supplier ledger...' : 'Type or select Customer ledger...'"
-              />
+            <!-- First Time Notice & Suggestion -->
+            <div v-if="!isValidTallyLedger" class="p-3 bg-amber-50 rounded-xl border border-amber-300/80 text-xs text-amber-950 space-y-2">
+              <div class="flex items-start gap-2">
+                <AlertCircle class="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <div>
+                  <div class="font-extrabold text-amber-900">Link Party to Tally (First Time Required)</div>
+                  <p class="text-[11px] text-amber-800 mt-0.5 leading-relaxed">
+                    <strong>"{{ voucher.customerName }}"</strong> does not have a linked Tally ledger yet. You must choose an existing ledger from Tally Prime below to post this voucher.
+                  </p>
+                </div>
+              </div>
 
-              <!-- Suggestions Dropdown -->
-              <div 
-                v-if="showPartyDropdown && filteredTallyParties.length > 0"
-                class="absolute left-0 right-0 top-full mt-1 z-30 max-h-48 overflow-y-auto bg-white rounded-lg shadow-xl border border-gray-200 divide-y divide-gray-100"
+              <!-- Quick Suggestion Chip -->
+              <div v-if="suggestedMatch" class="flex items-center gap-2 pt-2 border-t border-amber-200">
+                <span class="text-[11px] font-bold text-amber-900">Suggested Tally Ledger:</span>
+                <button
+                  type="button"
+                  @mousedown.prevent="selectPartyLedger(suggestedMatch)"
+                  class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-white text-indigo-700 border border-indigo-200 hover:bg-indigo-50 hover:border-indigo-300 shadow-2xs cursor-pointer transition-colors"
+                >
+                  <span>{{ suggestedMatch }}</span>
+                  <Check class="w-3.5 h-3.5 text-indigo-600" />
+                </button>
+              </div>
+            </div>
+
+            <!-- Confirmed Ledger Display (if already selected/valid and not currently editing) -->
+            <div v-if="isValidTallyLedger && !isEditingParty" class="p-2.5 bg-white rounded-xl border border-emerald-200 shadow-2xs flex items-center justify-between">
+              <div class="flex items-center gap-2.5">
+                <div class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
+                  <Check class="w-4 h-4" />
+                </div>
+                <div>
+                  <div class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Selected Tally Ledger</div>
+                  <div class="text-xs font-black text-gray-900">{{ form.partyLedgerName }}</div>
+                </div>
+              </div>
+              <button
+                type="button"
+                @click="startEditingParty"
+                class="px-2.5 py-1 text-xs font-bold text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 rounded-lg transition-colors cursor-pointer"
               >
+                Change Ledger
+              </button>
+            </div>
+
+            <!-- Searchable Dropdown (shown when no ledger is valid OR user clicked Change) -->
+            <div v-else class="relative">
+              <div class="relative">
+                <input 
+                  type="text"
+                  v-model="partySearchQuery"
+                  @focus="showPartyDropdown = true"
+                  @input="showPartyDropdown = true"
+                  @keydown.enter.prevent="onPartySearchEnter"
+                  @blur="onPartySearchBlur"
+                  class="w-full text-xs font-bold px-3 py-2 rounded-lg border border-indigo-200 bg-white text-gray-900 shadow-2xs focus:ring-2 focus:ring-indigo-500 outline-none"
+                  :placeholder="`Search from ${activeTallyLedgers.length} existing Tally ledgers...`"
+                />
+                <button
+                  v-if="isEditingParty && isValidTallyLedger"
+                  type="button"
+                  @mousedown.prevent="cancelEditingParty"
+                  class="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400 hover:text-gray-600 cursor-pointer"
+                >
+                  Cancel
+                </button>
+              </div>
+
+              <!-- Dropdown List of Tally Ledgers Only -->
+              <div 
+                v-if="showPartyDropdown"
+                class="absolute left-0 right-0 top-full mt-1 z-30 max-h-52 overflow-y-auto bg-white rounded-lg shadow-xl border border-gray-200 divide-y divide-gray-100"
+              >
+                <div v-if="filteredTallyParties.length === 0" class="p-3 text-xs text-gray-500 text-center italic">
+                  No existing Tally ledger found matching "{{ partySearchQuery }}".<br>
+                  <span class="text-[10px] text-gray-400 font-semibold">Only ledgers already existing in Tally Prime can be selected.</span>
+                </div>
                 <button
                   type="button"
                   v-for="d in filteredTallyParties"
                   :key="d"
-                  @click="selectPartyLedger(d)"
-                  class="w-full text-left px-3 py-2 text-xs hover:bg-indigo-50 transition-colors flex items-center justify-between"
+                  @mousedown.prevent="selectPartyLedger(d)"
+                  class="w-full text-left px-3 py-2 text-xs hover:bg-indigo-50 transition-colors flex items-center justify-between cursor-pointer"
                   :class="form.partyLedgerName === d ? 'bg-indigo-50/80 font-bold text-indigo-900' : 'text-gray-800'"
                 >
-                  <span>{{ d }}</span>
+                  <span class="font-medium">{{ d }}</span>
                   <Check v-if="form.partyLedgerName === d" class="w-3.5 h-3.5 text-indigo-600" />
                 </button>
               </div>
@@ -451,13 +521,19 @@
         </button>
 
         <div class="flex items-center gap-3">
+          <!-- Missing Ledger Alert -->
+          <div v-if="!isValidTallyLedger" class="flex items-center gap-1.5 text-xs font-bold text-amber-800 bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-300">
+            <AlertTriangle class="w-4 h-4 text-amber-600 shrink-0" />
+            <span>Select an existing Tally ledger to enable posting</span>
+          </div>
+
           <button 
-            type="button"
-            :disabled="!isBalanced || isPosting"
+            type="button" 
+            :disabled="!isBalanced || isPosting || !isValidTallyLedger"
             @click="postToTally"
             class="px-5 py-2.5 text-xs font-black text-white rounded-xl shadow-sm transition-all flex items-center gap-2 cursor-pointer active:scale-95"
             :class="[
-              isBalanced && !isPosting 
+              isBalanced && !isPosting && isValidTallyLedger
                 ? 'bg-indigo-600 hover:bg-indigo-700 hover:shadow-md' 
                 : 'bg-gray-400 cursor-not-allowed opacity-60'
             ]"
@@ -500,7 +576,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'close'): void
-  (e: 'posted', voucherNo: string): void
+  (e: 'posted', voucherNo: string, partyLedgerName?: string, busyPartyName?: string): void
 }>()
 
 // State
@@ -527,8 +603,33 @@ const form = ref<{
 const formDisplayDate = ref<string>('')
 const partySearchQuery = ref<string>('')
 const showPartyDropdown = ref(false)
+const isEditingParty = ref(false)
 const isPosting = ref(false)
 const postFeedback = ref<{ success: boolean; message: string } | null>(null)
+
+// Active tally ledgers based on Sales (Debtors) vs Purchase (Creditors)
+const activeTallyLedgers = computed<string[]>(() => {
+  const isPurchase = props.voucher?.voucherType === 'Purchase'
+  const list = isPurchase
+    ? (props.availableTallyCreditors && props.availableTallyCreditors.length > 0 ? props.availableTallyCreditors : props.availableTallyDebtors)
+    : props.availableTallyDebtors
+  return list || []
+})
+
+// Check if current partyLedgerName is a genuine Tally ledger
+const isValidTallyLedger = computed(() => {
+  if (!form.value.partyLedgerName) return false
+  const trimmed = form.value.partyLedgerName.trim().toLowerCase()
+  return activeTallyLedgers.value.some(l => l.trim().toLowerCase() === trimmed)
+})
+
+// Suggested Tally ledger if available in active list
+const suggestedMatch = computed(() => {
+  if (!props.voucher) return ''
+  const sug = props.voucher.suggestedTallyParty || ''
+  if (!sug) return ''
+  return activeTallyLedgers.value.find(l => l.toLowerCase() === sug.toLowerCase()) || ''
+})
 
 // Initialize form when voucher changes
 watch(() => props.voucher, (v) => {
@@ -546,8 +647,13 @@ watch(() => props.voucher, (v) => {
     formDisplayDate.value = new Date().toISOString().slice(0, 10)
   }
 
-  const party = v.mappedTallyParty || v.suggestedTallyParty || v.customerName
+  // If already mapped and exists in Tally, use it. Otherwise, force selection from Tally ledgers!
+  const isAlreadyMapped = Boolean(v.isMapped && v.mappedTallyParty)
+  const party = isAlreadyMapped ? (v.mappedTallyParty || '') : ''
+
   partySearchQuery.value = party
+  isEditingParty.value = false
+  showPartyDropdown.value = false
 
   form.value = {
     voucherType: v.voucherType || 'Sales',
@@ -556,7 +662,7 @@ watch(() => props.voucher, (v) => {
     date: v.voucherDate,
     partyLedgerName: party,
     narration: v.narration || `${v.voucherType || 'Sales'} Invoice - ${v.voucherNo}`,
-    saveMapping: !v.isMapped,
+    saveMapping: !isAlreadyMapped,
     ledgerEntries: JSON.parse(JSON.stringify(v.defaultTallyEntries || []))
   }
 
@@ -581,23 +687,55 @@ watch(formDisplayDate, (val) => {
 
 // Filter parties for autocomplete based on Sales (Debtors) vs Purchase (Creditors)
 const filteredTallyParties = computed(() => {
-  const isPurchase = props.voucher?.voucherType === 'Purchase'
-  const list = isPurchase
-    ? (props.availableTallyCreditors && props.availableTallyCreditors.length > 0 ? props.availableTallyCreditors : props.availableTallyDebtors)
-    : props.availableTallyDebtors
-
+  const list = activeTallyLedgers.value
   const q = partySearchQuery.value.toLowerCase().trim()
-  if (!q) return list.slice(0, 30)
-  return list.filter(d => d.toLowerCase().includes(q)).slice(0, 30)
+  if (!q) return list.slice(0, 50)
+  return list.filter(d => d.toLowerCase().includes(q)).slice(0, 50)
 })
 
 const selectPartyLedger = (ledger: string) => {
   form.value.partyLedgerName = ledger
   partySearchQuery.value = ledger
+  isEditingParty.value = false
   showPartyDropdown.value = false
   if (form.value.ledgerEntries.length > 0) {
     form.value.ledgerEntries[0].ledgerName = ledger
   }
+}
+
+const startEditingParty = () => {
+  isEditingParty.value = true
+  showPartyDropdown.value = true
+  partySearchQuery.value = form.value.partyLedgerName
+}
+
+const cancelEditingParty = () => {
+  isEditingParty.value = false
+  showPartyDropdown.value = false
+  partySearchQuery.value = form.value.partyLedgerName
+}
+
+const onPartySearchEnter = () => {
+  if (filteredTallyParties.value.length === 1) {
+    selectPartyLedger(filteredTallyParties.value[0])
+  } else if (filteredTallyParties.value.length > 1) {
+    const exact = filteredTallyParties.value.find(l => l.toLowerCase() === partySearchQuery.value.trim().toLowerCase())
+    if (exact) {
+      selectPartyLedger(exact)
+    }
+  }
+}
+
+const onPartySearchBlur = () => {
+  setTimeout(() => {
+    showPartyDropdown.value = false
+    if (!isValidTallyLedger.value) {
+      partySearchQuery.value = ''
+    } else {
+      isEditingParty.value = false
+      partySearchQuery.value = form.value.partyLedgerName
+    }
+  }, 250)
 }
 
 // Narration Helpers
@@ -689,7 +827,7 @@ const postToTally = async () => {
         success: true,
         message: `Voucher ${res.voucherNo} successfully created in company "${res.company}" on Tally Prime!`
       }
-      emit('posted', res.voucherNo)
+      emit('posted', res.voucherNo, form.value.partyLedgerName, props.voucher.customerName)
       setTimeout(() => {
         close()
       }, 1400)

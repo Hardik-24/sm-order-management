@@ -218,13 +218,17 @@
 
               <!-- Tally Party Link / Suggestion -->
               <td class="px-4 py-3">
-                <div v-if="v.isMapped" class="flex items-center gap-1.5 text-emerald-700 font-semibold truncate max-w-[190px]">
+                <div v-if="v.isMapped" class="flex items-center gap-1.5 text-emerald-700 font-bold truncate max-w-[190px]">
                   <Check class="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                  <span class="truncate" :title="v.mappedTallyParty">{{ v.mappedTallyParty }}</span>
+                  <span class="truncate text-xs" :title="v.mappedTallyParty">{{ v.mappedTallyParty }}</span>
                 </div>
-                <div v-else class="flex items-center gap-1.5 text-gray-600 truncate max-w-[190px]">
-                  <span class="text-[10px] font-bold text-amber-700 bg-amber-50 px-1 py-0.2 rounded border border-amber-200 shrink-0">Auto</span>
-                  <span class="truncate font-medium text-gray-800" :title="v.suggestedTallyParty">{{ v.suggestedTallyParty }}</span>
+                <div v-else class="flex items-center gap-1.5 truncate max-w-[190px]">
+                  <span class="text-[10px] font-black text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded border border-amber-300 shrink-0 inline-flex items-center gap-1">
+                    <Link2 class="w-3 h-3 text-amber-700" /> Link First
+                  </span>
+                  <span v-if="v.suggestedTallyParty" class="truncate text-[11px] text-gray-500 font-medium" :title="'Suggested: ' + v.suggestedTallyParty">
+                    {{ v.suggestedTallyParty }}
+                  </span>
                 </div>
               </td>
 
@@ -268,11 +272,15 @@
                   :class="[
                     v.isPosted 
                       ? 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50' 
-                      : 'bg-indigo-600 text-white border-indigo-600 hover:bg-indigo-700 hover:shadow-sm'
+                      : (!v.isMapped
+                          ? 'bg-amber-600 text-white border-amber-600 hover:bg-amber-700 hover:shadow-sm'
+                          : 'bg-indigo-600 text-white border-indigo-600 hover:bg-indigo-700 hover:shadow-sm')
                   ]"
                 >
-                  <Eye class="w-3.5 h-3.5" />
-                  <span>{{ v.isPosted ? 'View / Repost' : 'Review & Post' }}</span>
+                  <Eye v-if="v.isPosted" class="w-3.5 h-3.5" />
+                  <Link2 v-else-if="!v.isMapped" class="w-3.5 h-3.5" />
+                  <Send v-else class="w-3.5 h-3.5" />
+                  <span>{{ v.isPosted ? 'View / Repost' : (!v.isMapped ? 'Link & Post' : 'Review & Post') }}</span>
                 </button>
               </td>
             </tr>
@@ -314,7 +322,9 @@ import {
   Loader2,
   ShoppingCart,
   ShoppingBag,
-  ChevronDown
+  ChevronDown,
+  Link2,
+  Send
 } from 'lucide-vue-next'
 import type { PreparedVoucherItem } from '~~/server/api/tally/vouchers.get'
 import BusyToTallyReviewModal from './BusyToTallyReviewModal.vue'
@@ -427,11 +437,19 @@ const openReviewModal = (v: PreparedVoucherItem) => {
 }
 
 // Callback when voucher is posted
-const onVoucherPosted = (vchNo: string) => {
+const onVoucherPosted = (vchNo: string, partyLedgerName?: string, busyPartyName?: string) => {
   const target = vouchers.value.find(v => v.voucherNo === vchNo)
   if (target) {
     target.isPosted = true
     target.postedAt = new Date().toISOString()
+  }
+  if (partyLedgerName && busyPartyName) {
+    for (const v of vouchers.value) {
+      if (v.customerName === busyPartyName) {
+        v.isMapped = true
+        v.mappedTallyParty = partyLedgerName
+      }
+    }
   }
 }
 
