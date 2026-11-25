@@ -75,7 +75,7 @@
         <div class="bg-white p-3 rounded-xl border border-indigo-200/80 shadow-2xs bg-gradient-to-br from-white to-indigo-50/30">
           <div class="text-[10px] font-bold uppercase tracking-wider text-indigo-700">Known Tally Ledgers</div>
           <div class="text-lg font-black text-indigo-900 mt-0.5">
-            {{ availableTallyDebtors.length + availableTallyCreditors.length }}
+            {{ availableAllLedgers.length || (availableTallyDebtors.length + availableTallyCreditors.length) }}
           </div>
         </div>
       </div>
@@ -302,6 +302,7 @@
       :voucher="selectedVoucher"
       :available-tally-debtors="availableTallyDebtors"
       :available-tally-creditors="availableTallyCreditors"
+      :available-all-ledgers="availableAllLedgers"
       :available-voucher-types="availableVoucherTypes"
       @close="isReviewModalOpen = false"
       @posted="onVoucherPosted"
@@ -343,6 +344,7 @@ const vouchers = ref<PreparedVoucherItem[]>([])
 const tallyStatus = ref<{ online: boolean; company?: string; port: number } | null>(null)
 const availableTallyDebtors = ref<string[]>([])
 const availableTallyCreditors = ref<string[]>([])
+const availableAllLedgers = ref<string[]>([])
 const availableVoucherTypes = ref<string[]>(['Sales', 'Purchase'])
 
 const searchQuery = ref('')
@@ -415,6 +417,11 @@ const refreshData = async () => {
     }
     if (Array.isArray(ledgersRes?.creditors)) {
       availableTallyCreditors.value = ledgersRes.creditors
+    }
+    if (Array.isArray(ledgersRes?.allLedgers) && ledgersRes.allLedgers.length > 0) {
+      availableAllLedgers.value = ledgersRes.allLedgers.map((l: any) => typeof l === 'string' ? l : l.name)
+    } else {
+      availableAllLedgers.value = Array.from(new Set([...availableTallyDebtors.value, ...availableTallyCreditors.value])).sort()
     }
     if (Array.isArray(ledgersRes?.voucherTypes) && ledgersRes.voucherTypes.length > 0) {
       availableVoucherTypes.value = ledgersRes.voucherTypes

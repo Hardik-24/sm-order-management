@@ -211,7 +211,7 @@
           <div class="bg-indigo-50/40 p-4 rounded-xl border border-indigo-100 space-y-3">
             <div class="flex items-center justify-between">
               <label class="block text-[11px] font-black uppercase tracking-wider text-indigo-950">
-                Party Ledger in Tally ({{ voucher.voucherType === 'Purchase' ? 'Sundry Creditor' : 'Sundry Debtor' }})
+                Party Ledger in Tally (All Available Tally Ledgers)
               </label>
               <span 
                 v-if="voucher.isMapped && isValidTallyLedger"
@@ -571,6 +571,7 @@ const props = defineProps<{
   voucher: PreparedVoucherItem | null
   availableTallyDebtors: string[]
   availableTallyCreditors?: string[]
+  availableAllLedgers?: string[]
   availableVoucherTypes: string[]
 }>()
 
@@ -607,8 +608,19 @@ const isEditingParty = ref(false)
 const isPosting = ref(false)
 const postFeedback = ref<{ success: boolean; message: string } | null>(null)
 
-// Active tally ledgers based on Sales (Debtors) vs Purchase (Creditors)
+// Active tally ledgers: Show ALL Tally ledgers, with relevant Debtors/Creditors prioritized at top
 const activeTallyLedgers = computed<string[]>(() => {
+  if (props.availableAllLedgers && props.availableAllLedgers.length > 0) {
+    const isPurchase = props.voucher?.voucherType === 'Purchase'
+    const priority = isPurchase
+      ? (props.availableTallyCreditors && props.availableTallyCreditors.length > 0 ? props.availableTallyCreditors : [])
+      : props.availableTallyDebtors
+
+    const prioritySet = new Set(priority)
+    const others = props.availableAllLedgers.filter(l => !prioritySet.has(l))
+    return [...priority, ...others]
+  }
+
   const isPurchase = props.voucher?.voucherType === 'Purchase'
   const list = isPurchase
     ? (props.availableTallyCreditors && props.availableTallyCreditors.length > 0 ? props.availableTallyCreditors : props.availableTallyDebtors)
@@ -685,12 +697,12 @@ watch(formDisplayDate, (val) => {
   form.value.date = val.replace(/-/g, '')
 })
 
-// Filter parties for autocomplete based on Sales (Debtors) vs Purchase (Creditors)
+// Filter parties for autocomplete across ALL existing Tally ledgers
 const filteredTallyParties = computed(() => {
   const list = activeTallyLedgers.value
   const q = partySearchQuery.value.toLowerCase().trim()
-  if (!q) return list.slice(0, 50)
-  return list.filter(d => d.toLowerCase().includes(q)).slice(0, 50)
+  if (!q) return list.slice(0, 100)
+  return list.filter(d => d.toLowerCase().includes(q)).slice(0, 100)
 })
 
 const selectPartyLedger = (ledger: string) => {
