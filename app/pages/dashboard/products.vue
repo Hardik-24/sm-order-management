@@ -460,12 +460,12 @@
             </div>
           </div>
 
-          <!-- Billed History (Where all billed & Party Rates) -->
+          <!-- Billed History (Where all billed invoices are displayed) -->
           <div class="mt-4 pt-4 border-t border-gray-100">
             <div class="flex items-center justify-between mb-2.5">
               <h4 class="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-2">
                 <Receipt class="w-3.5 h-3.5 text-[#1b3b5f]" />
-                <span>Billed History ({{ totalHistoryCount }})</span>
+                <span>Billed Invoices ({{ productAllVouchers.length }})</span>
                 <span v-if="isLoadingPriceHistory" class="text-[10px] text-gray-400 flex items-center gap-1 font-normal lowercase">
                   <Loader2 class="w-3 h-3 animate-spin text-gray-400" />
                   loading...
@@ -478,66 +478,41 @@
                 class="text-[11px] text-sky-600 hover:text-sky-800 font-semibold inline-flex items-center gap-0.5"
                 title="Search all invoices for this item in BUSY Voucher Explorer"
               >
-                <span>View Invoices &rarr;</span>
+                <span>View in Voucher Explorer &rarr;</span>
               </NuxtLink>
             </div>
 
             <!-- Stats Ribbon (when data exists) -->
-            <div v-if="productBillingSummary && (productPriceHistory.length > 0 || productAllVouchers.length > 0)" class="grid grid-cols-3 gap-2 mb-3">
+            <div v-if="productBillingSummary && productAllVouchers.length > 0" class="grid grid-cols-3 gap-2 mb-3">
               <div class="p-2 bg-gray-50 rounded-lg border border-gray-100 text-center">
                 <span class="text-[10px] text-gray-400 font-medium block">Lowest Rate</span>
-                <span class="text-xs font-bold text-gray-800">
-                  {{ productBillingSummary.minRate ? formatCurrency(productBillingSummary.minRate) : '—' }}
+                <span class="text-xs font-bold text-gray-800 tabular-nums">
+                  {{ productBillingSummary.minRate ? formatPriceExact(productBillingSummary.minRate) : '—' }}
                 </span>
               </div>
               <div class="p-2 bg-blue-50/50 rounded-lg border border-blue-100 text-center">
                 <span class="text-[10px] text-blue-600 font-medium block">Avg Billed Rate</span>
-                <span class="text-xs font-bold text-[#1b3b5f]">
-                  {{ productBillingSummary.avgRate ? formatCurrency(productBillingSummary.avgRate) : '—' }}
+                <span class="text-xs font-bold text-[#1b3b5f] tabular-nums">
+                  {{ productBillingSummary.avgRate ? formatPriceExact(productBillingSummary.avgRate) : '—' }}
                 </span>
               </div>
               <div class="p-2 bg-gray-50 rounded-lg border border-gray-100 text-center">
                 <span class="text-[10px] text-gray-400 font-medium block">Highest Rate</span>
-                <span class="text-xs font-bold text-gray-800">
-                  {{ productBillingSummary.maxRate ? formatCurrency(productBillingSummary.maxRate) : '—' }}
+                <span class="text-xs font-bold text-gray-800 tabular-nums">
+                  {{ productBillingSummary.maxRate ? formatPriceExact(productBillingSummary.maxRate) : '—' }}
                 </span>
               </div>
             </div>
 
-            <!-- View Mode Switcher & Search Bar -->
-            <div v-if="productPriceHistory.length > 0 || productAllVouchers.length > 0" class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 mb-2.5">
-              <!-- Mode Tabs -->
-              <div class="inline-flex p-0.5 bg-gray-100 rounded-lg text-xs font-medium shrink-0">
-                <button
-                  type="button"
-                  @click="historyViewMode = 'parties'"
-                  :class="historyViewMode === 'parties' ? 'bg-white text-gray-900 shadow-2xs' : 'text-gray-500 hover:text-gray-700'"
-                  class="px-2.5 py-1 rounded-md transition-all flex items-center gap-1.5 cursor-pointer"
-                >
-                  <Users class="w-3 h-3" />
-                  <span>By Party ({{ productPriceHistory.length }})</span>
-                </button>
-                <button
-                  type="button"
-                  @click="historyViewMode = 'all'"
-                  :class="historyViewMode === 'all' ? 'bg-white text-gray-900 shadow-2xs' : 'text-gray-500 hover:text-gray-700'"
-                  class="px-2.5 py-1 rounded-md transition-all flex items-center gap-1.5 cursor-pointer"
-                >
-                  <FileText class="w-3 h-3" />
-                  <span>All Invoices ({{ productAllVouchers.length }})</span>
-                </button>
-              </div>
-
-              <!-- Search input -->
-              <div class="relative flex-1 sm:max-w-xs">
-                <Search class="w-3 h-3 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                <input
-                  v-model="historySearchQuery"
-                  type="text"
-                  placeholder="Filter party or invoice..."
-                  class="w-full pl-7 pr-2.5 py-1 text-xs bg-gray-50 hover:bg-white focus:bg-white border border-gray-200 rounded-lg outline-none focus:border-[#1b3b5f] transition-all"
-                />
-              </div>
+            <!-- Search Bar -->
+            <div v-if="productAllVouchers.length > 0" class="relative mb-2.5">
+              <Search class="w-3 h-3 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                v-model="historySearchQuery"
+                type="text"
+                placeholder="Search party name or invoice number..."
+                class="w-full pl-7 pr-2.5 py-1.5 text-xs bg-gray-50 hover:bg-white focus:bg-white border border-gray-200 rounded-lg outline-none focus:border-[#1b3b5f] transition-all"
+              />
             </div>
 
             <!-- List Content -->
@@ -551,13 +526,13 @@
                 <div class="min-w-0 pr-2">
                   <div class="flex items-center gap-1.5 flex-wrap">
                     <p class="font-bold text-gray-900 truncate">
-                      {{ item.customer?.name || item.customerName || 'Direct Customer' }}
+                      {{ item.customerName || item.customer?.name || 'Direct Customer' }}
                     </p>
                     <span 
-                      v-if="item.customer?.customerCode || item.customerCode"
+                      v-if="item.customerCode || item.customer?.customerCode"
                       class="text-[9px] px-1 py-0.2 rounded font-mono font-medium bg-gray-100 text-gray-600 border border-gray-200"
                     >
-                      {{ item.customer?.customerCode || item.customerCode }}
+                      {{ item.customerCode || item.customer?.customerCode }}
                     </span>
                     <span 
                       v-if="item.customer?.city"
@@ -583,30 +558,33 @@
                     <span>•</span>
                     <span>{{ item.voucherDate ? formatDate(item.voucherDate) : '—' }}</span>
                     <span>•</span>
-                    <span>Qty: {{ item.quantity ?? item.qty }} {{ item.unit || selectedProduct.unit || 'Nos.' }}</span>
+                    <span>Qty: {{ item.qty ?? item.quantity }} {{ item.unit || selectedProduct.unit || 'Nos.' }}</span>
                     <span v-if="item.amount">
                       • Total: ₹{{ Number(item.amount).toLocaleString('en-IN') }}
                     </span>
                   </p>
                 </div>
 
-                <div class="text-right shrink-0">
-                  <p class="font-bold text-sm text-[#1b3b5f]">
-                    {{ formatCurrency(item.unitPrice ?? item.rate ?? 0) }}
-                  </p>
+                <div class="shrink-0 text-right max-w-[55%] sm:max-w-none">
+                  <div class="flex items-center justify-end gap-1 flex-wrap text-xs sm:text-sm tabular-nums">
+                    <span class="font-bold text-gray-800">{{ getItemBreakdown(item).withoutTaxFormatted }}</span>
+                    <span class="text-gray-400 font-bold">+</span>
+                    <span class="text-gray-600 font-medium text-[11px] sm:text-xs" :title="`${getItemBreakdown(item).gstRate}% GST`">GST {{ getItemBreakdown(item).gstAmountFormatted }}</span>
+                    <span class="text-gray-400 font-bold">=</span>
+                    <strong class="font-black text-[#1b3b5f]">{{ getItemBreakdown(item).finalRateFormatted }}</strong>
+                  </div>
                   <span 
-                    class="text-[9px] px-1.5 py-0.2 rounded font-bold uppercase tracking-wider inline-block mt-0.5"
-                    :class="(item.isTaxInclusive ?? true) ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-gray-100 text-gray-600 border border-gray-200'"
+                    class="text-[9px] font-semibold text-gray-400 block mt-0.5"
                   >
-                    {{ (item.isTaxInclusive ?? true) ? 'Tax Incl.' : '+Tax' }}
+                    {{ (item.isTaxInclusive ?? true) ? 'Tax Incl.' : '+Tax' }} &bull; {{ getItemBreakdown(item).gstRate }}% GST
                   </span>
                 </div>
               </div>
             </div>
 
             <!-- Empty filtered state -->
-            <div v-else-if="(productPriceHistory.length > 0 || productAllVouchers.length > 0) && !isLoadingPriceHistory" class="p-4 bg-gray-50 rounded-xl border border-dashed border-gray-200 text-center text-xs text-gray-400">
-              No matching records found for "{{ historySearchQuery }}".
+            <div v-else-if="productAllVouchers.length > 0 && !isLoadingPriceHistory" class="p-4 bg-gray-50 rounded-xl border border-dashed border-gray-200 text-center text-xs text-gray-400">
+              No matching invoices found for "{{ historySearchQuery }}".
             </div>
 
             <!-- Empty record state -->
@@ -818,7 +796,7 @@ import {
   ChevronDown, ChevronLeft, ChevronRight, CheckCircle2, XCircle, Tag, Hash, Layers, ShieldCheck,
   Receipt, Users, FileText, Building2
 } from 'lucide-vue-next'
-import { formatCurrency, formatDate } from '~/lib/utils'
+import { formatCurrency, formatDate, formatPriceExact } from '~/lib/utils'
 import { useSnackbar } from '~/composables/useSnackbar'
 import { useGsapAnimation } from '~/composables/useGsapAnimation'
 import { useRealtimeSync } from '~/composables/useRealtimeSync'
@@ -910,40 +888,89 @@ const isDetailModalOpen = ref(false)
 const detailModalRef = ref<HTMLElement | null>(null)
 const detailBackdropRef = ref<HTMLElement | null>(null)
 
+interface ItemBreakdown {
+  withoutTax: number
+  withoutTaxFormatted: string
+  gstRate: number
+  gstAmount: number
+  gstAmountFormatted: string
+  finalRate: number
+  finalRateFormatted: string
+}
+
+const getItemBreakdown = (item: any): ItemBreakdown => {
+  const isIncl = item.isTaxInclusive !== false
+  const taxRate = Number(item.taxRate ?? 18)
+
+  let withoutTax = 0
+  let finalRate = 0
+
+  if (item.qty && Number(item.qty) > 0 && item.taxableAmount && Number(item.taxableAmount) > 0) {
+    withoutTax = Number(item.taxableAmount) / Number(item.qty)
+    if (isIncl) {
+      finalRate = Number(item.rate ?? (withoutTax * (1 + taxRate / 100)))
+    } else {
+      finalRate = withoutTax * (1 + taxRate / 100)
+    }
+  } else if (item.basePrice !== null && item.basePrice !== undefined && Number(item.basePrice) > 0) {
+    withoutTax = Number(item.basePrice)
+    if (isIncl) {
+      finalRate = Number(item.unitPrice ?? (withoutTax * (1 + taxRate / 100)))
+    } else {
+      finalRate = withoutTax * (1 + taxRate / 100)
+    }
+  } else if (item.unitPrice !== null && item.unitPrice !== undefined && Number(item.unitPrice) > 0) {
+    const uPrice = Number(item.unitPrice)
+    if (isIncl) {
+      finalRate = uPrice
+      withoutTax = taxRate > 0 ? (finalRate / (1 + taxRate / 100)) : finalRate
+    } else {
+      withoutTax = uPrice
+      finalRate = withoutTax * (1 + taxRate / 100)
+    }
+  } else if (item.rate !== null && item.rate !== undefined && Number(item.rate) > 0) {
+    const r = Number(item.rate)
+    if (isIncl) {
+      finalRate = r
+      withoutTax = taxRate > 0 ? (finalRate / (1 + taxRate / 100)) : finalRate
+    } else {
+      withoutTax = r
+      finalRate = withoutTax * (1 + taxRate / 100)
+    }
+  }
+
+  withoutTax = Math.round(withoutTax * 10000) / 10000
+  finalRate = Math.round(finalRate * 10000) / 10000
+  const gstAmount = Math.round(Math.abs(finalRate - withoutTax) * 10000) / 10000
+
+  return {
+    withoutTax,
+    withoutTaxFormatted: formatPriceExact(withoutTax),
+    gstRate: taxRate,
+    gstAmount,
+    gstAmountFormatted: formatPriceExact(gstAmount),
+    finalRate,
+    finalRateFormatted: formatPriceExact(finalRate)
+  }
+}
+
 // Product Billed Price History state
-const productPriceHistory = ref<any[]>([])
 const productAllVouchers = ref<any[]>([])
 const productBillingSummary = ref<any>(null)
 const isLoadingPriceHistory = ref(false)
-const historyViewMode = ref<'parties' | 'all'>('parties')
 const historySearchQuery = ref('')
-
-const totalHistoryCount = computed(() => {
-  return historyViewMode.value === 'parties' 
-    ? productPriceHistory.value.length 
-    : productAllVouchers.value.length
-})
 
 const filteredProductHistory = computed(() => {
   const query = historySearchQuery.value.trim().toLowerCase()
-  if (historyViewMode.value === 'parties') {
-    if (!query) return productPriceHistory.value
-    return productPriceHistory.value.filter((hp: any) => {
-      const name = (hp.customer?.name || '').toLowerCase()
-      const comp = (hp.customer?.company || '').toLowerCase()
-      const code = (hp.customer?.customerCode || '').toLowerCase()
-      const vNo = (hp.voucherNo || '').toLowerCase()
-      return name.includes(query) || comp.includes(query) || code.includes(query) || vNo.includes(query)
-    })
-  } else {
-    if (!query) return productAllVouchers.value
-    return productAllVouchers.value.filter((v: any) => {
-      const name = (v.customerName || '').toLowerCase()
-      const code = (v.customerCode || '').toLowerCase()
-      const vNo = (v.voucherNo || '').toLowerCase()
-      return name.includes(query) || code.includes(query) || vNo.includes(query)
-    })
-  }
+  if (!query) return productAllVouchers.value
+  return productAllVouchers.value.filter((v: any) => {
+    const name = (v.customerName || v.customer?.name || '').toLowerCase()
+    const comp = (v.customer?.company || '').toLowerCase()
+    const code = (v.customerCode || v.customer?.customerCode || '').toLowerCase()
+    const city = (v.customer?.city || '').toLowerCase()
+    const vNo = (v.voucherNo || '').toLowerCase()
+    return name.includes(query) || comp.includes(query) || code.includes(query) || city.includes(query) || vNo.includes(query)
+  })
 })
 
 // Product Form modal state
@@ -1112,17 +1139,14 @@ const triggerRowAnimation = () => {
 const openProductDetail = (product: any) => {
   selectedProduct.value = product
   isDetailModalOpen.value = true
-  productPriceHistory.value = []
   productAllVouchers.value = []
   productBillingSummary.value = null
   historySearchQuery.value = ''
-  historyViewMode.value = 'parties'
 
   if (product && product.id) {
     isLoadingPriceHistory.value = true
-    $fetch<any>(`/api/products/${product.id}/last-prices?limit=100`)
+    $fetch<any>(`/api/products/${product.id}/last-prices?limit=250`)
       .then(res => {
-        productPriceHistory.value = res.historicalPrices || []
         productAllVouchers.value = res.allVouchers || []
         productBillingSummary.value = res.summary || null
       })
@@ -1142,9 +1166,9 @@ const openProductDetail = (product: any) => {
 const closeProductDetail = () => {
   isDetailModalOpen.value = false
   selectedProduct.value = null
-  productPriceHistory.value = []
   productAllVouchers.value = []
   productBillingSummary.value = null
+  historySearchQuery.value = ''
 }
 
 const editProductFromDetail = () => {
