@@ -11,6 +11,8 @@ export interface TallyLedgersResponse {
   taxAccounts: string[]
   roundOffAccounts: string[]
   voucherTypes: string[]
+  purchaseVoucherTypes: string[]
+  salesVoucherTypes: string[]
   allLedgers: Array<{ name: string; parent: string }>
 }
 
@@ -23,7 +25,9 @@ export default defineEventHandler(async (event): Promise<TallyLedgersResponse> =
   const purchaseAccounts = new Set<string>()
   const taxAccounts = new Set<string>()
   const roundOffAccounts = new Set<string>()
-  const voucherTypes = new Set<string>(['Sales', 'Purchase'])
+  const voucherTypes = new Set<string>()
+  const purchaseVoucherTypes = new Set<string>()
+  const salesVoucherTypes = new Set<string>()
   const allLedgers: Array<{ name: string; parent: string }> = []
 
   // 1. Try Live Tally Query on port 9000
@@ -73,15 +77,19 @@ export default defineEventHandler(async (event): Promise<TallyLedgersResponse> =
       }
     }
 
-    // Also fetch Voucher Types
+    // Also fetch Voucher Types strictly from Tally
     try {
       const vchTypeXml = `<ENVELOPE><HEADER><VERSION>1</VERSION><TALLYREQUEST>Export</TALLYREQUEST><TYPE>Collection</TYPE><ID>VTCol</ID></HEADER><BODY><DESC><STATICVARIABLES><SVEXPORTFORMAT>$$SysName:XML</SVEXPORTFORMAT></STATICVARIABLES><TDL><TDLMESSAGE><COLLECTION NAME="VTCol"><TYPE>VoucherType</TYPE><FETCH>Name,Parent</FETCH></COLLECTION></TDLMESSAGE></TDL></DESC></BODY></ENVELOPE>`
       const vtRaw = await queryTally(vchTypeXml, 4000)
-      const vtMatches = vtRaw.matchAll(/<VOUCHERTYPE NAME="([^"]+)"[^>]*>[\s\S]*?<PARENT[^>]*>([^<]+)<\/PARENT>/gi)
+      const vtMatches = vtRaw.matchAll(/<VOUCHERTYPE\s+NAME="([^"]+)"[^>]*>[\s\S]*?<PARENT[^>]*>([^<]+)<\/PARENT>/gi)
       for (const m of vtMatches) {
         const vtName = m[1].trim()
         const vtParent = m[2].trim()
-        if (vtParent.toLowerCase() === 'sales' || vtName.toLowerCase().includes('sales') || vtParent.toLowerCase() === 'purchase' || vtName.toLowerCase().includes('purchase')) {
+        if (vtParent.toLowerCase() === 'sales') {
+          salesVoucherTypes.add(vtName)
+          voucherTypes.add(vtName)
+        } else if (vtParent.toLowerCase() === 'purchase') {
+          purchaseVoucherTypes.add(vtName)
           voucherTypes.add(vtName)
         }
       }
@@ -177,6 +185,8 @@ export default defineEventHandler(async (event): Promise<TallyLedgersResponse> =
     taxAccounts: Array.from(taxAccounts).sort(),
     roundOffAccounts: Array.from(roundOffAccounts).sort(),
     voucherTypes: Array.from(voucherTypes).sort(),
+    purchaseVoucherTypes: Array.from(purchaseVoucherTypes).sort(),
+    salesVoucherTypes: Array.from(salesVoucherTypes).sort(),
     allLedgers
   }
 })

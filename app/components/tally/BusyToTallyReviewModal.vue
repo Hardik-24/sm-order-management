@@ -164,11 +164,21 @@
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <!-- Voucher Type -->
             <div>
-              <label class="block text-[11px] font-bold text-gray-700 mb-1">Voucher Type</label>
+              <div class="flex items-center justify-between mb-1">
+                <label class="block text-[11px] font-bold text-gray-700">Tally Voucher Type</label>
+                <span v-if="filteredVoucherTypes.length > 0" class="text-[10px] font-semibold text-emerald-700">
+                  Live from Tally ({{ filteredVoucherTypes.length }})
+                </span>
+                <span v-else class="text-[10px] font-semibold text-rose-600">
+                  Tally Offline
+                </span>
+              </div>
               <select 
                 v-model="form.voucherType"
-                class="w-full text-xs font-semibold px-3 py-2 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                :disabled="filteredVoucherTypes.length === 0"
+                class="w-full text-xs font-semibold px-3 py-2 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none disabled:bg-gray-100 disabled:text-gray-400"
               >
+                <option v-if="filteredVoucherTypes.length === 0" value="" disabled>Tally Offline - Start Tally on Port 9000</option>
                 <option v-for="vt in filteredVoucherTypes" :key="vt" :value="vt">{{ vt }}</option>
               </select>
             </div>
@@ -637,6 +647,8 @@ const props = defineProps<{
   availableTallyCreditors?: string[]
   availableAllLedgers?: string[]
   availableVoucherTypes: string[]
+  availablePurchaseVoucherTypes?: string[]
+  availableSalesVoucherTypes?: string[]
 }>()
 
 const emit = defineEmits<{
@@ -748,24 +760,19 @@ const activeTallyLedgers = computed<string[]>(() => {
   return list || []
 })
 
-// Filtered voucher types based on Purchase vs Sales with standard defaults
+// Filtered voucher types based strictly on what Tally returns for Purchase vs Sales (zero hardcoded types)
 const filteredVoucherTypes = computed<string[]>(() => {
   const isPurchase = props.voucher?.voucherType === 'Purchase'
-  const all = props.availableVoucherTypes || []
   if (isPurchase) {
-    const purchList = all.filter(vt => {
-      const l = vt.toLowerCase()
-      return l.includes('purchase') || l.includes('rcm') || l.includes('expense')
-    })
-    const defaults = ['Expenses GST Purchase', 'Trade Purchase', 'General Purchase', 'Purchase', 'RCM UR']
-    return Array.from(new Set([...defaults, ...purchList]))
+    if (props.availablePurchaseVoucherTypes && props.availablePurchaseVoucherTypes.length > 0) {
+      return props.availablePurchaseVoucherTypes
+    }
+    return (props.availableVoucherTypes || []).filter(vt => vt.toLowerCase().includes('purchase'))
   } else {
-    const salesList = all.filter(vt => {
-      const l = vt.toLowerCase()
-      return l.includes('sales') || l.includes('invoice')
-    })
-    const defaults = ['Sales', 'Trade Sales']
-    return Array.from(new Set([...defaults, ...salesList]))
+    if (props.availableSalesVoucherTypes && props.availableSalesVoucherTypes.length > 0) {
+      return props.availableSalesVoucherTypes
+    }
+    return (props.availableVoucherTypes || []).filter(vt => vt.toLowerCase().includes('sales'))
   }
 })
 
@@ -808,17 +815,27 @@ watch(() => props.voucher, (v) => {
   isEditingParty.value = false
   showPartyDropdown.value = false
 
-  // Smart initial voucher type selection
-  let initialVchType = v.voucherType || 'Sales'
+  // Smart initial voucher type selection strictly from Tally's list
+  let initialVchType = ''
+  const availableTypes = filteredVoucherTypes.value
+
   if (v.voucherType === 'Purchase') {
     const isExpense = (v.series && v.series.toUpperCase().includes('EXP')) ||
                       (v.voucherNo && v.voucherNo.toUpperCase().startsWith('GSTEXP')) ||
                       (Array.isArray(v.items) && v.items.some((it: any) => (it.name || '').toLowerCase().includes('expense')))
     if (isExpense) {
-      initialVchType = 'Expenses GST Purchase'
+      initialVchType = availableTypes.find(t => t.toLowerCase().includes('exp')) ||
+                       availableTypes.find(t => t.toLowerCase() === 'purchase') ||
+                       availableTypes[0] || ''
     } else {
-      initialVchType = 'Trade Purchase'
+      initialVchType = availableTypes.find(t => t.toLowerCase().includes('trade')) ||
+                       availableTypes.find(t => t.toLowerCase() === 'purchase') ||
+                       availableTypes[0] || ''
     }
+  } else {
+    initialVchType = availableTypes.find(t => t.toLowerCase() === 'sales') ||
+                     availableTypes.find(t => t.toLowerCase().includes('trade')) ||
+                     availableTypes[0] || ''
   }
 
   form.value = {
@@ -841,6 +858,25 @@ watch(() => props.voucher, (v) => {
     } else {
       form.value.ledgerEntries[0].isDeemedPositive = true
       form.value.ledgerEntries[0].amount = Math.abs(v.totalAmount)
+    }
+  }
+}, { immediate: true })
+
+// Auto-select smart voucher type once Tally's live types arrive
+watch(filteredVoucherTypes, (types) => {
+  if (types.length > 0 && (!form.value.voucherType || !types.includes(form.value.voucherType))) {
+    const isPurchase = props.voucher?.voucherType === 'Purchase'
+    if (isPurchase) {
+      const isExpense = (props.voucher?.series && props.voucher.series.toUpperCase().includes('EXP')) ||
+                        (props.voucher?.voucherNo && props.voucher.voucherNo.toUpperCase().startsWith('GSTEXP')) ||
+                        (Array.isArray(props.voucher?.items) && props.voucher.items.some((it: any) => (it.name || '').toLowerCase().includes('expense')))
+      if (isExpense) {
+        form.value.voucherType = types.find(t => t.toLowerCase().includes('exp')) || types.find(t => t.toLowerCase() === 'purchase') || types[0]
+      } else {
+        form.value.voucherType = types.find(t => t.toLowerCase().includes('trade')) || types.find(t => t.toLowerCase() === 'purchase') || types[0]
+      }
+    } else {
+      form.value.voucherType = types.find(t => t.toLowerCase() === 'sales') || types.find(t => t.toLowerCase().includes('trade')) || types[0]
     }
   }
 }, { immediate: true })

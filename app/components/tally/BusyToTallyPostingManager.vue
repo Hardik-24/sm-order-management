@@ -429,6 +429,8 @@
       :available-tally-creditors="availableTallyCreditors"
       :available-all-ledgers="availableAllLedgers"
       :available-voucher-types="availableVoucherTypes"
+      :available-purchase-voucher-types="availablePurchaseVoucherTypes"
+      :available-sales-voucher-types="availableSalesVoucherTypes"
       @close="isReviewModalOpen = false"
       @posted="onVoucherPosted"
       @status-changed="onVoucherStatusChanged"
@@ -474,7 +476,9 @@ const tallyStatus = ref<{ online: boolean; company?: string; port: number } | nu
 const availableTallyDebtors = ref<string[]>([])
 const availableTallyCreditors = ref<string[]>([])
 const availableAllLedgers = ref<string[]>([])
-const availableVoucherTypes = ref<string[]>(['Sales', 'Purchase'])
+const availableVoucherTypes = ref<string[]>([])
+const availablePurchaseVoucherTypes = ref<string[]>([])
+const availableSalesVoucherTypes = ref<string[]>([])
 
 const searchQuery = ref('')
 const selectedType = ref<'sales' | 'purchase' | 'all'>('sales')
@@ -575,8 +579,14 @@ const refreshData = async () => {
     } else {
       availableAllLedgers.value = Array.from(new Set([...availableTallyDebtors.value, ...availableTallyCreditors.value])).sort()
     }
-    if (Array.isArray(ledgersRes?.voucherTypes) && ledgersRes.voucherTypes.length > 0) {
+    if (Array.isArray(ledgersRes?.voucherTypes)) {
       availableVoucherTypes.value = ledgersRes.voucherTypes
+    }
+    if (Array.isArray(ledgersRes?.purchaseVoucherTypes)) {
+      availablePurchaseVoucherTypes.value = ledgersRes.purchaseVoucherTypes
+    }
+    if (Array.isArray(ledgersRes?.salesVoucherTypes)) {
+      availableSalesVoucherTypes.value = ledgersRes.salesVoucherTypes
     }
 
     if (Array.isArray(vouchersRes?.vouchers)) {
