@@ -464,7 +464,7 @@ export default defineEventHandler(async (event) => {
         )
         if (found) {
           isVerifiedInTally = true
-          matchedTallyRef = pv.ref || pv.voucherNo || ''
+          matchedTallyRef = found.ref || found.voucherNo || ''
         }
       }
 
