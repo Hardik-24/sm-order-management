@@ -150,7 +150,7 @@ export async function requireActionPermission(
   } else {
     // Default role capabilities
     if (dbUser.role === 'SUPERVISOR') {
-      if (['canEditOrders', 'canEditOrderStatus', 'canCancelOrders', 'canEditCustomers', 'canEditProducts', 'canDeleteQuotations', 'canViewAllCompanyOrders', 'canLinkBusyData', 'canManageBatches'].includes(permission)) {
+      if (['canEditOrders', 'canEditOrderStatus', 'canCancelOrders', 'canEditCustomers', 'canEditProducts', 'canDeleteQuotations', 'canViewAllCompanyOrders', 'canLinkBusyData', 'canManageBatches', 'canPostBusyToTally'].includes(permission)) {
         hasPerm = true
       }
     }

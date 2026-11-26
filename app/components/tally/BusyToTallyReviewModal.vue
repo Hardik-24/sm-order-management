@@ -1126,7 +1126,7 @@ const postToTally = async () => {
     }
   } catch (err: any) {
     progressStep.value = -1
-    const errMsg = err.data?.statusMessage || err.message || 'Failed processing voucher request'
+    const errMsg = err.data?.statusMessage || err.data?.message || err.message || 'Failed processing voucher request'
     progressErrorMessage.value = errMsg
 
     const lower = errMsg.toLowerCase()
@@ -1134,10 +1134,12 @@ const postToTally = async () => {
       progressFailedAt.value = 1
       progressStep1Details.value = 'Duplicate blocked: voucher already exists in Tally books.'
       emit('posted', form.value.voucherNo, form.value.partyLedgerName, props.voucher.customerName)
-    } else if (lower.includes('ledger') || lower.includes('balance') || lower.includes('tax')) {
+    } else if (lower.includes('ledger') || lower.includes('balance') || lower.includes('tax') || lower.includes('equilibrium')) {
       progressFailedAt.value = 2
+      progressStep2Details.value = errMsg
     } else {
-      progressFailedAt.value = 3
+      progressFailedAt.value = 1
+      progressStep1Details.value = `Enqueuing failed: ${errMsg}`
     }
 
     postFeedback.value = {

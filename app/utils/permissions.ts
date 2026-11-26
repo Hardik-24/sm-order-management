@@ -176,7 +176,7 @@ export const DEFAULT_ROLE_ACTION_PERMISSIONS: Record<UserRole, UserActionPermiss
     canEditConvertedQuotationOrders: false,
     canManageBatches: true,
     canDownloadPartyLedger: false,
-    canPostBusyToTally: false,
+    canPostBusyToTally: true,
   },
   SALES: {
     canEditOrders: true,
