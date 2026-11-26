@@ -27,24 +27,37 @@ export default defineEventHandler(async (event) => {
         const lastHb = agentStatus.lastHeartbeat ? new Date(agentStatus.lastHeartbeat).getTime() : 0
         const ageMs = Date.now() - lastHb
 
-        // If heartbeat is within the last 5 minutes and Tally is reported online
-        if (ageMs < 300000 && agentStatus.tallyOnline) {
-          return {
-            online: true,
-            company: agentStatus.company || 'SRI LAKSHMI PLYWOODS 2627',
-            port: 9000,
-            viaSyncAgent: true,
-            lastHeartbeat: agentStatus.lastHeartbeat
+        // If heartbeat is fresh (within last 3 minutes), respect the Sync Agent's explicit live verdict
+        if (ageMs < 180000) {
+          if (agentStatus.tallyOnline) {
+            return {
+              online: true,
+              company: agentStatus.company || 'SRI LAKSHMI PLYWOODS 2627',
+              port: 9000,
+              viaSyncAgent: true,
+              lastHeartbeat: agentStatus.lastHeartbeat
+            }
+          } else {
+            // Sync Agent is active, but local Tally Prime on port 9000 is closed/unreachable
+            return {
+              online: false,
+              port: 9000,
+              viaSyncAgent: true,
+              error: agentStatus.error || 'Tally Prime closed on Main PC'
+            }
           }
         }
       } catch (_) {}
     }
 
-    // 3. Fallback: If Tally receivables/financials was synced recently
+    // 3. Fallback: Only if NO Sync Agent heartbeat exists yet AND receivables was synced very recently (< 15 mins)
     if (receivablesSetting?.value) {
       try {
         const rec = JSON.parse(receivablesSetting.value)
-        if (rec.company && rec.company !== 'No Company Open') {
+        const syncTime = rec.syncedAt ? new Date(rec.syncedAt).getTime() : 0
+        const syncAgeMs = Date.now() - syncTime
+
+        if (syncAgeMs < 900000 && rec.company && rec.company !== 'No Company Open') {
           return {
             online: true,
             company: rec.company,

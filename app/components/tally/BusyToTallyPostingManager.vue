@@ -579,7 +579,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, nextTick } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import gsap from 'gsap'
 import {
   Layers,
@@ -909,19 +909,53 @@ const onVoucherPosted = (vchNo: string, partyLedgerName?: string, busyPartyName?
   }
 }
 
+let statusPollTimer: ReturnType<typeof setInterval> | null = null
+
+const checkTallyStatusOnly = async () => {
+  if (!props.isOpen) return
+  try {
+    const res = await $fetch<{ online: boolean; company?: string; port: number; viaSyncAgent?: boolean }>('/api/tally/status')
+    if (res) {
+      tallyStatus.value = res
+    }
+  } catch (_) {}
+}
+
 const close = () => {
+  if (statusPollTimer) {
+    clearInterval(statusPollTimer)
+    statusPollTimer = null
+  }
   emit('close')
 }
 
 watch(() => props.isOpen, (open) => {
   if (open) {
     refreshData()
+    if (!statusPollTimer) {
+      statusPollTimer = setInterval(checkTallyStatusOnly, 20000)
+    }
+  } else {
+    if (statusPollTimer) {
+      clearInterval(statusPollTimer)
+      statusPollTimer = null
+    }
   }
 })
 
 onMounted(() => {
   if (props.isOpen) {
     refreshData()
+    if (!statusPollTimer) {
+      statusPollTimer = setInterval(checkTallyStatusOnly, 20000)
+    }
+  }
+})
+
+onUnmounted(() => {
+  if (statusPollTimer) {
+    clearInterval(statusPollTimer)
+    statusPollTimer = null
   }
 })
 </script>
