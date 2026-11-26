@@ -81,10 +81,11 @@ export default defineEventHandler(async (event) => {
       return false
     }
 
-    const [receivablesSetting, payablesSetting, postedSetting] = await Promise.all([
+    const [receivablesSetting, payablesSetting, postedSetting, masterLedgersSetting] = await Promise.all([
       prisma.systemSetting.findUnique({ where: { key: 'tally_receivables_data' } }),
       prisma.systemSetting.findUnique({ where: { key: 'tally_payables_data' } }),
       prisma.systemSetting.findUnique({ where: { key: 'BUSY_TALLY_POSTED_VOUCHERS' } }),
+      prisma.systemSetting.findUnique({ where: { key: 'tally_master_ledgers' } }),
     ])
 
     // Determine active company name from synced financials or standard fallback
@@ -245,11 +246,103 @@ export default defineEventHandler(async (event) => {
       `
     }).join('')
 
+    // 3. Extract Party Details directly from Tally's Synced Master Records
+    const GST_STATE_MAP: Record<string, string> = {
+      '01': 'Jammu & Kashmir', '02': 'Himachal Pradesh', '03': 'Punjab', '04': 'Chandigarh',
+      '05': 'Uttarakhand', '06': 'Haryana', '07': 'Delhi', '08': 'Rajasthan',
+      '09': 'Uttar Pradesh', '10': 'Bihar', '11': 'Sikkim', '12': 'Arunachal Pradesh',
+      '13': 'Nagaland', '14': 'Manipur', '15': 'Mizoram', '16': 'Tripura',
+      '17': 'Meghalaya', '18': 'Assam', '19': 'West Bengal', '20': 'Jharkhand',
+      '21': 'Odisha', '22': 'Chhattisgarh', '23': 'Madhya Pradesh', '24': 'Gujarat',
+      '26': 'Dadra & Nagar Haveli and Daman & Diu', '27': 'Maharashtra', '28': 'Andhra Pradesh',
+      '29': 'Karnataka', '30': 'Goa', '31': 'Lakshadweep', '32': 'Kerala',
+      '33': 'Tamil Nadu', '34': 'Puducherry', '35': 'Andaman & Nicobar Islands',
+      '36': 'Telangana', '37': 'Andhra Pradesh', '38': 'Ladakh'
+    }
+
+    function findTallyPartyMaster(partyName: string) {
+      const clean = (partyName || '').trim().toLowerCase()
+      if (!clean) return null
+      // Check Debtors
+      if (receivablesSetting?.value) {
+        try {
+          const rec = JSON.parse(receivablesSetting.value)
+          if (Array.isArray(rec.parties)) {
+            const found = rec.parties.find((p: any) => (p.party || '').trim().toLowerCase() === clean)
+            if (found) return found
+          }
+        } catch {}
+      }
+      // Check Creditors
+      if (payablesSetting?.value) {
+        try {
+          const pay = JSON.parse(payablesSetting.value)
+          if (Array.isArray(pay.parties)) {
+            const found = pay.parties.find((p: any) => (p.party || '').trim().toLowerCase() === clean)
+            if (found) return found
+          }
+        } catch {}
+      }
+      // Check Master Ledgers
+      if (masterLedgersSetting?.value) {
+        try {
+          const mas = JSON.parse(masterLedgersSetting.value)
+          if (Array.isArray(mas.allLedgers)) {
+            const found = mas.allLedgers.find((l: any) => (l.name || '').trim().toLowerCase() === clean)
+            if (found) return found
+          }
+        } catch {}
+      }
+      return null
+    }
+
+    const tallyParty = findTallyPartyMaster(partyLedger)
+    const rawGstin = String(tallyParty?.gstin || '').trim().toUpperCase()
+    const gstinPrefix = rawGstin.slice(0, 2)
+    const partyState = String(tallyParty?.state || '').trim() || GST_STATE_MAP[gstinPrefix] || 'Karnataka'
+    const partyCountry = String(tallyParty?.country || '').trim() || 'India'
+    const placeOfSupply = partyState
+    const gstRegType = rawGstin.length === 15 ? 'Regular' : (tallyParty?.gstType || 'Unregistered')
+
+    const addressLines: string[] = []
+    if (Array.isArray(tallyParty?.addressLines) && tallyParty.addressLines.length > 0) {
+      addressLines.push(...tallyParty.addressLines.map((l: string) => String(l || '').trim()).filter(Boolean))
+    } else if (tallyParty?.address) {
+      const splitLines = String(tallyParty.address).split(/,\s*/).map(s => s.trim()).filter(Boolean)
+      addressLines.push(...splitLines)
+    }
+
     const escapedCompany = String(companyName).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     const escapedParty = String(partyLedger).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    const escapedState = partyState.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    const escapedCountry = partyCountry.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    const escapedPlaceOfSupply = placeOfSupply.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    const escapedGstin = rawGstin.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    const escapedGstRegType = gstRegType.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     const escapedNarration = String(narration).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     const escapedReference = String(reference).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     const referenceXml = escapedReference ? `<REFERENCE>${escapedReference}</REFERENCE><REFERENCEDATE>${vchDate}</REFERENCEDATE>` : ''
+
+    const buyerAddressXml = addressLines.length > 0 ? `
+          <BASICBUYERADDRESS.LIST TYPE="String">
+            ${addressLines.map(line => `<BASICBUYERADDRESS>${line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</BASICBUYERADDRESS>`).join('\n            ')}
+          </BASICBUYERADDRESS.LIST>
+          <ADDRESS.LIST TYPE="String">
+            ${addressLines.map(line => `<ADDRESS>${line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</ADDRESS>`).join('\n            ')}
+          </ADDRESS.LIST>` : ''
+
+    const partyDetailsXml = `
+          <PARTYNAME>${escapedParty}</PARTYNAME>
+          <PARTYLEDGERNAME>${escapedParty}</PARTYLEDGERNAME>
+          <BASICBUYERNAME>${escapedParty}</BASICBUYERNAME>
+          <BASICBASEPARTYNAME>${escapedParty}</BASICBASEPARTYNAME>
+          ${buyerAddressXml}
+          <STATENAME>${escapedState}</STATENAME>
+          <CONSIGNEESTATENAME>${escapedState}</CONSIGNEESTATENAME>
+          <COUNTRYOFRESIDENCE>${escapedCountry}</COUNTRYOFRESIDENCE>
+          <PLACEOFSUPPLY>${escapedPlaceOfSupply}</PLACEOFSUPPLY>
+          ${escapedGstin ? `<PARTYGSTIN>${escapedGstin}</PARTYGSTIN>` : ''}
+          <GSTREGISTRATIONTYPE>${escapedGstRegType}</GSTREGISTRATIONTYPE>`.trim()
 
     const tallyEnvelope = `
 <ENVELOPE>
@@ -272,7 +365,7 @@ export default defineEventHandler(async (event) => {
           <VOUCHERTYPENAME>${vchType}</VOUCHERTYPENAME>
           <VOUCHERNUMBER>${vchNo}</VOUCHERNUMBER>
           ${referenceXml}
-          <PARTYLEDGERNAME>${escapedParty}</PARTYLEDGERNAME>
+          ${partyDetailsXml}
           <PERSISTEDVIEW>Invoice Voucher View</PERSISTEDVIEW>
           <VCHENTRYMODE>Accounting Invoice</VCHENTRYMODE>
           <ISINVOICE>Yes</ISINVOICE>

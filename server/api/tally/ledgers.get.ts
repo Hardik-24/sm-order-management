@@ -41,7 +41,7 @@ export default defineEventHandler(async (event): Promise<TallyLedgersResponse> =
             <TDLMESSAGE>
               <COLLECTION NAME="LedgerExportCol">
                 <TYPE>Ledger</TYPE>
-                <FETCH>Name,Parent</FETCH>
+                <FETCH>Name,Parent,Address,StateName,LedgerStateName,CountryName,PartyGSTIN,GSTRegistrationType,PinCode</FETCH>
               </COLLECTION>
             </TDLMESSAGE>
           </TDL>
@@ -50,14 +50,37 @@ export default defineEventHandler(async (event): Promise<TallyLedgersResponse> =
     </ENVELOPE>`
 
     const raw = await queryTally(xml, 8000)
-    const matches = raw.matchAll(/<LEDGER NAME="([^"]+)"[^>]*>[\s\S]*?<PARENT[^>]*>([^<]+)<\/PARENT>/gi)
+    const matches = raw.matchAll(/<LEDGER NAME="([^"]+)"[^>]*>([\s\S]*?)<\/LEDGER>/gi)
 
     for (const m of matches) {
       const name = m[1].replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').trim()
-      const parent = m[2].replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').trim()
+      const block = m[2]
+      const parentMatch = block.match(/<PARENT[^>]*>([^<]+)<\/PARENT>/i)
+      const parent = parentMatch ? parentMatch[1].replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').trim() : ''
 
       if (!name) continue
-      allLedgers.push({ name, parent })
+
+      const stateMatch = block.match(/<LEDGERSTATENAME[^>]*>([^<]+)<\/LEDGERSTATENAME>/i) || block.match(/<STATENAME[^>]*>([^<]+)<\/STATENAME>/i)
+      const gstinMatch = block.match(/<PARTYGSTIN[^>]*>([^<]+)<\/PARTYGSTIN>/i) || block.match(/<GSTIN[^>]*>([^<]+)<\/GSTIN>/i)
+      const gstTypeMatch = block.match(/<GSTREGISTRATIONTYPE[^>]*>([^<]+)<\/GSTREGISTRATIONTYPE>/i)
+      const pinMatch = block.match(/<PINCODE[^>]*>([^<]+)<\/PINCODE>/i)
+
+      const addressLines: string[] = []
+      const addrListMatch = block.match(/<ADDRESS\.LIST[^>]*>([\s\S]*?)<\/ADDRESS\.LIST>/i)
+      const addrSource = addrListMatch ? addrListMatch[1] : block
+      const addrRegex = /<ADDRESS[^>]*>([^<]+)<\/ADDRESS>/gi
+      let aMatch
+      while ((aMatch = addrRegex.exec(addrSource)) !== null) {
+        const line = aMatch[1].replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').trim()
+        if (line) addressLines.push(line)
+      }
+
+      const state = stateMatch ? stateMatch[1].trim() : ''
+      const gstin = gstinMatch ? gstinMatch[1].trim() : ''
+      const gstType = gstTypeMatch ? gstTypeMatch[1].trim() : (gstin.length === 15 ? 'Regular' : 'Unregistered')
+      const pincode = pinMatch ? pinMatch[1].trim() : ''
+
+      allLedgers.push({ name, parent, addressLines, state, gstin, gstType, pincode } as any)
 
       const parentUpper = parent.toUpperCase()
       const nameUpper = name.toUpperCase()
