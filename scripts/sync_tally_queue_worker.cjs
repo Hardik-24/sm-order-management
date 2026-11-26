@@ -198,6 +198,59 @@ async function processPendingJobs() {
   return jobs.length;
 }
 
+async function sendHeartbeat() {
+  try {
+    const cmpXml = `<ENVELOPE><HEADER><VERSION>1</VERSION><TALLYREQUEST>Export</TALLYREQUEST><TYPE>Collection</TYPE><ID>CurCmpCol</ID></HEADER><BODY><DESC><STATICVARIABLES><SVEXPORTFORMAT>$$SysName:XML</SVEXPORTFORMAT></STATICVARIABLES><TDL><TDLMESSAGE><COLLECTION NAME="CurCmpCol"><TYPE>Company</TYPE><FETCH>Name</FETCH></COLLECTION></TDLMESSAGE></TDL></DESC></BODY></ENVELOPE>`;
+    const cmpRes = await queryTally(cmpXml, 4000);
+    const cmpMatch = cmpRes.match(/<COMPANY[^>]*NAME="([^"]+)"/i) || cmpRes.match(/<NAME[^>]*>([^<]+)<\/NAME>/i);
+    const company = cmpMatch ? cmpMatch[1].replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').trim() : (process.env.TALLY_EXPECTED_COMPANY || 'SRI LAKSHMI PLYWOODS 2627');
+
+    const vtXml = `<ENVELOPE><HEADER><VERSION>1</VERSION><TALLYREQUEST>Export</TALLYREQUEST><TYPE>Collection</TYPE><ID>VTCol</ID></HEADER><BODY><DESC><STATICVARIABLES><SVEXPORTFORMAT>$$SysName:XML</SVEXPORTFORMAT></STATICVARIABLES><TDL><TDLMESSAGE><COLLECTION NAME="VTCol"><TYPE>VoucherType</TYPE><FETCH>Name,Parent</FETCH></COLLECTION></TDLMESSAGE></TDL></DESC></BODY></ENVELOPE>`;
+    const vtRes = await queryTally(vtXml, 4000);
+    const salesVoucherTypes = [];
+    const purchaseVoucherTypes = [];
+    const voucherTypes = [];
+    const vtMatches = vtRes.matchAll(/<VOUCHERTYPE\s+NAME="([^"]+)"[^>]*>[\s\S]*?<PARENT[^>]*>([^<]+)<\/PARENT>/gi);
+    for (const m of vtMatches) {
+      const name = m[1].trim();
+      const parent = m[2].trim().toLowerCase();
+      voucherTypes.push(name);
+      if (parent === 'sales') salesVoucherTypes.push(name);
+      if (parent === 'purchase') purchaseVoucherTypes.push(name);
+    }
+
+    const statusObj = {
+      tallyOnline: true,
+      company,
+      port: TALLY_PORT,
+      salesVoucherTypes: salesVoucherTypes.length > 0 ? salesVoucherTypes : ['Sales', 'Sales - Manual Series'],
+      purchaseVoucherTypes: purchaseVoucherTypes.length > 0 ? purchaseVoucherTypes : ['Purchase', 'Purchase Trade', 'Purchase Exps GST', 'Purchase General'],
+      voucherTypes: voucherTypes.length > 0 ? voucherTypes : ['Sales', 'Purchase'],
+      lastHeartbeat: new Date().toISOString()
+    };
+
+    await prisma.systemSetting.upsert({
+      where: { key: 'tally_sync_agent_status' },
+      update: { value: JSON.stringify(statusObj) },
+      create: { key: 'tally_sync_agent_status', value: JSON.stringify(statusObj) }
+    });
+  } catch (err) {
+    try {
+      const offlineObj = {
+        tallyOnline: false,
+        port: TALLY_PORT,
+        error: err.message,
+        lastHeartbeat: new Date().toISOString()
+      };
+      await prisma.systemSetting.upsert({
+        where: { key: 'tally_sync_agent_status' },
+        update: { value: JSON.stringify(offlineObj) },
+        create: { key: 'tally_sync_agent_status', value: JSON.stringify(offlineObj) }
+      });
+    } catch (_) {}
+  }
+}
+
 async function main() {
   const isWatchMode = process.argv.includes('--watch') || process.argv.includes('-w');
 
@@ -207,11 +260,17 @@ async function main() {
   console.log(`  Mode: ${isWatchMode ? 'Continuous Polling Daemon' : 'One-Shot Check'}`);
   console.log('===============================================================');
 
+  // Perform initial heartbeat to broadcast Tally connection status to OMS Cloud
+  await sendHeartbeat();
+
   if (!isWatchMode) {
     const count = await processPendingJobs();
     console.log(`[Tally Worker] Processed ${count} pending jobs.`);
     process.exit(0);
   }
+
+  // Periodic heartbeat every 20 seconds
+  setInterval(sendHeartbeat, 20000);
 
   console.log('[Tally Worker] Watching for pending vouchers from OMS Cloud (every 2s)...');
   const poll = async () => {

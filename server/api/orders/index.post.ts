@@ -7,7 +7,7 @@ import { broadcastRealtimeEvent } from '~~/server/utils/realtimeBroadcast'
 
 export default defineEventHandler(async (event) => {
   const user = await getUserFromEvent(event)
-  await requireRole(event, ['ADMIN', 'SALES'])
+  await requireRole(event, ['ADMIN', 'SUPERVISOR', 'SALES'])
   
   const body = await readBody(event)
   if (!body) {

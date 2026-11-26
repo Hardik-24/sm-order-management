@@ -99,13 +99,35 @@ export default defineEventHandler(async (event): Promise<TallyLedgersResponse> =
     // 2. Fallback to cached receivables & payables data if Tally is temporarily closed
   }
 
-  // Load from cached master ledgers first, then fallback to receivables & payables
+  // Load from cached master ledgers first, then fallback to receivables, payables, and sync agent status
   try {
-    const [master, rec, pay] = await Promise.all([
+    const [master, rec, pay, agentStatus] = await Promise.all([
       prisma.systemSetting.findUnique({ where: { key: 'tally_master_ledgers' } }),
       prisma.systemSetting.findUnique({ where: { key: 'tally_receivables_data' } }),
       prisma.systemSetting.findUnique({ where: { key: 'tally_payables_data' } }),
+      prisma.systemSetting.findUnique({ where: { key: 'tally_sync_agent_status' } }),
     ])
+
+    if (agentStatus?.value) {
+      try {
+        const parsedAgent = JSON.parse(agentStatus.value)
+        if (Array.isArray(parsedAgent.purchaseVoucherTypes)) {
+          for (const vt of parsedAgent.purchaseVoucherTypes) {
+            purchaseVoucherTypes.add(vt.trim())
+            voucherTypes.add(vt.trim())
+          }
+        }
+        if (Array.isArray(parsedAgent.salesVoucherTypes)) {
+          for (const vt of parsedAgent.salesVoucherTypes) {
+            salesVoucherTypes.add(vt.trim())
+            voucherTypes.add(vt.trim())
+          }
+        }
+        if (Array.isArray(parsedAgent.voucherTypes)) {
+          for (const vt of parsedAgent.voucherTypes) voucherTypes.add(vt.trim())
+        }
+      } catch (_) {}
+    }
 
     if (master?.value) {
       try {
@@ -176,6 +198,20 @@ export default defineEventHandler(async (event): Promise<TallyLedgersResponse> =
 
   roundOffAccounts.add('Sales Rounding Off')
   roundOffAccounts.add('Rounding Off')
+
+  // Ensure standard voucher types fallback if remote/cloud Tally query is offline
+  if (purchaseVoucherTypes.size === 0) {
+    purchaseVoucherTypes.add('Purchase')
+    purchaseVoucherTypes.add('Purchase Trade')
+    purchaseVoucherTypes.add('Purchase Exps GST')
+    purchaseVoucherTypes.add('Purchase General')
+  }
+  if (salesVoucherTypes.size === 0) {
+    salesVoucherTypes.add('Sales')
+    salesVoucherTypes.add('Sales - Manual Series')
+  }
+  for (const p of purchaseVoucherTypes) voucherTypes.add(p)
+  for (const s of salesVoucherTypes) voucherTypes.add(s)
 
   return {
     debtors: Array.from(debtors).sort(),

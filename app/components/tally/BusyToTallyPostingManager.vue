@@ -23,14 +23,14 @@
                 class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200"
               >
                 <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                Tally Online (Port {{ tallyStatus.port }})
+                {{ tallyStatus?.viaSyncAgent ? 'Tally Online (via Sync Agent)' : `Tally Online (Port ${tallyStatus.port})` }}
               </span>
               <span 
                 v-else
                 class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-red-100 text-red-800 border border-red-200"
               >
                 <span class="w-2 h-2 rounded-full bg-red-500"></span>
-                Tally Offline (Port 9000)
+                Tally Offline (Sync Agent Inactive)
               </span>
             </div>
             <p class="text-xs text-gray-500 mt-0.5">
@@ -554,7 +554,7 @@ const emit = defineEmits<{
 // State
 const isLoading = ref(false)
 const vouchers = ref<PreparedVoucherItem[]>([])
-const tallyStatus = ref<{ online: boolean; company?: string; port: number } | null>(null)
+const tallyStatus = ref<{ online: boolean; company?: string; port: number; viaSyncAgent?: boolean } | null>(null)
 const availableTallyDebtors = ref<string[]>([])
 const availableTallyCreditors = ref<string[]>([])
 const availableAllLedgers = ref<string[]>([])
