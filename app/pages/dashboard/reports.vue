@@ -34,13 +34,6 @@
                 Generate official Statements of Account with date filtering, running balances, multi-page pagination, and 1-tap PDF/print export.
               </p>
             </div>
-
-            <!-- Features Tags -->
-            <div class="flex items-center gap-1.5 flex-wrap pt-1 text-[10px] font-bold text-gray-500">
-              <span class="px-2 py-0.5 rounded-md bg-slate-100 border border-slate-200">Classic Look</span>
-              <span class="px-2 py-0.5 rounded-md bg-slate-100 border border-slate-200">SM Quotation Look</span>
-              <span class="px-2 py-0.5 rounded-md bg-slate-100 border border-slate-200">Date Presets</span>
-            </div>
           </div>
 
           <!-- Bottom Action Button -->
@@ -78,13 +71,6 @@
               <p class="text-xs text-gray-600 leading-relaxed mt-1.5">
                 Inspect, review side-by-side, edit fields, and post unposted BUSY sales vouchers into Tally Prime with auto party and GST mapping.
               </p>
-            </div>
-
-            <!-- Features Tags -->
-            <div class="flex items-center gap-1.5 flex-wrap pt-1 text-[10px] font-bold text-gray-500">
-              <span class="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200">Side-by-Side Review</span>
-              <span class="px-2 py-0.5 rounded-md bg-slate-100 border border-slate-200">Editable Override</span>
-              <span class="px-2 py-0.5 rounded-md bg-slate-100 border border-slate-200">Port 9000 Direct</span>
             </div>
           </div>
 
