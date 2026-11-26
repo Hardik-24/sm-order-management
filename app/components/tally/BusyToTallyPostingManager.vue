@@ -271,9 +271,11 @@
                 <span 
                   v-if="v.isVerifiedInTally"
                   class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 inline-flex items-center gap-1 shadow-2xs"
-                  title="Ground-truth verified in live Tally Prime register"
+                  :title="v.tallyReference ? 'Ground-truth verified in live Tally (Ref: ' + v.tallyReference + ')' : 'Ground-truth verified in live Tally Prime register'"
                 >
-                  <CheckCircle2 class="w-3 h-3 text-emerald-600" /> Verified in Tally
+                  <CheckCircle2 class="w-3 h-3 text-emerald-600" />
+                  <span>Verified in Tally</span>
+                  <span v-if="v.tallyReference" class="text-[9px] font-mono text-emerald-950 font-normal ml-0.5">({{ v.tallyReference }})</span>
                 </span>
                 <span 
                   v-else-if="v.isJustPosted || v.isPosted"

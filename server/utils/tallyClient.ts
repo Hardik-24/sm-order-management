@@ -76,18 +76,39 @@ export interface ExistingTallyVoucherInfo {
   reference?: string
 }
 
+// Smart party normalization for robust matching
+function cleanParty(name: string): string {
+  return (name || '')
+    .toLowerCase()
+    .replace(/\b(cr|dr|pvt|ltd|private|limited|llp|inc|co|company|enterprises|agency|agencies)\b/gi, '')
+    .replace(/[^a-z0-9]/g, '')
+}
+
+function isSmartPartyMatch(p1: string, p2: string): boolean {
+  if (!p1 || !p2) return false
+  const c1 = cleanParty(p1)
+  const c2 = cleanParty(p2)
+  if (!c1 || !c2) return false
+  if (c1 === c2) return true
+  if (c1.length >= 4 && c2.length >= 4 && (c1.includes(c2) || c2.includes(c1))) return true
+  return false
+}
+
 /**
- * Checks live in Tally Prime whether a voucher with the given number or reference already exists.
+ * Checks live in Tally Prime whether a voucher with the given number, reference,
+ * or matching Date + Amount + Party already exists.
  * This directly prevents double posting (both from OMS and manual vouchers entered in Tally).
  */
 export async function checkTallyVoucherExists(
   voucherNo: string,
   companyName: string = 'SRI LAKSHMI PLYWOODS 2627',
-  reference?: string
+  reference?: string,
+  date?: string,
+  amount?: number,
+  partyName?: string
 ): Promise<ExistingTallyVoucherInfo> {
   const normNo = (voucherNo || '').trim().toUpperCase()
   const normRef = (reference || '').trim().toUpperCase()
-  if (!normNo && !normRef) return { exists: false }
 
   const filterTerms: string[] = []
   if (normNo) {
@@ -98,6 +119,13 @@ export async function checkTallyVoucherExists(
     filterTerms.push(`$$Upper:$VoucherNumber = "${normRef}"`)
     filterTerms.push(`$$Upper:$Reference = "${normRef}"`)
   }
+  if (date && amount && amount > 0) {
+    const cleanDate = date.replace(/[^0-9]/g, '')
+    const roundedAmt = Math.round(amount * 100) / 100
+    filterTerms.push(`($$Date:$Date = $$Date:"${cleanDate}" and $$Abs:$Amount = ${roundedAmt})`)
+  }
+
+  if (filterTerms.length === 0) return { exists: false }
 
   const formula = filterTerms.join(' or ')
   const escapedCompany = companyName.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -145,15 +173,30 @@ export async function checkTallyVoucherExists(
     const dateMatch = dataContent.match(/<DATE[^>]*>([^<]+)<\/DATE>/i)
     const refMatch = dataContent.match(/<REFERENCE[^>]*>([^<]+)<\/REFERENCE>/i)
 
+    const foundVchNo = vchNoMatch ? vchNoMatch[1].trim() : ''
+    const foundRef = refMatch ? refMatch[1].trim() : ''
+    const foundParty = partyMatch ? partyMatch[1].trim() : ''
     const rawAmt = amtMatch ? Math.abs(parseFloat(amtMatch[1])) : 0
+
+    // If matched by number or reference, confirmed
+    const matchedByNumber = (normNo && (foundVchNo.toUpperCase() === normNo || foundRef.toUpperCase() === normNo)) ||
+                            (normRef && (foundVchNo.toUpperCase() === normRef || foundRef.toUpperCase() === normRef))
+    
+    // If matched by Date + Amount, verify party name matches as well to prevent false positives
+    const matchedBy3Way = Boolean(partyName && isSmartPartyMatch(foundParty, partyName))
+
+    if (!matchedByNumber && !matchedBy3Way) {
+      return { exists: false }
+    }
+
     return {
       exists: true,
-      voucherNo: vchNoMatch ? vchNoMatch[1].trim() : voucherNo,
+      voucherNo: foundVchNo || voucherNo,
       voucherType: vchTypeMatch ? vchTypeMatch[1].trim() : undefined,
-      partyLedgerName: partyMatch ? partyMatch[1].trim() : undefined,
+      partyLedgerName: foundParty || undefined,
       amount: isNaN(rawAmt) ? undefined : rawAmt,
       date: dateMatch ? dateMatch[1].trim() : undefined,
-      reference: refMatch ? refMatch[1].trim() : undefined
+      reference: foundRef || undefined
     }
   } catch (err: any) {
     console.warn('[checkTallyVoucherExists] Warning querying live Tally:', err.message)

@@ -20,6 +20,7 @@ export interface PreparedVoucherItem {
   series: string
   customerName: string // Customer for sales, Supplier for purchase
   reference?: string // Supplier invoice no for purchase, or reference
+  tallyReference?: string // Matched Tally reference number if live in Tally
   totalAmount: number
   taxableAmount: number
   cgstAmount: number
@@ -62,6 +63,7 @@ export default defineEventHandler(async (event) => {
 
   // Parse Tally synced sales vouchers
   const tallySalesSet = new Set<string>()
+  const allTallySalesVouchers: Array<{ date: string; voucherNo: string; ref: string; party: string; amount: number }> = []
   const allTallyDebtors: string[] = []
   if (receivablesSetting?.value) {
     try {
@@ -70,6 +72,13 @@ export default defineEventHandler(async (event) => {
         for (const tv of rec.vouchers) {
           if (tv.voucherNo) tallySalesSet.add(tv.voucherNo.trim().toUpperCase())
           if (tv.ref) tallySalesSet.add(tv.ref.trim().toUpperCase())
+          allTallySalesVouchers.push({
+            date: (tv.date || '').replace(/[^0-9]/g, ''),
+            voucherNo: (tv.voucherNo || '').trim().toUpperCase(),
+            ref: (tv.ref || '').trim().toUpperCase(),
+            party: tv.party || '',
+            amount: Math.abs(Number(tv.amount) || 0)
+          })
         }
       }
       if (Array.isArray(rec.parties)) {
@@ -82,6 +91,7 @@ export default defineEventHandler(async (event) => {
 
   // Parse Tally synced purchase vouchers
   const tallyPurchSet = new Set<string>()
+  const allTallyPurchVouchers: Array<{ date: string; voucherNo: string; ref: string; party: string; amount: number }> = []
   const allTallyCreditors: string[] = []
   if (payablesSetting?.value) {
     try {
@@ -90,6 +100,13 @@ export default defineEventHandler(async (event) => {
         for (const pv of pay.vouchers) {
           if (pv.voucherNo) tallyPurchSet.add(pv.voucherNo.trim().toUpperCase())
           if (pv.ref) tallyPurchSet.add(pv.ref.trim().toUpperCase())
+          allTallyPurchVouchers.push({
+            date: (pv.date || '').replace(/[^0-9]/g, ''),
+            voucherNo: (pv.voucherNo || '').trim().toUpperCase(),
+            ref: (pv.ref || '').trim().toUpperCase(),
+            party: pv.party || '',
+            amount: Math.abs(Number(pv.amount) || 0)
+          })
         }
       }
       if (Array.isArray(pay.parties)) {
@@ -117,6 +134,24 @@ export default defineEventHandler(async (event) => {
         }
       }
     } catch {}
+  }
+
+  // Smart party normalization for robust matching
+  function cleanParty(name: string): string {
+    return (name || '')
+      .toLowerCase()
+      .replace(/\b(cr|dr|pvt|ltd|private|limited|llp|inc|co|company|enterprises|agency|agencies)\b/gi, '')
+      .replace(/[^a-z0-9]/g, '')
+  }
+
+  function isSmartPartyMatch(p1: string, p2: string): boolean {
+    if (!p1 || !p2) return false
+    const c1 = cleanParty(p1)
+    const c2 = cleanParty(p2)
+    if (!c1 || !c2) return false
+    if (c1 === c2) return true
+    if (c1.length >= 4 && c2.length >= 4 && (c1.includes(c2) || c2.includes(c1))) return true
+    return false
   }
 
   // Helper for fuzzy match
@@ -186,15 +221,6 @@ export default defineEventHandler(async (event) => {
       const tallyDate = `${yyyy}${mm}${dd}`
       const displayDate = `${dd}-${mm}-${yyyy}`
 
-      // Two-Tier Synchronized Check: Live Tally Register vs Just Posted from OMS
-      const isVerifiedInTally = tallySalesSet.has(normNo)
-      const isJustPosted = Boolean(postedVouchers[vchNo])
-      const isPosted = isVerifiedInTally || isJustPosted
-      const postStatus: 'verified' | 'just_posted' | 'unposted' = isVerifiedInTally
-        ? 'verified'
-        : (isJustPosted ? 'just_posted' : 'unposted')
-      const postedInfo = postedVouchers[vchNo]
-
       const vSeries = (v.series || (v.voucherType === 2 ? 'RETAIL' : 'SMG')).toUpperCase()
 
       // Search filtering
@@ -203,14 +229,35 @@ export default defineEventHandler(async (event) => {
         if (!matchesSearch) continue
       }
 
+      const mappedTallyParty = partyMappings[customer]
+      const suggestedTallyParty = mappedTallyParty || findBestMatch(customer, allTallyDebtors) || customer
+      const totalAmt = Number(v.totalAmount) || 0
+
+      // Two-Tier Synchronized Check: Live Tally Register vs Just Posted from OMS
+      let isVerifiedInTally = tallySalesSet.has(normNo)
+      let matchedTallyRef = ''
+      if (!isVerifiedInTally && allTallySalesVouchers.length > 0) {
+        const found = allTallySalesVouchers.find(tv => 
+          tv.date === tallyDate &&
+          Math.abs(tv.amount - totalAmt) < 1.0 &&
+          (isSmartPartyMatch(tv.party, customer) || (mappedTallyParty && isSmartPartyMatch(tv.party, mappedTallyParty)) || (suggestedTallyParty && isSmartPartyMatch(tv.party, suggestedTallyParty)))
+        )
+        if (found) {
+          isVerifiedInTally = true
+          matchedTallyRef = found.ref || found.voucherNo || ''
+        }
+      }
+
+      const isJustPosted = Boolean(postedVouchers[vchNo])
+      const isPosted = isVerifiedInTally || isJustPosted
+      const postStatus: 'verified' | 'just_posted' | 'unposted' = isVerifiedInTally
+        ? 'verified'
+        : (isJustPosted ? 'just_posted' : 'unposted')
+      const postedInfo = postedVouchers[vchNo]
+
       // Status filtering
       if (status === 'unposted' && isPosted) continue
       if (status === 'posted' && !isPosted) continue
-
-      const mappedTallyParty = partyMappings[customer]
-      const suggestedTallyParty = mappedTallyParty || findBestMatch(customer, allTallyDebtors) || customer
-
-      const totalAmt = Number(v.totalAmount) || 0
       const taxableAmt = Number(v.taxableAmount) || 0
       const cgstAmt = Number(v.cgstAmount) || 0
       const sgstAmt = Number(v.sgstAmount) || 0
@@ -333,6 +380,7 @@ export default defineEventHandler(async (event) => {
         series: vSeries,
         customerName: customer,
         reference: vchNo,
+        tallyReference: matchedTallyRef || undefined,
         totalAmount: totalAmt,
         taxableAmount: taxableAmt,
         cgstAmount: cgstAmt,
@@ -395,8 +443,31 @@ export default defineEventHandler(async (event) => {
       const tallyDate = `${yyyy}${mm}${dd}`
       const displayDate = `${dd}-${mm}-${yyyy}`
 
+      // Search filtering
+      if (search) {
+        const matchesSearch = vchNo.toLowerCase().includes(search) || supplier.toLowerCase().includes(search)
+        if (!matchesSearch) continue
+      }
+
+      const mappedTallyParty = partyMappings[supplier]
+      const suggestedTallyParty = mappedTallyParty || findBestMatch(supplier, allTallyCreditors) || supplier
+      const totalAmt = Number(p.totalAmount) || 0
+
       // Two-Tier Synchronized Check: Live Tally Register vs Just Posted from OMS
-      const isVerifiedInTally = tallyPurchSet.has(normNo)
+      let isVerifiedInTally = tallyPurchSet.has(normNo)
+      let matchedTallyRef = ''
+      if (!isVerifiedInTally && allTallyPurchVouchers.length > 0) {
+        const found = allTallyPurchVouchers.find(pv => 
+          pv.date === tallyDate &&
+          Math.abs(pv.amount - totalAmt) < 1.0 &&
+          (isSmartPartyMatch(pv.party, supplier) || (mappedTallyParty && isSmartPartyMatch(pv.party, mappedTallyParty)) || (suggestedTallyParty && isSmartPartyMatch(pv.party, suggestedTallyParty)))
+        )
+        if (found) {
+          isVerifiedInTally = true
+          matchedTallyRef = pv.ref || pv.voucherNo || ''
+        }
+      }
+
       const isJustPosted = Boolean(postedVouchers[vchNo])
       const isPosted = isVerifiedInTally || isJustPosted
       const postStatus: 'verified' | 'just_posted' | 'unposted' = isVerifiedInTally
@@ -404,20 +475,9 @@ export default defineEventHandler(async (event) => {
         : (isJustPosted ? 'just_posted' : 'unposted')
       const postedInfo = postedVouchers[vchNo]
 
-      // Search filtering
-      if (search) {
-        const matchesSearch = vchNo.toLowerCase().includes(search) || supplier.toLowerCase().includes(search)
-        if (!matchesSearch) continue
-      }
-
       // Status filtering
       if (status === 'unposted' && isPosted) continue
       if (status === 'posted' && !isPosted) continue
-
-      const mappedTallyParty = partyMappings[supplier]
-      const suggestedTallyParty = mappedTallyParty || findBestMatch(supplier, allTallyCreditors) || supplier
-
-      const totalAmt = Number(p.totalAmount) || 0
       const taxableAmt = Number(p.taxableAmount) || 0
       const cgstAmt = Number(p.cgstAmount) || 0
       const sgstAmt = Number(p.sgstAmount) || 0
@@ -493,6 +553,7 @@ export default defineEventHandler(async (event) => {
         series: p.series || 'Main',
         customerName: supplier,
         reference: vchNo,
+        tallyReference: matchedTallyRef || undefined,
         totalAmount: totalAmt,
         taxableAmount: taxableAmt,
         cgstAmount: cgstAmt,

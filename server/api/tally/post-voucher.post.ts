@@ -70,6 +70,24 @@ export default defineEventHandler(async (event) => {
   const normNo = vchNo.toUpperCase()
   const normRef = (reference || '').toUpperCase()
 
+  // Smart party normalization for robust matching
+  function cleanParty(name: string): string {
+    return (name || '')
+      .toLowerCase()
+      .replace(/\b(cr|dr|pvt|ltd|private|limited|llp|inc|co|company|enterprises|agency|agencies)\b/gi, '')
+      .replace(/[^a-z0-9]/g, '')
+  }
+
+  function isSmartPartyMatch(p1: string, p2: string): boolean {
+    if (!p1 || !p2) return false
+    const c1 = cleanParty(p1)
+    const c2 = cleanParty(p2)
+    if (!c1 || !c2) return false
+    if (c1 === c2) return true
+    if (c1.length >= 4 && c2.length >= 4 && (c1.includes(c2) || c2.includes(c1))) return true
+    return false
+  }
+
   const [receivablesSetting, payablesSetting, postedSetting] = await Promise.all([
     prisma.systemSetting.findUnique({ where: { key: 'tally_receivables_data' } }),
     prisma.systemSetting.findUnique({ where: { key: 'tally_payables_data' } }),
@@ -78,52 +96,81 @@ export default defineEventHandler(async (event) => {
 
   let isAlreadyInDbSync = false
   let syncedType = ''
+  let matchedRef = ''
 
-  if (vchType.toLowerCase() === 'sales' && receivablesSetting?.value) {
+  const isSalesVch = vchType.toLowerCase().includes('sales')
+  const isPurchVch = vchType.toLowerCase().includes('purchase') || vchType.toLowerCase().includes('expense')
+
+  if (isSalesVch && receivablesSetting?.value) {
     try {
       const rec = JSON.parse(receivablesSetting.value)
       if (Array.isArray(rec.vouchers)) {
-        const found = rec.vouchers.find((v: any) => 
-          (v.voucherNo && v.voucherNo.trim().toUpperCase() === normNo) ||
-          (v.ref && v.ref.trim().toUpperCase() === normNo) ||
-          (normRef && v.voucherNo && v.voucherNo.trim().toUpperCase() === normRef) ||
-          (normRef && v.ref && v.ref.trim().toUpperCase() === normRef)
-        )
+        const found = rec.vouchers.find((v: any) => {
+          const numMatch = (v.voucherNo && v.voucherNo.trim().toUpperCase() === normNo) ||
+                           (v.ref && v.ref.trim().toUpperCase() === normNo) ||
+                           (normRef && v.voucherNo && v.voucherNo.trim().toUpperCase() === normRef) ||
+                           (normRef && v.ref && v.ref.trim().toUpperCase() === normRef)
+          if (numMatch) return true
+
+          // Smart 3-way check: Same date + Amount within ₹1 + Party matches
+          const vDateClean = (v.date || '').replace(/[^0-9]/g, '')
+          if (vDateClean === vchDate) {
+            const amtDiff = Math.abs((Number(v.amount) || 0) - totalDebit)
+            if (amtDiff < 1.0 && (isSmartPartyMatch(v.party, partyLedger) || isSmartPartyMatch(v.party, body.busyPartyName || ''))) {
+              return true
+            }
+          }
+          return false
+        })
         if (found) {
           isAlreadyInDbSync = true
           syncedType = 'Sales'
+          matchedRef = found.ref || found.voucherNo || ''
         }
       }
     } catch {}
-  } else if (vchType.toLowerCase() === 'purchase' && payablesSetting?.value) {
+  } else if (isPurchVch && payablesSetting?.value) {
     try {
       const pay = JSON.parse(payablesSetting.value)
       if (Array.isArray(pay.vouchers)) {
-        const found = pay.vouchers.find((v: any) => 
-          (v.voucherNo && v.voucherNo.trim().toUpperCase() === normNo) ||
-          (v.ref && v.ref.trim().toUpperCase() === normNo) ||
-          (normRef && v.voucherNo && v.voucherNo.trim().toUpperCase() === normRef) ||
-          (normRef && v.ref && v.ref.trim().toUpperCase() === normRef)
-        )
+        const found = pay.vouchers.find((v: any) => {
+          const numMatch = (v.voucherNo && v.voucherNo.trim().toUpperCase() === normNo) ||
+                           (v.ref && v.ref.trim().toUpperCase() === normNo) ||
+                           (normRef && v.voucherNo && v.voucherNo.trim().toUpperCase() === normRef) ||
+                           (normRef && v.ref && v.ref.trim().toUpperCase() === normRef)
+          if (numMatch) return true
+
+          // Smart 3-way check: Same date + Amount within ₹1 + Party matches
+          const vDateClean = (v.date || '').replace(/[^0-9]/g, '')
+          if (vDateClean === vchDate) {
+            const amtDiff = Math.abs((Number(v.amount) || 0) - totalDebit)
+            if (amtDiff < 1.0 && (isSmartPartyMatch(v.party, partyLedger) || isSmartPartyMatch(v.party, body.busyPartyName || ''))) {
+              return true
+            }
+          }
+          return false
+        })
         if (found) {
           isAlreadyInDbSync = true
           syncedType = 'Purchase'
+          matchedRef = found.ref || found.voucherNo || ''
         }
       }
     } catch {}
   }
 
   if (isAlreadyInDbSync) {
+    const refSuffix = matchedRef ? ` (Ref / Number: ${matchedRef})` : ''
     return {
       success: false,
       alreadyExists: true,
       voucherNo: vchNo,
-      error: `Duplicate Blocked: Voucher #${vchNo} is already present in Tally Prime (${syncedType} Register). Double posting is strictly prohibited.`
+      error: `Duplicate Blocked: This voucher is already present in Tally Prime (${syncedType} Register)${refSuffix}. Double posting is strictly prohibited.`
     }
   }
 
   // Check B: LIVE TALLY GROUND-TRUTH QUERY (Detects any voucher manually entered by accounts team!)
-  const liveCheck = await checkTallyVoucherExists(vchNo, companyName, reference)
+  const liveCheck = await checkTallyVoucherExists(vchNo, companyName, reference, vchDate, totalDebit, partyLedger)
   if (liveCheck.exists) {
     // Record in BUSY_TALLY_POSTED_VOUCHERS so OMS knows it's already there
     try {

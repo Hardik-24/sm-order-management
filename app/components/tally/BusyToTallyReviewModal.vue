@@ -169,7 +169,7 @@
                 v-model="form.voucherType"
                 class="w-full text-xs font-semibold px-3 py-2 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
               >
-                <option v-for="vt in availableVoucherTypes" :key="vt" :value="vt">{{ vt }}</option>
+                <option v-for="vt in filteredVoucherTypes" :key="vt" :value="vt">{{ vt }}</option>
               </select>
             </div>
 
@@ -676,6 +676,27 @@ const activeTallyLedgers = computed<string[]>(() => {
   return list || []
 })
 
+// Filtered voucher types based on Purchase vs Sales with standard defaults
+const filteredVoucherTypes = computed<string[]>(() => {
+  const isPurchase = props.voucher?.voucherType === 'Purchase'
+  const all = props.availableVoucherTypes || []
+  if (isPurchase) {
+    const purchList = all.filter(vt => {
+      const l = vt.toLowerCase()
+      return l.includes('purchase') || l.includes('rcm') || l.includes('expense')
+    })
+    const defaults = ['Expenses GST Purchase', 'Trade Purchase', 'General Purchase', 'Purchase', 'RCM UR']
+    return Array.from(new Set([...defaults, ...purchList]))
+  } else {
+    const salesList = all.filter(vt => {
+      const l = vt.toLowerCase()
+      return l.includes('sales') || l.includes('invoice')
+    })
+    const defaults = ['Sales', 'Trade Sales']
+    return Array.from(new Set([...defaults, ...salesList]))
+  }
+})
+
 // Check if current partyLedgerName is a genuine Tally ledger
 const isValidTallyLedger = computed(() => {
   if (!form.value.partyLedgerName) return false
@@ -715,8 +736,21 @@ watch(() => props.voucher, (v) => {
   isEditingParty.value = false
   showPartyDropdown.value = false
 
+  // Smart initial voucher type selection
+  let initialVchType = v.voucherType || 'Sales'
+  if (v.voucherType === 'Purchase') {
+    const isExpense = (v.series && v.series.toUpperCase().includes('EXP')) ||
+                      (v.voucherNo && v.voucherNo.toUpperCase().startsWith('GSTEXP')) ||
+                      (Array.isArray(v.items) && v.items.some((it: any) => (it.name || '').toLowerCase().includes('expense')))
+    if (isExpense) {
+      initialVchType = 'Expenses GST Purchase'
+    } else {
+      initialVchType = 'Trade Purchase'
+    }
+  }
+
   form.value = {
-    voucherType: v.voucherType || 'Sales',
+    voucherType: initialVchType,
     voucherNo: v.voucherNo,
     reference: v.reference || (v.voucherType === 'Purchase' ? v.voucherNo : ''),
     date: v.voucherDate,
