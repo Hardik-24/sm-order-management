@@ -512,19 +512,52 @@
 
       <!-- Bottom Action Bar -->
       <div class="px-6 py-4 border-t border-gray-200 bg-slate-50/80 flex items-center justify-between shrink-0">
-        <button 
-          type="button" 
-          @click="close"
-          class="px-4 py-2 text-xs font-bold text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-xl transition-colors cursor-pointer"
-        >
-          Cancel
-        </button>
+        <div class="flex items-center gap-2">
+          <button 
+            type="button" 
+            @click="close"
+            class="px-4 py-2 text-xs font-bold text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-xl transition-colors cursor-pointer"
+          >
+            Cancel
+          </button>
+
+          <!-- Mark as Posted / Reset to Unposted button -->
+          <button
+            v-if="!voucher?.isPosted"
+            type="button"
+            @click="toggleManualPosting('mark')"
+            :disabled="isTogglingPosting"
+            class="px-3.5 py-2 text-xs font-bold text-teal-800 bg-teal-50 border border-teal-300 hover:bg-teal-100 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 disabled:opacity-50"
+            title="Mark as already entered in Tally without sending XML"
+          >
+            <Loader2 v-if="isTogglingPosting" class="w-3.5 h-3.5 animate-spin" />
+            <Check v-else class="w-3.5 h-3.5 text-teal-600" />
+            <span>Mark as Posted</span>
+          </button>
+
+          <button
+            v-else
+            type="button"
+            @click="toggleManualPosting('unmark')"
+            :disabled="isTogglingPosting"
+            class="px-3.5 py-2 text-xs font-bold text-rose-700 bg-rose-50 border border-rose-300 hover:bg-rose-100 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 disabled:opacity-50"
+            title="Reset this voucher back to Unposted"
+          >
+            <Loader2 v-if="isTogglingPosting" class="w-3.5 h-3.5 animate-spin" />
+            <RotateCcw v-else class="w-3.5 h-3.5 text-rose-600" />
+            <span>Reset to Unposted</span>
+          </button>
+        </div>
 
         <div class="flex items-center gap-3">
           <!-- Already Posted Notice -->
-          <div v-if="voucher.isVerifiedInTally" class="flex items-center gap-1.5 text-xs font-bold text-emerald-800 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-300">
+          <div v-if="voucher?.isVerifiedInTally" class="flex items-center gap-1.5 text-xs font-bold text-emerald-800 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-300">
             <CheckCircle2 class="w-4 h-4 text-emerald-600 shrink-0" />
             <span>Voucher is verified in Tally Prime. Double posting is prevented.</span>
+          </div>
+          <div v-else-if="voucher?.postStatus === 'manual' || voucher?.isManualPosted" class="flex items-center gap-1.5 text-xs font-bold text-teal-800 bg-teal-50 px-3 py-1.5 rounded-lg border border-teal-300">
+            <Check class="w-4 h-4 text-teal-600 shrink-0" />
+            <span>Marked as already entered in Tally.</span>
           </div>
 
           <!-- Missing Ledger Alert -->
@@ -535,21 +568,21 @@
 
           <button 
             type="button" 
-            :disabled="!isBalanced || isPosting || !isValidTallyLedger || voucher.isVerifiedInTally"
+            :disabled="!isBalanced || isPosting || !isValidTallyLedger || voucher?.isVerifiedInTally"
             @click="postToTally"
             class="px-5 py-2.5 text-xs font-black text-white rounded-xl shadow-sm transition-all flex items-center gap-2 cursor-pointer active:scale-95"
             :class="[
-              voucher.isVerifiedInTally
+              voucher?.isVerifiedInTally
                 ? 'bg-slate-400 cursor-not-allowed opacity-80'
                 : (isBalanced && !isPosting && isValidTallyLedger
                     ? 'bg-indigo-600 hover:bg-indigo-700 hover:shadow-md' 
                     : 'bg-gray-400 cursor-not-allowed opacity-60')
             ]"
           >
-            <CheckCircle2 v-if="voucher.isVerifiedInTally" class="w-4 h-4 text-emerald-300" />
+            <CheckCircle2 v-if="voucher?.isVerifiedInTally" class="w-4 h-4 text-emerald-300" />
             <Loader2 v-else-if="isPosting" class="w-4 h-4 animate-spin" />
             <Send v-else class="w-4 h-4" />
-            <span>{{ isPosting ? 'Checking & Posting...' : (voucher.isVerifiedInTally ? 'Already Live in Tally' : 'Post to Tally Prime (Port 9000)') }}</span>
+            <span>{{ isPosting ? 'Checking & Posting...' : (voucher?.isVerifiedInTally ? 'Already Live in Tally' : 'Post to Tally Prime (Port 9000)') }}</span>
           </button>
         </div>
       </div>
@@ -591,7 +624,8 @@ import {
   AlertCircle,
   Send,
   Loader2,
-  FileText
+  FileText,
+  RotateCcw
 } from 'lucide-vue-next'
 import type { PreparedVoucherItem, FormattedTallyEntry } from '~~/server/api/tally/vouchers.get'
 import BusyToTallyProgressModal from './BusyToTallyProgressModal.vue'
@@ -608,7 +642,45 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'close'): void
   (e: 'posted', voucherNo: string, partyLedgerName?: string, busyPartyName?: string): void
+  (e: 'status-changed', voucherNo: string, action: 'mark' | 'unmark'): void
 }>()
+
+const isTogglingPosting = ref(false)
+
+const toggleManualPosting = async (action: 'mark' | 'unmark') => {
+  if (!props.voucher || isTogglingPosting.value) return
+  isTogglingPosting.value = true
+  try {
+    const res = await $fetch<{ success: boolean; isPosted: boolean }>('/api/tally/toggle-posted', {
+      method: 'POST',
+      body: {
+        voucherNo: props.voucher.voucherNo,
+        action
+      }
+    })
+    if (res.success) {
+      if (action === 'mark') {
+        props.voucher.isPosted = true
+        props.voucher.isJustPosted = true
+        props.voucher.isManualPosted = true
+        props.voucher.postStatus = 'manual'
+      } else {
+        props.voucher.isPosted = false
+        props.voucher.isJustPosted = false
+        props.voucher.isVerifiedInTally = false
+        props.voucher.isManualPosted = false
+        props.voucher.postStatus = 'unposted'
+      }
+      emit('status-changed', props.voucher.voucherNo, action)
+      close()
+    }
+  } catch (err: any) {
+    console.error('Failed toggling manual posting:', err)
+    alert(err?.data?.message || err?.message || 'Failed to update voucher status')
+  } finally {
+    isTogglingPosting.value = false
+  }
+}
 
 // State
 const form = ref<{

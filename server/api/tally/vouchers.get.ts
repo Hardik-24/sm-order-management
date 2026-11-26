@@ -32,7 +32,8 @@ export interface PreparedVoucherItem {
   isPosted: boolean
   isVerifiedInTally: boolean
   isJustPosted: boolean
-  postStatus: 'verified' | 'just_posted' | 'unposted'
+  isManualPosted?: boolean
+  postStatus: 'verified' | 'just_posted' | 'manual' | 'unposted'
   postedAt?: string
   isMapped: boolean
   mappedTallyParty?: string
@@ -233,10 +234,13 @@ export default defineEventHandler(async (event) => {
       const suggestedTallyParty = mappedTallyParty || findBestMatch(customer, allTallyDebtors) || customer
       const totalAmt = Number(v.totalAmount) || 0
 
+      const postedInfo = postedVouchers[vchNo]
+      const isManuallyUnmarked = Boolean(postedInfo?.unmarked)
+
       // Two-Tier Synchronized Check: Live Tally Register vs Just Posted from OMS
-      let isVerifiedInTally = tallySalesSet.has(normNo)
+      let isVerifiedInTally = !isManuallyUnmarked && tallySalesSet.has(normNo)
       let matchedTallyRef = ''
-      if (!isVerifiedInTally && allTallySalesVouchers.length > 0) {
+      if (!isVerifiedInTally && !isManuallyUnmarked && allTallySalesVouchers.length > 0) {
         const found = allTallySalesVouchers.find(tv => 
           tv.date === tallyDate &&
           Math.abs(tv.amount - totalAmt) < 1.0 &&
@@ -248,12 +252,12 @@ export default defineEventHandler(async (event) => {
         }
       }
 
-      const isJustPosted = Boolean(postedVouchers[vchNo])
+      const isManualPosted = !isManuallyUnmarked && Boolean(postedInfo?.manual)
+      const isJustPosted = !isManuallyUnmarked && Boolean(postedInfo && !postedInfo.unmarked)
       const isPosted = isVerifiedInTally || isJustPosted
-      const postStatus: 'verified' | 'just_posted' | 'unposted' = isVerifiedInTally
+      const postStatus: 'verified' | 'just_posted' | 'manual' | 'unposted' = isVerifiedInTally
         ? 'verified'
-        : (isJustPosted ? 'just_posted' : 'unposted')
-      const postedInfo = postedVouchers[vchNo]
+        : (isManualPosted ? 'manual' : (isJustPosted ? 'just_posted' : 'unposted'))
 
       // Status filtering
       if (status === 'unposted' && isPosted) continue
@@ -392,6 +396,7 @@ export default defineEventHandler(async (event) => {
         isPosted,
         isVerifiedInTally,
         isJustPosted,
+        isManualPosted,
         postStatus,
         postedAt: postedInfo?.postedAt,
         isMapped: Boolean(mappedTallyParty),
@@ -453,10 +458,13 @@ export default defineEventHandler(async (event) => {
       const suggestedTallyParty = mappedTallyParty || findBestMatch(supplier, allTallyCreditors) || supplier
       const totalAmt = Number(p.totalAmount) || 0
 
+      const postedInfo = postedVouchers[vchNo]
+      const isManuallyUnmarked = Boolean(postedInfo?.unmarked)
+
       // Two-Tier Synchronized Check: Live Tally Register vs Just Posted from OMS
-      let isVerifiedInTally = tallyPurchSet.has(normNo)
+      let isVerifiedInTally = !isManuallyUnmarked && tallyPurchSet.has(normNo)
       let matchedTallyRef = ''
-      if (!isVerifiedInTally && allTallyPurchVouchers.length > 0) {
+      if (!isVerifiedInTally && !isManuallyUnmarked && allTallyPurchVouchers.length > 0) {
         const found = allTallyPurchVouchers.find(pv => 
           pv.date === tallyDate &&
           Math.abs(pv.amount - totalAmt) < 1.0 &&
@@ -468,12 +476,12 @@ export default defineEventHandler(async (event) => {
         }
       }
 
-      const isJustPosted = Boolean(postedVouchers[vchNo])
+      const isManualPosted = !isManuallyUnmarked && Boolean(postedInfo?.manual)
+      const isJustPosted = !isManuallyUnmarked && Boolean(postedInfo && !postedInfo.unmarked)
       const isPosted = isVerifiedInTally || isJustPosted
-      const postStatus: 'verified' | 'just_posted' | 'unposted' = isVerifiedInTally
+      const postStatus: 'verified' | 'just_posted' | 'manual' | 'unposted' = isVerifiedInTally
         ? 'verified'
-        : (isJustPosted ? 'just_posted' : 'unposted')
-      const postedInfo = postedVouchers[vchNo]
+        : (isManualPosted ? 'manual' : (isJustPosted ? 'just_posted' : 'unposted'))
 
       // Status filtering
       if (status === 'unposted' && isPosted) continue
@@ -565,6 +573,7 @@ export default defineEventHandler(async (event) => {
         isPosted,
         isVerifiedInTally,
         isJustPosted,
+        isManualPosted,
         postStatus,
         postedAt: postedInfo?.postedAt,
         isMapped: Boolean(mappedTallyParty),
