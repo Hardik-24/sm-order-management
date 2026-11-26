@@ -51,16 +51,25 @@ namespace SMFlowSyncAgent
             TallyCompanyName = "SRI LAKSHMI PLYWOODS 2627";
         }
 
+        public static string GetAppDirectory()
+        {
+            string loc = typeof(AgentConfig).Assembly.Location;
+            if (!string.IsNullOrEmpty(loc))
+            {
+                string dir = Path.GetDirectoryName(loc);
+                if (!string.IsNullOrEmpty(dir) && Directory.Exists(dir)) return dir;
+            }
+            return AppDomain.CurrentDomain.BaseDirectory;
+        }
+
         public static string GetConfigPath()
         {
-            string appDir = AppDomain.CurrentDomain.BaseDirectory;
-            return Path.Combine(appDir, "config.json");
+            return Path.Combine(GetAppDirectory(), "config.json");
         }
 
         public static string GetConfigBackupPath()
         {
-            string appDir = AppDomain.CurrentDomain.BaseDirectory;
-            return Path.Combine(appDir, "config.json.bak");
+            return Path.Combine(GetAppDirectory(), "config.json.bak");
         }
 
         private static AgentConfig TryParseFile(string filePath)
@@ -196,18 +205,14 @@ namespace SMFlowSyncAgent
                 }
             }
 
-            string dbgPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "debug.log");
             try
             {
-                File.AppendAllText(dbgPath, string.Format("Main entered at {0}\n", DateTime.Now));
                 Process current = Process.GetCurrentProcess();
                 Process[] processes = Process.GetProcessesByName(current.ProcessName);
-                File.AppendAllText(dbgPath, string.Format("Found {0} processes with name {1}\n", processes.Length, current.ProcessName));
                 foreach (Process p in processes)
                 {
                     if (p.Id != current.Id)
                     {
-                        File.AppendAllText(dbgPath, string.Format("Another instance already running (PID {0}), signaling window restore.\n", p.Id));
                         // Broadcast message to wake up and show existing instance
                         PostMessage(HWND_BROADCAST, WM_SHOWME, IntPtr.Zero, IntPtr.Zero);
 
@@ -225,17 +230,15 @@ namespace SMFlowSyncAgent
                     }
                 }
 
-                File.AppendAllText(dbgPath, "Calling Application.EnableVisualStyles...\n");
                 Application.EnableVisualStyles();
                 Application.SetCompatibleTextRenderingDefault(false);
-                File.AppendAllText(dbgPath, "Creating MainForm...\n");
                 MainForm form = new MainForm(startInTray);
-                File.AppendAllText(dbgPath, "Starting Application.Run...\n");
                 Application.Run(form);
             }
             catch (Exception ex)
             {
-                File.AppendAllText(dbgPath, "FATAL EXCEPTION: " + ex.ToString() + "\n");
+                string dbgPath = Path.Combine(AgentConfig.GetAppDirectory(), "debug.log");
+                try { File.AppendAllText(dbgPath, "FATAL EXCEPTION: " + ex.ToString() + "\n"); } catch { }
             }
         }
     }
@@ -285,6 +288,11 @@ namespace SMFlowSyncAgent
         private Label lblStatDuration;
         private Label lblStatPrimary;
         private Label lblStatInterval;
+        private Label lblStatTallyQueue;
+
+        private Process tallyQueueWorkerProc = null;
+        private Thread tallyQueueSupervisorThread = null;
+        private bool isTallyQueueDisposing = false;
 
         private TabControl mainTabs;
         private TabPage tabTerminal;
@@ -332,6 +340,7 @@ namespace SMFlowSyncAgent
             UpdateStatsUI();
             LoadHistory();
             ResetTerminalWelcome();
+            StartTallyQueueListener();
         }
 
         protected override void WndProc(ref Message m)
@@ -365,6 +374,7 @@ namespace SMFlowSyncAgent
             if (IsPrimary())
             {
                 AppendLog(string.Format("Status: ACTIVE PRIMARY. Auto-sync scheduled for every {0} minutes (at :00, :30 sharp).", config.IntervalMinutes), ColorGreen);
+                AppendLog("Tally Queue Listener: Active (Watching OMS Cloud queue for voucher posting requests)", ColorCyan);
             }
             else
             {
@@ -497,26 +507,34 @@ namespace SMFlowSyncAgent
             lblStatDuration.ForeColor = ColorTextMuted;
             lblStatDuration.Font = new Font("Segoe UI", 8.5F, FontStyle.Regular);
             lblStatDuration.AutoSize = true;
-            lblStatDuration.Location = new Point(220, 12);
+            lblStatDuration.Location = new Point(180, 12);
 
             lblStatInterval = new Label();
             lblStatInterval.Text = "Interval: 30 Mins";
             lblStatInterval.ForeColor = ColorTextMuted;
             lblStatInterval.Font = new Font("Segoe UI", 8.5F, FontStyle.Regular);
             lblStatInterval.AutoSize = true;
-            lblStatInterval.Location = new Point(380, 12);
+            lblStatInterval.Location = new Point(300, 12);
 
             lblStatPrimary = new Label();
             lblStatPrimary.Text = "Host: " + Environment.MachineName;
             lblStatPrimary.ForeColor = ColorTextMuted;
             lblStatPrimary.Font = new Font("Segoe UI", 8.5F, FontStyle.Regular);
             lblStatPrimary.AutoSize = true;
-            lblStatPrimary.Location = new Point(540, 12);
+            lblStatPrimary.Location = new Point(440, 12);
+
+            lblStatTallyQueue = new Label();
+            lblStatTallyQueue.Text = "Tally Queue: Starting...";
+            lblStatTallyQueue.ForeColor = ColorCyan;
+            lblStatTallyQueue.Font = new Font("Segoe UI", 8.5F, FontStyle.Bold);
+            lblStatTallyQueue.AutoSize = true;
+            lblStatTallyQueue.Location = new Point(620, 12);
 
             statsPanel.Controls.Add(lblStatLastSync);
             statsPanel.Controls.Add(lblStatDuration);
             statsPanel.Controls.Add(lblStatInterval);
             statsPanel.Controls.Add(lblStatPrimary);
+            statsPanel.Controls.Add(lblStatTallyQueue);
             this.Controls.Add(statsPanel);
 
             // 3. Tab Control
@@ -1027,6 +1045,7 @@ namespace SMFlowSyncAgent
                 if (dr != DialogResult.Yes) return;
             }
 
+            StopTallyQueueListener();
             trayIcon.Visible = false;
             trayIcon.Dispose();
             Application.Exit();
@@ -1045,6 +1064,10 @@ namespace SMFlowSyncAgent
                     hasShownTrayBalloon = true;
                     trayIcon.ShowBalloonTip(3000, "SM Flow Sync Agent", "Agent is running quietly in the background tray. Double-click the tray icon anytime to open.", ToolTipIcon.Info);
                 }
+            }
+            else
+            {
+                StopTallyQueueListener();
             }
         }
 
@@ -1952,6 +1975,163 @@ namespace SMFlowSyncAgent
             });
         }
 
+        // =========================================================================
+        // TALLY VOUCHER QUEUE WORKER (CLOUD QUEUE <---> TALLY PRIME 127.0.0.1:9000)
+        // =========================================================================
+        private void StartTallyQueueListener()
+        {
+            if (tallyQueueSupervisorThread != null && tallyQueueSupervisorThread.IsAlive) return;
+
+            tallyQueueSupervisorThread = new Thread(() =>
+            {
+                while (!isTallyQueueDisposing)
+                {
+                    try
+                    {
+                        bool canRunTally = IsPrimary();
+                        if (!canRunTally)
+                        {
+                            try
+                            {
+                                using (System.Net.Sockets.TcpClient tcp = new System.Net.Sockets.TcpClient())
+                                {
+                                    IAsyncResult ar = tcp.BeginConnect(config.TallyHost ?? "127.0.0.1", config.TallyPort > 0 ? config.TallyPort : 9000, null, null);
+                                    canRunTally = ar.AsyncWaitHandle.WaitOne(800, false) && tcp.Connected;
+                                }
+                            }
+                            catch { }
+                        }
+
+                        if (!canRunTally)
+                        {
+                            InvokeAction(() =>
+                            {
+                                if (lblStatTallyQueue != null)
+                                {
+                                    lblStatTallyQueue.Text = "Tally Queue: Standby";
+                                    lblStatTallyQueue.ForeColor = ColorTextMuted;
+                                }
+                            });
+                            Thread.Sleep(5000);
+                            continue;
+                        }
+
+                        string script = GetScriptPath("sync_tally_queue_worker.cjs");
+                        if (!File.Exists(script))
+                        {
+                            InvokeAction(() =>
+                            {
+                                if (lblStatTallyQueue != null)
+                                {
+                                    lblStatTallyQueue.Text = "Tally Queue: Script Missing";
+                                    lblStatTallyQueue.ForeColor = ColorAmber;
+                                }
+                            });
+                            Thread.Sleep(10000);
+                            continue;
+                        }
+
+                        string appDir = AppDomain.CurrentDomain.BaseDirectory;
+                        string nodeExe = "node.exe";
+                        string localNode = Path.Combine(appDir, "node.exe");
+                        if (File.Exists(localNode)) nodeExe = localNode;
+
+                        string workDir = GetScriptsWorkingDir();
+
+                        ProcessStartInfo psi = new ProcessStartInfo();
+                        psi.FileName = nodeExe;
+                        psi.Arguments = string.Format("\"{0}\" --watch", script);
+                        psi.WorkingDirectory = workDir;
+                        psi.UseShellExecute = false;
+                        psi.CreateNoWindow = true;
+                        psi.RedirectStandardOutput = true;
+                        psi.RedirectStandardError = true;
+
+                        psi.EnvironmentVariables["TALLY_HOST"] = string.IsNullOrEmpty(config.TallyHost) ? "127.0.0.1" : config.TallyHost;
+                        psi.EnvironmentVariables["TALLY_PORT"] = config.TallyPort > 0 ? config.TallyPort.ToString() : "9000";
+                        psi.EnvironmentVariables["TALLY_EXPECTED_COMPANY"] = string.IsNullOrEmpty(config.TallyCompanyName) ? "SRI LAKSHMI PLYWOODS 2627" : config.TallyCompanyName;
+
+                        using (Process proc = Process.Start(psi))
+                        {
+                            tallyQueueWorkerProc = proc;
+                            InvokeAction(() =>
+                            {
+                                if (lblStatTallyQueue != null)
+                                {
+                                    lblStatTallyQueue.Text = "Tally Queue: Active";
+                                    lblStatTallyQueue.ForeColor = ColorGreen;
+                                }
+                            });
+
+                            string line;
+                            while ((line = proc.StandardOutput.ReadLine()) != null)
+                            {
+                                string l = line;
+                                InvokeAction(() =>
+                                {
+                                    if (l.Contains("SUCCESS"))
+                                    {
+                                        AppendLog("      [v] " + l.Trim(), ColorGreen);
+                                    }
+                                    else if (l.Contains("FAILED") || l.Contains("Fatal error"))
+                                    {
+                                        AppendLog("      [x] " + l.Trim(), ColorRose);
+                                    }
+                                    else if (l.Contains("Picking up job") || l.Contains("Transmitting XML"))
+                                    {
+                                        AppendLog("      [>] " + l.Trim(), ColorCyan);
+                                    }
+                                });
+                            }
+
+                            string errLine;
+                            while ((errLine = proc.StandardError.ReadLine()) != null)
+                            {
+                                string el = errLine;
+                                if (!string.IsNullOrWhiteSpace(el))
+                                {
+                                    InvokeAction(() => AppendLog("      [Tally Queue Error] " + el.Trim(), ColorRose));
+                                }
+                            }
+
+                            proc.WaitForExit();
+                        }
+                    }
+                    catch { }
+
+                    if (!isTallyQueueDisposing)
+                    {
+                        InvokeAction(() =>
+                        {
+                            if (lblStatTallyQueue != null)
+                            {
+                                lblStatTallyQueue.Text = "Tally Queue: Reconnecting...";
+                                lblStatTallyQueue.ForeColor = ColorAmber;
+                            }
+                        });
+                        Thread.Sleep(4000);
+                    }
+                }
+            });
+
+            tallyQueueSupervisorThread.IsBackground = true;
+            tallyQueueSupervisorThread.Name = "TallyQueueWorkerSupervisor";
+            tallyQueueSupervisorThread.Start();
+        }
+
+        private void StopTallyQueueListener()
+        {
+            isTallyQueueDisposing = true;
+            try
+            {
+                if (tallyQueueWorkerProc != null && !tallyQueueWorkerProc.HasExited)
+                {
+                    tallyQueueWorkerProc.Kill();
+                }
+            }
+            catch { }
+        }
+
         private string GetEffectiveLogFile()
         {
             string appDir = AppDomain.CurrentDomain.BaseDirectory;
@@ -2102,8 +2282,14 @@ namespace SMFlowSyncAgent
         private void InvokeAction(Action act)
         {
             if (this.IsDisposed) return;
-            if (this.InvokeRequired) this.Invoke(act);
-            else act();
+            if (this.InvokeRequired)
+            {
+                try { this.BeginInvoke(act); } catch { }
+            }
+            else
+            {
+                act();
+            }
         }
 
         private string GetScriptsWorkingDir()

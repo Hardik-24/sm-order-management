@@ -1003,7 +1003,7 @@ const close = () => {
   emit('close')
 }
 
-// Post to Tally Prime with Animated Multi-Step Stepper
+// Post to Tally Prime with Animated Multi-Step Stepper via Sync Agent Queue
 const postToTally = async () => {
   if (!isBalanced.value || !props.voucher) return
 
@@ -1014,28 +1014,13 @@ const postToTally = async () => {
   isProgressOpen.value = true
   progressStep.value = 1
   progressFailedAt.value = undefined
-  progressStep1Details.value = 'Connecting to Tally Prime & checking for duplicate voucher in books...'
+  progressStep1Details.value = 'Enqueuing voucher in OMS Cloud & verifying duplicate protection...'
   progressStep2Details.value = ''
   progressStep3Details.value = ''
   progressStep4Details.value = ''
   progressErrorMessage.value = ''
 
   try {
-    // Step 1: Brief pause so the user sees Step 1 engaging
-    await new Promise(r => setTimeout(r, 350))
-
-    // Step 2: Validate Ledgers & Tax Balance
-    progressStep.value = 2
-    progressStep1Details.value = 'Tally Prime reached. No duplicate found in Tally register.'
-    const totalDrVal = totalDr.value.toFixed(2)
-    progressStep2Details.value = `Verified equilibrium (₹${totalDrVal}). Ledgers & GST structure validated.`
-
-    await new Promise(r => setTimeout(r, 300))
-
-    // Step 3: XML Transmission
-    progressStep.value = 3
-    progressStep3Details.value = `Generating <TALLYMESSAGE> XML envelope with Bill Allocation (New Ref)...`
-
     const payload = {
       voucherId: props.voucher.id,
       voucherNo: form.value.voucherNo,
@@ -1054,41 +1039,94 @@ const postToTally = async () => {
       body: payload
     })
 
-    if (res.success) {
-      // Step 4: Confirm Creation in Tally Books
-      progressStep.value = 4
-      progressStep3Details.value = 'XML payload successfully delivered to Tally.'
-      progressStep4Details.value = `Tally responded: <CREATED>1</CREATED>. Bill reference "${res.voucherNo}" allocated.`
-
-      await new Promise(r => setTimeout(r, 400))
-
-      // Step 5: Success State
-      progressStep.value = 5
-      createdTallyCompany.value = res.company || 'SRI LAKSHMI PLYWOODS 2627'
-
-      postFeedback.value = {
-        success: true,
-        message: `Voucher ${res.voucherNo} successfully created in company "${res.company}" on Tally Prime!`
-      }
-      emit('posted', res.voucherNo, form.value.partyLedgerName, props.voucher.customerName)
-    } else {
+    if (!res.success) {
       progressStep.value = -1
       if (res.alreadyExists) {
         progressFailedAt.value = 1
         progressStep1Details.value = `Voucher #${res.voucherNo} already exists in Tally books.`
         emit('posted', res.voucherNo, form.value.partyLedgerName, props.voucher.customerName)
       } else {
-        progressFailedAt.value = 4
+        progressFailedAt.value = 2
       }
-      progressErrorMessage.value = res.error || 'Tally Prime rejected the voucher creation request.'
+      progressErrorMessage.value = res.error || 'Voucher posting rejected.'
       postFeedback.value = {
         success: false,
-        message: res.error || 'Tally Prime rejected the voucher.'
+        message: res.error || 'Voucher posting rejected.'
+      }
+      return
+    }
+
+    // Step 2: Voucher Enqueued - Ledgers & GST Equilibrium Confirmed
+    progressStep.value = 2
+    progressStep1Details.value = 'Voucher enqueued in OMS Cloud. Awaiting Sync Agent on Main PC...'
+    const totalDrVal = totalDr.value.toFixed(2)
+    progressStep2Details.value = `Verified equilibrium (₹${totalDrVal}). XML payload ready for Sync Agent.`
+
+    // Step 3 & 4: Poll Sync Agent Job Status
+    const jobId = res.jobId
+    const startTime = Date.now()
+    const timeoutMs = 45000 // 45 seconds timeout
+    let jobFinished = false
+
+    while (!jobFinished && isProgressOpen.value) {
+      await new Promise(r => setTimeout(r, 1500))
+
+      if (Date.now() - startTime > timeoutMs) {
+        progressStep.value = -1
+        progressFailedAt.value = 3
+        progressErrorMessage.value = 'Sync Agent Timeout (45s): The Sync Agent on the Main PC has not picked up the job yet. Please verify SMFlowSyncAgent is running on the main PC.'
+        postFeedback.value = {
+          success: false,
+          message: progressErrorMessage.value
+        }
+        break
+      }
+
+      try {
+        const pollRes = await $fetch<any>(`/api/tally/job-status?jobId=${jobId}`)
+        if (!pollRes || !pollRes.job) continue
+
+        const job = pollRes.job
+
+        if (job.status === 'PROCESSING') {
+          progressStep.value = 3
+          progressStep3Details.value = 'Sync Agent on Main PC picked up job. Transmitting XML to Tally Prime...'
+        } else if (job.status === 'SUCCESS') {
+          jobFinished = true
+
+          // Step 4: Confirm Creation
+          progressStep.value = 4
+          progressStep3Details.value = 'XML payload successfully delivered to Tally Prime.'
+          progressStep4Details.value = `Tally confirmed voucher #${job.tallyVchNo || res.voucherNo} created in books.`
+
+          await new Promise(r => setTimeout(r, 400))
+
+          // Step 5: Success State
+          progressStep.value = 5
+          createdTallyCompany.value = job.createdCompany || res.company || 'SRI LAKSHMI PLYWOODS 2627'
+
+          postFeedback.value = {
+            success: true,
+            message: `Voucher #${res.voucherNo} successfully created in company "${createdTallyCompany.value}" on Tally Prime via Sync Agent!`
+          }
+          emit('posted', res.voucherNo, form.value.partyLedgerName, props.voucher.customerName)
+        } else if (job.status === 'FAILED') {
+          jobFinished = true
+          progressStep.value = -1
+          progressFailedAt.value = 4
+          progressErrorMessage.value = job.errorMessage || 'Tally Prime rejected the voucher creation request.'
+          postFeedback.value = {
+            success: false,
+            message: job.errorMessage || 'Tally Prime rejected the voucher.'
+          }
+        }
+      } catch (pollErr: any) {
+        // Transient network jitter while polling; continue polling next cycle
       }
     }
   } catch (err: any) {
     progressStep.value = -1
-    const errMsg = err.data?.statusMessage || err.message || 'Failed connecting to Tally Prime'
+    const errMsg = err.data?.statusMessage || err.message || 'Failed processing voucher request'
     progressErrorMessage.value = errMsg
 
     const lower = errMsg.toLowerCase()
@@ -1096,9 +1134,6 @@ const postToTally = async () => {
       progressFailedAt.value = 1
       progressStep1Details.value = 'Duplicate blocked: voucher already exists in Tally books.'
       emit('posted', form.value.voucherNo, form.value.partyLedgerName, props.voucher.customerName)
-    } else if (lower.includes('connect') || lower.includes('port') || lower.includes('econnrefused') || lower.includes('timeout')) {
-      progressFailedAt.value = 1
-      progressStep1Details.value = 'Connection failed to Port 9000.'
     } else if (lower.includes('ledger') || lower.includes('balance') || lower.includes('tax')) {
       progressFailedAt.value = 2
     } else {

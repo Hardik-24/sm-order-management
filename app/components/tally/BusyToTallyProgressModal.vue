@@ -110,10 +110,10 @@
             </div>
             <div class="flex-1">
               <div class="text-xs font-bold" :class="getStepTextClass(1)">
-                Step 1: Connection & Duplicate Prevention Check
+                Step 1: Enqueue & Duplicate Prevention Check
               </div>
               <div class="text-[11px] text-gray-500 mt-0.5">
-                {{ step1Details || 'Checking Port 9000 & verifying voucher does not already exist in Tally...' }}
+                {{ step1Details || 'Enqueuing voucher & verifying duplicate protection...' }}
               </div>
             </div>
           </div>
@@ -186,10 +186,10 @@
             </div>
             <div class="flex-1">
               <div class="text-xs font-bold" :class="getStepTextClass(3)">
-                Step 3: Transmit XML Payload to Tally
+                Step 3: Transmit XML via Sync Agent to Tally Prime
               </div>
               <div class="text-[11px] text-gray-500 mt-0.5">
-                {{ step3Details || 'Posting <TALLYMESSAGE> with Bill Allocation (New Ref)...' }}
+                {{ step3Details || 'Sync Agent on Main PC posting <TALLYMESSAGE> to Port 9000...' }}
               </div>
             </div>
           </div>
@@ -227,7 +227,7 @@
                 Step 4: Confirm Creation in Tally Books
               </div>
               <div class="text-[11px] text-gray-500 mt-0.5">
-                {{ step4Details || 'Verifying <CREATED>1</CREATED> in Tally response...' }}
+                {{ step4Details || 'Verifying voucher created in active Tally company...' }}
               </div>
             </div>
           </div>

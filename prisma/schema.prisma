@@ -722,3 +722,20 @@ model TrustedDevice {
   @@index([pairingCode])
   @@map("trusted_devices")
 }
+
+model TallyVoucherQueue {
+  id             String   @id @default(uuid()) @db.Uuid
+  voucherNo      String   @map("voucher_no")
+  voucherType    String   @map("voucher_type")
+  status         String   @default("PENDING")
+  payload        Json
+  errorMessage   String?  @map("error_message")
+  tallyVchNo     String?  @map("tally_vch_no")
+  createdCompany String?  @map("created_company")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@index([status], map: "idx_tally_voucher_queue_status")
+  @@index([voucherNo], map: "idx_tally_voucher_queue_voucher_no")
+  @@map("tally_voucher_queue")
+}

@@ -1,6 +1,6 @@
 import { defineEventHandler, readBody, createError } from 'h3'
 import { requireActionPermission } from '~~/server/utils/auth'
-import { queryTally, getTallyConnectionStatus, checkTallyVoucherExists } from '~~/server/utils/tallyClient'
+import { enqueueTallyVoucher } from '~~/server/utils/tallyQueue'
 import { prisma } from '~~/server/utils/prisma'
 
 export interface PostVoucherPayload {
@@ -29,15 +29,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Invalid voucher payload: Voucher No, Party Ledger, and at least 2 ledger entries are required' })
   }
 
-  // 1. Verify Tally connection and get current active company
-  const status = await getTallyConnectionStatus()
-  if (!status.online) {
-    throw createError({ statusCode: 503, statusMessage: `Tally Prime is not reachable on port ${status.port}. Please ensure Tally Prime is open.` })
-  }
-
-  const companyName = status.company && status.company !== 'No Company Open' ? status.company : 'SRI LAKSHMI PLYWOODS 2627'
-
-  // 2. Validate Debit / Credit Balance
+  // 1. Validate Debit / Credit Balance
   let totalDebit = 0
   let totalCredit = 0
 
@@ -65,8 +57,7 @@ export default defineEventHandler(async (event) => {
   const narration = body.narration || `${vchType} Invoice ${vchNo}`
   const reference = (body.reference || '').trim()
 
-  // 3. DUPLICATE CHECK & DOUBLE-POSTING PREVENTION
-  // Check A: Database records (Tally synced registers + recent OMS posts)
+  // 2. DUPLICATE CHECK & DOUBLE-POSTING PREVENTION
   const normNo = vchNo.toUpperCase()
   const normRef = (reference || '').toUpperCase()
 
@@ -93,6 +84,15 @@ export default defineEventHandler(async (event) => {
     prisma.systemSetting.findUnique({ where: { key: 'tally_payables_data' } }),
     prisma.systemSetting.findUnique({ where: { key: 'BUSY_TALLY_POSTED_VOUCHERS' } }),
   ])
+
+  // Determine active company name from synced financials or standard fallback
+  let companyName = 'SRI LAKSHMI PLYWOODS 2627'
+  if (receivablesSetting?.value) {
+    try {
+      const rec = JSON.parse(receivablesSetting.value)
+      if (rec.company && rec.company !== 'No Company Open') companyName = rec.company
+    } catch {}
+  }
 
   let isAlreadyInDbSync = false
   let syncedType = ''
@@ -159,51 +159,56 @@ export default defineEventHandler(async (event) => {
     } catch {}
   }
 
+  // Check manual/permanent posted registry
+  if (postedSetting?.value) {
+    try {
+      const postedMap = JSON.parse(postedSetting.value)
+      if (postedMap[normNo] || postedMap[vchNo]) {
+        isAlreadyInDbSync = true
+        syncedType = 'Posted Register'
+      }
+    } catch {}
+  }
+
   if (isAlreadyInDbSync) {
     const refSuffix = matchedRef ? ` (Ref / Number: ${matchedRef})` : ''
     return {
       success: false,
       alreadyExists: true,
       voucherNo: vchNo,
-      error: `Duplicate Blocked: This voucher is already present in Tally Prime (${syncedType} Register)${refSuffix}. Double posting is strictly prohibited.`
+      error: `Duplicate Blocked: This voucher is already present in Tally Prime (${syncedType})${refSuffix}. Double posting is strictly prohibited.`
     }
   }
 
-  // Check B: LIVE TALLY GROUND-TRUTH QUERY (Detects any voucher manually entered by accounts team!)
-  const liveCheck = await checkTallyVoucherExists(vchNo, companyName, reference, vchDate, totalDebit, partyLedger)
-  if (liveCheck.exists) {
-    // Record in BUSY_TALLY_POSTED_VOUCHERS so OMS knows it's already there
-    try {
-      let postedMap: Record<string, { postedAt: string; tallyVchNo?: string }> = {}
-      if (postedSetting?.value) {
-        try { postedMap = JSON.parse(postedSetting.value) } catch {}
+  // Check queue for duplicate pending/in-flight jobs
+  try {
+    const existingQueueJobs = await prisma.$queryRawUnsafe<any[]>(
+      `SELECT id, status FROM tally_voucher_queue 
+       WHERE UPPER(voucher_no) = $1 AND status IN ('PENDING', 'PROCESSING', 'SUCCESS') 
+       ORDER BY created_at DESC LIMIT 1`,
+      normNo
+    )
+    if (existingQueueJobs && existingQueueJobs.length > 0) {
+      const ex = existingQueueJobs[0]
+      if (ex.status === 'SUCCESS') {
+        return {
+          success: false,
+          alreadyExists: true,
+          voucherNo: vchNo,
+          error: `Duplicate Blocked: Voucher #${vchNo} has already been posted to Tally Prime. Double posting is strictly prohibited.`
+        }
+      } else {
+        return {
+          success: false,
+          alreadyExists: true,
+          voucherNo: vchNo,
+          error: `Voucher #${vchNo} is already in the queue (status: ${ex.status}) and currently being transmitted by the Sync Agent.`
+        }
       }
-      postedMap[vchNo] = {
-        postedAt: new Date().toISOString(),
-        tallyVchNo: liveCheck.voucherNo || vchNo
-      }
-      await prisma.systemSetting.upsert({
-        where: { key: 'BUSY_TALLY_POSTED_VOUCHERS' },
-        update: { value: JSON.stringify(postedMap) },
-        create: { key: 'BUSY_TALLY_POSTED_VOUCHERS', value: JSON.stringify(postedMap) }
-      })
-    } catch {}
-
-    const amtStr = liveCheck.amount ? ` (₹${liveCheck.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })})` : ''
-    const partyStr = liveCheck.partyLedgerName ? ` for "${liveCheck.partyLedgerName}"` : ''
-    const typeStr = liveCheck.voucherType ? ` (${liveCheck.voucherType})` : ''
-
-    return {
-      success: false,
-      alreadyExists: true,
-      voucherNo: vchNo,
-      existingVoucher: liveCheck,
-      error: `Duplicate Blocked: Voucher #${vchNo} already exists in Tally Prime${typeStr}${partyStr}${amtStr}. Double posting is strictly prohibited.`
     }
-  }
+  } catch (_) {}
 
-  // 4. Construct Tally XML
-
+  // 3. Construct Tally XML
   const ledgerXmlParts = body.ledgerEntries.map((e, idx) => {
     const isPositive = Boolean(e.isDeemedPositive)
     const rawAmt = Math.abs(Number(e.amount) || 0)
@@ -278,55 +283,7 @@ export default defineEventHandler(async (event) => {
 </ENVELOPE>
   `.trim()
 
-  // 4. Send XML to Tally Prime
-  let tallyResponseRaw = ''
-  try {
-    tallyResponseRaw = await queryTally(tallyEnvelope, 15000)
-  } catch (err: any) {
-    throw createError({ statusCode: 502, statusMessage: `Failed sending to Tally Prime: ${err.message}` })
-  }
-
-  // 5. Parse Tally Response
-  const createdMatch = tallyResponseRaw.match(/<CREATED[^>]*>([^<]+)<\/CREATED>/i)
-  const alteredMatch = tallyResponseRaw.match(/<ALTERED[^>]*>([^<]+)<\/ALTERED>/i)
-  const errorsMatch = tallyResponseRaw.match(/<ERRORS[^>]*>([^<]+)<\/ERRORS>/i)
-  const lineErrors = Array.from(tallyResponseRaw.matchAll(/<LINEERROR[^>]*>([^<]+)<\/LINEERROR>/gi)).map(m => m[1].trim())
-
-  const createdCount = createdMatch ? parseInt(createdMatch[1], 10) : 0
-  const alteredCount = alteredMatch ? parseInt(alteredMatch[1], 10) : 0
-  const errorCount = errorsMatch ? parseInt(errorsMatch[1], 10) : (lineErrors.length > 0 ? lineErrors.length : 0)
-
-  if (errorCount > 0 || (createdCount === 0 && alteredCount === 0)) {
-    const errorDetails = lineErrors.join(' | ') || 'Tally rejected the voucher without specific error'
-    return {
-      success: false,
-      voucherNo: vchNo,
-      error: errorDetails,
-      rawResponse: tallyResponseRaw.slice(0, 500)
-    }
-  }
-
-  // 6. Record Voucher as Posted in Database
-  try {
-    const postedSetting = await prisma.systemSetting.findUnique({ where: { key: 'BUSY_TALLY_POSTED_VOUCHERS' } })
-    let postedMap: Record<string, { postedAt: string; tallyVchNo?: string }> = {}
-    if (postedSetting?.value) {
-      try { postedMap = JSON.parse(postedSetting.value) } catch {}
-    }
-
-    postedMap[vchNo] = {
-      postedAt: new Date().toISOString(),
-      tallyVchNo: vchNo
-    }
-
-    await prisma.systemSetting.upsert({
-      where: { key: 'BUSY_TALLY_POSTED_VOUCHERS' },
-      update: { value: JSON.stringify(postedMap) },
-      create: { key: 'BUSY_TALLY_POSTED_VOUCHERS', value: JSON.stringify(postedMap) }
-    })
-  } catch (_) {}
-
-  // 7. Save Party Mapping if requested
+  // 4. Save Party Mapping if requested
   if (body.saveMapping && body.busyPartyName && body.partyLedgerName) {
     try {
       const busyKey = body.busyPartyName.trim()
@@ -345,12 +302,29 @@ export default defineEventHandler(async (event) => {
     } catch (_) {}
   }
 
+  // 5. Enqueue Voucher Job for Sync Agent on Main PC
+  const jobId = await enqueueTallyVoucher({
+    voucherNo: vchNo,
+    voucherType: vchType,
+    payload: {
+      xml: tallyEnvelope,
+      companyName,
+      voucherNo: vchNo,
+      voucherType: vchType,
+      busyPartyName: body.busyPartyName,
+      partyLedgerName,
+      date: vchDate,
+      amount: totalDebit,
+      saveMapping: body.saveMapping
+    }
+  })
+
   return {
     success: true,
+    queued: true,
+    jobId,
     voucherNo: vchNo,
-    company: companyName,
-    created: createdCount,
-    altered: alteredCount,
-    postedAt: new Date().toISOString()
+    voucherType: vchType,
+    company: companyName
   }
 })
