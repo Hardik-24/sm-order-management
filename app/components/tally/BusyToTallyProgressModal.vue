@@ -1,14 +1,21 @@
 <template>
-  <div v-if="isOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
+  <div v-if="isOpen" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
     <!-- Backdrop -->
-    <div class="fixed inset-0 bg-slate-950/75 backdrop-blur-xs transition-opacity" @click="handleBackdropClick"></div>
+    <div 
+      ref="backdropRef"
+      class="fixed inset-0 bg-slate-950/75 backdrop-blur-xs transition-opacity" 
+      @click="handleBackdropClick"
+    ></div>
 
-    <!-- Stepper Dialog Card -->
-    <div class="relative bg-white rounded-2xl shadow-2xl border border-gray-200 w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+    <!-- Stepper Dialog Card (Non-clipping, Flex-column with Scrollable Body) -->
+    <div 
+      ref="modalCardRef"
+      class="relative bg-white rounded-2xl shadow-2xl border border-gray-200 w-full max-w-lg flex flex-col max-h-[92vh] my-auto overflow-hidden"
+    >
       
-      <!-- Top Banner -->
+      <!-- Top Banner (Sticky Header) -->
       <div 
-        class="px-6 py-4 border-b flex items-center justify-between"
+        class="px-6 py-4 border-b flex items-center justify-between shrink-0"
         :class="[
           currentStep === 5 ? 'bg-emerald-50/80 border-emerald-100' : 
           currentStep === -1 ? 'bg-red-50/80 border-red-100' : 'bg-slate-50 border-gray-200'
@@ -54,8 +61,8 @@
         </button>
       </div>
 
-      <!-- Stepper Steps Body -->
-      <div class="p-6 space-y-5">
+      <!-- Stepper Steps Body (Scrollable, never overflows/clips) -->
+      <div class="overflow-y-auto flex-1 p-5 sm:p-6 space-y-4">
 
         <!-- Target Summary Strip -->
         <div class="p-3 bg-slate-50 rounded-xl border border-gray-200 text-xs flex items-center justify-between">
@@ -258,8 +265,8 @@
 
       </div>
 
-      <!-- Footer Action -->
-      <div class="px-6 py-3.5 border-t border-gray-200 bg-slate-50 flex items-center justify-between text-xs">
+      <!-- Footer Action (Sticky) -->
+      <div class="px-6 py-3.5 border-t border-gray-200 bg-slate-50 flex items-center justify-between text-xs shrink-0">
         <span class="text-gray-400 text-[11px]">
           {{ currentStep === 5 ? 'Voucher is live in Tally' : (currentStep === -1 ? 'Ready to retry' : 'Please keep this window open...') }}
         </span>
@@ -289,7 +296,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
+import gsap from 'gsap'
 import {
   Send,
   X,
@@ -299,6 +307,9 @@ import {
   Loader2,
   ArrowRight
 } from 'lucide-vue-next'
+
+const backdropRef = ref<HTMLElement | null>(null)
+const modalCardRef = ref<HTMLElement | null>(null)
 
 const props = defineProps<{
   isOpen: boolean
@@ -346,4 +357,21 @@ const handleBackdropClick = () => {
     emit('close')
   }
 }
+
+watch(() => props.isOpen, (open) => {
+  if (open) {
+    nextTick(() => {
+      if (backdropRef.value && modalCardRef.value) {
+        gsap.fromTo(backdropRef.value, 
+          { opacity: 0 }, 
+          { opacity: 1, duration: 0.25, ease: 'power2.out' }
+        )
+        gsap.fromTo(modalCardRef.value, 
+          { opacity: 0, scale: 0.9, y: 15 }, 
+          { opacity: 1, scale: 1, y: 0, duration: 0.35, ease: 'back.out(1.4)' }
+        )
+      }
+    })
+  }
+})
 </script>

@@ -661,6 +661,11 @@ const isTogglingPosting = ref(false)
 
 const toggleManualPosting = async (action: 'mark' | 'unmark') => {
   if (!props.voucher || isTogglingPosting.value) return
+  const confirmMsg = action === 'mark'
+    ? `Mark voucher #${props.voucher.voucherNo} for "${props.voucher.customerName}" (₹${props.voucher.totalAmount.toLocaleString('en-IN')}) as already posted in Tally?`
+    : `Reset voucher #${props.voucher.voucherNo} back to Unposted?`
+  if (!confirm(confirmMsg)) return
+
   isTogglingPosting.value = true
   try {
     const res = await $fetch<{ success: boolean; isPosted: boolean }>('/api/tally/toggle-posted', {

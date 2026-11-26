@@ -189,8 +189,6 @@
               <th class="px-4 py-3">Type</th>
               <th class="px-4 py-3">Party (BUSY)</th>
               <th class="px-4 py-3">Tally Party Link</th>
-              <th class="px-4 py-3 text-right">Taxable</th>
-              <th class="px-4 py-3 text-right">GST</th>
               <th class="px-4 py-3 text-right">Total (₹)</th>
               <th class="px-4 py-3 text-center">Status</th>
               <th class="px-4 py-3 text-right">Action</th>
@@ -251,16 +249,6 @@
                 </div>
               </td>
 
-              <!-- Taxable -->
-              <td class="px-4 py-3 text-right font-mono text-gray-600 whitespace-nowrap">
-                ₹{{ v.taxableAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
-              </td>
-
-              <!-- GST (CGST+SGST+IGST) -->
-              <td class="px-4 py-3 text-right font-mono text-gray-600 whitespace-nowrap">
-                ₹{{ (v.cgstAmount + v.sgstAmount + v.igstAmount).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
-              </td>
-
               <!-- Total -->
               <td class="px-4 py-3 text-right font-mono font-bold text-gray-900 whitespace-nowrap">
                 ₹{{ v.totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
@@ -299,39 +287,14 @@
                 </span>
               </td>
 
-              <!-- Review & Post Action Button -->
-              <td class="px-4 py-3 text-right whitespace-nowrap">
-                <div class="flex items-center justify-end gap-1.5">
-                  <!-- Quick Toggle Button: Mark as Posted / Reset to Unposted -->
-                  <button 
-                    v-if="!v.isPosted"
-                    type="button"
-                    @click.stop="togglePostedStatus(v, 'mark')"
-                    :disabled="togglingVoucherNo === v.voucherNo"
-                    class="px-2.5 py-1.5 text-xs font-bold rounded-lg border border-teal-200 bg-teal-50 text-teal-700 hover:bg-teal-100 hover:border-teal-300 transition-all flex items-center gap-1 cursor-pointer shadow-2xs active:scale-95 disabled:opacity-50"
-                    title="Mark as already entered in Tally"
-                  >
-                    <Loader2 v-if="togglingVoucherNo === v.voucherNo" class="w-3.5 h-3.5 animate-spin" />
-                    <Check v-else class="w-3.5 h-3.5 text-teal-600" />
-                    <span>Mark as Posted</span>
-                  </button>
-                  <button 
-                    v-else
-                    type="button"
-                    @click.stop="togglePostedStatus(v, 'unmark')"
-                    :disabled="togglingVoucherNo === v.voucherNo"
-                    class="px-2.5 py-1.5 text-xs font-bold rounded-lg border border-slate-200 bg-slate-50 text-slate-600 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-200 transition-all flex items-center gap-1 cursor-pointer shadow-2xs active:scale-95 disabled:opacity-50"
-                    title="Reset back to Unposted"
-                  >
-                    <Loader2 v-if="togglingVoucherNo === v.voucherNo" class="w-3.5 h-3.5 animate-spin" />
-                    <RotateCcw v-else class="w-3.5 h-3.5 text-rose-600" />
-                    <span>Reset to Unposted</span>
-                  </button>
-
+              <!-- Review & Post Action Button Stacked -->
+              <td class="px-4 py-2.5 text-right whitespace-nowrap">
+                <div class="flex flex-col items-stretch gap-1 w-32 ml-auto">
+                  <!-- Top: Review & Post -->
                   <button 
                     type="button"
                     @click="openReviewModal(v)"
-                    class="px-3 py-1.5 text-xs font-bold rounded-lg border transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs active:scale-95"
+                    class="w-full px-2 py-1 text-[11px] font-bold rounded-lg border transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-95"
                     :class="[
                       v.isVerifiedInTally
                         ? 'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200' 
@@ -342,11 +305,37 @@
                                 : 'bg-indigo-600 text-white border-indigo-600 hover:bg-indigo-700 hover:shadow-sm'))
                     ]"
                   >
-                    <CheckCircle2 v-if="v.isVerifiedInTally" class="w-3.5 h-3.5 text-emerald-600" />
-                    <Clock v-else-if="v.isJustPosted" class="w-3.5 h-3.5 text-blue-600" />
-                    <Link2 v-else-if="!v.isMapped" class="w-3.5 h-3.5" />
-                    <Send v-else class="w-3.5 h-3.5" />
-                    <span>{{ v.isVerifiedInTally ? 'View / Repost' : (v.isJustPosted ? 'View / Repost' : (!v.isMapped ? 'Link & Post' : 'Review & Post')) }}</span>
+                    <CheckCircle2 v-if="v.isVerifiedInTally" class="w-3 h-3 text-emerald-600" />
+                    <Clock v-else-if="v.isJustPosted" class="w-3 h-3 text-blue-600" />
+                    <Link2 v-else-if="!v.isMapped" class="w-3 h-3" />
+                    <Send v-else class="w-3 h-3" />
+                    <span class="truncate">{{ v.isVerifiedInTally ? 'View / Repost' : (v.isJustPosted ? 'View / Repost' : (!v.isMapped ? 'Link & Post' : 'Review & Post')) }}</span>
+                  </button>
+
+                  <!-- Bottom: Mark as Posted / Reset to Unposted -->
+                  <button 
+                    v-if="!v.isPosted"
+                    type="button"
+                    @click.stop="promptConfirmModal(v, 'mark')"
+                    :disabled="togglingVoucherNo === v.voucherNo"
+                    class="w-full px-2 py-1 text-[11px] font-bold rounded-lg border border-teal-200 bg-teal-50 text-teal-700 hover:bg-teal-100 hover:border-teal-300 transition-all flex items-center justify-center gap-1 cursor-pointer shadow-2xs active:scale-95 disabled:opacity-50"
+                    title="Mark as already entered in Tally"
+                  >
+                    <Loader2 v-if="togglingVoucherNo === v.voucherNo" class="w-3 h-3 animate-spin" />
+                    <Check v-else class="w-3 h-3 text-teal-600" />
+                    <span>Mark as Posted</span>
+                  </button>
+                  <button 
+                    v-else
+                    type="button"
+                    @click.stop="promptConfirmModal(v, 'unmark')"
+                    :disabled="togglingVoucherNo === v.voucherNo"
+                    class="w-full px-2 py-1 text-[11px] font-bold rounded-lg border border-slate-200 bg-slate-50 text-slate-600 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-200 transition-all flex items-center justify-center gap-1 cursor-pointer shadow-2xs active:scale-95 disabled:opacity-50"
+                    title="Reset back to Unposted"
+                  >
+                    <Loader2 v-if="togglingVoucherNo === v.voucherNo" class="w-3 h-3 animate-spin" />
+                    <RotateCcw v-else class="w-3 h-3 text-rose-600" />
+                    <span>Reset to Unposted</span>
                   </button>
                 </div>
               </td>
@@ -361,6 +350,98 @@
         <span>Click <strong>"Review & Post"</strong> on any voucher to open the side-by-side comparison & override modal.</span>
       </div>
 
+    </div>
+
+    <!-- Single Voucher Mark/Unmark Confirmation Modal with GSAP Animation -->
+    <div 
+      v-if="confirmModal.isOpen" 
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto"
+    >
+      <div 
+        ref="confirmBackdropRef"
+        class="fixed inset-0 bg-slate-950/75 backdrop-blur-xs transition-opacity" 
+        @click="closeConfirmModal"
+      ></div>
+
+      <div 
+        ref="confirmCardRef"
+        class="relative bg-white rounded-2xl shadow-2xl border border-gray-200 w-full max-w-md p-6 space-y-4 my-auto overflow-hidden"
+      >
+        <!-- Modal Header -->
+        <div class="flex items-center gap-3">
+          <div 
+            class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-xs"
+            :class="confirmModal.action === 'mark' ? 'bg-teal-100 text-teal-700' : 'bg-rose-100 text-rose-700'"
+          >
+            <Check v-if="confirmModal.action === 'mark'" class="w-5 h-5 stroke-[2.5]" />
+            <RotateCcw v-else class="w-5 h-5 stroke-[2.5]" />
+          </div>
+          <div>
+            <h3 class="text-sm font-black text-gray-900">
+              {{ confirmModal.action === 'mark' ? 'Mark Voucher as Posted?' : 'Reset Voucher to Unposted?' }}
+            </h3>
+            <p class="text-xs text-gray-500">
+              {{ confirmModal.action === 'mark' ? 'Confirm manual matching in Tally' : 'Revert voucher back to unposted status' }}
+            </p>
+          </div>
+        </div>
+
+        <!-- Voucher Summary Box -->
+        <div class="p-3.5 bg-slate-50 rounded-xl border border-gray-200 space-y-2 text-xs">
+          <div class="flex items-center justify-between">
+            <span class="text-gray-500 font-medium">Voucher No:</span>
+            <span class="font-mono font-bold text-gray-900">{{ confirmModal.voucher?.voucherNo }}</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-gray-500 font-medium">Party:</span>
+            <span class="font-bold text-gray-900 truncate max-w-[220px]" :title="confirmModal.voucher?.customerName">
+              {{ confirmModal.voucher?.customerName }}
+            </span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-gray-500 font-medium">Total Amount:</span>
+            <span class="font-mono font-black text-indigo-900">
+              ₹{{ (confirmModal.voucher?.totalAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Explanatory note -->
+        <div 
+          class="p-3 rounded-xl border text-xs leading-relaxed"
+          :class="confirmModal.action === 'mark' ? 'bg-teal-50/70 border-teal-200 text-teal-900' : 'bg-rose-50/70 border-rose-200 text-rose-900'"
+        >
+          <p v-if="confirmModal.action === 'mark'">
+            This will record this voucher as <strong>already posted in Tally</strong> without sending an XML push. Future syncs will permanently retain this status.
+          </p>
+          <p v-else>
+            This will remove the posted record in OMS and move this voucher back to the <strong>Unposted</strong> tab so you can review and post it again.
+          </p>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex items-center justify-end gap-2.5 pt-2 border-t border-gray-100">
+          <button 
+            type="button" 
+            @click="closeConfirmModal"
+            class="px-4 py-2 text-xs font-bold text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-xl transition-colors cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button 
+            type="button" 
+            @click="executeConfirmedAction"
+            :disabled="togglingVoucherNo === confirmModal.voucher?.voucherNo"
+            class="px-4 py-2 text-xs font-black text-white rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 disabled:opacity-50"
+            :class="confirmModal.action === 'mark' ? 'bg-teal-600 hover:bg-teal-700' : 'bg-rose-600 hover:bg-rose-700'"
+          >
+            <Loader2 v-if="togglingVoucherNo === confirmModal.voucher?.voucherNo" class="w-3.5 h-3.5 animate-spin" />
+            <Check v-else-if="confirmModal.action === 'mark'" class="w-3.5 h-3.5" />
+            <RotateCcw v-else class="w-3.5 h-3.5" />
+            <span>{{ confirmModal.action === 'mark' ? 'Yes, Mark as Posted' : 'Yes, Reset to Unposted' }}</span>
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Reset Test Data Confirmation Modal -->
@@ -439,7 +520,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, nextTick } from 'vue'
+import gsap from 'gsap'
 import {
   Layers,
   X,
@@ -606,6 +688,68 @@ const openReviewModal = (v: PreparedVoucherItem) => {
 }
 
 const togglingVoucherNo = ref<string | null>(null)
+
+// Confirmation Modal State with GSAP
+const confirmModal = ref<{
+  isOpen: boolean
+  voucher: PreparedVoucherItem | null
+  action: 'mark' | 'unmark'
+}>({
+  isOpen: false,
+  voucher: null,
+  action: 'mark'
+})
+
+const confirmBackdropRef = ref<HTMLElement | null>(null)
+const confirmCardRef = ref<HTMLElement | null>(null)
+
+const promptConfirmModal = (v: PreparedVoucherItem, action: 'mark' | 'unmark') => {
+  confirmModal.value = {
+    isOpen: true,
+    voucher: v,
+    action
+  }
+  nextTick(() => {
+    if (confirmBackdropRef.value && confirmCardRef.value) {
+      gsap.fromTo(confirmBackdropRef.value, 
+        { opacity: 0 }, 
+        { opacity: 1, duration: 0.22, ease: 'power2.out' }
+      )
+      gsap.fromTo(confirmCardRef.value, 
+        { opacity: 0, scale: 0.9, y: 15 }, 
+        { opacity: 1, scale: 1, y: 0, duration: 0.3, ease: 'back.out(1.5)' }
+      )
+    }
+  })
+}
+
+const closeConfirmModal = () => {
+  if (confirmBackdropRef.value && confirmCardRef.value) {
+    gsap.to(confirmBackdropRef.value, { opacity: 0, duration: 0.15, ease: 'power2.in' })
+    gsap.to(confirmCardRef.value, {
+      opacity: 0,
+      scale: 0.95,
+      y: 10,
+      duration: 0.15,
+      ease: 'power2.in',
+      onComplete: () => {
+        confirmModal.value.isOpen = false
+        confirmModal.value.voucher = null
+      }
+    })
+  } else {
+    confirmModal.value.isOpen = false
+    confirmModal.value.voucher = null
+  }
+}
+
+const executeConfirmedAction = async () => {
+  if (!confirmModal.value.voucher) return
+  const v = confirmModal.value.voucher
+  const action = confirmModal.value.action
+  await togglePostedStatus(v, action)
+  closeConfirmModal()
+}
 
 const togglePostedStatus = async (v: PreparedVoucherItem, action: 'mark' | 'unmark') => {
   if (togglingVoucherNo.value) return
