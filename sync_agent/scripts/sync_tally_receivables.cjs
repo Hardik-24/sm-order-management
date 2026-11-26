@@ -196,13 +196,15 @@ function parseMergedDebtorData(ledgersXml, billsXml, companyName) {
       const phoneMatch = block.match(/<LEDGERPHONE[^>]*>([^<]+)<\/LEDGERPHONE>/i);
       const mobileMatch = block.match(/<LEDGERMOBILE[^>]*>([^<]+)<\/LEDGERMOBILE>/i);
       const pinMatch = block.match(/<PINCODE[^>]*>([^<]+)<\/PINCODE>/i);
-      const stateMatch = block.match(/<STATENAME[^>]*>([^<]+)<\/STATENAME>/i);
+      const stateMatch = block.match(/<LEDGERSTATENAME[^>]*>([^<]+)<\/LEDGERSTATENAME>/i) || block.match(/<STATENAME[^>]*>([^<]+)<\/STATENAME>/i);
       const gstinMatch = block.match(/<PARTYGSTIN[^>]*>([^<]+)<\/PARTYGSTIN>/i) || block.match(/<GSTIN[^>]*>([^<]+)<\/GSTIN>/i);
+      const gstTypeMatch = block.match(/<GSTREGISTRATIONTYPE[^>]*>([^<]+)<\/GSTREGISTRATIONTYPE>/i);
 
       const phone = phoneMatch ? phoneMatch[1].trim() : (mobileMatch ? mobileMatch[1].trim() : '');
       const pincode = pinMatch ? pinMatch[1].trim() : '';
       const state = stateMatch ? stateMatch[1].trim() : '';
       const gstin = gstinMatch ? gstinMatch[1].trim() : '';
+      const gstType = gstTypeMatch ? gstTypeMatch[1].trim() : (gstin.length === 15 ? 'Regular' : 'Unregistered');
 
       partiesMap.set(cleanName, {
         party: cleanName,
@@ -223,7 +225,8 @@ function parseMergedDebtorData(ledgersXml, billsXml, companyName) {
         phone,
         pincode,
         state,
-        gstin
+        gstin,
+        gstType
       });
     }
   }
@@ -374,13 +377,15 @@ function parseMergedCreditorData(ledgersXml, billsXml, companyName) {
       const phoneMatch = block.match(/<LEDGERPHONE[^>]*>([^<]+)<\/LEDGERPHONE>/i);
       const mobileMatch = block.match(/<LEDGERMOBILE[^>]*>([^<]+)<\/LEDGERMOBILE>/i);
       const pinMatch = block.match(/<PINCODE[^>]*>([^<]+)<\/PINCODE>/i);
-      const stateMatch = block.match(/<STATENAME[^>]*>([^<]+)<\/STATENAME>/i);
+      const stateMatch = block.match(/<LEDGERSTATENAME[^>]*>([^<]+)<\/LEDGERSTATENAME>/i) || block.match(/<STATENAME[^>]*>([^<]+)<\/STATENAME>/i);
       const gstinMatch = block.match(/<PARTYGSTIN[^>]*>([^<]+)<\/PARTYGSTIN>/i) || block.match(/<GSTIN[^>]*>([^<]+)<\/GSTIN>/i);
+      const gstTypeMatch = block.match(/<GSTREGISTRATIONTYPE[^>]*>([^<]+)<\/GSTREGISTRATIONTYPE>/i);
 
       const phone = phoneMatch ? phoneMatch[1].trim() : (mobileMatch ? mobileMatch[1].trim() : '');
       const pincode = pinMatch ? pinMatch[1].trim() : '';
       const state = stateMatch ? stateMatch[1].trim() : '';
       const gstin = gstinMatch ? gstinMatch[1].trim() : '';
+      const gstType = gstTypeMatch ? gstTypeMatch[1].trim() : (gstin.length === 15 ? 'Regular' : 'Unregistered');
 
       partiesMap.set(cleanName, {
         party: cleanName,
@@ -401,7 +406,8 @@ function parseMergedCreditorData(ledgersXml, billsXml, companyName) {
         phone,
         pincode,
         state,
-        gstin
+        gstin,
+        gstType
       });
     }
   }
@@ -606,7 +612,7 @@ async function syncTally() {
                 <TYPE>Ledger</TYPE>
                 <CHILDOF>$$GroupSundryDebtors</CHILDOF>
                 <BELONGSTO>Yes</BELONGSTO>
-                <FETCH>Name,Parent,ClosingBalance,OpeningBalance,DebitTotals,CreditTotals,Address,LedgerPhone,LedgerMobile,Pincode,CountryName,StateName,PartyGSTIN</FETCH>
+                <FETCH>Name,Parent,ClosingBalance,OpeningBalance,DebitTotals,CreditTotals,Address,LedgerPhone,LedgerMobile,Pincode,CountryName,StateName,LedgerStateName,PartyGSTIN,GSTRegistrationType</FETCH>
               </COLLECTION>
             </TDLMESSAGE>
           </TDL>
@@ -755,7 +761,7 @@ async function syncTally() {
                 <TYPE>Ledger</TYPE>
                 <CHILDOF>$$GroupSundryCreditors</CHILDOF>
                 <BELONGSTO>Yes</BELONGSTO>
-                <FETCH>Name,Parent,ClosingBalance,OpeningBalance,DebitTotals,CreditTotals,Address,LedgerPhone,LedgerMobile,Pincode,CountryName,StateName,PartyGSTIN</FETCH>
+                <FETCH>Name,Parent,ClosingBalance,OpeningBalance,DebitTotals,CreditTotals,Address,LedgerPhone,LedgerMobile,Pincode,CountryName,StateName,LedgerStateName,PartyGSTIN,GSTRegistrationType</FETCH>
               </COLLECTION>
             </TDLMESSAGE>
           </TDL>
@@ -915,7 +921,7 @@ async function syncTally() {
               <TDLMESSAGE>
                 <COLLECTION NAME="AllLedgersMasterCol">
                   <TYPE>Ledger</TYPE>
-                  <FETCH>Name,Parent</FETCH>
+                  <FETCH>Name,Parent,Address,StateName,LedgerStateName,CountryName,PartyGSTIN,GSTRegistrationType,PinCode</FETCH>
                 </COLLECTION>
               </TDLMESSAGE>
             </TDL>
@@ -933,12 +939,35 @@ async function syncTally() {
       ]);
       const roundOffAccounts = new Set(['Sales Rounding Off', 'Purchase Rounding Off', 'Rounding Off']);
 
-      const allLedgerRegex = /<LEDGER NAME="([^"]+)"[^>]*>[\s\S]*?<PARENT[^>]*>([^<]+)<\/PARENT>/gi;
+      const allLedgerRegex = /<LEDGER NAME="([^"]+)"[^>]*>([\s\S]*?)<\/LEDGER>/gi;
       for (const m of allLedgersRaw.matchAll(allLedgerRegex)) {
         const name = m[1].replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').trim();
-        const parent = m[2].replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').trim();
+        const block = m[2];
+        const parentMatch = block.match(/<PARENT[^>]*>([^<]+)<\/PARENT>/i);
+        const parent = parentMatch ? parentMatch[1].replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').trim() : '';
         if (!name) continue;
-        allLedgerItems.push({ name, parent });
+
+        const stateMatch = block.match(/<LEDGERSTATENAME[^>]*>([^<]+)<\/LEDGERSTATENAME>/i) || block.match(/<STATENAME[^>]*>([^<]+)<\/STATENAME>/i);
+        const gstinMatch = block.match(/<PARTYGSTIN[^>]*>([^<]+)<\/PARTYGSTIN>/i) || block.match(/<GSTIN[^>]*>([^<]+)<\/GSTIN>/i);
+        const gstTypeMatch = block.match(/<GSTREGISTRATIONTYPE[^>]*>([^<]+)<\/GSTREGISTRATIONTYPE>/i);
+        const pinMatch = block.match(/<PINCODE[^>]*>([^<]+)<\/PINCODE>/i);
+
+        const addressLines = [];
+        const addrListMatch = block.match(/<ADDRESS\.LIST[^>]*>([\s\S]*?)<\/ADDRESS\.LIST>/i);
+        const addrSource = addrListMatch ? addrListMatch[1] : block;
+        const addrRegex = /<ADDRESS[^>]*>([^<]+)<\/ADDRESS>/gi;
+        let aMatch;
+        while ((aMatch = addrRegex.exec(addrSource)) !== null) {
+          const line = aMatch[1].replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').trim();
+          if (line) addressLines.push(line);
+        }
+
+        const state = stateMatch ? stateMatch[1].trim() : '';
+        const gstin = gstinMatch ? gstinMatch[1].trim() : '';
+        const gstType = gstTypeMatch ? gstTypeMatch[1].trim() : (gstin.length === 15 ? 'Regular' : 'Unregistered');
+        const pincode = pinMatch ? pinMatch[1].trim() : '';
+
+        allLedgerItems.push({ name, parent, addressLines, state, gstin, gstType, pincode });
 
         const parentUpper = parent.toUpperCase();
         const nameUpper = name.toUpperCase();
