@@ -73,11 +73,13 @@
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 px-6 py-3.5 bg-slate-50/50 border-b border-gray-200 shrink-0 text-xs">
         <div class="bg-white p-3 rounded-xl border border-gray-200 shadow-2xs">
           <div class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Total Vouchers</div>
-          <div class="text-lg font-black text-gray-900 mt-0.5">{{ totalCount }}</div>
+          <div v-if="isLoading && vouchers.length === 0" class="h-6 w-14 bg-slate-200 animate-pulse rounded mt-1"></div>
+          <div v-else class="text-lg font-black text-gray-900 mt-0.5">{{ totalCount }}</div>
         </div>
         <div class="bg-white p-3 rounded-xl border border-amber-200/80 shadow-2xs bg-gradient-to-br from-white to-amber-50/30">
           <div class="text-[10px] font-bold uppercase tracking-wider text-amber-700">Unposted in Tally</div>
-          <div class="text-lg font-black text-amber-900 mt-0.5">{{ unpostedCount }}</div>
+          <div v-if="isLoading && vouchers.length === 0" class="h-6 w-14 bg-amber-200/70 animate-pulse rounded mt-1"></div>
+          <div v-else class="text-lg font-black text-amber-900 mt-0.5">{{ unpostedCount }}</div>
         </div>
         <div class="bg-white p-3 rounded-xl border border-emerald-200/80 shadow-2xs bg-gradient-to-br from-white to-emerald-50/30">
           <div class="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-emerald-700">
@@ -86,7 +88,8 @@
               {{ justPostedCount }} new
             </span>
           </div>
-          <div class="text-lg font-black text-emerald-900 mt-0.5 flex items-baseline gap-2">
+          <div v-if="isLoading && vouchers.length === 0" class="h-6 w-20 bg-emerald-200/70 animate-pulse rounded mt-1"></div>
+          <div v-else class="text-lg font-black text-emerald-900 mt-0.5 flex items-baseline gap-2">
             <span>{{ postedCount }}</span>
             <span class="text-[11px] font-semibold text-emerald-600">({{ verifiedCount }} verified)</span>
           </div>
@@ -172,16 +175,71 @@
 
       <!-- Vouchers Table -->
       <div class="flex-1 overflow-y-auto">
-        <div v-if="isLoading && vouchers.length === 0" class="py-16 text-center">
-          <Loader2 class="w-8 h-8 animate-spin text-indigo-600 mx-auto mb-2" />
-          <span class="text-xs text-gray-500 font-medium">Loading BUSY vouchers & verifying Tally sync...</span>
+        <!-- Skeleton Loading State when switching tabs or initial load -->
+        <div v-if="isLoading && vouchers.length === 0" class="p-4 sm:p-6 space-y-3">
+          <div class="flex items-center justify-between pb-1">
+            <div class="flex items-center gap-2">
+              <span class="relative flex h-2.5 w-2.5">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" :class="selectedType === 'purchase' ? 'bg-emerald-400' : 'bg-indigo-400'"></span>
+                <span class="relative inline-flex rounded-full h-2.5 w-2.5" :class="selectedType === 'purchase' ? 'bg-emerald-500' : 'bg-indigo-500'"></span>
+              </span>
+              <span class="text-xs font-bold text-gray-700">
+                Loading {{ selectedType === 'purchase' ? 'Purchases' : 'Sales' }} from BUSY & verifying Tally sync...
+              </span>
+            </div>
+            <div class="flex items-center gap-1.5 text-[11px] text-gray-400 font-medium">
+              <Loader2 class="w-3.5 h-3.5 animate-spin text-gray-400" />
+              <span>Checking registers...</span>
+            </div>
+          </div>
+
+          <div class="border border-gray-200/90 rounded-2xl overflow-hidden shadow-2xs bg-white">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-50 border-b border-gray-200 text-[10px] font-black uppercase text-gray-400 tracking-wider">
+                <tr>
+                  <th class="px-4 py-3">Date</th>
+                  <th class="px-4 py-3">Voucher No</th>
+                  <th class="px-4 py-3">Type</th>
+                  <th class="px-4 py-3">Party (BUSY)</th>
+                  <th class="px-4 py-3">Tally Party Link</th>
+                  <th class="px-4 py-3 text-right">Total (₹)</th>
+                  <th class="px-4 py-3 text-center">Status</th>
+                  <th class="px-4 py-3 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100">
+                <tr v-for="i in 8" :key="i" class="animate-pulse">
+                  <td class="px-4 py-3.5"><div class="h-3.5 w-16 bg-slate-200 rounded"></div></td>
+                  <td class="px-4 py-3.5"><div class="h-3.5 w-20 bg-slate-200 rounded font-mono"></div></td>
+                  <td class="px-4 py-3.5">
+                    <div 
+                      class="h-5 w-16 rounded-full"
+                      :class="selectedType === 'purchase' ? 'bg-emerald-100' : 'bg-indigo-100'"
+                    ></div>
+                  </td>
+                  <td class="px-4 py-3.5 space-y-1.5">
+                    <div class="h-3.5 w-40 bg-slate-200 rounded"></div>
+                    <div class="h-2.5 w-24 bg-slate-100 rounded"></div>
+                  </td>
+                  <td class="px-4 py-3.5"><div class="h-5 w-28 bg-slate-100 rounded-md"></div></td>
+                  <td class="px-4 py-3.5 text-right"><div class="h-3.5 w-20 bg-slate-200 rounded ml-auto"></div></td>
+                  <td class="px-4 py-3.5 text-center"><div class="h-5 w-16 bg-slate-100 rounded-full mx-auto"></div></td>
+                  <td class="px-4 py-3.5 text-right"><div class="h-7 w-20 bg-slate-200 rounded-lg ml-auto"></div></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
 
         <div v-else-if="filteredVouchers.length === 0" class="py-16 text-center text-gray-400 text-xs">
           No vouchers match the selected filter criteria.
         </div>
 
-        <table v-else class="w-full text-left text-xs">
+        <div v-else class="relative">
+          <!-- Subtle top progress bar if background revalidating -->
+          <div v-if="isLoading" class="absolute top-0 inset-x-0 h-0.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 animate-pulse z-20"></div>
+
+          <table class="w-full text-left text-xs">
           <thead class="sticky top-0 bg-slate-50 border-b border-gray-200 text-[10px] font-black uppercase text-gray-500 tracking-wider z-10">
             <tr>
               <th class="px-4 py-3">Date</th>
@@ -342,6 +400,7 @@
             </tr>
           </tbody>
         </table>
+        </div>
       </div>
 
       <!-- Bottom Bar -->
@@ -554,6 +613,7 @@ const emit = defineEmits<{
 // State
 const isLoading = ref(false)
 const vouchers = ref<PreparedVoucherItem[]>([])
+const vouchersCache = ref<Record<string, PreparedVoucherItem[]>>({})
 const tallyStatus = ref<{ online: boolean; company?: string; port: number; viaSyncAgent?: boolean } | null>(null)
 const availableTallyDebtors = ref<string[]>([])
 const availableTallyCreditors = ref<string[]>([])
@@ -582,6 +642,7 @@ const executeReset = async () => {
       body: { resetMappings: alsoResetMappings.value }
     })
     isResetModalOpen.value = false
+    vouchersCache.value = {}
     await refreshData()
   } catch (err) {
     console.error('Failed to reset test postings:', err)
@@ -591,8 +652,18 @@ const executeReset = async () => {
 }
 
 const setTypeFilter = (type: 'sales' | 'purchase' | 'all') => {
+  if (selectedType.value === type && !isLoading.value) return
   selectedType.value = type
-  fetchVouchers()
+
+  // Instant switch if tab data is already in memory cache
+  if (vouchersCache.value[type] && vouchersCache.value[type].length > 0) {
+    vouchers.value = vouchersCache.value[type]
+    fetchVouchers(true) // silent background revalidation
+  } else {
+    // Clear old tab data immediately so old data is never stuck on screen!
+    vouchers.value = []
+    fetchVouchers(false)
+  }
 }
 
 // Counts
@@ -622,25 +693,30 @@ const filteredVouchers = computed(() => {
 })
 
 // Fetch vouchers based on selected type
-const fetchVouchers = async () => {
-  isLoading.value = true
+const fetchVouchers = async (silent = false) => {
+  if (!silent) isLoading.value = true
+  const targetType = selectedType.value
   try {
     const res = await $fetch<any>('/api/tally/vouchers', {
-      query: { type: selectedType.value }
+      query: { type: targetType }
     })
     if (Array.isArray(res?.vouchers)) {
-      vouchers.value = res.vouchers
+      vouchersCache.value[targetType] = res.vouchers
+      if (selectedType.value === targetType) {
+        vouchers.value = res.vouchers
+      }
     }
   } catch (err) {
     console.error('Failed fetching vouchers:', err)
   } finally {
-    isLoading.value = false
+    if (!silent) isLoading.value = false
   }
 }
 
 // Fetch all initial data
 const refreshData = async () => {
   isLoading.value = true
+  vouchersCache.value = {}
   try {
     const [statusRes, ledgersRes, vouchersRes] = await Promise.all([
       $fetch<any>('/api/tally/status').catch(() => ({ online: false, port: 9000 })),
@@ -673,6 +749,7 @@ const refreshData = async () => {
 
     if (Array.isArray(vouchersRes?.vouchers)) {
       vouchers.value = vouchersRes.vouchers
+      vouchersCache.value[selectedType.value] = vouchersRes.vouchers
     }
   } catch (err) {
     console.error('Failed refreshing data:', err)
@@ -776,6 +853,9 @@ const togglePostedStatus = async (v: PreparedVoucherItem, action: 'mark' | 'unma
         v.isManualPosted = false
         v.postStatus = 'unposted'
       }
+      if (vouchersCache.value[selectedType.value]) {
+        vouchersCache.value[selectedType.value] = [...vouchers.value]
+      }
     }
   } catch (err: any) {
     console.error('Failed toggling posted status:', err)
@@ -801,6 +881,9 @@ const onVoucherStatusChanged = (vchNo: string, action: 'mark' | 'unmark') => {
       target.isManualPosted = false
       target.postStatus = 'unposted'
     }
+    if (vouchersCache.value[selectedType.value]) {
+      vouchersCache.value[selectedType.value] = [...vouchers.value]
+    }
   }
 }
 
@@ -820,6 +903,9 @@ const onVoucherPosted = (vchNo: string, partyLedgerName?: string, busyPartyName?
         v.mappedTallyParty = partyLedgerName
       }
     }
+  }
+  if (vouchersCache.value[selectedType.value]) {
+    vouchersCache.value[selectedType.value] = [...vouchers.value]
   }
 }
 
