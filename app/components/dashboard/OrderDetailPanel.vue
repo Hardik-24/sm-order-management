@@ -2682,10 +2682,10 @@ onUnmounted(() => {
                         <!-- Net Sale (Pre-tax) -->
                         <td class="px-2.5 sm:px-3.5 py-2.5 text-right font-medium tabular-nums whitespace-nowrap text-xs">
                           <span class="font-bold text-gray-900 block font-mono">
-                            {{ formatCurrency(mItem.netSalePretax) }}
+                            {{ formatPriceExact(mItem.netSalePretax) }}
                           </span>
                           <span class="text-[10px] text-gray-400 block font-mono">
-                            @ {{ formatCurrency(mItem.pretaxSellingRate) }}
+                            @ {{ formatPriceExact(mItem.pretaxSellingRate) }}
                           </span>
                         </td>
 
@@ -2693,10 +2693,10 @@ onUnmounted(() => {
                         <td class="px-2.5 sm:px-3.5 py-2.5 text-right font-mono tabular-nums whitespace-nowrap text-xs">
                           <template v-if="mItem.purchaseCost != null">
                             <span class="font-bold text-gray-700 block">
-                              {{ formatCurrency(mItem.purchaseCost) }}
+                              {{ formatPriceExact(mItem.purchaseCost) }}
                             </span>
                             <span class="text-[10px] text-gray-400 block">
-                              @ {{ formatCurrency(mItem.purchaseRate) }}
+                              @ {{ formatPriceExact(mItem.purchaseRate) }}
                             </span>
                           </template>
                           <span v-else class="text-gray-300">—</span>
@@ -2704,7 +2704,7 @@ onUnmounted(() => {
 
                         <!-- Govt GST -->
                         <td class="px-2.5 sm:px-3 py-2.5 text-right font-mono text-emerald-800 tabular-nums whitespace-nowrap text-xs font-semibold">
-                          {{ formatCurrency(mItem.govtGst) }}
+                          {{ formatPriceExact(mItem.govtGst) }}
                         </td>
 
                         <!-- Profit -->
@@ -2713,9 +2713,9 @@ onUnmounted(() => {
                             <span 
                               class="inline-flex items-center gap-1 font-mono font-bold text-[11px] px-1.5 py-0.5 rounded"
                               :class="mItem.grossProfit >= 0 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'"
-                              :title="mItem.marginPercent != null ? `+${formatCurrency(mItem.grossProfit)} in-hand (${Number(mItem.marginPercent).toFixed(1)}% margin)` : ''"
+                              :title="mItem.marginPercent != null ? `+${formatPriceExact(mItem.grossProfit)} in-hand (${Number(mItem.marginPercent).toFixed(1)}% margin)` : ''"
                             >
-                              {{ mItem.grossProfit >= 0 ? '+' : '' }}{{ formatCurrency(mItem.grossProfit) }}
+                              {{ mItem.grossProfit >= 0 ? '+' : '' }}{{ formatPriceExact(mItem.grossProfit) }}
                             </span>
                             <span class="block text-[10px] font-mono mt-0.5 font-bold" :class="mItem.marginPercent >= 0 ? 'text-emerald-700' : 'text-rose-600'">
                               {{ mItem.marginPercent >= 0 ? '+' : '' }}{{ Number(mItem.marginPercent).toFixed(1) }}%
@@ -3200,7 +3200,7 @@ onUnmounted(() => {
 
                         <!-- Rate Column (Hidden in Packing and Delivery) -->
                         <td v-if="context !== 'packing' && context !== 'delivery'" class="px-3 py-3 text-right font-medium text-gray-600 tabular-nums whitespace-nowrap">
-                          {{ formatCurrency(item.unitPrice || 0) }}
+                          {{ formatPriceExact(item.unitPrice || 0) }}
                         </td>
 
                         <!-- Approved Qty Column -->
@@ -3231,7 +3231,7 @@ onUnmounted(() => {
 
                         <!-- Total Column (Hidden in Packing and Delivery) -->
                         <td v-if="context !== 'packing' && context !== 'delivery'" class="px-3.5 py-3 text-right font-bold text-[#1b3b5f] tabular-nums whitespace-nowrap">
-                          {{ formatCurrency(getItemTotal(item)) }}
+                          {{ formatPriceExact(getItemTotal(item)) }}
                         </td>
 
                         <!-- Packing Qty with - and + buttons (Shown only in Packing) -->
@@ -3815,10 +3815,10 @@ onUnmounted(() => {
                         </span>
                       </td>
                       <td class="py-2.5 px-3 text-right whitespace-nowrap font-medium text-gray-700">
-                        {{ formatCurrency(mi.unitPrice || 0) }}
+                        {{ formatPriceExact(mi.unitPrice || 0) }}
                       </td>
                       <td class="py-2.5 px-3 text-right whitespace-nowrap font-bold text-gray-900">
-                        {{ formatCurrency(getItemTotal(mi)) }}
+                        {{ formatPriceExact(getItemTotal(mi)) }}
                       </td>
                     </tr>
                   </tbody>
@@ -4194,14 +4194,14 @@ onUnmounted(() => {
                               </div>
                             </td>
                             <td class="py-2.5 px-3 text-right font-medium text-gray-700 whitespace-nowrap tabular-nums">
-                              {{ formatCurrency(item.unitPrice || 0) }}
+                              {{ formatPriceExact(item.unitPrice || 0) }}
                             </td>
                             <td class="py-2.5 px-3 text-right whitespace-nowrap">
                               <span class="font-bold text-gray-900 tabular-nums">{{ item.quantity }}</span>
                               <span class="text-[10px] text-gray-500 ml-1">pcs</span>
                             </td>
                             <td class="py-2.5 px-3 text-right font-bold text-gray-900 whitespace-nowrap tabular-nums">
-                              {{ formatCurrency(getItemTotal(item)) }}
+                              {{ formatPriceExact(getItemTotal(item)) }}
                             </td>
                           </tr>
                         </tbody>
@@ -4963,7 +4963,7 @@ onUnmounted(() => {
                       <div class="text-slate-600 text-[11px] font-semibold flex items-center gap-1.5 flex-wrap">
                         <span class="font-bold text-slate-900">{{ item.quantity }} {{ getEditSelectedProduct(item.productId)?.unit || 'units' }}</span>
                         <span>×</span>
-                        <span class="font-bold text-slate-900">{{ formatCurrency(item.unitPrice) }}</span>
+                        <span class="font-bold text-slate-900">{{ formatPriceExact(item.unitPrice) }}</span>
                         <span v-if="item.isTaxInclusive" class="text-[9px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.2 rounded border border-blue-200">
                           INCL
                         </span>
@@ -4974,10 +4974,10 @@ onUnmounted(() => {
 
                       <div class="text-right">
                         <div class="font-black text-slate-900 text-xs sm:text-sm">
-                          {{ formatCurrency(calculateEditItemTotal(item)) }}
+                          {{ formatPriceExact(calculateEditItemTotal(item)) }}
                         </div>
                         <div class="text-[9px] text-slate-400">
-                          {{ item.isTaxInclusive ? 'GST incl.' : `+${formatCurrency(calculateEditItemTotal(item) - (item.quantity * item.unitPrice))} GST` }}
+                          {{ item.isTaxInclusive ? 'GST incl.' : `+${formatPriceExact(calculateEditItemTotal(item) - (item.quantity * item.unitPrice))} GST` }}
                         </div>
                       </div>
                     </div>
@@ -5564,11 +5564,11 @@ onUnmounted(() => {
             <div>
               <span class="text-gray-500 font-semibold">Item Total</span>
               <div class="text-[10px] text-gray-400">
-                Rate: {{ formatCurrency(currentEditSubItem.unitPrice) }} × {{ currentEditSubItem.quantity }}
+                Rate: {{ formatPriceExact(currentEditSubItem.unitPrice) }} × {{ currentEditSubItem.quantity }}
               </div>
             </div>
             <span class="text-lg font-black text-[#1b3b5f]">
-              {{ formatCurrency(calculateEditItemTotal(currentEditSubItem)) }}
+              {{ formatPriceExact(calculateEditItemTotal(currentEditSubItem)) }}
             </span>
           </div>
         </div>

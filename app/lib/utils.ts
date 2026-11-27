@@ -32,7 +32,7 @@ export function formatPriceExact(val: number | string | undefined | null): strin
   const str = String(cleanNum).trim()
   const decParts = str.split('.')
   const decimals = decParts.length > 1 ? decParts[1].length : 0
-  const minDec = decimals > 0 ? Math.min(2, decimals) : 0
+  const minDec = decimals > 0 ? 2 : 0
   const maxDec = Math.max(decimals, 2)
 
   return new Intl.NumberFormat('en-IN', {
