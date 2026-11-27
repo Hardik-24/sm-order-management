@@ -165,13 +165,15 @@
                           <Link2 class="w-2.5 h-2.5 text-[#1b3b5f]" />
                           <span>Link Product</span>
                         </button>
-                        <span 
-                          v-if="item.isTaxInclusive" 
-                          class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-blue-50 text-blue-700 border border-blue-200 shadow-2xs"
-                          title="Tax Inclusive Rate"
+                        <button
+                          type="button"
+                          @click="item.isTaxInclusive = !item.isTaxInclusive"
+                          class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer border"
+                          :class="item.isTaxInclusive ? 'bg-blue-50 text-blue-700 border-blue-200 shadow-2xs hover:bg-blue-100' : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200'"
+                          :title="item.isTaxInclusive ? 'Tax inclusive rate (click to switch to tax exclusive)' : 'Tax exclusive rate (click to switch to tax inclusive)'"
                         >
-                          Tax Inc.
-                        </span>
+                          {{ item.isTaxInclusive ? 'Tax Inc.' : '+ Tax Excl.' }}
+                        </button>
                         <span 
                           v-if="item.applyLastPrice" 
                           class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-2xs"
@@ -226,6 +228,9 @@
                       <div v-if="item.isTaxInclusive" class="text-[9px] font-semibold text-blue-600 mt-0.5">
                         (Tax Incl.)
                       </div>
+                      <div v-else class="text-[9px] font-semibold text-gray-400 mt-0.5">
+                        (+{{ item.taxRate || 0 }}% GST)
+                      </div>
                     </td>
                     <td class="px-3 py-2.5 text-right">
                       <input 
@@ -272,12 +277,15 @@
                     </p>
                   </div>
                   <div class="flex flex-col items-end gap-1 shrink-0">
-                    <span 
-                      v-if="item.isTaxInclusive" 
-                      class="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200"
+                    <button 
+                      type="button"
+                      @click="item.isTaxInclusive = !item.isTaxInclusive"
+                      class="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border transition-colors cursor-pointer"
+                      :class="item.isTaxInclusive ? 'bg-blue-50 text-blue-700 border-blue-200 shadow-2xs' : 'bg-gray-100 text-gray-500 border-gray-200'"
+                      :title="item.isTaxInclusive ? 'Tax inclusive rate (click to switch)' : 'Tax exclusive rate (click to switch)'"
                     >
-                      Tax Inc.
-                    </span>
+                      {{ item.isTaxInclusive ? 'Tax Inc.' : '+ Tax Excl.' }}
+                    </button>
                     <span 
                       v-if="item.applyLastPrice" 
                       class="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200"
@@ -640,32 +648,68 @@ const closeModal = () => {
 }
 
 // Calculations based on billedQuantity
-const calculateSubtotal = (item: any) => {
-  const qty = Number(item.billedQuantity !== undefined ? item.billedQuantity : (item.packedQuantity ?? item.quantity))
+const getItemQty = (item: any) => {
+  return Number(item.billedQuantity !== undefined ? item.billedQuantity : (item.packedQuantity ?? item.quantity)) || 0
+}
+
+const calculateGrossAmount = (item: any) => {
+  const qty = getItemQty(item)
   return qty * Number(item.unitPrice || 0)
 }
 
+const calculateSubtotal = calculateGrossAmount
+
 const calculateDiscountAmt = (item: any) => {
-  const sub = calculateSubtotal(item)
-  return sub * ((Number(item.discount || 0)) / 100)
+  const gross = calculateGrossAmount(item)
+  return gross * ((Number(item.discount || 0)) / 100)
 }
 
 const calculateTax = (item: any) => {
-  const afterDiscount = calculateSubtotal(item) - calculateDiscountAmt(item)
-  return afterDiscount * ((Number(item.taxRate || 0)) / 100)
+  const gross = calculateGrossAmount(item)
+  const disc = calculateDiscountAmt(item)
+  const net = Math.max(0, gross - disc)
+  const taxPct = Number(item.taxRate || 0)
+  const isInc = Boolean(item.isTaxInclusive)
+
+  if (isInc) {
+    const taxable = taxPct > 0 ? (net / (1 + (taxPct / 100))) : net
+    return net - taxable
+  } else {
+    return net * (taxPct / 100)
+  }
 }
 
 const calculateTotal = (item: any) => {
-  const afterDiscount = calculateSubtotal(item) - calculateDiscountAmt(item)
-  return afterDiscount + calculateTax(item)
+  const gross = calculateGrossAmount(item)
+  const disc = calculateDiscountAmt(item)
+  const net = Math.max(0, gross - disc)
+  const isInc = Boolean(item.isTaxInclusive)
+
+  if (isInc) {
+    return net
+  } else {
+    return net + calculateTax(item)
+  }
 }
 
 const grandSubtotal = computed(() => {
-  return editableItems.value.reduce((sum, item) => sum + calculateSubtotal(item), 0)
+  return editableItems.value.reduce((sum, item) => {
+    const gross = calculateGrossAmount(item)
+    const taxPct = Number(item.taxRate || 0)
+    const isInc = Boolean(item.isTaxInclusive)
+    const base = (isInc && taxPct > 0) ? (gross / (1 + (taxPct / 100))) : gross
+    return sum + base
+  }, 0)
 })
 
 const grandDiscount = computed(() => {
-  return editableItems.value.reduce((sum, item) => sum + calculateDiscountAmt(item), 0)
+  return editableItems.value.reduce((sum, item) => {
+    const disc = calculateDiscountAmt(item)
+    const taxPct = Number(item.taxRate || 0)
+    const isInc = Boolean(item.isTaxInclusive)
+    const baseDisc = (isInc && taxPct > 0) ? (disc / (1 + (taxPct / 100))) : disc
+    return sum + baseDisc
+  }, 0)
 })
 
 const grandTax = computed(() => {
@@ -721,6 +765,7 @@ const confirmGenerate = async () => {
       unitPrice: Number(item.unitPrice),
       discount: Number(item.discount || 0),
       taxRate: Number(item.taxRate || 0),
+      isTaxInclusive: Boolean(item.isTaxInclusive),
       taxAmount: calculateTax(item),
       totalPrice: calculateTotal(item)
     }))
@@ -732,6 +777,7 @@ const confirmGenerate = async () => {
         invoiceNumber: invoiceNumber.value.trim(),
         invoiceDate: invoiceDate.value || undefined,
         invoicePdfUrl: invoicePdfUrl.value?.trim() || undefined,
+        totalAmount: grandTotal.value,
         items: itemsToSave
       }
     })

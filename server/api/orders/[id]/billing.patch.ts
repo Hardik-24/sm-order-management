@@ -21,7 +21,7 @@ export default defineEventHandler(async (event) => {
   if (!id) throw createError({ statusCode: 400, message: 'Missing order ID' })
   
   const body = await readBody(event)
-  const { status, invoiceNumber, invoiceDate, invoicePdfUrl, holdReason, items } = body
+  const { status, invoiceNumber, invoiceDate, invoicePdfUrl, holdReason, items, totalAmount } = body
 
   const order = await prisma.order.findUnique({
     where: { id },
@@ -80,6 +80,7 @@ export default defineEventHandler(async (event) => {
         if (item.taxRate !== undefined) updateData.taxRate = Number(item.taxRate)
         if (item.taxAmount !== undefined) updateData.taxAmount = Number(item.taxAmount)
         if (item.totalPrice !== undefined) updateData.totalPrice = Number(item.totalPrice)
+        if (item.isTaxInclusive !== undefined) updateData.isTaxInclusive = Boolean(item.isTaxInclusive)
         await prisma.orderItem.update({
           where: { id: item.id },
           data: updateData
@@ -108,19 +109,25 @@ export default defineEventHandler(async (event) => {
     ? 'CANCELLED'
     : calculateOverallStatus(status, order.packingStatus?.status || 'PENDING', order.deliveryStatus?.status || 'WAITING')
 
+  const orderUpdateData: any = {
+    overallStatus,
+    billingStatus: { update: billingData },
+    timeline: {
+      create: {
+        action: 'Billing Status Updated',
+        description: desc,
+        performedById: user.id
+      }
+    }
+  }
+
+  if (totalAmount !== undefined && totalAmount !== null && !isNaN(Number(totalAmount))) {
+    orderUpdateData.totalAmount = Number(totalAmount)
+  }
+
   const updatedOrder = await prisma.order.update({
     where: { id },
-    data: {
-      overallStatus,
-      billingStatus: { update: billingData },
-      timeline: {
-        create: {
-          action: 'Billing Status Updated',
-          description: desc,
-          performedById: user.id
-        }
-      }
-    },
+    data: orderUpdateData,
     include: { billingStatus: true }
   })
 
