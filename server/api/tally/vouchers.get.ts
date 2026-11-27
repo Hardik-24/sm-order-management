@@ -62,6 +62,27 @@ export default defineEventHandler(async (event) => {
   const partyMappings: Record<string, string> = mapSetting?.value ? JSON.parse(mapSetting.value) : {}
   const postedVouchers: Record<string, { postedAt: string; tallyVchNo?: string }> = postedSetting?.value ? JSON.parse(postedSetting.value) : {}
 
+  function parseTallyDateToYmd(tallyDateStr: string): string {
+    if (!tallyDateStr) return ''
+    const clean = tallyDateStr.trim()
+    if (/^\d{8}$/.test(clean)) return clean
+    const parts = clean.split(/[-/\s]/)
+    if (parts.length === 3) {
+      let day = parts[0].padStart(2, '0')
+      let month = parts[1]
+      let year = parts[2]
+      if (year.length === 2) year = '20' + year
+      const monthMap: Record<string, string> = {
+        jan: '01', feb: '02', mar: '03', apr: '04', may: '05', jun: '06',
+        jul: '07', aug: '08', sep: '09', oct: '10', nov: '11', dec: '12'
+      }
+      const mLower = month.toLowerCase().slice(0, 3)
+      month = monthMap[mLower] || month.padStart(2, '0')
+      return `${year}${month}${day}`
+    }
+    return clean.replace(/[^0-9]/g, '')
+  }
+
   // Parse Tally synced sales vouchers
   const tallySalesSet = new Set<string>()
   const allTallySalesVouchers: Array<{ date: string; voucherNo: string; ref: string; party: string; amount: number }> = []
@@ -74,7 +95,7 @@ export default defineEventHandler(async (event) => {
           if (tv.voucherNo) tallySalesSet.add(tv.voucherNo.trim().toUpperCase())
           if (tv.ref) tallySalesSet.add(tv.ref.trim().toUpperCase())
           allTallySalesVouchers.push({
-            date: (tv.date || '').replace(/[^0-9]/g, ''),
+            date: parseTallyDateToYmd(tv.date),
             voucherNo: (tv.voucherNo || '').trim().toUpperCase(),
             ref: (tv.ref || '').trim().toUpperCase(),
             party: tv.party || '',
@@ -86,35 +107,19 @@ export default defineEventHandler(async (event) => {
         for (const p of rec.parties) {
           if (p.party) allTallyDebtors.push(p.party.trim())
 
-          // Extract all transactions from party records
+          // Extract ONLY actual sales transactions from current financial year (exclude old multi-year bills)
           if (Array.isArray(p.transactions)) {
             for (const tx of p.transactions) {
               const num = (tx.vchNo || '').trim().toUpperCase()
-              if (num) {
+              const isSales = (tx.vchType || '').toLowerCase().includes('sales') || !tx.vchType
+              if (num && isSales) {
                 tallySalesSet.add(num)
                 allTallySalesVouchers.push({
-                  date: (tx.date || '').replace(/[^0-9]/g, ''),
+                  date: parseTallyDateToYmd(tx.date),
                   voucherNo: num,
                   ref: num,
                   party: p.party || '',
-                  amount: Math.abs(Number(tx.debit || tx.credit || tx.amount) || 0)
-                })
-              }
-            }
-          }
-
-          // Extract all bills from party records
-          if (Array.isArray(p.bills)) {
-            for (const b of p.bills) {
-              const ref = (b.ref || '').trim().toUpperCase()
-              if (ref) {
-                tallySalesSet.add(ref)
-                allTallySalesVouchers.push({
-                  date: (b.date || '').replace(/[^0-9]/g, ''),
-                  voucherNo: ref,
-                  ref: ref,
-                  party: p.party || '',
-                  amount: Math.abs(Number(b.amount) || 0)
+                  amount: Math.abs(Number(tx.debit || tx.amount) || 0)
                 })
               }
             }
@@ -136,7 +141,7 @@ export default defineEventHandler(async (event) => {
           if (pv.voucherNo) tallyPurchSet.add(pv.voucherNo.trim().toUpperCase())
           if (pv.ref) tallyPurchSet.add(pv.ref.trim().toUpperCase())
           allTallyPurchVouchers.push({
-            date: (pv.date || '').replace(/[^0-9]/g, ''),
+            date: parseTallyDateToYmd(pv.date),
             voucherNo: (pv.voucherNo || '').trim().toUpperCase(),
             ref: (pv.ref || '').trim().toUpperCase(),
             party: pv.party || '',
@@ -148,35 +153,19 @@ export default defineEventHandler(async (event) => {
         for (const p of pay.parties) {
           if (p.party) allTallyCreditors.push(p.party.trim())
 
-          // Extract all transactions from creditor party records
+          // Extract ONLY actual purchase transactions from current financial year (exclude old multi-year bills)
           if (Array.isArray(p.transactions)) {
             for (const tx of p.transactions) {
               const num = (tx.vchNo || '').trim().toUpperCase()
-              if (num) {
+              const isPurch = (tx.vchType || '').toLowerCase().includes('purchase') || !tx.vchType
+              if (num && isPurch) {
                 tallyPurchSet.add(num)
                 allTallyPurchVouchers.push({
-                  date: (tx.date || '').replace(/[^0-9]/g, ''),
+                  date: parseTallyDateToYmd(tx.date),
                   voucherNo: num,
                   ref: num,
                   party: p.party || '',
-                  amount: Math.abs(Number(tx.debit || tx.credit || tx.amount) || 0)
-                })
-              }
-            }
-          }
-
-          // Extract all bills from creditor party records
-          if (Array.isArray(p.bills)) {
-            for (const b of p.bills) {
-              const ref = (b.ref || '').trim().toUpperCase()
-              if (ref) {
-                tallyPurchSet.add(ref)
-                allTallyPurchVouchers.push({
-                  date: (b.date || '').replace(/[^0-9]/g, ''),
-                  voucherNo: ref,
-                  ref: ref,
-                  party: p.party || '',
-                  amount: Math.abs(Number(b.amount) || 0)
+                  amount: Math.abs(Number(tx.credit || tx.amount) || 0)
                 })
               }
             }
@@ -306,9 +295,9 @@ export default defineEventHandler(async (event) => {
       const isManuallyUnmarked = Boolean(postedInfo?.unmarked)
 
       // Two-Tier Synchronized Check: Live Tally Register vs Just Posted from OMS
-      let isVerifiedInTally = !isManuallyUnmarked && tallySalesSet.has(normNo)
+      let isVerifiedInTally = tallySalesSet.has(normNo)
       let matchedTallyRef = ''
-      if (!isVerifiedInTally && !isManuallyUnmarked && allTallySalesVouchers.length > 0) {
+      if (!isVerifiedInTally && allTallySalesVouchers.length > 0) {
         const found = allTallySalesVouchers.find(tv => 
           tv.date === tallyDate &&
           Math.abs(tv.amount - totalAmt) < 1.0 &&
@@ -530,9 +519,9 @@ export default defineEventHandler(async (event) => {
       const isManuallyUnmarked = Boolean(postedInfo?.unmarked)
 
       // Two-Tier Synchronized Check: Live Tally Register vs Just Posted from OMS
-      let isVerifiedInTally = !isManuallyUnmarked && tallyPurchSet.has(normNo)
+      let isVerifiedInTally = tallyPurchSet.has(normNo)
       let matchedTallyRef = ''
-      if (!isVerifiedInTally && !isManuallyUnmarked && allTallyPurchVouchers.length > 0) {
+      if (!isVerifiedInTally && allTallyPurchVouchers.length > 0) {
         const found = allTallyPurchVouchers.find(pv => 
           pv.date === tallyDate &&
           Math.abs(pv.amount - totalAmt) < 1.0 &&
