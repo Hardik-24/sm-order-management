@@ -743,7 +743,7 @@
 
                         <!-- Rate -->
                         <td class="px-2 sm:px-3 py-2.5 text-right font-medium text-gray-600 tabular-nums whitespace-nowrap text-xs">
-                          {{ formatCurrency(item.rate) }}
+                          {{ formatPriceExact(item.rate) }}
                         </td>
 
                         <!-- Qty -->
@@ -753,12 +753,12 @@
 
                         <!-- Total -->
                         <td class="px-2.5 sm:px-3.5 py-2.5 text-right font-bold text-[#1b3b5f] tabular-nums whitespace-nowrap text-xs">
-                          {{ formatCurrency(item.amount) }}
+                          {{ formatPriceExact(item.amount) }}
                         </td>
 
                         <!-- Cost (Sales Vouchers Only) -->
                         <td v-if="activeTab === 'sales'" class="px-2 sm:px-3 py-2.5 text-right font-mono text-gray-600 tabular-nums whitespace-nowrap text-xs">
-                          {{ item.costPrice != null ? formatCurrency(item.costPrice) : '—' }}
+                          {{ item.costPrice != null ? formatPriceExact(item.costPrice) : '—' }}
                         </td>
 
                         <!-- Profit (Sales Vouchers Only) -->
@@ -767,9 +767,9 @@
                             v-if="item.lineProfit != null" 
                             class="inline-flex items-center gap-1 font-mono font-bold text-[11px] px-1.5 py-0.5 rounded"
                             :class="item.lineProfit >= 0 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'"
-                            :title="item.lineMargin != null ? `+${formatCurrency(item.lineProfit)} in-hand (${Number(item.lineMargin).toFixed(2)}% margin, excl. GST)` : ''"
+                            :title="item.lineMargin != null ? `+${formatPriceExact(item.lineProfit)} in-hand (${Number(item.lineMargin).toFixed(2)}% margin, excl. GST)` : ''"
                           >
-                            {{ item.lineProfit >= 0 ? '+' : '' }}{{ formatCurrency(item.lineProfit) }}
+                            {{ item.lineProfit >= 0 ? '+' : '' }}{{ formatPriceExact(item.lineProfit) }}
                           </span>
                           <span v-else class="text-gray-300">—</span>
                         </td>
@@ -876,6 +876,7 @@ import OdometerNumber from '~/components/ui/OdometerNumber.vue'
 import LoadingTopBar from '~/components/ui/LoadingTopBar.vue'
 import TableSkeletonRows from '~/components/ui/TableSkeletonRows.vue'
 import RowsPerPageSelect from '~/components/ui/RowsPerPageSelect.vue'
+import { formatPriceExact } from '~/lib/utils'
 
 definePageMeta({
   layout: 'dashboard'
