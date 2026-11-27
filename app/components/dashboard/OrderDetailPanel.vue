@@ -2527,7 +2527,7 @@ onUnmounted(() => {
                   :class="marginData.summary.grossProfit >= 0 ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-rose-100 text-rose-800 border border-rose-300'"
                 >
                   <span>Est. Profit:</span>
-                  <span>{{ marginData.summary.grossProfit >= 0 ? '+' : '' }}{{ formatCurrency(marginData.summary.grossProfit) }}</span>
+                  <span>{{ marginData.summary.grossProfit >= 0 ? '+' : '' }}{{ formatPriceExact(marginData.summary.grossProfit) }}</span>
                   <span class="text-[10px] opacity-80">({{ marginData.summary.marginPercent >= 0 ? '+' : '' }}{{ Number(marginData.summary.marginPercent).toFixed(1) }}%)</span>
                 </span>
                 <span v-else-if="isLoadingMargin" class="text-[10px] text-gray-400 italic flex items-center gap-1">
@@ -2580,7 +2580,7 @@ onUnmounted(() => {
                         class="text-xl sm:text-2xl font-black font-mono tracking-tight"
                         :class="marginData.summary.grossProfit >= 0 ? 'text-emerald-700' : 'text-rose-600'"
                       >
-                        {{ marginData.summary.grossProfit >= 0 ? '+' : '' }}{{ formatCurrency(marginData.summary.grossProfit) }}
+                        {{ marginData.summary.grossProfit >= 0 ? '+' : '' }}{{ formatPriceExact(marginData.summary.grossProfit) }}
                       </div>
                       <div v-else class="text-sm font-semibold text-gray-500">
                         Awaiting Cost Data
@@ -2606,22 +2606,22 @@ onUnmounted(() => {
               <div class="grid grid-cols-3 divide-x divide-gray-100 bg-white p-3 text-center border-b border-gray-200">
                 <div class="px-1.5 py-1">
                   <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider block">Net Sale (Pre-Tax)</span>
-                  <span class="text-xs sm:text-sm font-bold font-mono text-gray-900 mt-0.5 block truncate" :title="`Total invoice value with GST: ${formatCurrency(marginData?.summary?.totalAmount)}`">
-                    {{ formatCurrency(marginData?.summary?.netSalePretax) }}
+                  <span class="text-xs sm:text-sm font-bold font-mono text-gray-900 mt-0.5 block truncate" :title="`Total invoice value with GST: ${formatPriceExact(marginData?.summary?.totalAmount)}`">
+                    {{ formatPriceExact(marginData?.summary?.netSalePretax) }}
                   </span>
                 </div>
 
                 <div class="px-1.5 py-1">
                   <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider block">Purchase Cost</span>
                   <span class="text-xs sm:text-sm font-bold font-mono text-gray-700 mt-0.5 block truncate">
-                    {{ marginData?.summary?.hasCostData ? formatCurrency(marginData.summary.purchaseCost) : '—' }}
+                    {{ marginData?.summary?.hasCostData ? formatPriceExact(marginData.summary.purchaseCost) : '—' }}
                   </span>
                 </div>
 
                 <div class="px-1.5 py-1">
                   <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider block">Govt GST</span>
                   <span class="text-xs sm:text-sm font-bold font-mono text-emerald-800 mt-0.5 block truncate" title="GST payable to Government (excluded from profit)">
-                    {{ formatCurrency(marginData?.summary?.govtGst) }}
+                    {{ formatPriceExact(marginData?.summary?.govtGst) }}
                   </span>
                 </div>
               </div>
