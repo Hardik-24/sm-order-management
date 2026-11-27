@@ -85,6 +85,40 @@ export default defineEventHandler(async (event) => {
       if (Array.isArray(rec.parties)) {
         for (const p of rec.parties) {
           if (p.party) allTallyDebtors.push(p.party.trim())
+
+          // Extract all transactions from party records
+          if (Array.isArray(p.transactions)) {
+            for (const tx of p.transactions) {
+              const num = (tx.vchNo || '').trim().toUpperCase()
+              if (num) {
+                tallySalesSet.add(num)
+                allTallySalesVouchers.push({
+                  date: (tx.date || '').replace(/[^0-9]/g, ''),
+                  voucherNo: num,
+                  ref: num,
+                  party: p.party || '',
+                  amount: Math.abs(Number(tx.debit || tx.credit || tx.amount) || 0)
+                })
+              }
+            }
+          }
+
+          // Extract all bills from party records
+          if (Array.isArray(p.bills)) {
+            for (const b of p.bills) {
+              const ref = (b.ref || '').trim().toUpperCase()
+              if (ref) {
+                tallySalesSet.add(ref)
+                allTallySalesVouchers.push({
+                  date: (b.date || '').replace(/[^0-9]/g, ''),
+                  voucherNo: ref,
+                  ref: ref,
+                  party: p.party || '',
+                  amount: Math.abs(Number(b.amount) || 0)
+                })
+              }
+            }
+          }
         }
       }
     } catch {}
@@ -113,6 +147,40 @@ export default defineEventHandler(async (event) => {
       if (Array.isArray(pay.parties)) {
         for (const p of pay.parties) {
           if (p.party) allTallyCreditors.push(p.party.trim())
+
+          // Extract all transactions from creditor party records
+          if (Array.isArray(p.transactions)) {
+            for (const tx of p.transactions) {
+              const num = (tx.vchNo || '').trim().toUpperCase()
+              if (num) {
+                tallyPurchSet.add(num)
+                allTallyPurchVouchers.push({
+                  date: (tx.date || '').replace(/[^0-9]/g, ''),
+                  voucherNo: num,
+                  ref: num,
+                  party: p.party || '',
+                  amount: Math.abs(Number(tx.debit || tx.credit || tx.amount) || 0)
+                })
+              }
+            }
+          }
+
+          // Extract all bills from creditor party records
+          if (Array.isArray(p.bills)) {
+            for (const b of p.bills) {
+              const ref = (b.ref || '').trim().toUpperCase()
+              if (ref) {
+                tallyPurchSet.add(ref)
+                allTallyPurchVouchers.push({
+                  date: (b.date || '').replace(/[^0-9]/g, ''),
+                  voucherNo: ref,
+                  ref: ref,
+                  party: p.party || '',
+                  amount: Math.abs(Number(b.amount) || 0)
+                })
+              }
+            }
+          }
         }
       }
     } catch {}

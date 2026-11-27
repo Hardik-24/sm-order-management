@@ -154,6 +154,37 @@ export default defineEventHandler(async (event) => {
               matchedRef = found.ref || found.voucherNo || ''
             }
           }
+
+          // Also check party transactions and bills
+          if (!isAlreadyInDbSync && Array.isArray(rec.parties)) {
+            for (const p of rec.parties) {
+              if (isAlreadyInDbSync) break
+              if (Array.isArray(p.transactions)) {
+                const found = p.transactions.find((tx: any) => {
+                  const num = (tx.vchNo || '').trim().toUpperCase()
+                  return num === normNo || (normRef && num === normRef)
+                })
+                if (found) {
+                  isAlreadyInDbSync = true
+                  syncedType = 'Sales'
+                  matchedRef = found.vchNo || ''
+                  break
+                }
+              }
+              if (Array.isArray(p.bills)) {
+                const found = p.bills.find((b: any) => {
+                  const ref = (b.ref || '').trim().toUpperCase()
+                  return ref === normNo || (normRef && ref === normRef)
+                })
+                if (found) {
+                  isAlreadyInDbSync = true
+                  syncedType = 'Sales'
+                  matchedRef = found.ref || ''
+                  break
+                }
+              }
+            }
+          }
         } catch {}
       } else if (isPurchVch && payablesSetting?.value) {
         try {
@@ -180,6 +211,37 @@ export default defineEventHandler(async (event) => {
               isAlreadyInDbSync = true
               syncedType = 'Purchase'
               matchedRef = found.ref || found.voucherNo || ''
+            }
+          }
+
+          // Also check creditor transactions and bills
+          if (!isAlreadyInDbSync && Array.isArray(pay.parties)) {
+            for (const p of pay.parties) {
+              if (isAlreadyInDbSync) break
+              if (Array.isArray(p.transactions)) {
+                const found = p.transactions.find((tx: any) => {
+                  const num = (tx.vchNo || '').trim().toUpperCase()
+                  return num === normNo || (normRef && num === normRef)
+                })
+                if (found) {
+                  isAlreadyInDbSync = true
+                  syncedType = 'Purchase'
+                  matchedRef = found.vchNo || ''
+                  break
+                }
+              }
+              if (Array.isArray(p.bills)) {
+                const found = p.bills.find((b: any) => {
+                  const ref = (b.ref || '').trim().toUpperCase()
+                  return ref === normNo || (normRef && ref === normRef)
+                })
+                if (found) {
+                  isAlreadyInDbSync = true
+                  syncedType = 'Purchase'
+                  matchedRef = found.ref || ''
+                  break
+                }
+              }
             }
           }
         } catch {}
