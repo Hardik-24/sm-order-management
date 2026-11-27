@@ -17,21 +17,44 @@
               <h2 class="text-lg font-black text-gray-950 tracking-tight">
                 BUSY to Tally Prime Voucher Posting
               </h2>
-              <!-- Tally Connection Indicator -->
-              <span 
-                v-if="tallyStatus?.online"
-                class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200"
-              >
-                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                {{ tallyStatus?.viaSyncAgent ? 'Tally Online (via Sync Agent)' : `Tally Online (Port ${tallyStatus.port})` }}
-              </span>
-              <span 
-                v-else
-                class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-red-100 text-red-800 border border-red-200"
-              >
-                <span class="w-2 h-2 rounded-full bg-red-500"></span>
-                Tally Offline (Sync Agent Inactive)
-              </span>
+              <!-- Tally Connection Indicator & Refresh Button -->
+              <div class="inline-flex items-center gap-1.5 flex-wrap">
+                <span 
+                  v-if="tallyStatus?.online"
+                  class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 shadow-2xs"
+                >
+                  <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <span>{{ tallyStatus?.viaSyncAgent ? 'Tally Online (via Sync Agent)' : `Tally Online (Port ${tallyStatus.port})` }}</span>
+                  <span v-if="checkedAgoText" class="text-[10px] font-semibold text-emerald-700/80">• {{ checkedAgoText }}</span>
+                </span>
+                <span 
+                  v-else
+                  class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-red-100 text-red-800 border border-red-200 shadow-2xs"
+                >
+                  <span class="w-2 h-2 rounded-full bg-red-500"></span>
+                  <span>{{ tallyStatus?.error || 'Tally Offline (Sync Agent Inactive)' }}</span>
+                  <span v-if="checkedAgoText" class="text-[10px] font-semibold text-red-700/80">• {{ checkedAgoText }}</span>
+                </span>
+
+                <!-- Circular Refresh Button -->
+                <button
+                  type="button"
+                  @click="checkStatusManually"
+                  :disabled="isCheckingStatus"
+                  class="inline-flex items-center justify-center w-6 h-6 rounded-full text-gray-500 hover:text-gray-800 hover:bg-gray-100 active:bg-gray-200 transition-colors border border-gray-200 bg-white shadow-2xs disabled:opacity-50 cursor-pointer"
+                  title="Check connection status now"
+                >
+                  <svg 
+                    class="w-3.5 h-3.5 transition-transform" 
+                    :class="{ 'animate-spin': isCheckingStatus }" 
+                    fill="none" 
+                    viewBox="0 0 24 24" 
+                    stroke="currentColor"
+                  >
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                </button>
+              </div>
             </div>
             <p class="text-xs text-gray-500 mt-0.5">
               Connected Company: <span class="font-bold text-gray-800">{{ tallyStatus?.company || 'SRI LAKSHMI PLYWOODS 2627' }}</span>
@@ -678,7 +701,26 @@ const emit = defineEmits<{
 const isLoading = ref(false)
 const vouchers = ref<PreparedVoucherItem[]>([])
 const vouchersCache = ref<Record<string, PreparedVoucherItem[]>>({})
-const tallyStatus = ref<{ online: boolean; company?: string; port: number; viaSyncAgent?: boolean } | null>(null)
+const tallyStatus = ref<{
+  online: boolean
+  company?: string
+  port: number
+  viaSyncAgent?: boolean
+  lastChecked?: string
+  error?: string
+} | null>(null)
+const isCheckingStatus = ref(false)
+const currentTime = ref(Date.now())
+let secondTimer: ReturnType<typeof setInterval> | null = null
+
+const checkedAgoText = computed(() => {
+  if (!tallyStatus.value?.lastChecked) return ''
+  const diffSec = Math.max(0, Math.floor((currentTime.value - new Date(tallyStatus.value.lastChecked).getTime()) / 1000))
+  if (diffSec < 2) return 'checked just now'
+  if (diffSec < 60) return `checked ${diffSec}s ago`
+  const diffMin = Math.floor(diffSec / 60)
+  return `checked ${diffMin}m ago`
+})
 const availableTallyDebtors = ref<string[]>([])
 const availableTallyCreditors = ref<string[]>([])
 const availableAllLedgers = ref<string[]>([])
@@ -827,6 +869,7 @@ const refreshData = async () => {
     ])
 
     tallyStatus.value = statusRes
+    currentTime.value = Date.now()
 
     if (Array.isArray(ledgersRes?.debtors)) {
       availableTallyDebtors.value = ledgersRes.debtors
@@ -1016,17 +1059,36 @@ let statusPollTimer: ReturnType<typeof setInterval> | null = null
 const checkTallyStatusOnly = async () => {
   if (!props.isOpen) return
   try {
-    const res = await $fetch<{ online: boolean; company?: string; port: number; viaSyncAgent?: boolean }>('/api/tally/status')
+    const res = await $fetch<{ online: boolean; company?: string; port: number; viaSyncAgent?: boolean; lastChecked?: string; error?: string }>('/api/tally/status')
     if (res) {
       tallyStatus.value = res
+      currentTime.value = Date.now()
     }
   } catch (_) {}
+}
+
+const checkStatusManually = async () => {
+  if (isCheckingStatus.value) return
+  isCheckingStatus.value = true
+  const minDelay = new Promise(resolve => setTimeout(resolve, 400))
+  try {
+    await Promise.all([
+      checkTallyStatusOnly(),
+      minDelay
+    ])
+  } finally {
+    isCheckingStatus.value = false
+  }
 }
 
 const close = () => {
   if (statusPollTimer) {
     clearInterval(statusPollTimer)
     statusPollTimer = null
+  }
+  if (secondTimer) {
+    clearInterval(secondTimer)
+    secondTimer = null
   }
   emit('close')
 }
@@ -1037,10 +1099,19 @@ watch(() => props.isOpen, (open) => {
     if (!statusPollTimer) {
       statusPollTimer = setInterval(checkTallyStatusOnly, 4000)
     }
+    if (!secondTimer) {
+      secondTimer = setInterval(() => {
+        currentTime.value = Date.now()
+      }, 1000)
+    }
   } else {
     if (statusPollTimer) {
       clearInterval(statusPollTimer)
       statusPollTimer = null
+    }
+    if (secondTimer) {
+      clearInterval(secondTimer)
+      secondTimer = null
     }
   }
 })
@@ -1051,6 +1122,11 @@ onMounted(() => {
     if (!statusPollTimer) {
       statusPollTimer = setInterval(checkTallyStatusOnly, 4000)
     }
+    if (!secondTimer) {
+      secondTimer = setInterval(() => {
+        currentTime.value = Date.now()
+      }, 1000)
+    }
   }
 })
 
@@ -1058,6 +1134,10 @@ onUnmounted(() => {
   if (statusPollTimer) {
     clearInterval(statusPollTimer)
     statusPollTimer = null
+  }
+  if (secondTimer) {
+    clearInterval(secondTimer)
+    secondTimer = null
   }
 })
 </script>

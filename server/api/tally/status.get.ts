@@ -10,7 +10,10 @@ export default defineEventHandler(async (event) => {
   try {
     const localStatus = await getTallyConnectionStatus()
     if (localStatus.online) {
-      return localStatus
+      return {
+        ...localStatus,
+        lastChecked: new Date().toISOString()
+      }
     }
   } catch (_) {}
 
@@ -27,7 +30,7 @@ export default defineEventHandler(async (event) => {
         const lastHb = agentStatus.lastHeartbeat ? new Date(agentStatus.lastHeartbeat).getTime() : 0
         const ageMs = Date.now() - lastHb
 
-        // High-responsiveness: Fresh heartbeat expected within 25 seconds
+        // High-responsiveness: Fresh status expected within 25 seconds
         if (ageMs < 25000) {
           if (agentStatus.tallyOnline) {
             return {
@@ -35,6 +38,7 @@ export default defineEventHandler(async (event) => {
               company: agentStatus.company || 'SRI LAKSHMI PLYWOODS 2627',
               port: 9000,
               viaSyncAgent: true,
+              lastChecked: agentStatus.lastHeartbeat,
               lastHeartbeat: agentStatus.lastHeartbeat
             }
           } else {
@@ -43,21 +47,23 @@ export default defineEventHandler(async (event) => {
               online: false,
               port: 9000,
               viaSyncAgent: true,
+              lastChecked: agentStatus.lastHeartbeat,
               error: agentStatus.error || 'Tally Prime closed on Main PC'
             }
           }
         } else {
-          // Sync Agent stopped sending heartbeats > 25 seconds ago (PC offline/network disconnected)
+          // Sync Agent stopped sending updates > 25 seconds ago (PC offline/network disconnected)
           return {
             online: false,
             port: 9000,
             viaSyncAgent: true,
-            error: `Sync Agent offline (no heartbeat for ${Math.round(ageMs / 1000)}s)`
+            lastChecked: agentStatus.lastHeartbeat,
+            error: 'Sync Agent offline'
           }
         }
       } catch (_) {}
     }
   } catch (_) {}
 
-  return { online: false, port: 9000 }
+  return { online: false, port: 9000, error: 'Tally Offline / Disconnected' }
 })
