@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, computed, nextTick, onMounted, onUnmounted } from 'vue'
-import { X, MoreHorizontal, Lock, Edit, Package, PackageCheck, PackageX, Truck, Check, Box, Plus, Trash2, MapPin, AlertCircle, AlertTriangle, Ban, CheckCheck, CheckCircle2, Zap, User, IndianRupee, Clock, Building2, Phone, FileText, Calendar, Copy, ChevronRight, Car, GitFork, SlidersHorizontal, Loader2, Save, Link2, UserCheck, Calculator, LayoutList, ChevronUp, ChevronDown, Tag, PackageSearch, Layers, ArrowLeft, ArrowRight } from 'lucide-vue-next'
+import { X, MoreHorizontal, Lock, Edit, Package, PackageCheck, PackageX, Truck, Check, Box, Plus, Trash2, MapPin, AlertCircle, AlertTriangle, Ban, CheckCheck, CheckCircle2, Zap, User, IndianRupee, Clock, Building2, Phone, FileText, Calendar, Copy, ChevronRight, Car, GitFork, SlidersHorizontal, Loader2, Save, Link2, UserCheck, Calculator, LayoutList, ChevronUp, ChevronDown, Tag, PackageSearch, Layers, ArrowLeft, ArrowRight, TrendingUp } from 'lucide-vue-next'
 import StatusBadge from '~/components/ui/StatusBadge.vue'
 import GenerateBillModal from '~/components/dashboard/GenerateBillModal.vue'
 import SetDeliveryPinModal from '~/components/dashboard/SetDeliveryPinModal.vue'
@@ -93,6 +93,29 @@ const emit = defineEmits<{
 const { user, hasRole, canEditOrders, canCancelOrders, canEditOrderStatus, canLinkBusyData, canEditConvertedQuotationOrders, canManageBatches, canAccessPage } = useAuth()
 const order = ref<Order | null>(null)
 const isLoading = ref(false)
+
+// Admin-only Margin & Profitability Summary (Strictly Admin only, collapsed by default)
+const isMarginExpanded = ref(false)
+const marginData = ref<any>(null)
+const isLoadingMargin = ref(false)
+
+const fetchOrderMargin = async (orderId: string) => {
+  if (user.value?.role !== 'ADMIN' || !orderId) {
+    marginData.value = null
+    return
+  }
+  isLoadingMargin.value = true
+  try {
+    const res: any = await $fetch(`/api/orders/${orderId}/margin`)
+    if (res?.success) {
+      marginData.value = res
+    }
+  } catch (err) {
+    console.error('Failed to fetch order margin details:', err)
+  } finally {
+    isLoadingMargin.value = false
+  }
+}
 const activeTab = ref<'DETAILS' | 'MASTER_ORDER' | 'BATCHES' | 'TIMELINE' | 'NOTES'>('DETAILS')
 
 // Master Order & Batch Pools
@@ -606,6 +629,7 @@ const isSavingPacking = ref(false)
 
 watch(() => props.isOpen, async (open) => {
   isHeaderMenuOpen.value = false
+  isMarginExpanded.value = false
   if (open) {
     navigationStack.value = []
     if (props.orderId) {
@@ -613,11 +637,13 @@ watch(() => props.isOpen, async (open) => {
     }
   } else {
     navigationStack.value = []
+    marginData.value = null
   }
 })
 
 watch(() => props.orderId, async (newId) => {
   isHeaderMenuOpen.value = false
+  isMarginExpanded.value = false
   if (newId && props.isOpen && newId !== order.value?.id) {
     const isInternalNavigation = navigationStack.value.some(entry => entry.orderId === newId)
     if (!isInternalNavigation) {
@@ -743,6 +769,9 @@ const fetchOrder = async (id: string, silent = false) => {
   try {
     const data = await $fetch<Order>(`/api/orders/${id}`)
     order.value = data
+    if (user.value?.role === 'ADMIN' && id) {
+      fetchOrderMargin(id)
+    }
     emit('updated', data)
     hasPackingChanges.value = false
     packingForm.value = {
@@ -2468,6 +2497,237 @@ onUnmounted(() => {
               <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-200/70 text-gray-700 mt-0.5">
                 {{ order.items?.length || 0 }} {{ (order.items?.length === 1) ? 'item' : 'items' }}
               </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ADMIN ONLY: Collapsible Margin & Profitability Summary -->
+        <div v-if="user?.role === 'ADMIN'" class="border-b border-gray-200/80 bg-white flex-shrink-0">
+          <!-- Collapsible Header Bar (Collapsed by default) -->
+          <button
+            type="button"
+            @click="isMarginExpanded = !isMarginExpanded"
+            class="w-full px-4 sm:px-6 py-2.5 bg-gradient-to-r from-emerald-50/70 via-teal-50/30 to-white hover:bg-emerald-50/80 transition-colors flex items-center justify-between gap-3 text-left cursor-pointer group"
+          >
+            <div class="flex items-center gap-2.5 min-w-0">
+              <div class="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-emerald-600/10 text-emerald-700 flex items-center justify-center shrink-0 border border-emerald-200/50">
+                <TrendingUp class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-700" />
+              </div>
+              <div class="flex items-center gap-2 min-w-0 flex-wrap">
+                <span class="text-xs font-bold text-gray-900 group-hover:text-emerald-900 transition-colors">
+                  Margin Summary
+                </span>
+                <span class="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-amber-100 text-amber-900 border border-amber-300">
+                  Admin Only
+                </span>
+                <!-- Inline Pill Preview when collapsed -->
+                <span 
+                  v-if="marginData?.summary?.hasCostData" 
+                  class="inline-flex items-center gap-1 text-[11px] font-mono font-bold px-2 py-0.5 rounded-full shadow-2xs"
+                  :class="marginData.summary.grossProfit >= 0 ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-rose-100 text-rose-800 border border-rose-300'"
+                >
+                  <span>Est. Profit:</span>
+                  <span>{{ marginData.summary.grossProfit >= 0 ? '+' : '' }}{{ formatCurrency(marginData.summary.grossProfit) }}</span>
+                  <span class="text-[10px] opacity-80">({{ marginData.summary.marginPercent >= 0 ? '+' : '' }}{{ Number(marginData.summary.marginPercent).toFixed(1) }}%)</span>
+                </span>
+                <span v-else-if="isLoadingMargin" class="text-[10px] text-gray-400 italic flex items-center gap-1">
+                  <Loader2 class="w-3 h-3 animate-spin text-emerald-600" />
+                  Calculating...
+                </span>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-1.5 shrink-0 text-xs font-semibold text-gray-500 group-hover:text-emerald-900">
+              <span class="hidden sm:inline text-[11px] font-bold">{{ isMarginExpanded ? 'Collapse' : 'Expand' }}</span>
+              <div class="w-5 h-5 rounded-md bg-gray-100 group-hover:bg-emerald-100 flex items-center justify-center transition-colors">
+                <ChevronDown class="w-3.5 h-3.5 text-gray-600 transition-transform duration-200" :class="{ 'rotate-180': isMarginExpanded }" />
+              </div>
+            </div>
+          </button>
+
+          <!-- Expanded Body (Voucher style + item breakdown) -->
+          <div v-if="isMarginExpanded" class="border-t border-emerald-100 bg-slate-50/50 max-h-[460px] overflow-y-auto animate-in fade-in duration-150">
+            <!-- Loading State -->
+            <div v-if="isLoadingMargin && !marginData" class="p-6 flex items-center justify-center gap-2 text-xs text-gray-500">
+              <Loader2 class="w-4 h-4 animate-spin text-emerald-700" />
+              <span>Calculating order cost & profit breakdown...</span>
+            </div>
+
+            <div v-else class="space-y-0">
+              <!-- 1. Highlight Banner (Estimated Profit) - exact voucher styling -->
+              <div 
+                class="p-4 transition-colors"
+                :class="[
+                  marginData?.summary?.hasCostData
+                    ? (marginData.summary.grossProfit >= 0 ? 'bg-gradient-to-r from-emerald-50 via-emerald-50/60 to-teal-50 border-b border-emerald-100' : 'bg-gradient-to-r from-rose-50 via-rose-50/60 to-orange-50 border-b border-rose-100')
+                    : 'bg-gray-50 border-b border-gray-100'
+                ]"
+              >
+                <div class="flex items-center justify-between gap-3 flex-wrap sm:flex-nowrap">
+                  <div class="flex items-center gap-3">
+                    <div 
+                      class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-xs"
+                      :class="marginData?.summary?.grossProfit >= 0 ? 'bg-emerald-600 text-white' : (marginData?.summary?.hasCostData ? 'bg-rose-600 text-white' : 'bg-gray-200 text-gray-500')"
+                    >
+                      <TrendingUp class="w-5 h-5" />
+                    </div>
+                    <div>
+                      <span class="text-[10px] uppercase font-bold tracking-wider text-emerald-800/80 block">
+                        Estimated Gross Profit (In Hand)
+                      </span>
+                      <div 
+                        v-if="marginData?.summary?.hasCostData" 
+                        class="text-xl sm:text-2xl font-black font-mono tracking-tight"
+                        :class="marginData.summary.grossProfit >= 0 ? 'text-emerald-700' : 'text-rose-600'"
+                      >
+                        {{ marginData.summary.grossProfit >= 0 ? '+' : '' }}{{ formatCurrency(marginData.summary.grossProfit) }}
+                      </div>
+                      <div v-else class="text-sm font-semibold text-gray-500">
+                        Awaiting Cost Data
+                      </div>
+                    </div>
+                  </div>
+
+                  <div v-if="marginData?.summary?.hasCostData" class="text-right shrink-0">
+                    <span 
+                      class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold font-mono shadow-2xs"
+                      :class="marginData.summary.marginPercent >= 0 ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'"
+                    >
+                      {{ marginData.summary.marginPercent >= 0 ? '+' : '' }}{{ Number(marginData.summary.marginPercent).toFixed(2) }}% Margin
+                    </span>
+                    <span class="block text-[10px] text-gray-500 mt-1 font-medium">
+                      {{ marginData.summary.resolvedCount }}/{{ marginData.summary.totalCount }} items matched
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 2. Simple 3-Box Financial Breakdown (Pre-Tax In-Hand Comparison) - exact voucher styling -->
+              <div class="grid grid-cols-3 divide-x divide-gray-100 bg-white p-3 text-center border-b border-gray-200">
+                <div class="px-1.5 py-1">
+                  <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider block">Net Sale (Pre-Tax)</span>
+                  <span class="text-xs sm:text-sm font-bold font-mono text-gray-900 mt-0.5 block truncate" :title="`Total invoice value with GST: ${formatCurrency(marginData?.summary?.totalAmount)}`">
+                    {{ formatCurrency(marginData?.summary?.netSalePretax) }}
+                  </span>
+                </div>
+
+                <div class="px-1.5 py-1">
+                  <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider block">Purchase Cost</span>
+                  <span class="text-xs sm:text-sm font-bold font-mono text-gray-700 mt-0.5 block truncate">
+                    {{ marginData?.summary?.hasCostData ? formatCurrency(marginData.summary.purchaseCost) : '—' }}
+                  </span>
+                </div>
+
+                <div class="px-1.5 py-1">
+                  <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider block">Govt GST</span>
+                  <span class="text-xs sm:text-sm font-bold font-mono text-emerald-800 mt-0.5 block truncate" title="GST payable to Government (excluded from profit)">
+                    {{ formatCurrency(marginData?.summary?.govtGst) }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- 3. Individual Products Breakdown Table -->
+              <div class="p-3 sm:p-4 space-y-2 bg-slate-50/60">
+                <div class="flex items-center justify-between px-0.5">
+                  <span class="text-[11px] font-bold text-gray-600 uppercase tracking-wider flex items-center gap-1.5">
+                    <Package class="w-3.5 h-3.5 text-gray-400" />
+                    <span>Product Margin Breakdown ({{ marginData?.items?.length || 0 }})</span>
+                  </span>
+                  <span class="text-[10px] text-gray-500 font-medium">
+                    Pre-tax in-hand margins excluding GST
+                  </span>
+                </div>
+
+                <div class="overflow-x-auto border border-gray-200/90 rounded-xl shadow-2xs bg-white">
+                  <table class="w-full text-left text-xs">
+                    <thead class="bg-gray-50 text-[10px] sm:text-[11px] font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">
+                      <tr>
+                        <th class="px-3 sm:px-3.5 py-2 font-bold min-w-[140px] sm:min-w-[180px]">Product</th>
+                        <th class="px-2 sm:px-3 py-2 font-bold text-right whitespace-nowrap">Qty</th>
+                        <th class="px-2.5 sm:px-3.5 py-2 font-bold text-right whitespace-nowrap">Net Sale (Pre-tax)</th>
+                        <th class="px-2.5 sm:px-3.5 py-2 font-bold text-right whitespace-nowrap">Cost</th>
+                        <th class="px-2.5 sm:px-3.5 py-2 font-bold text-right whitespace-nowrap">Govt GST</th>
+                        <th class="px-2.5 sm:px-3.5 py-2 font-bold text-right whitespace-nowrap" title="In-hand profit (Taxable Sale minus Purchase Cost, excluding GST)">Profit</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100 bg-white">
+                      <tr 
+                        v-for="mItem in (marginData?.items || [])" 
+                        :key="'margin-item-' + mItem.id"
+                        class="hover:bg-gray-50/70 transition-colors"
+                      >
+                        <!-- Product Name & Badges -->
+                        <td class="px-3 sm:px-3.5 py-2.5">
+                          <div class="font-bold text-xs text-gray-900 break-words whitespace-normal leading-snug" :title="mItem.productName">
+                            {{ mItem.productName }}
+                          </div>
+                          <div class="flex items-center gap-1.5 mt-0.5 text-[10px] text-gray-500 flex-wrap">
+                            <span v-if="mItem.sku && mItem.sku.trim().toLowerCase() !== mItem.productName.trim().toLowerCase()" class="font-mono text-gray-600 bg-gray-100 px-1 py-0.1 rounded">
+                              {{ mItem.sku }}
+                            </span>
+                            <span v-if="mItem.taxRate" class="font-mono text-emerald-700">
+                              GST {{ mItem.taxRate }}%
+                            </span>
+                            <span v-if="mItem.costSource" class="font-mono text-slate-500 text-[9px]">
+                              ({{ mItem.costSource }})
+                            </span>
+                          </div>
+                        </td>
+
+                        <!-- Qty -->
+                        <td class="px-2 sm:px-3 py-2.5 font-bold tabular-nums whitespace-nowrap text-right text-gray-900 text-xs">
+                          {{ mItem.qty }} {{ mItem.unit }}
+                        </td>
+
+                        <!-- Net Sale (Pre-tax) -->
+                        <td class="px-2.5 sm:px-3.5 py-2.5 text-right font-medium tabular-nums whitespace-nowrap text-xs">
+                          <span class="font-bold text-gray-900 block font-mono">
+                            {{ formatCurrency(mItem.netSalePretax) }}
+                          </span>
+                          <span class="text-[10px] text-gray-400 block font-mono">
+                            @ {{ formatCurrency(mItem.pretaxSellingRate) }}
+                          </span>
+                        </td>
+
+                        <!-- Purchase Cost -->
+                        <td class="px-2.5 sm:px-3.5 py-2.5 text-right font-mono tabular-nums whitespace-nowrap text-xs">
+                          <template v-if="mItem.purchaseCost != null">
+                            <span class="font-bold text-gray-700 block">
+                              {{ formatCurrency(mItem.purchaseCost) }}
+                            </span>
+                            <span class="text-[10px] text-gray-400 block">
+                              @ {{ formatCurrency(mItem.purchaseRate) }}
+                            </span>
+                          </template>
+                          <span v-else class="text-gray-300">—</span>
+                        </td>
+
+                        <!-- Govt GST -->
+                        <td class="px-2.5 sm:px-3 py-2.5 text-right font-mono text-emerald-800 tabular-nums whitespace-nowrap text-xs font-semibold">
+                          {{ formatCurrency(mItem.govtGst) }}
+                        </td>
+
+                        <!-- Profit -->
+                        <td class="px-2.5 sm:px-3.5 py-2.5 text-right tabular-nums whitespace-nowrap text-xs">
+                          <template v-if="mItem.grossProfit != null">
+                            <span 
+                              class="inline-flex items-center gap-1 font-mono font-bold text-[11px] px-1.5 py-0.5 rounded"
+                              :class="mItem.grossProfit >= 0 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'"
+                              :title="mItem.marginPercent != null ? `+${formatCurrency(mItem.grossProfit)} in-hand (${Number(mItem.marginPercent).toFixed(1)}% margin)` : ''"
+                            >
+                              {{ mItem.grossProfit >= 0 ? '+' : '' }}{{ formatCurrency(mItem.grossProfit) }}
+                            </span>
+                            <span class="block text-[10px] font-mono mt-0.5 font-bold" :class="mItem.marginPercent >= 0 ? 'text-emerald-700' : 'text-rose-600'">
+                              {{ mItem.marginPercent >= 0 ? '+' : '' }}{{ Number(mItem.marginPercent).toFixed(1) }}%
+                            </span>
+                          </template>
+                          <span v-else class="text-gray-300">—</span>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
           </div>
         </div>
