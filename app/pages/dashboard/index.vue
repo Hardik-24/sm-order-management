@@ -4,7 +4,6 @@ import { Calendar, Building2, User as UserIcon, Filter, ChevronDown, Check, Sear
 import { formatDate } from '~/lib/utils'
 
 import StatCards from '~/components/dashboard/StatCards.vue'
-import OrderVolumeChart from '~/components/dashboard/OrderVolumeChart.vue'
 import OrderTable from '~/components/dashboard/OrderTable.vue'
 import CreateBatchModal from '~/components/dashboard/CreateBatchModal.vue'
 
@@ -433,7 +432,7 @@ const onBatchCreated = () => {
           <span v-else-if="isSales && salesScope === 'mine'">
             Showing your <strong class="text-gray-900 font-semibold">personal orders</strong>
           </span>
-          <span v-else>
+          <span v-else class="hidden sm:inline">
             Showing orders across the <strong class="text-gray-900 font-semibold">entire company</strong>
           </span>
         </p>
@@ -497,11 +496,6 @@ const onBatchCreated = () => {
       @split-order="openCreateBatchModal"
     />
     </div>
-  </div>
-
-  <!-- Order Velocity Chart / Analysis (Mobile: #5 at bottom, Desktop: Row 4 at bottom) -->
-  <div class="col-span-1 lg:col-span-5 order-5 lg:order-4">
-    <OrderVolumeChart :trends="dashboardData?.orderTrends" :isLoading="dashboardPending" />
   </div>
 
   <!-- Slide-out Order Detail Panel -->

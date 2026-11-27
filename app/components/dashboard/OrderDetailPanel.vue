@@ -2651,7 +2651,7 @@ onUnmounted(() => {
                 </div>
 
                 <div>
-                  <span class="block text-[10px] sm:text-[11px] uppercase font-bold text-gray-400 tracking-wider mb-0.5">Placed By</span>
+                  <span class="block text-[10px] sm:text-[11px] uppercase font-bold text-gray-400 tracking-wider mb-0.5">Created By</span>
                   <div class="flex items-center gap-1.5 font-medium text-gray-900">
                     <User class="w-3.5 h-3.5 text-gray-400 shrink-0" />
                     <span class="truncate">{{ order.salesPerson?.name || order.timeline?.find(t => t.action?.includes('Created'))?.performedBy?.name || '—' }}</span>
@@ -3470,7 +3470,7 @@ onUnmounted(() => {
                 </div>
 
                 <div>
-                  <span class="block text-[10px] sm:text-[11px] uppercase font-bold text-gray-400 tracking-wider mb-0.5">Placed By</span>
+                  <span class="block text-[10px] sm:text-[11px] uppercase font-bold text-gray-400 tracking-wider mb-0.5">Created By</span>
                   <div class="flex items-center gap-1.5 font-medium text-gray-900">
                     <User class="w-3.5 h-3.5 text-gray-400 shrink-0" />
                     <span class="truncate">{{ (order as any).parentOrder?.salesPerson?.name || order.salesPerson?.name || '—' }}</span>
@@ -4412,7 +4412,7 @@ onUnmounted(() => {
                   <input v-model="editForm.orderNumber" required class="w-full text-sm border border-gray-300 rounded-lg p-2.5 focus:ring-[#1b3b5f] focus:border-[#1b3b5f]" />
                 </div>
                 <div>
-                  <label class="block text-[10px] sm:text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Placed By</label>
+                  <label class="block text-[10px] sm:text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Created By</label>
                   <input :value="order?.salesPerson?.name || 'Unknown'" disabled class="w-full text-sm border border-gray-200 bg-gray-50 rounded-lg p-2.5 text-gray-500 cursor-not-allowed" />
                 </div>
                 <div>

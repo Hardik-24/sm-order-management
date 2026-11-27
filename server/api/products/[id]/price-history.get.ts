@@ -39,7 +39,10 @@ export default defineEventHandler(async (event) => {
     supplierCode: string | null
     qty: number
     rate: number
+    pretaxRate: number
     amount: number
+    taxableAmount: number
+    taxRate: number
     isTaxInclusive: boolean
   }> = []
 
@@ -49,7 +52,9 @@ export default defineEventHandler(async (event) => {
              COALESCE((item->>'qty')::numeric, 0) as qty, 
              COALESCE((item->>'rate')::numeric, 0) as rate, 
              COALESCE((item->>'amount')::numeric, 0) as amount, 
-             COALESCE((item->>'isTaxInclusive')::boolean, true) as "isTaxInclusive"
+             COALESCE((item->>'taxableAmount')::numeric, 0) as "taxableAmount",
+             COALESCE((item->>'taxRate')::numeric, 0) as "taxRate",
+             COALESCE((item->>'isTaxInclusive')::boolean, false) as "isTaxInclusive"
       FROM busy_purchases p,
            jsonb_array_elements(p.items) AS item
       WHERE item->>'name' ILIKE ${product.name}
@@ -57,16 +62,35 @@ export default defineEventHandler(async (event) => {
       ORDER BY p."voucherDate" DESC
       LIMIT ${limit};
     `
-    purchases = (rawPurchases || []).map((r) => ({
-      voucherNo: r.voucherNo,
-      voucherDate: r.voucherDate,
-      supplierName: r.supplierName,
-      supplierCode: r.supplierCode || null,
-      qty: Number(r.qty),
-      rate: Number(r.rate),
-      amount: Number(r.amount),
-      isTaxInclusive: Boolean(r.isTaxInclusive)
-    }))
+    purchases = (rawPurchases || []).map((r) => {
+      const q = Number(r.qty) || 0
+      const origRate = Number(r.rate) || 0
+      const taxable = Number(r.taxableAmount) || 0
+      const amt = Number(r.amount) || 0
+      const tRate = Number(r.taxRate) || 0
+      const isInc = Boolean(r.isTaxInclusive)
+
+      let pretaxRate = origRate
+      if (taxable > 0 && q > 0 && isInc && taxable < amt) {
+        pretaxRate = Number((taxable / q).toFixed(2))
+      } else if (isInc && tRate > 0 && taxable < amt) {
+        pretaxRate = Number((origRate / (1 + (tRate / 100))).toFixed(2))
+      }
+
+      return {
+        voucherNo: r.voucherNo,
+        voucherDate: r.voucherDate,
+        supplierName: r.supplierName,
+        supplierCode: r.supplierCode || null,
+        qty: q,
+        rate: pretaxRate,
+        pretaxRate,
+        amount: amt,
+        taxableAmount: taxable,
+        taxRate: tRate,
+        isTaxInclusive: isInc
+      }
+    })
   } catch (err) {
     console.error('Error fetching product purchase history:', err)
   }
@@ -79,7 +103,11 @@ export default defineEventHandler(async (event) => {
     customerCode: string | null
     qty: number
     rate: number
+    pretaxRate: number
+    inclusiveRate: number
     amount: number
+    taxableAmount: number
+    taxRate: number
     isTaxInclusive: boolean
   }> = []
 
@@ -89,6 +117,8 @@ export default defineEventHandler(async (event) => {
              COALESCE((item->>'qty')::numeric, 0) as qty, 
              COALESCE((item->>'rate')::numeric, 0) as rate, 
              COALESCE((item->>'amount')::numeric, 0) as amount, 
+             COALESCE((item->>'taxableAmount')::numeric, 0) as "taxableAmount",
+             COALESCE((item->>'taxRate')::numeric, 0) as "taxRate",
              COALESCE((item->>'isTaxInclusive')::boolean, true) as "isTaxInclusive"
       FROM busy_vouchers v,
            jsonb_array_elements(v.items) AS item
@@ -97,21 +127,42 @@ export default defineEventHandler(async (event) => {
       ORDER BY v."voucherDate" DESC
       LIMIT ${limit};
     `
-    sales = (rawSales || []).map((r) => ({
-      voucherNo: r.voucherNo,
-      voucherDate: r.voucherDate,
-      customerName: r.customerName,
-      customerCode: r.customerCode || null,
-      qty: Number(r.qty),
-      rate: Number(r.rate),
-      amount: Number(r.amount),
-      isTaxInclusive: Boolean(r.isTaxInclusive)
-    }))
+    sales = (rawSales || []).map((r) => {
+      const q = Number(r.qty) || 0
+      const origRate = Number(r.rate) || 0
+      const taxable = Number(r.taxableAmount) || 0
+      const amt = Number(r.amount) || 0
+      const tRate = Number(r.taxRate) || 18
+      const isInc = Boolean(r.isTaxInclusive)
+
+      // Strictly pre-tax rate: extract base rate without GST
+      let pretaxRate = origRate
+      if (taxable > 0 && q > 0) {
+        pretaxRate = Number((taxable / q).toFixed(2))
+      } else if (isInc && tRate > 0) {
+        pretaxRate = Number((origRate / (1 + (tRate / 100))).toFixed(2))
+      }
+
+      return {
+        voucherNo: r.voucherNo,
+        voucherDate: r.voucherDate,
+        customerName: r.customerName,
+        customerCode: r.customerCode || null,
+        qty: q,
+        rate: pretaxRate,
+        pretaxRate,
+        inclusiveRate: origRate,
+        amount: amt,
+        taxableAmount: taxable,
+        taxRate: tRate,
+        isTaxInclusive: isInc
+      }
+    })
   } catch (err) {
     console.error('Error fetching product sales history:', err)
   }
 
-  // 5. Calculate Price Intelligence Summary
+  // 5. Calculate Price Intelligence Summary (All strictly pre-tax for true apples-to-apples margin)
   const lastPurchase = purchases.length > 0 ? purchases[0] : null
   const lastSale = sales.length > 0 ? sales[0] : null
 

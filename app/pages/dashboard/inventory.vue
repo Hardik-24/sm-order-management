@@ -1380,7 +1380,7 @@ onUnmounted(() => {
                 <!-- 1. Last Purchase Rate (Buying Cost) -->
                 <div class="p-3 rounded-xl bg-amber-50/70 border border-amber-200/80 flex flex-col justify-between">
                   <div class="flex items-center justify-between text-[11px] text-amber-900 font-semibold">
-                    <span class="flex items-center gap-1"><ShoppingBag class="w-3 h-3 text-amber-700" /> Last Purchase Rate</span>
+                    <span class="flex items-center gap-1"><ShoppingBag class="w-3 h-3 text-amber-700" /> Purchase Cost (Pre-tax)</span>
                     <span v-if="priceHistory.summary?.lastPurchase" class="text-[10px] text-amber-700 font-normal">
                       {{ formatShortDate(priceHistory.summary.lastPurchase.voucherDate) }}
                     </span>
@@ -1402,7 +1402,7 @@ onUnmounted(() => {
                 <!-- 2. Last Sold Rate (Selling Price) -->
                 <div class="p-3 rounded-xl bg-sky-50/70 border border-sky-200/80 flex flex-col justify-between">
                   <div class="flex items-center justify-between text-[11px] text-sky-900 font-semibold">
-                    <span class="flex items-center gap-1"><Receipt class="w-3 h-3 text-sky-700" /> Last Sold Rate</span>
+                    <span class="flex items-center gap-1"><Receipt class="w-3 h-3 text-sky-700" /> Last Sold Rate (Pre-tax)</span>
                     <span v-if="priceHistory.summary?.lastSale" class="text-[10px] text-sky-700 font-normal">
                       {{ formatShortDate(priceHistory.summary.lastSale.voucherDate) }}
                     </span>
@@ -1411,6 +1411,9 @@ onUnmounted(() => {
                     <div v-if="priceHistory.summary?.lastSale" class="text-base sm:text-lg font-extrabold text-sky-950 leading-tight">
                       ₹{{ Number(priceHistory.summary.lastSale.rate).toLocaleString('en-IN') }}
                       <span class="text-[10px] font-normal text-sky-700">/ {{ selectedProduct.unit || 'unit' }}</span>
+                      <span v-if="priceHistory.summary.lastSale.inclusiveRate && priceHistory.summary.lastSale.inclusiveRate !== priceHistory.summary.lastSale.rate" class="block text-[10px] text-sky-700/80 font-normal">
+                        (₹{{ Number(priceHistory.summary.lastSale.inclusiveRate).toLocaleString('en-IN') }} incl. tax)
+                      </span>
                     </div>
                     <div v-else class="text-xs text-sky-700/80 font-medium italic">
                       No sales invoice yet
@@ -1424,7 +1427,7 @@ onUnmounted(() => {
                 <!-- 3. Margin Spread -->
                 <div class="p-3 rounded-xl bg-emerald-50/70 border border-emerald-200/80 flex flex-col justify-between">
                   <div class="flex items-center justify-between text-[11px] text-emerald-900 font-semibold">
-                    <span class="flex items-center gap-1"><TrendingUp class="w-3 h-3 text-emerald-700" /> Margin / Spread</span>
+                    <span class="flex items-center gap-1"><TrendingUp class="w-3 h-3 text-emerald-700" /> Margin / Spread (Pre-tax)</span>
                     <span v-if="priceHistory.summary?.marginPercent !== null" class="px-1.5 py-0.2 rounded-full text-[9px] font-bold" :class="priceHistory.summary.marginAmount >= 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'">
                       {{ priceHistory.summary.marginAmount >= 0 ? '+' : '' }}{{ priceHistory.summary.marginPercent }}%
                     </span>
@@ -1438,7 +1441,7 @@ onUnmounted(() => {
                       Requires purchase & sale
                     </div>
                     <div class="text-[10px] text-emerald-800/80 mt-0.5">
-                      {{ priceHistory.summary?.marginAmount >= 0 ? 'Gross profit spread' : 'Negative markup' }}
+                      {{ priceHistory.summary?.marginAmount >= 0 ? 'Gross profit spread (pre-tax)' : 'Negative markup' }}
                     </div>
                   </div>
                 </div>
@@ -1482,7 +1485,7 @@ onUnmounted(() => {
                         <th class="px-3 py-2.5">Supplier Name</th>
                         <th class="px-3 py-2.5">Bill #</th>
                         <th class="px-3 py-2.5 text-right">Qty</th>
-                        <th class="px-3 py-2.5 text-right font-bold text-amber-950">Buying Rate</th>
+                        <th class="px-3 py-2.5 text-right font-bold text-amber-950">Buying Rate (Pre-tax)</th>
                         <th class="px-3 py-2.5 text-right">Bill Total</th>
                       </tr>
                     </thead>
@@ -1515,7 +1518,7 @@ onUnmounted(() => {
                         <th class="px-3 py-2.5">Customer Name</th>
                         <th class="px-3 py-2.5">Invoice #</th>
                         <th class="px-3 py-2.5 text-right">Qty</th>
-                        <th class="px-3 py-2.5 text-right font-bold text-sky-950">Sold Rate</th>
+                        <th class="px-3 py-2.5 text-right font-bold text-sky-950">Sold Rate (Pre-tax)</th>
                         <th class="px-3 py-2.5 text-right">Inv Total</th>
                       </tr>
                     </thead>
@@ -1525,7 +1528,12 @@ onUnmounted(() => {
                         <td class="px-3 py-2 font-medium text-gray-900 max-w-[170px] truncate" :title="s.customerName">{{ s.customerName }}</td>
                         <td class="px-3 py-2 text-gray-500 font-mono text-[11px]">{{ s.voucherNo }}</td>
                         <td class="px-3 py-2 text-right text-gray-700 font-semibold">{{ s.qty }}</td>
-                        <td class="px-3 py-2 text-right font-bold text-sky-900 whitespace-nowrap">₹{{ Number(s.rate).toLocaleString('en-IN') }}</td>
+                        <td class="px-3 py-2 text-right font-bold text-sky-900 whitespace-nowrap">
+                          <div>₹{{ Number(s.rate).toLocaleString('en-IN') }}</div>
+                          <div v-if="s.inclusiveRate && s.inclusiveRate !== s.rate" class="text-[9px] text-gray-400 font-normal">
+                            ₹{{ Number(s.inclusiveRate).toLocaleString('en-IN') }} incl. tax
+                          </div>
+                        </td>
                         <td class="px-3 py-2 text-right text-gray-500 font-mono text-[11px]">₹{{ Number(s.amount).toLocaleString('en-IN') }}</td>
                       </tr>
                     </tbody>

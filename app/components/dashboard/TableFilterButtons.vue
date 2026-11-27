@@ -721,10 +721,10 @@ const deliveryStatusOptions = [
             </div>
           </div>
 
-          <!-- Placed By (Sales Person) Filter -->
+          <!-- Created By (Sales Person) Filter -->
           <div v-if="showPlacedBy" class="space-y-1.5 relative">
             <div class="flex items-center justify-between">
-              <label class="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Placed By (Sales Person)</label>
+              <label class="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Created By (Sales Person)</label>
               <button 
                 v-if="salesPersonId" 
                 type="button"
