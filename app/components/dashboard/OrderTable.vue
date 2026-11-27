@@ -4,7 +4,6 @@ import { formatTime, formatCurrency, getDisplayStatus, getOverallColor, getStatu
 import CustomSelect from '~/components/ui/CustomSelect.vue'
 import TableFilterButtons from '~/components/dashboard/TableFilterButtons.vue'
 import RowsPerPageSelect from '~/components/ui/RowsPerPageSelect.vue'
-import StatusBadge from '~/components/ui/StatusBadge.vue'
 import FloatingHorizontalScrollbar from '~/components/ui/FloatingHorizontalScrollbar.vue'
 import LoadingTopBar from '~/components/ui/LoadingTopBar.vue'
 import TableSkeletonRows from '~/components/ui/TableSkeletonRows.vue'
@@ -874,13 +873,15 @@ const getItemsTotalQuantity = (order: Order) => {
               </span>
             </div>
             
-            <!-- Overall Status Badge (Cleanly anchored on top right) -->
-            <StatusBadge 
-              :status="order.overallStatus" 
-              :display="getDisplayStatus(order)"
-              :class="getOverallColor(order)"
-              class="!text-[10px] !py-0.5 !px-2.5 shrink-0 whitespace-nowrap leading-tight"
-            />
+            <!-- Created By (Cleanly anchored on top right) -->
+            <div class="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-slate-100 border border-slate-200 shrink-0 whitespace-nowrap leading-tight max-w-[130px]" :title="order.salesPerson?.name || 'Unknown'">
+              <div class="w-3.5 h-3.5 rounded-full bg-[#1b3b5f] text-white flex items-center justify-center text-[8px] font-black shrink-0">
+                {{ (order.salesPerson?.name || 'U').charAt(0).toUpperCase() }}
+              </div>
+              <span class="text-[10px] font-bold text-gray-800 truncate">
+                {{ order.salesPerson?.name || 'Unknown' }}
+              </span>
+            </div>
           </div>
 
           <!-- LINE 2: Full Customer Name -->
@@ -891,15 +892,12 @@ const getItemsTotalQuantity = (order: Order) => {
             <span v-if="(order.customer as any)?.isPriorityClient" class="text-amber-500 font-bold text-xs shrink-0" title="Priority Client">★</span>
           </div>
 
-          <!-- LINE 3: Phone • City (Left) + Created By • Time • Item Count (Right) -->
+          <!-- LINE 3: Phone • City (Left) + Time • Item Count (Right) -->
           <div class="flex items-center justify-between gap-2 text-[11px] text-gray-500 min-w-0 leading-none">
             <span class="truncate min-w-0 font-medium text-gray-500" :title="formatCustomerContact(order.customer)">
               {{ formatCustomerContact(order.customer) !== '—' ? formatCustomerContact(order.customer) : (order.customer?.city || '') }}
             </span>
             <div class="flex items-center gap-1.5 shrink-0 text-gray-400 tabular-nums">
-              <span v-if="order.salesPerson?.name" class="text-[#1b3b5f] font-bold text-[10px] bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">
-                {{ order.salesPerson.name }}
-              </span>
               <span class="text-gray-500 font-medium">{{ formatTime(order.createdAt) }}</span>
               <span class="text-gray-300">•</span>
               <span class="text-gray-600 font-semibold">{{ order.items?.length || 0 }} {{ (order.items?.length === 1) ? 'item' : 'items' }}</span>
