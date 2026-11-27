@@ -27,8 +27,8 @@ export default defineEventHandler(async (event) => {
         const lastHb = agentStatus.lastHeartbeat ? new Date(agentStatus.lastHeartbeat).getTime() : 0
         const ageMs = Date.now() - lastHb
 
-        // If heartbeat is fresh (within last 3 minutes), respect the Sync Agent's explicit live verdict
-        if (ageMs < 180000) {
+        // High-responsiveness: Fresh heartbeat expected within 25 seconds
+        if (ageMs < 25000) {
           if (agentStatus.tallyOnline) {
             return {
               online: true,
@@ -46,24 +46,13 @@ export default defineEventHandler(async (event) => {
               error: agentStatus.error || 'Tally Prime closed on Main PC'
             }
           }
-        }
-      } catch (_) {}
-    }
-
-    // 3. Fallback: Only if NO Sync Agent heartbeat exists yet AND receivables was synced very recently (< 15 mins)
-    if (receivablesSetting?.value) {
-      try {
-        const rec = JSON.parse(receivablesSetting.value)
-        const syncTime = rec.syncedAt ? new Date(rec.syncedAt).getTime() : 0
-        const syncAgeMs = Date.now() - syncTime
-
-        if (syncAgeMs < 900000 && rec.company && rec.company !== 'No Company Open') {
+        } else {
+          // Sync Agent stopped sending heartbeats > 25 seconds ago (PC offline/network disconnected)
           return {
-            online: true,
-            company: rec.company,
+            online: false,
             port: 9000,
             viaSyncAgent: true,
-            lastSynced: rec.syncedAt
+            error: `Sync Agent offline (no heartbeat for ${Math.round(ageMs / 1000)}s)`
           }
         }
       } catch (_) {}

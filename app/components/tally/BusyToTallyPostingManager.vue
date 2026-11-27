@@ -1035,7 +1035,7 @@ watch(() => props.isOpen, (open) => {
   if (open) {
     refreshData()
     if (!statusPollTimer) {
-      statusPollTimer = setInterval(checkTallyStatusOnly, 20000)
+      statusPollTimer = setInterval(checkTallyStatusOnly, 4000)
     }
   } else {
     if (statusPollTimer) {
@@ -1049,7 +1049,7 @@ onMounted(() => {
   if (props.isOpen) {
     refreshData()
     if (!statusPollTimer) {
-      statusPollTimer = setInterval(checkTallyStatusOnly, 20000)
+      statusPollTimer = setInterval(checkTallyStatusOnly, 4000)
     }
   }
 })

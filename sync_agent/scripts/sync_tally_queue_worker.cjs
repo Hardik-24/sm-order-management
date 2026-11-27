@@ -269,8 +269,8 @@ async function main() {
     process.exit(0);
   }
 
-  // Periodic heartbeat every 20 seconds
-  setInterval(sendHeartbeat, 20000);
+  // Periodic heartbeat every 5 seconds for rapid connection status detection
+  setInterval(sendHeartbeat, 5000);
 
   console.log('[Tally Worker] Watching for pending vouchers from OMS Cloud (every 2s)...');
   const poll = async () => {
