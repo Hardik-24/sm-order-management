@@ -103,9 +103,9 @@
       </div>
 
       <!-- Filter Bar -->
-      <div class="p-4 sm:px-6 bg-white border-b border-gray-200 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 shrink-0">
+      <div class="p-4 sm:px-6 bg-white border-b border-gray-200 flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-3 shrink-0">
         <!-- Left: Search Input + Sales / Purchases Toggle -->
-        <div class="flex items-center gap-3 flex-1 max-w-2xl">
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-1 max-w-2xl">
           <div class="relative flex-1">
             <Search class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input 
@@ -139,8 +139,29 @@
           </div>
         </div>
 
-        <!-- Right: Status Tabs (Unposted / Posted / All) -->
-        <div class="flex items-center gap-2">
+        <!-- Right: Date Filter + Status Tabs -->
+        <div class="flex flex-wrap items-center gap-2.5 shrink-0">
+          <!-- Date Filter Picker -->
+          <div class="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-xl border border-gray-200">
+            <Calendar class="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+            <input 
+              type="date"
+              v-model="dateFilter"
+              class="text-xs bg-transparent border-none text-gray-700 font-semibold focus:outline-none cursor-pointer"
+              title="Filter vouchers by date"
+            />
+            <button 
+              v-if="dateFilter"
+              type="button"
+              @click="dateFilter = ''"
+              class="text-gray-400 hover:text-rose-600 transition-colors p-0.5 cursor-pointer"
+              title="Clear date filter (show all dates)"
+            >
+              <X class="w-3 h-3" />
+            </button>
+          </div>
+
+          <!-- Status Tabs (Unposted / Posted / All) -->
           <div class="flex p-0.5 bg-slate-100 rounded-xl text-xs font-bold text-gray-600 border border-gray-200">
             <button 
               type="button"
@@ -240,14 +261,53 @@
           <div v-if="isLoading" class="absolute top-0 inset-x-0 h-0.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 animate-pulse z-20"></div>
 
           <table class="w-full text-left text-xs">
-          <thead class="sticky top-0 bg-slate-50 border-b border-gray-200 text-[10px] font-black uppercase text-gray-500 tracking-wider z-10">
+          <thead class="sticky top-0 bg-slate-50 border-b border-gray-200 text-[10px] font-black uppercase text-gray-500 tracking-wider z-10 select-none">
             <tr>
-              <th class="px-4 py-3">Date</th>
-              <th class="px-4 py-3">Voucher No</th>
+              <th 
+                class="px-4 py-3 cursor-pointer hover:bg-slate-100/90 transition-colors"
+                @click="toggleSort('voucherDate')"
+                title="Click to sort by date"
+              >
+                <div class="flex items-center gap-1.5">
+                  <span>Date</span>
+                  <span v-if="sortField === 'voucherDate'" class="text-indigo-600 font-bold">
+                    <ArrowUp v-if="sortOrder === 'asc'" class="w-3 h-3" />
+                    <ArrowDown v-else class="w-3 h-3" />
+                  </span>
+                  <ArrowUpDown v-else class="w-2.5 h-2.5 text-gray-400 opacity-60" />
+                </div>
+              </th>
+              <th 
+                class="px-4 py-3 cursor-pointer hover:bg-slate-100/90 transition-colors"
+                @click="toggleSort('voucherNo')"
+                title="Click to sort by voucher number"
+              >
+                <div class="flex items-center gap-1.5">
+                  <span>Voucher No</span>
+                  <span v-if="sortField === 'voucherNo'" class="text-indigo-600 font-bold">
+                    <ArrowUp v-if="sortOrder === 'asc'" class="w-3 h-3" />
+                    <ArrowDown v-else class="w-3 h-3" />
+                  </span>
+                  <ArrowUpDown v-else class="w-2.5 h-2.5 text-gray-400 opacity-60" />
+                </div>
+              </th>
               <th class="px-4 py-3">Type</th>
               <th class="px-4 py-3">Party (BUSY)</th>
               <th class="px-4 py-3">Tally Party Link</th>
-              <th class="px-4 py-3 text-right">Total (₹)</th>
+              <th 
+                class="px-4 py-3 text-right cursor-pointer hover:bg-slate-100/90 transition-colors"
+                @click="toggleSort('totalAmount')"
+                title="Click to sort by amount"
+              >
+                <div class="flex items-center justify-end gap-1.5">
+                  <span>Total (₹)</span>
+                  <span v-if="sortField === 'totalAmount'" class="text-indigo-600 font-bold">
+                    <ArrowUp v-if="sortOrder === 'asc'" class="w-3 h-3" />
+                    <ArrowDown v-else class="w-3 h-3" />
+                  </span>
+                  <ArrowUpDown v-else class="w-2.5 h-2.5 text-gray-400 opacity-60" />
+                </div>
+              </th>
               <th class="px-4 py-3 text-center">Status</th>
               <th class="px-4 py-3 text-right">Action</th>
             </tr>
@@ -597,7 +657,11 @@ import {
   Send,
   Clock,
   RotateCcw,
-  AlertTriangle
+  AlertTriangle,
+  Calendar,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-vue-next'
 import type { PreparedVoucherItem } from '~~/server/api/tally/vouchers.get'
 import BusyToTallyReviewModal from './BusyToTallyReviewModal.vue'
@@ -625,6 +689,18 @@ const availableSalesVoucherTypes = ref<string[]>([])
 const searchQuery = ref('')
 const selectedType = ref<'sales' | 'purchase' | 'all'>('sales')
 const statusFilter = ref<'all' | 'unposted' | 'posted'>('unposted')
+const dateFilter = ref('')
+const sortField = ref<'voucherNo' | 'voucherDate' | 'totalAmount'>('voucherNo')
+const sortOrder = ref<'asc' | 'desc'>('asc')
+
+const toggleSort = (field: 'voucherNo' | 'voucherDate' | 'totalAmount') => {
+  if (sortField.value === field) {
+    sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    sortField.value = field
+    sortOrder.value = 'asc'
+  }
+}
 
 const isReviewModalOpen = ref(false)
 const selectedVoucher = ref<PreparedVoucherItem | null>(null)
@@ -666,16 +742,22 @@ const setTypeFilter = (type: 'sales' | 'purchase' | 'all') => {
   }
 }
 
-// Counts
-const totalCount = computed(() => vouchers.value.length)
-const postedCount = computed(() => vouchers.value.filter(v => v.isPosted).length)
-const unpostedCount = computed(() => vouchers.value.filter(v => !v.isPosted).length)
-const verifiedCount = computed(() => vouchers.value.filter(v => v.isVerifiedInTally).length)
-const justPostedCount = computed(() => vouchers.value.filter(v => v.isJustPosted && !v.isVerifiedInTally).length)
+// Counts (respect active dateFilter)
+const dateFilteredVouchers = computed(() => {
+  if (!dateFilter.value) return vouchers.value
+  const targetDateClean = dateFilter.value.replace(/[^0-9]/g, '')
+  return vouchers.value.filter(v => (v.voucherDate || '').replace(/[^0-9]/g, '') === targetDateClean)
+})
 
-// Filtering
+const totalCount = computed(() => dateFilteredVouchers.value.length)
+const postedCount = computed(() => dateFilteredVouchers.value.filter(v => v.isPosted).length)
+const unpostedCount = computed(() => dateFilteredVouchers.value.filter(v => !v.isPosted).length)
+const verifiedCount = computed(() => dateFilteredVouchers.value.filter(v => v.isVerifiedInTally).length)
+const justPostedCount = computed(() => dateFilteredVouchers.value.filter(v => v.isJustPosted && !v.isVerifiedInTally).length)
+
+// Filtering & Default Sort by Voucher Number
 const filteredVouchers = computed(() => {
-  return vouchers.value.filter(v => {
+  const filtered = vouchers.value.filter(v => {
     // Search
     if (searchQuery.value) {
       const q = searchQuery.value.toLowerCase().trim()
@@ -684,11 +766,31 @@ const filteredVouchers = computed(() => {
       if (!matchNo && !matchCustomer) return false
     }
 
+    // Date Filter (YYYY-MM-DD -> YYYYMMDD)
+    if (dateFilter.value) {
+      const targetDateClean = dateFilter.value.replace(/[^0-9]/g, '')
+      const vDateClean = (v.voucherDate || '').replace(/[^0-9]/g, '')
+      if (vDateClean !== targetDateClean) return false
+    }
+
     // Status
     if (statusFilter.value === 'unposted' && v.isPosted) return false
     if (statusFilter.value === 'posted' && !v.isPosted) return false
 
     return true
+  })
+
+  // Natural alphanumeric sort by default (Voucher No)
+  return [...filtered].sort((a, b) => {
+    let cmp = 0
+    if (sortField.value === 'voucherNo') {
+      cmp = (a.voucherNo || '').localeCompare(b.voucherNo || '', undefined, { numeric: true, sensitivity: 'base' })
+    } else if (sortField.value === 'voucherDate') {
+      cmp = (a.voucherDate || '').localeCompare(b.voucherDate || '')
+    } else if (sortField.value === 'totalAmount') {
+      cmp = (Number(a.totalAmount) || 0) - (Number(b.totalAmount) || 0)
+    }
+    return sortOrder.value === 'asc' ? cmp : -cmp
   })
 })
 

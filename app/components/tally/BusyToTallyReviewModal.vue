@@ -843,13 +843,16 @@ watch(() => props.voucher, (v) => {
                      availableTypes[0] || ''
   }
 
+  const isSalesVch = initialVchType === 'Sales' || !v.voucherType || v.voucherType.toLowerCase().includes('sales')
+  const initialNarration = isSalesVch ? 'Sales of goods.' : (v.narration || `${v.voucherType || 'Purchase'} Invoice - ${v.voucherNo}`)
+
   form.value = {
     voucherType: initialVchType,
     voucherNo: v.voucherNo,
     reference: v.reference || (v.voucherType === 'Purchase' ? v.voucherNo : ''),
     date: v.voucherDate,
     partyLedgerName: party,
-    narration: v.narration || `${v.voucherType || 'Sales'} Invoice - ${v.voucherNo}`,
+    narration: initialNarration,
     saveMapping: !isAlreadyMapped,
     ledgerEntries: JSON.parse(JSON.stringify(v.defaultTallyEntries || []))
   }
@@ -957,7 +960,8 @@ const appendNarrationTag = (tag: string) => {
 
 const resetNarration = () => {
   if (!props.voucher) return
-  form.value.narration = props.voucher.narration || `${props.voucher.voucherType || 'Sales'} Invoice - ${props.voucher.voucherNo}`
+  const isSalesVch = form.value.voucherType === 'Sales' || !props.voucher.voucherType || props.voucher.voucherType.toLowerCase().includes('sales')
+  form.value.narration = isSalesVch ? 'Sales of goods.' : (props.voucher.narration || `${props.voucher.voucherType || 'Purchase'} Invoice - ${props.voucher.voucherNo}`)
 }
 
 // Ledger Rows management

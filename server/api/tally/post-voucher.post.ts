@@ -56,7 +56,8 @@ export default defineEventHandler(async (event) => {
     const vchNo = String(body.voucherNo || '').trim()
     const partyLedger = String(body.partyLedgerName || '').trim()
     const partyLedgerName = partyLedger
-    const narration = body.narration || `${vchType} Invoice ${vchNo}`
+    const defaultNarration = vchType.toLowerCase().includes('sales') ? 'Sales of goods.' : `${vchType} Invoice ${vchNo}`
+    const narration = (body.narration && String(body.narration).trim()) ? String(body.narration).trim() : defaultNarration
     const reference = String(body.reference || '').trim()
 
     // 2. DUPLICATE CHECK & DOUBLE-POSTING PREVENTION
@@ -97,6 +98,26 @@ export default defineEventHandler(async (event) => {
       } catch {}
     }
 
+    // Check manual/permanent posted registry
+    let isManuallyUnmarked = false
+    if (postedSetting?.value) {
+      try {
+        const postedMap = JSON.parse(postedSetting.value)
+        const matchingKey = Object.keys(postedMap).find(
+          k => k.trim().toUpperCase() === normNo || k.trim().toUpperCase() === vchNo.trim().toUpperCase()
+        )
+        const entry = matchingKey ? postedMap[matchingKey] : (postedMap[normNo] || postedMap[vchNo])
+        if (entry) {
+          if (entry.unmarked) {
+            isManuallyUnmarked = true
+          } else {
+            isAlreadyInDbSync = true
+            syncedType = 'Posted Register'
+          }
+        }
+      } catch {}
+    }
+
     let isAlreadyInDbSync = false
     let syncedType = ''
     let matchedRef = ''
@@ -104,73 +125,65 @@ export default defineEventHandler(async (event) => {
     const isSalesVch = vchType.toLowerCase().includes('sales')
     const isPurchVch = vchType.toLowerCase().includes('purchase') || vchType.toLowerCase().includes('expense')
 
-    if (isSalesVch && receivablesSetting?.value) {
-      try {
-        const rec = JSON.parse(receivablesSetting.value)
-        if (Array.isArray(rec.vouchers)) {
-          const found = rec.vouchers.find((v: any) => {
-            const numMatch = (v.voucherNo && v.voucherNo.trim().toUpperCase() === normNo) ||
-                             (v.ref && v.ref.trim().toUpperCase() === normNo) ||
-                             (normRef && v.voucherNo && v.voucherNo.trim().toUpperCase() === normRef) ||
-                             (normRef && v.ref && v.ref.trim().toUpperCase() === normRef)
-            if (numMatch) return true
+    // Only perform ledger/vouchers duplicate lookup if the user hasn't explicitly unmarked it
+    if (!isManuallyUnmarked) {
+      if (isSalesVch && receivablesSetting?.value) {
+        try {
+          const rec = JSON.parse(receivablesSetting.value)
+          if (Array.isArray(rec.vouchers)) {
+            const found = rec.vouchers.find((v: any) => {
+              const numMatch = (v.voucherNo && v.voucherNo.trim().toUpperCase() === normNo) ||
+                               (v.ref && v.ref.trim().toUpperCase() === normNo) ||
+                               (normRef && v.voucherNo && v.voucherNo.trim().toUpperCase() === normRef) ||
+                               (normRef && v.ref && v.ref.trim().toUpperCase() === normRef)
+              if (numMatch) return true
 
-            // Smart 3-way check: Same date + Amount within ₹1 + Party matches
-            const vDateClean = (v.date || '').replace(/[^0-9]/g, '')
-            if (vDateClean === vchDate) {
-              const amtDiff = Math.abs((Number(v.amount) || 0) - totalDebit)
-              if (amtDiff < 1.0 && (isSmartPartyMatch(v.party, partyLedger) || isSmartPartyMatch(v.party, body.busyPartyName || ''))) {
-                return true
+              // Smart 3-way check: Same date + Amount within ₹1 + Party matches
+              const vDateClean = (v.date || '').replace(/[^0-9]/g, '')
+              if (vDateClean === vchDate) {
+                const amtDiff = Math.abs((Number(v.amount) || 0) - totalDebit)
+                if (amtDiff < 1.0 && (isSmartPartyMatch(v.party, partyLedger) || isSmartPartyMatch(v.party, body.busyPartyName || ''))) {
+                  return true
+                }
               }
+              return false
+            })
+            if (found) {
+              isAlreadyInDbSync = true
+              syncedType = 'Sales'
+              matchedRef = found.ref || found.voucherNo || ''
             }
-            return false
-          })
-          if (found) {
-            isAlreadyInDbSync = true
-            syncedType = 'Sales'
-            matchedRef = found.ref || found.voucherNo || ''
           }
-        }
-      } catch {}
-    } else if (isPurchVch && payablesSetting?.value) {
-      try {
-        const pay = JSON.parse(payablesSetting.value)
-        if (Array.isArray(pay.vouchers)) {
-          const found = pay.vouchers.find((v: any) => {
-            const numMatch = (v.voucherNo && v.voucherNo.trim().toUpperCase() === normNo) ||
-                             (v.ref && v.ref.trim().toUpperCase() === normNo) ||
-                             (normRef && v.voucherNo && v.voucherNo.trim().toUpperCase() === normRef) ||
-                             (normRef && v.ref && v.ref.trim().toUpperCase() === normRef)
-            if (numMatch) return true
+        } catch {}
+      } else if (isPurchVch && payablesSetting?.value) {
+        try {
+          const pay = JSON.parse(payablesSetting.value)
+          if (Array.isArray(pay.vouchers)) {
+            const found = pay.vouchers.find((v: any) => {
+              const numMatch = (v.voucherNo && v.voucherNo.trim().toUpperCase() === normNo) ||
+                               (v.ref && v.ref.trim().toUpperCase() === normNo) ||
+                               (normRef && v.voucherNo && v.voucherNo.trim().toUpperCase() === normRef) ||
+                               (normRef && v.ref && v.ref.trim().toUpperCase() === normRef)
+              if (numMatch) return true
 
-            // Smart 3-way check: Same date + Amount within ₹1 + Party matches
-            const vDateClean = (v.date || '').replace(/[^0-9]/g, '')
-            if (vDateClean === vchDate) {
-              const amtDiff = Math.abs((Number(v.amount) || 0) - totalDebit)
-              if (amtDiff < 1.0 && (isSmartPartyMatch(v.party, partyLedger) || isSmartPartyMatch(v.party, body.busyPartyName || ''))) {
-                return true
+              // Smart 3-way check: Same date + Amount within ₹1 + Party matches
+              const vDateClean = (v.date || '').replace(/[^0-9]/g, '')
+              if (vDateClean === vchDate) {
+                const amtDiff = Math.abs((Number(v.amount) || 0) - totalDebit)
+                if (amtDiff < 1.0 && (isSmartPartyMatch(v.party, partyLedger) || isSmartPartyMatch(v.party, body.busyPartyName || ''))) {
+                  return true
+                }
               }
+              return false
+            })
+            if (found) {
+              isAlreadyInDbSync = true
+              syncedType = 'Purchase'
+              matchedRef = found.ref || found.voucherNo || ''
             }
-            return false
-          })
-          if (found) {
-            isAlreadyInDbSync = true
-            syncedType = 'Purchase'
-            matchedRef = found.ref || found.voucherNo || ''
           }
-        }
-      } catch {}
-    }
-
-    // Check manual/permanent posted registry
-    if (postedSetting?.value) {
-      try {
-        const postedMap = JSON.parse(postedSetting.value)
-        if (postedMap[normNo] || postedMap[vchNo]) {
-          isAlreadyInDbSync = true
-          syncedType = 'Posted Register'
-        }
-      } catch {}
+        } catch {}
+      }
     }
 
     if (isAlreadyInDbSync) {
@@ -184,11 +197,12 @@ export default defineEventHandler(async (event) => {
     }
 
     // Check queue for duplicate pending/in-flight jobs via native Prisma model
+    // If the user manually unmarked the voucher, ignore old SUCCESS jobs and only block on active in-flight jobs
     try {
       const existingQueueJob = await prisma.tallyVoucherQueue.findFirst({
         where: {
           voucherNo: { equals: vchNo, mode: 'insensitive' },
-          status: { in: ['PENDING', 'PROCESSING', 'SUCCESS'] }
+          status: { in: isManuallyUnmarked ? ['PENDING', 'PROCESSING'] : ['PENDING', 'PROCESSING', 'SUCCESS'] }
         },
         orderBy: { createdAt: 'desc' }
       })

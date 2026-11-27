@@ -42,6 +42,13 @@ export default defineEventHandler(async (event) => {
       unmarked: true,
       unpostedAt: new Date().toISOString()
     }
+
+    // Also remove any old queue records for this voucher so it can be cleanly enqueued and re-posted
+    try {
+      await prisma.tallyVoucherQueue.deleteMany({
+        where: { voucherNo: { equals: voucherNo, mode: 'insensitive' } }
+      })
+    } catch (_) {}
   }
 
   // 3. Save back to permanent DB settings
