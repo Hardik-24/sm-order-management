@@ -10,7 +10,7 @@ const prisma = new PrismaClient({
 const TALLY_HOST = process.env.TALLY_HOST || '127.0.0.1';
 const TALLY_PORT = parseInt(process.env.TALLY_PORT || '9000', 10);
 
-function queryTallyXml(xml) {
+function queryTallyXml(xml, timeoutMs = 90000) {
   return new Promise((resolve, reject) => {
     const minified = xml.replace(/\n\s*/g, '');
     const req = http.request({
@@ -24,7 +24,7 @@ function queryTallyXml(xml) {
         'Content-Length': Buffer.byteLength(minified),
         'Connection': 'close'
       },
-      timeout: 30000
+      timeout: timeoutMs
     }, (res) => {
       let data = '';
       res.on('data', chunk => data += chunk);
@@ -34,7 +34,7 @@ function queryTallyXml(xml) {
     req.on('error', err => reject(err));
     req.on('timeout', () => {
       req.destroy();
-      reject(new Error('Tally request timed out (30s)'));
+      reject(new Error(`Tally request timed out (${timeoutMs / 1000}s)`));
     });
 
     req.write(minified);
@@ -172,6 +172,9 @@ function parseMergedDebtorData(ledgersXml, billsXml, companyName) {
     const pending = rawCl < 0 ? Math.abs(rawCl) : 0;
     const advance = rawCl > 0 ? rawCl : 0;
     const opening = Math.abs(rawOp);
+    // In Tally: negative (< 0) = Debit (Dr), positive (> 0) = Credit (Cr)
+    const openingType = rawOp < 0 ? 'Dr' : (rawOp > 0 ? 'Cr' : 'Dr');
+    const closingType = rawCl < 0 ? 'Dr' : (rawCl > 0 ? 'Cr' : 'Dr');
 
     if (billed > 0 || paid > 0 || pending > 0 || opening > 0 || advance > 0) {
       sumBilled += billed;
@@ -210,6 +213,8 @@ function parseMergedDebtorData(ledgersXml, billsXml, companyName) {
         party: cleanName,
         parent,
         openingBalance: Math.round(opening * 100) / 100,
+        openingType,
+        closingType,
         totalBilled: Math.round(billed * 100) / 100,
         totalPaid: Math.round(paid * 100) / 100,
         netPending: Math.round(pending * 100) / 100,
@@ -353,6 +358,9 @@ function parseMergedCreditorData(ledgersXml, billsXml, companyName) {
 
     const pending = rawCl > 0 ? rawCl : (rawCl < 0 ? Math.abs(rawCl) : 0);
     const opening = Math.abs(rawOp);
+    // In Tally: positive (> 0) = Credit (Cr), negative (< 0) = Debit (Dr)
+    const openingType = rawOp > 0 ? 'Cr' : (rawOp < 0 ? 'Dr' : 'Cr');
+    const closingType = rawCl > 0 ? 'Cr' : (rawCl < 0 ? 'Dr' : 'Cr');
 
     if (purchases > 0 || paid > 0 || pending > 0 || opening > 0) {
       sumPurchases += purchases;
@@ -391,6 +399,8 @@ function parseMergedCreditorData(ledgersXml, billsXml, companyName) {
         party: cleanName,
         parent,
         openingBalance: Math.round(opening * 100) / 100,
+        openingType,
+        closingType,
         totalPurchased: Math.round(purchases * 100) / 100,
         totalBilled: Math.round(purchases * 100) / 100,
         totalPaid: Math.round(paid * 100) / 100,

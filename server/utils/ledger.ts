@@ -37,6 +37,7 @@ export interface LedgerReportData {
   transactions: LedgerTransaction[]
   totals: {
     openingBalance: number
+    openingBalanceType?: 'Dr' | 'Cr'
     totalDebit: number
     totalCredit: number
     closingBalance: number
@@ -243,7 +244,16 @@ export async function computePartyLedger(
 
   const rawTransactions: any[] = Array.isArray(tallyParty.transactions) ? tallyParty.transactions : []
 
-  let openingAdjustment = 0
+  // Determine initial opening balance direction ('Dr' vs 'Cr')
+  // In Tally: Dr = Debit (asset/receivable), Cr = Credit (liability/payable)
+  const baseOpeningBalance = Math.abs(Number(tallyParty.openingBalance) || 0)
+  const initialOpeningType: 'Dr' | 'Cr' = tallyParty.openingType
+    ? tallyParty.openingType
+    : (role === 'creditor' || (tallyParty.parent && /creditor/i.test(tallyParty.parent)) ? 'Cr' : 'Dr')
+
+  // Using signed convention: Debit is positive (+), Credit is negative (-)
+  let signedOpening = (initialOpeningType === 'Cr' ? -1 : 1) * baseOpeningBalance
+
   const inRangeTx: LedgerTransaction[] = []
 
   for (const tx of rawTransactions) {
@@ -253,7 +263,9 @@ export async function computePartyLedger(
 
     if (txDate) {
       if (txDate.getTime() < fromDateObj.getTime()) {
-        openingAdjustment += (debitVal || 0) - (creditVal || 0)
+        // Transactions prior to start date adjust the opening balance
+        // Debit increases debit balance (+), Credit increases credit balance (-)
+        signedOpening += (debitVal || 0) - (creditVal || 0)
       } else if (txDate.getTime() <= toDateObj.getTime()) {
         inRangeTx.push({
           date: tx.date || formatToTallyDate(txDate),
@@ -276,14 +288,26 @@ export async function computePartyLedger(
     }
   }
 
-  const baseOpeningBalance = Number(tallyParty.openingBalance) || 0
-  const effectiveOpening = baseOpeningBalance + openingAdjustment
+  // Calculate effective opening balance and type after pre-period adjustments
+  const effectiveOpening = Math.round(Math.abs(signedOpening) * 100) / 100
+  const effectiveOpeningType: 'Dr' | 'Cr' =
+    signedOpening > 0 ? 'Dr' : (signedOpening < 0 ? 'Cr' : initialOpeningType)
 
   const transactions: LedgerTransaction[] = []
   let totalDebit = 0
   let totalCredit = 0
 
-  if (effectiveOpening > 0) {
+  if (effectiveOpeningType === 'Cr') {
+    transactions.push({
+      date: formattedFrom,
+      particulars: 'By Opening Balance',
+      vchType: '',
+      vchNo: '',
+      debit: null,
+      credit: effectiveOpening
+    })
+    totalCredit += effectiveOpening
+  } else {
     transactions.push({
       date: formattedFrom,
       particulars: 'To Opening Balance',
@@ -293,26 +317,6 @@ export async function computePartyLedger(
       credit: null
     })
     totalDebit += effectiveOpening
-  } else if (effectiveOpening < 0) {
-    const absOpening = Math.abs(effectiveOpening)
-    transactions.push({
-      date: formattedFrom,
-      particulars: 'By Opening Balance',
-      vchType: '',
-      vchNo: '',
-      debit: null,
-      credit: absOpening
-    })
-    totalCredit += absOpening
-  } else {
-    transactions.push({
-      date: formattedFrom,
-      particulars: 'To Opening Balance',
-      vchType: '',
-      vchNo: '',
-      debit: 0,
-      credit: null
-    })
   }
 
   for (const t of inRangeTx) {
@@ -321,9 +325,12 @@ export async function computePartyLedger(
     if (t.credit) totalCredit += t.credit
   }
 
-  const closingBalance = Math.abs(totalDebit - totalCredit)
-  const closingBalanceType = totalDebit >= totalCredit ? 'Dr' : 'Cr'
-  const balancedTotal = Math.max(totalDebit, totalCredit)
+  totalDebit = Math.round(totalDebit * 100) / 100
+  totalCredit = Math.round(totalCredit * 100) / 100
+
+  const closingBalance = Math.round(Math.abs(totalDebit - totalCredit) * 100) / 100
+  const closingBalanceType: 'Dr' | 'Cr' = totalDebit >= totalCredit ? 'Dr' : 'Cr'
+  const balancedTotal = Math.round(Math.max(totalDebit, totalCredit) * 100) / 100
 
   return {
     company: companyInfo,
@@ -338,6 +345,7 @@ export async function computePartyLedger(
     transactions,
     totals: {
       openingBalance: effectiveOpening,
+      openingBalanceType: effectiveOpeningType,
       totalDebit,
       totalCredit,
       closingBalance,
