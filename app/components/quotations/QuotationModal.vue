@@ -996,7 +996,7 @@
                     <th class="py-2.5 px-3">Description</th>
                     <th class="py-2.5 px-2 w-14 text-center">Brand</th>
                     <th class="py-2.5 px-2 min-w-[110px] w-28 sm:w-32 text-center">Qty</th>
-                    <th class="py-2.5 px-2.5 w-20 text-right">MRP (₹)</th>
+                    <th class="py-2.5 px-2 w-28 text-right">MRP (₹)</th>
                     <th class="py-2.5 px-2 w-12 text-center">UoM</th>
                     <th class="py-2.5 px-2.5 w-20 text-center bg-amber-50/40 border-x border-amber-100">Disc %</th>
                     <th class="py-2.5 px-2.5 w-20 text-center bg-sky-50/40 border-r border-sky-100" title="Tax bracket per item. Prefilled from Sheets.">GST %</th>
@@ -1116,15 +1116,29 @@
                     </td>
 
                     <!-- MRP -->
-                    <td class="py-2.5 px-2.5 text-right font-medium text-gray-700">
-                      <input
-                        v-if="row.isCustom"
-                        v-model.number="row.mrp"
-                        type="number"
-                        min="0"
-                        class="w-16 text-right font-medium text-xs border border-gray-200 rounded px-1 py-0.5"
-                      />
-                      <span v-else>₹{{ row.mrp.toLocaleString('en-IN') }}</span>
+                    <td class="py-2 px-2 text-right">
+                      <div class="flex flex-col items-end gap-1">
+                        <button 
+                          type="button" 
+                          tabindex="-1"
+                          @click="openRateCalculator(idx)" 
+                          class="text-[9px] bg-[#1b3b5f] hover:bg-[#132c49] text-white font-bold flex items-center gap-1 px-1.5 py-0.5 rounded shadow-2xs transition-colors cursor-pointer"
+                          title="Calculate MRP by Sheet Sq.ft (A × B × Rate)"
+                        >
+                          <Calculator class="w-2.5 h-2.5 text-white" />
+                          <span>Sq.ft Calc</span>
+                        </button>
+                        <div class="relative flex items-center w-24">
+                          <span class="absolute left-1.5 text-gray-400 text-[10px] pointer-events-none">₹</span>
+                          <input
+                            v-model.number="row.mrp"
+                            type="number"
+                            min="0"
+                            step="any"
+                            class="w-full pl-4 pr-1.5 py-0.5 text-right font-bold text-xs border border-gray-300 rounded bg-white text-gray-900 focus:ring-1 focus:ring-[#1b3b5f] focus:border-[#1b3b5f]"
+                          />
+                        </div>
+                      </div>
                     </td>
 
                     <!-- UoM -->
@@ -2204,6 +2218,137 @@
       @confirm="confirmDiscard"
       @cancel="cancelDiscard"
     />
+
+    <!-- ── Rate Calculator Modal (A × B × Rate per Sq.ft) ────────────────────── -->
+    <div v-if="isRateCalcOpen" data-modal-container class="fixed inset-0 z-[800] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-4 sm:p-5 border border-gray-100 space-y-3 animate-in fade-in zoom-in-95 duration-150 max-h-[90dvh] overflow-y-auto">
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between border-b border-gray-100 pb-2.5">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-xl bg-[#1b3b5f]/10 text-[#1b3b5f] flex items-center justify-center border border-[#1b3b5f]/20">
+              <Calculator class="w-4 h-4 text-[#1b3b5f]" />
+            </div>
+            <div>
+              <h4 class="text-sm sm:text-base font-bold text-gray-900">Sq.ft Sheet Rate Calculator</h4>
+              <p class="text-[11px] text-gray-500">Calculate MRP: Size (A × B) × Sq.ft Rate</p>
+            </div>
+          </div>
+          <button 
+            type="button" 
+            @click="isRateCalcOpen = false" 
+            data-modal-close="true"
+            aria-label="Close"
+            class="text-gray-400 hover:text-gray-600 p-1.5 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+          >
+            <X class="w-4 h-4" />
+          </button>
+        </div>
+
+        <!-- Quick Size Presets -->
+        <div v-if="sheetSizesOptions && sheetSizesOptions.length > 0" class="space-y-1">
+          <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">Quick Sheet Sizes</label>
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <button
+              v-for="qs in sheetSizesOptions"
+              :key="qs.label"
+              type="button"
+              @click="setCalcSize(qs.length, qs.width)"
+              class="px-2.5 py-1 rounded-lg text-xs font-bold border transition-colors cursor-pointer flex items-center gap-1"
+              :class="calcLength === qs.length && calcWidth === qs.width
+                ? 'bg-[#1b3b5f] text-white border-[#1b3b5f] shadow-xs'
+                : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'"
+            >
+              <span>{{ qs.label }}</span>
+              <span v-if="qs.isDefault" class="text-[9px] opacity-75">★</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Dimensions & Area (Inline Compact Group) -->
+        <div class="p-2.5 sm:p-3 bg-slate-50/90 rounded-xl border border-gray-200/90 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-bold text-gray-700 uppercase tracking-wider">Sheet Dimensions</span>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <div class="relative flex-1">
+              <input
+                type="number"
+                v-model.number="calcLength"
+                min="0.1"
+                step="0.1"
+                class="w-full pl-3 pr-7 py-1.5 border border-gray-300 rounded-lg text-sm font-bold text-gray-900 bg-white shadow-2xs focus:ring-[#1b3b5f] focus:border-[#1b3b5f]"
+                placeholder="Length"
+              />
+              <span class="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-gray-400 pointer-events-none">ft</span>
+            </div>
+
+            <span class="text-gray-400 font-bold text-xs shrink-0">×</span>
+
+            <div class="relative flex-1">
+              <input
+                type="number"
+                v-model.number="calcWidth"
+                min="0.1"
+                step="0.1"
+                class="w-full pl-3 pr-7 py-1.5 border border-gray-300 rounded-lg text-sm font-bold text-gray-900 bg-white shadow-2xs focus:ring-[#1b3b5f] focus:border-[#1b3b5f]"
+                placeholder="Width"
+              />
+              <span class="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-gray-400 pointer-events-none">ft</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Rate per Sqft Input -->
+        <div class="space-y-1">
+          <label class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider">Rate per Sq.ft (₹) *</label>
+          <div class="relative flex items-center">
+            <IndianRupee class="absolute left-3 w-4 h-4 text-gray-400 pointer-events-none" />
+            <input
+              type="number"
+              v-model.number="calcSqftRate"
+              min="0"
+              step="0.01"
+              class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-xl text-base font-black text-gray-900 focus:ring-2 focus:ring-[#1b3b5f]/20 focus:border-[#1b3b5f] bg-white shadow-2xs"
+              placeholder="e.g. 75.00"
+              @keyup.enter="applyCalculatedRate"
+            />
+          </div>
+        </div>
+
+        <!-- Live Calculated Preview Box -->
+        <div class="p-3 bg-emerald-50/80 border border-emerald-200/90 rounded-xl text-center space-y-0.5">
+          <span class="text-[10px] font-bold text-emerald-800 uppercase tracking-wider block">Calculated Sheet MRP</span>
+          <div class="text-2xl font-mono font-black text-[#1b3b5f]">
+            ₹{{ calcTotalRate.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
+          </div>
+          <p class="text-[10px] text-emerald-700 font-medium">
+            {{ calcSqftArea }} sq.ft × ₹{{ Number(calcSqftRate || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }} / sq.ft
+          </p>
+        </div>
+
+        <!-- Modal Action Buttons -->
+        <div class="flex items-center justify-end gap-2 pt-1">
+          <button
+            type="button"
+            @click="isRateCalcOpen = false"
+            data-modal-close="true"
+            class="px-3.5 py-1.5 border border-gray-300 text-gray-700 rounded-xl text-xs font-bold hover:bg-gray-50 transition cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            @click="applyCalculatedRate"
+            :disabled="calcTotalRate <= 0"
+            class="px-4 py-1.5 bg-[#1b3b5f] hover:bg-[#132c49] text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-sm disabled:opacity-50"
+          >
+            <Check class="w-3.5 h-3.5 text-white" />
+            <span>Apply as MRP</span>
+          </button>
+        </div>
+      </div>
+    </div>
   </Teleport>
 </template>
 
@@ -2242,7 +2387,9 @@ import {
   EyeOff,
   ChevronDown,
   ChevronLeft,
-  Percent
+  Percent,
+  Check,
+  IndianRupee
 } from 'lucide-vue-next'
 import CustomSelect from '~/components/ui/CustomSelect.vue'
 import ConfirmDiscardModal from '~/components/ui/ConfirmDiscardModal.vue'
@@ -2250,6 +2397,7 @@ import { toBlob, toPng, toJpeg } from 'html-to-image'
 import { jsPDF } from 'jspdf'
 import { useSnackbar } from '~/composables/useSnackbar'
 import { useAuth } from '~/composables/useAuth'
+import { useMasters } from '~/composables/useMasters'
 import { rankAndFilter } from '~/utils/search'
 
 const props = defineProps<{
@@ -2265,6 +2413,55 @@ const emit = defineEmits<{
 
 const { showSaved, showEditing } = useSnackbar()
 const { user } = useAuth()
+const { sheetSizesOptions } = useMasters()
+
+// ── Rate Calculator State (A × B × Rate per sq.ft) ──────────────────────────
+const isRateCalcOpen = ref(false)
+const calcItemIndex = ref<number | null>(null)
+const calcLength = ref<number>(8)
+const calcWidth = ref<number>(4)
+const calcSqftRate = ref<number>(0)
+
+const setCalcSize = (l: number, w: number) => {
+  calcLength.value = l
+  calcWidth.value = w
+}
+
+const calcSqftArea = computed(() => {
+  const l = Number(calcLength.value || 0)
+  const w = Number(calcWidth.value || 0)
+  return Number((l * w).toFixed(3))
+})
+
+const calcTotalRate = computed(() => {
+  const area = calcSqftArea.value
+  const rate = Number(calcSqftRate.value || 0)
+  return Number((area * rate).toFixed(2))
+})
+
+const openRateCalculator = (idx: number) => {
+  calcItemIndex.value = idx
+  const defaultSize = sheetSizesOptions?.value?.find((s: any) => s.isDefault) || sheetSizesOptions?.value?.[0]
+  calcLength.value = defaultSize?.length || 8
+  calcWidth.value = defaultSize?.width || 4
+  const currentArea = calcLength.value * calcWidth.value
+
+  const it = quoteItems.value[idx]
+  if (it && Number(it.mrp) > 0) {
+    calcSqftRate.value = currentArea > 0 ? Number((Number(it.mrp) / currentArea).toFixed(2)) : 0
+  } else {
+    calcSqftRate.value = 0
+  }
+  isRateCalcOpen.value = true
+}
+
+const applyCalculatedRate = () => {
+  if (calcItemIndex.value !== null && quoteItems.value[calcItemIndex.value]) {
+    quoteItems.value[calcItemIndex.value].mrp = calcTotalRate.value
+    showSaved(`Applied MRP ₹${calcTotalRate.value.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`)
+  }
+  isRateCalcOpen.value = false
+}
 
 // State
 const isSuccessView = ref(false)
