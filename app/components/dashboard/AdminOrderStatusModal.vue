@@ -39,10 +39,32 @@ const deliveryStatus = ref<string>('WAITING')
 const deliveryHoldReason = ref('')
 const driverName = ref('')
 
-const autoCascadeStages = ref(true)
+interface WorkflowMissingStage {
+  key: string
+  name: string
+  current: string
+  fix: string
+}
+
+interface WorkflowWarningState {
+  isOpen: boolean
+  targetDepartment: 'packing' | 'billing' | 'delivery'
+  targetValue: string
+  targetLabel: string
+  missingStages: WorkflowMissingStage[]
+}
+
 const autoAdvancedStages = ref({
   approval: false,
   packing: false
+})
+
+const workflowWarning = ref<WorkflowWarningState>({
+  isOpen: false,
+  targetDepartment: 'packing',
+  targetValue: '',
+  targetLabel: '',
+  missingStages: []
 })
 
 const autoCalculateOverall = ref(true)
@@ -69,6 +91,7 @@ const initForm = () => {
   overallStatus.value = props.order.overallStatus || 'CONFIRMED'
   notes.value = ''
 
+  workflowWarning.value.isOpen = false
   autoAdvancedStages.value = {
     approval: false,
     packing: false
@@ -81,17 +104,28 @@ const selectApproval = (val: boolean) => {
 }
 
 const selectPackingStatus = (val: string) => {
+  if ((val === 'PACKED' || val === 'IN_PROGRESS') && !isApproved.value) {
+    workflowWarning.value = {
+      isOpen: true,
+      targetDepartment: 'packing',
+      targetValue: val,
+      targetLabel: packingOptions.find(o => o.value === val)?.label || val,
+      missingStages: [
+        {
+          key: 'approval',
+          name: 'Approval Desk',
+          current: 'Pending Review',
+          fix: 'Mark Approved'
+        }
+      ]
+    }
+    return
+  }
   packingStatus.value = val
   autoAdvancedStages.value.packing = false
-  if (autoCascadeStages.value && (val === 'PACKED' || val === 'IN_PROGRESS')) {
-    if (!isApproved.value) {
-      isApproved.value = true
-      autoAdvancedStages.value.approval = true
-    }
-  }
 }
 
-const selectBillingStatus = (val: string) => {
+const applyBillingSelection = (val: string) => {
   billingStatus.value = val
   if (val === 'GENERATED') {
     if (!invoiceNumber.value || !invoiceNumber.value.trim()) {
@@ -99,25 +133,106 @@ const selectBillingStatus = (val: string) => {
     } else if (!invoiceNumber.value.toUpperCase().startsWith('SMG')) {
       invoiceNumber.value = 'SMG' + invoiceNumber.value
     }
-    if (autoCascadeStages.value && !isApproved.value) {
-      isApproved.value = true
-      autoAdvancedStages.value.approval = true
-    }
   }
 }
 
+const selectBillingStatus = (val: string) => {
+  if (val === 'GENERATED' && !isApproved.value) {
+    workflowWarning.value = {
+      isOpen: true,
+      targetDepartment: 'billing',
+      targetValue: val,
+      targetLabel: 'Generated',
+      missingStages: [
+        {
+          key: 'approval',
+          name: 'Approval Desk',
+          current: 'Pending Review',
+          fix: 'Mark Approved'
+        }
+      ]
+    }
+    return
+  }
+  applyBillingSelection(val)
+}
+
 const selectDeliveryStatus = (val: string) => {
-  deliveryStatus.value = val
-  if (autoCascadeStages.value && ['ASSIGNED', 'DISPATCHED', 'DELIVERED'].includes(val)) {
+  if (['ASSIGNED', 'DISPATCHED', 'DELIVERED'].includes(val)) {
+    const missing: WorkflowMissingStage[] = []
     if (!isApproved.value) {
+      missing.push({
+        key: 'approval',
+        name: 'Approval Desk',
+        current: 'Pending Review',
+        fix: 'Mark Approved'
+      })
+    }
+    if (packingStatus.value !== 'PACKED') {
+      missing.push({
+        key: 'packing',
+        name: 'Packing & Fulfillment',
+        current: packingOptions.find(o => o.value === packingStatus.value)?.label || packingStatus.value,
+        fix: 'Mark Packed'
+      })
+    }
+
+    if (missing.length > 0) {
+      workflowWarning.value = {
+        isOpen: true,
+        targetDepartment: 'delivery',
+        targetValue: val,
+        targetLabel: deliveryOptions.find(o => o.value === val)?.label || val,
+        missingStages: missing
+      }
+      return
+    }
+  }
+  deliveryStatus.value = val
+}
+
+const confirmWithAutoCascade = () => {
+  const { targetDepartment, targetValue, missingStages } = workflowWarning.value
+
+  for (const stage of missingStages) {
+    if (stage.key === 'approval') {
       isApproved.value = true
       autoAdvancedStages.value.approval = true
     }
-    if (packingStatus.value !== 'PACKED') {
+    if (stage.key === 'packing') {
       packingStatus.value = 'PACKED'
       autoAdvancedStages.value.packing = true
     }
   }
+
+  if (targetDepartment === 'packing') {
+    packingStatus.value = targetValue
+  } else if (targetDepartment === 'billing') {
+    applyBillingSelection(targetValue)
+  } else if (targetDepartment === 'delivery') {
+    deliveryStatus.value = targetValue
+  }
+
+  workflowWarning.value.isOpen = false
+}
+
+const confirmSingleOverrideOnly = () => {
+  const { targetDepartment, targetValue } = workflowWarning.value
+
+  if (targetDepartment === 'packing') {
+    packingStatus.value = targetValue
+    autoAdvancedStages.value.packing = false
+  } else if (targetDepartment === 'billing') {
+    applyBillingSelection(targetValue)
+  } else if (targetDepartment === 'delivery') {
+    deliveryStatus.value = targetValue
+  }
+
+  workflowWarning.value.isOpen = false
+}
+
+const cancelWorkflowWarning = () => {
+  workflowWarning.value.isOpen = false
 }
 
 watch(billingStatus, (val) => {
@@ -271,6 +386,89 @@ const submitStatusUpdate = async () => {
       <!-- Modal Card -->
       <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl flex flex-col max-h-[calc(100dvh-3.5rem-env(safe-area-inset-bottom,0px)-2rem)] md:max-h-[92vh] overflow-hidden border border-gray-200">
         
+        <!-- Workflow Pipeline Warning Modal -->
+        <div 
+          v-if="workflowWarning.isOpen" 
+          class="absolute inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4"
+        >
+          <div class="bg-white rounded-2xl shadow-2xl border border-amber-200 max-w-md w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <!-- Warning Header -->
+            <div class="bg-amber-50 px-5 py-3.5 border-b border-amber-200 flex items-start gap-3">
+              <div class="p-2 bg-amber-100 text-amber-800 rounded-lg shrink-0 mt-0.5">
+                <AlertTriangle class="w-5 h-5 text-amber-700" />
+              </div>
+              <div class="min-w-0">
+                <h3 class="text-sm font-bold text-amber-950">
+                  Workflow Pipeline Notice
+                </h3>
+                <p class="text-xs text-amber-800 mt-0.5">
+                  Out-of-order stage advancement detected
+                </p>
+              </div>
+            </div>
+
+            <!-- Body -->
+            <div class="p-5 space-y-3.5 text-xs text-gray-700">
+              <p>
+                You selected <span class="font-bold text-gray-900 bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200">{{ workflowWarning.targetLabel }}</span>, but the following prerequisite stage(s) are incomplete:
+              </p>
+
+              <div class="space-y-2 bg-gray-50 border border-gray-200 rounded-lg p-3">
+                <div 
+                  v-for="stage in workflowWarning.missingStages" 
+                  :key="stage.key"
+                  class="flex items-center justify-between gap-2"
+                >
+                  <div class="font-semibold text-gray-800">
+                    {{ stage.name }}
+                  </div>
+                  <div class="flex items-center gap-1.5 text-[11px]">
+                    <span class="px-2 py-0.5 rounded bg-amber-100 text-amber-800 font-medium border border-amber-200">
+                      {{ stage.current }}
+                    </span>
+                    <ArrowRight class="w-3 h-3 text-gray-400" />
+                    <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold border border-emerald-200">
+                      {{ stage.fix }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <p class="text-[11px] text-gray-500">
+                To keep order workflow records clean and consistent, it is recommended to auto-complete the preceding stages.
+              </p>
+            </div>
+
+            <!-- Actions -->
+            <div class="p-4 bg-gray-50 border-t border-gray-100 flex flex-col gap-2">
+              <button
+                type="button"
+                @click="confirmWithAutoCascade"
+                class="w-full py-2.5 px-4 rounded-lg bg-[#1b3b5f] hover:bg-[#152e4a] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition cursor-pointer"
+              >
+                <Zap class="w-3.5 h-3.5 text-amber-400" />
+                <span>Auto-Complete Preceding Stages (Recommended)</span>
+              </button>
+
+              <button
+                type="button"
+                @click="confirmSingleOverrideOnly"
+                class="w-full py-2 px-4 rounded-lg bg-white hover:bg-gray-100 text-gray-700 border border-gray-300 font-semibold text-xs transition cursor-pointer"
+              >
+                Update {{ workflowWarning.targetLabel }} Only (Manual Override)
+              </button>
+
+              <button
+                type="button"
+                @click="cancelWorkflowWarning"
+                class="w-full py-1.5 text-[11px] text-gray-500 hover:text-gray-700 font-medium transition cursor-pointer"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+
         <!-- Header -->
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-[#faf8f5] shrink-0">
           <div class="flex items-center gap-3">
@@ -313,31 +511,6 @@ const submitStatusUpdate = async () => {
           <p>
             Direct override applies immediate status changes across departments and permanently records an audit entry in the order timeline.
           </p>
-        </div>
-
-        <!-- Auto-Cascade Setting Banner -->
-        <div class="px-6 py-2.5 bg-gradient-to-r from-purple-50/90 via-indigo-50/40 to-white border-b border-purple-100 flex items-center justify-between gap-3 shrink-0">
-          <div class="flex items-center gap-2.5 min-w-0">
-            <div class="w-6 h-6 rounded-md bg-purple-100 text-purple-700 flex items-center justify-center shrink-0">
-              <Zap class="w-3.5 h-3.5" />
-            </div>
-            <div class="truncate">
-              <div class="flex items-center gap-2">
-                <span class="text-xs font-bold text-gray-900">Auto-Cascade Workflow Stages</span>
-                <span class="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold bg-purple-100 text-purple-800 uppercase tracking-wide">
-                  Smart Sync
-                </span>
-              </div>
-              <p class="text-[11px] text-gray-500 truncate">
-                Automatically advances preceding stages (Approval, Packing) when jumping to a downstream status
-              </p>
-            </div>
-          </div>
-
-          <label class="relative inline-flex items-center cursor-pointer shrink-0">
-            <input type="checkbox" v-model="autoCascadeStages" class="sr-only peer">
-            <div class="w-8 h-4.5 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-purple-700"></div>
-          </label>
         </div>
 
         <!-- Scrollable Body -->
