@@ -375,12 +375,21 @@ export function generateLedgerVectorPdf(
         columnStyles: {
           0: { cellWidth: 58, halign: 'left' },
           1: { cellWidth: 'auto', halign: 'left' },
-          2: { cellWidth: 58, halign: 'left' },
+          2: { cellWidth: 58, halign: 'center' },
           3: { cellWidth: 52, halign: 'center' },
           4: { cellWidth: 72, halign: 'right' },
           5: { cellWidth: 72, halign: 'right' }
         },
         didParseCell: (data) => {
+          // Explicit column alignments for ALL sections: head, body, foot
+          if (data.column.index === 0 || data.column.index === 1) {
+            data.cell.styles.halign = 'left'
+          } else if (data.column.index === 2 || data.column.index === 3) {
+            data.cell.styles.halign = 'center'
+          } else if (data.column.index === 4 || data.column.index === 5) {
+            data.cell.styles.halign = 'right'
+          }
+
           const rowRaw = data.row.raw as any[]
           if (rowRaw && (rowRaw[1] === 'Brought Forward' || rowRaw[1] === 'Carried Over')) {
             data.cell.styles.fontStyle = 'bold'
@@ -748,6 +757,15 @@ export function generateLedgerVectorPdf(
           5: { cellWidth: 74, halign: 'right' }
         },
         didParseCell: (data) => {
+          // Explicit column alignments for ALL sections: head, body, foot
+          if (data.column.index === 0 || data.column.index === 1) {
+            data.cell.styles.halign = 'left'
+          } else if (data.column.index === 2 || data.column.index === 3) {
+            data.cell.styles.halign = 'center'
+          } else if (data.column.index === 4 || data.column.index === 5) {
+            data.cell.styles.halign = 'right'
+          }
+
           const rowRaw = data.row.raw as any[]
           if (rowRaw && (rowRaw[1] === 'Brought Forward' || rowRaw[1] === 'Carried Over')) {
             data.cell.styles.fontStyle = 'bold'

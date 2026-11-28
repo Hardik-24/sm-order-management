@@ -154,10 +154,16 @@ export async function computePartyLedger(
   let phone = tallyParty.phone || ''
   let gstin = tallyParty.gstin || ''
 
-  if (addressLines.length === 0 || !phone) {
+  // Fallback for parties whose Tally ledger master had blank GSTIN but invoices have Consignee GSTIN
+  if (!gstin && tallyParty.party && /moddy/i.test(tallyParty.party)) {
+    gstin = '33AAHCM2099P1ZW'
+  }
+
+  if (addressLines.length === 0 || !phone || !gstin) {
     let dbCustomer: any = null
     try {
-      const partyBase = partyParam.split(',')[0].trim()
+      const cleanParty = partyParam.replace(/['\/]/g, ' ').replace(/\s+/g, ' ').trim()
+      const partyBase = cleanParty.split(',')[0].trim()
       dbCustomer = await prisma.customer.findFirst({
         where: {
           OR: [
@@ -174,7 +180,7 @@ export async function computePartyLedger(
       })
 
       if (!dbCustomer) {
-        const tokens = partyBase.split(/\s+/).filter(w => w.length > 3)
+        const tokens = partyBase.split(/\s+/).filter(w => w.length > 3 && !['private', 'limited', 'pvt', 'ltd'].includes(w.toLowerCase()))
         for (const token of tokens) {
           dbCustomer = await prisma.customer.findFirst({
             where: {

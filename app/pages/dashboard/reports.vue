@@ -86,12 +86,6 @@
             >
               Permission Locked
             </span>
-            <span
-              v-else
-              class="text-[9px] font-bold px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200"
-            >
-              Active
-            </span>
           </div>
         </div>
       </div>
