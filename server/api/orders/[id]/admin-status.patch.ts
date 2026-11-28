@@ -209,6 +209,19 @@ export default defineEventHandler(async (event) => {
       }
     })
 
+    // If order was approved just now, ensure approvedQuantity is initialized for any item where it is null
+    if (targetIsApproved && !order.isApproved && order.items.length > 0) {
+      for (const itm of order.items) {
+        if (itm.approvedQuantity === null || itm.approvedQuantity === undefined) {
+          await tx.orderItem.update({
+            where: { id: itm.id },
+            data: { approvedQuantity: itm.quantity }
+          })
+          itm.approvedQuantity = itm.quantity
+        }
+      }
+    }
+
     // 2. Billing updates
     if (Object.keys(billingUpdate).length > 0) {
       await tx.billingStatus.upsert({

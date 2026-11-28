@@ -3,7 +3,7 @@ import { ref, computed, watch, nextTick } from 'vue'
 import { 
   X, Check, Shield, AlertTriangle, AlertCircle, 
   Receipt, Package, Truck, SlidersHorizontal, 
-  CheckCheck, Loader2, ArrowRight
+  CheckCheck, Loader2, ArrowRight, Zap
 } from 'lucide-vue-next'
 import { useSnackbar } from '~/composables/useSnackbar'
 import { useRealtimeSync } from '~/composables/useRealtimeSync'
@@ -39,6 +39,12 @@ const deliveryStatus = ref<string>('WAITING')
 const deliveryHoldReason = ref('')
 const driverName = ref('')
 
+const autoCascadeStages = ref(true)
+const autoAdvancedStages = ref({
+  approval: false,
+  packing: false
+})
+
 const autoCalculateOverall = ref(true)
 const overallStatus = ref<string>('CONFIRMED')
 const notes = ref('')
@@ -62,6 +68,27 @@ const initForm = () => {
   autoCalculateOverall.value = true
   overallStatus.value = props.order.overallStatus || 'CONFIRMED'
   notes.value = ''
+
+  autoAdvancedStages.value = {
+    approval: false,
+    packing: false
+  }
+}
+
+const selectApproval = (val: boolean) => {
+  isApproved.value = val
+  autoAdvancedStages.value.approval = false
+}
+
+const selectPackingStatus = (val: string) => {
+  packingStatus.value = val
+  autoAdvancedStages.value.packing = false
+  if (autoCascadeStages.value && (val === 'PACKED' || val === 'IN_PROGRESS')) {
+    if (!isApproved.value) {
+      isApproved.value = true
+      autoAdvancedStages.value.approval = true
+    }
+  }
 }
 
 const selectBillingStatus = (val: string) => {
@@ -71,6 +98,24 @@ const selectBillingStatus = (val: string) => {
       invoiceNumber.value = 'SMG'
     } else if (!invoiceNumber.value.toUpperCase().startsWith('SMG')) {
       invoiceNumber.value = 'SMG' + invoiceNumber.value
+    }
+    if (autoCascadeStages.value && !isApproved.value) {
+      isApproved.value = true
+      autoAdvancedStages.value.approval = true
+    }
+  }
+}
+
+const selectDeliveryStatus = (val: string) => {
+  deliveryStatus.value = val
+  if (autoCascadeStages.value && ['ASSIGNED', 'DISPATCHED', 'DELIVERED'].includes(val)) {
+    if (!isApproved.value) {
+      isApproved.value = true
+      autoAdvancedStages.value.approval = true
+    }
+    if (packingStatus.value !== 'PACKED') {
+      packingStatus.value = 'PACKED'
+      autoAdvancedStages.value.packing = true
     }
   }
 }
@@ -270,6 +315,31 @@ const submitStatusUpdate = async () => {
           </p>
         </div>
 
+        <!-- Auto-Cascade Setting Banner -->
+        <div class="px-6 py-2.5 bg-gradient-to-r from-purple-50/90 via-indigo-50/40 to-white border-b border-purple-100 flex items-center justify-between gap-3 shrink-0">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <div class="w-6 h-6 rounded-md bg-purple-100 text-purple-700 flex items-center justify-center shrink-0">
+              <Zap class="w-3.5 h-3.5" />
+            </div>
+            <div class="truncate">
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-bold text-gray-900">Auto-Cascade Workflow Stages</span>
+                <span class="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold bg-purple-100 text-purple-800 uppercase tracking-wide">
+                  Smart Sync
+                </span>
+              </div>
+              <p class="text-[11px] text-gray-500 truncate">
+                Automatically advances preceding stages (Approval, Packing) when jumping to a downstream status
+              </p>
+            </div>
+          </div>
+
+          <label class="relative inline-flex items-center cursor-pointer shrink-0">
+            <input type="checkbox" v-model="autoCascadeStages" class="sr-only peer">
+            <div class="w-8 h-4.5 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-purple-700"></div>
+          </label>
+        </div>
+
         <!-- Scrollable Body -->
         <div ref="scrollContainerRef" class="p-6 overflow-y-auto space-y-6">
           
@@ -286,18 +356,28 @@ const submitStatusUpdate = async () => {
                 </div>
               </div>
 
-              <span 
-                class="px-2.5 py-0.5 rounded-full text-xs font-bold border"
-                :class="isApproved ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'"
-              >
-                {{ isApproved ? '✓ Approved' : '⏳ Pending Review' }}
-              </span>
+              <div class="flex items-center gap-1.5">
+                <span 
+                  v-if="autoAdvancedStages.approval"
+                  class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-700 border border-purple-200 flex items-center gap-1"
+                  title="Automatically approved because a downstream stage was advanced"
+                >
+                  <Zap class="w-2.5 h-2.5 text-purple-600" />
+                  Auto-advanced
+                </span>
+                <span 
+                  class="px-2.5 py-0.5 rounded-full text-xs font-bold border"
+                  :class="isApproved ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'"
+                >
+                  {{ isApproved ? '✓ Approved' : '⏳ Pending Review' }}
+                </span>
+              </div>
             </div>
 
             <div class="grid grid-cols-2 gap-2.5 pt-1">
               <button
                 type="button"
-                @click="isApproved = true"
+                @click="selectApproval(true)"
                 class="px-3 py-2.5 rounded-lg text-xs font-bold flex items-center justify-center gap-2 border transition cursor-pointer"
                 :class="isApproved ? 'bg-[#1b3b5f] text-white border-[#1b3b5f] shadow-xs' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'"
               >
@@ -306,7 +386,7 @@ const submitStatusUpdate = async () => {
               </button>
               <button
                 type="button"
-                @click="isApproved = false"
+                @click="selectApproval(false)"
                 class="px-3 py-2.5 rounded-lg text-xs font-bold flex items-center justify-center gap-2 border transition cursor-pointer"
                 :class="!isApproved ? 'bg-amber-600 text-white border-amber-600 shadow-xs' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'"
               >
@@ -329,9 +409,19 @@ const submitStatusUpdate = async () => {
                 </div>
               </div>
 
-              <span class="text-xs font-mono font-bold text-gray-500">
-                Current: {{ order?.packingStatus?.status || 'PENDING' }}
-              </span>
+              <div class="flex items-center gap-1.5">
+                <span 
+                  v-if="autoAdvancedStages.packing"
+                  class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-700 border border-purple-200 flex items-center gap-1"
+                  title="Automatically marked packed because delivery was advanced"
+                >
+                  <Zap class="w-2.5 h-2.5 text-purple-600" />
+                  Auto-advanced
+                </span>
+                <span class="text-xs font-mono font-bold text-gray-500">
+                  Current: {{ order?.packingStatus?.status || 'PENDING' }}
+                </span>
+              </div>
             </div>
 
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
@@ -339,7 +429,7 @@ const submitStatusUpdate = async () => {
                 v-for="opt in packingOptions"
                 :key="opt.value"
                 type="button"
-                @click="packingStatus = opt.value"
+                @click="selectPackingStatus(opt.value)"
                 class="px-3 py-2 rounded-lg text-left border transition cursor-pointer"
                 :class="packingStatus === opt.value ? 'bg-[#1b3b5f] text-white border-[#1b3b5f] shadow-xs' : 'bg-white text-gray-800 border-gray-200 hover:bg-gray-50'"
               >
@@ -450,7 +540,7 @@ const submitStatusUpdate = async () => {
                 v-for="opt in deliveryOptions"
                 :key="opt.value"
                 type="button"
-                @click="deliveryStatus = opt.value"
+                @click="selectDeliveryStatus(opt.value)"
                 class="px-3 py-2 rounded-lg text-left border transition cursor-pointer"
                 :class="deliveryStatus === opt.value ? 'bg-[#1b3b5f] text-white border-[#1b3b5f] shadow-xs' : 'bg-white text-gray-800 border-gray-200 hover:bg-gray-50'"
               >

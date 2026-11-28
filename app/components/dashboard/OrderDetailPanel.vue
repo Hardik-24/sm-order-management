@@ -2515,7 +2515,7 @@ onUnmounted(() => {
               </div>
               <div class="flex items-center gap-2 min-w-0 flex-wrap">
                 <span class="text-xs font-bold text-gray-900 group-hover:text-emerald-900 transition-colors">
-                  Margin Summary
+                  Profitability Summary
                 </span>
                 <span class="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-amber-100 text-amber-900 border border-amber-300">
                   Admin Only
