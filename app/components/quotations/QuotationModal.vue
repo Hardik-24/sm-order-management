@@ -1285,22 +1285,6 @@
                     <span>GST Inclusive</span>
                   </label>
                 </div>
-
-                <!-- Quick Apply Tax Bracket to All Items -->
-                <div v-if="quoteItems.length > 0" class="mt-2.5 flex items-center gap-1.5 flex-wrap">
-                  <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Set all items:</span>
-                  <button
-                    v-for="rate in [0, 5, 12, 18, 28]"
-                    :key="rate"
-                    type="button"
-                    @click="applyGstRateToAll(rate)"
-                    class="px-2 py-0.5 rounded-md text-[10px] font-bold border transition-colors cursor-pointer"
-                    :class="isAllGstRate(rate) ? 'bg-sky-100 text-sky-800 border-sky-300 font-extrabold shadow-2xs' : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'"
-                    :title="`Set tax bracket for all items to ${rate}%`"
-                  >
-                    {{ rate }}%
-                  </button>
-                </div>
               </div>
 
               <!-- Notes Textarea -->
@@ -3225,18 +3209,6 @@ const addCustomItem = () => {
     gstRate: 18,
     isCustom: true
   })
-}
-
-const applyGstRateToAll = (rate: number) => {
-  quoteItems.value.forEach(row => {
-    row.gstRate = rate
-  })
-  showSaved(`Applied ${rate}% GST to all items`)
-}
-
-const isAllGstRate = (rate: number) => {
-  if (quoteItems.value.length === 0) return false
-  return quoteItems.value.every(row => Number(row.gstRate) === rate)
 }
 
 const removeQuoteItem = (idx: number) => {
