@@ -3,7 +3,7 @@ import { ref, computed, watch, nextTick } from 'vue'
 import { 
   X, Check, Shield, AlertTriangle, AlertCircle, 
   Receipt, Package, Truck, SlidersHorizontal, 
-  CheckCheck, Loader2, ArrowRight, Zap
+  CheckCheck, Loader2, Lock
 } from 'lucide-vue-next'
 import { useSnackbar } from '~/composables/useSnackbar'
 import { useRealtimeSync } from '~/composables/useRealtimeSync'
@@ -39,33 +39,12 @@ const deliveryStatus = ref<string>('WAITING')
 const deliveryHoldReason = ref('')
 const driverName = ref('')
 
-interface WorkflowMissingStage {
-  key: string
-  name: string
-  current: string
-  fix: string
-}
+// Sequential Department Pipeline Gates
+const isPackingAllowed = computed(() => isApproved.value)
+const isBillingAllowed = computed(() => isApproved.value && packingStatus.value === 'PACKED')
+const isDeliveryAllowed = computed(() => isApproved.value && packingStatus.value === 'PACKED' && billingStatus.value === 'GENERATED')
 
-interface WorkflowWarningState {
-  isOpen: boolean
-  targetDepartment: 'packing' | 'billing' | 'delivery'
-  targetValue: string
-  targetLabel: string
-  missingStages: WorkflowMissingStage[]
-}
-
-const autoAdvancedStages = ref({
-  approval: false,
-  packing: false
-})
-
-const workflowWarning = ref<WorkflowWarningState>({
-  isOpen: false,
-  targetDepartment: 'packing',
-  targetValue: '',
-  targetLabel: '',
-  missingStages: []
-})
+const validationError = ref<string>('')
 
 const autoCalculateOverall = ref(true)
 const overallStatus = ref<string>('CONFIRMED')
@@ -90,39 +69,39 @@ const initForm = () => {
   autoCalculateOverall.value = true
   overallStatus.value = props.order.overallStatus || 'CONFIRMED'
   notes.value = ''
-
-  workflowWarning.value.isOpen = false
-  autoAdvancedStages.value = {
-    approval: false,
-    packing: false
-  }
+  validationError.value = ''
 }
 
 const selectApproval = (val: boolean) => {
+  validationError.value = ''
+  if (!val) {
+    // If setting to pending, downstream completed stages cannot stay completed
+    if (['DELIVERED', 'DISPATCHED', 'ASSIGNED'].includes(deliveryStatus.value) || billingStatus.value === 'GENERATED' || packingStatus.value === 'PACKED') {
+      const confirmReset = confirm('Setting Approval to Pending will also reset downstream Packing, Billing, and Delivery. Proceed?')
+      if (!confirmReset) return
+      deliveryStatus.value = 'WAITING'
+      billingStatus.value = 'PENDING'
+      packingStatus.value = 'PENDING'
+    }
+  }
   isApproved.value = val
-  autoAdvancedStages.value.approval = false
 }
 
 const selectPackingStatus = (val: string) => {
-  if ((val === 'PACKED' || val === 'IN_PROGRESS') && !isApproved.value) {
-    workflowWarning.value = {
-      isOpen: true,
-      targetDepartment: 'packing',
-      targetValue: val,
-      targetLabel: packingOptions.find(o => o.value === val)?.label || val,
-      missingStages: [
-        {
-          key: 'approval',
-          name: 'Approval Desk',
-          current: 'Pending Review',
-          fix: 'Mark Approved'
-        }
-      ]
-    }
+  validationError.value = ''
+  if ((val === 'PACKED' || val === 'IN_PROGRESS') && !isPackingAllowed.value) {
+    validationError.value = 'Approval Required: You cannot start or complete packing until the order is Approved.'
     return
   }
+  if (val !== 'PACKED') {
+    if (['DELIVERED', 'DISPATCHED', 'ASSIGNED'].includes(deliveryStatus.value) || billingStatus.value === 'GENERATED') {
+      const confirmReset = confirm('Resetting Packing will also reset downstream Billing and Delivery. Proceed?')
+      if (!confirmReset) return
+      deliveryStatus.value = 'WAITING'
+      billingStatus.value = 'PENDING'
+    }
+  }
   packingStatus.value = val
-  autoAdvancedStages.value.packing = false
 }
 
 const applyBillingSelection = (val: string) => {
@@ -137,102 +116,43 @@ const applyBillingSelection = (val: string) => {
 }
 
 const selectBillingStatus = (val: string) => {
-  if (val === 'GENERATED' && !isApproved.value) {
-    workflowWarning.value = {
-      isOpen: true,
-      targetDepartment: 'billing',
-      targetValue: val,
-      targetLabel: 'Generated',
-      missingStages: [
-        {
-          key: 'approval',
-          name: 'Approval Desk',
-          current: 'Pending Review',
-          fix: 'Mark Approved'
-        }
-      ]
+  validationError.value = ''
+  if (val === 'GENERATED') {
+    if (!isApproved.value) {
+      validationError.value = 'Approval Required: Order must be Approved before an invoice can be generated.'
+      return
     }
-    return
+    if (packingStatus.value !== 'PACKED') {
+      validationError.value = 'Packing Required: Order must be marked as Packed before an invoice can be generated.'
+      return
+    }
+  } else {
+    if (['DELIVERED', 'DISPATCHED', 'ASSIGNED'].includes(deliveryStatus.value)) {
+      const confirmReset = confirm('Resetting Billing will also reset Delivery to Waiting. Proceed?')
+      if (!confirmReset) return
+      deliveryStatus.value = 'WAITING'
+    }
   }
   applyBillingSelection(val)
 }
 
 const selectDeliveryStatus = (val: string) => {
+  validationError.value = ''
   if (['ASSIGNED', 'DISPATCHED', 'DELIVERED'].includes(val)) {
-    const missing: WorkflowMissingStage[] = []
     if (!isApproved.value) {
-      missing.push({
-        key: 'approval',
-        name: 'Approval Desk',
-        current: 'Pending Review',
-        fix: 'Mark Approved'
-      })
+      validationError.value = 'Approval Required: Order must be Approved before delivery can be assigned or completed.'
+      return
     }
     if (packingStatus.value !== 'PACKED') {
-      missing.push({
-        key: 'packing',
-        name: 'Packing & Fulfillment',
-        current: packingOptions.find(o => o.value === packingStatus.value)?.label || packingStatus.value,
-        fix: 'Mark Packed'
-      })
+      validationError.value = 'Packing Required: Order must be marked as Packed before delivery can be assigned or completed.'
+      return
     }
-
-    if (missing.length > 0) {
-      workflowWarning.value = {
-        isOpen: true,
-        targetDepartment: 'delivery',
-        targetValue: val,
-        targetLabel: deliveryOptions.find(o => o.value === val)?.label || val,
-        missingStages: missing
-      }
+    if (billingStatus.value !== 'GENERATED') {
+      validationError.value = 'Billing Required: Invoice must be Generated before delivery can be assigned or completed.'
       return
     }
   }
   deliveryStatus.value = val
-}
-
-const confirmWithAutoCascade = () => {
-  const { targetDepartment, targetValue, missingStages } = workflowWarning.value
-
-  for (const stage of missingStages) {
-    if (stage.key === 'approval') {
-      isApproved.value = true
-      autoAdvancedStages.value.approval = true
-    }
-    if (stage.key === 'packing') {
-      packingStatus.value = 'PACKED'
-      autoAdvancedStages.value.packing = true
-    }
-  }
-
-  if (targetDepartment === 'packing') {
-    packingStatus.value = targetValue
-  } else if (targetDepartment === 'billing') {
-    applyBillingSelection(targetValue)
-  } else if (targetDepartment === 'delivery') {
-    deliveryStatus.value = targetValue
-  }
-
-  workflowWarning.value.isOpen = false
-}
-
-const confirmSingleOverrideOnly = () => {
-  const { targetDepartment, targetValue } = workflowWarning.value
-
-  if (targetDepartment === 'packing') {
-    packingStatus.value = targetValue
-    autoAdvancedStages.value.packing = false
-  } else if (targetDepartment === 'billing') {
-    applyBillingSelection(targetValue)
-  } else if (targetDepartment === 'delivery') {
-    deliveryStatus.value = targetValue
-  }
-
-  workflowWarning.value.isOpen = false
-}
-
-const cancelWorkflowWarning = () => {
-  workflowWarning.value.isOpen = false
 }
 
 watch(billingStatus, (val) => {
@@ -339,6 +259,20 @@ const submitStatusUpdate = async () => {
     return
   }
 
+  // Strict Sequential Workflow Validation
+  if ((packingStatus.value === 'PACKED' || packingStatus.value === 'IN_PROGRESS') && !isApproved.value) {
+    validationError.value = 'Cannot save: Order must be Approved before packing can be started or completed.'
+    return
+  }
+  if (billingStatus.value === 'GENERATED' && (!isApproved.value || packingStatus.value !== 'PACKED')) {
+    validationError.value = 'Cannot save: Order must be Approved and Packed before invoice can be marked as Generated.'
+    return
+  }
+  if (['ASSIGNED', 'DISPATCHED', 'DELIVERED'].includes(deliveryStatus.value) && (!isApproved.value || packingStatus.value !== 'PACKED' || billingStatus.value !== 'GENERATED')) {
+    validationError.value = 'Cannot save: Order must be Approved, Packed, and Billed before delivery can be assigned, dispatched, or completed.'
+    return
+  }
+
   isSubmitting.value = true
   try {
     const payload = {
@@ -386,131 +320,30 @@ const submitStatusUpdate = async () => {
       <!-- Modal Card -->
       <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl flex flex-col max-h-[calc(100dvh-3.5rem-env(safe-area-inset-bottom,0px)-2rem)] md:max-h-[92vh] overflow-hidden border border-gray-200">
         
-        <!-- Workflow Pipeline Warning Modal -->
-        <div 
-          v-if="workflowWarning.isOpen" 
-          class="absolute inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4"
-        >
-          <div class="bg-white rounded-2xl shadow-2xl border border-amber-200 max-w-md w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-            <!-- Warning Header -->
-            <div class="bg-amber-50 px-5 py-3.5 border-b border-amber-200 flex items-start gap-3">
-              <div class="p-2 bg-amber-100 text-amber-800 rounded-lg shrink-0 mt-0.5">
-                <AlertTriangle class="w-5 h-5 text-amber-700" />
-              </div>
-              <div class="min-w-0">
-                <h3 class="text-sm font-bold text-amber-950">
-                  Workflow Pipeline Notice
-                </h3>
-                <p class="text-xs text-amber-800 mt-0.5">
-                  Out-of-order stage advancement detected
-                </p>
-              </div>
-            </div>
-
-            <!-- Body -->
-            <div class="p-5 space-y-3.5 text-xs text-gray-700">
-              <p>
-                You selected <span class="font-bold text-gray-900 bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200">{{ workflowWarning.targetLabel }}</span>, but the following prerequisite stage(s) are incomplete:
-              </p>
-
-              <div class="space-y-2 bg-gray-50 border border-gray-200 rounded-lg p-3">
-                <div 
-                  v-for="stage in workflowWarning.missingStages" 
-                  :key="stage.key"
-                  class="flex items-center justify-between gap-2"
-                >
-                  <div class="font-semibold text-gray-800">
-                    {{ stage.name }}
-                  </div>
-                  <div class="flex items-center gap-1.5 text-[11px]">
-                    <span class="px-2 py-0.5 rounded bg-amber-100 text-amber-800 font-medium border border-amber-200">
-                      {{ stage.current }}
-                    </span>
-                    <ArrowRight class="w-3 h-3 text-gray-400" />
-                    <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold border border-emerald-200">
-                      {{ stage.fix }}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <p class="text-[11px] text-gray-500">
-                To keep order workflow records clean and consistent, it is recommended to auto-complete the preceding stages.
-              </p>
-            </div>
-
-            <!-- Actions -->
-            <div class="p-4 bg-gray-50 border-t border-gray-100 flex flex-col gap-2">
-              <button
-                type="button"
-                @click="confirmWithAutoCascade"
-                class="w-full py-2.5 px-4 rounded-lg bg-[#1b3b5f] hover:bg-[#152e4a] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition cursor-pointer"
-              >
-                <Zap class="w-3.5 h-3.5 text-amber-400" />
-                <span>Auto-Complete Preceding Stages (Recommended)</span>
-              </button>
-
-              <button
-                type="button"
-                @click="confirmSingleOverrideOnly"
-                class="w-full py-2 px-4 rounded-lg bg-white hover:bg-gray-100 text-gray-700 border border-gray-300 font-semibold text-xs transition cursor-pointer"
-              >
-                Update {{ workflowWarning.targetLabel }} Only (Manual Override)
-              </button>
-
-              <button
-                type="button"
-                @click="cancelWorkflowWarning"
-                class="w-full py-1.5 text-[11px] text-gray-500 hover:text-gray-700 font-medium transition cursor-pointer"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Header -->
-        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-[#faf8f5] shrink-0">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold">
-              <Shield class="w-5 h-5" />
-            </div>
-            <div>
-              <div class="flex items-center gap-2">
-                <h2 class="text-base sm:text-lg font-bold text-gray-900 tracking-tight">
-                  Edit Department Statuses
-                </h2>
-                <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black bg-purple-600 text-white tracking-wider uppercase">
-                  Status Override
-                </span>
-              </div>
-              <p class="text-xs text-gray-500 mt-0.5 flex items-center gap-1.5 flex-wrap">
-                <span class="font-mono font-bold text-gray-900">{{ order?.orderNumber }}</span>
-                <span>&bull;</span>
-                <span>{{ order?.customer?.company || order?.customer?.name }}</span>
-                <span>&bull;</span>
-                <span class="font-bold text-[#1b3b5f]">{{ formatCurrency(order?.totalAmount || 0) }}</span>
-              </p>
-            </div>
-          </div>
-
-          <button 
-            @click="closeModal" 
-            :disabled="isSubmitting"
-            data-modal-close="true"
-            title="Close"
-            class="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition cursor-pointer"
-          >
-            <X class="w-5 h-5" />
-          </button>
-        </div>
-
         <!-- Banner Note -->
         <div class="bg-purple-50/70 border-b border-purple-100 px-6 py-2.5 flex items-center gap-2.5 text-xs text-purple-900 shrink-0">
           <AlertTriangle class="w-4 h-4 text-purple-600 shrink-0" />
           <p>
-            Direct override applies immediate status changes across departments and permanently records an audit entry in the order timeline.
+            Strict departmental workflow: Each department must be completed before downstream stages can be advanced.
           </p>
+        </div>
+
+        <!-- Validation Error Alert Banner -->
+        <div 
+          v-if="validationError" 
+          class="mx-6 mt-4 p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-900 flex items-center justify-between gap-2 shrink-0 animate-in fade-in"
+        >
+          <div class="flex items-center gap-2">
+            <AlertCircle class="w-4 h-4 text-rose-600 shrink-0" />
+            <span class="font-semibold">{{ validationError }}</span>
+          </div>
+          <button 
+            type="button" 
+            @click="validationError = ''" 
+            class="p-1 text-rose-500 hover:text-rose-700 cursor-pointer"
+          >
+            <X class="w-3.5 h-3.5" />
+          </button>
         </div>
 
         <!-- Scrollable Body -->
@@ -530,14 +363,6 @@ const submitStatusUpdate = async () => {
               </div>
 
               <div class="flex items-center gap-1.5">
-                <span 
-                  v-if="autoAdvancedStages.approval"
-                  class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-700 border border-purple-200 flex items-center gap-1"
-                  title="Automatically approved because a downstream stage was advanced"
-                >
-                  <Zap class="w-2.5 h-2.5 text-purple-600" />
-                  Auto-advanced
-                </span>
                 <span 
                   class="px-2.5 py-0.5 rounded-full text-xs font-bold border"
                   :class="isApproved ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'"
@@ -583,18 +408,16 @@ const submitStatusUpdate = async () => {
               </div>
 
               <div class="flex items-center gap-1.5">
-                <span 
-                  v-if="autoAdvancedStages.packing"
-                  class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-700 border border-purple-200 flex items-center gap-1"
-                  title="Automatically marked packed because delivery was advanced"
-                >
-                  <Zap class="w-2.5 h-2.5 text-purple-600" />
-                  Auto-advanced
-                </span>
                 <span class="text-xs font-mono font-bold text-gray-500">
                   Current: {{ order?.packingStatus?.status || 'PENDING' }}
                 </span>
               </div>
+            </div>
+
+            <!-- Prerequisite Gate Notice -->
+            <div v-if="!isPackingAllowed" class="p-2.5 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800 flex items-center gap-2">
+              <Lock class="w-3.5 h-3.5 text-amber-600 shrink-0" />
+              <span><strong>Approval Required:</strong> Mark order as Approved in Step 1 to enable packing.</span>
             </div>
 
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
@@ -603,10 +426,16 @@ const submitStatusUpdate = async () => {
                 :key="opt.value"
                 type="button"
                 @click="selectPackingStatus(opt.value)"
-                class="px-3 py-2 rounded-lg text-left border transition cursor-pointer"
-                :class="packingStatus === opt.value ? 'bg-[#1b3b5f] text-white border-[#1b3b5f] shadow-xs' : 'bg-white text-gray-800 border-gray-200 hover:bg-gray-50'"
+                class="px-3 py-2 rounded-lg text-left border transition relative"
+                :class="[
+                  packingStatus === opt.value ? 'bg-[#1b3b5f] text-white border-[#1b3b5f] shadow-xs' : 'bg-white text-gray-800 border-gray-200 hover:bg-gray-50',
+                  (opt.value === 'PACKED' || opt.value === 'IN_PROGRESS') && !isPackingAllowed ? 'opacity-50 cursor-not-allowed bg-gray-50/80' : 'cursor-pointer'
+                ]"
               >
-                <div class="font-bold text-xs">{{ opt.label }}</div>
+                <div class="flex items-center justify-between">
+                  <div class="font-bold text-xs">{{ opt.label }}</div>
+                  <Lock v-if="(opt.value === 'PACKED' || opt.value === 'IN_PROGRESS') && !isPackingAllowed" class="w-3 h-3 text-amber-600" />
+                </div>
                 <div class="text-[10px] opacity-80 mt-0.5">{{ opt.desc }}</div>
               </button>
             </div>
@@ -643,16 +472,28 @@ const submitStatusUpdate = async () => {
               </span>
             </div>
 
+            <!-- Prerequisite Gate Notice -->
+            <div v-if="!isBillingAllowed" class="p-2.5 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800 flex items-center gap-2">
+              <Lock class="w-3.5 h-3.5 text-amber-600 shrink-0" />
+              <span><strong>Packing Required:</strong> Order must be Approved and marked Packed before generating invoice.</span>
+            </div>
+
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
               <button
                 v-for="opt in billingOptions"
                 :key="opt.value"
                 type="button"
                 @click="selectBillingStatus(opt.value)"
-                class="px-3 py-2 rounded-lg text-left border transition cursor-pointer"
-                :class="billingStatus === opt.value ? 'bg-[#1b3b5f] text-white border-[#1b3b5f] shadow-xs' : 'bg-white text-gray-800 border-gray-200 hover:bg-gray-50'"
+                class="px-3 py-2 rounded-lg text-left border transition relative"
+                :class="[
+                  billingStatus === opt.value ? 'bg-[#1b3b5f] text-white border-[#1b3b5f] shadow-xs' : 'bg-white text-gray-800 border-gray-200 hover:bg-gray-50',
+                  opt.value === 'GENERATED' && !isBillingAllowed ? 'opacity-50 cursor-not-allowed bg-gray-50/80' : 'cursor-pointer'
+                ]"
               >
-                <div class="font-bold text-xs">{{ opt.label }}</div>
+                <div class="flex items-center justify-between">
+                  <div class="font-bold text-xs">{{ opt.label }}</div>
+                  <Lock v-if="opt.value === 'GENERATED' && !isBillingAllowed" class="w-3 h-3 text-amber-600" />
+                </div>
                 <div class="text-[10px] opacity-80 mt-0.5">{{ opt.desc }}</div>
               </button>
             </div>
@@ -702,6 +543,12 @@ const submitStatusUpdate = async () => {
               </span>
             </div>
 
+            <!-- Prerequisite Gate Notice -->
+            <div v-if="!isDeliveryAllowed" class="p-2.5 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800 flex items-center gap-2">
+              <Lock class="w-3.5 h-3.5 text-amber-600 shrink-0" />
+              <span><strong>Billing Required:</strong> Order must be Approved, Packed, and Billed to dispatch or deliver.</span>
+            </div>
+
             <!-- Informative Note -->
             <div class="p-2.5 bg-blue-50/70 border border-blue-200/60 rounded-lg text-xs text-blue-900 flex items-start gap-2">
               <span class="font-bold text-blue-700 shrink-0">Tip:</span>
@@ -714,10 +561,16 @@ const submitStatusUpdate = async () => {
                 :key="opt.value"
                 type="button"
                 @click="selectDeliveryStatus(opt.value)"
-                class="px-3 py-2 rounded-lg text-left border transition cursor-pointer"
-                :class="deliveryStatus === opt.value ? 'bg-[#1b3b5f] text-white border-[#1b3b5f] shadow-xs' : 'bg-white text-gray-800 border-gray-200 hover:bg-gray-50'"
+                class="px-3 py-2 rounded-lg text-left border transition relative"
+                :class="[
+                  deliveryStatus === opt.value ? 'bg-[#1b3b5f] text-white border-[#1b3b5f] shadow-xs' : 'bg-white text-gray-800 border-gray-200 hover:bg-gray-50',
+                  ['ASSIGNED', 'DISPATCHED', 'DELIVERED'].includes(opt.value) && !isDeliveryAllowed ? 'opacity-50 cursor-not-allowed bg-gray-50/80' : 'cursor-pointer'
+                ]"
               >
-                <div class="font-bold text-xs">{{ opt.label }}</div>
+                <div class="flex items-center justify-between">
+                  <div class="font-bold text-xs">{{ opt.label }}</div>
+                  <Lock v-if="['ASSIGNED', 'DISPATCHED', 'DELIVERED'].includes(opt.value) && !isDeliveryAllowed" class="w-3 h-3 text-amber-600" />
+                </div>
                 <div class="text-[10px] opacity-80 mt-0.5 truncate">{{ opt.desc }}</div>
               </button>
             </div>

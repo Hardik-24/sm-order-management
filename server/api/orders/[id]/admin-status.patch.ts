@@ -135,6 +135,38 @@ export default defineEventHandler(async (event) => {
 
   // 4. Delivery
   const targetDelivery = (deliveryStatus as DeliveryState) || order.deliveryStatus?.status || 'WAITING'
+
+  // Strict Department Workflow Pipeline Enforcement
+  // 1. Packing cannot be started or completed without approval
+  if ((targetPacking === 'PACKED' || targetPacking === 'IN_PROGRESS') && !targetIsApproved) {
+    if (packingStatus && packingStatus !== order.packingStatus?.status) {
+      throw createError({
+        statusCode: 400,
+        message: 'Cannot advance packing: Order must be marked as Approved first.'
+      })
+    }
+  }
+
+  // 2. Billing cannot be marked generated without approval and full packing
+  if (targetBilling === 'GENERATED' && (!targetIsApproved || targetPacking !== 'PACKED')) {
+    if (billingStatus && billingStatus !== order.billingStatus?.status) {
+      throw createError({
+        statusCode: 400,
+        message: 'Cannot generate invoice: Order must be Approved and fully Packed first.'
+      })
+    }
+  }
+
+  // 3. Delivery cannot be assigned, dispatched, or delivered without approval, packing, and billing
+  if (['ASSIGNED', 'DISPATCHED', 'DELIVERED'].includes(targetDelivery) && (!targetIsApproved || targetPacking !== 'PACKED' || targetBilling !== 'GENERATED')) {
+    if (deliveryStatus && deliveryStatus !== order.deliveryStatus?.status) {
+      throw createError({
+        statusCode: 400,
+        message: 'Cannot advance delivery: Order must be Approved, Packed, and Billed (Invoice Generated) first.'
+      })
+    }
+  }
+
   const deliveryUpdate: any = {}
   if (deliveryStatus && deliveryStatus !== order.deliveryStatus?.status) {
     changes.push(`Delivery: ${order.deliveryStatus?.status || 'WAITING'} → ${deliveryStatus}`)
