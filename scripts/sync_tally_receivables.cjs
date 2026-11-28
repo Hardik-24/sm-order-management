@@ -695,26 +695,39 @@ async function syncTally() {
         let debit = null;
         let credit = null;
 
-        if (v.vchType === 'Sales') {
+        const vTypeLower = (v.vchType || '').toLowerCase();
+        const pEntry = v.entries && v.entries.find(e => e.name.toLowerCase() === pKey);
+
+        if (vTypeLower.includes('sale')) {
           particulars = `To ${opposing || 'Sales GST@18%'}`;
           debit = v.amount;
-        } else if (v.vchType === 'Receipt') {
+        } else if (vTypeLower.includes('receipt')) {
           particulars = `By ${opposing || 'Bank / Cash'}`;
           credit = v.amount;
-        } else if (v.vchType === 'Credit Note') {
+        } else if (vTypeLower.includes('credit note')) {
           particulars = `By ${opposing || 'Sales Return'}`;
           credit = v.amount;
-        } else if (v.vchType === 'Debit Note') {
+        } else if (vTypeLower.includes('debit note')) {
           particulars = `To ${opposing || 'Debit Note'}`;
           debit = v.amount;
-        } else if (v.vchType === 'Journal') {
-          const pEntry = v.entries.find(e => e.name.toLowerCase() === pKey);
-          if (pEntry && pEntry.amount < 0) {
+        } else if (vTypeLower.includes('payment')) {
+          particulars = `To ${opposing || 'Bank / Cash'}`;
+          debit = v.amount;
+        } else if (vTypeLower.includes('journal')) {
+          if (pEntry && (pEntry.isDeemedPositive || pEntry.amount < 0)) {
             particulars = `To ${opposing || 'Journal'}`;
             debit = Math.abs(pEntry.amount);
           } else {
             particulars = `By ${opposing || 'Journal'}`;
             credit = pEntry ? Math.abs(pEntry.amount) : v.amount;
+          }
+        } else if (pEntry) {
+          if (pEntry.isDeemedPositive || pEntry.amount < 0) {
+            particulars = `To ${opposing || v.vchType}`;
+            debit = Math.abs(pEntry.amount);
+          } else {
+            particulars = `By ${opposing || v.vchType}`;
+            credit = Math.abs(pEntry.amount);
           }
         }
 
@@ -842,26 +855,39 @@ async function syncTally() {
         let debit = null;
         let credit = null;
 
-        if (v.vchType === 'Purchase') {
+        const vTypeLower = (v.vchType || '').toLowerCase();
+        const pEntry = v.entries && v.entries.find(e => e.name.toLowerCase() === pKey);
+
+        if (vTypeLower.includes('purchase')) {
           particulars = `By ${opposing || 'Purchase GST@18%'}`;
           credit = v.amount;
-        } else if (v.vchType === 'Payment') {
+        } else if (vTypeLower.includes('payment')) {
           particulars = `To ${opposing || 'Bank / Cash'}`;
           debit = v.amount;
-        } else if (v.vchType === 'Debit Note') {
+        } else if (vTypeLower.includes('debit note')) {
           particulars = `To ${opposing || 'Purchase Return'}`;
           debit = v.amount;
-        } else if (v.vchType === 'Credit Note') {
+        } else if (vTypeLower.includes('credit note')) {
           particulars = `By ${opposing || 'Credit Note'}`;
           credit = v.amount;
-        } else if (v.vchType === 'Journal') {
-          const pEntry = v.entries.find(e => e.name.toLowerCase() === pKey);
-          if (pEntry && pEntry.amount < 0) {
+        } else if (vTypeLower.includes('receipt')) {
+          particulars = `By ${opposing || 'Bank / Cash'}`;
+          credit = v.amount;
+        } else if (vTypeLower.includes('journal')) {
+          if (pEntry && (pEntry.isDeemedPositive || pEntry.amount < 0)) {
             particulars = `To ${opposing || 'Journal'}`;
             debit = Math.abs(pEntry.amount);
           } else {
             particulars = `By ${opposing || 'Journal'}`;
             credit = pEntry ? Math.abs(pEntry.amount) : v.amount;
+          }
+        } else if (pEntry) {
+          if (pEntry.isDeemedPositive || pEntry.amount < 0) {
+            particulars = `To ${opposing || v.vchType}`;
+            debit = Math.abs(pEntry.amount);
+          } else {
+            particulars = `By ${opposing || v.vchType}`;
+            credit = Math.abs(pEntry.amount);
           }
         }
 
