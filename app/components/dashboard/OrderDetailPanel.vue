@@ -2602,10 +2602,10 @@ onUnmounted(() => {
                 </div>
               </div>
 
-              <!-- 2. Simple 3-Box Financial Breakdown (Pre-Tax In-Hand Comparison) - exact voucher styling -->
+              <!-- 2. Simple 3-Box Financial Breakdown (Taxable Sale, Purchase Cost, GST) -->
               <div class="grid grid-cols-3 divide-x divide-gray-100 bg-white p-3 text-center border-b border-gray-200">
                 <div class="px-1.5 py-1">
-                  <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider block">Net Sale (Pre-Tax)</span>
+                  <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider block">Taxable Sale</span>
                   <span class="text-xs sm:text-sm font-bold font-mono text-gray-900 mt-0.5 block truncate" :title="`Total invoice value with GST: ${formatPriceExact(marginData?.summary?.totalAmount)}`">
                     {{ formatPriceExact(marginData?.summary?.netSalePretax) }}
                   </span>
@@ -2619,8 +2619,8 @@ onUnmounted(() => {
                 </div>
 
                 <div class="px-1.5 py-1">
-                  <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider block">Govt GST</span>
-                  <span class="text-xs sm:text-sm font-bold font-mono text-emerald-800 mt-0.5 block truncate" title="GST payable to Government (excluded from profit)">
+                  <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider block">GST</span>
+                  <span class="text-xs sm:text-sm font-bold font-mono text-emerald-800 mt-0.5 block truncate" title="GST amount (excluded from profit)">
                     {{ formatPriceExact(marginData?.summary?.govtGst) }}
                   </span>
                 </div>
@@ -2634,7 +2634,7 @@ onUnmounted(() => {
                     <span>Product Margin Breakdown ({{ marginData?.items?.length || 0 }})</span>
                   </span>
                   <span class="text-[10px] text-gray-500 font-medium">
-                    Pre-tax in-hand margins excluding GST
+                    In-hand margins excluding GST
                   </span>
                 </div>
 
@@ -2644,9 +2644,9 @@ onUnmounted(() => {
                       <tr>
                         <th class="px-3 sm:px-3.5 py-2 font-bold min-w-[140px] sm:min-w-[180px]">Product</th>
                         <th class="px-2 sm:px-3 py-2 font-bold text-right whitespace-nowrap">Qty</th>
-                        <th class="px-2.5 sm:px-3.5 py-2 font-bold text-right whitespace-nowrap">Net Sale (Pre-tax)</th>
+                        <th class="px-2.5 sm:px-3.5 py-2 font-bold text-right whitespace-nowrap">Taxable Sale</th>
                         <th class="px-2.5 sm:px-3.5 py-2 font-bold text-right whitespace-nowrap">Cost</th>
-                        <th class="px-2.5 sm:px-3.5 py-2 font-bold text-right whitespace-nowrap">Govt GST</th>
+                        <th class="px-2.5 sm:px-3.5 py-2 font-bold text-right whitespace-nowrap">GST</th>
                         <th class="px-2.5 sm:px-3.5 py-2 font-bold text-right whitespace-nowrap" title="In-hand profit (Taxable Sale minus Purchase Cost, excluding GST)">Profit</th>
                       </tr>
                     </thead>
@@ -2679,7 +2679,7 @@ onUnmounted(() => {
                           {{ mItem.qty }} {{ mItem.unit }}
                         </td>
 
-                        <!-- Net Sale (Pre-tax) -->
+                        <!-- Taxable Sale -->
                         <td class="px-2.5 sm:px-3.5 py-2.5 text-right font-medium tabular-nums whitespace-nowrap text-xs">
                           <span class="font-bold text-gray-900 block font-mono">
                             {{ formatPriceExact(mItem.netSalePretax) }}
@@ -2702,7 +2702,7 @@ onUnmounted(() => {
                           <span v-else class="text-gray-300">—</span>
                         </td>
 
-                        <!-- Govt GST -->
+                        <!-- GST -->
                         <td class="px-2.5 sm:px-3 py-2.5 text-right font-mono text-emerald-800 tabular-nums whitespace-nowrap text-xs font-semibold">
                           {{ formatPriceExact(mItem.govtGst) }}
                         </td>
