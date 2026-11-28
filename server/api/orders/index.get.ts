@@ -52,6 +52,18 @@ export default defineEventHandler(async (event) => {
       andConditions.push({ overallStatus: { not: 'CANCELLED' } })
     } else if (status === 'ALL' || status === 'ALL_WITH_CANCELLED') {
       // Show all orders including cancelled
+    } else if (status === 'UNFULFILLED') {
+      // Orders where any department is pending (Approval, Packing, Billing, or Delivery)
+      andConditions.push({
+        overallStatus: { not: 'CANCELLED' },
+        OR: [
+          { overallStatus: { notIn: ['DELIVERED', 'CANCELLED'] } },
+          { isApproved: false },
+          { packingStatus: { status: { not: 'PACKED' } } },
+          { billingStatus: { status: { not: 'GENERATED' } } },
+          { deliveryStatus: { status: { not: 'DELIVERED' } } }
+        ]
+      })
     } else {
       andConditions.push({ overallStatus: status })
     }

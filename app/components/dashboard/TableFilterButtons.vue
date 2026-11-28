@@ -232,6 +232,9 @@ const selectSalesPerson = (id: string) => {
 const resetDates = () => {
   emit('update:startDate', '')
   emit('update:endDate', '')
+  if (props.status === 'UNFULFILLED') {
+    emit('update:status', '')
+  }
 }
 
 const clearDates = () => {
@@ -246,31 +249,54 @@ const formatDateYMD = (d: Date) => {
   return `${year}-${month}-${day}`
 }
 
-const isPresetActive = (preset: 'today' | 'yesterday' | 'last7' | 'thisMonth') => {
+const isPresetActive = (preset: 'today' | 'yesterday' | 'last7' | 'thisMonth' | 'unfulfilled') => {
+  if (preset === 'unfulfilled') {
+    return props.status === 'UNFULFILLED' && !props.startDate && !props.endDate
+  }
   const now = new Date()
   const todayStr = formatDateYMD(now)
   if (preset === 'today') {
-    return props.startDate === todayStr && props.endDate === todayStr
+    return props.startDate === todayStr && props.endDate === todayStr && props.status !== 'UNFULFILLED'
   }
   if (preset === 'yesterday') {
     const yest = new Date(now)
     yest.setDate(yest.getDate() - 1)
     const yestStr = formatDateYMD(yest)
-    return props.startDate === yestStr && props.endDate === yestStr
+    return props.startDate === yestStr && props.endDate === yestStr && props.status !== 'UNFULFILLED'
   }
   if (preset === 'last7') {
     const past = new Date(now)
     past.setDate(past.getDate() - 6)
-    return props.startDate === formatDateYMD(past) && props.endDate === todayStr
+    return props.startDate === formatDateYMD(past) && props.endDate === todayStr && props.status !== 'UNFULFILLED'
   }
   if (preset === 'thisMonth') {
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-    return props.startDate === formatDateYMD(startOfMonth) && props.endDate === todayStr
+    return props.startDate === formatDateYMD(startOfMonth) && props.endDate === todayStr && props.status !== 'UNFULFILLED'
   }
   return false
 }
 
-const setDatePreset = (preset: 'today' | 'yesterday' | 'last7' | 'thisMonth') => {
+const setDatePreset = (preset: 'today' | 'yesterday' | 'last7' | 'thisMonth' | 'unfulfilled') => {
+  if (preset === 'unfulfilled') {
+    if (isPresetActive('unfulfilled')) {
+      // Toggle off back to today
+      const todayStr = formatDateYMD(new Date())
+      emit('update:startDate', todayStr)
+      emit('update:endDate', todayStr)
+      emit('update:status', '')
+    } else {
+      emit('update:startDate', '')
+      emit('update:endDate', '')
+      emit('update:status', 'UNFULFILLED')
+    }
+    return
+  }
+
+  // If another preset is selected, clear UNFULFILLED status if active
+  if (props.status === 'UNFULFILLED') {
+    emit('update:status', '')
+  }
+
   const now = new Date()
   const todayStr = formatDateYMD(now)
   if (preset === 'today') {
@@ -295,6 +321,9 @@ const setDatePreset = (preset: 'today' | 'yesterday' | 'last7' | 'thisMonth') =>
 }
 
 const dateButtonText = computed(() => {
+  if (props.status === 'UNFULFILLED' && !props.startDate && !props.endDate) {
+    return 'Not Fulfilled'
+  }
   if (props.startDate && props.endDate) {
     if (isPresetActive('today')) return 'Today'
     if (isPresetActive('yesterday')) return 'Yesterday'
@@ -364,6 +393,7 @@ const onFilterSectionClick = (e: MouseEvent) => {
 // 1. Overall Status
 const overallStatusOptions = [
   { label: 'All Active Orders', value: '', dot: 'bg-gray-300' },
+  { label: 'Not Fulfilled (Any Pending)', value: 'UNFULFILLED', dot: 'bg-amber-500' },
   { label: 'All Orders (Incl. Cancelled)', value: 'ALL', dot: 'bg-gray-400' },
   { label: 'Awaiting Billing & Packing', value: 'CONFIRMED', dot: 'bg-amber-400' },
   { label: 'Awaiting / Action Required', value: 'PROCESSING', dot: 'bg-amber-500' },
@@ -417,11 +447,11 @@ const deliveryStatusOptions = [
         type="button"
         @click="toggleDatePicker"
         class="w-full sm:w-auto flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 border border-gray-300 rounded-lg text-xs sm:text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors shadow-2xs sm:shadow-sm cursor-pointer whitespace-nowrap"
-        :class="{ 'border-[#1b3b5f] ring-1 ring-[#1b3b5f] text-[#1b3b5f]': startDate || endDate }"
+        :class="{ 'border-[#1b3b5f] ring-1 ring-[#1b3b5f] text-[#1b3b5f]': startDate || endDate || status === 'UNFULFILLED' }"
       >
-        <Calendar class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-500 shrink-0" :class="{ 'text-[#1b3b5f]': startDate || endDate }" />
+        <Calendar class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-500 shrink-0" :class="{ 'text-[#1b3b5f]': startDate || endDate || status === 'UNFULFILLED' }" />
         <span class="truncate max-w-[85px] sm:max-w-none">{{ dateButtonText }}</span>
-        <span v-if="startDate || endDate" class="w-1.5 h-1.5 rounded-full bg-[#1b3b5f] shrink-0" />
+        <span v-if="startDate || endDate || status === 'UNFULFILLED'" class="w-1.5 h-1.5 rounded-full bg-[#1b3b5f] shrink-0" />
       </button>
 
       <!-- Date Popover Content -->
@@ -452,7 +482,7 @@ const deliveryStatusOptions = [
         <div class="p-4 pb-3 flex items-center justify-between border-b border-gray-100 flex-shrink-0">
           <div class="flex items-center gap-2 truncate">
             <h4 class="text-xs font-bold text-gray-900 uppercase tracking-wider">Date Range</h4>
-            <span v-if="startDate || endDate" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#1b3b5f]/10 text-[#1b3b5f] truncate max-w-[130px]">
+            <span v-if="startDate || endDate || status === 'UNFULFILLED'" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#1b3b5f]/10 text-[#1b3b5f] truncate max-w-[130px]">
               {{ dateButtonText }}
             </span>
           </div>
@@ -468,7 +498,7 @@ const deliveryStatusOptions = [
             <div class="flex items-center justify-between">
               <label class="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Quick Presets</label>
               <button 
-                v-if="startDate || endDate" 
+                v-if="startDate || endDate || status === 'UNFULFILLED'" 
                 type="button"
                 @click.stop="resetDates"
                 class="text-[10px] font-semibold text-[#1b3b5f] hover:underline cursor-pointer"
@@ -476,6 +506,28 @@ const deliveryStatusOptions = [
                 Reset
               </button>
             </div>
+
+            <!-- Not Fulfilled Preset Button -->
+            <button
+              type="button"
+              @click="setDatePreset('unfulfilled')"
+              class="w-full px-3 py-2 text-xs rounded-xl border text-left transition-all duration-150 flex items-center justify-between cursor-pointer"
+              :class="isPresetActive('unfulfilled') 
+                ? 'border-amber-400 bg-amber-50/80 text-amber-950 font-bold ring-1 ring-amber-300 shadow-2xs' 
+                : 'border-amber-200/90 bg-amber-50/30 hover:bg-amber-50/70 text-amber-900 hover:border-amber-300'"
+            >
+              <div class="flex items-center gap-2 min-w-0">
+                <span class="w-2 h-2 rounded-full shrink-0" :class="isPresetActive('unfulfilled') ? 'bg-amber-500 animate-pulse' : 'bg-amber-400'" />
+                <div class="truncate">
+                  <div class="font-bold flex items-center gap-1.5">
+                    <span>Not Fulfilled</span>
+                    <span class="text-[9px] uppercase px-1.5 py-0.2 rounded bg-amber-200/80 text-amber-950 font-black">All Time</span>
+                  </div>
+                  <p class="text-[10px] text-amber-700/90 truncate">Any pending approval, packing, billing or delivery</p>
+                </div>
+              </div>
+              <Check v-if="isPresetActive('unfulfilled')" class="w-4 h-4 text-amber-700 shrink-0 ml-1.5" />
+            </button>
 
             <div class="grid grid-cols-2 gap-2">
               <button 
@@ -537,7 +589,7 @@ const deliveryStatusOptions = [
             <div class="flex items-center justify-between">
               <label class="text-[11px] font-bold text-gray-500 uppercase tracking-wider block">Custom Date Range</label>
               <button 
-                v-if="startDate || endDate" 
+                v-if="startDate || endDate || status === 'UNFULFILLED'" 
                 type="button"
                 @click.stop="resetDates"
                 class="text-[10px] font-semibold text-[#1b3b5f] hover:underline cursor-pointer"
@@ -552,7 +604,7 @@ const deliveryStatusOptions = [
                 <div class="relative">
                   <input 
                     :value="startDate"
-                    @input="e => emit('update:startDate', (e.target as HTMLInputElement).value)"
+                    @input="e => { if (status === 'UNFULFILLED') emit('update:status', ''); emit('update:startDate', (e.target as HTMLInputElement).value) }"
                     type="date" 
                     class="w-full px-3.5 py-2.5 rounded-xl border text-xs sm:text-sm font-medium transition-all text-gray-800 bg-white focus:outline-none cursor-pointer"
                     :class="startDate ? 'border-[#1b3b5f] bg-[#1b3b5f]/5 ring-1 ring-[#1b3b5f]/20 font-medium' : 'border-gray-200 hover:border-gray-300 focus:border-gray-400'"
@@ -565,7 +617,7 @@ const deliveryStatusOptions = [
                 <div class="relative">
                   <input 
                     :value="endDate"
-                    @input="e => emit('update:endDate', (e.target as HTMLInputElement).value)"
+                    @input="e => { if (status === 'UNFULFILLED') emit('update:status', ''); emit('update:endDate', (e.target as HTMLInputElement).value) }"
                     type="date" 
                     class="w-full px-3.5 py-2.5 rounded-xl border text-xs sm:text-sm font-medium transition-all text-gray-800 bg-white focus:outline-none cursor-pointer"
                     :class="endDate ? 'border-[#1b3b5f] bg-[#1b3b5f]/5 ring-1 ring-[#1b3b5f]/20 font-medium' : 'border-gray-200 hover:border-gray-300 focus:border-gray-400'"
